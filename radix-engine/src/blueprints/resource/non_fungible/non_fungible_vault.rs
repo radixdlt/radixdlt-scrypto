@@ -30,7 +30,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        Self::assert_not_frozen(api)?;
+        Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         // Check amount
         if !check_non_fungible_amount(amount) {
@@ -53,7 +53,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        Self::assert_not_frozen(api)?;
+        Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         // Take
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
@@ -66,6 +66,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::DEPOSIT, api)?;
+
         // Drop other bucket
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -116,7 +118,7 @@ impl NonFungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn freeze<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub fn freeze<Y>(to_freeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -124,18 +126,18 @@ impl NonFungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::VaultFrozenFlag.into(),
+            NonFungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::MUTABLE,
         )?;
 
         let mut frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
-        frozen.is_frozen = true;
+        frozen.frozen.insert(to_freeze);
         api.field_lock_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
     }
 
-    pub fn unfreeze<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub fn unfreeze<Y>(to_unfreeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -143,11 +145,11 @@ impl NonFungibleVaultBlueprint {
 
         let frozen_flag_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
-            FungibleVaultField::VaultFrozenFlag.into(),
+            NonFungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::MUTABLE,
         )?;
         let mut frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
-        frozen.is_frozen = false;
+        frozen.frozen.remove(to_unfreeze);
         api.field_lock_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
@@ -229,6 +231,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
+
         Self::take(&amount, api)?.package_burn(api)?;
         Ok(())
     }
@@ -240,6 +244,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
+
         Self::take_non_fungibles(non_fungible_local_ids, api)?.package_burn(api)?;
         Ok(())
     }
@@ -272,7 +278,7 @@ impl NonFungibleVaultBlueprint {
         Ok(())
     }
 
-    fn assert_not_frozen<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn assert_not_frozen<Y>(flags: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -286,7 +292,8 @@ impl NonFungibleVaultBlueprint {
             LockFlags::MUTABLE,
         )?;
         let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
-        if frozen.is_frozen {
+
+        if frozen.frozen.intersects(flags) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::VaultIsFrozen),
             ));

@@ -1,5 +1,4 @@
-use super::*;
-use sbor::*;
+use crate::internal_prelude::*;
 
 pub type ScryptoRawPayload<'a> = RawPayload<'a, ScryptoCustomExtension>;
 pub type ScryptoOwnedRawPayload = RawPayload<'static, ScryptoCustomExtension>;

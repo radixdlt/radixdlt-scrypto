@@ -73,7 +73,7 @@ impl FungibleResourceManagerBlueprint {
         track_total_supply: bool,
         divisibility: u8,
         metadata: MetadataInit,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
@@ -108,7 +108,7 @@ impl FungibleResourceManagerBlueprint {
         track_total_supply: bool,
         divisibility: u8,
         metadata: MetadataInit,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
@@ -135,7 +135,7 @@ impl FungibleResourceManagerBlueprint {
         track_total_supply: bool,
         divisibility: u8,
         metadata: MetadataInit,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
         resource_address_reservation: GlobalAddressReservation,
         api: &mut Y,

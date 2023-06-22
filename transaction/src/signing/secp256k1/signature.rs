@@ -40,23 +40,6 @@ impl TryFrom<&[u8]> for Secp256k1Signature {
 // error
 //======
 
-/// Represents an error when parsing an ECDSA Secp256k1 public key from hex.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseSecp256k1PublicKeyError {
-    InvalidHex(String),
-    InvalidLength(usize),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseSecp256k1PublicKeyError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseSecp256k1PublicKeyError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseSecp256k1SignatureError {
     InvalidHex(String),

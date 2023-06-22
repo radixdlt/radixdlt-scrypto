@@ -30,7 +30,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::rule;
+use radix_engine_interface::{metadata_init, metadata_init_set_entry, rule};
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, SubstateDatabase},

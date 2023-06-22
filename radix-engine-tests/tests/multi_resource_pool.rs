@@ -7,7 +7,6 @@ use radix_engine::{
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
-use scrypto::prelude::*;
 use scrypto_unit::{is_auth_error, TestRunner};
 use transaction::prelude::{ManifestBuilder, TransactionManifestV1};
 

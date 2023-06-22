@@ -1,4 +1,4 @@
-use super::*;
+use crate::internal_prelude::*;
 
 pub type ManifestRawPayload<'a> = RawPayload<'a, ManifestCustomExtension>;
 pub type ManifestOwnedRawPayload = RawPayload<'static, ManifestCustomExtension>;

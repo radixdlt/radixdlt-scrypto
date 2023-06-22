@@ -1,8 +1,4 @@
-use sbor::decoder::*;
-use sbor::traversal::*;
-use sbor::value_kind::*;
-
-use super::*;
+use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManifestCustomTerminalValueRef(pub ManifestCustomValue);

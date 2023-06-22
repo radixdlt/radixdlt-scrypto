@@ -99,7 +99,7 @@ impl NonFungibleResourceManagerBlueprint {
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: MetadataInit,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
@@ -126,7 +126,7 @@ impl NonFungibleResourceManagerBlueprint {
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: MetadataInit,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         resource_address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
@@ -170,7 +170,7 @@ impl NonFungibleResourceManagerBlueprint {
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: MetadataInit,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
@@ -252,7 +252,7 @@ impl NonFungibleResourceManagerBlueprint {
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: MetadataInit,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         entries: Vec<(ScryptoValue,)>,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
