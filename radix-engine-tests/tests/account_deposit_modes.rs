@@ -4,7 +4,6 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_queries::typed_substate_layout::AccountError;
-use scrypto::prelude::*;
 use scrypto_unit::TestRunner;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
 use transaction::signing::secp256k1::Secp256k1PrivateKey;

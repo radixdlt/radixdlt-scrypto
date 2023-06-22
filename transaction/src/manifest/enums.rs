@@ -113,7 +113,7 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum ResourceMethodAuthKey {
+            enum ResourceAction {
                 Mint = 0;
                 Burn = 1;
                 UpdateNonFungibleData = 2;
