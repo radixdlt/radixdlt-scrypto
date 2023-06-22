@@ -41,7 +41,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
 }
@@ -52,7 +52,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
 }

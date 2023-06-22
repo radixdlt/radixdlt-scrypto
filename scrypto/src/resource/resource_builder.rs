@@ -581,7 +581,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -634,7 +634,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -687,7 +687,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
