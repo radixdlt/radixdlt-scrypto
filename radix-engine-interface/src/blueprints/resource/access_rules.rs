@@ -246,18 +246,18 @@ impl Roles {
 // TODO: Remove?
 pub fn resource_access_rules_from_owner_badge(
     owner_badge: &NonFungibleGlobalId,
-) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
+) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
     let mut access_rules = BTreeMap::new();
     access_rules.insert(
-        ResourceMethodAuthKey::Withdraw,
+        ResourceAction::Withdraw,
         (AccessRule::AllowAll, rule!(require(owner_badge.clone()))),
     );
     access_rules.insert(
-        ResourceMethodAuthKey::Deposit,
+        ResourceAction::Deposit,
         (AccessRule::AllowAll, rule!(require(owner_badge.clone()))),
     );
     access_rules.insert(
-        ResourceMethodAuthKey::Recall,
+        ResourceAction::Recall,
         (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
     );
     access_rules.insert(

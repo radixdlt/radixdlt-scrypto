@@ -50,7 +50,7 @@ impl TransactionTrackerNativePackage {
         let mut collections: Vec<BlueprintCollectionSchema<TypeRef<LocalTypeIndex>>> = vec![];
         for _ in PARTITION_RANGE_START..=PARTITION_RANGE_END {
             collections.push(BlueprintCollectionSchema::KeyValueStore(
-                schema::BlueprintKeyValueStoreSchema {
+                BlueprintKeyValueStoreSchema {
                     key: TypeRef::Static(key_type_index),
                     value: TypeRef::Static(value_type_index),
                     can_own: false,

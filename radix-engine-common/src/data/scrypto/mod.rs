@@ -1,3 +1,8 @@
+// Modules that should appear explicitly under the scrypto module
+pub mod model;
+
+// Modules which should appear part of the scrypto module
+
 /// Defines the full Scrypto extension.
 mod custom_extension;
 mod custom_formatting;
@@ -16,10 +21,10 @@ mod custom_value;
 mod custom_value_kind;
 /// Defines the scrypto custom well known types.
 mod custom_well_known_types;
+/// Defines the core traits and methods for scrypto SBOR encoding
+mod definitions;
 /// Defines a way to uniquely identify an element within a Scrypto schema type.
 mod schema_path;
-
-pub mod model;
 
 pub use custom_extension::*;
 pub use custom_formatting::*;
@@ -32,63 +37,28 @@ pub use custom_validation::*;
 pub use custom_value::*;
 pub use custom_value_kind::*;
 pub use custom_well_known_types::*;
+pub use definitions::*;
 pub use schema_path::*;
 
-use sbor::rust::vec::Vec;
-use sbor::traversal::VecTraverser;
-use sbor::*;
+// Prelude:
+// This exposes all the types/traits directly, without exposing the module
+// names. These module names can clash with other preludes so get excluded.
+pub mod prelude {
+    // Public modules to include in prelude
+    pub use super::model::*;
 
-pub use radix_engine_constants::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
-pub const SCRYPTO_SBOR_V1_MAX_DEPTH: usize = 64;
-
-pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind>;
-pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind>;
-pub type ScryptoTraverser<'a> = VecTraverser<'a, ScryptoCustomTraversal>;
-pub type ScryptoValueKind = ValueKind<ScryptoCustomValueKind>;
-pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
-
-// The following trait "aliases" are to be used in parameters.
-//
-// They are much nicer to read than the underlying traits, but because they are "new", and are defined
-// via blanket impls, they can only be used for parameters, but cannot be used for implementations.
-//
-// Implementations should instead implement the underlying traits:
-// * Categorize<ScryptoCustomValueKind>
-// * Encode<ScryptoCustomValueKind, E> (impl over all E: Encoder<ScryptoCustomValueKind>)
-// * Decode<ScryptoCustomValueKind, D> (impl over all D: Decoder<ScryptoCustomValueKind>)
-//
-// TODO: Change these to be Trait aliases once stable in rust: https://github.com/rust-lang/rust/issues/41517
-pub trait ScryptoCategorize: Categorize<ScryptoCustomValueKind> {}
-impl<T: Categorize<ScryptoCustomValueKind> + ?Sized> ScryptoCategorize for T {}
-
-pub trait ScryptoSborEnum: SborEnum<ScryptoCustomValueKind> {}
-impl<T: SborEnum<ScryptoCustomValueKind> + ?Sized> ScryptoSborEnum for T {}
-
-pub trait ScryptoSborTuple: SborTuple<ScryptoCustomValueKind> {}
-impl<T: SborTuple<ScryptoCustomValueKind> + ?Sized> ScryptoSborTuple for T {}
-
-pub trait ScryptoDecode: for<'a> Decode<ScryptoCustomValueKind, ScryptoDecoder<'a>> {}
-impl<T: for<'a> Decode<ScryptoCustomValueKind, ScryptoDecoder<'a>>> ScryptoDecode for T {}
-
-pub trait ScryptoEncode: for<'a> Encode<ScryptoCustomValueKind, ScryptoEncoder<'a>> {}
-impl<T: for<'a> Encode<ScryptoCustomValueKind, ScryptoEncoder<'a>> + ?Sized> ScryptoEncode for T {}
-
-pub trait ScryptoDescribe: Describe<ScryptoCustomTypeKind> {}
-impl<T: Describe<ScryptoCustomTypeKind>> ScryptoDescribe for T {}
-
-pub trait ScryptoSbor: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe {}
-impl<T: ScryptoCategorize + ScryptoDecode + ScryptoEncode + ScryptoDescribe> ScryptoSbor for T {}
-
-/// Encodes a data structure into byte array.
-pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
-    let mut buf = Vec::with_capacity(512);
-    let encoder = ScryptoEncoder::new(&mut buf, SCRYPTO_SBOR_V1_MAX_DEPTH);
-    encoder.encode_payload(value, SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-    Ok(buf)
-}
-
-/// Decodes a data structure from a byte array.
-pub fn scrypto_decode<T: ScryptoDecode>(buf: &[u8]) -> Result<T, DecodeError> {
-    ScryptoDecoder::new(buf, SCRYPTO_SBOR_V1_MAX_DEPTH)
-        .decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+    // Private modules to include in prelude
+    pub use super::custom_extension::*;
+    pub use super::custom_formatting::*;
+    pub use super::custom_payload_wrappers::*;
+    pub use super::custom_schema::*;
+    #[cfg(feature = "serde")]
+    pub use super::custom_serde::*;
+    pub use super::custom_traversal::*;
+    pub use super::custom_validation::*;
+    pub use super::custom_value::*;
+    pub use super::custom_value_kind::*;
+    pub use super::custom_well_known_types::*;
+    pub use super::definitions::*;
+    pub use super::schema_path::*;
 }

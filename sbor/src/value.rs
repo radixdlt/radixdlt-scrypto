@@ -349,9 +349,9 @@ impl<X: CustomValueKind, Y: CustomValue<X>, C: CustomTypeKind<GlobalTypeId>> Des
     }
 }
 
-///==============================================
-/// ENUMS
-///==============================================
+//==============================================
+// ENUMS
+//==============================================
 
 pub struct EnumVariantValue<X: CustomValueKind, Y: CustomValue<X>> {
     pub discriminator: u8,

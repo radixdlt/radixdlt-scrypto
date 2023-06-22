@@ -7,12 +7,15 @@
 // In order to distinguish payloads, all of these should be distinct!
 // This is particularly important for payloads which will be signed (Transaction / ROLA)
 
-/// 0x5b for [5b]or - (90 in decimal)
-pub const BASIC_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5b; // Duplicated due to dependency issues
+// 0x5b for [5b]or - (90 in decimal)
+// The following is exported from the sbor repo, but commented out here to avoid import clashes:
+// pub const BASIC_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5b;
+
 /// 0x5c for [5c]rypto - (91 in decimal)
 pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
 /// 0x4d = M in ASCII for Manifest - (77 in decimal)
 pub const MANIFEST_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x4d;
+
 /// The ROLA hash which is signed is created as `hash(ROLA_HASHABLE_PAYLOAD_PREFIX || ..)`
 ///
 /// 0x52 = R in ASCII for ROLA - (82 in decimal)
