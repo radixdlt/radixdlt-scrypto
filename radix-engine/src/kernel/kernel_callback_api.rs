@@ -23,7 +23,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_drop_node<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn after_drop_node<Y>(api: &mut Y, total_substate_size: usize) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -37,6 +37,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn after_create_node<Y>(
         node_id: &NodeId,
+        total_substate_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

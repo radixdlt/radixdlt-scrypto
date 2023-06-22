@@ -105,6 +105,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn after_create_node<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
+        _total_substate_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -119,7 +120,10 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn after_drop_node<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _total_substate_size: usize,
+    ) -> Result<(), RuntimeError> {
         Ok(())
     }
 

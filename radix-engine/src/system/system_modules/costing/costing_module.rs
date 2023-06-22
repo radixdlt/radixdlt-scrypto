@@ -206,6 +206,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
+        total_substate_size: usize,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
@@ -213,17 +214,23 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .costing
             .apply_execution_cost(CostingEntry::CreateNode {
                 node_id,
+                total_substate_size,
                 db_access: store_access,
             })?;
 
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        total_substate_size: usize,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::DropNode)?;
+            .apply_execution_cost(CostingEntry::DropNode {
+                total_substate_size,
+            })?;
 
         Ok(())
     }

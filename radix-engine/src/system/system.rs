@@ -2042,7 +2042,6 @@ where
     V: SystemCallbackObject,
 {
     // No costing should be applied
-    #[trace_resources(log=units, log=reason)]
     fn consume_cost_units(
         &mut self,
         costing_entry: ClientCostingEntry,
