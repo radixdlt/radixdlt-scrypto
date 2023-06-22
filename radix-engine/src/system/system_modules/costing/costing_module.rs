@@ -173,7 +173,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             })
             .and_then(|()| {
                 fee_reserve.consume_deferred(
-                    fee_table.tx_signature_verification_per_sig(),
+                    fee_table.tx_signature_verification_cost_per_sig(),
                     costing.num_of_signatures,
                     CostingReason::TxSignatureVerification,
                 )
