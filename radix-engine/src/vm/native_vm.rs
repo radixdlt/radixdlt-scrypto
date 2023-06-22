@@ -23,7 +23,7 @@ pub struct NativeVm;
 
 impl NativeVm {
     pub fn create_instance(
-        _package_address: &PackageAddress,
+        package_address: &PackageAddress,
         code: &[u8],
     ) -> Result<NativeVmInstance, RuntimeError> {
         if code.len() != 1 {
@@ -33,6 +33,7 @@ impl NativeVm {
         }
 
         let instance = NativeVmInstance {
+            package_address: *package_address,
             native_package_code_id: code[0],
         };
 
@@ -41,6 +42,9 @@ impl NativeVm {
 }
 
 pub struct NativeVmInstance {
+    // Used by profiling
+    #[allow(dead_code)]
+    package_address: PackageAddress,
     native_package_code_id: u8,
 }
 
