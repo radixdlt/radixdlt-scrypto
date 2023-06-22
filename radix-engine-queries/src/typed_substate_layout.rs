@@ -1,15 +1,14 @@
 use radix_engine::blueprints::transaction_tracker::TransactionTrackerSubstate;
 use radix_engine::types::*;
-use sbor::rust::prelude::*;
 
 // Import and re-export these types so they are available easily with a single import
 pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::*;
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
-pub use radix_engine::blueprints::pool::multi_resource_pool::*;
-pub use radix_engine::blueprints::pool::one_resource_pool::*;
-pub use radix_engine::blueprints::pool::two_resource_pool::*;
+pub use radix_engine::blueprints::pool::multi_resource_pool;
+pub use radix_engine::blueprints::pool::one_resource_pool;
+pub use radix_engine::blueprints::pool::two_resource_pool;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
@@ -516,17 +515,17 @@ pub enum TypedAccountFieldValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedOneResourcePoolFieldValue {
-    OneResourcePool(OneResourcePoolSubstate),
+    OneResourcePool(one_resource_pool::OneResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedTwoResourcePoolFieldValue {
-    TwoResourcePool(TwoResourcePoolSubstate),
+    TwoResourcePool(two_resource_pool::TwoResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedMultiResourcePoolFieldValue {
-    MultiResourcePool(MultiResourcePoolSubstate),
+    MultiResourcePool(multi_resource_pool::MultiResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]

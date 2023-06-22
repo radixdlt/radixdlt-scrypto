@@ -356,23 +356,23 @@ impl ResourceManagerNativePackage {
                     function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
                         roles {
-                            MINT_ROLE => updaters: [MINT_UPDATE_ROLE];
-                            MINT_UPDATE_ROLE => updaters: [MINT_UPDATE_ROLE];
-                            BURN_ROLE => updaters: [BURN_UPDATE_ROLE];
-                            BURN_UPDATE_ROLE => updaters: [BURN_UPDATE_ROLE];
-                            WITHDRAW_ROLE => updaters: [WITHDRAW_UPDATE_ROLE];
-                            WITHDRAW_UPDATE_ROLE => updaters: [WITHDRAW_UPDATE_ROLE];
-                            DEPOSIT_ROLE => updaters: [DEPOSIT_UPDATE_ROLE];
-                            DEPOSIT_UPDATE_ROLE => updaters: [DEPOSIT_UPDATE_ROLE];
-                            RECALL_ROLE => updaters: [RECALL_UPDATE_ROLE];
-                            RECALL_UPDATE_ROLE => updaters: [RECALL_UPDATE_ROLE];
-                            FREEZE_ROLE => updaters: [FREEZE_UPDATE_ROLE];
-                            FREEZE_UPDATE_ROLE => updaters: [FREEZE_UPDATE_ROLE];
+                            MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
+                            MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
+                            BURNER_ROLE => updaters: [BURNER_UPDATER_ROLE];
+                            BURNER_UPDATER_ROLE => updaters: [BURNER_UPDATER_ROLE];
+                            WITHDRAWER_ROLE => updaters: [WITHDRAWER_UPDATER_ROLE];
+                            WITHDRAWER_UPDATER_ROLE => updaters: [WITHDRAWER_UPDATER_ROLE];
+                            DEPOSITOR_ROLE => updaters: [DEPOSITOR_UPDATER_ROLE];
+                            DEPOSITOR_UPDATER_ROLE => updaters: [DEPOSITOR_UPDATER_ROLE];
+                            RECALLER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
+                            RECALLER_UPDATER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
+                            FREEZER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
+                            FREEZER_UPDATER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
                             RESOURCE_PACKAGE_ROLE;
                         },
                         methods {
-                            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
-                            RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];
+                            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINTER_ROLE];
+                            RESOURCE_MANAGER_BURN_IDENT => [BURNER_ROLE];
                             RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
                             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
@@ -686,29 +686,29 @@ impl ResourceManagerNativePackage {
                     function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
                         roles {
-                            MINT_ROLE => updaters: [MINT_UPDATE_ROLE];
-                            MINT_UPDATE_ROLE => updaters: [MINT_UPDATE_ROLE];
-                            BURN_ROLE => updaters: [BURN_UPDATE_ROLE];
-                            BURN_UPDATE_ROLE => updaters: [BURN_UPDATE_ROLE];
-                            WITHDRAW_ROLE => updaters: [WITHDRAW_UPDATE_ROLE];
-                            WITHDRAW_UPDATE_ROLE => updaters: [WITHDRAW_UPDATE_ROLE];
-                            DEPOSIT_ROLE => updaters: [DEPOSIT_UPDATE_ROLE];
-                            DEPOSIT_UPDATE_ROLE => updaters: [DEPOSIT_UPDATE_ROLE];
-                            RECALL_ROLE => updaters: [RECALL_UPDATE_ROLE];
-                            RECALL_UPDATE_ROLE => updaters: [RECALL_UPDATE_ROLE];
-                            FREEZE_ROLE => updaters: [FREEZE_UPDATE_ROLE];
-                            FREEZE_UPDATE_ROLE => updaters: [FREEZE_UPDATE_ROLE];
-                            UPDATE_NON_FUNGIBLE_DATA_ROLE => updaters: [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE];
-                            UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE => updaters: [UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE];
+                            MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
+                            MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
+                            BURNER_ROLE => updaters: [BURNER_UPDATER_ROLE];
+                            BURNER_UPDATER_ROLE => updaters: [BURNER_UPDATER_ROLE];
+                            WITHDRAWER_ROLE => updaters: [WITHDRAWER_UPDATER_ROLE];
+                            WITHDRAWER_UPDATER_ROLE => updaters: [WITHDRAWER_UPDATER_ROLE];
+                            DEPOSITOR_ROLE => updaters: [DEPOSITOR_UPDATER_ROLE];
+                            DEPOSITOR_UPDATER_ROLE => updaters: [DEPOSITOR_UPDATER_ROLE];
+                            RECALLER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
+                            RECALLER_UPDATER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
+                            FREEZER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
+                            FREEZER_UPDATER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
+                            NON_FUNGIBLE_DATA_UPDATER_ROLE => updaters: [NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE];
+                            NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE => updaters: [NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE];
                             RESOURCE_PACKAGE_ROLE;
                         },
                         methods {
-                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
-                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT => [MINT_ROLE];
-                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => [MINT_ROLE];
-                            RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];
+                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINTER_ROLE];
+                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT => [MINTER_ROLE];
+                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => [MINTER_ROLE];
+                            RESOURCE_MANAGER_BURN_IDENT => [BURNER_ROLE];
                             RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
+                            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => [NON_FUNGIBLE_DATA_UPDATER_ROLE];
                             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
@@ -946,13 +946,13 @@ impl ResourceManagerNativePackage {
                             VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
                             VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
-                            VAULT_FREEZE_IDENT => [FREEZE_ROLE];
-                            VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
-                            VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
-                            FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAW_ROLE];
-                            VAULT_RECALL_IDENT => [RECALL_ROLE];
-                            VAULT_PUT_IDENT => [DEPOSIT_ROLE];
-                            VAULT_BURN_IDENT => [BURN_ROLE];
+                            VAULT_FREEZE_IDENT => [FREEZER_ROLE];
+                            VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
+                            VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                            FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAWER_ROLE];
+                            VAULT_RECALL_IDENT => [RECALLER_ROLE];
+                            VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
+                            VAULT_BURN_IDENT => [BURNER_ROLE];
                             FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                             FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                         },
@@ -1239,15 +1239,15 @@ impl ResourceManagerNativePackage {
                             VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
-                            VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
-                            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAW_ROLE];
-                            VAULT_RECALL_IDENT => [RECALL_ROLE];
-                            VAULT_FREEZE_IDENT => [FREEZE_ROLE];
-                            VAULT_UNFREEZE_IDENT => [FREEZE_ROLE];
-                            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALL_ROLE];
-                            VAULT_PUT_IDENT => [DEPOSIT_ROLE];
-                            VAULT_BURN_IDENT => [BURN_ROLE];
-                            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURN_ROLE];
+                            VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAWER_ROLE];
+                            VAULT_RECALL_IDENT => [RECALLER_ROLE];
+                            VAULT_FREEZE_IDENT => [FREEZER_ROLE];
+                            VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
+                            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALLER_ROLE];
+                            VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
+                            VAULT_BURN_IDENT => [BURNER_ROLE];
+                            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURNER_ROLE];
 
                             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
@@ -2598,19 +2598,19 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_FREEZE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: VaultFreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultFreezeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleVaultBlueprint::freeze(api)?;
+                let rtn = FungibleVaultBlueprint::freeze(input.to_freeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleVaultBlueprint::unfreeze(api)?;
+                let rtn = FungibleVaultBlueprint::unfreeze(input.to_unfreeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
@@ -2717,19 +2717,19 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: VaultFreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultFreezeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleVaultBlueprint::freeze(api)?;
+                let rtn = NonFungibleVaultBlueprint::freeze(input.to_freeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleVaultBlueprint::unfreeze(api)?;
+                let rtn = NonFungibleVaultBlueprint::unfreeze(input.to_unfreeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {

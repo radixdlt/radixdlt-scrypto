@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
 fn build_access_rules(
-    mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    mut access_rules_map: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
 ) -> BTreeMap<ObjectModuleId, Roles> {
     let mut main_roles = Roles::new();
 
@@ -28,78 +28,77 @@ fn build_access_rules(
     {
         // Mint
         let (mint_access_rule, mint_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Mint)
+            .remove(&ResourceAction::Mint)
             .unwrap_or((DenyAll, DenyAll));
         {
-            main_roles.define_mutable_role(MINT_UPDATE_ROLE, mint_mutability);
-            main_roles.define_mutable_role(MINT_ROLE, mint_access_rule);
+            main_roles.define_mutable_role(MINTER_UPDATER_ROLE, mint_mutability);
+            main_roles.define_mutable_role(MINTER_ROLE, mint_access_rule);
         }
 
         // Burn
         let (burn_access_rule, burn_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Burn)
+            .remove(&ResourceAction::Burn)
             .unwrap_or((DenyAll, DenyAll));
         {
-            main_roles.define_mutable_role(BURN_UPDATE_ROLE, burn_mutability);
-            main_roles.define_mutable_role(BURN_ROLE, burn_access_rule);
+            main_roles.define_mutable_role(BURNER_UPDATER_ROLE, burn_mutability);
+            main_roles.define_mutable_role(BURNER_ROLE, burn_access_rule);
         }
 
         // Non Fungible Update data
         let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
             access_rules_map
-                .remove(&ResourceMethodAuthKey::UpdateNonFungibleData)
+                .remove(&ResourceAction::UpdateNonFungibleData)
                 .unwrap_or((AllowAll, DenyAll));
         {
             main_roles.define_mutable_role(
-                UPDATE_NON_FUNGIBLE_DATA_UPDATE_ROLE,
+                NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE,
                 update_non_fungible_data_mutability,
             );
-
             main_roles.define_mutable_role(
-                UPDATE_NON_FUNGIBLE_DATA_ROLE,
+                NON_FUNGIBLE_DATA_UPDATER_ROLE,
                 update_non_fungible_data_access_rule,
             );
         }
 
         // Withdraw
         let (withdraw_access_rule, withdraw_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Withdraw)
+            .remove(&ResourceAction::Withdraw)
             .unwrap_or((AllowAll, DenyAll));
         {
-            main_roles.define_mutable_role(WITHDRAW_ROLE, withdraw_access_rule);
-            main_roles.define_mutable_role(WITHDRAW_UPDATE_ROLE, withdraw_mutability);
+            main_roles.define_mutable_role(WITHDRAWER_ROLE, withdraw_access_rule);
+            main_roles.define_mutable_role(WITHDRAWER_UPDATER_ROLE, withdraw_mutability);
         }
 
         // Recall
         let (recall_access_rule, recall_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Recall)
+            .remove(&ResourceAction::Recall)
             .unwrap_or((DenyAll, DenyAll));
         {
-            main_roles.define_mutable_role(RECALL_ROLE, recall_access_rule);
-            main_roles.define_mutable_role(RECALL_UPDATE_ROLE, recall_mutability);
+            main_roles.define_mutable_role(RECALLER_ROLE, recall_access_rule);
+            main_roles.define_mutable_role(RECALLER_UPDATER_ROLE, recall_mutability);
         }
 
         // Freeze/Unfreeze Role
         if let Some((freeze_access_rule, freeze_mutability)) =
-            access_rules_map.remove(&ResourceMethodAuthKey::Freeze)
+            access_rules_map.remove(&ResourceAction::Freeze)
         {
-            main_roles.define_mutable_role(FREEZE_ROLE, freeze_access_rule);
-            main_roles.define_mutable_role(FREEZE_UPDATE_ROLE, freeze_mutability);
+            main_roles.define_mutable_role(FREEZER_ROLE, freeze_access_rule);
+            main_roles.define_mutable_role(FREEZER_UPDATER_ROLE, freeze_mutability);
         }
 
         // Deposit
         let (deposit_access_rule, deposit_mutability) = access_rules_map
-            .remove(&ResourceMethodAuthKey::Deposit)
+            .remove(&ResourceAction::Deposit)
             .unwrap_or((AllowAll, DenyAll));
         {
-            main_roles.define_mutable_role(DEPOSIT_ROLE, deposit_access_rule);
-            main_roles.define_mutable_role(DEPOSIT_UPDATE_ROLE, deposit_mutability);
+            main_roles.define_mutable_role(DEPOSITOR_ROLE, deposit_access_rule);
+            main_roles.define_mutable_role(DEPOSITOR_UPDATER_ROLE, deposit_mutability);
         }
     }
 
     // Metadata
     let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
-        .remove(&ResourceMethodAuthKey::UpdateMetadata)
+        .remove(&ResourceAction::UpdateMetadata)
         .unwrap_or((DenyAll, DenyAll));
     let metadata_roles = {
         let mut metadata_roles = Roles::new();
@@ -118,23 +117,23 @@ fn build_access_rules(
 
 pub fn features(
     track_total_supply: bool,
-    access_rules: &BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    access_rules: &BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
 ) -> Vec<&str> {
     let mut features = Vec::new();
 
     if track_total_supply {
         features.push(TRACK_TOTAL_SUPPLY_FEATURE);
     }
-    if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
+    if access_rules.contains_key(&ResourceAction::Freeze) {
         features.push(VAULT_FREEZE_FEATURE);
     }
-    if access_rules.contains_key(&ResourceMethodAuthKey::Recall) {
+    if access_rules.contains_key(&ResourceAction::Recall) {
         features.push(VAULT_RECALL_FEATURE);
     }
-    if access_rules.contains_key(&ResourceMethodAuthKey::Mint) {
+    if access_rules.contains_key(&ResourceAction::Mint) {
         features.push(MINT_FEATURE);
     }
-    if access_rules.contains_key(&ResourceMethodAuthKey::Burn) {
+    if access_rules.contains_key(&ResourceAction::Burn) {
         features.push(BURN_FEATURE);
     }
 
@@ -144,7 +143,7 @@ pub fn features(
 pub fn globalize_resource_manager<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
-    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, MetadataValue>,
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
@@ -171,7 +170,7 @@ where
 pub fn globalize_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
-    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, MetadataValue>,
     initial_supply: Decimal,
     api: &mut Y,
@@ -208,7 +207,7 @@ where
 pub fn globalize_non_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
-    access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     metadata: BTreeMap<String, MetadataValue>,
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,

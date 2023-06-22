@@ -296,7 +296,7 @@ fn test_claim_royalty() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .claim_package_royalty(package_address)
+            .claim_package_royalties(package_address)
             .call_method(
                 account,
                 "try_deposit_batch_or_abort",
