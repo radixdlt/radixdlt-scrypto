@@ -39,7 +39,7 @@ impl ObjectStub for PackageStub {
 }
 
 impl PackageStub {
-    pub fn claim_royalty(&self) -> Bucket {
+    pub fn claim_royalties(&self) -> Bucket {
         self.call(
             PACKAGE_CLAIM_ROYALTIES_IDENT,
             &PackageClaimRoyaltiesInput {},

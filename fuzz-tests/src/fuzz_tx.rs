@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT
 };
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -668,8 +668,18 @@ impl TxFuzzer {
                         args: manifest_args!(method, amount),
                     })
                 }
-                // SetMetadata
+                // LockComponentRoyalty
                 46 => {
+                    let method = String::arbitrary(&mut unstructured).unwrap();
+
+                    Some(InstructionV1::CallRoyaltyMethod {
+                        address: component_address.into(),
+                        method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
+                        args: manifest_args!(method),
+                    })
+                }
+                // SetMetadata
+                47 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
