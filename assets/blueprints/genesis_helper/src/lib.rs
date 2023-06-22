@@ -86,7 +86,7 @@ mod genesis_helper {
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
             .roles(roles! {
-                system => rule!(require(system_role.clone())), mutable_by: system;
+                system => rule!(require(system_role.clone())), updaters: system;
             })
             .with_address(address_reservation)
             .globalize()

@@ -134,31 +134,25 @@ impl RoleKey {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub struct RoleEntry {
     pub rule: AccessRule,
-    pub mutable: RoleList,
-    pub mutable_mutable: bool,
+    pub updaters: RoleList,
 }
 
 impl RoleEntry {
-    pub fn new<A: Into<AccessRule>, M: Into<RoleList>>(
-        rule: A,
-        mutable: M,
-        mutable_mutable: bool,
-    ) -> Self {
+    pub fn new<A: Into<AccessRule>, M: Into<RoleList>>(rule: A, updaters: M) -> Self {
         Self {
             rule: rule.into(),
-            mutable: mutable.into(),
-            mutable_mutable,
+            updaters: updaters.into(),
         }
     }
 
     pub fn immutable<A: Into<AccessRule>>(rule: A) -> Self {
         Self {
             rule: rule.into(),
-            mutable: RoleList::none(),
-            mutable_mutable: false,
+            updaters: RoleList::none(),
         }
     }
 
+    // TODO: Remove and replace with set immutable rule
     pub fn disabled() -> Self {
         Self::immutable(AccessRule::DenyAll)
     }
@@ -218,10 +212,11 @@ pub enum OwnerRole {
 }
 
 impl OwnerRole {
+    // TODO: Remove
     pub fn to_role_entry(self, owner_role_name: &str) -> RoleEntry {
         match self {
             OwnerRole::Fixed(rule) => RoleEntry::immutable(rule),
-            OwnerRole::Updateable(rule) => RoleEntry::new(rule, [owner_role_name], false),
+            OwnerRole::Updateable(rule) => RoleEntry::new(rule, [owner_role_name]),
             OwnerRole::None => RoleEntry::immutable(AccessRule::DenyAll),
         }
     }
@@ -231,7 +226,7 @@ impl OwnerRole {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct Roles {
-    pub roles: BTreeMap<RoleKey, RoleEntry>,
+    pub roles: BTreeMap<RoleKey, (RoleEntry, bool)>,
 }
 
 impl Roles {
@@ -239,8 +234,13 @@ impl Roles {
         Self { roles: btreemap!() }
     }
 
-    pub fn define_role<K: Into<RoleKey>>(&mut self, role: K, entry: RoleEntry) {
-        self.roles.insert(role.into(), entry);
+    pub fn define_immutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
+        self.roles
+            .insert(role.into(), (RoleEntry::immutable(access_rule), true));
+    }
+
+    pub fn define_mutable_role<K: Into<RoleKey>>(&mut self, role: K, entry: RoleEntry) {
+        self.roles.insert(role.into(), (entry, false));
     }
 }
 

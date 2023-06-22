@@ -211,16 +211,23 @@ pub enum Instruction {
         address: Value,
         args: Vec<Value>,
     },
+    SetRole {
+        address: Value,
+        args: Vec<Value>,
+    },
+    LockRole {
+        address: Value,
+        args: Vec<Value>,
+    },
+    SetAndLockRole {
+        address: Value,
+        args: Vec<Value>,
+    },
     LockComponentRoyalty {
         address: Value,
         args: Vec<Value>,
     },
     ClaimComponentRoyalties {
-        address: Value,
-        args: Vec<Value>,
-    },
-
-    UpdateRole {
         address: Value,
         args: Vec<Value>,
     },

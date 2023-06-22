@@ -352,10 +352,10 @@ impl ConsensusManagerBlueprint {
         Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.update_role(
+        access_rules.set_and_lock_role(
             ObjectModuleId::Main,
             RoleKey::new(START_ROLE),
-            RoleEntry::disabled(),
+            AccessRule::DenyAll,
             api,
         )?;
 

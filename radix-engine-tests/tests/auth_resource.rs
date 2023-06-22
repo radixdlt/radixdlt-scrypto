@@ -23,7 +23,7 @@ impl Action {
             Action::Mint => (ObjectModuleId::Main, RoleKey::new(MINTER_ROLE)),
             Action::Burn => (ObjectModuleId::Main, RoleKey::new(BURNER_ROLE)),
             Action::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAWER_ROLE)),
-            Action::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITER_ROLE)),
+            Action::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITOR_ROLE)),
             Action::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_ROLE)),
             Action::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_ROLE)),
 
