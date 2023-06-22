@@ -1,5 +1,5 @@
 use super::*;
-use super::{CostingReason, FeeReserveError, FeeTable, SystemLoanFeeReserve};
+use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
 use crate::kernel::actor::{Actor, MethodActor};
 use crate::kernel::call_frame::Message;
@@ -51,9 +51,7 @@ impl CostingModule {
 
     pub fn apply_execution_cost<F>(
         &mut self,
-        reason: CostingReason,
-        base_price: F,
-        multiplier: usize,
+        costing_entry: CostingEntry,
     ) -> Result<(), RuntimeError>
     where
         F: Fn(&FeeTable) -> u32,
@@ -496,53 +494,6 @@ const COSTING_COEFFICIENT_CPU_DIV_BITS_ADDON: u64 = 6; // used to scale up or do
 
 const COSTING_COEFFICIENT_STORAGE: u64 = 10;
 const COSTING_COEFFICIENT_STORAGE_DIV_BITS: u64 = 6; // used to scale up or down all storage costing
-
-pub enum CostingEntry<'a> {
-    /* invoke */
-    Invoke {
-        input_size: u32,
-        actor: &'a Actor,
-    },
-
-    /* node */
-    CreateNode {
-        node_id: &'a NodeId,
-    },
-    DropNode,
-    AllocateNodeId,
-
-    /* substate */
-    LockSubstate {
-        node_id: &'a NodeId,
-        partition_num: &'a PartitionNumber,
-        substate_key: &'a SubstateKey,
-    },
-    ReadSubstate {
-        size: u32,
-    },
-    WriteSubstate {
-        size: u32,
-    },
-    ScanSubstate,
-    SetSubstate,
-    TakeSubstate,
-    DropLock,
-    SubstateReadFromDb {
-        size: u32,
-    },
-    SubstateReadFromDbNotFound,
-    SubstateReadFromTrack {
-        size: u32,
-    },
-    SubstateWriteToTrack {
-        size: u32,
-    },
-    SubstateRewriteToTrack {
-        size_old: u32,
-        size_new: u32,
-    },
-    // FIXME: more costing after API becomes stable.
-}
 
 /// CPU instructions usage numbers obtained from test runs with 'resource_tracker` feature enabled
 /// and transformed (classified and groupped) using convert.py script.

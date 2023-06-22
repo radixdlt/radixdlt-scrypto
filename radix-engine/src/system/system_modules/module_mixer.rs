@@ -26,7 +26,7 @@ use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
 
-use super::costing::CostingReason;
+use super::costing::CostingEntry;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -503,16 +503,13 @@ impl SystemModuleMixer {
 
     pub fn apply_execution_cost<F>(
         &mut self,
-        reason: CostingReason,
-        base_price: F,
-        multiplier: usize,
+        costing_entry: CostingEntry,
     ) -> Result<(), RuntimeError>
     where
         F: Fn(&FeeTable) -> u32,
     {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing
-                .apply_execution_cost(reason, base_price, multiplier)
+            self.costing.apply_execution_cost(costing_entry)
         } else {
             Ok(())
         }
