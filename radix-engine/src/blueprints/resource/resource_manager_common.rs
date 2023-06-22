@@ -123,17 +123,29 @@ pub fn features(
     if track_total_supply {
         features.push(TRACK_TOTAL_SUPPLY_FEATURE);
     }
-    if access_rules.contains_key(&ResourceMethodAuthKey::Freeze) {
-        features.push(VAULT_FREEZE_FEATURE);
+
+    if let Some((rule, updater)) = access_rules.get(&ResourceMethodAuthKey::Freeze) {
+        if rule.ne(&AccessRule::DenyAll) || updater.ne(&AccessRule::DenyAll) {
+            features.push(VAULT_FREEZE_FEATURE);
+        }
     }
-    if access_rules.contains_key(&ResourceMethodAuthKey::Recall) {
-        features.push(VAULT_RECALL_FEATURE);
+
+    if let Some((rule, updater)) = access_rules.get(&ResourceMethodAuthKey::Recall) {
+        if rule.ne(&AccessRule::DenyAll) || updater.ne(&AccessRule::DenyAll) {
+            features.push(VAULT_RECALL_FEATURE);
+        }
     }
-    if access_rules.contains_key(&ResourceMethodAuthKey::Mint) {
-        features.push(MINT_FEATURE);
+
+    if let Some((rule, updater)) = access_rules.get(&ResourceMethodAuthKey::Mint) {
+        if rule.ne(&AccessRule::DenyAll) || updater.ne(&AccessRule::DenyAll) {
+            features.push(MINT_FEATURE);
+        }
     }
-    if access_rules.contains_key(&ResourceMethodAuthKey::Burn) {
-        features.push(BURN_FEATURE);
+
+    if let Some((rule, updater)) = access_rules.get(&ResourceMethodAuthKey::Burn) {
+        if rule.ne(&AccessRule::DenyAll) || updater.ne(&AccessRule::DenyAll) {
+            features.push(BURN_FEATURE);
+        }
     }
 
     features
