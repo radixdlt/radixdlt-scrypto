@@ -23,8 +23,8 @@ pub const BURNER_ROLE: &str = "burner";
 pub const BURNER_UPDATER_ROLE: &str = "burner_updater";
 pub const WITHDRAWER_ROLE: &str = "withdrawer";
 pub const WITHDRAWER_UPDATER_ROLE: &str = "withdrawer_updater";
-pub const DEPOSITER_ROLE: &str = "depositor";
-pub const DEPOSITER_UPDATER_ROLE: &str = "depositor_updater";
+pub const DEPOSITOR_ROLE: &str = "depositor";
+pub const DEPOSITOR_UPDATER_ROLE: &str = "depositor_updater";
 pub const RECALLER_ROLE: &str = "recaller";
 pub const RECALLER_UPDATER_ROLE: &str = "recaller_updater";
 pub const FREEZER_ROLE: &str = "freezer";
@@ -66,7 +66,7 @@ impl ResourceAction {
                 RoleKey::new(NON_FUNGIBLE_DATA_UPDATER_ROLE),
             ),
             Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAWER_ROLE)),
-            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITER_ROLE)),
+            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITOR_ROLE)),
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_ROLE)),
             Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_ROLE)),
 
@@ -83,7 +83,7 @@ impl ResourceAction {
                 RoleKey::new(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE),
             ),
             Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAWER_UPDATER_ROLE)),
-            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITER_UPDATER_ROLE)),
+            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITOR_UPDATER_ROLE)),
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_UPDATER_ROLE)),
             Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_UPDATER_ROLE)),
 

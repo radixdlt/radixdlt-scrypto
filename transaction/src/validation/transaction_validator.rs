@@ -471,7 +471,13 @@ mod tests {
             TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::EpochRangeTooLarge
             ),
-            (Epoch::zero(), Epoch::of(1000), 5, vec![1], 2)
+            (
+                Epoch::zero(),
+                Epoch::of(DEFAULT_MAX_EPOCH_RANGE + 1),
+                5,
+                vec![1],
+                2
+            )
         );
     }
 

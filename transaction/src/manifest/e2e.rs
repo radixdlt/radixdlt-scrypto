@@ -704,11 +704,21 @@ REMOVE_METADATA
             vec![],
             apply_address_replacements(
                 r##"
-UPDATE_ROLE
+SET_ROLE
     Address("${resource_address}")
     Enum<0u8>()
     "hello"
     Enum<0u8>()
+;
+LOCK_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+    "hello"
+;
+SET_AND_LOCK_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+    "hello"
     Enum<0u8>()
 ;
 "##,
@@ -1154,11 +1164,11 @@ CALL_METHOD
 CALL_METHOD
     Address("${account_address}")
     "withdraw"
-    Address("${fungible_resource_address}")
+    Address("${xrd_resource_address}")
     Decimal("123")
 ;
 TAKE_FROM_WORKTOP
-    Address("${fungible_resource_address}")
+    Address("${xrd_resource_address}")
     Decimal("123")
     Bucket("bucket1")
 ;

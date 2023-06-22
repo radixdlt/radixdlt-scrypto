@@ -18,9 +18,9 @@ fn build_access_rules(
 
     // Meta roles
     {
-        main_roles.define_role(
+        main_roles.define_immutable_role(
             RESOURCE_PACKAGE_ROLE,
-            RoleEntry::immutable(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
         );
     }
 
@@ -31,13 +31,13 @@ fn build_access_rules(
             .remove(&ResourceAction::Mint)
             .unwrap_or((DenyAll, DenyAll));
         {
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 MINTER_UPDATER_ROLE,
-                RoleEntry::new(mint_mutability, [MINTER_UPDATER_ROLE], false),
+                RoleEntry::new(mint_mutability, [MINTER_UPDATER_ROLE]),
             );
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 MINTER_ROLE,
-                RoleEntry::new(mint_access_rule, [MINTER_UPDATER_ROLE], false),
+                RoleEntry::new(mint_access_rule, [MINTER_UPDATER_ROLE]),
             );
         }
 
@@ -46,13 +46,13 @@ fn build_access_rules(
             .remove(&ResourceAction::Burn)
             .unwrap_or((DenyAll, DenyAll));
         {
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 BURNER_UPDATER_ROLE,
-                RoleEntry::new(burn_mutability, [BURNER_UPDATER_ROLE], false),
+                RoleEntry::new(burn_mutability, [BURNER_UPDATER_ROLE]),
             );
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 BURNER_ROLE,
-                RoleEntry::new(burn_access_rule, [BURNER_UPDATER_ROLE], false),
+                RoleEntry::new(burn_access_rule, [BURNER_UPDATER_ROLE]),
             );
         }
 
@@ -62,21 +62,19 @@ fn build_access_rules(
                 .remove(&ResourceAction::UpdateNonFungibleData)
                 .unwrap_or((AllowAll, DenyAll));
         {
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE,
                 RoleEntry::new(
                     update_non_fungible_data_mutability,
                     [NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE],
-                    false,
                 ),
             );
 
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 NON_FUNGIBLE_DATA_UPDATER_ROLE,
                 RoleEntry::new(
                     update_non_fungible_data_access_rule,
                     [NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE],
-                    false,
                 ),
             );
         }
@@ -86,13 +84,13 @@ fn build_access_rules(
             .remove(&ResourceAction::Withdraw)
             .unwrap_or((AllowAll, DenyAll));
         {
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 WITHDRAWER_ROLE,
-                RoleEntry::new(withdraw_access_rule, [WITHDRAWER_UPDATER_ROLE], false),
+                RoleEntry::new(withdraw_access_rule, [WITHDRAWER_UPDATER_ROLE]),
             );
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 WITHDRAWER_UPDATER_ROLE,
-                RoleEntry::new(withdraw_mutability, [WITHDRAWER_UPDATER_ROLE], false),
+                RoleEntry::new(withdraw_mutability, [WITHDRAWER_UPDATER_ROLE]),
             );
         }
 
@@ -101,13 +99,13 @@ fn build_access_rules(
             .remove(&ResourceAction::Recall)
             .unwrap_or((DenyAll, DenyAll));
         {
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 RECALLER_ROLE,
-                RoleEntry::new(recall_access_rule, [RECALLER_UPDATER_ROLE], false),
+                RoleEntry::new(recall_access_rule, [RECALLER_UPDATER_ROLE]),
             );
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 RECALLER_UPDATER_ROLE,
-                RoleEntry::new(recall_mutability, [RECALLER_UPDATER_ROLE], false),
+                RoleEntry::new(recall_mutability, [RECALLER_UPDATER_ROLE]),
             );
         }
 
@@ -115,13 +113,13 @@ fn build_access_rules(
         if let Some((freeze_access_rule, freeze_mutability)) =
             access_rules_map.remove(&ResourceAction::Freeze)
         {
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 FREEZER_ROLE,
-                RoleEntry::new(freeze_access_rule, [FREEZER_UPDATER_ROLE], false),
+                RoleEntry::new(freeze_access_rule, [FREEZER_UPDATER_ROLE]),
             );
-            main_roles.define_role(
+            main_roles.define_mutable_role(
                 FREEZER_UPDATER_ROLE,
-                RoleEntry::new(freeze_mutability, [FREEZER_UPDATER_ROLE], false),
+                RoleEntry::new(freeze_mutability, [FREEZER_UPDATER_ROLE]),
             );
         }
 
@@ -130,13 +128,13 @@ fn build_access_rules(
             .remove(&ResourceAction::Deposit)
             .unwrap_or((AllowAll, DenyAll));
         {
-            main_roles.define_role(
-                DEPOSITER_ROLE,
-                RoleEntry::new(deposit_access_rule, [DEPOSITER_UPDATER_ROLE], false),
+            main_roles.define_mutable_role(
+                DEPOSITOR_ROLE,
+                RoleEntry::new(deposit_access_rule, [DEPOSITOR_UPDATER_ROLE]),
             );
-            main_roles.define_role(
-                DEPOSITER_UPDATER_ROLE,
-                RoleEntry::new(deposit_mutability, [DEPOSITER_UPDATER_ROLE], false),
+            main_roles.define_mutable_role(
+                DEPOSITOR_UPDATER_ROLE,
+                RoleEntry::new(deposit_mutability, [DEPOSITOR_UPDATER_ROLE]),
             );
         }
     }
@@ -148,22 +146,14 @@ fn build_access_rules(
     let metadata_roles = {
         let mut metadata_roles = Roles::new();
 
-        metadata_roles.define_role(
+        metadata_roles.define_mutable_role(
             METADATA_ADMIN_ROLE,
-            RoleEntry::new(
-                update_metadata_access_rule,
-                [METADATA_ADMIN_UPDATER_ROLE],
-                false,
-            ),
+            RoleEntry::new(update_metadata_access_rule, [METADATA_ADMIN_UPDATER_ROLE]),
         );
 
-        metadata_roles.define_role(
+        metadata_roles.define_mutable_role(
             METADATA_ADMIN_UPDATER_ROLE,
-            RoleEntry::new(
-                update_metadata_mutability,
-                [METADATA_ADMIN_UPDATER_ROLE],
-                false,
-            ),
+            RoleEntry::new(update_metadata_mutability, [METADATA_ADMIN_UPDATER_ROLE]),
         );
 
         metadata_roles

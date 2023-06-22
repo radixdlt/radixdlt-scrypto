@@ -920,7 +920,7 @@ impl ResourceManagerNativePackage {
                         VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
                         FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAWER_ROLE];
                         VAULT_RECALL_IDENT => [RECALLER_ROLE];
-                        VAULT_PUT_IDENT => [DEPOSITER_ROLE];
+                        VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
                         VAULT_BURN_IDENT => [BURNER_ROLE];
                         FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                         FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
@@ -1211,7 +1211,7 @@ impl ResourceManagerNativePackage {
                         VAULT_FREEZE_IDENT => [FREEZER_ROLE];
                         VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
                         NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALLER_ROLE];
-                        VAULT_PUT_IDENT => [DEPOSITER_ROLE];
+                        VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
                         VAULT_BURN_IDENT => [BURNER_ROLE];
                         NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURNER_ROLE];
 

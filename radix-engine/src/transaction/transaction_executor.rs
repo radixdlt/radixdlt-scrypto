@@ -261,8 +261,6 @@ where
                         if !is_success {
                             costing_module.fee_reserve.revert_royalty();
                             track.revert_non_force_write_changes();
-
-                            // FIXME: clean up locks
                         }
 
                         #[cfg(not(feature = "alloc"))]

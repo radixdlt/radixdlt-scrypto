@@ -6,50 +6,6 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn test_all_resource_roles_have_immutable_updater() {
-    for key in ALL_RESOURCE_AUTH_KEYS {
-        ensure_auth_updater_is_immutable(key);
-    }
-}
-
-fn ensure_auth_updater_is_immutable(action: ResourceAction) {
-    // Arrange 1
-    let mut test_runner = TestRunner::builder().build();
-    let resource_address = test_runner.create_everything_allowed_non_fungible_resource();
-
-    // Act - check that despite everything being allowed, you cannot update the role mutability
-    // In other words, both roles are always set to have mutability always be the updater role
-    let (module, role_key) = action.action_role_key();
-    let (updater_module, updater_role_key) = action.updater_role_key();
-    test_runner
-        .execute_manifest_ignoring_fee(
-            ManifestBuilder::new()
-                .update_role_mutability(
-                    resource_address.into(),
-                    module,
-                    role_key,
-                    (RoleList::none(), false),
-                )
-                .build(),
-            vec![],
-        )
-        .expect_auth_mutability_failure();
-    test_runner
-        .execute_manifest_ignoring_fee(
-            ManifestBuilder::new()
-                .update_role_mutability(
-                    resource_address.into(),
-                    updater_module,
-                    updater_role_key,
-                    (RoleList::none(), false),
-                )
-                .build(),
-            vec![],
-        )
-        .expect_auth_mutability_failure();
-}
-
-#[test]
 fn test_locked_resource_auth_cannot_be_updated() {
     for key in ALL_RESOURCE_AUTH_KEYS {
         assert_locked_auth_can_no_longer_be_updated(key);
