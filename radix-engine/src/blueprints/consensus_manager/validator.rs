@@ -1080,7 +1080,7 @@ impl ValidatorCreator {
             NonFungibleIdType::RUID,
             true,
             metadata_init! {
-                "name" => "Stake Claims NFT".to_owned(), locked;
+                "name" => "Stake Claims NFTs".to_owned(), locked;
                 "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;
                 "icon_url" => Url("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
                 "validator" => GlobalAddress::from(address), locked;
@@ -1151,6 +1151,7 @@ impl ValidatorCreator {
                 name: "Validator Owner Badge".to_owned(),
                 validator: address.try_into().expect("Impossible Case!"),
             },
+            None,
             api,
         )?;
         let owner_badge_local_id = owner_token_bucket

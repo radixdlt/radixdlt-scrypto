@@ -394,30 +394,6 @@ impl AccountNativePackage {
             ACCOUNT_CREATE_VIRTUAL_ED25519_ID => ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
         );
 
-        /* TODO: If we decide to add back groupings, we'd want the following:
-            lock_fee: [
-                "lock_fee",
-                "lock_contingent_fee"
-            ]
-            withdraw: [
-                "withdraw",
-                "withdraw_non_fungibles"
-            ]
-            withdraw & lock fee: [
-                "lock_fee_and_withdraw",
-                "lock_fee_and_withdraw_non_fungibles"
-            ]
-            create_proof: [
-                "create_proof",
-                "create_proof_of_amount",
-                "create_proof_of_ids",
-            ]
-            deposit: [
-                "deposit",
-                "deposit_batch",
-            ]
-        */
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {

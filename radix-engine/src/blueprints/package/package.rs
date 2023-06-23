@@ -1047,6 +1047,7 @@ impl PackageNativePackage {
                 name: "Package Owner Badge".to_owned(),
                 package: address.try_into().expect("Impossible Case"),
             },
+            None,
             api,
         )?;
         let address = Self::publish_wasm_internal(

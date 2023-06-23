@@ -613,7 +613,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
-                    id_type: NonFungibleIdType::RUID,
+                    id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<IdentityOwnerBadgeData>(),
                     metadata: metadata_init! {
@@ -692,7 +692,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
-                    id_type: NonFungibleIdType::RUID,
+                    id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<AccountOwnerBadgeData>(),
                     metadata: metadata_init! {

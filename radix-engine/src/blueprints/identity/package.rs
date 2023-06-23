@@ -17,6 +17,7 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::metadata_init;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
     TypeRef,
@@ -223,7 +224,13 @@ impl IdentityBlueprint {
     {
         let access_rules = SecurifiedIdentity::create_advanced(owner_rule, api)?;
 
-        let modules = Self::create_object(access_rules, api)?;
+        let modules = Self::create_object(
+            access_rules,
+            metadata_init!(
+                "owner_badge" => "".to_owned(), locked; // TODO: Need ability to lock field with no data
+            ),
+            api,
+        )?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
         let address = api.globalize(modules, None)?;
         Ok(address)
@@ -242,10 +249,17 @@ impl IdentityBlueprint {
                 name: "Identity Owner Badge".to_string(),
                 identity: address.try_into().expect("Impossible Case"),
             },
+            Some(NonFungibleLocalId::bytes(address.as_node_id().0).unwrap()),
             api,
         )?;
 
-        let modules = Self::create_object(access_rules, api)?;
+        let modules = Self::create_object(
+            access_rules,
+            metadata_init! {
+                "owner_badge" => NonFungibleLocalId::bytes(address.as_node_id().0).unwrap(), locked;
+            },
+            api,
+        )?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
         let address = api.globalize(modules, Some(address_reservation))?;
         Ok((address, bucket))
@@ -280,31 +294,36 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let owner_badge = {
+            let bytes = public_key_hash.get_hash_bytes();
+            let entity_type = match public_key_hash {
+                PublicKeyHash::Ed25519(..) => EntityType::GlobalVirtualEd25519Account,
+                PublicKeyHash::Secp256k1(..) => EntityType::GlobalVirtualSecp256k1Account,
+            };
+
+            let mut id_bytes = vec![entity_type as u8];
+            id_bytes.extend(bytes);
+
+            NonFungibleLocalId::bytes(id_bytes).unwrap()
+        };
+
         let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
         let access_rules = SecurifiedIdentity::create_presecurified(owner_id, api)?;
 
-        let modules = Self::create_object(access_rules, api)?;
-
-        {
-            // Set up metadata
-            // TODO: Improve this when the Metadata module API is nicer
-            let metadata = modules.get(&ObjectModuleId::Metadata).unwrap();
-            // NOTE:
-            // This is the owner key for ROLA.
-            // We choose to set this explicitly to simplify the security-critical logic off-ledger.
-            // In particular, we want an owner to be able to explicitly delete the owner keys.
-            // If we went with a "no metadata = assume default public key hash", then this could cause unexpeted
-            // security-critical behaviour if a user expected that deleting the metadata removed the owner keys.
-            api.call_method(
-                &metadata.0,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: "owner_keys".to_string(),
-                    value: MetadataValue::PublicKeyHashArray(vec![public_key_hash]),
-                })
-                .unwrap(),
-            )?;
-        }
+        let modules = Self::create_object(
+            access_rules,
+            metadata_init!(
+                // NOTE:
+                // This is the owner key for ROLA. We choose to set this explicitly to simplify the
+                // security-critical logic off-ledger. In particular, we want an owner to be able to
+                // explicitly delete the owner keys. If we went with a "no metadata = assume default
+                // public key hash", then this could cause unexpected security-critical behavior if
+                // a user expected that deleting the metadata removed the owner keys.
+                "owner_keys" => vec![public_key_hash], updatable;
+                "owner_badge" => owner_badge, locked;
+            ),
+            api,
+        )?;
 
         Ok(modules)
     }
@@ -317,17 +336,23 @@ impl IdentityBlueprint {
             name: "Identity Owner Badge".into(),
             identity: ComponentAddress::new_or_panic(receiver.0),
         };
-        SecurifiedIdentity::securify(&receiver, owner_badge_data, api)
+        SecurifiedIdentity::securify(
+            &receiver,
+            owner_badge_data,
+            Some(NonFungibleLocalId::bytes(receiver.0).unwrap()),
+            api,
+        )
     }
 
     fn create_object<Y>(
         access_rules: AccessRules,
+        metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let metadata = Metadata::create(api)?;
+        let metadata = Metadata::create_with_data(metadata_init, api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, vec![])?;

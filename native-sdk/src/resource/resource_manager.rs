@@ -161,6 +161,35 @@ impl ResourceManager {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
+    /// Mints non-fungible resources
+    pub fn mint_non_fungible<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
+        &self,
+        data: BTreeMap<NonFungibleLocalId, T>,
+        api: &mut Y,
+    ) -> Result<NonFungibleResourceManagerMintOutput, E>
+    where
+        Y: ClientObjectApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerMintInput {
+                entries: data
+                    .into_iter()
+                    .map(|(key, value)| {
+                        (
+                            key,
+                            (scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),),
+                        )
+                    })
+                    .collect(),
+            })
+            .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
     /// Mints fungible resources
     pub fn mint_fungible<Y, E: Debug + ScryptoDecode>(
         &mut self,
