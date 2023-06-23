@@ -819,7 +819,7 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     false
     18u8
-    Map<String, Enum>(
+    Map<String, Tuple>(
         "name" => Tuple(
             Enum<0u8>(
                 "MyResource"
@@ -888,7 +888,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         ),
         Array<String>()
     )
-    Map<String, Enum>(
+    Map<String, Tuple>(
         "name" => Tuple(
             Enum<0u8>(
                 "MyResource"
@@ -964,7 +964,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
-    Map<String, Enum>(
+    Map<String, Tuple>(
         "name" => Enum<0u8>(
             Tuple(
                 "MyResource",
