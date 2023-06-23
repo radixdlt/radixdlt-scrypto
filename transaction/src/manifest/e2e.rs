@@ -258,7 +258,7 @@ RECALL_VAULT
     #[test]
     fn test_vault_freeze() {
         compile_and_decompile_with_inversion_test(
-            "resource_recall",
+            "vault_freeze",
             apply_address_replacements(include_str!("../../examples/resources/freeze.rtm")),
             &NetworkDefinition::simulator(),
             vec![],
