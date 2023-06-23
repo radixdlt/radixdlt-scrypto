@@ -40,7 +40,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(
         Map<String, Tuple>()
     )
-    Map<String, Enum>()
+    Map<String, Tuple>()
     Enum<0u8>()
 ;
 CALL_FUNCTION
@@ -75,7 +75,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(
         Map<String, Tuple>()
     )
-    Map<String, Enum>()
+    Map<String, Tuple>()
     Enum<0u8>()
 ;
 "##,
@@ -819,7 +819,7 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     false
     18u8
-    Map<String, Enum>(
+    Map<String, Tuple>(
         "name" => Tuple(
             Enum<0u8>(
                 "MyResource"
@@ -888,7 +888,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         ),
         Array<String>()
     )
-    Map<String, Enum>(
+    Map<String, Tuple>(
         "name" => Tuple(
             Enum<0u8>(
                 "MyResource"
@@ -964,18 +964,18 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
-    Map<String, Enum>(
-        "name" => Enum<0u8>(
-            Tuple(
-                "MyResource",
-                true
-            )
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<0u8>(
+                "MyResource"
+            ),
+            true
         ),
-        "description" => Enum<0u8>(
-            Tuple(
-                "A very innovative and important resource",
-                false
-            )
+        "description" => Tuple(
+            Enum<0u8>(
+                "A very innovative and important resource"
+            ),
+            false
         )
     )
     Map<Enum, Tuple>(

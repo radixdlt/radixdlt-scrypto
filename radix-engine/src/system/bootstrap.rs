@@ -1,8 +1,8 @@
 use crate::blueprints::access_controller::*;
-use crate::blueprints::account::AccountNativePackage;
+use crate::blueprints::account::{AccountNativePackage, AccountOwnerBadgeData};
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
-use crate::blueprints::identity::IdentityNativePackage;
-use crate::blueprints::package::PackageNativePackage;
+use crate::blueprints::identity::{IdentityNativePackage, IdentityOwnerBadgeData};
+use crate::blueprints::package::{PackageNativePackage, PackageOwnerBadgeData};
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
@@ -381,13 +381,13 @@ pub fn create_system_bootstrap_transaction(
                 setup: MetadataNativePackage::definition(),
                 metadata: metadata_init! {
                     "name" => "Metadata Package".to_owned(), locked;
-                    "description" => "".to_owned(), locked;
+                    "description" => "A native package that defines the logic of the metadata module that is used by resources, components, and packages.".to_owned(), locked;
                 },
             }),
         });
     }
 
-    // Access Rules Package
+    // Royalty Package
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -403,13 +403,13 @@ pub fn create_system_bootstrap_transaction(
                 setup: RoyaltyNativePackage::definition(),
                 metadata: metadata_init! {
                     "name" => "Royalty Package".to_owned(), locked;
-                    "description" => "".to_owned(), locked;
+                    "description" => "A native package that defines the logic of the royalty module used by components.".to_owned(), locked;
                 },
             }),
         });
     }
 
-    // Resource Package
+    // Access Rules Package
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -425,13 +425,13 @@ pub fn create_system_bootstrap_transaction(
                 setup: AccessRulesNativePackage::definition(),
                 metadata: metadata_init! {
                     "name" => "Access Rules Package".to_owned(), locked;
-                    "description" => "".to_owned(), locked;
+                    "description" => "A native package that defines the logic of the access rules module that is used by resources, components, and packages.".to_owned(), locked;
                 },
             }),
         });
     }
 
-    // Royalty Package
+    // Resource Manager Package
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -577,7 +577,7 @@ pub fn create_system_bootstrap_transaction(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<PackageOwnerBadgeData>(),
                     metadata: metadata_init! {
                         "name" => "Package Owner Badges".to_owned(), locked;
                         "description" => "Badges created by the Radix system that provide individual control over blueprint packages deployed by developers.".to_owned(), locked;
@@ -615,7 +615,7 @@ pub fn create_system_bootstrap_transaction(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<IdentityOwnerBadgeData>(),
                     metadata: metadata_init! {
                         "name" => "Identity Owner Badges".to_owned(), locked;
                         "description" => "Badges created by the Radix system that provide individual control over identity components.".to_owned(), locked;
@@ -663,8 +663,8 @@ pub fn create_system_bootstrap_transaction(
                 setup: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
                 metadata: metadata_init! {
-                    "name" => "Epoch Manager Package".to_owned(), locked;
-                    "description" => "A native package that may be used to get network epoch information.".to_owned(), locked;
+                    "name" => "Consensus Manager Package".to_owned(), locked;
+                    "description" => "A native package that may be used to get network consensus information.".to_owned(), locked;
                 },
             }),
         });
@@ -694,13 +694,12 @@ pub fn create_system_bootstrap_transaction(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<AccountOwnerBadgeData>(),
                     metadata: metadata_init! {
                         "name" => "Account Owner Badges".to_owned(), locked;
                         "description" => "Badges created by the Radix system that provide individual control over account components.".to_owned(), locked;
                         "tags" => vec![
                             "badge".to_owned(),
-                            
                             "account".to_owned(),
                         ], locked;
                         "icon_url" => Url("https://assets.radixdlt.com/icons/icon-account_owner_badge.png".to_owned()), locked;
@@ -813,7 +812,7 @@ pub fn create_system_bootstrap_transaction(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<Secp256k1VirtualBadgeData>(),
+                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: metadata_init! {
                         "name" => "ECDSA secp256k1 Virtual Badges".to_owned(), locked;
                         "description" => "Virtual badges generated automatically by the Radix system to represent ECDSA secp256k1 signatures applied to transactions. These badges cease to exist at the end of their transaction.".to_owned(), locked;
@@ -876,7 +875,7 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: metadata_init! {
                         "name" => "System Transaction Badge".to_owned(), locked;
-                        "description" => "Virtual badges are created under this resource to represent the Radix system’s authority at genesis and to affect changes to system entities during protocol updates, or to represent the Radix system’s authority in the regularly occurring system transactions including round and epoch changes.".to_owned(), locked;
+                        "description" => "Virtual badges are created under this resource to represent the Radix system's authority at genesis and to affect changes to system entities during protocol updates, or to represent the Radix system's authority in the regularly occurring system transactions including round and epoch changes.".to_owned(), locked;
                         "tags" => vec!["badge".to_owned(), "system badge".to_owned()], locked;
                         "icon_url" => Url("https://assets.radixdlt.com/icons/icon-system_transaction_badge.png".to_owned()), locked;
                     },
@@ -936,7 +935,7 @@ pub fn create_system_bootstrap_transaction(
                 setup: manifest_decode(&genesis_helper_abi).unwrap(),
                 metadata: metadata_init! {
                     "name" => "Genesis Helper Package".to_owned(), locked;
-                    "description" => "".to_owned(), locked;
+                    "description" => "A package that defines the logic of the genesis helper which includes various utility and helper functions used in the creation of the Babylon Genesis.".to_owned(), locked;
                 },
                 owner_rule: OwnerRole::None,
             }),
@@ -1152,14 +1151,4 @@ pub fn create_genesis_wrap_up_transaction(faucet_supply: Decimal) -> SystemTrans
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Wrap Up")),
     }
-}
-
-#[derive(ScryptoSbor)]
-struct Secp256k1VirtualBadgeData {
-    name: String,
-    description: String
-}
-
-impl NonFungibleData for Secp256k1VirtualBadgeData {
-    const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }

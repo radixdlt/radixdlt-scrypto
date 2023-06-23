@@ -71,7 +71,7 @@ pub struct ValidatorSubstate {
     /// A type of non-fungible token used as a receipt for unstaked stake units.
     /// Unstaking burns the SUs and inactivates the staked XRDs (i.e. moves it from the regular
     /// [`stake_xrd_vault_id`] to the [`pending_xrd_withdraw_vault_id`]), and then requires to claim
-    /// the XRDs using this NFT after a delay (see [`UnstakeData.epoch_unlocked`]).
+    /// the XRDs using this NFT after a delay (see [`UnstakeData.claim_epoch`]).
     pub unstake_nft: ResourceAddress,
 
     /// A vault holding the XRDs that were unstaked (see the [`unstake_nft`]) but not yet claimed.
@@ -113,12 +113,14 @@ pub struct ValidatorAcceptsDelegatedStakeFlag {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct UnstakeData {
+    pub name: String,
+
     /// An epoch number at (or after) which the pending unstaked XRD may be claimed.
     /// Note: on unstake, it is fixed to be [`ConsensusManagerConfigSubstate.num_unstake_epochs`] away.
-    pub epoch_unlocked: Epoch,
+    pub claim_epoch: Epoch,
 
     /// An XRD amount to be claimed.
-    pub amount: Decimal,
+    pub claim_amount: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -292,10 +294,11 @@ impl ValidatorBlueprint {
                 api.field_lock_read_typed(config_handle)?;
             api.field_lock_release(config_handle)?;
 
-            let epoch_unlocked = current_epoch.after(config_substate.config.num_unstake_epochs);
+            let claim_epoch = current_epoch.after(config_substate.config.num_unstake_epochs);
             let data = UnstakeData {
-                epoch_unlocked,
-                amount: xrd_amount,
+                name: "Stake Claim".into(),
+                claim_epoch,
+                claim_amount: xrd_amount,
             };
 
             let bucket = stake_vault.take(xrd_amount, api)?;
@@ -443,12 +446,12 @@ impl ValidatorBlueprint {
 
         for id in bucket.non_fungible_local_ids(api)? {
             let data: UnstakeData = nft_resman.get_non_fungible_data(id, api)?;
-            if current_epoch < data.epoch_unlocked {
+            if current_epoch < data.claim_epoch {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(ValidatorError::EpochUnlockHasNotOccurredYet),
                 ));
             }
-            unstake_amount += data.amount;
+            unstake_amount += data.claim_amount;
         }
         nft_resman.burn(bucket, api)?;
 
@@ -1009,6 +1012,7 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
 struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
+    type OwnerBadgeNonFungibleData = ValidatorOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = None;
 }
@@ -1076,7 +1080,7 @@ impl ValidatorCreator {
             NonFungibleIdType::RUID,
             true,
             metadata_init! {
-                "name" => "Stake Claim NFT".to_owned(), locked;
+                "name" => "Stake Claims NFT".to_owned(), locked;
                 "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;
                 "icon_url" => Url("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
                 "validator" => GlobalAddress::from(address), locked;
@@ -1142,7 +1146,13 @@ impl ValidatorCreator {
             ],
         )?;
 
-        let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
+        let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(
+            ValidatorOwnerBadgeData {
+                name: "Validator Owner Badge".to_owned(),
+                validator: address.try_into().expect("Impossible Case!"),
+            },
+            api,
+        )?;
         let owner_badge_local_id = owner_token_bucket
             .non_fungible_local_ids(api)?
             .first()
@@ -1189,4 +1199,14 @@ mod tests {
         let max_xrd_supply = dec!(24) * dec!(10).powi(12);
         assert_eq!(create_sort_prefix_from_stake(max_xrd_supply), 0);
     }
+}
+
+#[derive(ScryptoSbor)]
+pub struct ValidatorOwnerBadgeData {
+    pub name: String,
+    pub validator: ComponentAddress,
+}
+
+impl NonFungibleData for ValidatorOwnerBadgeData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }

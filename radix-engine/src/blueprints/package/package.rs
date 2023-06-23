@@ -353,6 +353,7 @@ const SECURIFY_OWNER_ROLE: &str = "securify_owner";
 struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
+    type OwnerBadgeNonFungibleData = PackageOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
@@ -1037,9 +1038,25 @@ impl PackageNativePackage {
     where
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
-        let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
-        let address =
-            Self::publish_wasm_internal(None, code, definition, metadata, access_rules, api)?;
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+        })?;
+        let (access_rules, bucket) = SecurifiedPackage::create_securified(
+            PackageOwnerBadgeData {
+                name: "Package Owner Badge".to_owned(),
+                package: address.try_into().expect("Impossible Case"),
+            },
+            api,
+        )?;
+        let address = Self::publish_wasm_internal(
+            Some(address_reservation),
+            code,
+            definition,
+            metadata,
+            access_rules,
+            api,
+        )?;
 
         Ok((address, bucket))
     }
@@ -1487,4 +1504,14 @@ impl PackageAuthNativeBlueprint {
 
         Ok(template)
     }
+}
+
+#[derive(ScryptoSbor)]
+pub struct PackageOwnerBadgeData {
+    pub name: String,
+    pub package: PackageAddress,
+}
+
+impl NonFungibleData for PackageOwnerBadgeData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }

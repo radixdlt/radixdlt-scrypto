@@ -68,7 +68,7 @@ impl OneResourcePoolBlueprint {
         let metadata = Metadata::create_with_data(
             metadata_init! {
                 "pool_vault_number" => 1u8, locked;
-                "pool_resources" => GlobalAddress::from(resource_address), locked;
+                "pool_resources" => vec![GlobalAddress::from(resource_address)], locked;
                 "pool_unit" => GlobalAddress::from(pool_unit_resource_manager.0), locked;
             },
             api,

@@ -204,6 +204,7 @@ const SECURIFY_ROLE: &'static str = "securify";
 struct SecurifiedIdentity;
 
 impl SecurifiedAccessRules for SecurifiedIdentity {
+    type OwnerBadgeNonFungibleData = IdentityOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
@@ -232,11 +233,21 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (access_rules, bucket) = SecurifiedIdentity::create_securified(api)?;
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: IDENTITY_PACKAGE,
+            blueprint_name: IDENTITY_BLUEPRINT.to_string(),
+        })?;
+        let (access_rules, bucket) = SecurifiedIdentity::create_securified(
+            IdentityOwnerBadgeData {
+                name: "Identity Owner Badge".to_string(),
+                identity: address.try_into().expect("Impossible Case"),
+            },
+            api,
+        )?;
 
         let modules = Self::create_object(access_rules, api)?;
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = api.globalize(modules, None)?;
+        let address = api.globalize(modules, Some(address_reservation))?;
         Ok((address, bucket))
     }
 
@@ -302,7 +313,11 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        SecurifiedIdentity::securify(&receiver, api)
+        let owner_badge_data = IdentityOwnerBadgeData {
+            name: "Identity Owner Badge".into(),
+            identity: ComponentAddress::new_or_panic(receiver.0),
+        };
+        SecurifiedIdentity::securify(&receiver, owner_badge_data, api)
     }
 
     fn create_object<Y>(
@@ -326,4 +341,14 @@ impl IdentityBlueprint {
 
         Ok(modules)
     }
+}
+
+#[derive(ScryptoSbor)]
+pub struct IdentityOwnerBadgeData {
+    pub name: String,
+    pub identity: ComponentAddress,
+}
+
+impl NonFungibleData for IdentityOwnerBadgeData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }

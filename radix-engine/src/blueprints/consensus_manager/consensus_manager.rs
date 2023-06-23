@@ -1,4 +1,4 @@
-use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
+use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator, ValidatorOwnerBadgeData};
 use crate::blueprints::consensus_manager::{START_ROLE, VALIDATOR_ROLE};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
@@ -223,12 +223,6 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         {
-            let metadata = metadata_init! {
-                "name" => "Validator Owner Badges".to_owned(), locked;
-                "description" => "Badges created by the Radix system that provide individual control over the validator components created for validator node-runners.".to_owned(), locked;
-                "tags" => vec!["badge".to_owned(), "owner badge".to_owned(), "validator".to_owned()], locked;
-                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-validator_owner_badge.png".to_owned()), locked;
-            };
             let mut access_rules = BTreeMap::new();
 
             // TODO: remove mint and premint all tokens
@@ -240,10 +234,20 @@ impl ConsensusManagerBlueprint {
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
-            ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError, _>(
+            ResourceManager::new_non_fungible_with_address::<
+                ValidatorOwnerBadgeData,
+                Y,
+                RuntimeError,
+                _,
+            >(
                 NonFungibleIdType::RUID,
                 true,
-                metadata,
+                metadata_init! {
+                    "name" => "Validator Owner Badges".to_owned(), locked;
+                    "description" => "Badges created by the Radix system that provide individual control over the validator components created for validator node-runners.".to_owned(), locked;
+                    "tags" => vec!["badge".to_owned(), "validator".to_owned()], locked;
+                    "icon_url" => Url("https://assets.radixdlt.com/icons/icon-validator_owner_badge.png".to_owned()), locked;
+                },
                 access_rules,
                 validator_token_address_reservation,
                 api,

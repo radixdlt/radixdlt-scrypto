@@ -52,6 +52,7 @@ pub const SECURIFY_ROLE: &'static str = "securify";
 struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
+    type OwnerBadgeNonFungibleData = AccountOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
@@ -150,7 +151,11 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        SecurifiedAccount::securify(receiver, api)
+        let owner_badge_data = AccountOwnerBadgeData {
+            name: "Account Owner Badge".into(),
+            account: ComponentAddress::new_or_panic(receiver.0),
+        };
+        SecurifiedAccount::securify(receiver, owner_badge_data, api)
     }
 
     pub fn create_advanced<Y>(
@@ -175,13 +180,24 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+        })?;
+
         let account = Self::create_local(api)?;
-        let (access_rules, bucket) = SecurifiedAccount::create_securified(api)?;
+        let (access_rules, bucket) = SecurifiedAccount::create_securified(
+            AccountOwnerBadgeData {
+                name: "Account Owner Badge".into(),
+                account: address.try_into().expect("Impossible Case"),
+            },
+            api,
+        )?;
         let mut modules = Self::create_modules(access_rules, api)?;
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(modules, None)?;
+        let address = api.globalize(modules, Some(address_reservation))?;
 
         Ok((address, bucket))
     }
@@ -735,4 +751,14 @@ impl AccountBlueprint {
 
         Ok(resource_deposit_configuration)
     }
+}
+
+#[derive(ScryptoSbor)]
+pub struct AccountOwnerBadgeData {
+    pub name: String,
+    pub account: ComponentAddress,
+}
+
+impl NonFungibleData for AccountOwnerBadgeData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }

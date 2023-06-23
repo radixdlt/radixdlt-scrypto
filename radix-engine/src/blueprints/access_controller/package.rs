@@ -639,39 +639,18 @@ impl AccessControllerNativePackage {
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
 
-            let access_rules = [
-                (
-                    ResourceAction::Mint,
-                    (
-                        rule!(require(global_component_caller_badge.clone())),
-                        AccessRule::DenyAll,
-                    ),
+            let access_rules = btreemap! {
+                Mint => (
+                    rule!(require(global_component_caller_badge.clone())),
+                    AccessRule::DenyAll,
                 ),
-                (
-                    ResourceAction::Burn,
-                    (AccessRule::AllowAll, AccessRule::DenyAll),
-                ),
-                (
-                    ResourceAction::Withdraw,
-                    (AccessRule::DenyAll, AccessRule::DenyAll),
-                ),
-                (
-                    ResourceAction::Deposit,
-                    (AccessRule::AllowAll, AccessRule::DenyAll),
-                ),
-                (
-                    ResourceAction::UpdateMetadata,
-                    (AccessRule::DenyAll, AccessRule::DenyAll),
-                ),
-                (
-                    ResourceAction::Recall,
-                    (AccessRule::DenyAll, AccessRule::DenyAll),
-                ),
-                (
-                    ResourceAction::UpdateNonFungibleData,
-                    (AccessRule::DenyAll, AccessRule::DenyAll),
-                ),
-            ];
+                Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
+                Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
+                Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
+                UpdateMetadata => (AccessRule::DenyAll, AccessRule::DenyAll),
+                Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
+                UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
+            };
 
             let resource_address = {
                 let (local_type_index, schema) =
