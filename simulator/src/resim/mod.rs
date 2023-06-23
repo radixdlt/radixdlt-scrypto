@@ -521,7 +521,8 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
         )
         .unwrap_or_else(|| ConsensusManagerSubstate {
             epoch: Epoch::zero(),
-            epoch_start_milli: 0,
+            effective_epoch_start_milli: 0,
+            actual_epoch_start_milli: 0,
             round: Round::zero(),
             current_leader: Some(0),
         });

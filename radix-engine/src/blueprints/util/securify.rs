@@ -58,10 +58,8 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
 
         let roles = btreemap!(
             ObjectModuleId::Main => roles,
-            //ObjectModuleId::Metadata => metadata_roles,
         );
 
-        // FIXME: How do we get around the presecurified owner role problem?
         let access_rules =
             AccessRules::create(OwnerRole::UpdatableByObject(owner_rule), roles, api)?;
         Ok(access_rules)
