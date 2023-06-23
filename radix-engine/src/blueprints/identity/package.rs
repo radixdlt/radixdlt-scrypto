@@ -312,7 +312,7 @@ impl IdentityBlueprint {
 
         let modules = Self::create_object(
             access_rules,
-            metadata_init!(
+            metadata_init! {
                 // NOTE:
                 // This is the owner key for ROLA. We choose to set this explicitly to simplify the
                 // security-critical logic off-ledger. In particular, we want an owner to be able to
@@ -321,7 +321,7 @@ impl IdentityBlueprint {
                 // a user expected that deleting the metadata removed the owner keys.
                 "owner_keys" => vec![public_key_hash], updatable;
                 "owner_badge" => owner_badge, locked;
-            ),
+            },
             api,
         )?;
 
