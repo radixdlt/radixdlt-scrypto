@@ -8,6 +8,42 @@ use utils::ContextualDisplay;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
 
+#[cfg(not(feature = "alloc"))]
+#[test]
+#[ignore = "Run this test only when expected costs should be updated"]
+fn update_expected_costs() {
+    run_basic_transfer(RunMode::OutputCosting(
+        "../assets/cost_transfer.csv".to_string(),
+    ));
+    run_radiswap(RunMode::OutputCosting(
+        "../assets/cost_radiswap.csv".to_string(),
+    ));
+    run_flash_loan(RunMode::OutputCosting(
+        "../assets/cost_flash_loan.csv".to_string(),
+    ));
+}
+
+#[test]
+fn test_transfer() {
+    run_basic_transfer(RunMode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_transfer.csv"
+    ))));
+}
+
+#[test]
+fn test_radiswap() {
+    run_basic_transfer(RunMode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_radiswap.csv"
+    ))));
+}
+
+#[test]
+fn test_flash_loan() {
+    run_basic_transfer(RunMode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_flash_loan.csv"
+    ))));
+}
+
 #[cfg(feature = "std")]
 fn execute_with_time_logging(
     test_runner: &mut TestRunner,
@@ -34,8 +70,43 @@ fn execute_with_time_logging(
     (receipt, 0)
 }
 
-#[test]
-fn test_basic_transfer() {
+pub fn load_cost_breakdown(content: &str) -> IndexMap<String, u32> {
+    let mut breakdown: IndexMap<String, u32> = index_map_new();
+    content.split("\n").filter(|x| x.len() > 0).for_each(|x| {
+        let mut tokens = x.split(",");
+        let entry = tokens.next().unwrap();
+        let cost = tokens.next().unwrap();
+        breakdown.insert(entry.to_string(), u32::from_str(cost).unwrap());
+    });
+    breakdown
+}
+
+#[cfg(not(feature = "alloc"))]
+pub fn write_cost_breakdown(mut breakdown: IndexMap<String, u32>, file: &str) {
+    use std::fs::File;
+    use std::io::Write;
+
+    // Sort keys for better diff
+    breakdown.sort_keys();
+
+    let mut buffer = String::new();
+    for (k, v) in breakdown {
+        buffer.push_str(k.as_str());
+        buffer.push_str(",");
+        buffer.push_str(v.to_string().as_str());
+        buffer.push_str("\n");
+    }
+
+    let mut f = File::create(file).unwrap();
+    f.write_all(buffer.as_bytes()).unwrap();
+}
+
+pub enum RunMode {
+    OutputCosting(String),
+    AssertCosting(IndexMap<String, u32>),
+}
+
+fn run_basic_transfer(mode: RunMode) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
@@ -59,31 +130,20 @@ fn test_basic_transfer() {
     );
     let commit_result = receipt.expect_commit(true);
 
-    // Assert
-    // NOTE: If this test fails, it should print out the actual fee table in the error logs.
-    // Or you can run just this test with the below:
-    // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
-    assert_eq!(
-        commit_result.fee_summary.execution_cost_sum,
-        0
-        + 897 /* AllocateNodeId */
-        + 1417 /* CreateNode */
-        + 5254 /* DropLock */
-        + 1365 /* DropNode */
-        + 736166 /* Invoke */
-        + 41708 /* LockSubstate */
-        + 8008 /* ReadSubstate */
-        + 57500 /* RunNative */
-        + 75000 /* RunSystem */
-        + 50000 /* TxBaseCost */
-        + 1345 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 856 /* WriteSubstate */
-    );
+    match mode {
+        RunMode::OutputCosting(file) => {
+            write_cost_breakdown(
+                commit_result.fee_summary.execution_cost_breakdown.clone(),
+                file.as_str(),
+            );
+        }
+        RunMode::AssertCosting(expected) => {
+            assert_eq!(commit_result.fee_summary.execution_cost_breakdown, expected);
+        }
+    }
 }
 
-#[test]
-fn test_radiswap() {
+fn run_radiswap(mode: RunMode) {
     let mut test_runner = TestRunner::builder().build();
 
     // Scrypto developer
@@ -189,37 +249,20 @@ fn test_radiswap() {
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
     let commit_result = receipt.expect_commit(true);
 
-    // NOTE: If this test fails, it should print out the actual fee table in the error logs.
-    // Or you can run just this test with the below:
-    // cargo test -p radix-engine-tests --test metering -- test_radiswap
-    assert_eq!(
-        commit_result.fee_summary.execution_cost_sum,
-        0
-        + 2070 /* AllocateNodeId */
-        + 3281 /* CreateNode */
-        + 12543 /* DropLock */
-        + 3045 /* DropNode */
-        + 3109581 /* Invoke */
-        + 2131636 /* LockSubstate */
-        + 19040 /* ReadSubstate */
-        + 122500 /* RunNative */
-        + 200000 /* RunSystem */
-        + 592535 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 1765 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 1885 /* WriteSubstate */
-    );
-
-    assert_eq!(
-        commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.6349881"),
-    );
-    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
+    match mode {
+        RunMode::OutputCosting(file) => {
+            write_cost_breakdown(
+                commit_result.fee_summary.execution_cost_breakdown.clone(),
+                file.as_str(),
+            );
+        }
+        RunMode::AssertCosting(expected) => {
+            assert_eq!(commit_result.fee_summary.execution_cost_breakdown, expected);
+        }
+    }
 }
 
-#[test]
-fn test_flash_loan() {
+fn run_flash_loan(mode: RunMode) {
     let mut test_runner = TestRunner::builder().build();
 
     // Scrypto developer
@@ -301,27 +344,17 @@ fn test_flash_loan() {
             + (repay_amount - loan_amount)
     );
 
-    // NOTE: If this test fails, it should print out the actual fee table in the error logs.
-    // Or you can run just this test with the below:
-    // cargo test -p radix-engine-tests --test metering -- test_flash_loan
-    assert_eq!(
-        commit_result.fee_summary.execution_cost_sum,
-        0
-        + 3657 /* AllocateNodeId */
-        + 5777 /* CreateNode */
-        + 20979 /* DropLock */
-        + 5565 /* DropNode */
-        + 4095003 /* Invoke */
-        + 4448000 /* LockSubstate */
-        + 32424 /* ReadSubstate */
-        + 192500 /* RunNative */
-        + 287500 /* RunSystem */
-        + 1201325 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 2570 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 4302 /* WriteSubstate */
-    );
+    match mode {
+        RunMode::OutputCosting(file) => {
+            write_cost_breakdown(
+                commit_result.fee_summary.execution_cost_breakdown.clone(),
+                file.as_str(),
+            );
+        }
+        RunMode::AssertCosting(expected) => {
+            assert_eq!(commit_result.fee_summary.execution_cost_breakdown, expected);
+        }
+    }
 }
 
 #[test]

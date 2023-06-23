@@ -343,7 +343,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 }
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
-    fn finalize(self ) -> FeeSummary {
+    fn finalize(self) -> FeeSummary {
         let total_execution_cost_xrd = transmute_u128_as_decimal(
             self.effective_execution_price * self.execution_committed_sum as u128,
         );
