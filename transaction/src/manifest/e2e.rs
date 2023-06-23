@@ -1223,6 +1223,7 @@ CALL_METHOD
 
         // If you use the following output for test cases, make sure you've checked the diff
         println!("{}", recompiled_decompiled);
+
         let intent = build_intent(
             expected_canonical.as_ref(),
             network,
@@ -1232,7 +1233,10 @@ CALL_METHOD
         .to_payload_bytes()
         .unwrap();
 
+        let intent_hash = PreparedIntentV1::prepare_from_payload(&intent).unwrap().intent_hash();
+
         print_blob(name, intent);
+        print_blob(&format!("{}_HASH", name), intent_hash.0.to_vec());
 
         // Check round-trip property
         assert_eq!(original_binary, recompiled_binary);
