@@ -2,7 +2,7 @@ AllocateNodeId,2756
 CloseSubstate,14400
 CreateNode,47218
 DropNode,47062
-EmitEvent,7100
+EmitEvent,30000
 Invoke,17310
 LockFee,100
 OpenSubstate,481544

@@ -1,6 +1,5 @@
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::*;
@@ -353,7 +352,7 @@ fn test_publish_large_package() {
                     (export "memory" (memory $0))
                 )
             "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 1024)
+        "i".repeat(1024 * 1024 - 1024)
     ));
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 100.into())

@@ -341,18 +341,18 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn emit_event_cost(&self, size: usize) -> u32 {
-        add(1000, Self::sbor_cost(size))
+    pub fn emit_event_cost(&self, _size: usize) -> u32 {
+        10000
     }
 
     #[inline]
-    pub fn emit_log_cost(&self, size: usize) -> u32 {
-        add(1000, Self::sbor_cost(size))
+    pub fn emit_log_cost(&self, _size: usize) -> u32 {
+        10000
     }
 
     #[inline]
-    pub fn panic_cost(&self, size: usize) -> u32 {
-        add(1000, Self::sbor_cost(size))
+    pub fn panic_cost(&self, _size: usize) -> u32 {
+        10000
     }
 
     //======================
