@@ -72,6 +72,20 @@ mod tests {
         hash(&manifest_encode(&value).unwrap()[1..])
     }
 
+    fn print_blob(name: &str, blob: Vec<u8>) {
+        print!(
+            "const HC_{}: [u8; {}] = [",
+            name.clone().to_uppercase(),
+            blob.len()
+        );
+
+        for &byte in blob.iter() {
+            print!("{:#04x}, ", byte);
+        }
+
+        println!("];");
+    }
+
     /// This test demonstrates how the hashes and payloads are constructed in a valid user transaction.
     /// It also provides an example payload which can be used in other implementations.
     #[test]
@@ -140,7 +154,12 @@ mod tests {
             .concat(),
         ));
 
+        print_blob("INTENT_HASH", expected_intent_hash.0.to_vec());
+
         let intent_payload_bytes = intent_v1.to_payload_bytes().unwrap();
+
+        print_blob("INTENT", intent_payload_bytes.clone());
+
         IntentV1::from_payload_bytes(&intent_payload_bytes).expect("Intent can be decoded");
         let intent_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&intent_payload_bytes).unwrap();
