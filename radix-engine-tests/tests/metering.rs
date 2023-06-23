@@ -10,7 +10,7 @@ use utils::ContextualDisplay;
 
 #[cfg(not(feature = "alloc"))]
 #[test]
-#[ignore = "Run this test only when expected costs should be updated"]
+#[ignore = "Run this to update expected costs"]
 fn update_expected_costs() {
     run_basic_transfer(Mode::OutputCosting(
         "./assets/cost_transfer.csv".to_string(),
@@ -32,14 +32,14 @@ fn test_transfer() {
 
 #[test]
 fn test_radiswap() {
-    run_basic_transfer(Mode::AssertCosting(load_cost_breakdown(include_str!(
+    run_radiswap(Mode::AssertCosting(load_cost_breakdown(include_str!(
         "../assets/cost_radiswap.csv"
     ))));
 }
 
 #[test]
 fn test_flash_loan() {
-    run_basic_transfer(Mode::AssertCosting(load_cost_breakdown(include_str!(
+    run_flash_loan(Mode::AssertCosting(load_cost_breakdown(include_str!(
         "../assets/cost_flash_loan.csv"
     ))));
 }
@@ -70,8 +70,8 @@ fn execute_with_time_logging(
     (receipt, 0)
 }
 
-pub fn load_cost_breakdown(content: &str) -> IndexMap<String, u32> {
-    let mut breakdown: IndexMap<String, u32> = index_map_new();
+pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
+    let mut breakdown = BTreeMap::<String, u32>::new();
     content.split("\n").filter(|x| x.len() > 0).for_each(|x| {
         let mut tokens = x.split(",");
         let entry = tokens.next().unwrap();
@@ -82,15 +82,12 @@ pub fn load_cost_breakdown(content: &str) -> IndexMap<String, u32> {
 }
 
 #[cfg(feature = "alloc")]
-pub fn write_cost_breakdown(_breakdown: IndexMap<String, u32>, _file: &str) {}
+pub fn write_cost_breakdown(_breakdown: BTreeMap<String, u32>, _file: &str) {}
 
 #[cfg(not(feature = "alloc"))]
-pub fn write_cost_breakdown(mut breakdown: IndexMap<String, u32>, file: &str) {
+pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
     use std::fs::File;
     use std::io::Write;
-
-    // Sort keys for better diff
-    breakdown.sort_keys();
 
     let mut buffer = String::new();
     for (k, v) in breakdown {
@@ -106,14 +103,14 @@ pub fn write_cost_breakdown(mut breakdown: IndexMap<String, u32>, file: &str) {
 
 pub enum Mode {
     OutputCosting(String),
-    AssertCosting(IndexMap<String, u32>),
+    AssertCosting(BTreeMap<String, u32>),
 }
 
 impl Mode {
-    pub fn run(&self, breakdown: &IndexMap<String, u32>) {
+    pub fn run(&self, breakdown: &BTreeMap<String, u32>) {
         match self {
             Mode::OutputCosting(file) => {
-                write_cost_breakdown(breakdown.clone(), file.as_str());
+                write_cost_breakdown(breakdown, file.as_str());
             }
             Mode::AssertCosting(expected) => {
                 assert_eq!(breakdown, expected);
