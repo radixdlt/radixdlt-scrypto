@@ -1,5 +1,4 @@
 use crate::blueprints::resource::*;
-use crate::data::scrypto::model::Own;
 use crate::data::scrypto::model::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
@@ -39,17 +38,6 @@ pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 pub const ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
 pub const ACCOUNT_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
-
-//================
-// Account Create Local
-//================
-
-pub const ACCOUNT_CREATE_LOCAL_IDENT: &str = "create_local";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountCreateLocalInput {}
-
-pub type AccountCreateLocalOutput = Own;
 
 //=============
 // Account Create Advanced
