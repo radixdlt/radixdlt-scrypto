@@ -10,6 +10,7 @@ OpenSubstate,8128420
 QueryActor,3000
 QueryAuthZone,400
 ReadSubstate,1095674
+RunNativeCode,4400190
 RunWasmCode,1250000
 TxBaseCost,50000
 TxPayloadCost,2570

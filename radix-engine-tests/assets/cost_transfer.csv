@@ -8,6 +8,7 @@ LockFee,100
 OpenSubstate,481544
 QueryActor,800
 ReadSubstate,258720
+RunNativeCode,1314155
 TxBaseCost,50000
 TxPayloadCost,1345
 TxSignatureVerification,100000

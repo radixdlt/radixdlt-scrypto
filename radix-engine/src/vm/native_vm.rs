@@ -59,6 +59,11 @@ impl VmInvoke for NativeVmInstance {
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
+        api.consume_cost_units(ClientCostingEntry::RunNativeCode {
+            package_address: &self.package_address,
+            export_name: export_name,
+        })?;
+
         match self.native_package_code_id {
             PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api),
             RESOURCE_MANAGER_CODE_ID => {
