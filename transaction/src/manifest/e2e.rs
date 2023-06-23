@@ -965,17 +965,17 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Array<String>()
     )
     Map<String, Tuple>(
-        "name" => Enum<0u8>(
-            Tuple(
-                "MyResource",
-                true
-            )
+        "name" => Tuple(
+            Enum<0u8>(
+                "MyResource"
+            ),
+            true
         ),
-        "description" => Enum<0u8>(
-            Tuple(
-                "A very innovative and important resource",
-                false
-            )
+        "description" => Tuple(
+            Enum<0u8>(
+                "A very innovative and important resource"
+            ),
+            false
         )
     )
     Map<Enum, Tuple>(

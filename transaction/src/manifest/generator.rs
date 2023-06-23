@@ -1731,8 +1731,11 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(
+                        Enum<Metadata::String>("Token"),
+                        true
+                    )
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1822,8 +1825,8 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1888,8 +1891,8 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE
                 false
                 18u8
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1933,8 +1936,8 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 false
                 18u8
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
