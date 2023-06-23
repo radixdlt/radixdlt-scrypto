@@ -396,6 +396,15 @@ pub struct ValidatorUpdateAcceptDelegatedStakeInput {
 
 pub type ValidatorUpdateAcceptDelegatedStakeOutput = ();
 
+pub const VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS: &str = "signal_protocol_update_readiness";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ValidatorSignalProtocolUpdateReadinessInput {
+    pub vote: String,
+}
+
+pub type ValidatorSignalProtocolUpdateReadinessOutput = ();
+
 pub const VALIDATOR_APPLY_EMISSION_IDENT: &str = "apply_emission";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
