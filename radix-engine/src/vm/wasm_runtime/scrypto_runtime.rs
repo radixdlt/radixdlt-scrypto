@@ -21,6 +21,7 @@ where
     next_buffer_id: BufferId,
     package_address: PackageAddress,
     export_name: String,
+    gas_buffer: u32,
 }
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
@@ -34,6 +35,7 @@ where
             next_buffer_id: 0,
             package_address,
             export_name,
+            gas_buffer: 0,
         }
     }
 }
@@ -357,13 +359,29 @@ where
     }
 
     fn consume_gas(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+        // Sanity check
+        if n == 0 {
+            return Ok(());
+        }
+
+        // Use buffered gas
+        if self.gas_buffer >= n {
+            self.gas_buffer -= n;
+            return Ok(());
+        }
+
+        // Request from system
+        let amount = ((n - 1) / 10_000 + 1) * 10_000;
         self.api
             .consume_cost_units(ClientCostingEntry::RunWasmCode {
                 package_address: &self.package_address,
                 export_name: &self.export_name,
-                gas: n,
+                gas: amount,
             })
-            .map_err(InvokeError::downstream)
+            .map_err(InvokeError::downstream)?;
+        self.gas_buffer += amount - n;
+
+        Ok(())
     }
 
     fn get_object_info(
