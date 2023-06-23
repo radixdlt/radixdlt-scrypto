@@ -64,6 +64,7 @@ pub enum CostingEntry<'a> {
 
     /* unstable node apis */
     SetSubstate {
+        value_size: usize,
         store_access: &'a StoreAccessInfo,
     },
     RemoveSubstate {
@@ -157,7 +158,10 @@ impl<'a> CostingEntry<'a> {
                 store_access,
             } => ft.write_substate_cost(*value_size, store_access),
             CostingEntry::CloseSubstate { store_access } => ft.close_substate_cost(store_access),
-            CostingEntry::SetSubstate { store_access } => ft.set_substate_cost(store_access),
+            CostingEntry::SetSubstate {
+                value_size,
+                store_access,
+            } => ft.set_substate_cost(*value_size, store_access),
             CostingEntry::RemoveSubstate { store_access } => ft.remove_substate_cost(store_access),
             CostingEntry::ScanSortedSubstates { store_access } => {
                 ft.scan_sorted_substates_cost(store_access)

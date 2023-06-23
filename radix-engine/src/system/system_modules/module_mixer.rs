@@ -406,9 +406,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
+        value_size: usize,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_set_substate(api, store_access))
+        internal_call_dispatch!(api, on_set_substate(api, value_size, store_access))
     }
 
     #[trace_resources]

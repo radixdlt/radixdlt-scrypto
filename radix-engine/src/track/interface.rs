@@ -137,7 +137,7 @@ pub trait SubstateStore {
 }
 
 #[derive(Debug, Clone)]
-pub struct StoreAccessInfo(Vec<StoreAccess>);
+pub struct StoreAccessInfo(pub Vec<StoreAccess>);
 
 impl StoreAccessInfo {
     pub fn new() -> Self {

@@ -731,6 +731,7 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
+        let value_size = value.len();
         let store_access = self
             .current_frame
             .set_substate(
@@ -745,7 +746,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_set_substate(&store_access, self)?;
+        M::on_set_substate(value_size, &store_access, self)?;
 
         Ok(())
     }

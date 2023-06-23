@@ -359,11 +359,6 @@ where
     }
 
     fn consume_gas(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
-        // Sanity check
-        if n == 0 {
-            return Ok(());
-        }
-
         // Use buffered gas
         if self.gas_buffer >= n {
             self.gas_buffer -= n;
