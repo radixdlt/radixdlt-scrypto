@@ -12,34 +12,34 @@ use utils::ContextualDisplay;
 #[test]
 #[ignore = "Run this test only when expected costs should be updated"]
 fn update_expected_costs() {
-    run_basic_transfer(RunMode::OutputCosting(
-        "../assets/cost_transfer.csv".to_string(),
+    run_basic_transfer(Mode::OutputCosting(
+        "./assets/cost_transfer.csv".to_string(),
     ));
-    run_radiswap(RunMode::OutputCosting(
-        "../assets/cost_radiswap.csv".to_string(),
+    run_radiswap(Mode::OutputCosting(
+        "./assets/cost_radiswap.csv".to_string(),
     ));
-    run_flash_loan(RunMode::OutputCosting(
-        "../assets/cost_flash_loan.csv".to_string(),
+    run_flash_loan(Mode::OutputCosting(
+        "./assets/cost_flash_loan.csv".to_string(),
     ));
 }
 
 #[test]
 fn test_transfer() {
-    run_basic_transfer(RunMode::AssertCosting(load_cost_breakdown(include_str!(
+    run_basic_transfer(Mode::AssertCosting(load_cost_breakdown(include_str!(
         "../assets/cost_transfer.csv"
     ))));
 }
 
 #[test]
 fn test_radiswap() {
-    run_basic_transfer(RunMode::AssertCosting(load_cost_breakdown(include_str!(
+    run_basic_transfer(Mode::AssertCosting(load_cost_breakdown(include_str!(
         "../assets/cost_radiswap.csv"
     ))));
 }
 
 #[test]
 fn test_flash_loan() {
-    run_basic_transfer(RunMode::AssertCosting(load_cost_breakdown(include_str!(
+    run_basic_transfer(Mode::AssertCosting(load_cost_breakdown(include_str!(
         "../assets/cost_flash_loan.csv"
     ))));
 }
@@ -81,6 +81,9 @@ pub fn load_cost_breakdown(content: &str) -> IndexMap<String, u32> {
     breakdown
 }
 
+#[cfg(feature = "alloc")]
+pub fn write_cost_breakdown(_breakdown: IndexMap<String, u32>, _file: &str) {}
+
 #[cfg(not(feature = "alloc"))]
 pub fn write_cost_breakdown(mut breakdown: IndexMap<String, u32>, file: &str) {
     use std::fs::File;
@@ -101,12 +104,25 @@ pub fn write_cost_breakdown(mut breakdown: IndexMap<String, u32>, file: &str) {
     f.write_all(buffer.as_bytes()).unwrap();
 }
 
-pub enum RunMode {
+pub enum Mode {
     OutputCosting(String),
     AssertCosting(IndexMap<String, u32>),
 }
 
-fn run_basic_transfer(mode: RunMode) {
+impl Mode {
+    pub fn run(&self, breakdown: &IndexMap<String, u32>) {
+        match self {
+            Mode::OutputCosting(file) => {
+                write_cost_breakdown(breakdown.clone(), file.as_str());
+            }
+            Mode::AssertCosting(expected) => {
+                assert_eq!(breakdown, expected);
+            }
+        }
+    }
+}
+
+fn run_basic_transfer(mode: Mode) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
@@ -130,20 +146,10 @@ fn run_basic_transfer(mode: RunMode) {
     );
     let commit_result = receipt.expect_commit(true);
 
-    match mode {
-        RunMode::OutputCosting(file) => {
-            write_cost_breakdown(
-                commit_result.fee_summary.execution_cost_breakdown.clone(),
-                file.as_str(),
-            );
-        }
-        RunMode::AssertCosting(expected) => {
-            assert_eq!(commit_result.fee_summary.execution_cost_breakdown, expected);
-        }
-    }
+    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
 }
 
-fn run_radiswap(mode: RunMode) {
+fn run_radiswap(mode: Mode) {
     let mut test_runner = TestRunner::builder().build();
 
     // Scrypto developer
@@ -249,20 +255,10 @@ fn run_radiswap(mode: RunMode) {
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
     let commit_result = receipt.expect_commit(true);
 
-    match mode {
-        RunMode::OutputCosting(file) => {
-            write_cost_breakdown(
-                commit_result.fee_summary.execution_cost_breakdown.clone(),
-                file.as_str(),
-            );
-        }
-        RunMode::AssertCosting(expected) => {
-            assert_eq!(commit_result.fee_summary.execution_cost_breakdown, expected);
-        }
-    }
+    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
 }
 
-fn run_flash_loan(mode: RunMode) {
+fn run_flash_loan(mode: Mode) {
     let mut test_runner = TestRunner::builder().build();
 
     // Scrypto developer
@@ -343,18 +339,7 @@ fn run_flash_loan(mode: RunMode) {
             + commit_result.fee_summary.total_royalty_cost_xrd
             + (repay_amount - loan_amount)
     );
-
-    match mode {
-        RunMode::OutputCosting(file) => {
-            write_cost_breakdown(
-                commit_result.fee_summary.execution_cost_breakdown.clone(),
-                file.as_str(),
-            );
-        }
-        RunMode::AssertCosting(expected) => {
-            assert_eq!(commit_result.fee_summary.execution_cost_breakdown, expected);
-        }
-    }
+    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
 }
 
 #[test]
