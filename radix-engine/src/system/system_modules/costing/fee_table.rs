@@ -267,28 +267,5 @@ impl FeeTable {
     // System module costs
     //======================
     // FIXME: add more costing rules
-    // We should account for running modules, such as auth and royalty.
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    pub fn test_x() {
-        let mut costs: IndexMap<&'static str, IndexMap<&'static str, u32>> = index_map_new();
-        include_str!("../../../../../assets/native_function_base_costs.csv")
-            .split("\n")
-            .filter(|x| x.len() > 0)
-            .for_each(|x| {
-                let mut tokens = x.split(",");
-                let blueprint_name = tokens.next().unwrap();
-                let function_name = tokens.next().unwrap();
-                let cost = tokens.next().unwrap();
-                costs
-                    .entry(blueprint_name)
-                    .or_default()
-                    .insert(function_name, u32::from_str(cost).unwrap());
-            });
-    }
+    // We should account for running system modules, such as auth and royalty.
 }
