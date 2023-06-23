@@ -95,7 +95,7 @@ pub struct SystemLoanFeeReserve {
     execution_deferred_sum: u32,
 
     /// Royalty costs
-    royalty_committed: BTreeMap<RoyaltyRecipient, (NodeId, u128)>,
+    royalty_committed: IndexMap<RoyaltyRecipient, (NodeId, u128)>,
     royalty_committed_sum: u128,
 
     /// Payments made during the execution of a transaction.
@@ -150,7 +150,7 @@ impl SystemLoanFeeReserve {
 
             execution_committed_sum: 0,
             execution_deferred_sum: 0,
-            royalty_committed: BTreeMap::new(),
+            royalty_committed: index_map_new(),
             royalty_committed_sum: 0,
 
             locked_fees: Vec::new(),
@@ -262,7 +262,7 @@ impl SystemLoanFeeReserve {
         self.royalty_committed_sum = 0;
     }
 
-    pub fn royalty_cost(&self) -> BTreeMap<RoyaltyRecipient, (NodeId, Decimal)> {
+    pub fn royalty_cost(&self) -> IndexMap<RoyaltyRecipient, (NodeId, Decimal)> {
         self.royalty_committed
             .clone()
             .into_iter()
@@ -343,7 +343,7 @@ impl ExecutionFeeReserve for SystemLoanFeeReserve {
 }
 
 impl FinalizingFeeReserve for SystemLoanFeeReserve {
-    fn finalize(self) -> FeeSummary {
+    fn finalize(self ) -> FeeSummary {
         let total_execution_cost_xrd = transmute_u128_as_decimal(
             self.effective_execution_price * self.execution_committed_sum as u128,
         );
@@ -359,6 +359,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             total_royalty_cost_xrd,
             total_bad_debt_xrd: transmute_u128_as_decimal(self.xrd_owed),
             locked_fees: self.locked_fees,
+            execution_cost_breakdown: index_map_new(),
             execution_cost_sum: self.execution_committed_sum,
             royalty_cost_breakdown,
         };
@@ -551,7 +552,7 @@ mod tests {
         assert_eq!(summary.execution_cost_sum, 2);
         assert_eq!(
             summary.royalty_cost_breakdown,
-            btreemap!(
+            indexmap!(
                 RoyaltyRecipient::Package(PACKAGE_PACKAGE) => (TEST_VAULT_ID, dec!("16"))
             )
         );

@@ -141,7 +141,7 @@ impl SystemModuleMixer {
                 max_call_depth: execution_config.max_call_depth,
                 payload_len,
                 num_of_signatures,
-                trace_costing: execution_config.trace_costing,
+                enable_cost_breakdown: execution_config.enable_cost_breakdown,
                 costing_traces: index_map_new(),
             },
             node_move: NodeMoveModule {},

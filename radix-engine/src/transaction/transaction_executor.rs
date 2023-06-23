@@ -54,7 +54,7 @@ pub struct ExecutionConfig {
     pub max_substate_writes_per_transaction: usize,
     pub max_substate_size: usize,
     pub max_invoke_input_size: usize,
-    pub trace_costing: bool,
+    pub enable_cost_breakdown: bool,
     pub max_event_size: usize,
     pub max_log_size: usize,
     pub max_panic_message_size: usize,
@@ -78,7 +78,7 @@ impl ExecutionConfig {
             max_substate_writes_per_transaction: DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
             max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
-            trace_costing: false,
+            enable_cost_breakdown: false,
             max_event_size: DEFAULT_MAX_EVENT_SIZE,
             max_log_size: DEFAULT_MAX_LOG_SIZE,
             max_panic_message_size: DEFAULT_MAX_PANIC_MESSAGE_SIZE,
@@ -113,7 +113,7 @@ impl ExecutionConfig {
     pub fn for_test_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_test_transaction(),
-            trace_costing: true,
+            enable_cost_breakdown: true,
             ..Self::default()
         }
     }
@@ -274,20 +274,14 @@ where
                             track.revert_non_force_write_changes();
                         }
 
-                        #[cfg(not(feature = "alloc"))]
-                        if execution_config
-                            .enabled_modules
-                            .contains(EnabledModules::KERNEL_TRACE)
-                        {
-                            println!("{:-^80}", "Costing Traces");
-                            for (k, v) in costing_module.costing_traces {
-                                println!("        + {} /* {} */", v, k);
-                            }
-                        }
-
                         // Distribute fees
-                        let (fee_summary, fee_payments) =
+                        let (mut fee_summary, fee_payments) =
                             Self::finalize_fees(&mut track, costing_module.fee_reserve, is_success);
+                        fee_summary.execution_cost_breakdown = costing_module
+                            .costing_traces
+                            .into_iter()
+                            .map(|(k, v)| (k.to_string(), v))
+                            .collect();
 
                         // Update intent hash status
                         if let Some(next_epoch) = Self::read_epoch(&mut track) {
@@ -837,6 +831,11 @@ where
     fn print_execution_summary(receipt: &TransactionReceipt) {
         match &receipt.transaction_result {
             TransactionResult::Commit(commit) => {
+                println!("{:-^80}", "Cost Breakdown");
+                for (k, v) in &commit.fee_summary.execution_cost_breakdown {
+                    println!("        + {} /* {} */", v, k);
+                }
+
                 println!("{:-^80}", "Cost Totals");
                 println!(
                     "{:<30}: {:>10}",

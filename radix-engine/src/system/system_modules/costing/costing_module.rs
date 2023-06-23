@@ -38,7 +38,7 @@ pub struct CostingModule {
     pub max_call_depth: usize,
     pub payload_len: usize,
     pub num_of_signatures: usize,
-    pub trace_costing: bool,
+    pub enable_cost_breakdown: bool,
     pub costing_traces: IndexMap<&'static str, u32>,
 }
 
@@ -61,7 +61,7 @@ impl CostingModule {
                 ))
             })?;
 
-        if self.trace_costing {
+        if self.enable_cost_breakdown {
             let key: &'static str = costing_entry.into();
             self.costing_traces
                 .entry(key)
@@ -84,7 +84,7 @@ impl CostingModule {
             ))
         })?;
 
-        if self.trace_costing {
+        if self.enable_cost_breakdown {
             let key: &'static str = costing_entry.into();
             self.costing_traces
                 .entry(key)
