@@ -66,19 +66,19 @@ fn test_basic_transfer() {
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
         0
-        + 897 /* AllocateNodeId */
-        + 1417 /* CreateNode */
-        + 5328 /* DropLock */
-        + 1365 /* DropNode */
-        + 736166 /* Invoke */
-        + 42294 /* LockSubstate */
-        + 8120 /* ReadSubstate */
-        + 57500 /* RunNative */
+        + 1104 /* AllocateNodeId */
+        + 1744 /* CreateNode */
+        + 6142 /* DropLock */
+        + 1680 /* DropNode */
+        + 1140299 /* Invoke */
+        + 431463 /* LockSubstate */
+        + 8624 /* ReadSubstate */
+        + 65000 /* RunNative */
         + 7500 /* RunSystem */
         + 50000 /* TxBaseCost */
-        + 1345 /* TxPayloadCost */
+        + 1280 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 856 /* WriteSubstate */
+        + 979 /* WriteSubstate */
     );
 }
 
@@ -200,10 +200,10 @@ fn test_radiswap() {
         + 12617 /* DropLock */
         + 3045 /* DropNode */
         + 3109581 /* Invoke */
-        + 2138659 /* LockSubstate */
+        + 2140007 /* LockSubstate */
         + 19152 /* ReadSubstate */
         + 122500 /* RunNative */
-        + 20000 /* RunSystem */
+        + 200000 /* RunSystem */
         + 602285 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1765 /* TxPayloadCost */
@@ -213,7 +213,7 @@ fn test_radiswap() {
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.6186840"),
+        dec!("0.6368188"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -312,10 +312,10 @@ fn test_flash_loan() {
         + 21053 /* DropLock */
         + 5565 /* DropNode */
         + 4095003 /* Invoke */
-        + 4456238 /* LockSubstate */
+        + 4455737 /* LockSubstate */
         + 32536 /* ReadSubstate */
         + 192500 /* RunNative */
-        + 40000 /* RunSystem */
+        + 287500 /* RunSystem */
         + 1188780 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2570 /* TxPayloadCost */
