@@ -64,7 +64,7 @@ impl FeeTable {
     }
 
     fn sbor_cost(size: usize) -> u32 {
-        add(mul(cast(size), 22), 289492)
+        add(mul(cast(size), 10), 1000)
     }
 
     fn store_access_cost(store_access: &StoreAccessInfo) -> u32 {
@@ -117,7 +117,7 @@ impl FeeTable {
                     }
                 }
                 StoreAccess::DeleteFromTrack => {
-                    191 // Averga of P95 points from benchmark
+                    191 // Average of P95 points from benchmark
                 }
             };
             sum = add(sum, cost);

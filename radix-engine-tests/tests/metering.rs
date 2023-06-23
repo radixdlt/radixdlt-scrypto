@@ -24,7 +24,7 @@ fn update_expected_costs() {
 }
 
 #[test]
-fn test_transfer() {
+fn test_basic_transfer() {
     run_basic_transfer(Mode::AssertCosting(load_cost_breakdown(include_str!(
         "../assets/cost_transfer.csv"
     ))));
