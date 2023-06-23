@@ -173,8 +173,12 @@ impl StoreAccessInfo {
             .sum()
     }
 
-    pub fn push(&mut self, items: &StoreAccessInfo) {
+    pub fn extend(&mut self, items: &StoreAccessInfo) {
         self.0.extend(&items.0)
+    }
+
+    pub fn push(&mut self, item: StoreAccess) {
+        self.0.push(item)
     }
 
     pub fn builder_push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
@@ -196,7 +200,7 @@ impl StoreAccessInfo {
                     self.0.push(item)
                 }
             }
-            StoreAccess::ReadFromDbNotFound => self.0.push(item),
+            StoreAccess::ReadFromDbNotFound | StoreAccess::DeleteFromTrack => (),
         }
     }
 
@@ -213,6 +217,8 @@ pub enum StoreAccess {
     WriteToTrack(usize),
     // Updates an entry for the second time
     // Need to report both the previous size and new size as partial refund may be required
-    // (Reason: only one write will be applied when the transaction finishes, despite substate being updated twice)
+    // (Reason: only one write to database will be applied when the transaction finishes,
+    // despite substate being updated twice or more during transaction execution)
     RewriteToTrack(usize, usize),
+    DeleteFromTrack,
 }

@@ -3,7 +3,7 @@ use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use crate::{event_schema, method_auth_template};
+use crate::{event_schema, roles_template};
 use native_sdk::component::BorrowedObject;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
@@ -437,33 +437,6 @@ impl AccessControllerNativePackage {
             ]
         };
 
-        let method_auth = method_auth_template!(
-            ACCESS_CONTROLLER_CREATE_PROOF_IDENT => ["primary"];
-            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => ["primary"];
-            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary"];
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => ["primary"];
-            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  ["primary"];
-            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => ["recovery"];
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => ["recovery"];
-            ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => MethodAccessibility::Public;
-            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery"];
-            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery"];
-            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => ["recovery"];
-            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => ["recovery"];
-
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery", "confirmation"];
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery", "confirmation"];
-
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary", "confirmation"];
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["primary", "confirmation"];
-
-            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => ["primary", "recovery"];
-
-            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => ["primary", "confirmation", "recovery"];
-
-            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => ["this_package"];
-        );
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -492,9 +465,40 @@ impl AccessControllerNativePackage {
                     function_auth: btreemap!(
                         ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(
-                        method_auth,
-                    ),
+                    method_auth: MethodAuthTemplate::Static(roles_template!(
+                        roles {
+                            "primary" => updaters: [SELF_ROLE];
+                            "recovery" => updaters: [SELF_ROLE];
+                            "confirmation" => updaters: [SELF_ROLE];
+                            "this_package";
+                        },
+                        methods {
+                            ACCESS_CONTROLLER_CREATE_PROOF_IDENT => ["primary"];
+                            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => ["primary"];
+                            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary"];
+                            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => ["primary"];
+                            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  ["primary"];
+                            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => ["recovery"];
+                            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => ["recovery"];
+                            ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => MethodAccessibility::Public;
+                            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery"];
+                            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery"];
+                            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => ["recovery"];
+                            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => ["recovery"];
+
+                            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery", "confirmation"];
+                            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery", "confirmation"];
+
+                            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary", "confirmation"];
+                            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["primary", "confirmation"];
+
+                            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => ["primary", "recovery"];
+
+                            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => ["primary", "confirmation", "recovery"];
+
+                            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => ["this_package"]; // FIXME: Remove
+                        }
+                    )),
                 },
             }
         );
@@ -1291,9 +1295,9 @@ fn locked_access_rules() -> RuleSet {
 fn init_roles_from_rule_set(rule_set: RuleSet) -> Roles {
     roles2! {
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
-        "primary" => rule_set.primary_role, mut [SELF_ROLE];
-        "recovery" => rule_set.recovery_role, mut [SELF_ROLE];
-        "confirmation" => rule_set.confirmation_role, mut [SELF_ROLE];
+        "primary" => rule_set.primary_role, updatable;
+        "recovery" => rule_set.recovery_role, updatable;
+        "confirmation" => rule_set.confirmation_role, updatable;
     }
 }
 

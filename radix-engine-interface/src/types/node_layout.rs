@@ -20,7 +20,6 @@ pub const ACCESS_RULES_MUTABILITY_PARTITION_OFFSET: PartitionOffset = PartitionO
 
 pub const ACCESS_RULES_FIELDS_PARTITION: PartitionNumber = PartitionNumber(4u8);
 pub const ACCESS_RULES_ROLE_DEF_PARTITION: PartitionNumber = PartitionNumber(5u8);
-pub const ACCESS_RULES_MUTABILITY_PARTITION: PartitionNumber = PartitionNumber(6u8);
 
 pub const MAIN_BASE_PARTITION: PartitionNumber = PartitionNumber(64u8);
 

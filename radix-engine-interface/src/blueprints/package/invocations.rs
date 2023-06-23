@@ -128,16 +128,31 @@ pub struct AuthConfig {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct StaticRoles {
+    pub methods: BTreeMap<MethodKey, MethodAccessibility>,
+    pub roles: BTreeMap<RoleKey, RoleList>,
+}
+
+impl Default for StaticRoles {
+    fn default() -> Self {
+        Self {
+            methods: BTreeMap::new(),
+            roles: BTreeMap::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub enum MethodAuthTemplate {
-    Static(BTreeMap<MethodKey, MethodAccessibility>),
+    Static(StaticRoles),
     /// This should only be used by inner blueprints and is verified during package schema verification
-    StaticUseOuterAuth(BTreeMap<MethodKey, MethodAccessibility>),
+    StaticUseOuterRoles(BTreeMap<MethodKey, MethodAccessibility>),
     /// All methods are accessible
     AllowAll,
 }
 
 impl Default for MethodAuthTemplate {
     fn default() -> Self {
-        MethodAuthTemplate::Static(BTreeMap::default())
+        MethodAuthTemplate::Static(StaticRoles::default())
     }
 }
