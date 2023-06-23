@@ -1,10 +1,10 @@
 use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
-use crate::blueprints::consensus_manager::{START_ROLE, VALIDATOR_ROLE};
+use crate::blueprints::consensus_manager::VALIDATOR_ROLE;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
@@ -30,6 +30,8 @@ pub struct ConsensusManagerConfigSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ConsensusManagerSubstate {
+    /// Whether the consensus process has started
+    pub started: bool,
     /// The current epoch.
     pub epoch: Epoch,
     /// The effective start-time of the epoch.
@@ -197,6 +199,7 @@ pub enum ConsensusManagerError {
         index: ValidatorIndex,
         count: usize,
     },
+    AlreadyStarted,
 }
 
 pub const CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX: CollectionIndex = 0u8;
@@ -250,6 +253,7 @@ impl ConsensusManagerBlueprint {
                 config: initial_config,
             };
             let consensus_manager = ConsensusManagerSubstate {
+                started: false,
                 epoch: initial_epoch,
                 actual_epoch_start_milli: initial_time_milli,
                 effective_epoch_start_milli: initial_time_milli,
@@ -291,7 +295,6 @@ impl ConsensusManagerBlueprint {
 
         let role_definitions = roles2! {
             VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
-            START_ROLE => rule!(require(AuthAddresses::system_role())), mut [SELF_ROLE];
         };
 
         let roles = btreemap!(ObjectModuleId::Main => role_definitions);
@@ -327,37 +330,39 @@ impl ConsensusManagerBlueprint {
         Ok(consensus_manager.epoch)
     }
 
-    pub(crate) fn start<Y>(receiver: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    pub(crate) fn start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let config_handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            ConsensusManagerField::Config.into(),
-            LockFlags::read_only(),
-        )?;
-        let config_substate: ConsensusManagerConfigSubstate =
-            api.field_lock_read_typed(config_handle)?;
-        api.field_lock_release(config_handle)?;
+        let config_substate = {
+            let config_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                ConsensusManagerField::Config.into(),
+                LockFlags::read_only(),
+            )?;
+            let config_substate: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+            api.field_lock_release(config_handle)?;
+            config_substate
+        };
 
-        let manager_handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
-            LockFlags::read_only(),
-        )?;
-        let manager_substate: ConsensusManagerSubstate =
-            api.field_lock_read_typed(manager_handle)?;
-        api.field_lock_release(manager_handle)?;
+        let manager_substate = {
+            let manager_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                ConsensusManagerField::ConsensusManager.into(),
+                LockFlags::MUTABLE,
+            )?;
+            let mut manager_substate: ConsensusManagerSubstate =
+                api.field_lock_read_typed(manager_handle)?;
+            if manager_substate.started {
+                return Err(RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(ConsensusManagerError::AlreadyStarted)));
+            }
+            manager_substate.started = true;
+            api.field_lock_write_typed(manager_handle, manager_substate.clone())?;
+            api.field_lock_release(manager_handle)?;
+            manager_substate
+        };
 
         Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
-
-        let access_rules = AttachedAccessRules(*receiver);
-        access_rules.set_and_lock_role(
-            ObjectModuleId::Main,
-            RoleKey::new(START_ROLE),
-            AccessRule::DenyAll,
-            api,
-        )?;
 
         Ok(())
     }

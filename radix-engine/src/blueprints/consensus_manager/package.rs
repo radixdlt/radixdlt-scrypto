@@ -3,7 +3,6 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::{event_schema, method_auth_template, types::*};
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -193,7 +192,7 @@ impl ConsensusManagerNativePackage {
                         CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     ),
                     method_auth: MethodAuthTemplate::Static(method_auth_template!(
-                        CONSENSUS_MANAGER_START_IDENT => [START_ROLE];
+                        CONSENSUS_MANAGER_START_IDENT => []; // Genesis is able to call this by skipping auth
                         CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
 
                         CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodAccessibility::Public;
@@ -503,11 +502,10 @@ impl ConsensusManagerNativePackage {
             CONSENSUS_MANAGER_START_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let receiver = Runtime::get_node_id(api)?;
                 let _input: ConsensusManagerStartInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = ConsensusManagerBlueprint::start(&receiver, api)?;
+                let rtn = ConsensusManagerBlueprint::start(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
