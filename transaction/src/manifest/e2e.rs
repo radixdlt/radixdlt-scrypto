@@ -2,7 +2,7 @@ use radix_engine_common::prelude::{Bech32Encoder, PACKAGE_PACKAGE};
 use utils::ContextualDisplay;
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::internal_prelude::*;
     use crate::manifest::*;
@@ -1342,18 +1342,20 @@ CALL_METHOD
         );
     }
 
-    fn print_blob(name: &str, blob: Vec<u8>) {
-        print!(
-            "const TX_{}: [u8; {}] = [",
-            name.clone().to_uppercase(),
-            blob.len()
-        );
+    pub fn print_blob(name: &str, blob: Vec<u8>) {
+        std::env::var("PRINT_TEST_VECTORS").ok().map(|_| {
+            print!(
+                "pub const TX_{}: [u8; {}] = [",
+                name.clone().to_uppercase(),
+                blob.len()
+            );
 
-        for &byte in blob.iter() {
-            print!("{:#04x}, ", byte);
-        }
+            for &byte in blob.iter() {
+                print!("{:#04x}, ", byte);
+            }
 
-        println!("];");
+            println!("];");
+        });
     }
 
     fn build_intent(

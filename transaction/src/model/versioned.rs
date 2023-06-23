@@ -65,25 +65,12 @@ mod tests {
     use radix_engine_interface::blueprints::resource::FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
 
     use super::*;
+    use crate::manifest::e2e::tests::print_blob;
     use crate::model::*;
     use crate::{signing::ed25519::Ed25519PrivateKey, signing::secp256k1::Secp256k1PrivateKey};
 
     fn hash_manifest_encoded_without_prefix_byte<T: ManifestEncode>(value: T) -> Hash {
         hash(&manifest_encode(&value).unwrap()[1..])
-    }
-
-    fn print_blob(name: &str, blob: Vec<u8>) {
-        print!(
-            "const HC_{}: [u8; {}] = [",
-            name.clone().to_uppercase(),
-            blob.len()
-        );
-
-        for &byte in blob.iter() {
-            print!("{:#04x}, ", byte);
-        }
-
-        println!("];");
     }
 
     /// This test demonstrates how the hashes and payloads are constructed in a valid user transaction.
@@ -154,12 +141,11 @@ mod tests {
             .concat(),
         ));
 
-        println!();
-        print_blob("INTENT_HASH", expected_intent_hash.0.to_vec());
-
         let intent_payload_bytes = intent_v1.to_payload_bytes().unwrap();
 
-        print_blob("INTENT", intent_payload_bytes.clone());
+        println!();
+        print_blob("HC_INTENT", intent_payload_bytes.clone());
+        print_blob("HC_INTENT_HASH", expected_intent_hash.0.to_vec());
 
         IntentV1::from_payload_bytes(&intent_payload_bytes).expect("Intent can be decoded");
         let intent_as_versioned =
