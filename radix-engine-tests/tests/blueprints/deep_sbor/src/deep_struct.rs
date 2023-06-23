@@ -31,6 +31,6 @@ fn generate_deep_access_rules(resource_address: ResourceAddress, exceed_depth: u
     }
 
     roles2! {
-        "test" => AccessRule::Protected(access_rule_node.clone()), mut ["test"];
+        "test" => AccessRule::Protected(access_rule_node.clone()), updatable;
     }
 }

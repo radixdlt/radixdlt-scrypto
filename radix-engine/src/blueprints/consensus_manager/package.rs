@@ -2,7 +2,7 @@ use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorB
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
-use crate::{event_schema, method_auth_template, types::*};
+use crate::{event_schema, roles_template, types::*};
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -20,7 +20,6 @@ use resources_tracker_macro::trace_resources;
 use super::*;
 
 pub const VALIDATOR_ROLE: &str = "validator";
-pub const START_ROLE: &str = "start";
 
 pub struct ConsensusManagerNativePackage;
 
@@ -191,14 +190,19 @@ impl ConsensusManagerNativePackage {
                     function_auth: btreemap!(
                         CONSENSUS_MANAGER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     ),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template!(
-                        CONSENSUS_MANAGER_START_IDENT => []; // Genesis is able to call this by skipping auth
-                        CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
+                    method_auth: MethodAuthTemplate::Static(roles_template!(
+                        roles {
+                            VALIDATOR_ROLE;
+                        },
+                        methods {
+                            CONSENSUS_MANAGER_START_IDENT => []; // Genesis is able to call this by skipping auth
+                            CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
 
-                        CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodAccessibility::Public;
-                        CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodAccessibility::Public;
-                        CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodAccessibility::Public;
-                        CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodAccessibility::Public;
+                            CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodAccessibility::Public;
+                            CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT => MethodAccessibility::Public;
+                            CONSENSUS_MANAGER_COMPARE_CURRENT_TIME_IDENT => MethodAccessibility::Public;
+                            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT => MethodAccessibility::Public;
+                        }
                     )),
                 },
             }
@@ -433,21 +437,23 @@ impl ConsensusManagerNativePackage {
                 royalty_config: RoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
-                        VALIDATOR_UNSTAKE_IDENT => MethodAccessibility::Public;
-                        VALIDATOR_CLAIM_XRD_IDENT => MethodAccessibility::Public;
-                        VALIDATOR_STAKE_IDENT => MethodAccessibility::Public;
-                        VALIDATOR_STAKE_AS_OWNER_IDENT => [OWNER_ROLE];
-                        VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
-                        VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
-                        VALIDATOR_UPDATE_KEY_IDENT => [OWNER_ROLE];
-                        VALIDATOR_UPDATE_FEE_IDENT => [OWNER_ROLE];
-                        VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
-                        VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
-                        VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
-                        VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
-                        VALIDATOR_APPLY_EMISSION_IDENT => MethodAccessibility::OuterObjectOnly;
-                        VALIDATOR_APPLY_REWARD_IDENT => MethodAccessibility::OuterObjectOnly;
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                        methods {
+                            VALIDATOR_UNSTAKE_IDENT => MethodAccessibility::Public;
+                            VALIDATOR_CLAIM_XRD_IDENT => MethodAccessibility::Public;
+                            VALIDATOR_STAKE_IDENT => MethodAccessibility::Public;
+                            VALIDATOR_STAKE_AS_OWNER_IDENT => [OWNER_ROLE];
+                            VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
+                            VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
+                            VALIDATOR_UPDATE_KEY_IDENT => [OWNER_ROLE];
+                            VALIDATOR_UPDATE_FEE_IDENT => [OWNER_ROLE];
+                            VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                            VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                            VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
+                            VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
+                            VALIDATOR_APPLY_EMISSION_IDENT => MethodAccessibility::OuterObjectOnly;
+                            VALIDATOR_APPLY_REWARD_IDENT => MethodAccessibility::OuterObjectOnly;
+                        }
                     }),
                 },
             }
