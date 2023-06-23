@@ -61,6 +61,25 @@ pub enum PackageError {
     InvalidAuthSetup,
     DefiningReservedRoleKey(String, RoleKey),
     MissingRole(RoleKey),
+    UnexpectedNumberOfMethodAuth {
+        blueprint: String,
+        expected: usize,
+        actual: usize,
+    },
+    MissingMethodPermission {
+        blueprint: String,
+        ident: String,
+    },
+
+    UnexpectedNumberOfFunctionAuth {
+        blueprint: String,
+        expected: usize,
+        actual: usize,
+    },
+    MissingFunctionPermission {
+        blueprint: String,
+        ident: String,
+    },
 
     InvalidMetadataKey(String),
 }
@@ -206,78 +225,121 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
 
 fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
     for (blueprint, definition_init) in &definition.blueprints {
+        match &definition_init.auth_config.function_auth {
+            FunctionAuth::AllowAll | FunctionAuth::RootOnly => {}
+            FunctionAuth::AccessRules(functions) => {
+                let num_functions = definition_init
+                    .schema
+                    .functions
+                    .functions
+                    .values()
+                    .filter(|schema| schema.receiver.is_none())
+                    .count();
+
+                if num_functions != functions.len() {
+                    return Err(PackageError::UnexpectedNumberOfFunctionAuth {
+                        blueprint: blueprint.clone(),
+                        expected: num_functions,
+                        actual: functions.len(),
+                    });
+                }
+
+                for (name, schema_init) in &definition_init.schema.functions.functions {
+                    if schema_init.receiver.is_none() && !functions.contains_key(name) {
+                        return Err(PackageError::MissingFunctionPermission {
+                            blueprint: blueprint.clone(),
+                            ident: name.clone(),
+                        });
+                    }
+                }
+            }
+        }
+
         match (
             &definition_init.blueprint_type,
             &definition_init.auth_config.method_auth,
         ) {
             (_, MethodAuthTemplate::AllowAll) => {}
-            (_, MethodAuthTemplate::Static(static_roles)) => {
-                let check_list = |list: &RoleList| {
-                    for role_key in &list.list {
-                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
-                            continue;
-                        }
-                        if !static_roles.roles.contains_key(role_key) {
-                            return Err(PackageError::MissingRole(role_key.clone()));
-                        }
-                    }
-                    Ok(())
-                };
-
-                for (role_key, role_list) in &static_roles.roles {
-                    check_list(&role_list)?;
-                    if AccessRulesNativePackage::is_reserved_role_key(&role_key) {
-                        return Err(PackageError::DefiningReservedRoleKey(
-                            blueprint.to_string(),
-                            role_key.clone(),
-                        ));
-                    }
-                }
-                for (_method, permission) in &static_roles.methods {
-                    match permission {
-                        MethodAccessibility::RoleProtected(role_list) => {
-                            check_list(&role_list)?;
-                        }
-                        MethodAccessibility::Public | MethodAccessibility::OuterObjectOnly => {}
-                    }
-                }
-            }
-            (
-                BlueprintType::Inner { outer_blueprint },
-                MethodAuthTemplate::StaticUseOuterRoles(methods),
-            ) => {
-                let check_list = |list: &RoleList| {
-                    for role_key in &list.list {
-                        if role_key.key.eq(SELF_ROLE) {
-                            continue;
-                        }
+            (blueprint_type, MethodAuthTemplate::StaticRoles(StaticRoles { roles, methods })) => {
+                let role_specification = match (blueprint_type, roles) {
+                    (_, RoleSpecification::Normal(roles)) => roles,
+                    (BlueprintType::Inner { outer_blueprint }, RoleSpecification::UseOuter) => {
                         if let Some(blueprint) = definition.blueprints.get(outer_blueprint) {
                             match &blueprint.auth_config.method_auth {
-                                MethodAuthTemplate::Static(static_roles) => {
-                                    if !static_roles.roles.contains_key(role_key) {
-                                        return Err(PackageError::MissingRole(role_key.clone()));
-                                    }
-                                }
+                                MethodAuthTemplate::StaticRoles(StaticRoles {
+                                    roles: RoleSpecification::Normal(roles),
+                                    ..
+                                }) => roles,
                                 _ => return Err(PackageError::InvalidAuthSetup),
                             }
                         } else {
                             return Err(PackageError::InvalidAuthSetup);
                         }
                     }
+                    _ => {
+                        return Err(PackageError::InvalidAuthSetup);
+                    }
+                };
+
+                let check_list = |list: &RoleList| {
+                    for role_key in &list.list {
+                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
+                            continue;
+                        }
+                        if !role_specification.contains_key(role_key) {
+                            return Err(PackageError::MissingRole(role_key.clone()));
+                        }
+                    }
                     Ok(())
                 };
 
-                for (_method, permission) in methods {
-                    match permission {
+                if let RoleSpecification::Normal(roles) = roles {
+                    for (role_key, role_list) in roles {
+                        check_list(role_list)?;
+                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
+                            return Err(PackageError::DefiningReservedRoleKey(
+                                blueprint.to_string(),
+                                role_key.clone(),
+                            ));
+                        }
+                    }
+                }
+
+                for (_method, accessibility) in methods {
+                    match accessibility {
                         MethodAccessibility::RoleProtected(role_list) => {
-                            check_list(&role_list)?;
+                            check_list(role_list)?;
                         }
                         MethodAccessibility::Public | MethodAccessibility::OuterObjectOnly => {}
                     }
                 }
-            }
-            _ => {
-                return Err(PackageError::InvalidAuthSetup);
+
+                let num_methods = definition_init
+                    .schema
+                    .functions
+                    .functions
+                    .values()
+                    .filter(|schema| schema.receiver.is_some())
+                    .count();
+
+                if num_methods != methods.len() {
+                    return Err(PackageError::UnexpectedNumberOfMethodAuth {
+                        blueprint: blueprint.clone(),
+                        expected: num_methods,
+                        actual: methods.len(),
+                    });
+                }
+
+                for (name, schema_init) in &definition_init.schema.functions.functions {
+                    if schema_init.receiver.is_some()
+                        && !methods.contains_key(&MethodKey::new(name))
+                    {
+                        return Err(PackageError::MissingMethodPermission {
+                            blueprint: blueprint.clone(),
+                            ident: name.clone(),
+                        });
+                    }
+                }
             }
         }
     }
@@ -302,7 +364,7 @@ fn globalize_package<Y, L: Default>(
     code: PackageCodeSubstate,
     code_hash: Hash,
 
-    package_royalties: BTreeMap<String, RoyaltyConfig>,
+    package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
 
     auth_configs: BTreeMap<String, AuthConfig>,
 
@@ -632,7 +694,7 @@ impl PackageNativePackage {
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
                 value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<RoyaltyConfig>(),
+                    aggregator.add_child_type_and_descendents::<ComponentRoyaltyConfig>(),
                 ),
                 can_own: false,
             },
@@ -725,14 +787,16 @@ impl PackageNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
-                        PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
-                        PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
+                    function_auth: FunctionAuth::AccessRules(
+                        btreemap!(
+                            PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
+                            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                            PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
+                        )
                     ),
-                    method_auth: MethodAuthTemplate::Static(
+                    method_auth: MethodAuthTemplate::StaticRoles(
                         roles_template! {
                             roles {
                                 SECURIFY_OWNER_ROLE;
@@ -1248,13 +1312,18 @@ impl PackageRoyaltyNativeBlueprint {
             SystemLockData::default(),
         )?;
 
-        let substate: KeyValueEntrySubstate<RoyaltyConfig> =
+        let substate: KeyValueEntrySubstate<PackageRoyaltyConfig> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         api.kernel_drop_lock(handle)?;
 
         let royalty_charge = substate
             .value
-            .and_then(|c| c.rules.get(ident).cloned())
+            .and_then(|royalty_config| match royalty_config {
+                PackageRoyaltyConfig::Enabled(royalty_amounts) => {
+                    royalty_amounts.get(ident).cloned()
+                }
+                PackageRoyaltyConfig::Disabled => Some(RoyaltyAmount::Free),
+            })
             .unwrap_or(RoyaltyAmount::Free);
 
         if royalty_charge.is_non_zero() {
@@ -1325,19 +1394,32 @@ impl PackageAuthNativeBlueprint {
         Y: KernelSubstateApi<SystemLockData> + KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     {
-        let auth_template = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
-        let access_rule = auth_template.function_auth.get(ident);
-        if let Some(access_rule) = access_rule {
-            Ok(ResolvedPermission::AccessRule(access_rule.clone()))
-        } else {
-            let package_address = PackageAddress::new_or_panic(receiver.0.clone());
-            let blueprint_id = BlueprintId::new(&package_address, &bp_version_key.blueprint);
-            Err(RuntimeError::SystemModuleError(
-                SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
-                    blueprint_id,
-                    ident: FnIdent::Application(ident.to_string()),
-                })),
-            ))
+        let auth_config = Self::get_bp_auth_template(receiver, bp_version_key, api)?;
+        match auth_config.function_auth {
+            FunctionAuth::AllowAll => Ok(ResolvedPermission::AllowAll),
+            FunctionAuth::RootOnly => {
+                if api.kernel_get_current_depth() == 0 {
+                    Ok(ResolvedPermission::AllowAll)
+                } else {
+                    Ok(ResolvedPermission::AccessRule(AccessRule::DenyAll))
+                }
+            }
+            FunctionAuth::AccessRules(access_rules) => {
+                let access_rule = access_rules.get(ident);
+                if let Some(access_rule) = access_rule {
+                    Ok(ResolvedPermission::AccessRule(access_rule.clone()))
+                } else {
+                    let package_address = PackageAddress::new_or_panic(receiver.0.clone());
+                    let blueprint_id =
+                        BlueprintId::new(&package_address, &bp_version_key.blueprint);
+                    Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
+                            blueprint_id,
+                            ident: FnIdent::Application(ident.to_string()),
+                        })),
+                    ))
+                }
+            }
         }
     }
 

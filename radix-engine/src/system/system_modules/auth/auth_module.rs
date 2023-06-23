@@ -16,7 +16,7 @@ use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
-    BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate,
+    BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -231,21 +231,26 @@ impl AuthModule {
         .method_auth;
 
         let (access_rules_of, method_permissions) = match auth_template {
-            MethodAuthTemplate::Static(static_roles) => {
-                // Non-globalized objects do not have access rules objet yet
-                if !callee.module_object_info.global {
-                    return Ok(ResolvedPermission::AllowAll);
-                }
+            MethodAuthTemplate::StaticRoles(static_roles) => {
+                let access_rules_of = match static_roles.roles {
+                    RoleSpecification::Normal(..) => {
+                        // Non-globalized objects do not have access rules module
+                        if !callee.module_object_info.global {
+                            return Ok(ResolvedPermission::AllowAll);
+                        }
 
-                (callee.node_id, static_roles.methods)
-            }
-            MethodAuthTemplate::StaticUseOuterRoles(methods) => {
-                let node_id = callee.node_id;
-                let info = api.get_object_info(&node_id)?;
+                        callee.node_id
+                    }
+                    RoleSpecification::UseOuter => {
+                        let node_id = callee.node_id;
+                        let info = api.get_object_info(&node_id)?;
 
-                // FIXME: Add verification that StaticUseOuterAuth should only be used with inner blueprints
-                let access_rules_of = info.get_outer_object();
-                (access_rules_of.into_node_id(), methods)
+                        let access_rules_of = info.get_outer_object();
+                        access_rules_of.into_node_id()
+                    }
+                };
+
+                (access_rules_of, static_roles.methods)
             }
             MethodAuthTemplate::AllowAll => return Ok(ResolvedPermission::AllowAll),
         };
@@ -292,16 +297,20 @@ impl AuthModule {
 
         // Prepare a new auth zone
         let is_barrier = callee.is_barrier();
-        let is_transaction_processor = callee.is_transaction_processor();
-        let (virtual_resources, virtual_non_fungibles) = if is_transaction_processor {
-            let auth_module = &api.kernel_get_system().modules.auth;
-            (
-                auth_module.params.virtual_resources.clone(),
-                auth_module.params.initial_proofs.clone(),
-            )
-        } else {
-            (BTreeSet::new(), BTreeSet::new())
-        };
+        // TODO: Remove special casing use of transaction processor and just have virtual resources
+        // stored in root call frame
+        let is_transaction_processor_blueprint = callee.is_transaction_processor_blueprint();
+        let is_at_root = api.kernel_get_current_depth() == 0;
+        let (virtual_resources, virtual_non_fungibles) =
+            if is_transaction_processor_blueprint && is_at_root {
+                let auth_module = &api.kernel_get_system().modules.auth;
+                (
+                    auth_module.params.virtual_resources.clone(),
+                    auth_module.params.initial_proofs.clone(),
+                )
+            } else {
+                (BTreeSet::new(), BTreeSet::new())
+            };
         let parent = api
             .kernel_get_system()
             .modules

@@ -73,7 +73,7 @@ impl OneResourcePoolBlueprint {
             ),
             api,
         )?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
         let object_id = {
             let vault = Vault::create(resource_address, api)?;
             let substate = OneResourcePoolSubstate {

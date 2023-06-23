@@ -92,6 +92,9 @@ pub enum InstructionIdent {
     SetComponentRoyalty,
     LockComponentRoyalty,
     ClaimComponentRoyalties,
+    SetOwnerRole,
+    LockOwnerRole,
+    SetAndLockOwnerRole,
     SetRole,
     LockRole,
     SetAndLockRole,
@@ -189,6 +192,9 @@ impl InstructionIdent {
             "SET_COMPONENT_ROYALTY" => InstructionIdent::SetComponentRoyalty,
             "LOCK_COMPONENT_ROYALTY" => InstructionIdent::LockComponentRoyalty,
             "CLAIM_COMPONENT_ROYALTIES" => InstructionIdent::ClaimComponentRoyalties,
+            "SET_OWNER_ROLE" => InstructionIdent::SetOwnerRole,
+            "LOCK_OWNER_ROLE" => InstructionIdent::LockOwnerRole,
+            "SET_AND_LOCK_OWNER_ROLE" => InstructionIdent::SetAndLockOwnerRole,
             "SET_ROLE" => InstructionIdent::SetRole,
             "LOCK_ROLE" => InstructionIdent::LockRole,
             "SET_AND_LOCK_ROLE" => InstructionIdent::SetAndLockRole,
@@ -686,6 +692,18 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::ClaimComponentRoyalties => Instruction::ClaimComponentRoyalties {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::SetOwnerRole => Instruction::SetOwnerRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::LockOwnerRole => Instruction::LockOwnerRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::SetAndLockOwnerRole => Instruction::SetAndLockOwnerRole {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

@@ -8,11 +8,11 @@ pub struct LoanDue {
 #[blueprint]
 mod basic_flash_loan {
     enable_package_royalties! {
-        instantiate_default => Xrd(5.into()),
-        available_liquidity => Free,
-        add_liquidity => Free,
-        repay_loan => Free,
-        take_loan => Xrd(2.into()),
+        instantiate_default => Xrd(5.into());
+        available_liquidity => Free;
+        add_liquidity => Free;
+        repay_loan => Free;
+        take_loan => Xrd(2.into());
     }
 
     struct BasicFlashLoan {

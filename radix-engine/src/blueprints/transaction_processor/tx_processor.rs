@@ -23,7 +23,6 @@ use transaction::validation::*;
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct TransactionProcessorRunInput {
-    pub transaction_hash: Hash,
     pub manifest_encoded_instructions: Vec<u8>,
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
@@ -33,7 +32,6 @@ pub struct TransactionProcessorRunInput {
 // This needs to match the above, but is easily encodable to avoid cloning from the transaction payload to encode
 #[derive(Debug, Eq, PartialEq, ScryptoEncode)]
 pub struct TransactionProcessorRunInputEfficientEncodable<'a> {
-    pub transaction_hash: &'a Hash,
     pub manifest_encoded_instructions: &'a [u8],
     pub global_address_reservations: Vec<GlobalAddressReservation>,
     pub references: &'a IndexSet<Reference>,
@@ -121,9 +119,15 @@ impl TransactionProcessorBlueprint {
             ),
         )?;
         let worktop = Worktop(Own(worktop_node_id));
-        let instructions =
-            manifest_decode::<Vec<InstructionV1>>(&input.manifest_encoded_instructions)
-                .expect("Instructions could not be decoded");
+        let instructions = manifest_decode::<Vec<InstructionV1>>(
+            &input.manifest_encoded_instructions,
+        )
+        .map_err(|e| {
+            // This error should never occur if being called from root since this is constructed
+            // by the transaction executor. This error is more to protect against application
+            // space calling this function if/when possible
+            RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+        })?;
         let mut processor =
             TransactionProcessor::new(input.blobs, input.global_address_reservations);
         let mut outputs = Vec::new();
