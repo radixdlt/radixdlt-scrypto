@@ -668,37 +668,37 @@ impl AccessControllerNativePackage {
             // rule be transient
             let access_rules = [
                 (
-                    ResourceMethodAuthKey::Mint,
+                    ResourceAction::Mint,
                     (
                         rule!(require(global_component_caller_badge.clone())),
                         AccessRule::DenyAll,
                     ),
                 ),
                 (
-                    ResourceMethodAuthKey::Burn,
+                    ResourceAction::Burn,
                     (AccessRule::AllowAll, AccessRule::DenyAll),
                 ),
                 (
-                    ResourceMethodAuthKey::Withdraw,
+                    ResourceAction::Withdraw,
                     (AccessRule::DenyAll, AccessRule::DenyAll),
                 ),
                 (
-                    ResourceMethodAuthKey::Deposit,
+                    ResourceAction::Deposit,
                     (AccessRule::AllowAll, AccessRule::DenyAll),
                 ),
                 (
-                    ResourceMethodAuthKey::UpdateMetadata,
+                    ResourceAction::UpdateMetadata,
                     (
                         rule!(require(global_component_caller_badge.clone())),
                         rule!(require(global_component_caller_badge.clone())),
                     ),
                 ),
                 (
-                    ResourceMethodAuthKey::Recall,
+                    ResourceAction::Recall,
                     (AccessRule::DenyAll, AccessRule::DenyAll),
                 ),
                 (
-                    ResourceMethodAuthKey::UpdateNonFungibleData,
+                    ResourceAction::UpdateNonFungibleData,
                     (AccessRule::DenyAll, AccessRule::DenyAll),
                 ),
             ];
@@ -1414,19 +1414,19 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let attached = AttachedAccessRules(receiver.clone());
-    attached.update_role_rules(
+    attached.set_role(
         ObjectModuleId::Main,
         RoleKey::new("primary"),
         rule_set.primary_role.clone(),
         api,
     )?;
-    attached.update_role_rules(
+    attached.set_role(
         ObjectModuleId::Main,
         RoleKey::new("recovery"),
         rule_set.recovery_role.clone(),
         api,
     )?;
-    attached.update_role_rules(
+    attached.set_role(
         ObjectModuleId::Main,
         RoleKey::new("confirmation"),
         rule_set.confirmation_role.clone(),

@@ -17,7 +17,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use scrypto::prelude::Mutability::LOCKED;
-use scrypto::prelude::{AccessRule, FromPublicKey, ResourceMethodAuthKey};
+use scrypto::prelude::{AccessRule, FromPublicKey, ResourceAction};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -283,9 +283,9 @@ fn vault_non_fungible_recall_emits_correct_events() {
     let (_, _, account) = test_runner.new_account(false);
     let (recallable_resource_address, non_fungible_local_id) = {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Recall, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Recall, (rule!(allow_all), LOCKED));
 
         let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
 
@@ -390,7 +390,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             false,
             18,
             Default::default(),
-            BTreeMap::<ResourceMethodAuthKey, (AccessRule, AccessRule)>::new(),
+            BTreeMap::<ResourceAction, (AccessRule, AccessRule)>::new(),
             Some(1.into()),
         )
         .call_method(
@@ -447,10 +447,10 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Burn, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Mint, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Burn, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
@@ -526,10 +526,10 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Burn, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Mint, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Burn, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
@@ -1455,13 +1455,13 @@ fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -
 
 fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress {
     let access_rules = [
-        ResourceMethodAuthKey::Burn,
-        ResourceMethodAuthKey::Deposit,
-        ResourceMethodAuthKey::Withdraw,
-        ResourceMethodAuthKey::Mint,
-        ResourceMethodAuthKey::Burn,
-        ResourceMethodAuthKey::UpdateMetadata,
-        ResourceMethodAuthKey::UpdateNonFungibleData,
+        ResourceAction::Burn,
+        ResourceAction::Deposit,
+        ResourceAction::Withdraw,
+        ResourceAction::Mint,
+        ResourceAction::Burn,
+        ResourceAction::UpdateMetadata,
+        ResourceAction::UpdateNonFungibleData,
     ]
     .into_iter()
     .map(|method| (method, (AccessRule::AllowAll, AccessRule::AllowAll)))

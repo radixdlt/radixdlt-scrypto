@@ -4,10 +4,10 @@ use crate::runtime::*;
 use crate::*;
 use radix_engine_common::types::RoyaltyAmount;
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyInput,
-    COMPONENT_ROYALTY_ADMIN_ROLE, COMPONENT_ROYALTY_BLUEPRINT,
+    ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentRoyaltyCreateInput,
+    ComponentSetRoyaltyInput, COMPONENT_ROYALTY_ADMIN_ROLE, COMPONENT_ROYALTY_BLUEPRINT,
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_CREATE_IDENT,
-    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -15,7 +15,7 @@ use radix_engine_interface::blueprints::resource::Bucket;
 use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::RoyaltyConfig;
-use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto::modules::Attachable;
@@ -56,10 +56,22 @@ impl Royalty {
         Self(ModuleHandle::Own(royalty))
     }
 
-    pub fn set_royalty(&self, method: String, amount: RoyaltyAmount) {
+    pub fn set_royalty<M: ToString>(&self, method: M, amount: RoyaltyAmount) {
         self.call_ignore_rtn(
             COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-            &ComponentSetRoyaltyInput { method, amount },
+            &ComponentSetRoyaltyInput {
+                method: method.to_string(),
+                amount,
+            },
+        );
+    }
+
+    pub fn lock_royalty<M: ToString>(&self, method: M) {
+        self.call_ignore_rtn(
+            COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+            &ComponentLockRoyaltyInput {
+                method: method.to_string(),
+            },
         );
     }
 

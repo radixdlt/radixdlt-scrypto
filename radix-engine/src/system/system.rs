@@ -177,7 +177,7 @@ where
                 )
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                        PayloadValidationAgainstSchemaError::SchemaValidationError(
+                        PayloadValidationAgainstSchemaError::PayloadValidationError(
                             err.error_message(&schema),
                         ),
                     ))
@@ -208,7 +208,7 @@ where
                 )
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                        PayloadValidationAgainstSchemaError::SchemaValidationError(
+                        PayloadValidationAgainstSchemaError::PayloadValidationError(
                             err.error_message(&instance_schema.schema),
                         ),
                     ))

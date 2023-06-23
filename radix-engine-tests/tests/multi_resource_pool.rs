@@ -5,7 +5,6 @@ use radix_engine::{
     types::*,
 };
 use radix_engine_interface::blueprints::pool::*;
-use scrypto::prelude::*;
 use scrypto_unit::{is_auth_error, TestRunner};
 use transaction::prelude::{ManifestBuilder, TransactionManifestV1};
 

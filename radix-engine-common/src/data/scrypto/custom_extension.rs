@@ -1,7 +1,4 @@
-use super::*;
-use crate::*;
-use sbor::rust::prelude::*;
-use sbor::*;
+use crate::internal_prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct ScryptoCustomExtension {}
