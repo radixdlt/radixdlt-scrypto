@@ -1,18 +1,18 @@
-AllocateNodeId,11236
-CloseSubstate,56900
-CreateNode,188528
-DropNode,187892
-EmitEvent,110000
-GenerateRuid,300
-Invoke,75080
-LockFee,100
-OpenSubstate,8128420
-QueryActor,3000
-QueryAuthZone,400
-ReadSubstate,1095674
-RunNativeCode,4400190
-RunWasmCode,1250000
-TxBaseCost,50000
-TxPayloadCost,2570
-TxSignatureVerification,100000
-WriteSubstate,177989
+AllocateNodeId                ,     11236
+CloseSubstate                 ,     56900
+CreateNode                    ,    188528
+DropNode                      ,    187892
+EmitEvent                     ,    110000
+GenerateRuid                  ,       300
+Invoke                        ,     75080
+LockFee                       ,       100
+OpenSubstate                  ,   8128420
+QueryActor                    ,      3000
+QueryAuthZone                 ,       400
+ReadSubstate                  ,   1095674
+RunNativeCode                 ,   4400190
+RunWasmCode                   ,   1250000
+TxBaseCost                    ,     50000
+TxPayloadCost                 ,      2570
+TxSignatureVerification       ,    100000
+WriteSubstate                 ,    177989

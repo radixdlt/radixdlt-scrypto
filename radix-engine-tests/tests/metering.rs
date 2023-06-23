@@ -73,8 +73,8 @@ pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
     let mut breakdown = BTreeMap::<String, u32>::new();
     content.split("\n").filter(|x| x.len() > 0).for_each(|x| {
         let mut tokens = x.split(",");
-        let entry = tokens.next().unwrap();
-        let cost = tokens.next().unwrap();
+        let entry = tokens.next().unwrap().trim();
+        let cost = tokens.next().unwrap().trim();
         breakdown.insert(entry.to_string(), u32::from_str(cost).unwrap());
     });
     breakdown
@@ -90,10 +90,7 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
 
     let mut buffer = String::new();
     for (k, v) in breakdown {
-        buffer.push_str(k.as_str());
-        buffer.push_str(",");
-        buffer.push_str(v.to_string().as_str());
-        buffer.push_str("\n");
+        buffer.push_str(format!("{:-30},{:-10}\n", k, v).as_str());
     }
 
     let mut f = File::create(file).unwrap();

@@ -13,9 +13,10 @@ lazy_static! {
             .filter(|x| x.len() > 0)
             .for_each(|x| {
                 let mut tokens = x.split(",");
-                let package_address = PackageAddress::try_from_hex(tokens.next().unwrap()).unwrap();
-                let export_name = tokens.next().unwrap();
-                let cost = u32::from_str(tokens.next().unwrap()).unwrap();
+                let package_address =
+                    PackageAddress::try_from_hex(tokens.next().unwrap().trim()).unwrap();
+                let export_name = tokens.next().unwrap().trim();
+                let cost = u32::from_str(tokens.next().unwrap().trim()).unwrap();
                 costs
                     .entry(package_address)
                     .or_default()
