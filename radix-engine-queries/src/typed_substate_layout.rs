@@ -1,4 +1,3 @@
-use radix_engine::blueprints::transaction_tracker::TransactionTrackerSubstate;
 use radix_engine::types::*;
 use sbor::rust::prelude::*;
 
@@ -11,11 +10,12 @@ pub use radix_engine::blueprints::pool::multi_resource_pool::*;
 pub use radix_engine::blueprints::pool::one_resource_pool::*;
 pub use radix_engine::blueprints::pool::two_resource_pool::*;
 pub use radix_engine::blueprints::resource::*;
+pub use radix_engine::blueprints::transaction_tracker::*;
 pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
-use radix_engine::system::system::KeyValueEntrySubstate;
+pub use radix_engine::system::system::KeyValueEntrySubstate;
 pub use radix_engine_interface::api::node_modules::royalty::*;
 
 //=========================================================================
@@ -455,7 +455,7 @@ pub enum TypedMainModuleSubstateValue {
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
     TransactionTracker(TypedTransactionTrackerFieldValue),
-    TransactionTrackerCollectionEntry(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
+    TransactionTrackerCollectionEntry(KeyValueEntrySubstate<TransactionStatusSubstateContents>),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStore(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
