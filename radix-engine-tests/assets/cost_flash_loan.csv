@@ -6,10 +6,10 @@ EmitEvent,26100
 GenerateRuid,300
 Invoke,75080
 LockFee,100
-OpenSubstate,8124838
+OpenSubstate,8128420
 QueryActor,3000
 QueryAuthZone,400
-ReadSubstate,1094324
+ReadSubstate,1095674
 RunWasmCode,1250000
 TxBaseCost,50000
 TxPayloadCost,2570

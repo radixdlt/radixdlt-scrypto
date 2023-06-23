@@ -19,6 +19,7 @@ use crate::kernel::call_frame::{
 };
 use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
+use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::limits::LimitingError;
@@ -423,6 +424,8 @@ pub enum ApplicationError {
     AccessRulesError(AccessRulesError),
 
     MetadataError(MetadataPanicError),
+
+    ComponentRoyaltyError(ComponentRoyaltyError),
 
     //===================
     // Blueprint errors

@@ -5,9 +5,9 @@ DropNode,47062
 EmitEvent,7100
 Invoke,17310
 LockFee,100
-OpenSubstate,482499
+OpenSubstate,481544
 QueryActor,800
-ReadSubstate,257910
+ReadSubstate,258720
 TxBaseCost,50000
 TxPayloadCost,1345
 TxSignatureVerification,100000

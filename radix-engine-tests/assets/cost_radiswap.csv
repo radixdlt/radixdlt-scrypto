@@ -5,9 +5,9 @@ DropNode,104856
 EmitEvent,19540
 Invoke,41560
 LockFee,100
-OpenSubstate,4098136
+OpenSubstate,4101366
 QueryActor,1300
-ReadSubstate,624358
+ReadSubstate,626248
 RunWasmCode,650000
 TxBaseCost,50000
 TxPayloadCost,1765

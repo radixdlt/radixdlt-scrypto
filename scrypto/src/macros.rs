@@ -452,10 +452,10 @@ macro_rules! enable_method_auth {
 
             let static_roles = scrypto::blueprints::package::StaticRoles {
                 methods,
-                roles,
+                roles: scrypto::blueprints::package::RoleSpecification::Normal(roles),
             };
 
-            scrypto::blueprints::package::MethodAuthTemplate::Static(static_roles)
+            scrypto::blueprints::package::MethodAuthTemplate::StaticRoles(static_roles)
         }
     );
 
@@ -470,10 +470,10 @@ macro_rules! enable_method_auth {
 
             let roles = scrypto::blueprints::package::StaticRoles {
                 methods,
-                roles: BTreeMap::new(),
+                roles: scrypto::blueprints::package::RoleSpecification::Normal(BTreeMap::new()),
             };
 
-            scrypto::blueprints::package::MethodAuthTemplate::Static(roles)
+            scrypto::blueprints::package::MethodAuthTemplate::StaticRoles(roles)
         }
     );
 }
@@ -483,27 +483,25 @@ macro_rules! enable_function_auth {
     (
         $($function:ident => $rule:expr;)*
     ) => (
-        fn function_auth() -> BTreeMap<String, AccessRule> {
+        fn function_auth() -> scrypto::blueprints::package::FunctionAuth {
             let rules = Functions::<AccessRule> {
                 $( $function: $rule, )*
             };
 
-            rules.to_mapping().into_iter().collect()
+            scrypto::blueprints::package::FunctionAuth::AccessRules(rules.to_mapping().into_iter().collect())
         }
     );
 }
 
 #[macro_export]
 macro_rules! enable_package_royalties {
-    ($($function:ident => $royalty:expr,)*) => (
-        fn package_royalty_config() -> RoyaltyConfig {
+    ($($function:ident => $royalty:expr;)*) => (
+        fn package_royalty_config() -> PackageRoyaltyConfig {
             let royalties = Fns::<RoyaltyAmount> {
                 $( $function: $royalty, )*
             };
 
-            RoyaltyConfig {
-                rules: royalties.to_mapping().into_iter().collect()
-            }
+            PackageRoyaltyConfig::Enabled(royalties.to_mapping().into_iter().collect())
         }
     );
 }
@@ -550,16 +548,23 @@ macro_rules! roles {
 }
 
 #[macro_export]
+macro_rules! internal_royalty_entry {
+    ($royalty:expr) => {{
+        ($royalty.into(), false)
+    }};
+    ($royalty:expr $(, updatable)?) => {{
+        ($royalty.into(), true)
+    }};
+}
+
+#[macro_export]
 macro_rules! royalty_config {
-    ($($method:ident => $royalty:expr),*) => ({
-        Methods::<RoyaltyAmount> {
+    ($($method:ident => $royalty:expr $(, $updatable:ident)? ;)*) => ({
+        Methods::<(RoyaltyAmount, bool)> {
             $(
-                $method: $royalty.into(),
+                $method: internal_royalty_entry!($royalty $(, $updatable)?),
             )*
         }
-    });
-    ($($method:ident => $royalty:expr,)*) => ({
-        royalty_config!($($method => $royalty),*)
     });
 }
 
@@ -617,7 +622,7 @@ macro_rules! metadata {
 }
 
 #[macro_export]
-macro_rules! royalties {
+macro_rules! component_royalties {
     {
         roles {
             $($role:ident => $rule:expr $(, $updatable:ident)? ;)*

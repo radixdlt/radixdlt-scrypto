@@ -7,7 +7,7 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod component_module {
-    use crate::RoyaltyConfig;
+    use crate::ComponentRoyaltyConfig;
     use std::collections::BTreeMap;
 
     struct ComponentModule {}
@@ -32,7 +32,7 @@ mod component_module {
                     COMPONENT_ROYALTY_BLUEPRINT,
                     COMPONENT_ROYALTY_CREATE_IDENT,
                     scrypto_encode(&ComponentRoyaltyCreateInput {
-                        royalty_config: RoyaltyConfig::default(),
+                        royalty_config: ComponentRoyaltyConfig::default(),
                     })
                     .unwrap(),
                 )

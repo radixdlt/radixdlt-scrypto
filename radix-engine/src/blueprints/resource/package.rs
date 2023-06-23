@@ -9,7 +9,8 @@ use crate::{event_schema, method_auth_template, roles_template};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+    PackageDefinition, RoleSpecification, StaticRoles,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -348,14 +349,10 @@ impl ResourceManagerNativePackage {
                         virtual_lazy_load_functions: btreemap!(),
                     },
                 },
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                    ),
-                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
                         roles {
                             MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
                             MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
@@ -682,15 +679,10 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                    ),
-                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
                         roles {
                             MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
                             MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
@@ -943,23 +935,25 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
-
-                    method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
-                        VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
-                        VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
-                        VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
-                        VAULT_FREEZE_IDENT => [FREEZER_ROLE];
-                        VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
-                        VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
-                        FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAWER_ROLE];
-                        VAULT_RECALL_IDENT => [RECALLER_ROLE];
-                        VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
-                        VAULT_BURN_IDENT => [BURNER_ROLE];
-                        FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
-                        FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                        roles: RoleSpecification::UseOuter,
+                        methods: method_auth_template! {
+                            VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                            VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                            VAULT_FREEZE_IDENT => [FREEZER_ROLE];
+                            VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
+                            VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                            FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAWER_ROLE];
+                            VAULT_RECALL_IDENT => [RECALLER_ROLE];
+                            VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
+                            VAULT_BURN_IDENT => [BURNER_ROLE];
+                            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
+                        },
                     }),
                 },
             }
@@ -1231,28 +1225,31 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
-                        VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
-                        NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
-                        VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
-                        VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
-                        NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                        roles: RoleSpecification::UseOuter,
+                        methods: method_auth_template! {
+                            VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
+                            VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
-                        VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
-                        NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAWER_ROLE];
-                        VAULT_RECALL_IDENT => [RECALLER_ROLE];
-                        VAULT_FREEZE_IDENT => [FREEZER_ROLE];
-                        VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
-                        NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALLER_ROLE];
-                        VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
-                        VAULT_BURN_IDENT => [BURNER_ROLE];
-                        NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURNER_ROLE];
+                            VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAWER_ROLE];
+                            VAULT_RECALL_IDENT => [RECALLER_ROLE];
+                            VAULT_FREEZE_IDENT => [FREEZER_ROLE];
+                            VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
+                            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALLER_ROLE];
+                            VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
+                            VAULT_BURN_IDENT => [BURNER_ROLE];
+                            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURNER_ROLE];
 
-                        NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
-                        NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
+                        },
                     }),
                 },
             }
@@ -1421,20 +1418,23 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
-                        BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
-                        BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
-                        BUCKET_CREATE_PROOF_IDENT => MethodAccessibility::Public;
-                        BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
-                        BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
-                        BUCKET_PUT_IDENT => MethodAccessibility::Public;
-                        BUCKET_TAKE_IDENT => MethodAccessibility::Public;
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                        methods: method_auth_template! {
+                            BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                            BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                            BUCKET_PUT_IDENT => MethodAccessibility::Public;
+                            BUCKET_TAKE_IDENT => MethodAccessibility::Public;
 
-                        FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
-                        FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
+                        },
+                        roles: RoleSpecification::UseOuter,
                     }),
                 },
             }
@@ -1634,23 +1634,26 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::StaticUseOuterRoles(method_auth_template! {
-                        BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
-                        BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
-                        BUCKET_CREATE_PROOF_IDENT => MethodAccessibility::Public;
-                        BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
-                        BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
-                        BUCKET_PUT_IDENT => MethodAccessibility::Public;
-                        BUCKET_TAKE_IDENT => MethodAccessibility::Public;
-                        NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
-                        NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
-                        NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                        methods: method_auth_template! {
+                            BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                            BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                            BUCKET_PUT_IDENT => MethodAccessibility::Public;
+                            BUCKET_TAKE_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
-                        NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
-                        NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
+                        },
+                        roles: RoleSpecification::UseOuter,
                     }),
                 },
             }
@@ -1745,11 +1748,9 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
@@ -1860,11 +1861,9 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
@@ -2019,11 +2018,9 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
@@ -2196,9 +2193,9 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
+                    function_auth: FunctionAuth::AllowAll,
                     method_auth: MethodAuthTemplate::AllowAll,
                 },
             }

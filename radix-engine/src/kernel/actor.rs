@@ -121,7 +121,7 @@ impl Actor {
         }
     }
 
-    pub fn is_transaction_processor(&self) -> bool {
+    pub fn is_transaction_processor_blueprint(&self) -> bool {
         match self {
             Actor::Root => false,
             Actor::Method(MethodActor {
