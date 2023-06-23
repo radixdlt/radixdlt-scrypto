@@ -70,15 +70,15 @@ fn test_basic_transfer() {
         + 1417 /* CreateNode */
         + 5328 /* DropLock */
         + 1365 /* DropNode */
-        + 736166 /* Invoke */
-        + 42251 /* LockSubstate */
+        + 735425 /* Invoke */
+        + 327188 /* LockSubstate */
         + 8120 /* ReadSubstate */
         + 57500 /* RunNative */
-        + 7500 /* RunSystem */
+        + 75000 /* RunSystem */
         + 50000 /* TxBaseCost */
         + 1345 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 856 /* WriteSubstate */
+        + 697 /* WriteSubstate */
     );
 }
 
@@ -199,21 +199,21 @@ fn test_radiswap() {
         + 3281 /* CreateNode */
         + 12617 /* DropLock */
         + 3045 /* DropNode */
-        + 3109581 /* Invoke */
-        + 2130099 /* LockSubstate */
+        + 3107898 /* Invoke */
+        + 3713214 /* LockSubstate */
         + 19152 /* ReadSubstate */
         + 122500 /* RunNative */
-        + 20000 /* RunSystem */
+        + 200000 /* RunSystem */
         + 592630 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1765 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 1885 /* WriteSubstate */
+        + 2056 /* WriteSubstate */
     );
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.6168625"),
+        dec!("0.7930228"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -311,16 +311,16 @@ fn test_flash_loan() {
         + 5777 /* CreateNode */
         + 21053 /* DropLock */
         + 5565 /* DropNode */
-        + 4095003 /* Invoke */
-        + 4517916 /* LockSubstate */
+        + 4091947 /* Invoke */
+        + 7600747 /* LockSubstate */
         + 32536 /* ReadSubstate */
         + 192500 /* RunNative */
-        + 40000 /* RunSystem */
+        + 287500 /* RunSystem */
         + 1201705 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2570 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 4302 /* WriteSubstate */
+        + 4967 /* WriteSubstate */
     );
 }
 

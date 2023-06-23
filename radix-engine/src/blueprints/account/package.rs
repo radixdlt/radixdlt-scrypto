@@ -90,20 +90,6 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: None,
-                input: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<AccountCreateLocalInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<AccountCreateLocalOutput>(),
-                ),
-                export: ACCOUNT_CREATE_LOCAL_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
             ACCOUNT_SECURIFY_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -509,17 +495,6 @@ impl AccountNativePackage {
                 })?;
 
                 let rtn = AccountBlueprint::create(api)?;
-
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_CREATE_LOCAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                let _input: AccountCreateLocalInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-
-                let rtn = AccountBlueprint::create_local(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

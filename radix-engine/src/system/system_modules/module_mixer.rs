@@ -27,6 +27,7 @@ use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
 
 use super::costing::CostingReason;
+use super::limits::TransactionLimitsError;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -154,6 +155,11 @@ impl SystemModuleMixer {
                 max_substate_write_count: execution_config.max_substate_writes_per_transaction,
                 max_substate_size: execution_config.max_substate_size,
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
+                max_number_of_logs: execution_config.max_number_of_logs,
+                max_number_of_events: execution_config.max_number_of_events,
+                max_event_size: execution_config.max_event_size,
+                max_log_size: execution_config.max_log_size,
+                max_panic_message_size: execution_config.max_panic_message_size,
             }),
             execution_trace: ExecutionTraceModule::new(execution_config.max_execution_trace_depth),
             transaction_runtime: TransactionRuntimeModule {
@@ -411,22 +417,85 @@ impl SystemModuleMixer {
     // - Kernel uses the `SystemModule<SystemConfig<V>>` trait above;
     // - System uses methods defined below (TODO: add a trait?)
 
-    pub fn add_log(&mut self, level: Level, message: String) {
+    pub fn add_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::LIMITS) {
+            if self.transaction_runtime.logs.len() >= self.limits.config().max_number_of_logs {
+                return Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::TransactionLimitsError(TransactionLimitsError::TooManyLogs),
+                ));
+            }
+            if message.len() > self.limits.config().max_log_size {
+                return Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::TransactionLimitsError(
+                        TransactionLimitsError::LogSizeTooLarge {
+                            actual: message.len(),
+                            max: self.limits.config().max_log_size,
+                        },
+                    ),
+                ));
+            }
+        }
+
         if self
             .enabled_modules
             .contains(EnabledModules::TRANSACTION_RUNTIME)
         {
-            self.transaction_runtime.add_log(level, message)
+            self.transaction_runtime.add_log(level, message);
         }
+
+        Ok(())
     }
 
-    pub fn add_event(&mut self, identifier: EventTypeIdentifier, data: Vec<u8>) {
+    pub fn add_event(
+        &mut self,
+        identifier: EventTypeIdentifier,
+        data: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::LIMITS) {
+            if self.transaction_runtime.events.len() >= self.limits.config().max_number_of_events {
+                return Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::TransactionLimitsError(
+                        TransactionLimitsError::TooManyEvents,
+                    ),
+                ));
+            }
+            if data.len() > self.limits.config().max_event_size {
+                return Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::TransactionLimitsError(
+                        TransactionLimitsError::EventSizeTooLarge {
+                            actual: data.len(),
+                            max: self.limits.config().max_event_size,
+                        },
+                    ),
+                ));
+            }
+        }
+
         if self
             .enabled_modules
             .contains(EnabledModules::TRANSACTION_RUNTIME)
         {
             self.transaction_runtime.add_event(identifier, data)
         }
+
+        Ok(())
+    }
+
+    pub fn set_panic_message(&mut self, message: String) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::LIMITS) {
+            if message.len() > self.limits.config().max_panic_message_size {
+                return Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::TransactionLimitsError(
+                        TransactionLimitsError::PanicMessageSizeTooLarge {
+                            actual: message.len(),
+                            max: self.limits.config().max_panic_message_size,
+                        },
+                    ),
+                ));
+            }
+        }
+
+        Ok(())
     }
 
     pub fn add_replacement(
