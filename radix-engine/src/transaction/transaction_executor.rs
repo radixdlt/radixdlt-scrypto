@@ -832,7 +832,7 @@ where
             TransactionResult::Commit(commit) => {
                 println!("{:-^80}", "Cost Breakdown");
                 for (k, v) in &commit.fee_summary.execution_cost_breakdown {
-                    println!("        + {} /* {} */", v, k);
+                    println!("{:<30}: {:>10}", k, v);
                 }
 
                 println!("{:-^80}", "Cost Totals");
