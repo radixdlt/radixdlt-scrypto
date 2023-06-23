@@ -308,7 +308,7 @@ impl ConsensusManagerBlueprint {
         let metadata = Metadata::create_with_data(
             metadata_init! {
                 "name" => "Consensus Manager".to_owned(), locked;
-                "description" => "".to_owned(), locked;
+                "description" => "A component that keeps track of various consensus related concepts such as the epoch, round, current validator set, and so on.".to_owned(), locked;
             },
             api,
         )?;

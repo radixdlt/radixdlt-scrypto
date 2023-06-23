@@ -8,7 +8,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::{metadata_init, metadata_init_set_entry, rule};
+use radix_engine_interface::{metadata_init, rule};
 use rand::Rng;
 use utils::ContextualDisplay;
 

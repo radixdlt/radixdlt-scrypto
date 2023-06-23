@@ -96,7 +96,7 @@ mod genesis_helper {
                 },
                 init {
                     "name" => "Genesis Helper".to_owned(), // TODO: Lock
-                    "description" => "".to_owned() // TODO: Lock
+                    "description" => "A component with various utility and helper methods used in the creation of the Babylon Genesis.".to_owned() // TODO: Lock
                 }
             })
             .globalize()
