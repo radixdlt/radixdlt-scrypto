@@ -25,9 +25,9 @@ fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
 }
 
 #[test]
-fn test_log_message() {
+fn test_emit_log() {
     // Arrange
-    let function_name = "log_message";
+    let function_name = "emit_log";
     let message = "Hello";
 
     // Act

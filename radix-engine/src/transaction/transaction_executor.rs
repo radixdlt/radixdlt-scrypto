@@ -55,6 +55,11 @@ pub struct ExecutionConfig {
     pub max_substate_size: usize,
     pub max_invoke_input_size: usize,
     pub trace_costing: bool,
+    pub max_event_size: usize,
+    pub max_log_size: usize,
+    pub max_panic_message_size: usize,
+    pub max_number_of_logs: usize,
+    pub max_number_of_events: usize,
 }
 
 impl ExecutionConfig {
@@ -74,6 +79,11 @@ impl ExecutionConfig {
             max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
             trace_costing: false,
+            max_event_size: DEFAULT_MAX_EVENT_SIZE,
+            max_log_size: DEFAULT_MAX_LOG_SIZE,
+            max_panic_message_size: DEFAULT_MAX_PANIC_MESSAGE_SIZE,
+            max_number_of_logs: DEFAULT_MAX_NUMBER_OF_LOGS,
+            max_number_of_events: DEFAULT_MAX_NUMBER_OF_EVENTS,
         }
     }
 
@@ -81,6 +91,7 @@ impl ExecutionConfig {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
             max_substate_reads_per_transaction: 50_000,
+            max_number_of_events: 1_000_000,
             ..Self::default()
         }
     }

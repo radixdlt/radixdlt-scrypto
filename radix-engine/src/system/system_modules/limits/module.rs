@@ -34,7 +34,23 @@ pub enum LimitingError {
     /// Returned when function or method invocation payload size exceeds defined limit,
     /// as parameter actual payload size is returned.
     MaxInvokePayloadSizeExceeded(usize),
+
     MaxCallDepthLimitReached,
+
+    LogSizeTooLarge {
+        actual: usize,
+        max: usize,
+    },
+    EventSizeTooLarge {
+        actual: usize,
+        max: usize,
+    },
+    PanicMessageSizeTooLarge {
+        actual: usize,
+        max: usize,
+    },
+    TooManyLogs,
+    TooManyEvents,
 }
 
 /// Representation of data which needs to be limited for each call frame.
@@ -57,6 +73,12 @@ pub struct TransactionLimitsConfig {
     pub max_substate_size: usize,
     /// Maximum Invoke payload size.
     pub max_invoke_payload_size: usize,
+
+    pub max_event_size: usize,
+    pub max_log_size: usize,
+    pub max_panic_message_size: usize,
+    pub max_number_of_logs: usize,
+    pub max_number_of_events: usize,
 }
 
 /// Tracks and verifies transaction limits during transactino execution,
@@ -94,6 +116,10 @@ impl LimitsModule {
             wasm_max_memory: 0,
             invoke_payload_max_size: 0,
         }
+    }
+
+    pub fn config(&self) -> &TransactionLimitsConfig {
+        &self.limits_config
     }
 
     /// Exports metrics to transaction receipt.

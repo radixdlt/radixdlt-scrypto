@@ -204,7 +204,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn log_message(
+    fn emit_log(
         &mut self,
         level: Vec<u8>,
         message: Vec<u8>,

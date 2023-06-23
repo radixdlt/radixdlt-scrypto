@@ -2554,13 +2554,13 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .add_event(event_type_identifier, event_data);
+            .add_event(event_type_identifier, event_data)?;
 
         Ok(())
     }
 
     #[trace_resources]
-    fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
@@ -2568,9 +2568,30 @@ where
                 size: message.len(),
             })?;
 
-        self.api.kernel_get_system().modules.add_log(level, message);
+        self.api
+            .kernel_get_system()
+            .modules
+            .add_log(level, message)?;
 
         Ok(())
+    }
+
+    fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::Panic {
+                size: message.len(),
+            })?;
+
+        self.api
+            .kernel_get_system()
+            .modules
+            .set_panic_message(message.clone())?;
+
+        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+            message,
+        )))
     }
 
     #[trace_resources]
@@ -2603,21 +2624,6 @@ where
                 SystemError::TransactionRuntimeModuleNotEnabled,
             ))
         }
-    }
-
-    // FIXME: update costing for runtime data, such as logs, error messages and events.
-
-    fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(CostingEntry::Panic {
-                size: message.len(),
-            })?;
-
-        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
-            message.to_string(),
-        )))
     }
 }
 

@@ -520,7 +520,7 @@ fn generate_ruid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmR
     runtime.generate_ruid().map(|buffer| buffer.0)
 }
 
-fn log_message(
+fn emit_log(
     mut caller: Caller<'_, HostState>,
     level_ptr: u32,
     level_len: u32,
@@ -532,7 +532,7 @@ fn log_message(
     let level = read_memory(caller.as_context_mut(), memory, level_ptr, level_len)?;
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
 
-    runtime.log_message(level, message)
+    runtime.emit_log(level, message)
 }
 
 fn panic(
@@ -931,7 +931,7 @@ impl WasmiModule {
             },
         );
 
-        let host_log_message = Func::wrap(
+        let host_emit_log = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              level_ptr: u32,
@@ -939,7 +939,7 @@ impl WasmiModule {
              message_ptr: u32,
              message_len: u32|
              -> Result<(), Trap> {
-                log_message(caller, level_ptr, level_len, message_ptr, message_len)
+                emit_log(caller, level_ptr, level_len, message_ptr, message_len)
                     .map_err(|e| e.into())
             },
         );
@@ -1047,7 +1047,7 @@ impl WasmiModule {
         );
         linker_define!(linker, CONSUME_GAS_FUNCTION_NAME, host_consume_gas);
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
-        linker_define!(linker, LOG_MESSAGE_FUNCTION_NAME, host_log_message);
+        linker_define!(linker, EMIT_LOG_FUNCTION_NAME, host_emit_log);
         linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
         linker_define!(
             linker,
