@@ -104,7 +104,7 @@ impl TransactionTrackerNativePackage {
                     function_auth: btreemap!(
                         TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                     ),
-                    method_auth: MethodAuthTemplate::Static(btreemap!()),
+                    method_auth: MethodAuthTemplate::default(),
                 },
             }
         );

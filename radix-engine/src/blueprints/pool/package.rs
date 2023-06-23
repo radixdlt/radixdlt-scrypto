@@ -4,7 +4,7 @@ use super::two_resource_pool::*;
 use crate::errors::*;
 use crate::event_schema;
 use crate::kernel::kernel_api::*;
-use crate::method_auth_template;
+use crate::roles_template;
 use crate::system::system_callback::*;
 use crate::system::system_modules::costing::*;
 use radix_engine_common::data::scrypto::*;
@@ -175,14 +175,19 @@ impl PoolNativePackage {
                     function_auth: btreemap!(
                         ONE_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
-                        // Main Module rules
-                        ONE_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
-                        ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
-                        ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT => MethodAccessibility::Public;
-                        ONE_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
-                        ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
-                        ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                        roles {
+                            POOL_MANAGER_ROLE;
+                        },
+                        methods {
+                            // Main Module rules
+                            ONE_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
+                            ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
+                            ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT => MethodAccessibility::Public;
+                            ONE_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                            ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                            ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                        }
                     }),
                 },
             }
@@ -338,14 +343,19 @@ impl PoolNativePackage {
                     function_auth: btreemap!(
                         TWO_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
-                        // Main Module rules
-                        TWO_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
-                        TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
-                        TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodAccessibility::Public;
-                        TWO_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
-                        TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
-                        TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                        roles {
+                            POOL_MANAGER_ROLE;
+                        },
+                        methods {
+                            // Main Module rules
+                            TWO_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
+                            TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
+                            TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodAccessibility::Public;
+                            TWO_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                            TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                            TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                        }
                     }),
                 },
             }
@@ -499,13 +509,18 @@ impl PoolNativePackage {
                     function_auth: btreemap!(
                         MULTI_RESOURCE_POOL_INSTANTIATE_IDENT.to_string() => rule!(allow_all),
                     ),
-                    method_auth: MethodAuthTemplate::Static(method_auth_template! {
-                        MULTI_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
-                        MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
-                        MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodAccessibility::Public;
-                        MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
-                        MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
-                        MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                        roles {
+                            POOL_MANAGER_ROLE;
+                        },
+                        methods {
+                            MULTI_RESOURCE_POOL_REDEEM_IDENT => MethodAccessibility::Public;
+                            MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT => MethodAccessibility::Public;
+                            MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT => MethodAccessibility::Public;
+                            MULTI_RESOURCE_POOL_CONTRIBUTE_IDENT => [POOL_MANAGER_ROLE];
+                            MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT => [POOL_MANAGER_ROLE];
+                            MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT => [POOL_MANAGER_ROLE];
+                        }
                     }),
                 },
             }

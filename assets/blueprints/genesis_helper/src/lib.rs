@@ -60,7 +60,7 @@ mod genesis_helper {
 
     enable_method_auth! {
         roles {
-            system
+            system => updaters: system;
         },
         methods {
             ingest_data_chunk => system;
@@ -86,7 +86,7 @@ mod genesis_helper {
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
             .roles(roles! {
-                system => rule!(require(system_role.clone())), updaters: system;
+                system => rule!(require(system_role.clone())), updatable;
             })
             .with_address(address_reservation)
             .globalize()
