@@ -83,10 +83,9 @@ lazy_static! {
         known_enum!(
             m,
             enum AccessRuleNode {
-                Authority = 0;
-                ProofRule = 1;
-                AnyOf = 2;
-                AllOf = 3;
+                ProofRule = 0;
+                AnyOf = 1;
+                AllOf = 2;
             }
         );
 

@@ -12,7 +12,6 @@ mod execute_manifest {
         "package_rdx1pkgxxxxxxxxxtxnpxrxxxxxxxxx002962227406xxxxxxxxxtxnpxr",
         TransactionProcessor {
             fn run(
-                transaction_hash: Hash,
                 manifest_encoded_instructions: Vec<u8>,
                 global_address_reservations: Vec<GlobalAddressReservation>,
                 references: Vec<Reference>,
@@ -29,7 +28,6 @@ mod execute_manifest {
             references: Vec<Reference>,
         ) {
             Blueprint::<TransactionProcessor>::run(
-                Hash([0u8; 32]),
                 manifest_encoded_instructions,
                 vec![],
                 references,
