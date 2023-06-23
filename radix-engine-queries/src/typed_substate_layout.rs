@@ -413,7 +413,7 @@ pub enum TypedAccessRulesModule {
 
 #[derive(Debug, Clone)]
 pub enum TypedRoyaltyModuleFieldValue {
-    ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
+    ComponentRoyaltyAccumulator(ComponentRoyaltySubstate),
 }
 
 /// Contains all the main module substate values, by each known partition layout
@@ -426,7 +426,7 @@ pub enum TypedMainModuleSubstateValue {
     PackageSchema(KeyValueEntrySubstate<ScryptoSchema>),
     PackageCode(KeyValueEntrySubstate<PackageCodeSubstate>),
     PackageAuthTemplate(KeyValueEntrySubstate<AuthConfig>),
-    PackageRoyalty(KeyValueEntrySubstate<RoyaltyConfig>),
+    PackageRoyalty(KeyValueEntrySubstate<ComponentRoyaltyConfig>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
     NonFungibleResourceData(KeyValueEntrySubstate<ScryptoOwnedRawValue>),

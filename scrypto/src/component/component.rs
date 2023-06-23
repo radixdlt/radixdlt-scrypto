@@ -61,7 +61,7 @@ pub trait HasStub {
 
 pub trait HasMethods {
     type Permissions: MethodMapping<MethodAccessibility>;
-    type Royalties: MethodMapping<RoyaltyAmount>;
+    type Royalties: MethodMapping<(RoyaltyAmount, bool)>;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -222,7 +222,7 @@ pub struct Globalizing<C: HasStub> {
 
     pub owner_role: OwnerRole,
     pub metadata_config: Option<(Metadata, Roles)>,
-    pub royalty_config: Option<(RoyaltyConfig, Roles)>,
+    pub royalty_config: Option<(ComponentRoyaltyConfig, Roles)>,
     pub address_reservation: Option<GlobalAddressReservation>,
 
     pub roles: Roles,
@@ -251,13 +251,16 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
-        let mut royalty_config = RoyaltyConfig::default();
-        for (method, royalty) in royalties.0.to_mapping() {
-            royalty_config.set_rule(method, royalty);
+    pub fn enable_component_royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
+        let mut royalty_amounts = BTreeMap::new();
+        for (method, (royalty, updatable)) in royalties.0.to_mapping() {
+            royalty_amounts.insert(method, (royalty, !updatable));
         }
 
-        self.royalty_config = Some((royalty_config, royalties.1));
+        self.royalty_config = Some((
+            ComponentRoyaltyConfig::Enabled(royalty_amounts),
+            royalties.1,
+        ));
 
         self
     }
@@ -275,7 +278,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         let (royalty_config, royalty_roles) = self
             .royalty_config
             .take()
-            .unwrap_or_else(|| (RoyaltyConfig::default(), Roles::new()));
+            .unwrap_or_else(|| (ComponentRoyaltyConfig::default(), Roles::new()));
         let royalty = Royalty::new(royalty_config);
         let access_rules = AccessRules::new(
             self.owner_role,

@@ -177,7 +177,7 @@ fn test_basic_package_missing_export() {
                 },
             },
 
-            royalty_config: RoyaltyConfig::default(),
+            royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig::default(),
         },
     );

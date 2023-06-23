@@ -86,7 +86,7 @@ impl MultiResourcePoolBlueprint {
             ),
             api,
         )?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
         let object_id = {
             let substate = MultiResourcePoolSubstate {
                 vaults: resource_addresses

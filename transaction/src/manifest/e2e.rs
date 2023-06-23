@@ -704,6 +704,17 @@ REMOVE_METADATA
             vec![],
             apply_address_replacements(
                 r##"
+SET_OWNER_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+;
+LOCK_OWNER_ROLE
+    Address("${resource_address}")
+;
+SET_AND_LOCK_OWNER_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+;
 SET_ROLE
     Address("${resource_address}")
     Enum<0u8>()
