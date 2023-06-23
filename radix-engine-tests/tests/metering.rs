@@ -82,7 +82,7 @@ pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
 }
 
 #[cfg(feature = "alloc")]
-pub fn write_cost_breakdown(_breakdown: BTreeMap<String, u32>, _file: &str) {}
+pub fn write_cost_breakdown(_breakdown: &BTreeMap<String, u32>, _file: &str) {}
 
 #[cfg(not(feature = "alloc"))]
 pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
