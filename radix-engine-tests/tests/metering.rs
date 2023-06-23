@@ -68,17 +68,17 @@ fn test_basic_transfer() {
         0
         + 897 /* AllocateNodeId */
         + 1417 /* CreateNode */
-        + 5254 /* DropLock */
+        + 5328 /* DropLock */
         + 1365 /* DropNode */
-        + 736166 /* Invoke */
-        + 41706 /* LockSubstate */
-        + 8008 /* ReadSubstate */
+        + 735425 /* Invoke */
+        + 327083 /* LockSubstate */
+        + 8120 /* ReadSubstate */
         + 57500 /* RunNative */
-        + 7500 /* RunSystem */
+        + 75000 /* RunSystem */
         + 50000 /* TxBaseCost */
         + 1345 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 856 /* WriteSubstate */
+        + 697 /* WriteSubstate */
     );
 }
 
@@ -197,23 +197,23 @@ fn test_radiswap() {
         0
         + 2070 /* AllocateNodeId */
         + 3281 /* CreateNode */
-        + 12543 /* DropLock */
+        + 12617 /* DropLock */
         + 3045 /* DropNode */
-        + 3109581 /* Invoke */
-        + 2147410 /* LockSubstate */
-        + 19040 /* ReadSubstate */
+        + 3107898 /* Invoke */
+        + 3729116 /* LockSubstate */
+        + 19152 /* ReadSubstate */
         + 122500 /* RunNative */
-        + 20000 /* RunSystem */
+        + 200000 /* RunSystem */
         + 602285 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1765 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 1885 /* WriteSubstate */
+        + 2056 /* WriteSubstate */
     );
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.6195405"),
+        dec!("0.7955785"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -309,18 +309,18 @@ fn test_flash_loan() {
         0
         + 3657 /* AllocateNodeId */
         + 5777 /* CreateNode */
-        + 20979 /* DropLock */
+        + 21053 /* DropLock */
         + 5565 /* DropNode */
-        + 4095003 /* Invoke */
-        + 4463214 /* LockSubstate */
-        + 32424 /* ReadSubstate */
+        + 4091947 /* Invoke */
+        + 7502698 /* LockSubstate */
+        + 32536 /* ReadSubstate */
         + 192500 /* RunNative */
-        + 40000 /* RunSystem */
+        + 287500 /* RunSystem */
         + 1188780 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2570 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 4302 /* WriteSubstate */
+        + 4967 /* WriteSubstate */
     );
 }
 

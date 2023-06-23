@@ -60,7 +60,7 @@ mod genesis_helper {
 
     enable_method_auth! {
         roles {
-            system
+            system => updaters: system;
         },
         methods {
             ingest_data_chunk => system;

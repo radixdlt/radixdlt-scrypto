@@ -132,6 +132,11 @@ impl CostingModule {
                     |fee_table| fee_table.kernel_api_cost(CostingEntry::SubstateReadFromDbNotFound),
                     1,
                 )?,
+                StoreAccess::DeleteFromTrack => self.apply_execution_cost(
+                    costing_reason.clone(),
+                    |fee_table| fee_table.kernel_api_cost(CostingEntry::SubstateDeleteFromTrack),
+                    1,
+                )?,
             }
         }
         Ok(())

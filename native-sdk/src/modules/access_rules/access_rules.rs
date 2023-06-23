@@ -1,8 +1,8 @@
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesLockRoleInput, AccessRulesSetAndLockRoleInput,
-    AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_LOCK_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
-    ACCESS_RULES_SET_ROLE_IDENT,
+    AccessRulesSetRoleInput, AccessRulesUpdateOwnerRoleInput, ACCESS_RULES_BLUEPRINT,
+    ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_ROLE_IDENT, ACCESS_RULES_UPDATE_OWNER_ROLE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
@@ -54,6 +54,28 @@ impl AccessRulesObject for AttachedAccessRules {
 
 pub trait AccessRulesObject {
     fn self_id(&self) -> (&NodeId, ObjectModuleId);
+
+    fn update_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
+        &self,
+        rule: Option<A>,
+        freeze: bool,
+        api: &mut Y,
+    ) -> Result<(), E> {
+        let (node_id, module_id) = self.self_id();
+        let _rtn = api.call_method_advanced(
+            node_id,
+            false,
+            module_id,
+            ACCESS_RULES_UPDATE_OWNER_ROLE_IDENT,
+            scrypto_encode(&AccessRulesUpdateOwnerRoleInput {
+                rule: rule.map(|a| a.into()),
+                freeze,
+            })
+            .unwrap(),
+        )?;
+
+        Ok(())
+    }
 
     fn set_role<
         Y: ClientApi<E>,

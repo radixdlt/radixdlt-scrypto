@@ -49,11 +49,11 @@ pub const ALL_RESOURCE_AUTH_KEYS: [ResourceAction; 8] = [
     ResourceAction::Mint,
     ResourceAction::Burn,
     ResourceAction::UpdateNonFungibleData,
-    ResourceAction::UpdateMetadata,
     ResourceAction::Withdraw,
     ResourceAction::Deposit,
     ResourceAction::Recall,
     ResourceAction::Freeze,
+    ResourceAction::UpdateMetadata,
 ];
 
 impl ResourceAction {

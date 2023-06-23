@@ -4,7 +4,7 @@ use scrypto::prelude::*;
 mod proofs {
     enable_method_auth! {
         roles {
-            auth
+            auth;
         },
         methods {
             organizational_authenticated_method => auth;
