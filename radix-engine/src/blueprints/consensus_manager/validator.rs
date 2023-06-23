@@ -1064,7 +1064,6 @@ impl ValidatorCreator {
         Y: ClientApi<RuntimeError>,
     {
         let mut unstake_nft_auth = BTreeMap::new();
-
         unstake_nft_auth.insert(
             Mint,
             (rule!(require(global_caller(address))), rule!(deny_all)),
