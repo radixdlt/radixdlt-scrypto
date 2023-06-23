@@ -25,14 +25,19 @@ impl NativeVm {
         _package_address: &PackageAddress,
         code: &[u8],
     ) -> Result<NativeVmInstance, RuntimeError> {
-        if code.len() != 1 {
-            return Err(RuntimeError::VmError(VmError::Native(
-                NativeRuntimeError::InvalidCodeId,
-            )));
-        }
+        let code: [u8; 8] = match code.clone().try_into() {
+            Ok(code) => code,
+            Err(..) => {
+                return Err(RuntimeError::VmError(VmError::Native(
+                    NativeRuntimeError::InvalidCodeId,
+                )));
+            }
+        };
+
+        let native_package_code_id = u64::from_be_bytes(code);
 
         let instance = NativeVmInstance {
-            native_package_code_id: code[0],
+            native_package_code_id,
         };
 
         Ok(instance)
@@ -40,7 +45,7 @@ impl NativeVm {
 }
 
 pub struct NativeVmInstance {
-    native_package_code_id: u8,
+    native_package_code_id: u64,
 }
 
 impl VmInvoke for NativeVmInstance {

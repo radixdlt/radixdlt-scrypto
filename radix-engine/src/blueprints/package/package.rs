@@ -730,7 +730,7 @@ impl PackageNativePackage {
 
     pub(crate) fn publish_native<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
-        native_package_code_id: u8,
+        native_package_code_id: u64,
         setup: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
@@ -752,7 +752,7 @@ impl PackageNativePackage {
 
         let code = PackageCodeSubstate {
             vm_type: VmType::Native,
-            code: vec![native_package_code_id],
+            code: native_package_code_id.to_be_bytes().to_vec(),
         };
 
         let code_hash = hash(scrypto_encode(&code).unwrap());
