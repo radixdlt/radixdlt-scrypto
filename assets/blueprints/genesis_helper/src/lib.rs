@@ -55,7 +55,7 @@ pub enum GenesisDataChunk {
 #[blueprint]
 mod genesis_helper {
     enable_function_auth! {
-        new => rule!(deny_all); // Genesis overrides this
+        new => rule!(deny_all); // Genesis skips this
     }
 
     enable_method_auth! {
@@ -84,10 +84,7 @@ mod genesis_helper {
                 validators: KeyValueStore::new(),
             }
             .instantiate()
-            .prepare_to_globalize(OwnerRole::None)
-            .roles(roles! {
-                system => rule!(require(system_role.clone())), updatable;
-            })
+            .prepare_to_globalize(OwnerRole::Updatable(rule!(require(system_role.clone()))))
             .with_address(address_reservation)
             .globalize()
         }
