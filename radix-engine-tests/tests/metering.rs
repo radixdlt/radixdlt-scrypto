@@ -66,19 +66,19 @@ fn test_basic_transfer() {
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
         0
-        + 1104 /* AllocateNodeId */
-        + 1744 /* CreateNode */
-        + 6142 /* DropLock */
-        + 1680 /* DropNode */
-        + 1140299 /* Invoke */
-        + 431463 /* LockSubstate */
-        + 8624 /* ReadSubstate */
-        + 65000 /* RunNative */
-        + 7500 /* RunSystem */
+        + 897 /* AllocateNodeId */
+        + 1417 /* CreateNode */
+        + 5328 /* DropLock */
+        + 1365 /* DropNode */
+        + 736166 /* Invoke */
+        + 41930 /* LockSubstate */
+        + 8120 /* ReadSubstate */
+        + 57500 /* RunNative */
+        + 75000 /* RunSystem */
         + 50000 /* TxBaseCost */
-        + 1280 /* TxPayloadCost */
+        + 1345 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 979 /* WriteSubstate */
+        + 856 /* WriteSubstate */
     );
 }
 
