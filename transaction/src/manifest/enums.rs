@@ -182,7 +182,7 @@ lazy_static! {
             enum OwnerRole {
                 None = 0;
                 Fixed = 1;
-                Updateable = 2;
+                Updatable = 2;
             }
         );
 
