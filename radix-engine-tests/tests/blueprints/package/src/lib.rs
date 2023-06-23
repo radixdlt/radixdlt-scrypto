@@ -1,7 +1,6 @@
 use sbor::basic_well_known_types::*;
 use sbor::*;
 use scrypto::prelude::*;
-use scrypto::schema::*;
 
 static LARGE: u32 = u32::MAX / 2;
 static MAX: u32 = u32::MAX;
@@ -56,10 +55,6 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         },
     };
 
-    let function_auth: BTreeMap<String, AccessRule> = btreemap!(
-        "f".to_string() => AccessRule::AllowAll,
-    );
-
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         dependencies: btreeset!(),
@@ -67,7 +62,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         schema,
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
-            function_auth,
+            function_auth: scrypto::blueprints::package::FunctionAuth::AllowAll,
             method_auth: scrypto::blueprints::package::MethodAuthTemplate::AllowAll,
         },
     };
@@ -97,10 +92,6 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         },
     );
 
-    let function_auth: BTreeMap<String, AccessRule> = btreemap!(
-        "f".to_string() => AccessRule::AllowAll,
-    );
-
     let schema = BlueprintSchemaInit {
         generics: vec![],
         schema: generate_full_schema(aggregator),
@@ -122,7 +113,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         schema,
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
-            function_auth,
+            function_auth: scrypto::blueprints::package::FunctionAuth::AllowAll,
             method_auth: scrypto::blueprints::package::MethodAuthTemplate::AllowAll,
         },
     };
@@ -166,10 +157,6 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         },
     };
 
-    let function_auth: BTreeMap<String, AccessRule> = btreemap!(
-        "f".to_string() => AccessRule::AllowAll,
-    );
-
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         dependencies: btreeset!(),
@@ -177,7 +164,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         schema,
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
-            function_auth,
+            function_auth: scrypto::blueprints::package::FunctionAuth::AllowAll,
             method_auth: scrypto::blueprints::package::MethodAuthTemplate::AllowAll,
         },
     };
@@ -231,9 +218,7 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
         },
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
-            function_auth: btreemap!(
-                "f".to_string() => AccessRule::AllowAll,
-            ),
+            function_auth: scrypto::blueprints::package::FunctionAuth::AllowAll,
             method_auth: scrypto::blueprints::package::MethodAuthTemplate::AllowAll,
         },
     };
