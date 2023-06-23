@@ -154,6 +154,7 @@ mod tests {
             .concat(),
         ));
 
+        println!();
         print_blob("INTENT_HASH", expected_intent_hash.0.to_vec());
 
         let intent_payload_bytes = intent_v1.to_payload_bytes().unwrap();
