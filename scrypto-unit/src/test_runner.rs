@@ -19,7 +19,7 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringCo
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltyAccumulatorSubstate;
+use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -29,9 +29,10 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
-    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+    PackageDefinition, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate,
+    TypePointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
@@ -445,7 +446,7 @@ impl TestRunner {
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
         let accumulator = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltySubstate>(
                 component_address.as_node_id(),
                 ROYALTY_BASE_PARTITION
                     .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
@@ -1120,7 +1121,7 @@ impl TestRunner {
 
     fn create_fungible_resource_and_deposit(
         &mut self,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, Mutability)>,
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
@@ -1220,8 +1221,7 @@ impl TestRunner {
     }
 
     pub fn create_everything_allowed_non_fungible_resource(&mut self) -> ResourceAddress {
-        let mut access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> =
-            BTreeMap::new();
+        let mut access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)> = BTreeMap::new();
         for key in ALL_RESOURCE_AUTH_KEYS {
             access_rules.insert(key, (rule!(allow_all), rule!(allow_all)));
         }
@@ -1245,6 +1245,7 @@ impl TestRunner {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Burn, (rule!(allow_all), LOCKED));
         access_rules.insert(Recall, (rule!(allow_all), LOCKED));
         access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
 
@@ -1253,9 +1254,9 @@ impl TestRunner {
 
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Recall, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Recall, (rule!(allow_all), LOCKED));
 
         self.create_fungible_resource_and_deposit(access_rules, account)
     }
@@ -1267,8 +1268,8 @@ impl TestRunner {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
         let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
@@ -1283,10 +1284,10 @@ impl TestRunner {
 
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(require(auth_resource_address)), LOCKED),
         );
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
 
         (auth_resource_address, resource_address)
@@ -1294,8 +1295,8 @@ impl TestRunner {
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
         entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
@@ -1328,8 +1329,8 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 100u32.into())
             .create_fungible_resource(
@@ -1558,12 +1559,12 @@ impl TestRunner {
     /// Executes a "start round number `round` at timestamp `timestamp_ms`" system transaction, as
     /// if it was proposed by the first validator from the validator set, after `round - 1` missed
     /// rounds by that validator.
-    /// Please note that this assumes that state is right at the beginning of an epoch.
     pub fn advance_to_round_at_timestamp(
         &mut self,
         round: Round,
         proposer_timestamp_ms: i64,
     ) -> TransactionReceipt {
+        let expected_round_number = self.get_consensus_manager_state().round.number() + 1;
         self.execute_system_transaction(
             vec![InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
@@ -1572,7 +1573,9 @@ impl TestRunner {
                     round,
                     proposer_timestamp_ms,
                     leader_proposal_history: LeaderProposalHistory {
-                        gap_round_leaders: (1..round.number()).map(|_| 0).collect(),
+                        gap_round_leaders: (expected_round_number..round.number())
+                            .map(|_| 0)
+                            .collect(),
                         current_leader: 0,
                         is_fallback: false,
                     },
@@ -1599,6 +1602,16 @@ impl TestRunner {
             )
             .unwrap()
             .epoch_milli
+    }
+
+    pub fn get_consensus_manager_state(&mut self) -> ConsensusManagerSubstate {
+        self.substate_db()
+            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+                CONSENSUS_MANAGER.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &ConsensusManagerField::ConsensusManager.into(),
+            )
+            .unwrap()
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
@@ -1853,11 +1866,9 @@ pub fn single_function_package_definition(
                 },
             },
 
-            royalty_config: RoyaltyConfig::default(),
+            royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig {
-                function_auth: btreemap!(
-                    function_name.to_string() => rule!(allow_all),
-                ),
+                function_auth: FunctionAuth::AllowAll,
                 method_auth: MethodAuthTemplate::AllowAll,
             },
         },

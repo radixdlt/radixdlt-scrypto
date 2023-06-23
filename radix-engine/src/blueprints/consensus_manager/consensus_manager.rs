@@ -30,9 +30,21 @@ pub struct ConsensusManagerConfigSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ConsensusManagerSubstate {
+    /// The current epoch.
     pub epoch: Epoch,
-    pub epoch_start_milli: i64,
+    /// The effective start-time of the epoch.
+    /// This is used to calculate the effective duration, for the purpose of calculating
+    /// when to change epoch. This will typically be close to the `actual_epoch_start_milli`
+    /// but may differ slightly as it attempts to avoid minor systematic drift in the epoch
+    /// start time.
+    pub effective_epoch_start_milli: i64,
+    /// The actual start-time of the epoch.
+    /// This is just saved as a sanity-check for checking divergence between actual and effective.
+    pub actual_epoch_start_milli: i64,
+    /// The current round in the epoch.
     pub round: Round,
+    /// The current leader - this is used for knowing who was the validator for the following
+    /// round of transactions
     pub current_leader: Option<ValidatorIndex>,
 }
 
@@ -173,6 +185,10 @@ pub enum ConsensusManagerError {
         from: Round,
         to: Round,
     },
+    InvalidProposerTimestampUpdate {
+        from_millis: i64,
+        to_millis: i64,
+    },
     InconsistentGapRounds {
         gap_rounds: usize,
         progressed_rounds: u64,
@@ -235,7 +251,8 @@ impl ConsensusManagerBlueprint {
             };
             let consensus_manager = ConsensusManagerSubstate {
                 epoch: initial_epoch,
-                epoch_start_milli: initial_time_milli,
+                actual_epoch_start_milli: initial_time_milli,
+                effective_epoch_start_milli: initial_time_milli,
                 round: Round::zero(),
                 current_leader: initial_current_leader,
             };
@@ -274,13 +291,13 @@ impl ConsensusManagerBlueprint {
 
         let role_definitions = roles2! {
             VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
-            START_ROLE => rule!(require(AuthAddresses::system_role())), mut [SELF_ROLE];
+            START_ROLE => rule!(require(AuthAddresses::system_role())), updatable;
         };
 
         let roles = btreemap!(ObjectModuleId::Main => role_definitions);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
             btreemap!(
@@ -335,10 +352,10 @@ impl ConsensusManagerBlueprint {
         Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
 
         let access_rules = AttachedAccessRules(*receiver);
-        access_rules.update_role(
+        access_rules.set_and_lock_role(
             ObjectModuleId::Main,
             RoleKey::new(START_ROLE),
-            RoleEntry::disabled(),
+            AccessRule::DenyAll,
             api,
         )?;
 
@@ -421,6 +438,8 @@ impl ConsensusManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::check_non_decreasing_and_update_timestamps(proposer_timestamp_milli, api)?;
+
         let config_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::Config.into(),
@@ -452,26 +471,31 @@ impl ConsensusManagerBlueprint {
         Self::update_proposal_statistics(progressed_rounds, proposal_history, api)?;
 
         let config = &config_substate.config;
-        let epoch_duration_millis = proposer_timestamp_milli - manager_substate.epoch_start_milli;
-        if config
-            .epoch_change_condition
-            .is_met(epoch_duration_millis, round)
-        {
-            let next_epoch = manager_substate.epoch.next();
-            Self::epoch_change(next_epoch, config, api)?;
-            manager_substate.epoch = next_epoch;
-            manager_substate.epoch_start_milli = proposer_timestamp_milli;
-            manager_substate.round = Round::zero();
-        } else {
-            Runtime::emit_event(api, RoundChangeEvent { round })?;
-            manager_substate.round = round;
+        let should_epoch_change = config.epoch_change_condition.should_epoch_change(
+            manager_substate.effective_epoch_start_milli,
+            proposer_timestamp_milli,
+            round,
+        );
+        match should_epoch_change {
+            EpochChangeOutcome::NoChange => {
+                Runtime::emit_event(api, RoundChangeEvent { round })?;
+                manager_substate.round = round;
+            }
+            EpochChangeOutcome::Change {
+                next_epoch_effective_start_millis: next_epoch_effective_start,
+            } => {
+                let next_epoch = manager_substate.epoch.next();
+                Self::epoch_change(next_epoch, config, api)?;
+                manager_substate.epoch = next_epoch;
+                manager_substate.round = Round::zero();
+                manager_substate.actual_epoch_start_milli = proposer_timestamp_milli;
+                manager_substate.effective_epoch_start_milli = next_epoch_effective_start;
+            }
         }
         manager_substate.current_leader = Some(current_leader);
 
         api.field_lock_write_typed(manager_handle, &manager_substate)?;
         api.field_lock_release(manager_handle)?;
-
-        Self::update_timestamps(proposer_timestamp_milli, api)?;
 
         Ok(())
     }
@@ -490,30 +514,49 @@ impl ConsensusManagerBlueprint {
         Ok((validator_address, owner_token_bucket))
     }
 
-    fn update_timestamps<Y>(current_time_ms: i64, api: &mut Y) -> Result<(), RuntimeError>
+    fn check_non_decreasing_and_update_timestamps<Y>(
+        current_time_ms: i64,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let proposer_milli_timestamp = ProposerMilliTimestampSubstate {
-            epoch_milli: current_time_ms,
-        };
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentTime.into(),
             LockFlags::MUTABLE,
         )?;
-        api.field_lock_write_typed(handle, &proposer_milli_timestamp)?;
+        let mut exact_time_substate: ProposerMilliTimestampSubstate =
+            api.field_lock_read_typed(handle)?;
+        let previous_timestamp = exact_time_substate.epoch_milli;
+        if current_time_ms < previous_timestamp {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(
+                    ConsensusManagerError::InvalidProposerTimestampUpdate {
+                        from_millis: previous_timestamp,
+                        to_millis: current_time_ms,
+                    },
+                ),
+            ));
+        } else if current_time_ms > previous_timestamp {
+            exact_time_substate.epoch_milli = current_time_ms;
+            api.field_lock_write_typed(handle, &exact_time_substate)?;
+        }
         api.field_lock_release(handle)?;
 
-        let proposer_minute_timestamp = ProposerMinuteTimestampSubstate {
-            epoch_minute: Self::milli_to_minute(current_time_ms),
-        };
+        let new_rounded_value = Self::milli_to_minute(current_time_ms);
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
             LockFlags::MUTABLE,
         )?;
-        api.field_lock_write_typed(handle, &proposer_minute_timestamp)?;
+        let mut rounded_timestamp_substate: ProposerMinuteTimestampSubstate =
+            api.field_lock_read_typed(handle)?;
+        let previous_rounded_value = rounded_timestamp_substate.epoch_minute;
+        if new_rounded_value > previous_rounded_value {
+            rounded_timestamp_substate.epoch_minute = new_rounded_value;
+            api.field_lock_write_typed(handle, &rounded_timestamp_substate)?;
+        }
         api.field_lock_release(handle)?;
 
         Ok(())

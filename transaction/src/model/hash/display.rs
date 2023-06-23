@@ -13,9 +13,6 @@ impl<'a> TransactionHashDisplayContext<'a> {
     }
 }
 
-pub static NO_NETWORK: TransactionHashDisplayContext =
-    TransactionHashDisplayContext { encoder: None };
-
 impl<'a> From<&'a TransactionHashBech32Encoder> for TransactionHashDisplayContext<'a> {
     fn from(encoder: &'a TransactionHashBech32Encoder) -> Self {
         Self::with_encoder(encoder)

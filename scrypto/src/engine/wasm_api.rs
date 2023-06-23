@@ -178,7 +178,7 @@ extern "C" {
         event_data_len: usize,
     );
 
-    pub fn log_message(
+    pub fn emit_log(
         level_ptr: *const u8,
         level_len: usize,
         message_ptr: *const u8,
@@ -402,7 +402,7 @@ pub unsafe fn emit_event(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn log_message(
+pub unsafe fn emit_log(
     _level_ptr: *const u8,
     _level_len: usize,
     _message_ptr: *const u8,

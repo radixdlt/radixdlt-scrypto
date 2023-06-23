@@ -105,27 +105,27 @@ impl<T: AnyResourceType> Default for InProgressResourceBuilder<T, NoAuth> {
 }
 
 pub trait ConfiguredAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>;
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)>;
 }
 
 pub struct NoAuth;
 impl ConfiguredAuth for NoAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
         BTreeMap::new()
     }
 }
 
-pub struct AccessRuleAuth(BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>);
+pub struct AccessRuleAuth(BTreeMap<ResourceAction, (AccessRule, AccessRule)>);
 
 impl ConfiguredAuth for AccessRuleAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
         self.0
     }
 }
 
 pub struct OwnerBadgeAuth(NonFungibleGlobalId);
 impl ConfiguredAuth for OwnerBadgeAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
         resource_access_rules_from_owner_badge(&self.0)
     }
 }
@@ -799,7 +799,7 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, No
 
     fn add_auth(
         self,
-        method: ResourceMethodAuthKey,
+        method: ResourceAction,
         method_auth: AccessRule,
         mutability: AccessRule,
     ) -> Self::OutputBuilder {
@@ -816,7 +816,7 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, Ac
 
     fn add_auth(
         mut self,
-        method: ResourceMethodAuthKey,
+        method: ResourceAction,
         method_auth: AccessRule,
         mutability: AccessRule,
     ) -> Self::OutputBuilder {
@@ -881,7 +881,7 @@ mod private {
     use super::*;
     use radix_engine_interface::{
         api::node_modules::metadata::MetadataValue,
-        blueprints::resource::{AccessRule, NonFungibleGlobalId, ResourceMethodAuthKey},
+        blueprints::resource::{AccessRule, NonFungibleGlobalId, ResourceAction},
     };
 
     pub trait CanAddMetadata: Sized {
@@ -895,7 +895,7 @@ mod private {
 
         fn add_auth(
             self,
-            method: ResourceMethodAuthKey,
+            method: ResourceAction,
             auth: AccessRule,
             mutability: AccessRule,
         ) -> Self::OutputBuilder;
@@ -915,13 +915,13 @@ mod private {
         Fungible {
             divisibility: u8,
             metadata: BTreeMap<String, MetadataValue>,
-            access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+            access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         },
         NonFungible {
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
             metadata: BTreeMap<String, MetadataValue>,
-            access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+            access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         },
     }
 }

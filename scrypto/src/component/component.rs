@@ -12,9 +12,6 @@ use radix_engine_common::prelude::{
 use radix_engine_interface::api::node_modules::metadata::{
     METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
-use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
@@ -64,7 +61,7 @@ pub trait HasStub {
 
 pub trait HasMethods {
     type Permissions: MethodMapping<MethodAccessibility>;
-    type Royalties: MethodMapping<RoyaltyAmount>;
+    type Royalties: MethodMapping<(RoyaltyAmount, bool)>;
 }
 
 pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
@@ -193,39 +190,6 @@ pub trait MethodMapping<T> {
     fn methods() -> Vec<&'static str>;
 }
 
-pub struct RoyaltyMethods<T> {
-    pub set_royalty_config: T,
-    pub claim_royalty: T,
-}
-
-impl<T> MethodMapping<T> for RoyaltyMethods<T> {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::Royalty;
-
-    fn to_mapping(self) -> Vec<(String, T)> {
-        vec![
-            (
-                COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-                self.set_royalty_config,
-            ),
-            (
-                COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-                self.claim_royalty,
-            ),
-        ]
-    }
-
-    fn methods() -> Vec<&'static str> {
-        vec![
-            COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-            COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
-        ]
-    }
-}
-
-pub struct RoyaltiesConfig<R: MethodMapping<RoyaltyAmount>> {
-    pub method_royalties: R,
-}
-
 pub struct MetadataMethods<T> {
     pub set: T,
     pub get: T,
@@ -258,7 +222,7 @@ pub struct Globalizing<C: HasStub> {
 
     pub owner_role: OwnerRole,
     pub metadata_config: Option<(Metadata, Roles)>,
-    pub royalty_config: Option<(RoyaltyConfig, Roles)>,
+    pub royalty_config: Option<(ComponentRoyaltyConfig, Roles)>,
     pub address_reservation: Option<GlobalAddressReservation>,
 
     pub roles: Roles,
@@ -287,13 +251,16 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
-        let mut royalty_config = RoyaltyConfig::default();
-        for (method, royalty) in royalties.0.to_mapping() {
-            royalty_config.set_rule(method, royalty);
+    pub fn enable_component_royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
+        let mut royalty_amounts = BTreeMap::new();
+        for (method, (royalty, updatable)) in royalties.0.to_mapping() {
+            royalty_amounts.insert(method, (royalty, !updatable));
         }
 
-        self.royalty_config = Some((royalty_config, royalties.1));
+        self.royalty_config = Some((
+            ComponentRoyaltyConfig::Enabled(royalty_amounts),
+            royalties.1,
+        ));
 
         self
     }
@@ -311,7 +278,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         let (royalty_config, royalty_roles) = self
             .royalty_config
             .take()
-            .unwrap_or_else(|| (RoyaltyConfig::default(), Roles::new()));
+            .unwrap_or_else(|| (ComponentRoyaltyConfig::default(), Roles::new()));
         let royalty = Royalty::new(royalty_config);
         let access_rules = AccessRules::new(
             self.owner_role,

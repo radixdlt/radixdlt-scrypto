@@ -4,11 +4,18 @@ use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::address::AddressBech32Encoder;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
-use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
+use radix_engine_interface::api::node_modules::auth::{
+    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
+};
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
+};
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -405,7 +412,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 /* Package */
                 (address, PACKAGE_CLAIM_ROYALTIES_IDENT) if address.is_static_global_package() => {
                     fields.push(address.to_instruction_argument());
-                    "CLAIM_PACKAGE_ROYALTY"
+                    "CLAIM_PACKAGE_ROYALTIES"
                 }
 
                 /* Resource manager */
@@ -462,11 +469,15 @@ pub fn decompile_instruction<F: fmt::Write>(
                 /* Component royalty */
                 (address, COMPONENT_ROYALTY_SET_ROYALTY_IDENT) => {
                     fields.push(address.to_instruction_argument());
-                    "SET_COMPONENT_ROYALTY_CONFIG"
+                    "SET_COMPONENT_ROYALTY"
+                }
+                (address, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT) => {
+                    fields.push(address.to_instruction_argument());
+                    "LOCK_COMPONENT_ROYALTY"
                 }
                 (address, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT) => {
                     fields.push(address.to_instruction_argument());
-                    "CLAIM_COMPONENT_ROYALTY"
+                    "CLAIM_COMPONENT_ROYALTIES"
                 }
 
                 /* Default */
@@ -502,6 +513,10 @@ pub fn decompile_instruction<F: fmt::Write>(
                     fields.push(address.to_instruction_argument());
                     "REMOVE_METADATA"
                 }
+                (address, METADATA_LOCK_IDENT) => {
+                    fields.push(address.to_instruction_argument());
+                    "LOCK_METADATA"
+                }
 
                 /* Default */
                 _ => {
@@ -528,9 +543,29 @@ pub fn decompile_instruction<F: fmt::Write>(
             let mut fields = Vec::new();
             let name = match (address, method_name.as_str()) {
                 /* Access rules */
-                (address, ACCESS_RULES_UPDATE_ROLE_IDENT) => {
+                (address, ACCESS_RULES_SET_OWNER_ROLE_IDENT) => {
                     fields.push(address.to_instruction_argument());
-                    "UPDATE_ROLE"
+                    "SET_OWNER_ROLE"
+                }
+                (address, ACCESS_RULES_LOCK_OWNER_ROLE_IDENT) => {
+                    fields.push(address.to_instruction_argument());
+                    "LOCK_OWNER_ROLE"
+                }
+                (address, ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT) => {
+                    fields.push(address.to_instruction_argument());
+                    "SET_AND_LOCK_OWNER_ROLE"
+                }
+                (address, ACCESS_RULES_SET_ROLE_IDENT) => {
+                    fields.push(address.to_instruction_argument());
+                    "SET_ROLE"
+                }
+                (address, ACCESS_RULES_LOCK_ROLE_IDENT) => {
+                    fields.push(address.to_instruction_argument());
+                    "LOCK_ROLE"
+                }
+                (address, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT) => {
+                    fields.push(address.to_instruction_argument());
+                    "SET_AND_LOCK_ROLE"
                 }
 
                 /* Default */

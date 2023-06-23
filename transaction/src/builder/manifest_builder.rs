@@ -1,11 +1,12 @@
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataSetInput, MetadataValue, METADATA_SET_IDENT,
+    MetadataLockInput, MetadataSetInput, MetadataValue, METADATA_LOCK_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltiesInput, ComponentSetRoyaltyInput,
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+    ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentSetRoyaltyInput,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
@@ -26,7 +27,7 @@ use radix_engine_interface::blueprints::package::{
     PackagePublishWasmManifestInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
 };
-use radix_engine_interface::blueprints::resource::ResourceMethodAuthKey::{Burn, Mint};
+use radix_engine_interface::blueprints::resource::ResourceAction::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, CONSENSUS_MANAGER, IDENTITY_PACKAGE,
@@ -438,7 +439,7 @@ impl ManifestBuilder {
         track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
         let access_rules = access_rules
@@ -484,7 +485,7 @@ impl ManifestBuilder {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
@@ -671,7 +672,7 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
+    pub fn claim_package_royalties(&mut self, package_address: PackageAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: package_address.into(),
             method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
@@ -697,11 +698,35 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn lock_component_royalty<S: ToString>(
+        &mut self,
+        component_address: ComponentAddress,
+        method: S,
+    ) -> &mut Self {
+        self.add_instruction(InstructionV1::CallRoyaltyMethod {
+            address: component_address.into(),
+            method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&ComponentLockRoyaltyInput {
+                method: method.to_string(),
+            }),
+        })
+        .0
+    }
+
     pub fn claim_component_royalties(&mut self, component_address: ComponentAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: component_address.into(),
             method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&ComponentClaimRoyaltiesInput {}),
+        })
+        .0
+    }
+
+    pub fn set_owner_role(&mut self, address: GlobalAddress, rule: AccessRule) -> &mut Self {
+        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+            address: address.into(),
+            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesSetOwnerRoleInput { rule }),
         })
         .0
     }
@@ -715,33 +740,26 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesUpdateRoleInput {
+            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesSetRoleInput {
                 module,
                 role_key,
-                rule: Some(rule),
-                mutability: None,
+                rule,
             }),
         })
         .0
     }
 
-    pub fn update_role_mutability(
+    pub fn lock_role(
         &mut self,
         address: GlobalAddress,
         module: ObjectModuleId,
         role_key: RoleKey,
-        mutability: (RoleList, bool),
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesUpdateRoleInput {
-                module,
-                role_key,
-                rule: None,
-                mutability: Some(mutability),
-            }),
+            method_name: ACCESS_RULES_LOCK_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesLockRoleInput { module, role_key }),
         })
         .0
     }
@@ -756,6 +774,15 @@ impl ManifestBuilder {
             address: address.into(),
             method_name: METADATA_SET_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&MetadataSetInput { key, value }),
+        })
+        .0
+    }
+
+    pub fn freeze_metadata(&mut self, address: GlobalAddress, key: String) -> &mut Self {
+        self.add_instruction(InstructionV1::CallMetadataMethod {
+            address: address.into(),
+            method_name: METADATA_LOCK_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&MetadataLockInput { key }),
         })
         .0
     }
@@ -854,7 +881,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
         access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
@@ -872,7 +899,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
 
@@ -887,7 +914,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
         access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
@@ -905,7 +932,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
+            ResourceAction::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
 
@@ -1002,20 +1029,68 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn freeze(&mut self, vault_id: InternalAddress) -> &mut Self {
+    pub fn freeze_withdraw(&mut self, vault_id: InternalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
             method_name: VAULT_FREEZE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&VaultFreezeInput {}),
+            args: to_manifest_value_and_unwrap!(&VaultFreezeInput {
+                to_freeze: VaultFreezeFlags::WITHDRAW,
+            }),
         });
         self
     }
 
-    pub fn unfreeze(&mut self, vault_id: InternalAddress) -> &mut Self {
+    pub fn unfreeze_withdraw(&mut self, vault_id: InternalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
             method_name: VAULT_UNFREEZE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&VaultUnfreezeInput {}),
+            args: to_manifest_value_and_unwrap!(&VaultUnfreezeInput {
+                to_unfreeze: VaultFreezeFlags::WITHDRAW,
+            }),
+        });
+        self
+    }
+
+    pub fn freeze_deposit(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_FREEZE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&VaultFreezeInput {
+                to_freeze: VaultFreezeFlags::DEPOSIT,
+            }),
+        });
+        self
+    }
+
+    pub fn unfreeze_deposit(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_UNFREEZE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&VaultUnfreezeInput {
+                to_unfreeze: VaultFreezeFlags::DEPOSIT,
+            }),
+        });
+        self
+    }
+
+    pub fn freeze_burn(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_FREEZE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&VaultFreezeInput {
+                to_freeze: VaultFreezeFlags::BURN,
+            }),
+        });
+        self
+    }
+
+    pub fn unfreeze_burn(&mut self, vault_id: InternalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: VAULT_UNFREEZE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&VaultUnfreezeInput {
+                to_unfreeze: VaultFreezeFlags::BURN,
+            }),
         });
         self
     }
@@ -1145,6 +1220,26 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallMethod {
             address: account.into(),
             method_name: ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
+            args,
+        })
+        .0
+    }
+
+    /// Withdraws resource from an account.
+    pub fn burn_in_account(
+        &mut self,
+        account: ComponentAddress,
+        resource_address: ResourceAddress,
+        amount: Decimal,
+    ) -> &mut Self {
+        let args = to_manifest_value_and_unwrap!(&AccountBurnInput {
+            resource_address,
+            amount
+        });
+
+        self.add_instruction(InstructionV1::CallMethod {
+            address: account.into(),
+            method_name: ACCOUNT_BURN_IDENT.to_string(),
             args,
         })
         .0

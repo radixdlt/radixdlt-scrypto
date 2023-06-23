@@ -18,7 +18,7 @@ pub struct FungibleResourceManagerCreateInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
 }
 
 pub type FungibleResourceManagerCreateOutput = ResourceAddress;
@@ -32,7 +32,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
 }
 
@@ -46,7 +46,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
     pub resource_address: GlobalAddressReservation,
 }
@@ -56,7 +56,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput
     pub track_total_supply: bool,
     pub divisibility: u8,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
     pub resource_address: ManifestAddressReservation,
 }

@@ -97,10 +97,10 @@ macro_rules! rule {
 #[macro_export]
 macro_rules! role_entry {
     ($roles: expr, $role: expr, $rule:expr) => {{
-        $roles.define_role($role, RoleEntry::immutable($rule));
+        $roles.define_immutable_role($role, $rule);
     }};
-    ($roles: expr, $role: expr, $rule:expr, mut $mutability:expr) => {{
-        $roles.define_role($role, RoleEntry::new($rule, $mutability, true));
+    ($roles: expr, $role: expr, $rule:expr, updatable) => {{
+        $roles.define_mutable_role($role, $rule);
     }};
 }
 
@@ -109,14 +109,11 @@ macro_rules! roles2 {
     ( ) => ({
         $crate::blueprints::resource::Roles::new()
     });
-    ( $($role:expr => $rule:expr $(, mut $mutability:expr)? );* ) => ({
+    ( $($role:expr => $rule:expr $(, $updatable:ident)?;)* ) => ({
         let mut roles = $crate::blueprints::resource::Roles::new();
         $(
-            role_entry!(roles, $role, $rule $(, mut $mutability)? );
+            role_entry!(roles, $role, $rule $(, $updatable)? );
         )*
         roles
-    });
-    ( $($role:expr => $rule:expr $(, mut $mutability:expr)?;)* ) => ({
-        roles2!($($role => $rule $(, mut $mutability)?);*)
     })
 }

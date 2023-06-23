@@ -203,21 +203,49 @@ pub enum Instruction {
         address: Value,
         args: Vec<Value>,
     },
-    SetComponentRoyaltyConfig {
+    LockMetadata {
         address: Value,
         args: Vec<Value>,
     },
-    ClaimComponentRoyalty {
+    SetComponentRoyalty {
         address: Value,
         args: Vec<Value>,
     },
-    UpdateRole {
+    SetOwnerRole {
+        address: Value,
+        args: Vec<Value>,
+    },
+    LockOwnerRole {
+        address: Value,
+        args: Vec<Value>,
+    },
+    SetAndLockOwnerRole {
+        address: Value,
+        args: Vec<Value>,
+    },
+    SetRole {
+        address: Value,
+        args: Vec<Value>,
+    },
+    LockRole {
+        address: Value,
+        args: Vec<Value>,
+    },
+    SetAndLockRole {
+        address: Value,
+        args: Vec<Value>,
+    },
+    LockComponentRoyalty {
+        address: Value,
+        args: Vec<Value>,
+    },
+    ClaimComponentRoyalties {
         address: Value,
         args: Vec<Value>,
     },
 
     /* call main method aliases */
-    ClaimPackageRoyalty {
+    ClaimPackageRoyalties {
         address: Value,
         args: Vec<Value>,
     },

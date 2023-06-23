@@ -1,10 +1,6 @@
 use super::converter::*;
 use super::model::*;
-use super::*;
-use crate::*;
-use sbor::representations::*;
-use sbor::rust::prelude::*;
-use sbor::traversal::*;
+use crate::internal_prelude::*;
 
 impl<'a> CustomDisplayContext<'a> for ManifestValueDisplayContext<'a> {
     type CustomExtension = ManifestCustomExtension;

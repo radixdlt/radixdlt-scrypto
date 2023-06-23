@@ -443,9 +443,9 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         Ok(())
     }
 
-    fn log_message(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
         let level = scrypto_encode(&level).unwrap();
-        unsafe { log_message(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
+        unsafe { emit_log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
         Ok(())
     }
 

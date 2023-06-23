@@ -79,26 +79,16 @@ fn can_call_protected_function_with_auth() {
 }
 
 #[test]
-fn access_rules_method_auth_can_not_be_mutated_when_locked() {
+fn access_rules_method_auth_cannot_be_mutated_when_locked() {
     // Arrange
     let mut roles = Roles::new();
-    roles.define_role(
-        "deposit_funds_auth_update",
-        RoleEntry::immutable(rule!(allow_all)),
-    );
-    roles.define_role(
-        "borrow_funds_auth",
-        RoleEntry::new(rule!(allow_all), ["deposit_funds_auth_update"], false),
-    );
-    roles.define_role(
-        "deposit_funds_auth",
-        RoleEntry::immutable(rule!(require(RADIX_TOKEN))),
-    );
+    roles.define_immutable_role("deposit_funds_auth_update", rule!(allow_all));
+    roles.define_mutable_role("borrow_funds_auth", rule!(allow_all));
+    roles.define_immutable_role("deposit_funds_auth", rule!(require(RADIX_TOKEN)));
     let mut test_runner = MutableAccessRulesTestRunner::new(roles);
 
     // Act
-    let receipt =
-        test_runner.set_authority_rule(RoleKey::new("deposit_funds_auth"), rule!(allow_all));
+    let receipt = test_runner.set_role_rule(RoleKey::new("deposit_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -120,8 +110,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
     )));
 
     // Act
-    let receipt =
-        test_runner.set_authority_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
+    let receipt = test_runner.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -143,7 +132,7 @@ fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present(
     )));
 
     // Act
-    let receipt = test_runner.lock_group_auth(RoleKey::new("borrow_funds_auth"));
+    let receipt = test_runner.lock_role(RoleKey::new("borrow_funds_auth"));
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -166,8 +155,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
 
     // Act
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
-    let receipt =
-        test_runner.set_authority_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
+    let receipt = test_runner.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_commit_success();
@@ -185,20 +173,19 @@ fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
 
     // Act
-    let receipt = test_runner.lock_group_auth(RoleKey::new("borrow_funds_auth"));
+    let receipt = test_runner.lock_role(RoleKey::new("borrow_funds_auth"));
 
     // Assert
     receipt.expect_commit_success();
 
     // Act
-    let receipt =
-        test_runner.set_authority_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
+    let receipt = test_runner.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
 
     // Assert
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
         )
     });
 }
@@ -409,29 +396,28 @@ impl MutableAccessRulesTestRunner {
         self.initial_proofs.insert(initial_proof);
     }
 
-    pub fn set_authority_rule(
+    pub fn set_role_rule(
         &mut self,
-        authority_key: RoleKey,
+        role_key: RoleKey,
         access_rule: AccessRule,
     ) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
             .update_role(
                 self.component_address.into(),
                 ObjectModuleId::Main,
-                authority_key,
+                role_key,
                 access_rule,
             )
             .build();
         self.execute_manifest(manifest)
     }
 
-    pub fn lock_group_auth(&mut self, role_key: RoleKey) -> TransactionReceipt {
+    pub fn lock_role(&mut self, role_key: RoleKey) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .update_role_mutability(
+            .lock_role(
                 self.component_address.into(),
                 ObjectModuleId::Main,
                 role_key,
-                (RoleList::none(), false),
             )
             .build();
         self.execute_manifest(manifest)

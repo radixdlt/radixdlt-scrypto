@@ -1,10 +1,7 @@
 use super::converter::*;
 use super::model::*;
 use super::*;
-use crate::*;
-use sbor::representations::*;
-use sbor::rust::prelude::*;
-use sbor::traversal::*;
+use crate::internal_prelude::*;
 
 impl SerializableCustomExtension for ManifestCustomExtension {
     fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(

@@ -10,11 +10,18 @@ use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::AddressBech32Decoder;
-use radix_engine_interface::api::node_modules::auth::ACCESS_RULES_UPDATE_ROLE_IDENT;
-use radix_engine_interface::api::node_modules::metadata::METADATA_REMOVE_IDENT;
+use radix_engine_interface::api::node_modules::auth::{
+    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
+};
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
+use radix_engine_interface::api::node_modules::metadata::{
+    METADATA_LOCK_IDENT, METADATA_REMOVE_IDENT,
+};
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::blueprints::access_controller::{
     ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -707,7 +714,12 @@ where
             method_name: METADATA_REMOVE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
-        ast::Instruction::SetComponentRoyaltyConfig { address, args } => {
+        ast::Instruction::LockMetadata { address, args } => InstructionV1::CallMetadataMethod {
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
+            method_name: METADATA_LOCK_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        },
+        ast::Instruction::SetComponentRoyalty { address, args } => {
             InstructionV1::CallRoyaltyMethod {
                 address: generate_dynamic_global_address(
                     address,
@@ -718,7 +730,18 @@ where
                 args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
-        ast::Instruction::ClaimComponentRoyalty { address, args } => {
+        ast::Instruction::LockComponentRoyalty { address, args } => {
+            InstructionV1::CallRoyaltyMethod {
+                address: generate_dynamic_global_address(
+                    address,
+                    address_bech32_decoder,
+                    resolver,
+                )?,
+                method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::ClaimComponentRoyalties { address, args } => {
             InstructionV1::CallRoyaltyMethod {
                 address: generate_dynamic_global_address(
                     address,
@@ -729,11 +752,49 @@ where
                 args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
-        ast::Instruction::UpdateRole { address, args } => InstructionV1::CallAccessRulesMethod {
+        ast::Instruction::SetOwnerRole { address, args } => InstructionV1::CallAccessRulesMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
-            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
+        ast::Instruction::LockOwnerRole { address, args } => InstructionV1::CallAccessRulesMethod {
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
+            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        },
+        ast::Instruction::SetAndLockOwnerRole { address, args } => {
+            InstructionV1::CallAccessRulesMethod {
+                address: generate_dynamic_global_address(
+                    address,
+                    address_bech32_decoder,
+                    resolver,
+                )?,
+                method_name: ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT.to_string(),
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::SetRole { address, args } => InstructionV1::CallAccessRulesMethod {
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
+            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        },
+        ast::Instruction::LockRole { address, args } => InstructionV1::CallAccessRulesMethod {
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
+            method_name: ACCESS_RULES_LOCK_ROLE_IDENT.to_string(),
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+        },
+        ast::Instruction::SetAndLockRole { address, args } => {
+            InstructionV1::CallAccessRulesMethod {
+                address: generate_dynamic_global_address(
+                    address,
+                    address_bech32_decoder,
+                    resolver,
+                )?,
+                method_name: ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT.to_string(),
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+            }
+        }
+
         /* call main method aliases */
         ast::Instruction::MintFungible { address, args } => InstructionV1::CallMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
@@ -750,7 +811,7 @@ where
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
-        ast::Instruction::ClaimPackageRoyalty { address, args } => InstructionV1::CallMethod {
+        ast::Instruction::ClaimPackageRoyalties { address, args } => InstructionV1::CallMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
@@ -1453,11 +1514,11 @@ mod tests {
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintRuidManifestInput, ResourceMethodAuthKey, Roles,
+        NonFungibleResourceManagerMintRuidManifestInput, ResourceAction, Roles,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
-    use radix_engine_interface::types::{NonFungibleData, RoyaltyConfig};
+    use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
 
     #[macro_export]
@@ -1679,7 +1740,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Map<String, Tuple>() Map<String, Tuple>() Map<String, Enum>() Map<String, Tuple>();"#,
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Map<String, Tuple>() Map<String, Enum>() Map<String, Enum>() Map<String, Tuple>();"#,
             InstructionV1::CallFunction {
                 package_address: PACKAGE_PACKAGE.into(),
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -1694,7 +1755,7 @@ mod tests {
                         .unwrap()
                     ),
                     BTreeMap::<String, BlueprintStateSchemaInit>::new(),
-                    BTreeMap::<String, RoyaltyConfig>::new(),
+                    BTreeMap::<String, PackageRoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
                     Roles::new()
                 ),
@@ -1721,11 +1782,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1744,11 +1805,11 @@ mod tests {
                     )]),
                     access_rules: BTreeMap::from([
                         (
-                            ResourceMethodAuthKey::Withdraw,
+                            ResourceAction::Withdraw,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                         (
-                            ResourceMethodAuthKey::Deposit,
+                            ResourceAction::Deposit,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
@@ -1813,11 +1874,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1847,11 +1908,11 @@ mod tests {
                         )]),
                         access_rules: BTreeMap::from([
                             (
-                                ResourceMethodAuthKey::Withdraw,
+                                ResourceAction::Withdraw,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                             (
-                                ResourceMethodAuthKey::Deposit,
+                                ResourceAction::Deposit,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                         ]),
@@ -1878,11 +1939,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1901,11 +1962,11 @@ mod tests {
                     )]),
                     access_rules: BTreeMap::from([
                         (
-                            ResourceMethodAuthKey::Withdraw,
+                            ResourceAction::Withdraw,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                         (
-                            ResourceMethodAuthKey::Deposit,
+                            ResourceAction::Deposit,
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
@@ -1924,11 +1985,11 @@ mod tests {
                     "name" => Enum<Metadata::String>("Token")
                 )
                 Map<Enum, Tuple>(
-                    Enum<ResourceMethodAuthKey::Withdraw>() => Tuple(
+                    Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     ),
-                    Enum<ResourceMethodAuthKey::Deposit>() => Tuple(
+                    Enum<ResourceAction::Deposit>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
@@ -1950,11 +2011,11 @@ mod tests {
                         )]),
                         access_rules: BTreeMap::from([
                             (
-                                ResourceMethodAuthKey::Withdraw,
+                                ResourceAction::Withdraw,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                             (
-                                ResourceMethodAuthKey::Deposit,
+                                ResourceAction::Deposit,
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                         ]),

@@ -88,14 +88,21 @@ pub enum InstructionIdent {
     // ==============
     SetMetadata,
     RemoveMetadata,
-    SetComponentRoyaltyConfig,
-    ClaimComponentRoyalty,
-    UpdateRole,
+    LockMetadata,
+    SetComponentRoyalty,
+    LockComponentRoyalty,
+    ClaimComponentRoyalties,
+    SetOwnerRole,
+    LockOwnerRole,
+    SetAndLockOwnerRole,
+    SetRole,
+    LockRole,
+    SetAndLockRole,
 
     // ==============
     // Call main-method aliases
     // ==============
-    ClaimPackageRoyalty,
+    ClaimPackageRoyalties,
     MintFungible,
     MintNonFungible,
     MintRuidNonFungible,
@@ -181,9 +188,16 @@ impl InstructionIdent {
             // ==============
             "SET_METADATA" => InstructionIdent::SetMetadata,
             "REMOVE_METADATA" => InstructionIdent::RemoveMetadata,
-            "SET_COMPONENT_ROYALTY_CONFIG" => InstructionIdent::SetComponentRoyaltyConfig,
-            "CLAIM_COMPONENT_ROYALTY" => InstructionIdent::ClaimComponentRoyalty,
-            "UPDATE_ROLE" => InstructionIdent::UpdateRole,
+            "LOCK_METADATA" => InstructionIdent::LockMetadata,
+            "SET_COMPONENT_ROYALTY" => InstructionIdent::SetComponentRoyalty,
+            "LOCK_COMPONENT_ROYALTY" => InstructionIdent::LockComponentRoyalty,
+            "CLAIM_COMPONENT_ROYALTIES" => InstructionIdent::ClaimComponentRoyalties,
+            "SET_OWNER_ROLE" => InstructionIdent::SetOwnerRole,
+            "LOCK_OWNER_ROLE" => InstructionIdent::LockOwnerRole,
+            "SET_AND_LOCK_OWNER_ROLE" => InstructionIdent::SetAndLockOwnerRole,
+            "SET_ROLE" => InstructionIdent::SetRole,
+            "LOCK_ROLE" => InstructionIdent::LockRole,
+            "SET_AND_LOCK_ROLE" => InstructionIdent::SetAndLockRole,
 
             // ==============
             // Call main-method aliases
@@ -191,7 +205,7 @@ impl InstructionIdent {
             "MINT_FUNGIBLE" => InstructionIdent::MintFungible,
             "MINT_NON_FUNGIBLE" => InstructionIdent::MintNonFungible,
             "MINT_RUID_NON_FUNGIBLE" => InstructionIdent::MintRuidNonFungible,
-            "CLAIM_PACKAGE_ROYALTY" => InstructionIdent::ClaimPackageRoyalty,
+            "CLAIM_PACKAGE_ROYALTIES" => InstructionIdent::ClaimPackageRoyalties,
             "CREATE_VALIDATOR" => InstructionIdent::CreateValidator,
             _ => {
                 return None;
@@ -665,15 +679,43 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::SetComponentRoyaltyConfig => Instruction::SetComponentRoyaltyConfig {
+            InstructionIdent::LockMetadata => Instruction::LockMetadata {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
+            InstructionIdent::SetComponentRoyalty => Instruction::SetComponentRoyalty {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::UpdateRole => Instruction::UpdateRole {
+            InstructionIdent::LockComponentRoyalty => Instruction::LockComponentRoyalty {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::ClaimComponentRoyalties => Instruction::ClaimComponentRoyalties {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::SetOwnerRole => Instruction::SetOwnerRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::LockOwnerRole => Instruction::LockOwnerRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::SetAndLockOwnerRole => Instruction::SetAndLockOwnerRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::SetRole => Instruction::SetRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::LockRole => Instruction::LockRole {
+                address: self.parse_value()?,
+                args: self.parse_values_till_semicolon()?,
+            },
+            InstructionIdent::SetAndLockRole => Instruction::SetAndLockRole {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
@@ -691,7 +733,7 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::ClaimPackageRoyalty => Instruction::ClaimPackageRoyalty {
+            InstructionIdent::ClaimPackageRoyalties => Instruction::ClaimPackageRoyalties {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

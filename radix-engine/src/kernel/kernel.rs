@@ -51,7 +51,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
         self,
-        transaction_hash: &'a Hash,
         manifest_encoded_instructions: &'a [u8],
         pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
         references: &'a IndexSet<Reference>,
@@ -156,7 +155,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,
             scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                transaction_hash,
                 manifest_encoded_instructions,
                 global_address_reservations,
                 references,

@@ -75,7 +75,7 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
             ObjectModuleId::AccessRules => access_rules.0,
@@ -186,8 +186,7 @@ impl AccountBlueprint {
         Ok((address, bucket))
     }
 
-    // FIXME: Remove
-    pub fn create_local<Y>(api: &mut Y) -> Result<Own, RuntimeError>
+    fn create_local<Y>(api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
