@@ -211,7 +211,7 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
 
-    const SIZE: u32 = 5000;
+    const SIZE: usize = 5000;
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -228,7 +228,7 @@ fn transaction_limit_exceeded_substate_write_size_should_fail() {
     let prepared = transactions.prepare().unwrap();
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
-    execution_config.max_substate_size = SIZE as usize + 8 /* SBOR prefix */ - 1 /* lower limit to trigger error */;
+    execution_config.max_substate_size = SIZE + 8 /* SBOR prefix */ - 1 /* lower limit to trigger error */;
     let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
@@ -281,4 +281,119 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
             ))
         )
     })
+}
+
+#[test]
+fn test_default_substate_size_limit() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 100.into())
+        .call_function(
+            package_address,
+            "TransactionLimitSubstateTest",
+            "write_large_value",
+            manifest_args!(DEFAULT_MAX_SUBSTATE_SIZE - 14),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+
+    // Act #2
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 100.into())
+        .call_function(
+            package_address,
+            "TransactionLimitSubstateTest",
+            "write_large_value",
+            manifest_args!(DEFAULT_MAX_SUBSTATE_SIZE - 13),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert #2
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
+            LimitingError::MaxSubstateWriteSizeExceeded(_),
+        )) => true,
+        _ => false,
+    })
+}
+
+#[test]
+fn test_default_invoke_payload_size_limit() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 100.into())
+        .call_function(
+            package_address,
+            "InvokeLimitsTest",
+            "call",
+            manifest_args!(
+                DEFAULT_MAX_INVOKE_INPUT_SIZE
+                    - 10
+                    - package_address.as_ref().len()
+                    - "InvokeLimitsTest".len()
+                    - "call".len()
+            ),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+
+    // Act #2
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 100.into())
+        .call_function(
+            package_address,
+            "InvokeLimitsTest",
+            "call",
+            manifest_args!(
+                DEFAULT_MAX_INVOKE_INPUT_SIZE
+                    - 9
+                    - package_address.as_ref().len()
+                    - "InvokeLimitsTest".len()
+                    - "call".len()
+            ),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert #2
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
+            LimitingError::MaxInvokePayloadSizeExceeded(_),
+        )) => true,
+        _ => false,
+    })
+}
+
+// FIXME: THIS CAUSES OVERFLOW. INVESTIGATE AND FIX IT!
+#[test]
+#[ignore]
+fn reproduce_crash() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 100.into())
+        .call_function(
+            package_address,
+            "SborOverflow",
+            "write_large_value",
+            manifest_args!(),
+        )
+        .build();
+    test_runner.execute_manifest(manifest, vec![]);
 }
