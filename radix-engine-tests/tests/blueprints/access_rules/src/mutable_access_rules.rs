@@ -4,12 +4,12 @@ use scrypto::prelude::*;
 mod mutable_access_rules_component {
     enable_method_auth! {
         roles {
-            borrow_funds_auth => updaters: deposit_funds_auth;
-            deposit_funds_auth;
+            borrow_funds_auth => updatable_by: [deposit_funds_auth];
+            deposit_funds_auth => updatable_by: [];
         },
         methods {
-            borrow_funds => borrow_funds_auth;
-            deposit_funds => deposit_funds_auth;
+            borrow_funds => restrict_to: [borrow_funds_auth];
+            deposit_funds => restrict_to: [deposit_funds_auth];
             set_authority_rules => PUBLIC;
             lock_authority => PUBLIC;
         }
@@ -34,7 +34,7 @@ mod mutable_access_rules_component {
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles! {
                     borrow_funds_auth => rule!(require(RADIX_TOKEN)), updatable;
-                    deposit_funds_auth => owner_update_access_rule;
+                    deposit_funds_auth => owner_update_access_rule, locked;
                 })
                 .globalize()
         }

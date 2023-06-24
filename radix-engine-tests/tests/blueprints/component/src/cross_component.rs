@@ -6,7 +6,7 @@ mod cross_component {
         methods {
             put_auth => PUBLIC;
             cross_component_call => PUBLIC;
-            get_component_state => OWNER;
+            get_component_state => restrict_to: [OWNER];
         }
     }
 
