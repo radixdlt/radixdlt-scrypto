@@ -65,6 +65,7 @@ mod tests {
     use radix_engine_interface::blueprints::resource::FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
 
     use super::*;
+    use crate::manifest::e2e::tests::print_blob;
     use crate::model::*;
     use crate::{signing::ed25519::Ed25519PrivateKey, signing::secp256k1::Secp256k1PrivateKey};
 
@@ -141,6 +142,11 @@ mod tests {
         ));
 
         let intent_payload_bytes = intent_v1.to_payload_bytes().unwrap();
+
+        println!();
+        print_blob("HC_INTENT", intent_payload_bytes.clone());
+        print_blob("HC_INTENT_HASH", expected_intent_hash.0.to_vec());
+
         IntentV1::from_payload_bytes(&intent_payload_bytes).expect("Intent can be decoded");
         let intent_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&intent_payload_bytes).unwrap();
