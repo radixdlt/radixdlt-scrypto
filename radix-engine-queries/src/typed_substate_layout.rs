@@ -17,6 +17,7 @@ pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
 pub use radix_engine::system::system::KeyValueEntrySubstate;
 pub use radix_engine_interface::api::node_modules::royalty::*;
+use transaction::prelude::IntentHash;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -126,7 +127,7 @@ pub enum TypedMainModuleSubstateKey {
     TwoResourcePoolField(TwoResourcePoolField),
     MultiResourcePoolField(MultiResourcePoolField),
     TransactionTrackerField(TransactionTrackerField),
-    TransactionTrackerCollectionEntry(Hash),
+    TransactionTrackerCollectionEntry(IntentHash),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -385,7 +386,7 @@ fn to_typed_object_substate_key_internal(
             } else {
                 if let Some(key) = substate_key.for_map() {
                     TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(
-                        scrypto_decode(&key).map_err(|_| ())?,
+                        IntentHash::from_hash(Hash(key.clone().try_into().map_err(|_| ())?)),
                     )
                 } else {
                     return Err(());
