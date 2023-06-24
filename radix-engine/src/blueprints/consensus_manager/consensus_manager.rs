@@ -505,6 +505,36 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
+    fn get_validator_xrd_cost<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+        where
+            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let manager_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ConsensusManagerField::ConsensusManager.into(),
+            LockFlags::read_only(),
+        )?;
+        let manager_substate: ConsensusManagerSubstate =
+            api.field_lock_read_typed(manager_handle)?;
+
+        let validator_creation_xrd_cost = if manager_substate.started {
+            let config_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                ConsensusManagerField::Config.into(),
+                LockFlags::read_only(),
+            )?;
+            let manager_config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+            api.field_lock_release(config_handle)?;
+            manager_config.config.validator_creation_xrd_cost
+        } else {
+            Decimal::zero()
+        };
+
+        api.field_lock_release(manager_handle)?;
+
+        Ok(validator_creation_xrd_cost)
+    }
+
     pub(crate) fn create_validator<Y>(
         key: Secp256k1PublicKey,
         fee_factor: Decimal,
@@ -513,6 +543,8 @@ impl ConsensusManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        let _validator_xrd_cost = Self::get_validator_xrd_cost(api)?;
+
         let (validator_address, owner_token_bucket) =
             ValidatorCreator::create(key, false, fee_factor, api)?;
 

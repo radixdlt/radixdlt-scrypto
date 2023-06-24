@@ -45,6 +45,8 @@ pub struct ConsensusManagerConfig {
     pub min_validator_reliability: Decimal,
     pub num_owner_stake_units_unlock_epochs: u64,
     pub num_fee_increase_delay_epochs: u64,
+
+    pub validator_creation_xrd_cost: Decimal,
 }
 
 impl ConsensusManagerConfig {
