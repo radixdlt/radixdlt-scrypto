@@ -326,6 +326,21 @@ fn test_default_substate_size_limit() {
 
 #[test]
 fn test_default_invoke_payload_size_limit() {
+    let mut overhead = Vec::new();
+    let mut encoder = VecEncoder::<ScryptoCustomValueKind>::new(&mut overhead, 100);
+    encoder
+        .write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+        .unwrap();
+    encoder.write_value_kind(ValueKind::Tuple).unwrap();
+    encoder.write_size(1).unwrap();
+    encoder.write_value_kind(ValueKind::Array).unwrap();
+    encoder.write_value_kind(ValueKind::U8).unwrap();
+    encoder.write_size(DEFAULT_MAX_INVOKE_INPUT_SIZE).unwrap();
+    let overhead_len = overhead.len();
+    let actor_len = PACKAGE_PACKAGE.as_ref().len() + "InvokeLimitsTest".len() + "callee".len();
+    println!("{:?}", overhead_len);
+    println!("{:?}", actor_len);
+
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
@@ -336,13 +351,7 @@ fn test_default_invoke_payload_size_limit() {
             package_address,
             "InvokeLimitsTest",
             "call",
-            manifest_args!(
-                DEFAULT_MAX_INVOKE_INPUT_SIZE
-                    - 10
-                    - package_address.as_ref().len()
-                    - "InvokeLimitsTest".len()
-                    - "call".len()
-            ),
+            manifest_args!(DEFAULT_MAX_INVOKE_INPUT_SIZE - actor_len - overhead_len),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -357,13 +366,7 @@ fn test_default_invoke_payload_size_limit() {
             package_address,
             "InvokeLimitsTest",
             "call",
-            manifest_args!(
-                DEFAULT_MAX_INVOKE_INPUT_SIZE
-                    - 9
-                    - package_address.as_ref().len()
-                    - "InvokeLimitsTest".len()
-                    - "call".len()
-            ),
+            manifest_args!(DEFAULT_MAX_INVOKE_INPUT_SIZE - actor_len - overhead_len + 1),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

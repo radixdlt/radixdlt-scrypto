@@ -248,13 +248,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             ));
         }
 
-        let tlimit = &mut api.kernel_get_system().modules.limits;
+        let module = &mut api.kernel_get_system().modules.limits;
         let input_size = invocation.len();
-        if input_size > tlimit.invoke_payload_max_size {
-            tlimit.invoke_payload_max_size = input_size;
+        if input_size > module.invoke_payload_max_size {
+            module.invoke_payload_max_size = input_size;
         }
 
-        if input_size > tlimit.limits_config.max_invoke_payload_size {
+        if input_size > module.limits_config.max_invoke_payload_size {
             Err(RuntimeError::SystemModuleError(
                 SystemModuleError::LimitingError(LimitingError::MaxInvokePayloadSizeExceeded(
                     input_size,
