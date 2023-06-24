@@ -61,7 +61,7 @@ impl FeeTable {
         mul(cast(size), 2)
     }
 
-    fn data_validation_cost(size: usize) -> u32 {
+    fn data_processing_cost(size: usize) -> u32 {
         add(mul(cast(size), 10), 1000)
     }
 
@@ -179,7 +179,7 @@ impl FeeTable {
 
     #[inline]
     pub fn invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {
-        Self::data_validation_cost(input_size)
+        Self::data_processing_cost(input_size)
     }
 
     #[inline]
@@ -196,7 +196,7 @@ impl FeeTable {
     ) -> u32 {
         // FIXME: add size count
         add3(
-            Self::data_validation_cost(total_substate_size),
+            Self::data_processing_cost(total_substate_size),
             Self::store_access_cost(store_access),
             if let Some(entity_type) = node_id.entity_type() {
                 match entity_type {
@@ -228,7 +228,7 @@ impl FeeTable {
     pub fn drop_node_cost(&self, size: usize) -> u32 {
         add(
             324, // average of gathered data
-            Self::data_validation_cost(size),
+            Self::data_processing_cost(size),
         )
     }
 
@@ -242,7 +242,7 @@ impl FeeTable {
     pub fn open_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
         add3(
             100,
-            Self::data_validation_cost(size),
+            Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
     }
@@ -251,7 +251,7 @@ impl FeeTable {
     pub fn read_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
         add3(
             174,
-            Self::data_validation_cost(size),
+            Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
     }
@@ -260,7 +260,7 @@ impl FeeTable {
     pub fn write_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
         add3(
             126,
-            Self::data_validation_cost(size),
+            Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
     }
@@ -274,7 +274,7 @@ impl FeeTable {
     pub fn set_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
         add3(
             100,
-            Self::data_validation_cost(size),
+            Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
     }
@@ -340,17 +340,17 @@ impl FeeTable {
 
     #[inline]
     pub fn emit_event_cost(&self, size: usize) -> u32 {
-        10000 + Self::data_validation_cost(size) + Self::transient_data_cost(size)
+        10000 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
     }
 
     #[inline]
     pub fn emit_log_cost(&self, size: usize) -> u32 {
-        10000 + Self::data_validation_cost(size) + Self::transient_data_cost(size)
+        10000 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
     }
 
     #[inline]
     pub fn panic_cost(&self, size: usize) -> u32 {
-        10000 + Self::data_validation_cost(size) + Self::transient_data_cost(size)
+        10000 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
     }
 
     //======================
