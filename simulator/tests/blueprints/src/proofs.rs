@@ -4,10 +4,10 @@ use scrypto::prelude::*;
 mod proofs {
     enable_method_auth! {
         roles {
-            auth;
+            auth => updatable_by: [];
         },
         methods {
-            organizational_authenticated_method => auth;
+            organizational_authenticated_method => restrict_to: [auth];
         }
     }
 
