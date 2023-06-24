@@ -163,8 +163,8 @@ impl ScenarioCore {
         &self.network
     }
 
-    pub fn encoder(&self) -> Bech32Encoder {
-        Bech32Encoder::new(&self.network)
+    pub fn encoder(&self) -> AddressBech32Encoder {
+        AddressBech32Encoder::new(&self.network)
     }
 
     pub fn check_start(&self, previous: &Option<&TransactionReceipt>) -> Result<(), ScenarioError> {

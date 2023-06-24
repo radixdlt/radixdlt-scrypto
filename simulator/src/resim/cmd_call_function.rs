@@ -44,7 +44,7 @@ pub struct CallFunction {
 
 impl CallFunction {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let bech32_decoder = Bech32Decoder::for_simulator();
+        let address_bech32_decoder = AddressBech32Decoder::for_simulator();
 
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
@@ -54,7 +54,7 @@ impl CallFunction {
             manifest_builder = manifest_builder.borrow_mut(|builder| {
                 create_proof_from_account(
                     builder,
-                    &bech32_decoder,
+                    &address_bech32_decoder,
                     default_account,
                     resource_specifier,
                 )
@@ -68,7 +68,7 @@ impl CallFunction {
             .borrow_mut(|builder| {
                 self.add_call_function_instruction_with_schema(
                     builder,
-                    &bech32_decoder,
+                    &address_bech32_decoder,
                     self.package_address.0,
                     self.blueprint_name.clone(),
                     self.function_name.clone(),
@@ -105,7 +105,7 @@ impl CallFunction {
     pub fn add_call_function_instruction_with_schema<'a>(
         &self,
         builder: &'a mut ManifestBuilder,
-        bech32_decoder: &Bech32Decoder,
+        address_bech32_decoder: &AddressBech32Decoder,
         package_address: PackageAddress,
         blueprint_name: String,
         function_name: String,
@@ -132,14 +132,19 @@ impl CallFunction {
             }
         };
 
-        let (builder, built_args) =
-            build_call_arguments(builder, bech32_decoder, &schema, index, args, account).map_err(
-                |e| {
-                    Error::TransactionConstructionError(
-                        BuildCallInstructionError::FailedToBuildArguments(e),
-                    )
-                },
-            )?;
+        let (builder, built_args) = build_call_arguments(
+            builder,
+            address_bech32_decoder,
+            &schema,
+            index,
+            args,
+            account,
+        )
+        .map_err(|e| {
+            Error::TransactionConstructionError(BuildCallInstructionError::FailedToBuildArguments(
+                e,
+            ))
+        })?;
 
         builder.add_instruction(InstructionV1::CallFunction {
             package_address: DynamicPackageAddress::Static(package_address),

@@ -50,22 +50,22 @@ impl NonFungibleGlobalId {
     }
 
     /// Returns canonical representation of this NonFungibleGlobalId.
-    pub fn to_canonical_string(&self, bech32_encoder: &Bech32Encoder) -> String {
-        format!("{}", self.display(bech32_encoder))
+    pub fn to_canonical_string(&self, address_bech32_encoder: &AddressBech32Encoder) -> String {
+        format!("{}", self.display(address_bech32_encoder))
     }
 
     /// Converts canonical representation to NonFungibleGlobalId.
     ///
     /// This is composed of `resource_address:id_simple_representation`
     pub fn try_from_canonical_string(
-        bech32_decoder: &Bech32Decoder,
+        address_bech32_decoder: &AddressBech32Decoder,
         s: &str,
     ) -> Result<Self, ParseNonFungibleGlobalIdError> {
         let parts = s.split(':').collect::<Vec<&str>>();
         if parts.len() != 2 {
             return Err(ParseNonFungibleGlobalIdError::RequiresTwoParts);
         }
-        let resource_address = ResourceAddress::try_from_bech32(bech32_decoder, parts[0])
+        let resource_address = ResourceAddress::try_from_bech32(address_bech32_decoder, parts[0])
             .ok_or(ParseNonFungibleGlobalIdError::InvalidResourceAddress)?;
         let local_id = NonFungibleLocalId::from_str(parts[1])?;
         Ok(NonFungibleGlobalId::new(resource_address, local_id))
@@ -182,12 +182,12 @@ impl FromPublicKey for NonFungibleGlobalId {
 mod tests {
     use super::*;
     use crate::address::test_addresses::*;
-    use crate::address::Bech32Decoder;
+    use crate::address::AddressBech32Decoder;
 
     #[test]
     fn non_fungible_global_id_canonical_conversion() {
-        let dec = Bech32Decoder::for_simulator();
-        let enc = Bech32Encoder::for_simulator();
+        let dec = AddressBech32Decoder::for_simulator();
+        let enc = AddressBech32Encoder::for_simulator();
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
@@ -244,10 +244,10 @@ mod tests {
 
     #[test]
     fn non_fungible_global_id_canonical_conversion_error() {
-        let bech32_decoder = Bech32Decoder::for_simulator();
+        let address_bech32_decoder = AddressBech32Decoder::for_simulator();
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
-                &bech32_decoder,
+                &address_bech32_decoder,
                 &NON_FUNGIBLE_RESOURCE_SIM_ADDRESS,
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
@@ -255,7 +255,7 @@ mod tests {
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
-                &bech32_decoder,
+                &address_bech32_decoder,
                 &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:1:2"),
             ),
             Err(ParseNonFungibleGlobalIdError::RequiresTwoParts)
@@ -263,7 +263,7 @@ mod tests {
 
         assert_eq!(
             NonFungibleGlobalId::try_from_canonical_string(
-                &bech32_decoder,
+                &address_bech32_decoder,
                 &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:"),
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(
@@ -272,13 +272,13 @@ mod tests {
         );
 
         assert!(matches!(
-            NonFungibleGlobalId::try_from_canonical_string(&bech32_decoder, ":",),
+            NonFungibleGlobalId::try_from_canonical_string(&address_bech32_decoder, ":",),
             Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress)
         ));
 
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(
-                &bech32_decoder,
+                &address_bech32_decoder,
                 "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:#1#",
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidResourceAddress)
@@ -286,7 +286,7 @@ mod tests {
 
         assert!(matches!(
             NonFungibleGlobalId::try_from_canonical_string(
-                &bech32_decoder,
+                &address_bech32_decoder,
                 &format!("{NON_FUNGIBLE_RESOURCE_SIM_ADDRESS}:#notnumber#"),
             ),
             Err(ParseNonFungibleGlobalIdError::InvalidNonFungibleLocalId(

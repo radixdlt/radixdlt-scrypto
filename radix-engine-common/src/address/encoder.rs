@@ -1,5 +1,5 @@
 use super::hrpset::HrpSet;
-use crate::address::errors::EncodeBech32AddressError;
+use crate::address::errors::AddressBech32EncodeError;
 use crate::network::NetworkDefinition;
 use crate::types::EntityType;
 use bech32::{self, ToBase32, Variant, WriteBase32};
@@ -7,23 +7,23 @@ use sbor::rust::prelude::*;
 
 /// Represents an encoder which understands how to encode Scrypto addresses in Bech32.
 #[derive(Debug)]
-pub struct Bech32Encoder {
+pub struct AddressBech32Encoder {
     pub hrp_set: HrpSet,
 }
 
-impl Bech32Encoder {
+impl AddressBech32Encoder {
     pub fn for_simulator() -> Self {
         Self::new(&NetworkDefinition::simulator())
     }
 
-    /// Instantiates a new Bech32Encoder with the HRP corresponding to the passed network.
+    /// Instantiates a new AddressBech32Encoder with the HRP corresponding to the passed network.
     pub fn new(network: &NetworkDefinition) -> Self {
         Self {
             hrp_set: network.into(),
         }
     }
 
-    pub fn encode(&self, full_data: &[u8]) -> Result<String, EncodeBech32AddressError> {
+    pub fn encode(&self, full_data: &[u8]) -> Result<String, AddressBech32EncodeError> {
         let mut buf = String::new();
         self.encode_to_fmt(&mut buf, full_data)?;
         Ok(buf)
@@ -34,22 +34,22 @@ impl Bech32Encoder {
         &self,
         fmt: &mut F,
         full_data: &[u8],
-    ) -> Result<(), EncodeBech32AddressError> {
+    ) -> Result<(), AddressBech32EncodeError> {
         // Decode the entity type
         let entity_type = EntityType::from_repr(
             *full_data
                 .get(0)
-                .ok_or(EncodeBech32AddressError::MissingEntityTypeByte)?,
+                .ok_or(AddressBech32EncodeError::MissingEntityTypeByte)?,
         )
-        .ok_or_else(|| EncodeBech32AddressError::InvalidEntityTypeId(full_data[0]))?;
+        .ok_or_else(|| AddressBech32EncodeError::InvalidEntityTypeId(full_data[0]))?;
 
         // Obtain the HRP corresponding to this entity type
         let hrp = self.hrp_set.get_entity_hrp(&entity_type);
 
         match bech32_encode_to_fmt(fmt, hrp, full_data.to_base32(), Variant::Bech32m) {
             Ok(Ok(())) => Ok(()),
-            Ok(Err(format_error)) => Err(EncodeBech32AddressError::FormatError(format_error)),
-            Err(encoding_error) => Err(EncodeBech32AddressError::Bech32mEncodingError(
+            Ok(Err(format_error)) => Err(AddressBech32EncodeError::FormatError(format_error)),
+            Err(encoding_error) => Err(AddressBech32EncodeError::Bech32mEncodingError(
                 encoding_error,
             )),
         }
