@@ -1,4 +1,6 @@
 use crate::*;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use sbor::rust::prelude::*;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]

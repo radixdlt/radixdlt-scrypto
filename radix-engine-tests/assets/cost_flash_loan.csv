@@ -6,7 +6,7 @@ EmitEvent                     ,    110000
 GenerateRuid                  ,       300
 Invoke                        ,     75080
 LockFee                       ,       100
-OpenSubstate                  ,   8242505
+OpenSubstate                  ,   8242705
 QueryActor                    ,      3000
 QueryAuthZone                 ,       400
 ReadSubstate                  ,   1095674

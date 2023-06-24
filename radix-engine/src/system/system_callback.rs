@@ -310,8 +310,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             // FIXME: Load dependent resources/components
 
-            let mut vm_instance =
-                { NativeVm::create_instance(&blueprint_id.package_address, &[PACKAGE_CODE_ID])? };
+            let mut vm_instance = {
+                NativeVm::create_instance(
+                    &blueprint_id.package_address,
+                    &PACKAGE_CODE_ID.to_be_bytes(),
+                )?
+            };
             let output = { vm_instance.invoke(&export_name, input, &mut system)? };
 
             output
@@ -335,7 +339,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let mut vm_instance = {
                 NativeVm::create_instance(
                     &blueprint_id.package_address,
-                    &[TRANSACTION_PROCESSOR_CODE_ID],
+                    &TRANSACTION_PROCESSOR_CODE_ID.to_be_bytes(),
                 )?
             };
             let output = { vm_instance.invoke(&export_name, input, &mut system)? };
