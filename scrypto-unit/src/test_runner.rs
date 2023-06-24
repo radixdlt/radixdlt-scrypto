@@ -809,7 +809,7 @@ impl TestRunner {
                 "free",
                 manifest_args!()
             )
-            .take_from_worktop(XRD, Decimal::zero(), |builder, bucket| {
+            .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, |builder, bucket| {
                 builder.create_validator(pub_key, Decimal::ONE, bucket);
                 builder
             })

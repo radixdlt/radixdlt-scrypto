@@ -181,7 +181,7 @@ impl ProposalStatistic {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum ConsensusManagerError {
     InvalidRoundUpdate {
         from: Round,
@@ -201,6 +201,10 @@ pub enum ConsensusManagerError {
     },
     AlreadyStarted,
     NotXrd,
+    InvalidXrdPayment {
+        expected: Decimal,
+        actual: Decimal,
+    },
 }
 
 pub const CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX: CollectionIndex = 0u8;
@@ -506,7 +510,7 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
-    fn get_validator_xrd_cost<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    fn get_validator_xrd_cost<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
         where
             Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -526,9 +530,9 @@ impl ConsensusManagerBlueprint {
             )?;
             let manager_config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
             api.field_lock_release(config_handle)?;
-            manager_config.config.validator_creation_xrd_cost
+            Some(manager_config.config.validator_creation_xrd_cost)
         } else {
-            Decimal::zero()
+            None
         };
 
         api.field_lock_release(manager_handle)?;
@@ -549,9 +553,21 @@ impl ConsensusManagerBlueprint {
             return Err(RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(ConsensusManagerError::NotXrd)));
         }
 
-        let _validator_xrd_cost = Self::get_validator_xrd_cost(api)?;
+        let validator_xrd_cost = Self::get_validator_xrd_cost(api)?;
+        if let Some(xrd_cost) = validator_xrd_cost {
+            let payment_amount = xrd_payment.amount(api)?;
+            if !payment_amount.eq(&xrd_cost) {
+                return Err(RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(ConsensusManagerError::InvalidXrdPayment {
+                    actual: payment_amount,
+                    expected: xrd_cost,
+                })));
+            }
 
-        xrd_payment.drop_empty(api)?;
+            xrd_payment.burn(api)?;
+
+        } else {
+            xrd_payment.drop_empty(api)?;
+        }
 
         let (validator_address, owner_token_bucket) =
             ValidatorCreator::create(key, false, fee_factor, api)?;

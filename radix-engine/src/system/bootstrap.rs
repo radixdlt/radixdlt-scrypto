@@ -458,6 +458,13 @@ pub fn create_system_bootstrap_transaction(
                 rule!(deny_all),
             ),
         );
+        access_rules.insert(
+            Burn,
+            (
+                rule!(require(global_caller(CONSENSUS_MANAGER))),
+                rule!(deny_all),
+            ),
+        );
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(RADIX_TOKEN),
