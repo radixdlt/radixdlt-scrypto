@@ -2064,6 +2064,16 @@ where
         }
     }
 
+    fn usd_price(&mut self) -> Result<Decimal, RuntimeError> {
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.usd_price())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
+    }
+
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, RuntimeError> {
         if let Some(costing) = self.api.kernel_get_system().modules.costing() {
             Ok(costing.max_per_function_royalty_in_xrd)
