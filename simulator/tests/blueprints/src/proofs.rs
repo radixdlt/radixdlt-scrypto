@@ -35,7 +35,7 @@ mod proofs {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles! {
-                    auth => organizational_access_rule;
+                    auth => organizational_access_rule, locked;
                 })
                 .globalize();
             (
