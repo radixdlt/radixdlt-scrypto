@@ -38,7 +38,7 @@ pub struct PackagePublishWasmAdvancedInput {
     pub code: Vec<u8>,
     pub setup: PackageDefinition,
     pub metadata: MetadataInit,
-    pub owner_rule: OwnerRole,
+    pub owner_role: OwnerRole,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -47,7 +47,7 @@ pub struct PackagePublishWasmAdvancedManifestInput {
     pub code: ManifestBlobRef,
     pub setup: PackageDefinition,
     pub metadata: MetadataInit,
-    pub owner_rule: OwnerRole,
+    pub owner_role: OwnerRole,
 }
 
 pub type PackagePublishWasmAdvancedOutput = PackageAddress;
@@ -57,7 +57,7 @@ pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct PackagePublishNativeInput {
     pub package_address: Option<GlobalAddressReservation>,
-    pub native_package_code_id: u8,
+    pub native_package_code_id: u64,
     pub setup: PackageDefinition,
     pub metadata: MetadataInit,
 }
@@ -65,7 +65,7 @@ pub struct PackagePublishNativeInput {
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishNativeManifestInput {
     pub package_address: Option<ManifestAddressReservation>,
-    pub native_package_code_id: u8,
+    pub native_package_code_id: u64,
     pub setup: PackageDefinition,
     pub metadata: MetadataInit,
 }

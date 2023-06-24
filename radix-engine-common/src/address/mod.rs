@@ -4,11 +4,11 @@ mod encoder;
 mod errors;
 mod hrpset;
 
-pub use decoder::Bech32Decoder;
+pub use decoder::*;
 pub use display::*;
-pub use encoder::Bech32Encoder;
+pub use encoder::*;
 pub use errors::*;
-pub use hrpset::HrpSet;
+pub use hrpset::*;
 
 pub mod test_addresses {
     use crate::types::{NodeId, ResourceAddress};

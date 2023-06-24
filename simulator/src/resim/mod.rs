@@ -197,7 +197,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     );
 
     if print_receipt {
-        let encoder = Bech32Encoder::for_simulator();
+        let encoder = AddressBech32Encoder::for_simulator();
         let display_context = TransactionReceiptDisplayContextBuilder::new()
             .encoder(&encoder)
             .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
@@ -268,7 +268,7 @@ pub fn handle_manifest<O: std::io::Write>(
             );
 
             if print_receipt {
-                let encoder = Bech32Encoder::for_simulator();
+                let encoder = AddressBech32Encoder::for_simulator();
                 let display_context = TransactionReceiptDisplayContextBuilder::new()
                     .encoder(&encoder)
                     .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {

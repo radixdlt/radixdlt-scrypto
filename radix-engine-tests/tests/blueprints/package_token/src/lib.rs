@@ -4,7 +4,7 @@ use scrypto::prelude::*;
 mod factory {
     enable_method_auth! {
         methods {
-            set_address => OWNER;
+            set_address => restrict_to: [OWNER];
         }
     }
 

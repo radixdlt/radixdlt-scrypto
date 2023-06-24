@@ -908,7 +908,7 @@ pub fn create_system_bootstrap_transaction(
                     "name" => "Faucet Package".to_owned(), locked;
                     "description" => "A package that defines the logic of a simple faucet component for testing purposes.".to_owned(), locked;
                 },
-                owner_rule: OwnerRole::None,
+                owner_role: OwnerRole::None,
             }),
         });
     }
@@ -937,7 +937,7 @@ pub fn create_system_bootstrap_transaction(
                     "name" => "Genesis Helper Package".to_owned(), locked;
                     "description" => "A package that defines the logic of the genesis helper which includes various utility and helper functions used in the creation of the Babylon Genesis.".to_owned(), locked;
                 },
-                owner_rule: OwnerRole::None,
+                owner_role: OwnerRole::None,
             }),
         });
     }

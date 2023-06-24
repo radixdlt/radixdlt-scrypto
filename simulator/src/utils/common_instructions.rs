@@ -74,11 +74,11 @@ impl From<RustToManifestValueError> for BuildCallArgumentsError {
 /// Creates resource proof from an account.
 pub fn create_proof_from_account<'a>(
     builder: &'a mut ManifestBuilder,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     account: ComponentAddress,
     resource_specifier: String,
 ) -> Result<&'a mut ManifestBuilder, BuildCallArgumentError> {
-    let resource_specifier = parse_resource_specifier(&resource_specifier, bech32_decoder)
+    let resource_specifier = parse_resource_specifier(&resource_specifier, address_bech32_decoder)
         .map_err(|_| BuildCallArgumentError::InvalidResourceSpecifier(resource_specifier))?;
     let builder = match resource_specifier {
         ResourceSpecifier::Amount(amount, resource_address) => {
@@ -96,7 +96,7 @@ pub fn create_proof_from_account<'a>(
 
 pub fn build_call_arguments<'a>(
     mut builder: &'a mut ManifestBuilder,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     schema: &ScryptoSchema,
     type_index: LocalTypeIndex,
     args: Vec<String>,
@@ -115,7 +115,7 @@ pub fn build_call_arguments<'a>(
             for (i, f) in field_types.iter().enumerate() {
                 let tuple = build_call_argument(
                     builder,
-                    bech32_decoder,
+                    address_bech32_decoder,
                     schema.resolve_type_kind(*f).expect("Inconsistent schema"),
                     schema
                         .resolve_type_validation(*f)
@@ -148,7 +148,7 @@ macro_rules! parse_basic_type {
 
 fn build_call_argument<'a>(
     builder: &'a mut ManifestBuilder,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     type_kind: &ScryptoTypeKind<LocalTypeIndex>,
     type_validation: &TypeValidation<ScryptoCustomTypeValidation>,
     argument: String,
@@ -205,7 +205,7 @@ fn build_call_argument<'a>(
                 ))
             ) =>
         {
-            let value = PackageAddress::try_from_bech32(&bech32_decoder, &argument)
+            let value = PackageAddress::try_from_bech32(&address_bech32_decoder, &argument)
                 .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
@@ -222,7 +222,7 @@ fn build_call_argument<'a>(
                 ))
             ) =>
         {
-            let value = ComponentAddress::try_from_bech32(&bech32_decoder, &argument)
+            let value = ComponentAddress::try_from_bech32(&address_bech32_decoder, &argument)
                 .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
@@ -239,7 +239,7 @@ fn build_call_argument<'a>(
                 ))
             ) =>
         {
-            let value = ResourceAddress::try_from_bech32(&bech32_decoder, &argument)
+            let value = ResourceAddress::try_from_bech32(&address_bech32_decoder, &argument)
                 .ok_or(BuildCallArgumentError::FailedToParse(argument))?;
             Ok((
                 builder,
@@ -254,7 +254,7 @@ fn build_call_argument<'a>(
                 TypeValidation::Custom(ScryptoCustomTypeValidation::Own(OwnValidation::IsBucket))
             ) =>
         {
-            let resource_specifier = parse_resource_specifier(&argument, bech32_decoder)
+            let resource_specifier = parse_resource_specifier(&argument, address_bech32_decoder)
                 .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
             let bucket_id = match resource_specifier {
                 ResourceSpecifier::Amount(amount, resource_address) => {
@@ -299,7 +299,7 @@ fn build_call_argument<'a>(
                 TypeValidation::Custom(ScryptoCustomTypeValidation::Own(OwnValidation::IsProof))
             ) =>
         {
-            let resource_specifier = parse_resource_specifier(&argument, bech32_decoder)
+            let resource_specifier = parse_resource_specifier(&argument, address_bech32_decoder)
                 .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
             let proof_id = match resource_specifier {
                 ResourceSpecifier::Amount(amount, resource_address) => {
@@ -508,7 +508,7 @@ mod test {
         // Arrange
         let component_address = component_address(EntityType::GlobalAccount, 5);
 
-        let arg = Bech32Encoder::for_simulator()
+        let arg = AddressBech32Encoder::for_simulator()
             .encode(component_address.as_ref())
             .unwrap();
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference);
@@ -529,7 +529,7 @@ mod test {
         // Arrange
         let package_address = package_address(EntityType::GlobalPackage, 5);
 
-        let arg = Bech32Encoder::for_simulator()
+        let arg = AddressBech32Encoder::for_simulator()
             .encode(package_address.as_ref())
             .unwrap();
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference);
@@ -550,7 +550,7 @@ mod test {
         // Arrange
         let resource_address = resource_address(EntityType::GlobalFungibleResourceManager, 5);
 
-        let arg = Bech32Encoder::for_simulator()
+        let arg = AddressBech32Encoder::for_simulator()
             .encode(resource_address.as_ref())
             .unwrap();
         let type_kind = ScryptoTypeKind::Custom(ScryptoCustomTypeKind::Reference);
@@ -664,7 +664,7 @@ mod test {
     ) -> Result<T, BuildAndDecodeArgError> {
         let (_, built_arg) = build_call_argument(
             &mut ManifestBuilder::new(),
-            &Bech32Decoder::for_simulator(),
+            &AddressBech32Decoder::for_simulator(),
             &type_kind,
             &type_validation,
             arg.as_ref().to_owned(),

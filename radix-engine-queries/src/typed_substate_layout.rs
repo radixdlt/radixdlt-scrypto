@@ -452,7 +452,6 @@ pub enum TypedMainModuleSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedPackageFieldValue {
-    Code(PackageCodeSubstate),
     Royalty(PackageRoyaltyAccumulatorSubstate),
 }
 

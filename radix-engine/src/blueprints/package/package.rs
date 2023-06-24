@@ -798,8 +798,8 @@ impl PackageNativePackage {
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AccessRules(
                         btreemap!(
-                            PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(allow_all),
-                            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(allow_all),
+                            PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
+                            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
                             PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
                         )
                     ),
@@ -870,7 +870,7 @@ impl PackageNativePackage {
                     input.code,
                     input.setup,
                     input.metadata,
-                    input.owner_rule,
+                    input.owner_role,
                     api,
                 )?;
 
@@ -892,7 +892,7 @@ impl PackageNativePackage {
 
     pub(crate) fn publish_native<Y, L: Default>(
         package_address: Option<GlobalAddressReservation>,
-        native_package_code_id: u8,
+        native_package_code_id: u64,
         definition: PackageDefinition,
         metadata: MetadataInit,
         api: &mut Y,
@@ -916,7 +916,7 @@ impl PackageNativePackage {
 
         let code = PackageCodeSubstate {
             vm_type: VmType::Native,
-            code: vec![native_package_code_id],
+            code: native_package_code_id.to_be_bytes().to_vec(),
         };
 
         let code_hash = hash(scrypto_encode(&code).unwrap());

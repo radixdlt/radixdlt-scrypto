@@ -60,11 +60,11 @@ mod genesis_helper {
 
     enable_method_auth! {
         roles {
-            system => updaters: system;
+            system => updatable_by: [system];
         },
         methods {
-            ingest_data_chunk => system;
-            wrap_up => system;
+            ingest_data_chunk => restrict_to: [system];
+            wrap_up => restrict_to: [system];
         }
     }
 
@@ -87,13 +87,9 @@ mod genesis_helper {
             .prepare_to_globalize(OwnerRole::Updatable(rule!(require(system_role.clone()))))
             .with_address(address_reservation)
             .metadata(metadata! {
-                roles {
-                    metadata_admin => rule!(deny_all);
-                    metadata_admin_updater => rule!(deny_all);
-                },
                 init {
-                    "name" => "Genesis Helper".to_owned(), // TODO: Lock
-                    "description" => "A component with various utility and helper methods used in the creation of the Babylon Genesis.".to_owned() // TODO: Lock
+                    "name" => "Genesis Helper".to_owned(), locked;
+                    "description" => "A component with various utility and helper methods used in the creation of the Babylon Genesis.".to_owned(), locked;
                 }
             })
             .globalize()

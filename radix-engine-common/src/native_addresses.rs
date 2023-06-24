@@ -232,7 +232,7 @@ pub const TRANSACTION_TRACKER: ComponentAddress = ComponentAddress::new_or_panic
 #[cfg(test)]
 mod tests {
     use super::*;
-    use radix_engine_common::{address::Bech32Encoder, network::NetworkDefinition};
+    use radix_engine_common::{address::AddressBech32Encoder, network::NetworkDefinition};
 
     #[test]
     fn test_mainnet_vanity_addresses() {
@@ -388,7 +388,7 @@ mod tests {
 
     fn check_address(address_bytes: &[u8], entity_type: EntityType, address_string: &str) {
         assert_eq!(address_bytes[0], entity_type as u8);
-        let encoded_address = Bech32Encoder::new(&NetworkDefinition::mainnet())
+        let encoded_address = AddressBech32Encoder::new(&NetworkDefinition::mainnet())
             .encode(address_bytes)
             .unwrap();
         assert_eq!(encoded_address.as_str(), address_string);

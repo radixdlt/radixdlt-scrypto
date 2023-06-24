@@ -798,7 +798,7 @@ impl ManifestBuilder {
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: M,
-        owner_rule: OwnerRole,
+        owner_role: OwnerRole,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -812,7 +812,7 @@ impl ManifestBuilder {
                 setup: definition,
                 metadata: metadata.into(),
                 package_address: None,
-                owner_rule,
+                owner_role,
             }),
         });
         self
@@ -855,7 +855,7 @@ impl ManifestBuilder {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
                 metadata: BTreeMap::new().into(),
-                owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
+                owner_role: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
         });
         self
