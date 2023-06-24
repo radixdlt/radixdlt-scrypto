@@ -8,7 +8,6 @@ use native_sdk::resource::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
-use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -76,14 +75,18 @@ impl MultiResourcePoolBlueprint {
         // Creating the pool nodes
         let access_rules =
             AccessRules::create(OwnerRole::Updatable(pool_manager_rule), btreemap!(), api)?.0;
-        // FIXME: The following fields must ALL be LOCKED. No entity with any authority should be
-        // able to update them later on. Implement this once metadata locking is done.
         let metadata = Metadata::create_with_data(
-            btreemap!(
-                "pool_vault_number".into() => MetadataValue::U8(2),
-                "pool_resources".into() => MetadataValue::GlobalAddressArray(resource_addresses.iter().cloned().map(Into::into).collect()),
-                "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()),
-            ),
+            metadata_init! {
+                "pool_vault_number" => 2u8, locked;
+                "pool_resources" => {
+                    let addresses: Vec<GlobalAddress> = resource_addresses.iter().cloned().map(Into::into).collect();
+                    addresses
+                }, locked;
+                "pool_unit" => {
+                    let address: GlobalAddress = pool_unit_resource_manager.0.into();
+                    address
+                }, locked;
+            },
             api,
         )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
