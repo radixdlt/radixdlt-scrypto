@@ -64,6 +64,9 @@ use transaction::model::{
 };
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
+use transaction::validation::{
+    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
+};
 
 pub struct Compile;
 
@@ -848,6 +851,22 @@ impl TestRunner {
             },
         );
         self.execute_manifest(manifest, initial_proofs)
+    }
+
+    pub fn execute_raw_transaction(
+        &mut self,
+        network: &NetworkDefinition,
+        raw_transaction: &RawNotarizedTransaction,
+    ) -> TransactionReceipt {
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
+        let validated = validator
+            .validate_from_raw(&raw_transaction)
+            .expect("Expected raw transaction to be valid");
+        self.execute_transaction(
+            validated.get_executable(),
+            FeeReserveConfig::default(),
+            ExecutionConfig::for_notarized_transaction(),
+        )
     }
 
     pub fn execute_manifest<T>(
