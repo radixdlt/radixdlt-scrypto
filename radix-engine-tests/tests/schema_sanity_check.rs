@@ -13,7 +13,7 @@ use utils::ContextualDisplay;
 #[test]
 fn scan_native_blueprint_schemas_and_highlight_unsafe_types() {
     let test_runner = TestRunner::builder().build();
-    let bech32 = Bech32Encoder::for_simulator();
+    let bech32 = AddressBech32Encoder::for_simulator();
 
     let package_addresses = test_runner.find_all_packages();
     for package_address in package_addresses {

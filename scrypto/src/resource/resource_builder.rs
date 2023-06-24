@@ -450,7 +450,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     scrypto_encode(&FungibleResourceManagerCreateInput {
                         divisibility,
                         track_total_supply: true,
-                        metadata,
+                        metadata: metadata.into(),
                         access_rules,
                     })
                     .unwrap(),
@@ -471,7 +471,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                         id_type,
                         track_total_supply: true,
                         non_fungible_schema,
-                        metadata,
+                        metadata: metadata.into(),
                         access_rules,
                     })
                     .unwrap(),
@@ -528,7 +528,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     track_total_supply: true,
                     divisibility: self.resource_type.divisibility,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     initial_supply: amount.into(),
                 })
@@ -581,7 +581,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -634,7 +634,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -687,7 +687,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -743,7 +743,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
                         non_fungible_schema,
                         track_total_supply: true,
-                        metadata: self.metadata,
+                        metadata: self.metadata.into(),
                         access_rules: self.auth.into_access_rules(),
                         entries: entries
                             .into_iter()

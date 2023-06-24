@@ -18,10 +18,19 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     false # Track Total Supply
     18u8
-    Map<String, Enum>(
-        "name" =>  Enum<Metadata::String>("MyResource"),                                        # Resource Name
-        "symbol" => Enum<Metadata::String>("RSRC"),                                            # Resource Symbol
-        "description" => Enum<Metadata::String>("A very innovative and important resource")    # Resource Description
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<Metadata::String>("MyResource"),                                       # Resource Name
+            true                                                                        # Locked Resource Name
+        ),
+        "symbol" => Tuple(
+            Enum<Metadata::String>("RSRC"),                                             # Resource Symbol
+            true                                                                        # Locked Resource Symbol
+        ),
+        "description" => Tuple(
+            Enum<Metadata::String>("A very innovative and important resource"),    # Resource Description
+            true                                                                   # Locked Resource Description
+        )
     ) 
     Map<Enum, Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array 

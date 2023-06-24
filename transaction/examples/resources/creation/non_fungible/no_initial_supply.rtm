@@ -18,9 +18,15 @@ CREATE_NON_FUNGIBLE_RESOURCE
     Enum<NonFungibleIdType::Integer>()
     false # Track Total Supply
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
-    Map<String, Enum>(
-        "name" => Enum<Metadata::String>("MyResource"),                                        # Resource Name
-        "description" => Enum<Metadata::String>("A very innovative and important resource")    # Resource Description
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<Metadata::String>("MyResource"),                                     # Resource Name
+            true                                                                      # Resource Name locked
+        ),
+        "description" => Tuple(
+            Enum<Metadata::String>("A very innovative and important resource"),       # Resource Description
+            false                                                                     # Resource Description not locked
+        )
     )
     Map<Enum, Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array

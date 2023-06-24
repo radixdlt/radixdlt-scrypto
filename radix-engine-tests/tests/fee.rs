@@ -67,7 +67,10 @@ fn should_be_aborted_when_loan_repaid() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let duration = start.elapsed();
     println!("Time elapsed is: {:?}", duration);
-    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
+    println!(
+        "{}",
+        receipt.display(&AddressBech32Encoder::for_simulator())
+    );
     receipt.expect_commit_failure();
 }
 

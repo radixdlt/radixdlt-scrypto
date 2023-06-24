@@ -384,7 +384,7 @@ impl fmt::Debug for TransactionReceipt {
 
 #[derive(Default)]
 pub struct TransactionReceiptDisplayContext<'a> {
-    pub encoder: Option<&'a Bech32Encoder>,
+    pub encoder: Option<&'a AddressBech32Encoder>,
     pub schema_lookup_callback:
         Option<Box<dyn Fn(&EventTypeIdentifier) -> Option<(LocalTypeIndex, ScryptoSchema)> + 'a>>,
 }
@@ -414,8 +414,8 @@ impl<'a> TransactionReceiptDisplayContext<'a> {
     }
 }
 
-impl<'a> From<&'a Bech32Encoder> for TransactionReceiptDisplayContext<'a> {
-    fn from(encoder: &'a Bech32Encoder) -> Self {
+impl<'a> From<&'a AddressBech32Encoder> for TransactionReceiptDisplayContext<'a> {
+    fn from(encoder: &'a AddressBech32Encoder) -> Self {
         Self {
             encoder: Some(encoder),
             schema_lookup_callback: None,
@@ -423,8 +423,8 @@ impl<'a> From<&'a Bech32Encoder> for TransactionReceiptDisplayContext<'a> {
     }
 }
 
-impl<'a> From<Option<&'a Bech32Encoder>> for TransactionReceiptDisplayContext<'a> {
-    fn from(encoder: Option<&'a Bech32Encoder>) -> Self {
+impl<'a> From<Option<&'a AddressBech32Encoder>> for TransactionReceiptDisplayContext<'a> {
+    fn from(encoder: Option<&'a AddressBech32Encoder>) -> Self {
         Self {
             encoder,
             schema_lookup_callback: None,
@@ -442,7 +442,7 @@ impl<'a> TransactionReceiptDisplayContextBuilder<'a> {
         })
     }
 
-    pub fn encoder(mut self, encoder: &'a Bech32Encoder) -> Self {
+    pub fn encoder(mut self, encoder: &'a AddressBech32Encoder) -> Self {
         self.0.encoder = Some(encoder);
         self
     }
