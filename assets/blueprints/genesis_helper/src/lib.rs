@@ -60,11 +60,11 @@ mod genesis_helper {
 
     enable_method_auth! {
         roles {
-            system => updaters: system;
+            system => updatable_by: [system];
         },
         methods {
-            ingest_data_chunk => system;
-            wrap_up => system;
+            ingest_data_chunk => restrict_to: [system];
+            wrap_up => restrict_to: [system];
         }
     }
 
