@@ -1960,7 +1960,7 @@ mod tests {
                     track_total_supply: false,
                     divisibility: 18,
                     metadata: metadata_init!(
-                        "name" => "Token".to_owned(), locked;
+                        "name" => "Token".to_owned(), updatable;
                     ),
                     access_rules: BTreeMap::from([
                         (
@@ -2008,7 +2008,7 @@ mod tests {
                         track_total_supply: false,
                         divisibility: 18,
                         metadata: metadata_init!(
-                            "name" => "Token".to_owned(), locked;
+                            "name" => "Token".to_owned(), updatable;
                         ),
                         access_rules: BTreeMap::from([
                             (
