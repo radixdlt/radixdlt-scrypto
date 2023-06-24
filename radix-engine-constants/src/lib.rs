@@ -114,3 +114,6 @@ pub const DEFAULT_MAX_LOG_SIZE: usize = 64 * 1024;
 pub const DEFAULT_MAX_PANIC_MESSAGE_SIZE: usize = 64 * 1024;
 pub const DEFAULT_MAX_NUMBER_OF_EVENTS: usize = 256;
 pub const DEFAULT_MAX_NUMBER_OF_LOGS: usize = 256;
+
+/* Metadata */
+pub const DEFAULT_MAX_METADATA_KEY_LEN: usize = 100;
