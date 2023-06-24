@@ -27,7 +27,12 @@ impl ConsensusManager {
         let rtn = api.call_method(
             self.0.as_node_id(),
             CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
-            scrypto_encode(&ConsensusManagerCreateValidatorInput { key, fee_factor, xrd_payment }).unwrap(),
+            scrypto_encode(&ConsensusManagerCreateValidatorInput {
+                key,
+                fee_factor,
+                xrd_payment,
+            })
+            .unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

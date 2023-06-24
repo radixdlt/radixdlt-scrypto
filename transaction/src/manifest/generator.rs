@@ -2103,7 +2103,9 @@ mod tests {
             .unwrap();
         let mut id_validator = ManifestValidator::new();
         let mut resolver = NameResolver::new();
-        resolver.named_buckets.insert("xrd_bucket".to_string(), ManifestBucket(0u32));
+        resolver
+            .named_buckets
+            .insert("xrd_bucket".to_string(), ManifestBucket(0u32));
         assert_eq!(
             generate_instruction(
                 &instruction,
@@ -2112,17 +2114,17 @@ mod tests {
                 &AddressBech32Decoder::new(&NetworkDefinition::simulator()),
                 &MockBlobProvider::default()
             ),
-            Ok(
-                InstructionV1::CallMethod {
-                    address: CONSENSUS_MANAGER.into(),
-                    method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                    args: to_manifest_value_and_unwrap!(&ConsensusManagerCreateValidatorManifestInput {
+            Ok(InstructionV1::CallMethod {
+                address: CONSENSUS_MANAGER.into(),
+                method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(
+                    &ConsensusManagerCreateValidatorManifestInput {
                         key: Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key(),
                         fee_factor: Decimal::ONE,
                         xrd_payment: ManifestBucket(0u32)
-                    }),
-                }
-            )
+                    }
+                ),
+            })
         );
     }
 

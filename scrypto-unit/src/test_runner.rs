@@ -804,11 +804,7 @@ impl TestRunner {
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 10.into())
-            .call_method(
-                self.faucet_component(),
-                "free",
-                manifest_args!()
-            )
+            .call_method(self.faucet_component(), "free", manifest_args!())
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, |builder, bucket| {
                 builder.create_validator(pub_key, Decimal::ONE, bucket);
                 builder

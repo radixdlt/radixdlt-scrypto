@@ -345,7 +345,8 @@ impl ConsensusManagerBlueprint {
                 ConsensusManagerField::Config.into(),
                 LockFlags::read_only(),
             )?;
-            let config_substate: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+            let config_substate: ConsensusManagerConfigSubstate =
+                api.field_lock_read_typed(config_handle)?;
             api.field_lock_release(config_handle)?;
             config_substate
         };
@@ -359,7 +360,9 @@ impl ConsensusManagerBlueprint {
             let mut manager_substate: ConsensusManagerSubstate =
                 api.field_lock_read_typed(manager_handle)?;
             if manager_substate.started {
-                return Err(RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(ConsensusManagerError::AlreadyStarted)));
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(ConsensusManagerError::AlreadyStarted),
+                ));
             }
             manager_substate.started = true;
             api.field_lock_write_typed(manager_handle, manager_substate.clone())?;
@@ -511,8 +514,8 @@ impl ConsensusManagerBlueprint {
     }
 
     fn get_validator_xrd_cost<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
-        where
-            Y: KernelNodeApi + ClientApi<RuntimeError>,
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let manager_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
@@ -528,7 +531,8 @@ impl ConsensusManagerBlueprint {
                 ConsensusManagerField::Config.into(),
                 LockFlags::read_only(),
             )?;
-            let manager_config: ConsensusManagerConfigSubstate = api.field_lock_read_typed(config_handle)?;
+            let manager_config: ConsensusManagerConfigSubstate =
+                api.field_lock_read_typed(config_handle)?;
             api.field_lock_release(config_handle)?;
             Some(manager_config.config.validator_creation_xrd_cost)
         } else {
@@ -550,21 +554,26 @@ impl ConsensusManagerBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         if !xrd_payment.resource_address(api)?.eq(&XRD) {
-            return Err(RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(ConsensusManagerError::NotXrd)));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(ConsensusManagerError::NotXrd),
+            ));
         }
 
         let validator_xrd_cost = Self::get_validator_xrd_cost(api)?;
         if let Some(xrd_cost) = validator_xrd_cost {
             let payment_amount = xrd_payment.amount(api)?;
             if !payment_amount.eq(&xrd_cost) {
-                return Err(RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(ConsensusManagerError::InvalidXrdPayment {
-                    actual: payment_amount,
-                    expected: xrd_cost,
-                })));
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::InvalidXrdPayment {
+                            actual: payment_amount,
+                            expected: xrd_cost,
+                        },
+                    ),
+                ));
             }
 
             xrd_payment.burn(api)?;
-
         } else {
             xrd_payment.drop_empty(api)?;
         }
