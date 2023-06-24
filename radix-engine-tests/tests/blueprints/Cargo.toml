@@ -31,6 +31,7 @@ members = [
     "package_token",
     "proof",
     "proof_creation",
+    "publish_package",
     "recall",
     "recursion",
     "reentrancy",
