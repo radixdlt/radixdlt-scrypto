@@ -26,34 +26,24 @@ lazy_static! {
     };
 }
 
+/// Fee table specifies how each costing entry should be costed.
+///
+/// ## High Level Guideline
+/// - Max cost unit limit: 100,000,000
+/// - Cost unit price: 0.000001 XRD per cost unit
+/// - Max execution costing, excluding tips: 100 XRD
+/// - Basic transfer transaction cost: < 1 XRD
+/// - Execution time for 100,000,000 cost units' worth of computation: <= 1 second
+/// - Baseline: 1 microsecond = 100 cost units
+/// - Non-time based costing will make the actual execution less than anticipated
+///
+/// FIXME: fee table is actively adjusted at this point of time!
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct FeeTable {
     tx_base_cost: u32,
     tx_payload_cost_per_byte: u32,
     tx_signature_verification_cost_per_sig: u32,
 }
-
-#[inline]
-fn cast(a: usize) -> u32 {
-    u32::try_from(a).unwrap_or(u32::MAX)
-}
-
-#[inline]
-fn add(a: u32, b: u32) -> u32 {
-    a.checked_add(b).unwrap_or(u32::MAX)
-}
-
-#[inline]
-fn add3(a: u32, b: u32, c: u32) -> u32 {
-    add(add(a, b), c)
-}
-
-#[inline]
-fn mul(a: u32, b: u32) -> u32 {
-    a.checked_mul(b).unwrap_or(u32::MAX)
-}
-
-// FIXME: update rules!
 
 impl FeeTable {
     pub fn new() -> Self {
@@ -361,4 +351,24 @@ impl FeeTable {
     //======================
     // FIXME: add more costing rules
     // We should account for running system modules, such as auth and royalty.
+}
+
+#[inline]
+fn cast(a: usize) -> u32 {
+    u32::try_from(a).unwrap_or(u32::MAX)
+}
+
+#[inline]
+fn add(a: u32, b: u32) -> u32 {
+    a.checked_add(b).unwrap_or(u32::MAX)
+}
+
+#[inline]
+fn add3(a: u32, b: u32, c: u32) -> u32 {
+    add(add(a, b), c)
+}
+
+#[inline]
+fn mul(a: u32, b: u32) -> u32 {
+    a.checked_mul(b).unwrap_or(u32::MAX)
 }
