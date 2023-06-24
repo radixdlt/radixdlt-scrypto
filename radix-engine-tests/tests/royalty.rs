@@ -1,10 +1,12 @@
 use radix_engine::{system::system_modules::costing::transmute_u128_as_decimal, types::*};
+use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_component_royalty() {
+    // Arrange
     // Basic setup
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -27,6 +29,7 @@ fn test_component_royalty() {
     );
     let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
 
+    // Act
     // Call the paid method
     let account_pre_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
     let receipt = test_runner.execute_manifest(
@@ -37,6 +40,7 @@ fn test_component_royalty() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
+    // Assert
     let commit_result = receipt.expect_commit(true);
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("3"));
     let account_post_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
@@ -102,64 +106,6 @@ fn test_component_royalty_in_usd() {
         component_royalty,
         commit_result.fee_summary.total_royalty_cost_xrd
     );
-}
-
-fn set_up_package_and_component() -> (
-    TestRunner,
-    ComponentAddress,
-    Secp256k1PublicKey,
-    PackageAddress,
-    ComponentAddress,
-    ResourceAddress,
-) {
-    // Basic setup
-    let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-
-    // Publish package
-    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
-    let owner_badge_addr =
-        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
-    let package_address =
-        test_runner.compile_and_publish_with_owner("./tests/blueprints/royalty", owner_badge_addr);
-
-    // Enable package royalty
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
-            .create_proof_from_account_of_non_fungibles(
-                account,
-                owner_badge_resource,
-                &btreeset!(NonFungibleLocalId::integer(1)),
-            )
-            .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-    receipt.expect_commit(true);
-
-    // Instantiate component
-    let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
-            .call_function(
-                package_address,
-                "RoyaltyTest",
-                "create_component_with_royalty_enabled",
-                manifest_args!(),
-            )
-            .build(),
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-    let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
-
-    (
-        test_runner,
-        account,
-        public_key,
-        package_address,
-        component_address,
-        owner_badge_resource,
-    )
 }
 
 #[test]
@@ -331,4 +277,114 @@ fn test_claim_royalty() {
         test_runner.inspect_component_royalty(component_address),
         dec!("0")
     );
+}
+
+#[test]
+fn cannot_set_royalty_after_locking() {
+    // Arrange
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        _package_address,
+        component_address,
+        owner_badge_resource,
+    ) = set_up_package_and_component();
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 100.into())
+            .create_proof_from_account_of_non_fungibles(
+                account,
+                owner_badge_resource,
+                &btreeset!(NonFungibleLocalId::integer(1)),
+            )
+            .lock_component_royalty(component_address, "paid_method".to_string())
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 100.into())
+            .create_proof_from_account_of_non_fungibles(
+                account,
+                owner_badge_resource,
+                &btreeset!(NonFungibleLocalId::integer(1)),
+            )
+            .set_component_royalty(
+                component_address,
+                "paid_method".to_string(),
+                RoyaltyAmount::Free,
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+        )
+    });
+}
+
+fn set_up_package_and_component() -> (
+    TestRunner,
+    ComponentAddress,
+    Secp256k1PublicKey,
+    PackageAddress,
+    ComponentAddress,
+    ResourceAddress,
+) {
+    // Basic setup
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+
+    // Publish package
+    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
+    let owner_badge_addr =
+        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
+    let package_address =
+        test_runner.compile_and_publish_with_owner("./tests/blueprints/royalty", owner_badge_addr);
+
+    // Enable package royalty
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 10u32.into())
+            .create_proof_from_account_of_non_fungibles(
+                account,
+                owner_badge_resource,
+                &btreeset!(NonFungibleLocalId::integer(1)),
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    receipt.expect_commit(true);
+
+    // Instantiate component
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 10u32.into())
+            .call_function(
+                package_address,
+                "RoyaltyTest",
+                "create_component_with_royalty_enabled",
+                manifest_args!(),
+            )
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+    let component_address: ComponentAddress = receipt.expect_commit(true).output(1);
+
+    (
+        test_runner,
+        account,
+        public_key,
+        package_address,
+        component_address,
+        owner_badge_resource,
+    )
 }

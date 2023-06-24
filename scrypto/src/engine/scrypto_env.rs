@@ -57,6 +57,10 @@ impl ClientCostingApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
+    fn usd_price(&mut self) -> Result<Decimal, ClientApiError> {
+        unimplemented!("Not exposed to scrypto")
+    }
+
     fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, ClientApiError> {
         unimplemented!("Not exposed to scrypto")
     }
