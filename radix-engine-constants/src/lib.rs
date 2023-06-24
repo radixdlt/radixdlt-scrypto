@@ -73,7 +73,7 @@ pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
 pub const DEFAULT_FREE_CREDIT_IN_XRD: &str = "100";
 
 /// The default cost unit price.
-pub const DEFAULT_COST_UNIT_PRICE: &str = "0.0000001";
+pub const DEFAULT_COST_UNIT_PRICE: &str = "0.0000005";
 
 /// The default USD price
 pub const DEFAULT_USD_PRICE: &str = "14";
