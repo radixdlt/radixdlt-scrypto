@@ -86,16 +86,15 @@ macro_rules! handle_call_method {
 
 impl TransactionProcessorBlueprint {
     pub(crate) fn run<Y, L: Default>(
-        input: &IndexedScryptoValue,
+        manifest_encoded_instructions: Vec<u8>,
+        global_address_reservations: Vec<GlobalAddressReservation>,
+        _references: Vec<Reference>, // Required so that the kernel passes the references to the processor frame
+        blobs: IndexMap<Hash, Vec<u8>>,
         api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    ) -> Result<Vec<InstructionOutput>, RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
-        let input: TransactionProcessorRunInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
-
         // Create a worktop
         let worktop_node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
@@ -120,7 +119,7 @@ impl TransactionProcessorBlueprint {
         )?;
         let worktop = Worktop(Own(worktop_node_id));
         let instructions = manifest_decode::<Vec<InstructionV1>>(
-            &input.manifest_encoded_instructions,
+            &manifest_encoded_instructions,
         )
         .map_err(|e| {
             // This error should never occur if being called from root since this is constructed
@@ -129,7 +128,7 @@ impl TransactionProcessorBlueprint {
             RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
         })?;
         let mut processor =
-            TransactionProcessor::new(input.blobs, input.global_address_reservations);
+            TransactionProcessor::new(blobs, global_address_reservations);
         let mut outputs = Vec::new();
         for (index, inst) in instructions.into_iter().enumerate() {
             api.update_instruction_index(index)?;
@@ -415,7 +414,7 @@ impl TransactionProcessorBlueprint {
 
         worktop.drop(api)?;
 
-        Ok(IndexedScryptoValue::from_typed(&outputs))
+        Ok(outputs)
     }
 }
 

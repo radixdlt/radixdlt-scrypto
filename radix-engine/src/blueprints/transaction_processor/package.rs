@@ -88,7 +88,19 @@ impl TransactionProcessorNativePackage {
             TRANSACTION_PROCESSOR_RUN_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                TransactionProcessorBlueprint::run(input, api)
+                let input: TransactionProcessorRunInput = input
+                    .as_typed()
+                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
+
+                let rtn = TransactionProcessorBlueprint::run(
+                    input.manifest_encoded_instructions,
+                    input.global_address_reservations,
+                    input.references,
+                    input.blobs,
+                    api,
+                )?;
+
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),
