@@ -339,18 +339,18 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn emit_event_cost(&self, _size: usize) -> u32 {
+    pub fn emit_event_cost(&self, size: usize) -> u32 {
         10000 + Self::data_validation_cost(size) + Self::transient_data_cost(size)
     }
 
     #[inline]
-    pub fn emit_log_cost(&self, _size: usize) -> u32 {
+    pub fn emit_log_cost(&self, size: usize) -> u32 {
         10000 + Self::data_validation_cost(size) + Self::transient_data_cost(size)
     }
 
     #[inline]
-    pub fn panic_cost(&self, _size: usize) -> u32 {
-        10000 + Self::data_validation_cost(size) + transient_data_cost(size)
+    pub fn panic_cost(&self, size: usize) -> u32 {
+        10000 + Self::data_validation_cost(size) + Self::transient_data_cost(size)
     }
 
     //======================
