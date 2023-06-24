@@ -7,6 +7,7 @@ use radix_engine_common::types::*;
 use radix_engine_interface::crypto::Secp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::fmt::Debug;
+use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 pub const CONSENSUS_MANAGER_BLUEPRINT: &str = "ConsensusManager";

@@ -3,6 +3,7 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -15,7 +16,6 @@ use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use radix_engine::transaction::TransactionReceipt;
 use scrypto_unit::*;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
 use transaction::model::InstructionV1;
@@ -23,8 +23,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn signal_protocol_update_test<F>(as_owner: bool, name_len: usize, result_check: F)
 where
-F: Fn(TransactionReceipt) -> (),
-
+    F: Fn(TransactionReceipt) -> (),
 {
     // Arrange
     let initial_epoch = Epoch::of(5);
@@ -38,7 +37,6 @@ F: Fn(TransactionReceipt) -> (),
         CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
-
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
@@ -69,14 +67,19 @@ fn can_signal_protocol_update() {
 
 #[test]
 fn cannot_signal_protocol_update_if_not_owner() {
-    signal_protocol_update_test(false, 32, |e| {
-        e.expect_auth_failure()
-    })
+    signal_protocol_update_test(false, 32, |e| e.expect_auth_failure())
 }
 
 #[test]
 fn cannot_signal_protocol_update_if_wrong_length() {
     signal_protocol_update_test(true, 33, |e| {
-        e.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::ValidatorError(ValidatorError::InvalidProtocolVersionNameLength {..}))));
+        e.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                    ValidatorError::InvalidProtocolVersionNameLength { .. }
+                ))
+            )
+        });
     })
 }
