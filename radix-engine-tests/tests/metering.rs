@@ -71,12 +71,16 @@ fn execute_with_time_logging(
 
 pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
     let mut breakdown = BTreeMap::<String, u32>::new();
-    content.split("\n").filter(|x| x.len() > 0).for_each(|x| {
-        let mut tokens = x.split(",");
-        let entry = tokens.next().unwrap().trim();
-        let cost = tokens.next().unwrap().trim();
-        breakdown.insert(entry.to_string(), u32::from_str(cost).unwrap());
-    });
+    content
+        .split("\n")
+        .filter(|x| x.len() > 0)
+        .skip(2)
+        .for_each(|x| {
+            let mut tokens = x.split(",");
+            let entry = tokens.next().unwrap().trim();
+            let cost = tokens.next().unwrap().trim();
+            breakdown.insert(entry.to_string(), u32::from_str(cost).unwrap());
+        });
     breakdown
 }
 
@@ -88,9 +92,29 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
     use std::fs::File;
     use std::io::Write;
 
+    use radix_engine::system::system_modules::costing::transmute_u128_as_decimal;
+
     let mut buffer = String::new();
+    buffer.push_str(
+        format!(
+            "{:<30},{:>10}\n",
+            "Total Cost Units",
+            breakdown.values().sum::<u32>()
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<30},{:>10}\n",
+            "Total Fee",
+            (Decimal::from(breakdown.values().sum::<u32>())
+                * transmute_u128_as_decimal(DEFAULT_COST_UNIT_PRICE))
+            .to_string()
+        )
+        .as_str(),
+    );
     for (k, v) in breakdown {
-        buffer.push_str(format!("{:-30},{:-10}\n", k, v).as_str());
+        buffer.push_str(format!("{:<30},{:>10}\n", k, v).as_str());
     }
 
     let mut f = File::create(file).unwrap();

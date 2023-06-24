@@ -39,7 +39,7 @@ mod fee {
         }
 
         pub fn lock_fee_with_temp_vault(&mut self, amount: Decimal) {
-            let vault = Vault::with_bucket(self.xrd.take(amount));
+            let vault = Vault::new(RADIX_TOKEN);
             vault.as_fungible().lock_fee(amount);
             self.garbage_vaults.push(vault);
         }
