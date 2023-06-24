@@ -41,15 +41,16 @@ fn bench_ed25519_validation(c: &mut Criterion) {
 }
 
 fn bench_transaction_validation(c: &mut Criterion) {
-    let bech32_decoder: Bech32Decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+    let address_bech32_decoder: AddressBech32Decoder =
+        AddressBech32Decoder::new(&NetworkDefinition::simulator());
 
     let account1 = ComponentAddress::try_from_bech32(
-        &bech32_decoder,
+        &address_bech32_decoder,
         "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q",
     )
     .unwrap();
     let account2 = ComponentAddress::try_from_bech32(
-        &bech32_decoder,
+        &address_bech32_decoder,
         "account_sim1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5syrgz9",
     )
     .unwrap();

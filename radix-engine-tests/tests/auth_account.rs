@@ -1,3 +1,5 @@
+use radix_engine::errors::{ApplicationError, RuntimeError};
+use radix_engine::system::node_modules::royalty::ComponentRoyaltyError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
@@ -330,7 +332,7 @@ fn can_update_updatable_owner_role_account() {
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.update_owner_role(account.into(), AccessRule::DenyAll);
+                builder.set_owner_role(account.into(), AccessRule::DenyAll);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
@@ -347,4 +349,27 @@ fn can_update_updatable_owner_role_account() {
 
     // Assert
     receipt.expect_commit_success();
+}
+
+#[test]
+fn cannot_set_royalty_on_accounts() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let account = test_runner.new_account_advanced(OwnerRole::Updatable(AccessRule::AllowAll));
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .set_component_royalty(account, "deposit", RoyaltyAmount::Free)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::ComponentRoyaltyError(
+                ComponentRoyaltyError::ComponentRoyaltyIsDisabled
+            ))
+        )
+    });
 }

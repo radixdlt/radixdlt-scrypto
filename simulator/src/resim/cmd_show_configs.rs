@@ -16,8 +16,10 @@ impl ShowConfigs {
             "{}: {}",
             "Account Address".green().bold(),
             match configs.default_account {
-                Some(component) =>
-                    format!("{}", component.display(&Bech32Encoder::for_simulator()),),
+                Some(component) => format!(
+                    "{}",
+                    component.display(&AddressBech32Encoder::for_simulator()),
+                ),
                 None => "None".to_owned(),
             }
         )
@@ -37,8 +39,10 @@ impl ShowConfigs {
             "{}: {}",
             "Account Owner Badge".green().bold(),
             match configs.default_owner_badge {
-                Some(owner_badge) =>
-                    format!("{}", owner_badge.display(&Bech32Encoder::for_simulator())),
+                Some(owner_badge) => format!(
+                    "{}",
+                    owner_badge.display(&AddressBech32Encoder::for_simulator())
+                ),
                 None => "None".to_owned(),
             }
         )

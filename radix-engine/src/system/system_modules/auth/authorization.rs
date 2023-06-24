@@ -370,7 +370,6 @@ impl Authorization {
                     let owner_role_substate: OwnerRoleSubstate =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
                     api.kernel_drop_lock(handle)?;
-
                     owner_role_substate.owner_role_entry.rule
                 }
             }

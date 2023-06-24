@@ -13,7 +13,8 @@ use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoad
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+    PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -107,13 +108,10 @@ impl IdentityNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        IDENTITY_CREATE_IDENT.to_string() => rule!(allow_all),
-                        IDENTITY_CREATE_ADVANCED_IDENT.to_string() => rule!(allow_all),
-                    ),
-                    method_auth: MethodAuthTemplate::Static(roles_template! {
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
                         roles {
                             SECURIFY_ROLE => updaters: [SELF_ROLE];
                         },
@@ -315,7 +313,7 @@ impl IdentityBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let object_id = api.new_simple_object(IDENTITY_BLUEPRINT, vec![])?;
 

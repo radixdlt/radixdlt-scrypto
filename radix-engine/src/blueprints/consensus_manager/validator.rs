@@ -1052,7 +1052,6 @@ impl ValidatorCreator {
         Y: ClientApi<RuntimeError>,
     {
         let mut unstake_nft_auth = BTreeMap::new();
-
         unstake_nft_auth.insert(
             Mint,
             (rule!(require(global_caller(address))), rule!(deny_all)),
@@ -1130,7 +1129,7 @@ impl ValidatorCreator {
 
         let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
             btreemap!(

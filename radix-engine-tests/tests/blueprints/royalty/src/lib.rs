@@ -3,20 +3,11 @@ use scrypto::prelude::*;
 #[blueprint]
 mod royalty_test {
     enable_package_royalties! {
-        paid_method => Xrd(2.into()),
-        paid_method_usd => Free,
-        paid_method_panic => Xrd(2.into()),
-        free_method => Free,
-        create_component_with_royalty_enabled => Free,
-    }
-
-    enable_method_auth! {
-        methods {
-            paid_method => PUBLIC;
-            paid_method_usd => PUBLIC;
-            paid_method_panic => PUBLIC;
-            free_method => PUBLIC;
-        }
+        paid_method => Xrd(2.into());
+        paid_method_usd => Free;
+        paid_method_panic => Xrd(2.into());
+        free_method => Free;
+        create_component_with_royalty_enabled => Free;
     }
 
     struct RoyaltyTest {}
@@ -42,15 +33,16 @@ mod royalty_test {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
-                .royalties(royalties! {
+                .enable_component_royalties(component_royalties! {
                     roles {
-                        royalty_admin => rule!(allow_all);
+                        royalty_admin => rule!(allow_all), locked;
+                        royalty_admin_updater => rule!(deny_all), locked;
                     },
                     init {
-                        free_method => Free,
-                        paid_method => Xrd(1.into()),
-                        paid_method_usd => Usd(1.into()),
-                        paid_method_panic => Xrd(1.into()),
+                        free_method => Free, locked;
+                        paid_method => Xrd(1.into()), locked;
+                        paid_method_usd => Usd(1.into()), locked;
+                        paid_method_panic => Xrd(1.into()), locked;
                     }
                 })
                 .globalize()

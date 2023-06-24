@@ -19,7 +19,7 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringCo
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltyAccumulatorSubstate;
+use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -29,9 +29,10 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
-    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
-    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+    PackageDefinition, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate,
+    TypePointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
@@ -445,7 +446,7 @@ impl TestRunner {
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
         let accumulator = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltyAccumulatorSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltySubstate>(
                 component_address.as_node_id(),
                 ROYALTY_BASE_PARTITION
                     .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
@@ -834,7 +835,7 @@ impl TestRunner {
                         setup: definition,
                         metadata: btreemap!(),
                         package_address: Some(ManifestAddressReservation(0)),
-                        owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
+                        owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),
                 }]),
                 blobs: BlobsV1 {
@@ -1865,11 +1866,9 @@ pub fn single_function_package_definition(
                 },
             },
 
-            royalty_config: RoyaltyConfig::default(),
+            royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig {
-                function_auth: btreemap!(
-                    function_name.to_string() => rule!(allow_all),
-                ),
+                function_auth: FunctionAuth::AllowAll,
                 method_auth: MethodAuthTemplate::AllowAll,
             },
         },

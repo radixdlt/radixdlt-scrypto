@@ -1,7 +1,8 @@
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataLockInput, MetadataSetInput, MetadataValue, METADATA_LOCK_IDENT, METADATA_SET_IDENT,
+    MetadataInit, MetadataLockInput, MetadataSetInput, MetadataValue, METADATA_LOCK_IDENT,
+    METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentSetRoyaltyInput,
@@ -456,7 +457,7 @@ impl ManifestBuilder {
                     &FungibleResourceManagerCreateWithInitialSupplyInput {
                         divisibility,
                         track_total_supply,
-                        metadata,
+                        metadata: metadata.into(),
                         access_rules,
                         initial_supply,
                     }
@@ -470,7 +471,7 @@ impl ManifestBuilder {
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
                     divisibility,
                     track_total_supply,
-                    metadata,
+                    metadata: metadata.into(),
                     access_rules,
                 }),
             });
@@ -503,6 +504,7 @@ impl ManifestBuilder {
                 .into_iter()
                 .map(|(id, e)| (id, (to_manifest_value_and_unwrap!(&e),)))
                 .collect();
+            let metadata: MetadataInit = metadata.into();
 
             self.add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -529,7 +531,7 @@ impl ManifestBuilder {
                     id_type,
                     track_total_supply,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                    metadata,
+                    metadata: metadata.into(),
                     access_rules,
                 }),
             });
@@ -722,14 +724,11 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn update_owner_role(&mut self, address: GlobalAddress, rule: AccessRule) -> &mut Self {
+    pub fn set_owner_role(&mut self, address: GlobalAddress, rule: AccessRule) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_UPDATE_OWNER_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesUpdateOwnerRoleInput {
-                rule: Some(rule),
-                freeze: false,
-            }),
+            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesSetOwnerRoleInput { rule }),
         })
         .0
     }
@@ -767,16 +766,19 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn set_metadata(
+    pub fn set_metadata<S: ToString>(
         &mut self,
         address: GlobalAddress,
-        key: String,
+        key: S,
         value: MetadataValue,
     ) -> &mut Self {
         self.add_instruction(InstructionV1::CallMetadataMethod {
             address: address.into(),
             method_name: METADATA_SET_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&MetadataSetInput { key, value }),
+            args: to_manifest_value_and_unwrap!(&MetadataSetInput {
+                key: key.to_string(),
+                value
+            }),
         })
         .0
     }
@@ -796,7 +798,7 @@ impl ManifestBuilder {
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
-        owner_rule: OwnerRole,
+        owner_role: OwnerRole,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
@@ -810,7 +812,7 @@ impl ManifestBuilder {
                 setup: definition,
                 metadata,
                 package_address: None,
-                owner_rule,
+                owner_role,
             }),
         });
         self
@@ -853,7 +855,7 @@ impl ManifestBuilder {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
                 metadata: BTreeMap::new(),
-                owner_rule: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
+                owner_role: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
         });
         self

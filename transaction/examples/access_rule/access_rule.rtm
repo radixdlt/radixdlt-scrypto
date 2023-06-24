@@ -1,3 +1,14 @@
+SET_OWNER_ROLE
+    Address("${resource_address}")
+    Enum<0u8>(); # The rule associated with the role
+
+LOCK_OWNER_ROLE
+    Address("${resource_address}");
+
+SET_AND_LOCK_OWNER_ROLE
+    Address("${resource_address}")
+    Enum<0u8>(); # The rule associated with the role
+
 SET_ROLE
     Address("${resource_address}")
     Enum<0u8>()

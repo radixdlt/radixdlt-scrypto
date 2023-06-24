@@ -71,7 +71,7 @@ fn test_basic_transfer() {
         + 5328 /* DropLock */
         + 1365 /* DropNode */
         + 735425 /* Invoke */
-        + 327083 /* LockSubstate */
+        + 327388 /* LockSubstate */
         + 8120 /* ReadSubstate */
         + 57500 /* RunNative */
         + 75000 /* RunSystem */
@@ -200,11 +200,11 @@ fn test_radiswap() {
         + 12617 /* DropLock */
         + 3045 /* DropNode */
         + 3107898 /* Invoke */
-        + 3729116 /* LockSubstate */
+        + 4018636 /* LockSubstate */
         + 19152 /* ReadSubstate */
         + 122500 /* RunNative */
         + 200000 /* RunSystem */
-        + 602285 /* RunWasm */
+        + 602350 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1765 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -213,7 +213,7 @@ fn test_radiswap() {
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.7955785"),
+        dec!("0.8245370"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -312,11 +312,11 @@ fn test_flash_loan() {
         + 21053 /* DropLock */
         + 5565 /* DropNode */
         + 4091947 /* Invoke */
-        + 7502698 /* LockSubstate */
+        + 7612891 /* LockSubstate */
         + 32536 /* ReadSubstate */
         + 192500 /* RunNative */
         + 287500 /* RunSystem */
-        + 1188780 /* RunWasm */
+        + 1188510 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2570 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
@@ -456,6 +456,9 @@ fn spin_loop_should_end_in_reasonable_amount_of_time() {
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
     // No assertion here - this is just a sanity-test
-    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
+    println!(
+        "{}",
+        receipt.display(&AddressBech32Encoder::for_simulator())
+    );
     receipt.expect_commit_failure();
 }
