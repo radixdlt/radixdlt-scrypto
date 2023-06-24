@@ -116,4 +116,5 @@ pub const DEFAULT_MAX_NUMBER_OF_EVENTS: usize = 256;
 pub const DEFAULT_MAX_NUMBER_OF_LOGS: usize = 256;
 
 /* Metadata */
-pub const DEFAULT_MAX_METADATA_KEY_LEN: usize = 100;
+pub const DEFAULT_MAX_METADATA_KEY_STRING_LEN: usize = 100;
+pub const DEFAULT_MAX_METADATA_VALUE_SBOR_LEN: usize = 512;
