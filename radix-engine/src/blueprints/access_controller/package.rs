@@ -4,8 +4,7 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
-use crate::{event_schema, method_auth_template};
-use native_sdk::component::BorrowedObject;
+use crate::{event_schema, roles_template};
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -17,7 +16,8 @@ use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+    PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -185,22 +185,6 @@ impl AccessControllerNativePackage {
                         .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
                 ),
                 export: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccessControllerPostInstantiationOutput>(
-                        ),
-                ),
-                export: ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -440,33 +424,6 @@ impl AccessControllerNativePackage {
             ]
         };
 
-        let method_auth = method_auth_template!(
-            ACCESS_CONTROLLER_CREATE_PROOF_IDENT => ["primary"];
-            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => ["primary"];
-            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary"];
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => ["primary"];
-            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  ["primary"];
-            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => ["recovery"];
-            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => ["recovery"];
-            ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => MethodAccessibility::Public;
-            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery"];
-            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery"];
-            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => ["recovery"];
-            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => ["recovery"];
-
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery", "confirmation"];
-            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery", "confirmation"];
-
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary", "confirmation"];
-            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["primary", "confirmation"];
-
-            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => ["primary", "recovery"];
-
-            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => ["primary", "confirmation", "recovery"];
-
-            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => ["this_package"];
-        );
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -490,14 +447,41 @@ impl AccessControllerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string() => rule!(allow_all),
-                    ),
-                    method_auth: MethodAuthTemplate::Static(
-                        method_auth,
-                    ),
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(roles_template!(
+                        roles {
+                            "primary" => updaters: [SELF_ROLE];
+                            "recovery" => updaters: [SELF_ROLE];
+                            "confirmation" => updaters: [SELF_ROLE];
+                            "this_package";
+                        },
+                        methods {
+                            ACCESS_CONTROLLER_CREATE_PROOF_IDENT => ["primary"];
+                            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => ["primary"];
+                            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary"];
+                            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => ["primary"];
+                            ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT =>  ["primary"];
+                            ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => ["recovery"];
+                            ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => ["recovery"];
+                            ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => MethodAccessibility::Public;
+                            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery"];
+                            ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery"];
+                            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => ["recovery"];
+                            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => ["recovery"];
+
+                            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => ["recovery", "confirmation"];
+                            ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["recovery", "confirmation"];
+
+                            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => ["primary", "confirmation"];
+                            ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => ["primary", "confirmation"];
+
+                            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => ["primary", "recovery"];
+
+                            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => ["primary", "confirmation", "recovery"];
+                        }
+                    )),
                 },
             }
         );
@@ -519,11 +503,6 @@ impl AccessControllerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 Self::create_global(input, api)
-            }
-            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                Self::post_instantiation(input, api)
             }
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -660,12 +639,6 @@ impl AccessControllerNativePackage {
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
 
-            // Hack: Interfaces for initializing metadata only allows for <String, String> metadata
-            // but the interfaces for setting metadata allow for any `MetadataEntry`. So we will
-            // set the metadata to be updatable by the component caller badge and then switch it
-            // back to only be immutable.
-            // FIXME: When metadata initialization allows MetadataEntry stop making update metadata
-            // rule be transient
             let access_rules = [
                 (
                     ResourceAction::Mint,
@@ -688,10 +661,7 @@ impl AccessControllerNativePackage {
                 ),
                 (
                     ResourceAction::UpdateMetadata,
-                    (
-                        rule!(require(global_component_caller_badge.clone())),
-                        rule!(require(global_component_caller_badge.clone())),
-                    ),
+                    (AccessRule::DenyAll, AccessRule::DenyAll),
                 ),
                 (
                     ResourceAction::Recall,
@@ -720,7 +690,11 @@ impl AccessControllerNativePackage {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,
-                        metadata: Default::default(),
+                        metadata: metadata_init! {
+                            "name" => "Recovery Badge".to_owned(), locked;
+                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;
+                            "access_controller" => address, locked;
+                        },
                         access_rules: access_rules.into(),
                     })
                     .unwrap(),
@@ -746,7 +720,7 @@ impl AccessControllerNativePackage {
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
         api.globalize(
@@ -759,66 +733,7 @@ impl AccessControllerNativePackage {
             Some(address_reservation),
         )?;
 
-        // Invoking the post-initialization method on the component
-        api.call_method(
-            address.as_node_id(),
-            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT,
-            scrypto_encode(&AccessControllerPostInstantiationInput).unwrap(),
-        )?;
-
         Ok(IndexedScryptoValue::from_typed(&address))
-    }
-
-    /// This method is only callable when the access controller virtual direct package caller
-    /// badge is present.
-    ///
-    /// This method has been added due to an issue with setting the metadata of the recovery badge
-    /// resource to include the address of the access controller before the access controller was
-    /// globalized. Doing that lead to an error along the lines of "callframe has no reference to
-    /// the (access controller) node id" because the access controller's node id has been allocated
-    /// but nothing has been globalized to it. Thus, the call frame did not have a reference to the
-    /// global address to pass when calling the metadata set method.
-    ///
-    /// A minimal example that reproduces this issue is only possible after the metadata interfaces
-    /// are updated to support any MetadataEntry.
-    ///
-    /// The method below can be removed and the logic can be moved to the instantiation function
-    /// once this bug is fixed.
-    fn post_instantiation<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        input
-            .as_typed::<AccessControllerPostInstantiationInput>()
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
-
-        let access_controller = api.actor_get_global_address()?;
-        let resource_address = {
-            let substate_key = AccessControllerField::AccessController.into();
-            let handle =
-                api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
-
-            let access_controller = {
-                let access_controller: AccessControllerSubstate =
-                    api.field_lock_read_typed(handle)?;
-                access_controller
-            };
-            access_controller.recovery_badge
-        };
-
-        let mut resource_manager = BorrowedObject(resource_address.into_node_id());
-        resource_manager.set_metadata("name", "Recovery Badge".to_owned(), api)?;
-        resource_manager.set_metadata(
-            "icon_url",
-            Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()),
-            api,
-        )?;
-        resource_manager.set_metadata("access_controller", access_controller, api)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn create_proof<Y>(
@@ -1349,9 +1264,9 @@ fn locked_access_rules() -> RuleSet {
 fn init_roles_from_rule_set(rule_set: RuleSet) -> Roles {
     roles2! {
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
-        "primary" => rule_set.primary_role, mut [SELF_ROLE];
-        "recovery" => rule_set.recovery_role, mut [SELF_ROLE];
-        "confirmation" => rule_set.confirmation_role, mut [SELF_ROLE];
+        "primary" => rule_set.primary_role, updatable;
+        "recovery" => rule_set.recovery_role, updatable;
+        "confirmation" => rule_set.confirmation_role, updatable;
     }
 }
 

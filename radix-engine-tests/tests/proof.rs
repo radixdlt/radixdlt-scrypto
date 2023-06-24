@@ -38,7 +38,10 @@ fn can_create_clone_and_drop_bucket_proof() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
+    println!(
+        "{}",
+        receipt.display(&AddressBech32Encoder::for_simulator())
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -77,7 +80,10 @@ fn can_create_clone_and_drop_vault_proof() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
+    println!(
+        "{}",
+        receipt.display(&AddressBech32Encoder::for_simulator())
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -117,7 +123,10 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
+    println!(
+        "{}",
+        receipt.display(&AddressBech32Encoder::for_simulator())
+    );
 
     // Assert
     receipt.expect_commit_success();

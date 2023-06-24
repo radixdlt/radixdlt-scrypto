@@ -8,11 +8,19 @@ impl SerializableCustomExtension for ScryptoCustomExtension {
     ) -> CustomTypeSerialization<'a, 't, 'de, 's1, 's2, Self> {
         let (serialization, include_type_tag_in_simple_mode) = match custom_value.0 {
             ScryptoCustomValue::Reference(value) => (
-                SerializableType::String(value.0.to_string(context.custom_context.bech32_encoder)),
+                SerializableType::String(
+                    value
+                        .0
+                        .to_string(context.custom_context.address_bech32_encoder),
+                ),
                 true,
             ),
             ScryptoCustomValue::Own(value) => (
-                SerializableType::String(value.0.to_string(context.custom_context.bech32_encoder)),
+                SerializableType::String(
+                    value
+                        .0
+                        .to_string(context.custom_context.address_bech32_encoder),
+                ),
                 true,
             ),
             ScryptoCustomValue::Decimal(value) => {
@@ -37,7 +45,7 @@ impl SerializableCustomExtension for ScryptoCustomExtension {
 mod tests {
     use super::*;
     use crate::address::test_addresses::*;
-    use crate::address::Bech32Encoder;
+    use crate::address::AddressBech32Encoder;
     use crate::data::scrypto::model::*;
     use crate::data::scrypto::{scrypto_encode, ScryptoValue};
     use crate::math::*;
@@ -93,7 +101,7 @@ mod tests {
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_address_encoding_with_network() {
         let value = Reference(FUNGIBLE_RESOURCE_NODE_ID);
-        let encoder = Bech32Encoder::for_simulator();
+        let encoder = AddressBech32Encoder::for_simulator();
 
         let expected_simple = json!({
             "kind": "Reference",
@@ -111,7 +119,7 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
-        let encoder = Bech32Encoder::for_simulator();
+        let encoder = AddressBech32Encoder::for_simulator();
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Custom {

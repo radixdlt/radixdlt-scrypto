@@ -68,17 +68,17 @@ fn test_basic_transfer() {
         0
         + 897 /* AllocateNodeId */
         + 1417 /* CreateNode */
-        + 5254 /* DropLock */
+        + 5328 /* DropLock */
         + 1365 /* DropNode */
-        + 736166 /* Invoke */
-        + 41730 /* LockSubstate */
-        + 8008 /* ReadSubstate */
+        + 735425 /* Invoke */
+        + 327388 /* LockSubstate */
+        + 8120 /* ReadSubstate */
         + 57500 /* RunNative */
-        + 7500 /* RunSystem */
+        + 75000 /* RunSystem */
         + 50000 /* TxBaseCost */
         + 1345 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 856 /* WriteSubstate */
+        + 697 /* WriteSubstate */
     );
 }
 
@@ -197,23 +197,23 @@ fn test_radiswap() {
         0
         + 2070 /* AllocateNodeId */
         + 3281 /* CreateNode */
-        + 12543 /* DropLock */
+        + 12617 /* DropLock */
         + 3045 /* DropNode */
-        + 3109581 /* Invoke */
-        + 2145734 /* LockSubstate */
-        + 19040 /* ReadSubstate */
+        + 3107898 /* Invoke */
+        + 3737100 /* LockSubstate */
+        + 19152 /* ReadSubstate */
         + 122500 /* RunNative */
-        + 20000 /* RunSystem */
+        + 200000 /* RunSystem */
         + 602285 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 1765 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 1885 /* WriteSubstate */
+        + 2056 /* WriteSubstate */
     );
 
     assert_eq!(
         commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.6193729"),
+        dec!("0.7963769"),
     );
     assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
 }
@@ -309,18 +309,18 @@ fn test_flash_loan() {
         0
         + 3657 /* AllocateNodeId */
         + 5777 /* CreateNode */
-        + 20979 /* DropLock */
+        + 21053 /* DropLock */
         + 5565 /* DropNode */
-        + 4095003 /* Invoke */
-        + 4463374 /* LockSubstate */
-        + 32424 /* ReadSubstate */
+        + 4091947 /* Invoke */
+        + 7622684 /* LockSubstate */
+        + 32536 /* ReadSubstate */
         + 192500 /* RunNative */
-        + 40000 /* RunSystem */
-        + 1188780 /* RunWasm */
+        + 287500 /* RunSystem */
+        + 1188770 /* RunWasm */
         + 50000 /* TxBaseCost */
         + 2570 /* TxPayloadCost */
         + 100000 /* TxSignatureVerification */
-        + 4302 /* WriteSubstate */
+        + 4967 /* WriteSubstate */
     );
 }
 
@@ -456,6 +456,9 @@ fn spin_loop_should_end_in_reasonable_amount_of_time() {
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
     // No assertion here - this is just a sanity-test
-    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
+    println!(
+        "{}",
+        receipt.display(&AddressBech32Encoder::for_simulator())
+    );
     receipt.expect_commit_failure();
 }

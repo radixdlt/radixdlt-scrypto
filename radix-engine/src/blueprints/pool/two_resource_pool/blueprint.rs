@@ -8,7 +8,6 @@ use native_sdk::resource::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
-use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -74,21 +73,26 @@ impl TwoResourcePoolBlueprint {
 
         // Creating the pool nodes
         let access_rules =
-            AccessRules::create(OwnerRole::Updateable(pool_manager_rule), btreemap!(), api)?.0;
-        // FIXME: The following fields must ALL be LOCKED. No entity with any authority should be
-        // able to update them later on. Implement this once metadata locking is done.
+            AccessRules::create(OwnerRole::Updatable(pool_manager_rule), btreemap!(), api)?.0;
+
         let metadata = Metadata::create_with_data(
-            btreemap!(
-                "pool_vault_number".into() => MetadataValue::U8(2),
-                "pool_resources".into() => MetadataValue::GlobalAddressArray(vec![
-                    resource_address1.into(),
-                    resource_address2.into()
-                ]),
-                "pool_unit".into() => MetadataValue::GlobalAddress(pool_unit_resource_manager.0.into()),
-            ),
+            metadata_init! {
+                "pool_vault_number" => 2u8, locked;
+                "pool_resources" => {
+                    let pool_resources: Vec<GlobalAddress> = vec![
+                        resource_address1.into(),
+                        resource_address2.into()
+                    ];
+                    pool_resources
+                }, locked;
+                "pool_unit" => {
+                    let address: GlobalAddress = pool_unit_resource_manager.0.into();
+                    address
+                }, locked;
+            },
             api,
         )?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
         let object_id = {
             let substate = TwoResourcePoolSubstate {
                 vaults: [

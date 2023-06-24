@@ -42,7 +42,7 @@ pub struct CallMethod {
 
 impl CallMethod {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let bech32_decoder = Bech32Decoder::for_simulator();
+        let address_bech32_decoder = AddressBech32Decoder::for_simulator();
 
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
@@ -52,7 +52,7 @@ impl CallMethod {
             manifest_builder = manifest_builder.borrow_mut(|builder| {
                 create_proof_from_account(
                     builder,
-                    &bech32_decoder,
+                    &address_bech32_decoder,
                     default_account,
                     resource_specifier,
                 )
@@ -66,7 +66,7 @@ impl CallMethod {
             .borrow_mut(|builder| {
                 self.add_call_method_instruction_with_schema(
                     builder,
-                    &bech32_decoder,
+                    &address_bech32_decoder,
                     self.component_address.0,
                     self.method_name.clone(),
                     self.arguments.clone(),
@@ -102,7 +102,7 @@ impl CallMethod {
     pub fn add_call_method_instruction_with_schema<'a>(
         &self,
         builder: &'a mut ManifestBuilder,
-        bech32_decoder: &Bech32Decoder,
+        address_bech32_decoder: &AddressBech32Decoder,
         component_address: ComponentAddress,
         method_name: String,
         args: Vec<String>,
@@ -142,14 +142,19 @@ impl CallMethod {
             }
         };
 
-        let (builder, built_args) =
-            build_call_arguments(builder, bech32_decoder, &schema, index, args, account).map_err(
-                |e| {
-                    Error::TransactionConstructionError(
-                        BuildCallInstructionError::FailedToBuildArguments(e),
-                    )
-                },
-            )?;
+        let (builder, built_args) = build_call_arguments(
+            builder,
+            address_bech32_decoder,
+            &schema,
+            index,
+            args,
+            account,
+        )
+        .map_err(|e| {
+            Error::TransactionConstructionError(BuildCallInstructionError::FailedToBuildArguments(
+                e,
+            ))
+        })?;
 
         builder.add_instruction(InstructionV1::CallMethod {
             address: component_address.into(),

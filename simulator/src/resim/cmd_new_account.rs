@@ -1,7 +1,6 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::resource::{
     require, FromPublicKey, NonFungibleDataSchema,
     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceAction,
@@ -9,7 +8,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::rule;
+use radix_engine_interface::{metadata_init, metadata_init_set_entry, rule};
 use rand::Rng;
 use utils::ContextualDisplay;
 
@@ -57,7 +56,7 @@ impl NewAccount {
             out,
         )?;
 
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+        let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
 
         if let Some(ref receipt) = receipt {
             let commit_result = receipt.expect_commit(true);
@@ -78,8 +77,8 @@ impl NewAccount {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        metadata: btreemap!(
-                            "name".to_owned() => MetadataValue::String("Owner Badge".to_owned())
+                        metadata: metadata_init!(
+                            "name" => "Owner Badge".to_owned(), locked;
                         ),
                         access_rules: btreemap!(
                             ResourceAction::Withdraw => (rule!(allow_all), rule!(deny_all))
@@ -114,7 +113,7 @@ impl NewAccount {
             writeln!(
                 out,
                 "Account component address: {}",
-                account.display(&bech32_encoder).to_string().green()
+                account.display(&address_bech32_encoder).to_string().green()
             )
             .map_err(Error::IOError)?;
             writeln!(out, "Public key: {}", public_key.to_string().green())
@@ -129,7 +128,7 @@ impl NewAccount {
                 out,
                 "Owner badge: {}",
                 owner_badge
-                    .to_canonical_string(&Bech32Encoder::for_simulator())
+                    .to_canonical_string(&AddressBech32Encoder::for_simulator())
                     .green()
             )
             .map_err(Error::IOError)?;

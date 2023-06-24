@@ -8,7 +8,8 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+    PackageDefinition,
 };
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FieldSchema,
@@ -99,12 +100,14 @@ impl TransactionTrackerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                    function_auth: FunctionAuth::AccessRules(
+                        btreemap!(
+                            TRANSACTION_TRACKER_CREATE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
+                        )
                     ),
-                    method_auth: MethodAuthTemplate::Static(btreemap!()),
+                    method_auth: MethodAuthTemplate::default(),
                 },
             }
         );
@@ -223,7 +226,7 @@ impl TransactionTrackerBlueprint {
         )?;
         let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
             btreemap!(
