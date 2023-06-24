@@ -92,8 +92,6 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
     use std::fs::File;
     use std::io::Write;
 
-    use radix_engine::system::system_modules::costing::transmute_u128_as_decimal;
-
     let mut buffer = String::new();
     buffer.push_str(
         format!(
@@ -108,7 +106,7 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
             "{:<30},{:>10}\n",
             "Total Fee",
             (Decimal::from(breakdown.values().sum::<u32>())
-                * transmute_u128_as_decimal(DEFAULT_COST_UNIT_PRICE))
+                * Decimal::try_from(DEFAULT_COST_UNIT_PRICE).unwrap())
             .to_string()
         )
         .as_str(),

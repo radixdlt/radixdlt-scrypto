@@ -26,16 +26,16 @@ use transaction::model::*;
 
 #[derive(Debug, Clone)]
 pub struct FeeReserveConfig {
-    pub cost_unit_price: u128,
-    pub usd_price: u128,
+    pub cost_unit_price: Decimal,
+    pub usd_price: Decimal,
     pub system_loan: u32,
 }
 
 impl Default for FeeReserveConfig {
     fn default() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE,
-            usd_price: DEFAULT_USD_PRICE,
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE.try_into().unwrap(),
+            usd_price: DEFAULT_USD_PRICE.try_into().unwrap(),
             system_loan: DEFAULT_SYSTEM_LOAN,
         }
     }

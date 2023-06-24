@@ -37,9 +37,9 @@ impl ValidatedPreviewIntent {
         let fee_payment = FeePayment {
             tip_percentage: header.tip_percentage,
             free_credit_in_xrd: if self.flags.use_free_credit {
-                DEFAULT_FREE_CREDIT_IN_XRD
+                Decimal::try_from(DEFAULT_FREE_CREDIT_IN_XRD).unwrap()
             } else {
-                0
+                Decimal::ZERO
             },
         };
         let initial_proofs = AuthAddresses::signer_set(&self.signer_public_keys);

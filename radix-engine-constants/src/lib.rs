@@ -63,25 +63,25 @@ pub const DEFAULT_MAX_TRANSACTION_SIZE: usize = 1 * 1024 * 1024;
 // Transaction execution
 //==========================
 
+/// The default system loan amount, used by transaction executor.
+pub const DEFAULT_SYSTEM_LOAN: u32 = 10_000_000;
+
 /// The default cost unit limit.
 pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
 
 /// The default free credit, for preview only.
-pub const DEFAULT_FREE_CREDIT_IN_XRD: u128 = 1_000_000_000_000_000_000_000u128;
+pub const DEFAULT_FREE_CREDIT_IN_XRD: &str = "100";
 
-/// The default system loan amount, used by transaction executor.
-pub const DEFAULT_SYSTEM_LOAN: u32 = 10_000_000;
+/// The default cost unit price.
+pub const DEFAULT_COST_UNIT_PRICE: &str = "0.0000001";
+
+/// The default USD price
+pub const DEFAULT_USD_PRICE: &str = "14";
 
 pub const DEFAULT_MAX_EXECUTION_TRACE_DEPTH: usize = 1;
 
 /// The default max call depth, used by transaction executor.
 pub const DEFAULT_MAX_CALL_DEPTH: usize = 8;
-
-/// The default cost unit price.
-pub const DEFAULT_COST_UNIT_PRICE: u128 = 100_000_000_000u128;
-
-/// The default USD price
-pub const DEFAULT_USD_PRICE: u128 = 14_000_000_000_000_000_000u128;
 
 /// The default maximum WASM memory per transaction (multiple WASM instances up to call depth).
 pub const DEFAULT_MAX_WASM_MEM_PER_TRANSACTION: usize = 10 * 1024 * 1024;
@@ -90,10 +90,10 @@ pub const DEFAULT_MAX_WASM_MEM_PER_TRANSACTION: usize = 10 * 1024 * 1024;
 pub const DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME: usize = 4 * 1024 * 1024;
 
 /// The default maximum substates reads count per transaction.
-pub const DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION: usize = 20_000;
+pub const DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION: usize = 16 * 1024;
 
 /// The default maximum substates writes count per transaction.
-pub const DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION: usize = 5_000;
+pub const DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION: usize = 4 * 1024;
 
 /// The default maximum substate read and write size.
 /// FIXME: Apply this limit in create_node too
