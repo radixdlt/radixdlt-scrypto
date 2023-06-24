@@ -76,12 +76,24 @@ fn cannot_initialize_metadata_if_key_too_long() {
     let key = "a".repeat(DEFAULT_MAX_METADATA_KEY_STRING_LEN + 1);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .call_function(package_address, "MetadataTest", "new_with_initial_metadata", manifest_args!(key, "some_value".to_string()))
+        .call_function(
+            package_address,
+            "MetadataTest",
+            "new_with_initial_metadata",
+            manifest_args!(key, "some_value".to_string()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::MetadataError(MetadataPanicError::KeyStringExceedsMaxLength { ..}))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataPanicError::KeyStringExceedsMaxLength { .. }
+            ))
+        )
+    });
 }
 
 #[test]
@@ -98,10 +110,86 @@ fn cannot_set_metadata_if_key_too_long() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .set_metadata(component_address.into(), "a".repeat(DEFAULT_MAX_METADATA_KEY_STRING_LEN + 1), MetadataValue::Bool(true))
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .set_metadata(
+            component_address.into(),
+            "a".repeat(DEFAULT_MAX_METADATA_KEY_STRING_LEN + 1),
+            MetadataValue::Bool(true),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(|e| matches!(e, RuntimeError::ApplicationError(ApplicationError::MetadataError(MetadataPanicError::KeyStringExceedsMaxLength { ..}))));
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataPanicError::KeyStringExceedsMaxLength { .. }
+            ))
+        )
+    });
+}
+
+#[test]
+fn cannot_initialize_metadata_if_value_too_long() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
+
+    // Act
+    let value = "a".repeat(DEFAULT_MAX_METADATA_VALUE_SBOR_LEN + 1);
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            package_address,
+            "MetadataTest",
+            "new_with_initial_metadata",
+            manifest_args!("a".to_string(), value),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataPanicError::ValueSborExceedsMaxLength { .. }
+            ))
+        )
+    });
+}
+
+#[test]
+fn cannot_set_metadata_if_value_too_long() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(package_address, "MetadataTest", "new", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .set_metadata(
+            component_address.into(),
+            "a",
+            MetadataValue::String("a".repeat(DEFAULT_MAX_METADATA_VALUE_SBOR_LEN + 1)),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::MetadataError(
+                MetadataPanicError::ValueSborExceedsMaxLength { .. }
+            ))
+        )
+    });
 }
