@@ -65,6 +65,7 @@ mod tests {
     use radix_engine_interface::blueprints::resource::FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT;
 
     use super::*;
+    use crate::manifest::e2e::tests::print_blob;
     use crate::model::*;
     use crate::{signing::ed25519::Ed25519PrivateKey, signing::secp256k1::Secp256k1PrivateKey};
 
@@ -141,6 +142,11 @@ mod tests {
         ));
 
         let intent_payload_bytes = intent_v1.to_payload_bytes().unwrap();
+
+        println!();
+        print_blob("HC_INTENT", intent_payload_bytes.clone());
+        print_blob("HC_INTENT_HASH", expected_intent_hash.0.to_vec());
+
         IntentV1::from_payload_bytes(&intent_payload_bytes).expect("Intent can be decoded");
         let intent_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&intent_payload_bytes).unwrap();
@@ -161,8 +167,8 @@ mod tests {
         let intent_hash = prepared_intent.intent_hash();
 
         assert_eq!(
-            intent_hash.to_string(),
-            "d5f67c03d5693901a08732359452107b6385e4b76c9edbf1ab1074c640578b24"
+            intent_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
+            "txid_sim16hm8cq74dyusrgy8xg6eg5ss0d3cte9hdj0dhudtzp6vvszh3vjq3amttp"
         );
         assert_eq!(
             hex::encode(intent_payload_bytes),
@@ -222,8 +228,8 @@ mod tests {
         let signed_intent_hash = expected_signed_intent_hash;
 
         assert_eq!(
-            signed_intent_hash.to_string(),
-            "693e4e830b6fc3319fda3b33a4135bbc8646d1d5d43190b4d47cc3f25b55428e"
+            signed_intent_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
+            "signedintent_sim1dylyaqctdlpnr8768ve6gy6mhjryd5w46scepdx50nplyk64g28qcy3zxn"
         );
         assert_eq!(
             hex::encode(signed_intent_payload_bytes),
@@ -287,8 +293,8 @@ mod tests {
         assert_eq!(intent_hash, prepared_notarized_transaction.intent_hash());
 
         assert_eq!(
-            notarized_transaction_hash.to_string(),
-            "fdd33105eaf217e6f31011b76fbd400869f099549840e3587650004bc1e71f6d"
+            notarized_transaction_hash.to_string(&TransactionHashBech32Encoder::for_simulator()),
+            "notarizedtransaction_sim1lhfnzp027gt7ducszxmkl02qpp5lpx25npqwxkrk2qqyhs08raksacmd94"
         );
         assert_eq!(
             hex::encode(notarized_transaction_payload_bytes),

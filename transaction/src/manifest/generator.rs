@@ -9,7 +9,7 @@ use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
-use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::address::AddressBech32Decoder;
 use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT,
     ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
@@ -225,7 +225,7 @@ impl NameResolver {
 
 pub fn generate_manifest<B>(
     instructions: &[ast::Instruction],
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     blobs: B,
 ) -> Result<TransactionManifestV1, GeneratorError>
 where
@@ -240,7 +240,7 @@ where
             instruction,
             &mut id_validator,
             &mut name_resolver,
-            bech32_decoder,
+            address_bech32_decoder,
             &blobs,
         )?);
     }
@@ -255,7 +255,7 @@ pub fn generate_instruction<B>(
     instruction: &ast::Instruction,
     id_validator: &mut ManifestValidator,
     resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
 ) -> Result<InstructionV1, GeneratorError>
 where
@@ -272,7 +272,10 @@ where
 
             InstructionV1::TakeFromWorktop {
                 amount: generate_decimal(amount)?,
-                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+                resource_address: generate_resource_address(
+                    resource_address,
+                    address_bech32_decoder,
+                )?,
             }
         }
         ast::Instruction::TakeNonFungiblesFromWorktop {
@@ -285,7 +288,10 @@ where
 
             InstructionV1::TakeNonFungiblesFromWorktop {
                 ids: generate_non_fungible_local_ids(ids)?,
-                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+                resource_address: generate_resource_address(
+                    resource_address,
+                    address_bech32_decoder,
+                )?,
             }
         }
         ast::Instruction::TakeAllFromWorktop {
@@ -296,7 +302,10 @@ where
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             InstructionV1::TakeAllFromWorktop {
-                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+                resource_address: generate_resource_address(
+                    resource_address,
+                    address_bech32_decoder,
+                )?,
             }
         }
         ast::Instruction::ReturnToWorktop { bucket } => {
@@ -311,13 +320,13 @@ where
             amount,
         } => InstructionV1::AssertWorktopContains {
             amount: generate_decimal(amount)?,
-            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+            resource_address: generate_resource_address(resource_address, address_bech32_decoder)?,
         },
         ast::Instruction::AssertWorktopContainsNonFungibles {
             resource_address,
             ids,
         } => InstructionV1::AssertWorktopContainsNonFungibles {
-            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+            resource_address: generate_resource_address(resource_address, address_bech32_decoder)?,
             ids: generate_non_fungible_local_ids(ids)?,
         },
         ast::Instruction::PopFromAuthZone { new_proof } => {
@@ -341,7 +350,8 @@ where
             resource_address,
             new_proof,
         } => {
-            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let resource_address =
+                generate_resource_address(resource_address, address_bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -354,7 +364,8 @@ where
             amount,
             new_proof,
         } => {
-            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let resource_address =
+                generate_resource_address(resource_address, address_bech32_decoder)?;
             let amount = generate_decimal(amount)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
@@ -371,7 +382,8 @@ where
             ids,
             new_proof,
         } => {
-            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let resource_address =
+                generate_resource_address(resource_address, address_bech32_decoder)?;
             let ids = generate_non_fungible_local_ids(ids)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
@@ -387,7 +399,8 @@ where
             resource_address,
             new_proof,
         } => {
-            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
+            let resource_address =
+                generate_resource_address(resource_address, address_bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -480,11 +493,14 @@ where
             function_name,
             args,
         } => {
-            let package_address =
-                generate_dynamic_package_address(package_address, bech32_decoder, resolver)?;
+            let package_address = generate_dynamic_package_address(
+                package_address,
+                address_bech32_decoder,
+                resolver,
+            )?;
             let blueprint_name = generate_string(&blueprint_name)?;
             let function_name = generate_string(&function_name)?;
-            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -501,9 +517,10 @@ where
             method_name,
             args,
         } => {
-            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
+            let address =
+                generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
-            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -518,9 +535,10 @@ where
             method_name,
             args,
         } => {
-            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
+            let address =
+                generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
-            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -535,9 +553,10 @@ where
             method_name,
             args,
         } => {
-            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
+            let address =
+                generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
-            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -552,9 +571,10 @@ where
             method_name,
             args,
         } => {
-            let address = generate_dynamic_global_address(address, bech32_decoder, resolver)?;
+            let address =
+                generate_dynamic_global_address(address, address_bech32_decoder, resolver)?;
             let method_name = generate_string(&method_name)?;
-            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
+            let args = generate_args(args, resolver, address_bech32_decoder, blobs)?;
             id_validator
                 .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -585,27 +605,27 @@ where
             declare_named_address(named_address, resolver, address_id)?;
 
             InstructionV1::AllocateGlobalAddress {
-                package_address: generate_package_address(package_address, bech32_decoder)?,
+                package_address: generate_package_address(package_address, address_bech32_decoder)?,
                 blueprint_name: generate_string(&blueprint_name)?,
             }
         }
 
         /* direct vault method aliases */
         ast::Instruction::RecallVault { vault_id, args } => InstructionV1::CallDirectVaultMethod {
-            address: generate_local_address(vault_id, bech32_decoder)?,
+            address: generate_local_address(vault_id, address_bech32_decoder)?,
             method_name: VAULT_RECALL_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::FreezeVault { vault_id, args } => InstructionV1::CallDirectVaultMethod {
-            address: generate_local_address(vault_id, bech32_decoder)?,
+            address: generate_local_address(vault_id, address_bech32_decoder)?,
             method_name: VAULT_FREEZE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::UnfreezeVault { vault_id, args } => {
             InstructionV1::CallDirectVaultMethod {
-                address: generate_local_address(vault_id, bech32_decoder)?,
+                address: generate_local_address(vault_id, address_bech32_decoder)?,
                 method_name: VAULT_UNFREEZE_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
 
@@ -614,19 +634,19 @@ where
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::PublishPackageAdvanced { args } => InstructionV1::CallFunction {
             package_address: PACKAGE_PACKAGE.into(),
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateFungibleResource { args } => InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateFungibleResourceWithInitialSupply { args } => {
             InstructionV1::CallFunction {
@@ -634,14 +654,14 @@ where
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::CreateNonFungibleResource { args } => InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateNonFungibleResourceWithInitialSupply { args } => {
             InstructionV1::CallFunction {
@@ -649,137 +669,157 @@ where
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::CreateAccessController { args } => InstructionV1::CallFunction {
             package_address: ACCESS_CONTROLLER_PACKAGE.into(),
             blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
             function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateIdentity { args } => InstructionV1::CallFunction {
             package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateIdentityAdvanced { args } => InstructionV1::CallFunction {
             package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateAccount { args } => InstructionV1::CallFunction {
             package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateAccountAdvanced { args } => InstructionV1::CallFunction {
             package_address: ACCOUNT_PACKAGE.into(),
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
 
         /* call non-main method aliases */
         ast::Instruction::SetMetadata { address, args } => InstructionV1::CallMetadataMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: METADATA_SET_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::RemoveMetadata { address, args } => InstructionV1::CallMetadataMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: METADATA_REMOVE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::LockMetadata { address, args } => InstructionV1::CallMetadataMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: METADATA_LOCK_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::SetComponentRoyalty { address, args } => {
             InstructionV1::CallRoyaltyMethod {
-                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+                address: generate_dynamic_global_address(
+                    address,
+                    address_bech32_decoder,
+                    resolver,
+                )?,
                 method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::LockComponentRoyalty { address, args } => {
             InstructionV1::CallRoyaltyMethod {
-                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+                address: generate_dynamic_global_address(
+                    address,
+                    address_bech32_decoder,
+                    resolver,
+                )?,
                 method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::ClaimComponentRoyalties { address, args } => {
             InstructionV1::CallRoyaltyMethod {
-                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+                address: generate_dynamic_global_address(
+                    address,
+                    address_bech32_decoder,
+                    resolver,
+                )?,
                 method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::SetOwnerRole { address, args } => InstructionV1::CallAccessRulesMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::LockOwnerRole { address, args } => InstructionV1::CallAccessRulesMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::SetAndLockOwnerRole { address, args } => {
             InstructionV1::CallAccessRulesMethod {
-                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+                address: generate_dynamic_global_address(
+                    address,
+                    address_bech32_decoder,
+                    resolver,
+                )?,
                 method_name: ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
         ast::Instruction::SetRole { address, args } => InstructionV1::CallAccessRulesMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::LockRole { address, args } => InstructionV1::CallAccessRulesMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: ACCESS_RULES_LOCK_ROLE_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::SetAndLockRole { address, args } => {
             InstructionV1::CallAccessRulesMethod {
-                address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+                address: generate_dynamic_global_address(
+                    address,
+                    address_bech32_decoder,
+                    resolver,
+                )?,
                 method_name: ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT.to_string(),
-                args: generate_args(args, resolver, bech32_decoder, blobs)?,
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
 
         /* call main method aliases */
         ast::Instruction::MintFungible { address, args } => InstructionV1::CallMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::MintNonFungible { address, args } => InstructionV1::CallMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::MintRuidNonFungible { address, args } => InstructionV1::CallMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalties { address, args } => InstructionV1::CallMethod {
-            address: generate_dynamic_global_address(address, bech32_decoder, resolver)?,
+            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::CreateValidator { args } => InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: generate_args(args, resolver, bech32_decoder, blobs)?,
+            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
     })
 }
@@ -797,7 +837,7 @@ macro_rules! invalid_type {
 fn generate_args<B>(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
 ) -> Result<ManifestValue, GeneratorError>
 where
@@ -805,7 +845,13 @@ where
 {
     let mut fields = Vec::new();
     for v in values {
-        fields.push(generate_value(v, None, resolver, bech32_decoder, blobs)?);
+        fields.push(generate_value(
+            v,
+            None,
+            resolver,
+            address_bech32_decoder,
+            blobs,
+        )?);
     }
 
     Ok(ManifestValue::Tuple { fields })
@@ -844,12 +890,12 @@ fn generate_precise_decimal(value: &ast::Value) -> Result<PreciseDecimal, Genera
 
 fn generate_package_address(
     value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<PackageAddress, GeneratorError> {
     match value {
         ast::Value::Address(inner) => match inner.borrow() {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
                     if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
                         return Ok(address);
                     }
@@ -864,12 +910,12 @@ fn generate_package_address(
 
 fn generate_resource_address(
     value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<ResourceAddress, GeneratorError> {
     match value {
         ast::Value::Address(inner) => match inner.borrow() {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
                     if let Ok(address) = ResourceAddress::try_from(full_data.as_ref()) {
                         return Ok(address);
                     }
@@ -884,13 +930,13 @@ fn generate_resource_address(
 
 fn generate_dynamic_global_address(
     value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     resolver: &mut NameResolver,
 ) -> Result<DynamicGlobalAddress, GeneratorError> {
     match value {
         ast::Value::Address(value) => match value.borrow() {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
                     if let Ok(address) = GlobalAddress::try_from(full_data.as_ref()) {
                         return Ok(DynamicGlobalAddress::Static(address));
                     }
@@ -920,13 +966,13 @@ fn generate_dynamic_global_address(
 
 fn generate_dynamic_package_address(
     value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     resolver: &mut NameResolver,
 ) -> Result<DynamicPackageAddress, GeneratorError> {
     match value {
         ast::Value::Address(value) => match value.borrow() {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
                     if let Ok(address) = PackageAddress::try_from(full_data.as_ref()) {
                         return Ok(DynamicPackageAddress::Static(address));
                     }
@@ -953,12 +999,12 @@ fn generate_dynamic_package_address(
 
 fn generate_local_address(
     value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<InternalAddress, GeneratorError> {
     match value {
         ast::Value::Address(value) => match value.borrow() {
             ast::Value::String(s) => {
-                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
                     if let Ok(address) = InternalAddress::try_from(full_data.as_ref()) {
                         return Ok(address);
                     }
@@ -1091,13 +1137,13 @@ fn generate_address_reservation(
 
 fn generate_static_address(
     value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
 ) -> Result<ManifestAddress, GeneratorError> {
     match value {
         ast::Value::Address(value) => match value.borrow() {
             ast::Value::String(s) => {
                 // Check bech32 && entity type
-                if let Ok((_, full_data)) = bech32_decoder.validate_and_decode(&s) {
+                if let Ok((_, full_data)) = address_bech32_decoder.validate_and_decode(&s) {
                     // Check length
                     if full_data.len() == NodeId::LENGTH {
                         return Ok(ManifestAddress::Static(NodeId(
@@ -1218,7 +1264,7 @@ pub fn generate_value<B>(
     value: &ast::Value,
     expected_type: Option<ManifestValueKind>,
     resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
 ) -> Result<ManifestValue, GeneratorError>
 where
@@ -1252,11 +1298,11 @@ where
             value: value.clone(),
         }),
         ast::Value::Tuple(fields) => Ok(Value::Tuple {
-            fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
+            fields: generate_singletons(fields, None, resolver, address_bech32_decoder, blobs)?,
         }),
         ast::Value::Enum(discriminator, fields) => Ok(Value::Enum {
             discriminator: discriminator.clone(),
-            fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
+            fields: generate_singletons(fields, None, resolver, address_bech32_decoder, blobs)?,
         }),
         ast::Value::Array(element_type, elements) => {
             let element_value_kind = element_type.value_kind();
@@ -1266,7 +1312,7 @@ where
                     elements,
                     Some(element_value_kind),
                     resolver,
-                    bech32_decoder,
+                    address_bech32_decoder,
                     blobs,
                 )?,
             })
@@ -1282,7 +1328,7 @@ where
                     key_value_kind,
                     value_value_kind,
                     resolver,
-                    bech32_decoder,
+                    address_bech32_decoder,
                     blobs,
                 )?,
             })
@@ -1296,7 +1342,7 @@ where
                 value,
                 None,
                 resolver,
-                bech32_decoder,
+                address_bech32_decoder,
                 blobs,
             )?],
         }),
@@ -1310,7 +1356,7 @@ where
                 value,
                 None,
                 resolver,
-                bech32_decoder,
+                address_bech32_decoder,
                 blobs,
             )?],
         }),
@@ -1320,7 +1366,7 @@ where
                 value,
                 None,
                 resolver,
-                bech32_decoder,
+                address_bech32_decoder,
                 blobs,
             )?],
         }),
@@ -1333,10 +1379,11 @@ where
         }
         ast::Value::NonFungibleGlobalId(value) => {
             let global_id = match value.as_ref() {
-                ast::Value::String(s) => {
-                    NonFungibleGlobalId::try_from_canonical_string(bech32_decoder, s.as_str())
-                        .map_err(|_| GeneratorError::InvalidNonFungibleGlobalId)
-                }
+                ast::Value::String(s) => NonFungibleGlobalId::try_from_canonical_string(
+                    address_bech32_decoder,
+                    s.as_str(),
+                )
+                .map_err(|_| GeneratorError::InvalidNonFungibleGlobalId),
                 v => invalid_type!(v, ast::ValueKind::String)?,
             }?;
             Ok(Value::Tuple {
@@ -1358,7 +1405,7 @@ where
         // Custom Types
         // ==============
         ast::Value::Address(_) => {
-            generate_static_address(value, bech32_decoder).map(|v| Value::Custom {
+            generate_static_address(value, address_bech32_decoder).map(|v| Value::Custom {
                 value: ManifestCustomValue::Address(v),
             })
         }
@@ -1402,7 +1449,7 @@ fn generate_singletons<B>(
     elements: &Vec<ast::Value>,
     expected_value_kind: Option<ManifestValueKind>,
     resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
 ) -> Result<Vec<ManifestValue>, GeneratorError>
 where
@@ -1414,7 +1461,7 @@ where
             element,
             expected_value_kind,
             resolver,
-            bech32_decoder,
+            address_bech32_decoder,
             blobs,
         )?);
     }
@@ -1426,7 +1473,7 @@ fn generate_kv_entries<B>(
     key_value_kind: ManifestValueKind,
     value_value_kind: ManifestValueKind,
     resolver: &mut NameResolver,
-    bech32_decoder: &Bech32Decoder,
+    address_bech32_decoder: &AddressBech32Decoder,
     blobs: &B,
 ) -> Result<Vec<(ManifestValue, ManifestValue)>, GeneratorError>
 where
@@ -1438,14 +1485,14 @@ where
             &entry.0,
             Some(key_value_kind),
             resolver,
-            bech32_decoder,
+            address_bech32_decoder,
             blobs,
         )?;
         let value = generate_value(
             &entry.1,
             Some(value_value_kind),
             resolver,
-            bech32_decoder,
+            address_bech32_decoder,
             blobs,
         )?;
         result.push((key, value));
@@ -1464,6 +1511,7 @@ mod tests {
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+    use radix_engine_interface::address::AddressBech32Decoder;
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
     use radix_engine_interface::blueprints::resource::{
@@ -1487,7 +1535,7 @@ mod tests {
                     &value,
                     None,
                     &mut resolver,
-                    &Bech32Decoder::new(&NetworkDefinition::simulator()),
+                    &AddressBech32Decoder::new(&NetworkDefinition::simulator()),
                     &BlobProvider::default()
                 ),
                 Ok($expected)
@@ -1510,7 +1558,7 @@ mod tests {
                     &instruction,
                     &mut id_validator,
                     &mut resolver,
-                    &Bech32Decoder::new(&NetworkDefinition::simulator()),
+                    &AddressBech32Decoder::new(&NetworkDefinition::simulator()),
                     &MockBlobProvider::default()
                 ),
                 Ok($expected)
@@ -1528,7 +1576,7 @@ mod tests {
                 &value,
                 None,
                 &mut NameResolver::new(),
-                &Bech32Decoder::new(&NetworkDefinition::simulator()),
+                &AddressBech32Decoder::new(&NetworkDefinition::simulator()),
                 &BlobProvider::default(),
             ) {
                 Ok(_) => {
@@ -1629,19 +1677,19 @@ mod tests {
 
     #[test]
     fn test_instructions() {
-        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+        let address_bech32_decoder = AddressBech32Decoder::new(&NetworkDefinition::simulator());
         let package_address = PackageAddress::try_from_bech32(
-            &bech32_decoder,
+            &address_bech32_decoder,
             "package_sim1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfd2jg3zk".into(),
         )
         .unwrap();
         let component = ComponentAddress::try_from_bech32(
-            &bech32_decoder,
+            &address_bech32_decoder,
             "component_sim1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cvemygpmu",
         )
         .unwrap();
         let resource_address = ResourceAddress::try_from_bech32(
-            &bech32_decoder,
+            &address_bech32_decoder,
             "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
         )
         .unwrap();
@@ -1732,8 +1780,11 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(
+                        Enum<Metadata::String>("Token"),
+                        true
+                    )
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1823,8 +1874,8 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1889,8 +1940,8 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE
                 false
                 18u8
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1911,7 +1962,7 @@ mod tests {
                     track_total_supply: false,
                     divisibility: 18,
                     metadata: metadata_init!(
-                        "name" => "Token".to_owned(), locked;
+                        "name" => "Token".to_owned(), updatable;
                     ),
                     access_rules: BTreeMap::from([
                         (
@@ -1934,8 +1985,8 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 false
                 18u8
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1959,7 +2010,7 @@ mod tests {
                         track_total_supply: false,
                         divisibility: 18,
                         metadata: metadata_init!(
-                            "name" => "Token".to_owned(), locked;
+                            "name" => "Token".to_owned(), updatable;
                         ),
                         access_rules: BTreeMap::from([
                             (
@@ -1980,9 +2031,9 @@ mod tests {
 
     #[test]
     fn test_mint_non_fungible_instruction() {
-        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+        let address_bech32_decoder = AddressBech32Decoder::new(&NetworkDefinition::simulator());
         let resource_address = ResourceAddress::try_from_bech32(
-            &bech32_decoder,
+            &address_bech32_decoder,
             "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
         )
         .unwrap();
@@ -2011,9 +2062,9 @@ mod tests {
 
     #[test]
     fn test_mint_ruid_non_fungible_instruction() {
-        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+        let address_bech32_decoder = AddressBech32Decoder::new(&NetworkDefinition::simulator());
         let resource_address = ResourceAddress::try_from_bech32(
-            &bech32_decoder,
+            &address_bech32_decoder,
             "resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez",
         )
         .unwrap();
@@ -2078,7 +2129,7 @@ mod tests {
     macro_rules! generate_compiled_manifest_with_given_depth {
         ( $depth:expr ) => {{
             let manifest = generate_manifest_input_with_given_depth!($depth);
-            let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+            let address_bech32_decoder = AddressBech32Decoder::new(&NetworkDefinition::simulator());
 
             let tokens = tokenize(&manifest)
                 .map_err(CompileError::LexerError)
@@ -2089,7 +2140,7 @@ mod tests {
                 .unwrap();
             let blobs = BlobProvider::new();
 
-            generate_manifest(&instructions, &bech32_decoder, blobs).unwrap()
+            generate_manifest(&instructions, &address_bech32_decoder, blobs).unwrap()
         }};
     }
 

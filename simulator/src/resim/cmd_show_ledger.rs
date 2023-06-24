@@ -56,7 +56,7 @@ impl ShowLedger {
         out: &mut O,
         substate_db: &RocksdbSubstateStore,
     ) -> Result<(), Error> {
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+        let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
         let mut packages: Vec<PackageAddress> = vec![];
         let mut components: Vec<ComponentAddress> = vec![];
         let mut resources: Vec<ResourceAddress> = vec![];
@@ -83,7 +83,7 @@ impl ShowLedger {
                 out,
                 "{} {}",
                 list_item_prefix(last),
-                address.display(&bech32_encoder),
+                address.display(&address_bech32_encoder),
             )
             .map_err(Error::IOError)?;
         }
@@ -93,7 +93,7 @@ impl ShowLedger {
                 out,
                 "{} {}",
                 list_item_prefix(last),
-                address.display(&bech32_encoder),
+                address.display(&address_bech32_encoder),
             )
             .map_err(Error::IOError)?;
         }
@@ -103,7 +103,7 @@ impl ShowLedger {
                 out,
                 "{} {}",
                 list_item_prefix(last),
-                address.display(&bech32_encoder),
+                address.display(&address_bech32_encoder),
             )
             .map_err(Error::IOError)?;
         }
