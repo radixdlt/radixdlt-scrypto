@@ -27,6 +27,7 @@ use sbor::LocalTypeIndex;
 // Import and re-export substate types
 use crate::roles_template;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
+use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -34,7 +35,6 @@ use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
-use crate::system::node_modules::royalty::RoyaltyUtil;
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -238,47 +238,40 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
     Ok(())
 }
 
-
 fn validate_royalties<Y>(definition: &PackageDefinition, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
+where
+    Y: ClientApi<RuntimeError>,
 {
     for (blueprint, definition_init) in &definition.blueprints {
         match &definition_init.royalty_config {
             PackageRoyaltyConfig::Disabled => {}
             PackageRoyaltyConfig::Enabled(function_royalties) => {
-                let num_functions = definition_init
-                    .schema
-                    .functions
-                    .functions
-                    .values()
-                    .filter(|schema| schema.receiver.is_none())
-                    .count();
+                let num_functions = definition_init.schema.functions.functions.len();
 
                 if num_functions != function_royalties.len() {
-                    return Err(RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::UnexpectedNumberOfFunctionRoyalties {
-                        blueprint: blueprint.clone(),
-                        expected: num_functions,
-                        actual: function_royalties.len(),
-                    })));
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::PackageError(
+                            PackageError::UnexpectedNumberOfFunctionRoyalties {
+                                blueprint: blueprint.clone(),
+                                expected: num_functions,
+                                actual: function_royalties.len(),
+                            },
+                        ),
+                    ));
                 }
 
-                for (name, schema_init) in &definition_init.schema.functions.functions {
-                    if schema_init.receiver.is_none() && !function_royalties.contains_key(name) {
-                        return Err(
-                            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                            PackageError::MissingFunctionRoyalty {
-                            blueprint: blueprint.clone(),
-                            ident: name.clone(),
-                        })));
+                for name in definition_init.schema.functions.functions.keys() {
+                    if !function_royalties.contains_key(name) {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::MissingFunctionRoyalty {
+                                blueprint: blueprint.clone(),
+                                ident: name.clone(),
+                            }),
+                        ));
                     }
                 }
 
-                RoyaltyUtil::verify_royalty_amounts(
-                    function_royalties.values(),
-                    false,
-                    api,
-                )?;
+                RoyaltyUtil::verify_royalty_amounts(function_royalties.values(), false, api)?;
             }
         }
     }

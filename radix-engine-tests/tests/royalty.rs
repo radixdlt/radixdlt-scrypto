@@ -1,6 +1,7 @@
-use radix_engine::{system::system_modules::costing::transmute_u128_as_decimal, types::*};
+use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::node_modules::royalty::ComponentRoyaltyError;
+use radix_engine::{system::system_modules::costing::transmute_u128_as_decimal, types::*};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -281,6 +282,44 @@ fn test_claim_royalty() {
 }
 
 #[test]
+fn cannot_initialize_package_royalty_if_greater_than_allowed() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_public_key, _, account) = test_runner.new_allocated_account();
+    let owner_badge_resource = test_runner.create_non_fungible_resource(account);
+    let owner_badge_addr =
+        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::integer(1));
+
+    // Act
+    let (code, mut definition) = Compile::compile("./tests/blueprints/royalty");
+    let blueprint_def = definition.blueprints.get_mut("RoyaltyTest").unwrap();
+    let max_royalty_allowed = Decimal::try_from(DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    match &mut blueprint_def.royalty_config {
+        PackageRoyaltyConfig::Enabled(royalties) => {
+            for royalty in royalties.values_mut() {
+                *royalty = RoyaltyAmount::Xrd(max_royalty_allowed + dec!("1"));
+            }
+        }
+        PackageRoyaltyConfig::Disabled => {}
+    }
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 100u32.into())
+        .publish_package_with_owner(code, definition, owner_badge_addr)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                PackageError::RoyaltyAmountIsGreaterThanAllowed { .. }
+            ))
+        )
+    });
+}
+
+#[test]
 fn cannot_initialize_component_royalty_if_greater_than_allowed() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -307,9 +346,14 @@ fn cannot_initialize_component_royalty_if_greater_than_allowed() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e|
-        matches!(e, RuntimeError::ApplicationError(ApplicationError::ComponentRoyaltyError(ComponentRoyaltyError::RoyaltyAmountIsGreaterThanAllowed {..})))
-    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::ComponentRoyaltyError(
+                ComponentRoyaltyError::RoyaltyAmountIsGreaterThanAllowed { .. }
+            ))
+        )
+    });
 }
 
 #[test]
@@ -334,17 +378,25 @@ fn cannot_set_component_royalty_if_greater_than_allowed() {
                 owner_badge_resource,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
-            .set_component_royalty(component_address, "paid_method", RoyaltyAmount::Xrd(max_royalty_allowed + dec!("1")))
+            .set_component_royalty(
+                component_address,
+                "paid_method",
+                RoyaltyAmount::Xrd(max_royalty_allowed + dec!("1")),
+            )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
-    receipt.expect_specific_failure(|e|
-        matches!(e, RuntimeError::ApplicationError(ApplicationError::ComponentRoyaltyError(ComponentRoyaltyError::RoyaltyAmountIsGreaterThanAllowed {..})))
-    );
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::ComponentRoyaltyError(
+                ComponentRoyaltyError::RoyaltyAmountIsGreaterThanAllowed { .. }
+            ))
+        )
+    });
 }
-
 
 #[test]
 fn cannot_set_royalty_after_locking() {

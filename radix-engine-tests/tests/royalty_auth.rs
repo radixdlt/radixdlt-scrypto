@@ -1,4 +1,3 @@
-use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -48,7 +47,7 @@ fn non_package_owner_cannot_claim_royalty() {
         public_key,
         package_address,
         _component_address,
-        owner_badge_resource,
+        _owner_badge_resource,
     ) = set_up_package_and_component();
 
     // Act
@@ -125,7 +124,6 @@ fn non_component_owner_cannot_set_royalty() {
     // Assert
     receipt.expect_commit_failure();
 }
-
 
 #[test]
 fn component_owner_can_claim_royalty() {

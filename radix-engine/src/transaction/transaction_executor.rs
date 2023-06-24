@@ -83,7 +83,10 @@ impl ExecutionConfig {
             max_panic_message_size: DEFAULT_MAX_PANIC_MESSAGE_SIZE,
             max_number_of_logs: DEFAULT_MAX_NUMBER_OF_LOGS,
             max_number_of_events: DEFAULT_MAX_NUMBER_OF_EVENTS,
-            max_per_function_royalty_in_xrd: Decimal::try_from(DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap(),
+            max_per_function_royalty_in_xrd: Decimal::try_from(
+                DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD,
+            )
+            .unwrap(),
         }
     }
 
