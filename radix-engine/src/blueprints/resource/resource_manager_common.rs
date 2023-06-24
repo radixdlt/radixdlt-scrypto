@@ -3,7 +3,7 @@ use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataValue, METADATA_ADMIN_ROLE, METADATA_ADMIN_UPDATER_ROLE,
+    MetadataInit, METADATA_ADMIN_ROLE, METADATA_ADMIN_UPDATER_ROLE,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
@@ -124,17 +124,29 @@ pub fn features(
     if track_total_supply {
         features.push(TRACK_TOTAL_SUPPLY_FEATURE);
     }
-    if access_rules.contains_key(&ResourceAction::Freeze) {
-        features.push(VAULT_FREEZE_FEATURE);
+
+    if let Some((rule, updater)) = access_rules.get(&ResourceAction::Freeze) {
+        if rule.ne(&AccessRule::DenyAll) || updater.ne(&AccessRule::DenyAll) {
+            features.push(VAULT_FREEZE_FEATURE);
+        }
     }
-    if access_rules.contains_key(&ResourceAction::Recall) {
-        features.push(VAULT_RECALL_FEATURE);
+
+    if let Some((rule, updater)) = access_rules.get(&ResourceAction::Recall) {
+        if rule.ne(&AccessRule::DenyAll) || updater.ne(&AccessRule::DenyAll) {
+            features.push(VAULT_RECALL_FEATURE);
+        }
     }
-    if access_rules.contains_key(&ResourceAction::Mint) {
-        features.push(MINT_FEATURE);
+
+    if let Some((rule, updater)) = access_rules.get(&ResourceAction::Mint) {
+        if rule.ne(&AccessRule::DenyAll) || updater.ne(&AccessRule::DenyAll) {
+            features.push(MINT_FEATURE);
+        }
     }
-    if access_rules.contains_key(&ResourceAction::Burn) {
-        features.push(BURN_FEATURE);
+
+    if let Some((rule, updater)) = access_rules.get(&ResourceAction::Burn) {
+        if rule.ne(&AccessRule::DenyAll) || updater.ne(&AccessRule::DenyAll) {
+            features.push(BURN_FEATURE);
+        }
     }
 
     features
@@ -144,7 +156,7 @@ pub fn globalize_resource_manager<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, MetadataValue>,
+    metadata: MetadataInit,
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
 where
@@ -171,7 +183,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, MetadataValue>,
+    metadata: MetadataInit,
     initial_supply: Decimal,
     api: &mut Y,
 ) -> Result<(ResourceAddress, Bucket), RuntimeError>
@@ -208,7 +220,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-    metadata: BTreeMap<String, MetadataValue>,
+    metadata: MetadataInit,
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
 ) -> Result<(ResourceAddress, Bucket), RuntimeError>

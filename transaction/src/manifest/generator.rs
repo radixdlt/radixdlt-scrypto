@@ -1778,8 +1778,11 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(
+                        Enum<Metadata::String>("Token"),
+                        true
+                    )
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1799,10 +1802,9 @@ mod tests {
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: BTreeMap::from([(
-                        "name".to_string(),
-                        MetadataValue::String("Token".to_string())
-                    )]),
+                    metadata: metadata_init! {
+                        "name" => "Token".to_string(), locked;
+                    },
                     access_rules: BTreeMap::from([
                         (
                             ResourceAction::Withdraw,
@@ -1845,7 +1847,7 @@ mod tests {
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
                         ),
-                        metadata: BTreeMap::new(),
+                        metadata: metadata_init!(),
                         access_rules: BTreeMap::new(),
                     }),
                 }],
@@ -1870,8 +1872,8 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1905,7 +1907,8 @@ mod tests {
                         metadata: BTreeMap::from([(
                             "name".to_string(),
                             MetadataValue::String("Token".to_string())
-                        )]),
+                        )])
+                        .into(),
                         access_rules: BTreeMap::from([
                             (
                                 ResourceAction::Withdraw,
@@ -1935,8 +1938,8 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE
                 false
                 18u8
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1956,10 +1959,9 @@ mod tests {
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
                     track_total_supply: false,
                     divisibility: 18,
-                    metadata: BTreeMap::from([(
-                        "name".to_string(),
-                        MetadataValue::String("Token".to_string())
-                    )]),
+                    metadata: metadata_init!(
+                        "name" => "Token".to_owned(), locked;
+                    ),
                     access_rules: BTreeMap::from([
                         (
                             ResourceAction::Withdraw,
@@ -1981,8 +1983,8 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 false
                 18u8
-                Map<String, Enum>(
-                    "name" => Enum<Metadata::String>("Token")
+                Map<String, Tuple>(
+                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -2005,10 +2007,9 @@ mod tests {
                     &FungibleResourceManagerCreateWithInitialSupplyInput {
                         track_total_supply: false,
                         divisibility: 18,
-                        metadata: BTreeMap::from([(
-                            "name".to_string(),
-                            MetadataValue::String("Token".to_string())
-                        )]),
+                        metadata: metadata_init!(
+                            "name" => "Token".to_owned(), locked;
+                        ),
                         access_rules: BTreeMap::from([
                             (
                                 ResourceAction::Withdraw,

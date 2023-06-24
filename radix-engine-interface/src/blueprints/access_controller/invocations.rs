@@ -33,17 +33,6 @@ impl Clone for AccessControllerCreateGlobalInput {
 
 pub type AccessControllerCreateGlobalOutput = ComponentAddress;
 
-//======================================
-// Access Controller Post Instantiation
-//======================================
-
-pub const ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT: &str = "post_instantiation";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccessControllerPostInstantiationInput;
-
-pub type AccessControllerPostInstantiationOutput = ();
-
 //================================
 // Access Controller Create Proof
 //================================
