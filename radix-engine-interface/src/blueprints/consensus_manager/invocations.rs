@@ -2,6 +2,7 @@ use crate::api::actor_sorted_index_api::SortedKey;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
+use radix_engine_common::prelude::ManifestBucket;
 use radix_engine_common::time::{Instant, TimeComparisonOperator};
 use radix_engine_common::types::*;
 use radix_engine_interface::crypto::Secp256k1PublicKey;
@@ -287,10 +288,18 @@ pub type ConsensusManagerNextRoundOutput = ();
 
 pub const CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ConsensusManagerCreateValidatorInput {
     pub key: Secp256k1PublicKey,
     pub fee_factor: Decimal,
+    pub xrd_payment: Bucket,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ConsensusManagerCreateValidatorManifestInput {
+    pub key: Secp256k1PublicKey,
+    pub fee_factor: Decimal,
+    pub xrd_payment: ManifestBucket,
 }
 
 pub type ConsensusManagerCreateValidatorOutput = (ComponentAddress, Bucket);

@@ -170,6 +170,13 @@ impl ResourceManagerStub {
         )
     }
 
+    pub fn create_empty_bucket(&self) -> Bucket {
+        self.call(
+            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
+            &ResourceManagerCreateEmptyBucketInput {},
+        )
+    }
+
     pub fn resource_type(&self) -> ResourceType {
         self.call(
             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT,

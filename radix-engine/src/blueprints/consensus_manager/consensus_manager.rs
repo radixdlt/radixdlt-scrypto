@@ -200,6 +200,7 @@ pub enum ConsensusManagerError {
         count: usize,
     },
     AlreadyStarted,
+    NotXrd,
 }
 
 pub const CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX: CollectionIndex = 0u8;
@@ -538,12 +539,19 @@ impl ConsensusManagerBlueprint {
     pub(crate) fn create_validator<Y>(
         key: Secp256k1PublicKey,
         fee_factor: Decimal,
+        xrd_payment: Bucket,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        if !xrd_payment.resource_address(api)?.eq(&XRD) {
+            return Err(RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(ConsensusManagerError::NotXrd)));
+        }
+
         let _validator_xrd_cost = Self::get_validator_xrd_cost(api)?;
+
+        xrd_payment.drop_empty(api)?;
 
         let (validator_address, owner_token_bucket) =
             ValidatorCreator::create(key, false, fee_factor, api)?;

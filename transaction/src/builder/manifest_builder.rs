@@ -15,7 +15,7 @@ use radix_engine_interface::blueprints::access_controller::{
 };
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ConsensusManagerCreateValidatorInput, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
+    CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
     VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_AS_OWNER_IDENT,
     VALIDATOR_STAKE_IDENT, VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
 };
@@ -560,14 +560,15 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_validator(&mut self, key: Secp256k1PublicKey, fee_factor: Decimal) -> &mut Self {
+    pub fn create_validator(&mut self, key: Secp256k1PublicKey, fee_factor: Decimal, xrd_payment: ManifestBucket) -> &mut Self {
         self.add_instruction(InstructionV1::CallMethod {
             address: CONSENSUS_MANAGER.into(),
             method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ConsensusManagerCreateValidatorInput {
+            args: manifest_args!(
                 key,
-                fee_factor
-            }),
+                fee_factor,
+                xrd_payment
+            ),
         });
         self
     }
