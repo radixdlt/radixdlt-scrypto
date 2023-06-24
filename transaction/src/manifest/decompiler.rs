@@ -3,7 +3,7 @@ use crate::model::*;
 use crate::validation::*;
 use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
-use radix_engine_interface::address::Bech32Encoder;
+use radix_engine_interface::address::AddressBech32Encoder;
 use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT,
     ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
@@ -85,7 +85,7 @@ impl From<RustToManifestValueError> for DecompileError {
 
 #[derive(Default)]
 pub struct DecompilationContext<'a> {
-    pub bech32_encoder: Option<&'a Bech32Encoder>,
+    pub address_bech32_encoder: Option<&'a AddressBech32Encoder>,
     pub id_allocator: ManifestIdAllocator,
     pub bucket_names: NonIterMap<ManifestBucket, String>,
     pub proof_names: NonIterMap<ManifestProof, String>,
@@ -94,23 +94,25 @@ pub struct DecompilationContext<'a> {
 }
 
 impl<'a> DecompilationContext<'a> {
-    pub fn new(bech32_encoder: &'a Bech32Encoder) -> Self {
+    pub fn new(address_bech32_encoder: &'a AddressBech32Encoder) -> Self {
         Self {
-            bech32_encoder: Some(bech32_encoder),
+            address_bech32_encoder: Some(address_bech32_encoder),
             ..Default::default()
         }
     }
 
-    pub fn new_with_optional_network(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+    pub fn new_with_optional_network(
+        address_bech32_encoder: Option<&'a AddressBech32Encoder>,
+    ) -> Self {
         Self {
-            bech32_encoder,
+            address_bech32_encoder,
             ..Default::default()
         }
     }
 
     pub fn for_value_display(&'a self) -> ManifestDecompilationDisplayContext<'a> {
         ManifestDecompilationDisplayContext::with_bech32_and_names(
-            self.bech32_encoder,
+            self.address_bech32_encoder,
             &self.bucket_names,
             &self.proof_names,
             &self.address_reservation_names,
@@ -161,9 +163,9 @@ pub fn decompile(
     instructions: &[InstructionV1],
     network: &NetworkDefinition,
 ) -> Result<String, DecompileError> {
-    let bech32_encoder = Bech32Encoder::new(network);
+    let address_bech32_encoder = AddressBech32Encoder::new(network);
     let mut buf = String::new();
-    let mut context = DecompilationContext::new(&bech32_encoder);
+    let mut context = DecompilationContext::new(&address_bech32_encoder);
     for inst in instructions {
         decompile_instruction(&mut buf, inst, &mut context)?;
     }

@@ -33,3 +33,9 @@ define_wrapped_hash!(SystemTransactionHash);
 pub trait HasSystemTransactionHash {
     fn system_transaction_hash(&self) -> SystemTransactionHash;
 }
+
+impl fmt::Display for SystemTransactionHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}

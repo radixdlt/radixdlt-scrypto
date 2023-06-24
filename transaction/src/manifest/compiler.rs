@@ -1,6 +1,6 @@
 use crate::builder::TransactionManifestV1;
 use crate::manifest::*;
-use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::address::AddressBech32Decoder;
 use radix_engine_interface::network::NetworkDefinition;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -18,12 +18,12 @@ pub fn compile<B>(
 where
     B: IsBlobProvider,
 {
-    let bech32_decoder = Bech32Decoder::new(network);
+    let address_bech32_decoder = AddressBech32Decoder::new(network);
 
     let tokens = lexer::tokenize(s).map_err(CompileError::LexerError)?;
     let instructions = parser::Parser::new(tokens, parser::PARSER_MAX_DEPTH)
         .parse_manifest()
         .map_err(CompileError::ParserError)?;
-    generator::generate_manifest(&instructions, &bech32_decoder, blobs)
+    generator::generate_manifest(&instructions, &address_bech32_decoder, blobs)
         .map_err(CompileError::GeneratorError)
 }

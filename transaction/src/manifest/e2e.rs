@@ -1,4 +1,4 @@
-use radix_engine_common::prelude::{Bech32Encoder, PACKAGE_PACKAGE};
+use radix_engine_common::prelude::{AddressBech32Encoder, PACKAGE_PACKAGE};
 use utils::ContextualDisplay;
 
 #[cfg(test)]
@@ -1422,26 +1422,26 @@ pub fn apply_address_replacements(input: impl ToString) -> String {
     // For other addresses, uncomment the below:;
     // {
     //     // Generate addresses
-    //     use radix_engine_common::address::{Bech32Decoder, Bech32Encoder};
+    //     use radix_engine_common::address::{AddressBech32Decoder, AddressBech32Encoder};
     //     use radix_engine_common::types::EntityType;
     //     use radix_engine_interface::constants::*;
 
     //     // Random address from resim new-account
     //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";
 
-    //     println!("{}", Bech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
 
-    //     let (_, mut pseudo_random_bytes) = Bech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
+    //     let (_, mut pseudo_random_bytes) = AddressBech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
     //     pseudo_random_bytes[0] = EntityType::InternalFungibleVault as u8;
-    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
     //     pseudo_random_bytes[0] = EntityType::GlobalValidator as u8;
-    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
     //     pseudo_random_bytes[0] = EntityType::GlobalAccessController as u8;
-    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
     //     pseudo_random_bytes[0] = EntityType::GlobalGenericComponent as u8;
-    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
     // };
-    let package_package_address = PACKAGE_PACKAGE.to_string(&Bech32Encoder::for_simulator());
+    let package_package_address = PACKAGE_PACKAGE.to_string(&AddressBech32Encoder::for_simulator());
     let replacement_vectors = sbor::prelude::BTreeMap::from([
         (
             "${xrd_resource_address}",
