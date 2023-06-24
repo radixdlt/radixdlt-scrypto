@@ -1375,7 +1375,7 @@ fn setting_metadata_emits_correct_events() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .set_metadata(resource_address.into(), "key".into(), MetadataValue::I32(1))
+        .set_metadata(resource_address.into(), "key", MetadataValue::I32(1))
         .build();
 
     // Act

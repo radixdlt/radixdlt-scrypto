@@ -60,11 +60,11 @@ mod genesis_helper {
 
     enable_method_auth! {
         roles {
-            system => updaters: system;
+            system => updatable_by: [system];
         },
         methods {
-            ingest_data_chunk => system;
-            wrap_up => system;
+            ingest_data_chunk => restrict_to: [system];
+            wrap_up => restrict_to: [system];
         }
     }
 
@@ -249,7 +249,7 @@ mod genesis_helper {
                     &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
                         track_total_supply: true,
                         divisibility: 18,
-                        metadata,
+                        metadata: metadata.into(),
                         access_rules,
                         initial_supply: Decimal::zero(),
                         resource_address: resource.address_reservation,

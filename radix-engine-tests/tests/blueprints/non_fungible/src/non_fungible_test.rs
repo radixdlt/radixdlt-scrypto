@@ -433,7 +433,7 @@ mod non_fungible_test {
                     scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                         id_type: NonFungibleIdType::RUID,
                         track_total_supply: false,
-                        metadata: BTreeMap::new(),
+                        metadata: scrypto::api::node_modules::metadata::MetadataInit::new(),
                         access_rules: BTreeMap::new(),
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries,

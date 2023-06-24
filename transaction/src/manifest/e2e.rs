@@ -2,7 +2,7 @@ use radix_engine_common::prelude::{AddressBech32Encoder, PACKAGE_PACKAGE};
 use utils::ContextualDisplay;
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::internal_prelude::*;
     use crate::manifest::*;
@@ -258,7 +258,7 @@ RECALL_VAULT
     #[test]
     fn test_vault_freeze() {
         compile_and_decompile_with_inversion_test(
-            "resource_recall",
+            "vault_freeze",
             apply_address_replacements(include_str!("../../examples/resources/freeze.rtm")),
             &NetworkDefinition::simulator(),
             vec![],
@@ -757,15 +757,24 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     false
     18u8
-    Map<String, Enum>(
-        "name" => Enum<0u8>(
-            "MyResource"
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<0u8>(
+                "MyResource"
+            ),
+            true
         ),
-        "symbol" => Enum<0u8>(
-            "RSRC"
+        "symbol" => Tuple(
+            Enum<0u8>(
+                "RSRC"
+            ),
+            true
         ),
-        "description" => Enum<0u8>(
-            "A very innovative and important resource"
+        "description" => Tuple(
+            Enum<0u8>(
+                "A very innovative and important resource"
+            ),
+            true
         )
     )
     Map<Enum, Tuple>(
@@ -810,15 +819,24 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     false
     18u8
-    Map<String, Enum>(
-        "name" => Enum<0u8>(
-            "MyResource"
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<0u8>(
+                "MyResource"
+            ),
+            true
         ),
-        "symbol" => Enum<0u8>(
-            "RSRC"
+        "symbol" => Tuple(
+            Enum<0u8>(
+                "RSRC"
+            ),
+            true
         ),
-        "description" => Enum<0u8>(
-            "A very innovative and important resource"
+        "description" => Tuple(
+            Enum<0u8>(
+                "A very innovative and important resource"
+            ),
+            true
         )
     )
     Map<Enum, Tuple>(
@@ -870,12 +888,18 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         ),
         Array<String>()
     )
-    Map<String, Enum>(
-        "name" => Enum<0u8>(
-            "MyResource"
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<0u8>(
+                "MyResource"
+            ),
+            true
         ),
-        "description" => Enum<0u8>(
-            "A very innovative and important resource"
+        "description" => Tuple(
+            Enum<0u8>(
+                "A very innovative and important resource"
+            ),
+            false
         )
     )
     Map<Enum, Tuple>(
@@ -940,12 +964,18 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
-    Map<String, Enum>(
-        "name" => Enum<0u8>(
-            "MyResource"
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<0u8>(
+                "MyResource"
+            ),
+            true
         ),
-        "description" => Enum<0u8>(
-            "A very innovative and important resource"
+        "description" => Tuple(
+            Enum<0u8>(
+                "A very innovative and important resource"
+            ),
+            false
         )
     )
     Map<Enum, Tuple>(
@@ -1322,6 +1352,7 @@ CALL_METHOD
 
         // If you use the following output for test cases, make sure you've checked the diff
         println!("{}", recompiled_decompiled);
+
         let intent = build_intent(
             expected_canonical.as_ref(),
             network,
@@ -1331,7 +1362,12 @@ CALL_METHOD
         .to_payload_bytes()
         .unwrap();
 
+        let intent_hash = PreparedIntentV1::prepare_from_payload(&intent)
+            .unwrap()
+            .intent_hash();
+
         print_blob(name, intent);
+        print_blob(&format!("{}_HASH", name), intent_hash.0.to_vec());
 
         // Check round-trip property
         assert_eq!(original_binary, recompiled_binary);
@@ -1347,18 +1383,20 @@ CALL_METHOD
         );
     }
 
-    fn print_blob(name: &str, blob: Vec<u8>) {
-        print!(
-            "const TX_{}: [u8; {}] = [",
-            name.clone().to_uppercase(),
-            blob.len()
-        );
+    pub fn print_blob(name: &str, blob: Vec<u8>) {
+        std::env::var("PRINT_TEST_VECTORS").ok().map(|_| {
+            print!(
+                "pub const TX_{}: [u8; {}] = [",
+                name.clone().to_uppercase(),
+                blob.len()
+            );
 
-        for &byte in blob.iter() {
-            print!("{:#04x}, ", byte);
-        }
+            for &byte in blob.iter() {
+                print!("{:#04x}, ", byte);
+            }
 
-        println!("];");
+            println!("];");
+        });
     }
 
     fn build_intent(

@@ -5,7 +5,6 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use crate::{event_schema, roles_template};
-use native_sdk::component::BorrowedObject;
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
@@ -13,6 +12,7 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
@@ -186,22 +186,6 @@ impl AccessControllerNativePackage {
                         .add_child_type_and_descendents::<AccessControllerCreateGlobalOutput>(),
                 ),
                 export: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            },
-        );
-        functions.insert(
-            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref_mut()),
-                input: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccessControllerPostInstantiationInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator
-                        .add_child_type_and_descendents::<AccessControllerPostInstantiationOutput>(
-                        ),
-                ),
-                export: ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT.to_string(),
             },
         );
         functions.insert(
@@ -497,8 +481,6 @@ impl AccessControllerNativePackage {
                             ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => ["primary", "recovery"];
 
                             ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => ["primary", "confirmation", "recovery"];
-
-                            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => ["this_package"]; // FIXME: Remove
                         }
                     )),
                 },
@@ -522,11 +504,6 @@ impl AccessControllerNativePackage {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
                 Self::create_global(input, api)
-            }
-            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                Self::post_instantiation(input, api)
             }
             ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
@@ -663,12 +640,6 @@ impl AccessControllerNativePackage {
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
 
-            // Hack: Interfaces for initializing metadata only allows for <String, String> metadata
-            // but the interfaces for setting metadata allow for any `MetadataEntry`. So we will
-            // set the metadata to be updatable by the component caller badge and then switch it
-            // back to only be immutable.
-            // FIXME: When metadata initialization allows MetadataEntry stop making update metadata
-            // rule be transient
             let access_rules = [
                 (
                     ResourceAction::Mint,
@@ -691,10 +662,7 @@ impl AccessControllerNativePackage {
                 ),
                 (
                     ResourceAction::UpdateMetadata,
-                    (
-                        rule!(require(global_component_caller_badge.clone())),
-                        rule!(require(global_component_caller_badge.clone())),
-                    ),
+                    (AccessRule::DenyAll, AccessRule::DenyAll),
                 ),
                 (
                     ResourceAction::Recall,
@@ -723,7 +691,11 @@ impl AccessControllerNativePackage {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,
-                        metadata: Default::default(),
+                        metadata: metadata_init! {
+                            "name" => "Recovery Badge".to_owned(), locked;
+                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;
+                            "access_controller" => address, locked;
+                        },
                         access_rules: access_rules.into(),
                     })
                     .unwrap(),
@@ -762,66 +734,7 @@ impl AccessControllerNativePackage {
             Some(address_reservation),
         )?;
 
-        // Invoking the post-initialization method on the component
-        api.call_method(
-            address.as_node_id(),
-            ACCESS_CONTROLLER_POST_INSTANTIATION_IDENT,
-            scrypto_encode(&AccessControllerPostInstantiationInput).unwrap(),
-        )?;
-
         Ok(IndexedScryptoValue::from_typed(&address))
-    }
-
-    /// This method is only callable when the access controller virtual direct package caller
-    /// badge is present.
-    ///
-    /// This method has been added due to an issue with setting the metadata of the recovery badge
-    /// resource to include the address of the access controller before the access controller was
-    /// globalized. Doing that lead to an error along the lines of "callframe has no reference to
-    /// the (access controller) node id" because the access controller's node id has been allocated
-    /// but nothing has been globalized to it. Thus, the call frame did not have a reference to the
-    /// global address to pass when calling the metadata set method.
-    ///
-    /// A minimal example that reproduces this issue is only possible after the metadata interfaces
-    /// are updated to support any MetadataEntry.
-    ///
-    /// The method below can be removed and the logic can be moved to the instantiation function
-    /// once this bug is fixed.
-    fn post_instantiation<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        input
-            .as_typed::<AccessControllerPostInstantiationInput>()
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
-
-        let access_controller = api.actor_get_global_address()?;
-        let resource_address = {
-            let substate_key = AccessControllerField::AccessController.into();
-            let handle =
-                api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
-
-            let access_controller = {
-                let access_controller: AccessControllerSubstate =
-                    api.field_lock_read_typed(handle)?;
-                access_controller
-            };
-            access_controller.recovery_badge
-        };
-
-        let mut resource_manager = BorrowedObject(resource_address.into_node_id());
-        resource_manager.set_metadata("name", "Recovery Badge".to_owned(), api)?;
-        resource_manager.set_metadata(
-            "icon_url",
-            Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()),
-            api,
-        )?;
-        resource_manager.set_metadata("access_controller", access_controller, api)?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
     }
 
     fn create_proof<Y>(
