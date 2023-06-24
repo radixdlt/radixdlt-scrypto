@@ -1477,6 +1477,7 @@ dependencies = [
 name = "transaction"
 version = "0.10.0"
 dependencies = [
+ "bech32",
  "ed25519-dalek",
  "hex",
  "lazy_static",

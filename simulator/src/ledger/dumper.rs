@@ -31,7 +31,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
     substate_db: &T,
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+    let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
     let (_, substate) = substate_db
         .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<PackageCodeSubstate>, MapKey>(
             package_address.as_node_id(),
@@ -46,7 +46,7 @@ pub fn dump_package<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {}",
         "Package".green().bold(),
-        package_address.display(&bech32_encoder)
+        package_address.display(&address_bech32_encoder)
     );
     writeln!(
         output,
@@ -63,7 +63,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
     substate_db: &T,
     output: &mut O,
 ) -> Result<(), EntityDumpError> {
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+    let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
 
     let (package_address, blueprint_name, resources) = {
         let type_info = substate_db
@@ -98,14 +98,14 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         output,
         "{}: {}",
         "Component".green().bold(),
-        component_address.display(&bech32_encoder),
+        component_address.display(&address_bech32_encoder),
     );
 
     writeln!(
         output,
         "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
         "Blueprint".green().bold(),
-        package_address.display(&bech32_encoder),
+        package_address.display(&address_bech32_encoder),
         blueprint_name
     );
 
@@ -115,7 +115,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             output,
             "{} {}: {}",
             list_item_prefix(last),
-            component_address.display(&bech32_encoder),
+            component_address.display(&address_bech32_encoder),
             amount
         );
     }
@@ -126,7 +126,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             output,
             "{} {}",
             list_item_prefix(last),
-            component_address.display(&bech32_encoder)
+            component_address.display(&address_bech32_encoder)
         );
         for (last, id) in ids.iter().identify_last() {
             writeln!(output, "   {} {}", list_item_prefix(last), id);

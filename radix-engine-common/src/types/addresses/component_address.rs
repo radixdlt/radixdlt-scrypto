@@ -1,5 +1,5 @@
-use crate::address::Bech32Decoder;
-use crate::address::{AddressDisplayContext, EncodeBech32AddressError, NO_NETWORK};
+use crate::address::AddressBech32Decoder;
+use crate::address::{AddressBech32EncodeError, AddressDisplayContext, NO_NETWORK};
 use crate::crypto::{hash, PublicKey};
 use crate::data::manifest::model::ManifestAddress;
 use crate::data::manifest::ManifestCustomValueKind;
@@ -79,7 +79,7 @@ impl ComponentAddress {
             .and_then(|x| Self::try_from(x.as_ref()).ok())
     }
 
-    pub fn try_from_bech32(decoder: &Bech32Decoder, s: &str) -> Option<Self> {
+    pub fn try_from_bech32(decoder: &AddressBech32Decoder, s: &str) -> Option<Self> {
         if let Ok((_, full_data)) = decoder.validate_and_decode(s) {
             Self::try_from(full_data.as_ref()).ok()
         } else {
@@ -236,7 +236,7 @@ impl fmt::Debug for ComponentAddress {
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
-    type Error = EncodeBech32AddressError;
+    type Error = AddressBech32EncodeError;
 
     fn contextual_format<F: fmt::Write>(
         &self,
@@ -249,6 +249,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
 
         // This could be made more performant by streaming the hex into the formatter
         write!(f, "ComponentAddress({})", hex::encode(&self.0))
-            .map_err(EncodeBech32AddressError::FormatError)
+            .map_err(AddressBech32EncodeError::FormatError)
     }
 }
