@@ -34,6 +34,7 @@ use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
+use crate::system::node_modules::royalty::RoyaltyUtil;
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -79,6 +80,20 @@ pub enum PackageError {
     MissingFunctionPermission {
         blueprint: String,
         ident: String,
+    },
+
+    UnexpectedNumberOfFunctionRoyalties {
+        blueprint: String,
+        expected: usize,
+        actual: usize,
+    },
+    MissingFunctionRoyalty {
+        blueprint: String,
+        ident: String,
+    },
+    RoyaltyAmountIsGreaterThanAllowed {
+        max: RoyaltyAmount,
+        actual: RoyaltyAmount,
     },
 
     InvalidMetadataKey(String),
@@ -216,6 +231,54 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
                     expected: expected_event_name.to_string(),
                     actual: actual_event_name,
                 })?
+            }
+        }
+    }
+
+    Ok(())
+}
+
+
+fn validate_royalties<Y>(definition: &PackageDefinition, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+{
+    for (blueprint, definition_init) in &definition.blueprints {
+        match &definition_init.royalty_config {
+            PackageRoyaltyConfig::Disabled => {}
+            PackageRoyaltyConfig::Enabled(function_royalties) => {
+                let num_functions = definition_init
+                    .schema
+                    .functions
+                    .functions
+                    .values()
+                    .filter(|schema| schema.receiver.is_none())
+                    .count();
+
+                if num_functions != function_royalties.len() {
+                    return Err(RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::UnexpectedNumberOfFunctionRoyalties {
+                        blueprint: blueprint.clone(),
+                        expected: num_functions,
+                        actual: function_royalties.len(),
+                    })));
+                }
+
+                for (name, schema_init) in &definition_init.schema.functions.functions {
+                    if schema_init.receiver.is_none() && !function_royalties.contains_key(name) {
+                        return Err(
+                            RuntimeError::ApplicationError(ApplicationError::PackageError(
+                            PackageError::MissingFunctionRoyalty {
+                            blueprint: blueprint.clone(),
+                            ident: name.clone(),
+                        })));
+                    }
+                }
+
+                RoyaltyUtil::verify_royalty_amounts(
+                    function_royalties.values(),
+                    false,
+                    api,
+                )?;
             }
         }
     }
@@ -694,7 +757,7 @@ impl PackageNativePackage {
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
                 value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<ComponentRoyaltyConfig>(),
+                    aggregator.add_child_type_and_descendents::<PackageRoyaltyConfig>(),
                 ),
                 can_own: false,
             },
@@ -1080,6 +1143,7 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_auth(&definition)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+        validate_royalties(&definition, api)?;
 
         for BlueprintDefinitionInit {
             blueprint_type,
