@@ -42,6 +42,9 @@ pub struct CostingModule {
     pub max_call_depth: usize,
     pub payload_len: usize,
     pub num_of_signatures: usize,
+
+    /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
+    pub max_per_function_royalty_in_xrd: Decimal,
 }
 
 impl CostingModule {
