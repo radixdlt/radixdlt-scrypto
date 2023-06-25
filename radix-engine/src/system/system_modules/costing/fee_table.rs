@@ -155,7 +155,10 @@ impl FeeTable {
 
         // FIXME: figure out the right conversion rate from gas to execution time
 
-        mul(gas / 20, 100)
+        // From `costing::spin_loop`, it takes 1.8851 ms to for 8011 gas' worth of execution.
+        // Therefore, cost for gas: 1.8851 * 1000 / 8011 * 100
+
+        mul(gas / 5, 100)
     }
 
     //======================
