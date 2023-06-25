@@ -162,12 +162,12 @@ impl FeeTable {
 
     #[inline]
     pub fn invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {
-        Self::data_processing_cost(input_size)
+        add(1_000, Self::data_processing_cost(input_size))
     }
 
     #[inline]
     pub fn allocate_node_id_cost(&self) -> u32 {
-        212
+        1_000
     }
 
     #[inline]
@@ -177,54 +177,28 @@ impl FeeTable {
         total_substate_size: usize,
         store_access: &StoreAccessInfo,
     ) -> u32 {
-        // FIXME: add size count
         add3(
+            1_000,
             Self::data_processing_cost(total_substate_size),
             Self::store_access_cost(store_access),
-            if let Some(entity_type) = node_id.entity_type() {
-                match entity_type {
-                    EntityType::GlobalAccessController => 1736,
-                    EntityType::GlobalAccount => 1640,
-                    EntityType::GlobalConsensusManager => 1203,
-                    EntityType::GlobalFungibleResourceManager => 1160,
-                    EntityType::GlobalGenericComponent => 2370,
-                    EntityType::GlobalIdentity => 838,
-                    EntityType::GlobalNonFungibleResourceManager => 1587,
-                    EntityType::GlobalPackage => 1493,
-                    EntityType::GlobalValidator => 2374,
-                    EntityType::GlobalVirtualSecp256k1Account => 1590,
-                    EntityType::GlobalVirtualSecp256k1Identity => 906,
-                    EntityType::InternalAccount => 329,
-                    EntityType::InternalFungibleVault => 368,
-                    EntityType::InternalGenericComponent => 336,
-                    EntityType::InternalKeyValueStore => 828,
-                    EntityType::InternalNonFungibleVault => 356,
-                    _ => 1182, // average of above values
-                }
-            } else {
-                1182 // average of above values
-            },
         )
     }
 
     #[inline]
     pub fn drop_node_cost(&self, size: usize) -> u32 {
-        add(
-            324, // average of gathered data
-            Self::data_processing_cost(size),
-        )
+        add(1_000, Self::data_processing_cost(size))
     }
 
     #[inline]
     pub fn move_modules_cost(&self) -> u32 {
         // FIXME: add rule
-        1
+        1_000
     }
 
     #[inline]
     pub fn open_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
         add3(
-            100,
+            1_000,
             Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
@@ -233,7 +207,7 @@ impl FeeTable {
     #[inline]
     pub fn read_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
         add3(
-            174,
+            1_000,
             Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
@@ -242,7 +216,7 @@ impl FeeTable {
     #[inline]
     pub fn write_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
         add3(
-            126,
+            1_000,
             Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
@@ -250,13 +224,13 @@ impl FeeTable {
 
     #[inline]
     pub fn close_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(100, Self::store_access_cost(store_access))
+        add(1_000, Self::store_access_cost(store_access))
     }
 
     #[inline]
     pub fn set_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
         add3(
-            100,
+            1_000,
             Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
@@ -264,22 +238,22 @@ impl FeeTable {
 
     #[inline]
     pub fn remove_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(100, Self::store_access_cost(store_access))
+        add(1_000, Self::store_access_cost(store_access))
     }
 
     #[inline]
     pub fn scan_sorted_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(100, Self::store_access_cost(store_access))
+        add(1_000, Self::store_access_cost(store_access))
     }
 
     #[inline]
     pub fn scan_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(100, Self::store_access_cost(store_access))
+        add(1_000, Self::store_access_cost(store_access))
     }
 
     #[inline]
     pub fn take_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(100, Self::store_access_cost(store_access))
+        add(1_000, Self::store_access_cost(store_access))
     }
 
     //======================
@@ -288,52 +262,52 @@ impl FeeTable {
 
     #[inline]
     pub fn lock_fee_cost(&self) -> u32 {
-        100
+        1_000
     }
 
     #[inline]
     pub fn query_fee_reserve_cost(&self) -> u32 {
-        100
+        1_000
     }
 
     #[inline]
     pub fn query_actor_cost(&self) -> u32 {
-        100
+        1_000
     }
 
     #[inline]
     pub fn query_auth_zone_cost(&self) -> u32 {
-        100
+        1_000
     }
 
     #[inline]
     pub fn assert_access_rule_cost(&self) -> u32 {
-        1000
+        1_000
     }
 
     #[inline]
     pub fn query_transaction_hash_cost(&self) -> u32 {
-        100
+        1_000
     }
 
     #[inline]
     pub fn generate_ruid_cost(&self) -> u32 {
-        300
+        1_000
     }
 
     #[inline]
     pub fn emit_event_cost(&self, size: usize) -> u32 {
-        10000 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        1_000 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
     }
 
     #[inline]
     pub fn emit_log_cost(&self, size: usize) -> u32 {
-        10000 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        1_000 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
     }
 
     #[inline]
     pub fn panic_cost(&self, size: usize) -> u32 {
-        10000 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+        1_000 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
     }
 
     //======================
