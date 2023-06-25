@@ -680,19 +680,12 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let (value, mut store_access) = self
+        let (value, store_access) = self
             .current_frame
             .read_substate(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
-        let mut value_size = value.len();
-
-        // FIXME: revisit package special costing rules
-        let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
-        if lock_info.node_id.is_global_package() {
-            store_access.clear();
-            value_size = 0;
-        }
+        let value_size = value.len();
 
         M::on_read_substate(lock_handle, value_size, &store_access, self)?;
 
