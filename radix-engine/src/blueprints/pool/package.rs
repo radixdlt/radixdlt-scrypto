@@ -6,7 +6,6 @@ use crate::event_schema;
 use crate::kernel::kernel_api::*;
 use crate::roles_template;
 use crate::system::system_callback::*;
-use crate::system::system_modules::costing::*;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::{
@@ -17,7 +16,6 @@ use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::MethodAccessibility;
 use radix_engine_interface::schema::*;
 use radix_engine_interface::types::*;
-use resources_tracker_macro::*;
 use sbor::rust::prelude::*;
 use sbor::*;
 
@@ -529,7 +527,6 @@ impl PoolNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,
@@ -540,8 +537,6 @@ impl PoolNativePackage {
     {
         match export_name {
             ONE_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let OneResourcePoolInstantiateInput {
                     resource_address,
                     pool_manager_rule,
@@ -558,8 +553,6 @@ impl PoolNativePackage {
             }
 
             ONE_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let OneResourcePoolContributeInput { bucket } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -568,8 +561,6 @@ impl PoolNativePackage {
             }
 
             ONE_RESOURCE_POOL_REDEEM_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let OneResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -578,8 +569,6 @@ impl PoolNativePackage {
             }
 
             ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let OneResourcePoolProtectedDepositInput { bucket } =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -589,8 +578,6 @@ impl PoolNativePackage {
             }
 
             ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let OneResourcePoolProtectedWithdrawInput { amount } =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -600,8 +587,6 @@ impl PoolNativePackage {
             }
 
             ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let OneResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
                 } = input.as_typed().map_err(|e| {
@@ -613,8 +598,6 @@ impl PoolNativePackage {
             }
 
             ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let OneResourcePoolGetVaultAmountInput {} = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -623,8 +606,6 @@ impl PoolNativePackage {
             }
 
             TWO_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let TwoResourcePoolInstantiateInput {
                     resource_addresses,
                     pool_manager_rule,
@@ -641,8 +622,6 @@ impl PoolNativePackage {
             }
 
             TWO_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let TwoResourcePoolContributeInput { buckets } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -651,8 +630,6 @@ impl PoolNativePackage {
             }
 
             TWO_RESOURCE_POOL_REDEEM_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let TwoResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -661,8 +638,6 @@ impl PoolNativePackage {
             }
 
             TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let TwoResourcePoolProtectedDepositInput { bucket } =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -672,8 +647,6 @@ impl PoolNativePackage {
             }
 
             TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let TwoResourcePoolProtectedWithdrawInput {
                     amount,
                     resource_address,
@@ -686,8 +659,6 @@ impl PoolNativePackage {
             }
 
             TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let TwoResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
                 } = input.as_typed().map_err(|e| {
@@ -699,8 +670,6 @@ impl PoolNativePackage {
             }
 
             TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let TwoResourcePoolGetVaultAmountsInput {} = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -709,8 +678,6 @@ impl PoolNativePackage {
             }
 
             MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let MultiResourcePoolInstantiateInput {
                     resource_addresses,
                     pool_manager_rule,
@@ -727,8 +694,6 @@ impl PoolNativePackage {
             }
 
             MULTI_RESOURCE_POOL_CONTRIBUTE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let MultiResourcePoolContributeInput { buckets } =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -738,8 +703,6 @@ impl PoolNativePackage {
             }
 
             MULTI_RESOURCE_POOL_REDEEM_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let MultiResourcePoolRedeemInput { bucket } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -748,8 +711,6 @@ impl PoolNativePackage {
             }
 
             MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let MultiResourcePoolProtectedDepositInput { bucket } =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -759,8 +720,6 @@ impl PoolNativePackage {
             }
 
             MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let MultiResourcePoolProtectedWithdrawInput {
                     amount,
                     resource_address,
@@ -773,8 +732,6 @@ impl PoolNativePackage {
             }
 
             MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let MultiResourcePoolGetRedemptionValueInput {
                     amount_of_pool_units,
                 } = input.as_typed().map_err(|e| {
@@ -786,8 +743,6 @@ impl PoolNativePackage {
             }
 
             MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let MultiResourcePoolGetVaultAmountsInput {} = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;

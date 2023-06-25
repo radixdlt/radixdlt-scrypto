@@ -13,13 +13,13 @@ fn can_get_from_scrypto() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             component_address,
             "set_array",
@@ -31,7 +31,7 @@ fn can_get_from_scrypto() {
 
     // Assert
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(component_address, "get_array", manifest_args!("key"))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -45,7 +45,7 @@ fn can_set_from_scrypto() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -53,7 +53,7 @@ fn can_set_from_scrypto() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             component_address,
             "set_array",

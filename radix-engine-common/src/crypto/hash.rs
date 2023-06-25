@@ -22,10 +22,6 @@ impl Hash {
 }
 
 pub trait IsHash: AsRef<[u8]> + Sized + From<Hash> + Into<Hash> + AsRef<Hash> {
-    fn into_bytes(self) -> [u8; Hash::LENGTH] {
-        self.into_hash().0
-    }
-
     fn as_bytes(&self) -> &[u8; Hash::LENGTH] {
         &<Self as AsRef<Hash>>::as_ref(self).0
     }
@@ -34,8 +30,20 @@ pub trait IsHash: AsRef<[u8]> + Sized + From<Hash> + Into<Hash> + AsRef<Hash> {
         &<Self as AsRef<Hash>>::as_ref(self).0
     }
 
+    fn as_hash(&self) -> &Hash {
+        &<Self as AsRef<Hash>>::as_ref(self)
+    }
+
+    fn into_bytes(self) -> [u8; Hash::LENGTH] {
+        self.into_hash().0
+    }
+
     fn into_hash(self) -> Hash {
         self.into()
+    }
+
+    fn from_bytes(bytes: [u8; Hash::LENGTH]) -> Self {
+        Hash(bytes).into()
     }
 
     fn from_hash(hash: Hash) -> Self {

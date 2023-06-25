@@ -1,4 +1,4 @@
-use radix_engine::{system::system_modules::costing::transmute_u128_as_decimal, types::*};
+use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,7 +15,7 @@ fn test_component_royalty() {
     // Instantiate component
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
+            .lock_fee(account, 50u32.into())
             .call_function(
                 package_address,
                 "RoyaltyTest",
@@ -31,7 +31,7 @@ fn test_component_royalty() {
     let account_pre_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -64,7 +64,7 @@ fn test_component_royalty_in_usd() {
     // Instantiate component
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
+            .lock_fee(account, 50u32.into())
             .call_function(
                 package_address,
                 "RoyaltyTest",
@@ -80,7 +80,7 @@ fn test_component_royalty_in_usd() {
     let account_pre_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .call_method(component_address, "paid_method_usd", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -89,7 +89,7 @@ fn test_component_royalty_in_usd() {
     let commit_result = receipt.expect_commit(true);
     assert_eq!(
         commit_result.fee_summary.total_royalty_cost_xrd,
-        dec!("1") * transmute_u128_as_decimal(DEFAULT_USD_PRICE)
+        dec!("1") * Decimal::try_from(DEFAULT_USD_PRICE).unwrap()
     );
     let account_post_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
     let component_royalty = test_runner.inspect_component_royalty(component_address);
@@ -126,7 +126,7 @@ fn set_up_package_and_component() -> (
     // Enable package royalty
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
+            .lock_fee(account, 50u32.into())
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
@@ -140,7 +140,7 @@ fn set_up_package_and_component() -> (
     // Instantiate component
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
+            .lock_fee(account, 50u32.into())
             .call_function(
                 package_address,
                 "RoyaltyTest",
@@ -176,7 +176,7 @@ fn test_package_royalty() {
     let account_pre_balance = test_runner.account_balance(account, RADIX_TOKEN).unwrap();
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -214,7 +214,7 @@ fn test_royalty_accumulation_when_success() {
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -244,7 +244,7 @@ fn test_royalty_accumulation_when_failure() {
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .call_method(component_address, "paid_method_panic", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -271,7 +271,7 @@ fn test_claim_royalty() {
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -290,7 +290,7 @@ fn test_claim_royalty() {
     // Claim package royalty
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
@@ -310,7 +310,7 @@ fn test_claim_royalty() {
     // Claim component royalty
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .claim_component_royalties(component_address)
             .call_method(
                 account,

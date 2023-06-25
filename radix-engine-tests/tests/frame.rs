@@ -1,5 +1,5 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::costing::CostingError;
+use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use scrypto_unit::*;
@@ -20,7 +20,7 @@ fn test_max_call_depth_success() {
     // ============================
     let num_calls = u32::try_from(DEFAULT_MAX_CALL_DEPTH).unwrap() - 1u32;
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "Caller",
@@ -42,7 +42,7 @@ fn test_max_call_depth_failure() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "Caller",
@@ -56,8 +56,8 @@ fn test_max_call_depth_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::MaxCallDepthLimitReached
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxCallDepthLimitReached
             ))
         )
     });

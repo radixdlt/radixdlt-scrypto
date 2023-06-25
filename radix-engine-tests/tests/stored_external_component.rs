@@ -11,7 +11,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "ExternalComponent",
@@ -31,7 +31,7 @@ fn stored_component_addresses_are_invokable() {
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
     let manifest1 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(package, "ExternalComponent", "create", manifest_args!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -41,7 +41,7 @@ fn stored_component_addresses_are_invokable() {
 
     // Act
     let manifest2 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(component0, "func", manifest_args!())
         .build();
     let receipt2 = test_runner.execute_manifest(
@@ -54,7 +54,7 @@ fn stored_component_addresses_are_invokable() {
 
     // Act
     let manifest2 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(component1, "func", manifest_args!())
         .build();
     let receipt2 = test_runner.execute_manifest(

@@ -60,7 +60,7 @@ impl Transfer {
         }
 
         let manifest = manifest_builder
-            .lock_fee(FAUCET, 100.into())
+            .lock_fee(FAUCET, 50u32.into())
             .withdraw_from_account(default_account, self.resource_address.0, self.amount)
             .call_method(
                 self.recipient.0,

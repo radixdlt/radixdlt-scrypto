@@ -35,7 +35,7 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             account,
             ACCOUNT_SECURIFY_IDENT,
@@ -168,7 +168,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     let (public_key, _, account) = test_runner.new_account(is_virtual);
     let (_, _, other_account) = test_runner.new_account(is_virtual);
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 10u32.into())
+        .lock_fee(account, 50u32.into())
         .withdraw_from_account(other_account, RADIX_TOKEN, 1.into())
         .call_method(
             account,

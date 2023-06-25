@@ -14,7 +14,7 @@ fn test_lock_fee_and_then_withdraw_failure() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 10u32.into())
+        .lock_fee(account, 50u32.into())
         .withdraw_from_account(account, RADIX_TOKEN, dec!("1000000"))
         .build();
     let receipt = test_runner.execute_manifest(
