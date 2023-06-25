@@ -7,7 +7,7 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, PackageDefinition,
-    PackagePublishNativeInput, PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
+    PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
 };
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
@@ -297,7 +297,6 @@ fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_pr
 fn should_not_be_able_to_publish_native_packages() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
-    let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
 
     // Act
     let manifest = ManifestBuilder::new()
