@@ -55,10 +55,6 @@ name = "transfer"
 harness = false
 
 [[bench]]
-name = "spin_loop"
-harness = false
-
-[[bench]]
 name = "resources_usage"
 harness = false
 required-features = ["cpu_ram_metrics"]
