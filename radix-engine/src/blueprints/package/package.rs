@@ -360,37 +360,14 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 }
 
 pub fn create_package_partitions(
-    //features: BTreeSet<String>,
     blueprints: BTreeMap<String, BlueprintDefinition>,
     blueprint_dependencies: BTreeMap<String, BlueprintDependencies>,
     schemas: BTreeMap<Hash, ScryptoSchema>,
-    code: PackageCodeSubstate,
-    code_hash: Hash,
-    //package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
+    code: BTreeMap<Hash, PackageCodeSubstate>,
     auth_configs: BTreeMap<String, AuthConfig>,
     metadata: BTreeMap<String, MetadataValue>,
 ) -> NodeSubstates {
     let mut partitions: NodeSubstates = BTreeMap::new();
-
-    // Prepare node init.
-    {
-        /*
-        if features.contains("royalty") {
-            let royalty = PackageRoyaltyAccumulatorSubstate {
-                royalty_vault: None,
-            };
-            let main_partition = btreemap!(
-                PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
-            );
-            partitions.insert(
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_FIELDS_PARTITION_OFFSET)
-                    .unwrap(),
-                main_partition,
-            );
-        }
-         */
-    }
 
     {
         let blueprints_partition = blueprints
@@ -463,29 +440,13 @@ pub fn create_package_partitions(
     }
 
     {
-        let value = KeyValueEntrySubstate::immutable_entry(code);
-        partitions.insert(
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
-                .unwrap(),
-            btreemap! (
-                SubstateKey::Map(scrypto_encode(&code_hash).unwrap()) => IndexedScryptoValue::from_typed(&value),
-            ),
-        );
-    };
-
-    /*
-    {
-        let royalty_partition = package_royalties
+        let code_partition = code
             .into_iter()
-            .map(|(blueprint, royalty)| {
-                let key = BlueprintVersionKey {
-                    blueprint,
-                    version: BlueprintVersion::default(),
-                };
-                let value = KeyValueEntrySubstate::immutable_entry(royalty);
+            .map(|(hash, code_substate)| {
+                let value = KeyValueEntrySubstate::immutable_entry(code_substate);
+
                 (
-                    SubstateKey::Map(scrypto_encode(&key).unwrap()),
+                    SubstateKey::Map(scrypto_encode(&hash).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
                 )
             })
@@ -493,12 +454,11 @@ pub fn create_package_partitions(
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
+                .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
                 .unwrap(),
-            royalty_partition,
+            code_partition,
         );
     };
-     */
 
     {
         let auth_partition = auth_configs
@@ -524,20 +484,7 @@ pub fn create_package_partitions(
         );
     }
 
-    partitions.insert(
-        TYPE_INFO_FIELD_PARTITION,
-        type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-            global: true,
-
-            blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            version: BlueprintVersion::default(),
-
-            blueprint_info: ObjectBlueprintInfo::default(),
-            features: btreeset!(),
-            instance_schema: None,
-        })),
-    );
-    let metadata_partition = {
+    {
         let mut metadata_partition = BTreeMap::new();
         for (key, value) in metadata {
             let value = KeyValueEntrySubstate::entry(value);
@@ -546,9 +493,22 @@ pub fn create_package_partitions(
                 IndexedScryptoValue::from_typed(&value),
             );
         }
-        metadata_partition
-    };
-    partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
+        partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
+    }
+
+    {
+        partitions.insert(
+            TYPE_INFO_FIELD_PARTITION,
+            type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                global: true,
+                blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                version: BlueprintVersion::default(),
+                blueprint_info: ObjectBlueprintInfo::default(),
+                features: btreeset!(),
+                instance_schema: None,
+            })),
+        );
+    }
 
     partitions
 }
@@ -559,8 +519,7 @@ fn globalize_package<Y>(
     blueprints: BTreeMap<String, BlueprintDefinition>,
     blueprint_dependencies: BTreeMap<String, BlueprintDependencies>,
     schemas: BTreeMap<Hash, ScryptoSchema>,
-    code: PackageCodeSubstate,
-    code_hash: Hash,
+    code_substates: BTreeMap<Hash, PackageCodeSubstate>,
     package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
     auth_configs: BTreeMap<String, AuthConfig>,
     metadata: BTreeMap<String, MetadataValue>,
@@ -615,13 +574,12 @@ where
 
     {
         let mut code_partition = BTreeMap::new();
-        //for (hash, schema) in schemas {
-            //let key = BlueprintVersionKey::new_default(blueprint);
+        for (hash, code_substate) in code_substates {
             code_partition.insert(
-                scrypto_encode(&code_hash).unwrap(),
-                (scrypto_encode(&code).unwrap(), true),
+                scrypto_encode(&hash).unwrap(),
+                (scrypto_encode(&code_substate).unwrap(), true),
             );
-        //}
+        }
         kv_entries.insert(3u8, code_partition);
     }
 
@@ -940,7 +898,7 @@ impl PackageNativePackage {
         BTreeMap<String, BlueprintDependencies>,
         BTreeMap<String, AuthConfig>,
         BTreeMap<Hash, ScryptoSchema>,
-        (Hash, PackageCodeSubstate),
+        BTreeMap<Hash, PackageCodeSubstate>,
     ), RuntimeError> {
         // Validate schema
         validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
@@ -955,13 +913,18 @@ impl PackageNativePackage {
         let mut blueprint_dependencies = BTreeMap::new();
         let mut auth_configs = BTreeMap::new();
         let mut schemas = BTreeMap::new();
+        let mut code_substates = BTreeMap::new();
 
-        let code = PackageCodeSubstate {
-            vm_type: VmType::Native,
-            code: native_package_code_id.to_be_bytes().to_vec(),
+        let code_hash = {
+            let code = PackageCodeSubstate {
+                vm_type: VmType::Native,
+                code: native_package_code_id.to_be_bytes().to_vec(),
+            };
+            let code_hash = hash(scrypto_encode(&code).unwrap());
+            code_substates.insert(code_hash, code);
+            code_hash
         };
 
-        let code_hash = hash(scrypto_encode(&code).unwrap());
 
         {
             for (blueprint, definition_init) in definition.blueprints {
@@ -1062,7 +1025,7 @@ impl PackageNativePackage {
             blueprint_dependencies,
             auth_configs,
             schemas,
-            (code_hash, code),
+            code_substates,
         ))
     }
 
@@ -1081,7 +1044,7 @@ impl PackageNativePackage {
             blueprint_dependencies,
             auth_configs,
             schemas,
-            (code_hash, code),
+            code_substates,
         ) = Self::validate_native_package_definition(definition, native_package_code_id)?;
 
         globalize_package(
@@ -1089,8 +1052,7 @@ impl PackageNativePackage {
             blueprints,
             blueprint_dependencies,
             schemas,
-            code,
-            code_hash,
+            code_substates,
             btreemap!(),
             auth_configs,
             metadata,
@@ -1236,12 +1198,6 @@ impl PackageNativePackage {
                 ))
             })?;
 
-        let code = PackageCodeSubstate {
-            vm_type: VmType::ScryptoV1,
-            code,
-        };
-
-        let code_hash = hash(scrypto_encode(&code).unwrap());
 
         let mut auth_templates = BTreeMap::new();
 
@@ -1249,6 +1205,18 @@ impl PackageNativePackage {
         let mut schemas = BTreeMap::new();
         let mut royalties = BTreeMap::new();
         let mut blueprint_dependencies = BTreeMap::new();
+        let mut code_substates = BTreeMap::new();
+
+        let code_hash = {
+            let code = PackageCodeSubstate {
+                vm_type: VmType::ScryptoV1,
+                code,
+            };
+            let code_hash = hash(scrypto_encode(&code).unwrap());
+            code_substates.insert(code_hash, code);
+            code_hash
+        };
+
 
         // Build node init
         {
@@ -1351,8 +1319,7 @@ impl PackageNativePackage {
             blueprints,
             blueprint_dependencies,
             schemas,
-            code,
-            code_hash,
+            code_substates,
             royalties,
             auth_templates,
             metadata,

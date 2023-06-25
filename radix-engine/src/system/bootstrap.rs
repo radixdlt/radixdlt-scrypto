@@ -382,7 +382,7 @@ pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BT
                 blueprint_dependencies,
                 auth_configs,
                 schemas,
-                (code_hash, code),
+                code_substates,
             ) = PackageNativePackage::validate_native_package_definition(
                 definition,
                 native_code_id,
@@ -392,8 +392,7 @@ pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BT
                 blueprints,
                 blueprint_dependencies,
                 schemas,
-                code,
-                code_hash,
+                code_substates,
                 auth_configs,
                 btreemap!(),
             )
