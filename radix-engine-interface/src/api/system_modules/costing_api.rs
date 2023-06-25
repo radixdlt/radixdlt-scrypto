@@ -4,7 +4,7 @@ use radix_engine_common::math::Decimal;
 use radix_engine_common::types::*;
 
 pub trait ClientCostingApi<E> {
-    fn consume_cost_units(&mut self, units: u32, reason: ClientCostingReason) -> Result<(), E>;
+    fn consume_cost_units(&mut self, costing_entry: ClientCostingEntry) -> Result<(), E>;
 
     fn credit_cost_units(
         &mut self,

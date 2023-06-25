@@ -22,7 +22,7 @@ fn test_manifest_with_non_existent_resource() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 10u32.into())
+        .lock_fee(account, 50u32.into())
         .take_all_from_worktop(non_existent_resource, |builder, bucket_id| {
             builder.call_method(account, "try_deposit_or_abort", manifest_args!(bucket_id))
         })
@@ -137,7 +137,7 @@ fn test_non_existent_blob_hash() {
                     blueprints: btreemap!(),
                 },
                 metadata: BTreeMap::new(),
-                owner_rule: OwnerRole::None,
+                owner_role: OwnerRole::None,
                 package_address: None,
             }),
         })

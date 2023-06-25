@@ -304,6 +304,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
+        _total_substate_size: usize,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
@@ -330,7 +331,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        _total_substate_size: usize,
+    ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         let system_state = api.kernel_get_system_state();
         system_state

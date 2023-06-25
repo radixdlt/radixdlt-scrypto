@@ -25,7 +25,9 @@ use transaction::prelude::TestTransaction;
 pub fn test_lock_substate_of_invisible_package_address() {
     // Create dummy transaction
     let transaction = TestTransaction::new_from_nonce(
-        ManifestBuilder::new().lock_fee(FAUCET, 100.into()).build(),
+        ManifestBuilder::new()
+            .lock_fee(FAUCET, 50u32.into())
+            .build(),
         1,
     )
     .prepare()

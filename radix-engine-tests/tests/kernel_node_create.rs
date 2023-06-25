@@ -11,7 +11,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NodeCreate",

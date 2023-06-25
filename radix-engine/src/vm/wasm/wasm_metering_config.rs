@@ -15,7 +15,7 @@ impl Default for WasmMeteringConfig {
 impl WasmMeteringConfig {
     pub fn parameters(&self) -> WasmMeteringParams {
         match self {
-            Self::V0 => WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 1024),
+            Self::V0 => WasmMeteringParams::new(InstructionCostRules::new(), 1024),
         }
     }
 }
