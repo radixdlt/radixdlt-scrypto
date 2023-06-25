@@ -1,6 +1,5 @@
-<<<<<<< HEAD
-Total Cost Units                                                                ,  15816087
-Total Fee                                                                       , 7.9080435
+Total Cost Units                                                                ,  15842161
+Total Fee                                                                       , 7.9210805
 AfterInvoke                                                                     ,       650
 AllocateNodeId                                                                  ,     15000
 BeforeInvoke                                                                    ,     14156
@@ -12,12 +11,12 @@ LockFee                                                                         
 OpenSubstate::GlobalAccount                                                     ,   2208124
 OpenSubstate::GlobalFungibleResourceManager                                     ,   1426634
 OpenSubstate::GlobalGenericComponent                                            ,    281647
-OpenSubstate::GlobalPackage                                                     ,   6032367
+OpenSubstate::GlobalPackage                                                     ,   6056904
 OpenSubstate::GlobalTwoResourcePool                                             ,    708129
 OpenSubstate::InternalFungibleVault                                             ,   1413947
 OpenSubstate::InternalGenericComponent                                          ,     85484
 QueryActor                                                                      ,      6500
-ReadSubstate                                                                    ,    408941
+ReadSubstate                                                                    ,    430478
 RunNativeCode::Worktop_drain                                                    ,      6900
 RunNativeCode::Worktop_drop                                                     ,      6600
 RunNativeCode::Worktop_put                                                      ,     42400
@@ -35,28 +34,8 @@ RunNativeCode::run                                                              
 RunNativeCode::take_FungibleVault                                               ,     40600
 RunNativeCode::try_deposit_batch_or_abort                                       ,     41100
 RunNativeCode::withdraw                                                         ,     25600
-RunWasmCode::Radiswap_swap                                                      ,   2100000
+RunWasmCode::Radiswap_swap                                                      ,   2080000
 TxBaseCost                                                                      ,     40000
 TxPayloadCost                                                                   ,     17650
 TxSignatureVerification                                                         ,      7000
 WriteSubstate                                                                   ,     23650
-=======
-Total Cost Units              ,  15345038
-Total Fee                     ,  7.672519
-AllocateNodeId                ,     15000
-CloseSubstate                 ,    170500
-CreateNode                    ,     21800
-DropNode                      ,     21146
-EmitEvent                     ,      5062
-Invoke                        ,     14156
-LockFee                       ,       500
-OpenSubstate                  ,  11921400
-QueryActor                    ,      6500
-ReadSubstate                  ,    193474
-RunNativeCode                 ,    807200
-RunWasmCode                   ,   2080000
-TxBaseCost                    ,     40000
-TxPayloadCost                 ,     17650
-TxSignatureVerification       ,      7000
-WriteSubstate                 ,     23650
->>>>>>> feature/basic-costing-adjustment

@@ -430,8 +430,8 @@ fn register_validator_with_auth_succeeds() {
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 500.into())
         .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
-        .lock_fee(test_runner.faucet_component(), 50.into())
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -493,8 +493,8 @@ fn unregister_validator_with_auth_succeeds() {
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 500.into())
         .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
-        .lock_fee(test_runner.faucet_component(), 50.into())
         .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -1604,8 +1604,8 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
         .lock_fee(test_runner.faucet_component(), 50.into())
+        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
         .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
