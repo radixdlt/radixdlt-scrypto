@@ -226,16 +226,16 @@ where
     ) -> Option<GenesisReceipts> {
         let substate_flash = create_system_bootstrap_flash();
 
-        // FIXME: use substate flash data
-        let xrd_info = self
+        let ((package_node_id, _partition_num), _substates) = substate_flash.iter().next().unwrap();
+        let first_typed_info = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                &RADIX_TOKEN.into(),
+                package_node_id,
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             );
 
-        if xrd_info.is_none() {
+        if first_typed_info.is_none() {
             // FIXME: Add flash receipt
             self.flash_substates(substate_flash);
 
@@ -436,88 +436,6 @@ pub fn create_system_bootstrap_transaction(
     let mut instructions = Vec::new();
     let mut pre_allocated_addresses = vec![];
     let mut blobs = vec![];
-
-    // Metadata Package
-    /*
-    {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(METADATA_MODULE_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: METADATA_CODE_ID,
-                setup: MetadataNativePackage::definition(),
-                metadata: BTreeMap::new(),
-            }),
-        });
-    }
-
-    // Access Rules Package
-    {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(ROYALTY_MODULE_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: ROYALTY_CODE_ID,
-                setup: RoyaltyNativePackage::definition(),
-                metadata: BTreeMap::new(),
-            }),
-        });
-    }
-     */
-
-    // Resource Package
-    /*
-    {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(ACCESS_RULES_MODULE_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: ACCESS_RULES_CODE_ID,
-                setup: AccessRulesNativePackage::definition(),
-                metadata: BTreeMap::new(),
-            }),
-        });
-    }
-     */
-
-    // Royalty Package
-    /*
-    {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(RESOURCE_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: RESOURCE_MANAGER_CODE_ID,
-                setup: ResourceManagerNativePackage::definition(),
-                metadata: BTreeMap::new(),
-            }),
-        });
-    }
-     */
 
     // XRD Token
     {

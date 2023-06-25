@@ -616,7 +616,6 @@ where
         kv_entries,
     )?;
 
-    // FIXME: Dont use
     let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
 
     let address = api.globalize(
