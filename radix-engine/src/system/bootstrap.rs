@@ -367,6 +367,7 @@ pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BT
     let package_flashes = [
         (PACKAGE_PACKAGE, PackageNativePackage::definition(), PACKAGE_CODE_ID),
         (TRANSACTION_PROCESSOR_PACKAGE, TransactionProcessorNativePackage::definition(), TRANSACTION_PROCESSOR_CODE_ID),
+        (METADATA_MODULE_PACKAGE, MetadataNativePackage::definition(), METADATA_CODE_ID),
     ];
 
     let mut to_flash = BTreeMap::new();
@@ -462,6 +463,7 @@ pub fn create_system_bootstrap_transaction(
     }
 
     // Metadata Package
+    /*
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -479,6 +481,7 @@ pub fn create_system_bootstrap_transaction(
             }),
         });
     }
+     */
 
     // Access Rules Package
     {
