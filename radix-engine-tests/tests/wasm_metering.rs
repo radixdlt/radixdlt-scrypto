@@ -131,7 +131,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "500000"));
     let package_address = test_runner.publish_package(
         code,
         single_function_package_definition("Test", "f"),
