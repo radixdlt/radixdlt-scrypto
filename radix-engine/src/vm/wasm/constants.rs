@@ -32,7 +32,7 @@ pub const FIELD_LOCK_WRITE_FUNCTION_NAME: &str = "field_lock_write";
 pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
 
 pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
-pub const LOG_MESSAGE_FUNCTION_NAME: &str = "log_message";
+pub const EMIT_LOG_FUNCTION_NAME: &str = "emit_log";
 pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
 pub const GENERATE_RUID_FUNCTION_NAME: &str = "generate_ruid";
 pub const GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "get_global_address";

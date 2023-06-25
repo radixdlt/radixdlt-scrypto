@@ -3,12 +3,13 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
-use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_queries::typed_substate_layout::ValidatorRewardAppliedEvent;
+use radix_engine_queries::typed_substate_layout::{
+    ConsensusManagerError, ValidatorRewardAppliedEvent,
+};
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use rand_chacha;
@@ -233,31 +234,155 @@ fn next_round_causes_epoch_change_on_reaching_max_rounds() {
 }
 
 #[test]
-fn next_round_causes_epoch_change_on_reaching_target_duration() {
+fn next_round_fails_if_time_moves_backward() {
     // Arrange
     let initial_epoch = Epoch::of(5);
     let rounds_per_epoch = 100;
-    let epoch_duration_millis = 1000;
+    let target_epoch_duration_millis = 1000;
+    let genesis_start_time_millis: i64 = 0;
     let genesis = CustomGenesis::default(
         initial_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: 0,
                 max_round_count: rounds_per_epoch,
-                target_duration_millis: epoch_duration_millis,
+                target_duration_millis: target_epoch_duration_millis,
             },
         ),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
 
-    // Act
-    let receipt =
-        test_runner.advance_to_round_at_timestamp(Round::of(1), epoch_duration_millis as i64);
+    // Act 1 - a small jump in timestamp should be fine
+    let next_round = Round::of(1);
+    let next_timestamp = genesis_start_time_millis + 5;
+    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
 
-    // Assert
+    // Assert 1
+    let result = receipt.expect_commit_success();
+    assert!(result.next_epoch().is_none());
+
+    // Act 2 - a jump backwards in timestamp fails
+    let next_round = Round::of(2);
+    let next_timestamp = next_timestamp - 1;
+    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+
+    // Assert 2
+    let error = receipt.expect_failure();
+    assert_eq!(
+        error,
+        &RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+            ConsensusManagerError::InvalidProposerTimestampUpdate {
+                from_millis: genesis_start_time_millis + 5,
+                to_millis: genesis_start_time_millis + 4,
+            }
+        ))
+    );
+}
+
+#[test]
+fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoch_length_normalization(
+) {
+    // Arrange
+    let initial_epoch = Epoch::of(5);
+    let rounds_per_epoch = 100;
+    let target_epoch_duration_millis = 1000;
+    let genesis_start_time_millis: i64 = 0;
+    let genesis = CustomGenesis::default(
+        initial_epoch,
+        CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
+            EpochChangeCondition {
+                min_round_count: 0,
+                max_round_count: rounds_per_epoch,
+                target_duration_millis: target_epoch_duration_millis,
+            },
+        ),
+    );
+    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+
+    // Prepare for first epoch
+    let current_epoch = initial_epoch;
+    let expected_next_epoch_change_time =
+        genesis_start_time_millis + (target_epoch_duration_millis as i64);
+
+    // Act 1 - not quite there
+    let next_round = Round::of(1);
+    let next_timestamp = expected_next_epoch_change_time - 1;
+    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+
+    // Assert 1
+    let result = receipt.expect_commit_success();
+    assert!(result.next_epoch().is_none());
+
+    // Act 2 - slightly over the time change - should trigger
+    let next_round = Round::of(2);
+    let next_timestamp = expected_next_epoch_change_time + 1;
+    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+
+    // Assert 2
     let result = receipt.expect_commit_success();
     let next_epoch = result.next_epoch().expect("Should have next epoch");
-    assert_eq!(next_epoch.epoch, initial_epoch.next());
+    assert_eq!(next_epoch.epoch, current_epoch.next());
+    let state = test_runner.get_consensus_manager_state();
+    assert_eq!(state.actual_epoch_start_milli, next_timestamp);
+    assert_eq!(
+        state.effective_epoch_start_milli,
+        expected_next_epoch_change_time
+    );
+
+    // Prepare for next epoch
+    let current_epoch = current_epoch.next();
+    let expected_next_epoch_change_time =
+        genesis_start_time_millis + 2 * (target_epoch_duration_millis as i64);
+
+    // Act 3 - In next epoch, not quite enough for another change
+    let next_round = Round::of(1);
+    let next_timestamp = expected_next_epoch_change_time - 1;
+    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+
+    // Assert 3
+    let result = receipt.expect_commit_success();
+    assert!(result.next_epoch().is_none());
+
+    // Act 4 - In next epoch, exactly on expected time change
+    // Because of the epoch normalization, this epoch length is only 999 milliseconds
+    // but we catch back up with where we're expecting to be
+    let next_round = Round::of(2);
+    let next_timestamp = expected_next_epoch_change_time;
+    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+
+    // Assert 4
+    let result = receipt.expect_commit_success();
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
+    assert_eq!(next_epoch.epoch, current_epoch.next());
+    let state = test_runner.get_consensus_manager_state();
+    assert_eq!(
+        state.actual_epoch_start_milli,
+        expected_next_epoch_change_time
+    );
+    assert_eq!(
+        state.effective_epoch_start_milli,
+        expected_next_epoch_change_time
+    );
+
+    // Prepare for next epoch
+    let current_epoch = current_epoch.next();
+    let expected_next_epoch_change_time =
+        genesis_start_time_millis + 3 * (target_epoch_duration_millis as i64);
+
+    // Act 5
+    let next_round = Round::of(1);
+    // This round lasts much longer than planned
+    let next_timestamp = expected_next_epoch_change_time + (target_epoch_duration_millis as i64);
+    let receipt = test_runner.advance_to_round_at_timestamp(next_round, next_timestamp);
+
+    // Assert 5
+    // Therefore the effective start isn't normalized, and is equal to actual start
+    let result = receipt.expect_commit_success();
+    let next_epoch = result.next_epoch().expect("Should have next epoch");
+    assert_eq!(next_epoch.epoch, current_epoch.next());
+    let state = test_runner.get_consensus_manager_state();
+    assert_eq!(state.actual_epoch_start_milli, next_timestamp);
+    assert_eq!(state.effective_epoch_start_milli, next_timestamp);
 }
 
 #[test]
@@ -453,7 +578,11 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     let manifest = builder
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
-            builder.call_method(validator_address, "stake", manifest_args!(bucket))
+            if owner {
+                builder.call_method(validator_address, "stake_as_owner", manifest_args!(bucket))
+            } else {
+                builder.call_method(validator_address, "stake", manifest_args!(bucket))
+            }
         })
         .call_method(
             validator_account_address,
@@ -473,8 +602,8 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
-                RuntimeError::SystemModuleError(SystemModuleError::AuthError(
-                    AuthError::Unauthorized { .. }
+                RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                    ValidatorError::ValidatorIsNotAcceptingDelegatedStake
                 ))
             )
         });
@@ -1187,7 +1316,7 @@ impl RegisterAndStakeTransactionType {
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .register_validator(validator_address)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.stake_validator(validator_address, bucket_id)
+                        builder.stake_validator_as_owner(validator_address, bucket_id)
                     })
                     .call_method(
                         account_address,
@@ -1203,7 +1332,7 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.stake_validator(validator_address, bucket_id)
+                        builder.stake_validator_as_owner(validator_address, bucket_id)
                     })
                     .register_validator(validator_address)
                     .call_method(
@@ -1226,7 +1355,7 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.stake_validator(validator_address, bucket_id)
+                        builder.stake_validator_as_owner(validator_address, bucket_id)
                     })
                     .call_method(
                         account_address,
@@ -1249,7 +1378,7 @@ impl RegisterAndStakeTransactionType {
                     .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                        builder.stake_validator(validator_address, bucket_id)
+                        builder.stake_validator_as_owner(validator_address, bucket_id)
                     })
                     .call_method(
                         account_address,

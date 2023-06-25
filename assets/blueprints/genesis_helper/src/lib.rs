@@ -55,16 +55,16 @@ pub enum GenesisDataChunk {
 #[blueprint]
 mod genesis_helper {
     enable_function_auth! {
-        new => rule!(deny_all); // Genesis overrides this
+        new => rule!(deny_all); // Genesis skips this
     }
 
     enable_method_auth! {
         roles {
-            system
+            system => updatable_by: [system];
         },
         methods {
-            ingest_data_chunk => system;
-            wrap_up => system;
+            ingest_data_chunk => restrict_to: [system];
+            wrap_up => restrict_to: [system];
         }
     }
 
@@ -84,10 +84,7 @@ mod genesis_helper {
                 validators: KeyValueStore::new(),
             }
             .instantiate()
-            .prepare_to_globalize(OwnerRole::None)
-            .roles(roles! {
-                system => rule!(require(system_role.clone())), mutable_by: system;
-            })
+            .prepare_to_globalize(OwnerRole::Updatable(rule!(require(system_role.clone()))))
             .with_address(address_reservation)
             .globalize()
         }
@@ -252,7 +249,7 @@ mod genesis_helper {
                     &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
                         track_total_supply: true,
                         divisibility: 18,
-                        metadata,
+                        metadata: metadata.into(),
                         access_rules,
                         initial_supply: Decimal::zero(),
                         resource_address: resource.address_reservation,

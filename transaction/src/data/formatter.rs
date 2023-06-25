@@ -3,7 +3,9 @@ use radix_engine_interface::data::manifest::{
     model::*, ManifestCustomValue, ManifestCustomValueKind, ManifestValue, ManifestValueKind,
 };
 use radix_engine_interface::types::ResourceAddress;
-use radix_engine_interface::{address::Bech32Encoder, blueprints::resource::NonFungibleGlobalId};
+use radix_engine_interface::{
+    address::AddressBech32Encoder, blueprints::resource::NonFungibleGlobalId,
+};
 use sbor::rust::collections::NonIterMap;
 use sbor::rust::fmt;
 use sbor::*;
@@ -17,7 +19,7 @@ pub struct MultiLine {
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ManifestDecompilationDisplayContext<'a> {
-    pub bech32_encoder: Option<&'a Bech32Encoder>,
+    pub address_bech32_encoder: Option<&'a AddressBech32Encoder>,
     pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
     pub address_reservation_names: Option<&'a NonIterMap<ManifestAddressReservation, String>>,
@@ -30,22 +32,22 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
         Self::default()
     }
 
-    pub fn with_optional_bech32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+    pub fn with_optional_bech32(address_bech32_encoder: Option<&'a AddressBech32Encoder>) -> Self {
         Self {
-            bech32_encoder,
+            address_bech32_encoder,
             ..Default::default()
         }
     }
 
     pub fn with_bech32_and_names(
-        bech32_encoder: Option<&'a Bech32Encoder>,
+        address_bech32_encoder: Option<&'a AddressBech32Encoder>,
         bucket_names: &'a NonIterMap<ManifestBucket, String>,
         proof_names: &'a NonIterMap<ManifestProof, String>,
         address_reservation_names: &'a NonIterMap<ManifestAddressReservation, String>,
         address_names: &'a NonIterMap<u32, String>,
     ) -> Self {
         Self {
-            bech32_encoder,
+            address_bech32_encoder,
             bucket_names: Some(bucket_names),
             proof_names: Some(proof_names),
             address_reservation_names: Some(address_reservation_names),
@@ -99,13 +101,13 @@ impl<'a> ManifestDecompilationDisplayContext<'a> {
     }
 }
 
-impl<'a> Into<ManifestDecompilationDisplayContext<'a>> for &'a Bech32Encoder {
+impl<'a> Into<ManifestDecompilationDisplayContext<'a>> for &'a AddressBech32Encoder {
     fn into(self) -> ManifestDecompilationDisplayContext<'a> {
         ManifestDecompilationDisplayContext::with_optional_bech32(Some(self))
     }
 }
 
-impl<'a> Into<ManifestDecompilationDisplayContext<'a>> for Option<&'a Bech32Encoder> {
+impl<'a> Into<ManifestDecompilationDisplayContext<'a>> for Option<&'a AddressBech32Encoder> {
     fn into(self) -> ManifestDecompilationDisplayContext<'a> {
         ManifestDecompilationDisplayContext::with_optional_bech32(self)
     }
@@ -198,7 +200,7 @@ pub fn format_manifest_value<F: fmt::Write>(
                             indent_start,
                             depth,
                             "NonFungibleGlobalId(\"{}\")",
-                            global_id.display(context.bech32_encoder)
+                            global_id.display(context.address_bech32_encoder)
                         );
                     }
                 }
@@ -383,7 +385,7 @@ pub fn format_custom_value<F: fmt::Write>(
                     indent_start,
                     depth,
                     "Address(\"{}\")",
-                    if let Some(encoder) = context.bech32_encoder {
+                    if let Some(encoder) = context.address_bech32_encoder {
                         if let Ok(bech32) = encoder.encode(node_id.as_ref()) {
                             bech32
                         } else {

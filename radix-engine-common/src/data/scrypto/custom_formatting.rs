@@ -1,35 +1,31 @@
-use super::*;
-use crate::address::Bech32Encoder;
-use crate::*;
-use sbor::representations::*;
-use sbor::rust::prelude::*;
-use sbor::traversal::*;
-use utils::ContextualDisplay;
+use crate::internal_prelude::*;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ScryptoValueDisplayContext<'a> {
-    pub bech32_encoder: Option<&'a Bech32Encoder>,
+    pub address_bech32_encoder: Option<&'a AddressBech32Encoder>,
 }
 
 impl<'a> ScryptoValueDisplayContext<'a> {
     pub fn no_context() -> Self {
         Self {
-            bech32_encoder: None,
+            address_bech32_encoder: None,
         }
     }
 
-    pub fn with_optional_bech32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
-        Self { bech32_encoder }
+    pub fn with_optional_bech32(address_bech32_encoder: Option<&'a AddressBech32Encoder>) -> Self {
+        Self {
+            address_bech32_encoder,
+        }
     }
 }
 
-impl<'a> Into<ScryptoValueDisplayContext<'a>> for &'a Bech32Encoder {
+impl<'a> Into<ScryptoValueDisplayContext<'a>> for &'a AddressBech32Encoder {
     fn into(self) -> ScryptoValueDisplayContext<'a> {
         ScryptoValueDisplayContext::with_optional_bech32(Some(self))
     }
 }
 
-impl<'a> Into<ScryptoValueDisplayContext<'a>> for Option<&'a Bech32Encoder> {
+impl<'a> Into<ScryptoValueDisplayContext<'a>> for Option<&'a AddressBech32Encoder> {
     fn into(self) -> ScryptoValueDisplayContext<'a> {
         ScryptoValueDisplayContext::with_optional_bech32(self)
     }
@@ -49,10 +45,10 @@ impl FormattableCustomExtension for ScryptoCustomExtension {
     ) -> Result<(), fmt::Error> {
         match &value.0 {
             ScryptoCustomValue::Reference(value) => {
-                write!(f, "\"{}\"", value.0.display(context.bech32_encoder))?;
+                write!(f, "\"{}\"", value.0.display(context.address_bech32_encoder))?;
             }
             ScryptoCustomValue::Own(value) => {
-                write!(f, "\"{}\"", value.0.display(context.bech32_encoder))?;
+                write!(f, "\"{}\"", value.0.display(context.address_bech32_encoder))?;
             }
             ScryptoCustomValue::Decimal(value) => {
                 write!(f, "\"{}\"", value)?;
@@ -72,13 +68,13 @@ impl FormattableCustomExtension for ScryptoCustomExtension {
 mod tests {
     use super::*;
     use crate::address::test_addresses::*;
-    use crate::address::Bech32Encoder;
+    use crate::address::AddressBech32Encoder;
     use crate::data::scrypto::model::*;
 
     #[test]
     fn test_rustlike_string_format_with_network() {
         use crate::math::{Decimal, PreciseDecimal};
-        let encoder = Bech32Encoder::for_simulator();
+        let encoder = AddressBech32Encoder::for_simulator();
         let value = ScryptoValue::Tuple {
             fields: vec![
                 Value::Custom {

@@ -35,7 +35,7 @@ mod non_fungible_test {
                     rule!(deny_all),
                 )
                 .burnable(rule!(allow_all), rule!(deny_all))
-                .updateable_non_fungible_data(
+                .updatable_non_fungible_data(
                     rule!(require(mint_badge.resource_address())),
                     rule!(deny_all),
                 )
@@ -433,7 +433,7 @@ mod non_fungible_test {
                     scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                         id_type: NonFungibleIdType::RUID,
                         track_total_supply: false,
-                        metadata: BTreeMap::new(),
+                        metadata: scrypto::api::node_modules::metadata::MetadataInit::new(),
                         access_rules: BTreeMap::new(),
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries,

@@ -5,11 +5,8 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesUpdateRoleInput, ACCESS_RULES_UPDATE_ROLE_IDENT,
-};
 use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
+    ClientApi, CollectionIndex, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -33,6 +30,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
+
         // Check amount
         if !check_non_fungible_amount(amount) {
             return Err(RuntimeError::ApplicationError(
@@ -54,6 +53,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
+
         // Take
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
@@ -65,6 +66,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::DEPOSIT, api)?;
+
         // Drop other bucket
         let other_bucket = drop_non_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -98,6 +101,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_recallable(api)?;
+
         if !check_non_fungible_amount(&amount) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
@@ -113,42 +118,39 @@ impl NonFungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn freeze<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub fn freeze<Y>(to_freeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        api.actor_call_module_method(
+        Self::assert_freezable(api)?;
+
+        let frozen_flag_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_UPDATE_ROLE_IDENT,
-            scrypto_encode(&AccessRulesUpdateRoleInput {
-                module: ObjectModuleId::Main,
-                role_key: RoleKey::new(VAULT_WITHDRAW_ROLE),
-                rule: Some(rule!(deny_all)),
-                mutability: None,
-            })
-            .unwrap(),
+            NonFungibleVaultField::VaultFrozenFlag.into(),
+            LockFlags::MUTABLE,
         )?;
+
+        let mut frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+        frozen.frozen.insert(to_freeze);
+        api.field_lock_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
     }
 
-    pub fn unfreeze<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub fn unfreeze<Y>(to_unfreeze: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        api.actor_call_module_method(
+        Self::assert_freezable(api)?;
+
+        let frozen_flag_handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_UPDATE_ROLE_IDENT,
-            scrypto_encode(&AccessRulesUpdateRoleInput {
-                module: ObjectModuleId::Main,
-                role_key: RoleKey::new(VAULT_WITHDRAW_ROLE),
-                rule: Some(rule!(allow_all)),
-                mutability: None,
-            })
-            .unwrap(),
+            NonFungibleVaultField::VaultFrozenFlag.into(),
+            LockFlags::MUTABLE,
         )?;
+        let mut frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+        frozen.frozen.remove(to_unfreeze);
+        api.field_lock_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
     }
@@ -160,6 +162,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_recallable(api)?;
+
         let taken = NonFungibleVault::take_non_fungibles(&non_fungible_local_ids, api)?;
 
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
@@ -227,6 +231,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
+
         Self::take(&amount, api)?.package_burn(api)?;
         Ok(())
     }
@@ -238,6 +244,8 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::assert_not_frozen(VaultFreezeFlags::BURN, api)?;
+
         Self::take_non_fungibles(non_fungible_local_ids, api)?.package_burn(api)?;
         Ok(())
     }
@@ -266,6 +274,56 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         NonFungibleVault::unlock_non_fungibles(local_ids, api)?;
+
+        Ok(())
+    }
+
+    fn assert_not_frozen<Y>(flags: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
+            return Ok(());
+        }
+
+        let frozen_flag_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            NonFungibleVaultField::VaultFrozenFlag.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+
+        if frozen.frozen.intersects(flags) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::VaultIsFrozen),
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn assert_freezable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::NotFreezable),
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn assert_recallable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_RECALL_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::NotRecallable),
+            ));
+        }
 
         Ok(())
     }

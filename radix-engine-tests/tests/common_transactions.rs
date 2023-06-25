@@ -17,12 +17,12 @@ macro_rules! replace_variables {
 
 #[test]
 fn test_allocate_address_and_call_it() {
-    run_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, address_bech32_encoder| {
         let code_blob = include_bytes!("../../assets/radiswap.wasm").to_vec();
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/address_allocation/allocate_address.rtm"),
-            account_address = account_address.display(bech32_encoder),
-            package_package_address = PACKAGE_PACKAGE.display(bech32_encoder),
+            account_address = account_address.display(address_bech32_encoder),
+            package_package_address = PACKAGE_PACKAGE.display(address_bech32_encoder),
             code_blob_hash = hash(&code_blob)
         );
         (manifest, vec![code_blob])
@@ -36,16 +36,16 @@ fn test_allocate_address_and_call_it() {
 /// An example manifest for transfer of funds between accounts
 #[test]
 fn transfer_of_funds_to_another_account_succeeds() {
-    run_manifest(|this_account_address, bech32_encoder| {
+    run_manifest(|this_account_address, address_bech32_encoder| {
         let private_key = Secp256k1PrivateKey::from_u64(12).unwrap();
         let public_key = private_key.public_key();
         let other_account_address = ComponentAddress::virtual_account_from_public_key(&public_key);
 
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/account/resource_transfer.rtm"),
-            xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            this_account_address = this_account_address.display(bech32_encoder),
-            other_account_address = other_account_address.display(bech32_encoder)
+            xrd_resource_address = RADIX_TOKEN.display(address_bech32_encoder),
+            this_account_address = this_account_address.display(address_bech32_encoder),
+            other_account_address = other_account_address.display(address_bech32_encoder)
         );
         (manifest, Vec::new())
     })
@@ -56,18 +56,18 @@ fn transfer_of_funds_to_another_account_succeeds() {
 fn multi_account_fund_transfer_succeeds() {
     test_manifest_with_additional_accounts(
         3,
-        |this_account_address, other_accounts, bech32_encoder| {
+        |this_account_address, other_accounts, address_bech32_encoder| {
             let manifest = replace_variables!(
                 include_str!(
                     "../../transaction/examples/account/multi_account_resource_transfer.rtm"
                 ),
-                xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
-                this_account_address = bech32_encoder
+                xrd_resource_address = RADIX_TOKEN.display(address_bech32_encoder),
+                this_account_address = address_bech32_encoder
                     .encode(this_account_address.as_ref())
                     .unwrap(),
-                account_a_component_address = other_accounts[0].display(bech32_encoder),
-                account_b_component_address = other_accounts[1].display(bech32_encoder),
-                account_c_component_address = other_accounts[2].display(bech32_encoder)
+                account_a_component_address = other_accounts[0].display(address_bech32_encoder),
+                account_b_component_address = other_accounts[1].display(address_bech32_encoder),
+                account_c_component_address = other_accounts[2].display(address_bech32_encoder)
             );
             (manifest, Vec::new())
         },
@@ -77,12 +77,12 @@ fn multi_account_fund_transfer_succeeds() {
 /// An example manifest for creating a new fungible resource with no initial supply
 #[test]
 fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
-    run_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, address_bech32_encoder| {
         let manifest = replace_variables!(
             include_str!(
                 "../../transaction/examples/resources/creation/fungible/no_initial_supply.rtm"
             ),
-            account_address = account_address.display(bech32_encoder)
+            account_address = account_address.display(address_bech32_encoder)
         );
         (manifest, Vec::new())
     })
@@ -92,7 +92,7 @@ fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
 /// An example manifest for creating a new fungible resource with an initial supply
 #[test]
 fn creating_a_fungible_resource_with_initial_supply_succeeds() {
-    run_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, address_bech32_encoder| {
         let initial_supply = dec!("10000000");
 
         let manifest = replace_variables!(
@@ -100,7 +100,7 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
                 "../../transaction/examples/resources/creation/fungible/with_initial_supply.rtm"
             ),
             initial_supply = initial_supply,
-            account_address = account_address.display(bech32_encoder)
+            account_address = account_address.display(address_bech32_encoder)
         );
         (manifest, Vec::new())
     })
@@ -110,12 +110,12 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
 /// An example manifest for creating a new non-fungible resource with no supply
 #[test]
 fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
-    run_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, address_bech32_encoder| {
         let manifest = replace_variables!(
             include_str!(
                 "../../transaction/examples/resources/creation/non_fungible/no_initial_supply.rtm"
             ),
-            account_address = account_address.display(bech32_encoder)
+            account_address = account_address.display(address_bech32_encoder)
         );
         (manifest, Vec::new())
     })
@@ -125,11 +125,11 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
 /// An example manifest for creating a new non-fungible resource with an initial supply
 #[test]
 fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
-    run_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, address_bech32_encoder| {
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply.rtm"),
             account_address =
-                account_address.display(bech32_encoder),
+                account_address.display(address_bech32_encoder),
                 non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
@@ -140,14 +140,14 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
 /// A sample manifest that publishes a package.
 #[test]
 fn publish_package_succeeds() {
-    run_manifest(|account_address, bech32_encoder| {
+    run_manifest(|account_address, address_bech32_encoder| {
         let code_blob = include_bytes!("../../assets/faucet.wasm").to_vec();
 
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/package/publish.rtm"),
             code_blob_hash = hash(&code_blob),
-            account_address = account_address.display(bech32_encoder),
-            auth_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
+            account_address = account_address.display(address_bech32_encoder),
+            auth_badge_resource_address = RADIX_TOKEN.display(address_bech32_encoder),
             auth_badge_non_fungible_local_id = "#1#"
         );
         (manifest, vec![code_blob])
@@ -163,16 +163,16 @@ fn minting_of_fungible_resource_succeeds() {
         |account_address,
          minter_badge_resource_address,
          mintable_fungible_resource_address,
-         bech32_encoder| {
+         address_bech32_encoder| {
             let mint_amount = dec!("800");
 
             let manifest = replace_variables!(
                 include_str!("../../transaction/examples/resources/mint/fungible/mint.rtm"),
-                account_address = account_address.display(bech32_encoder),
+                account_address = account_address.display(address_bech32_encoder),
                 mintable_fungible_resource_address =
-                    mintable_fungible_resource_address.display(bech32_encoder),
+                    mintable_fungible_resource_address.display(address_bech32_encoder),
                 minter_badge_resource_address =
-                    minter_badge_resource_address.display(bech32_encoder),
+                    minter_badge_resource_address.display(address_bech32_encoder),
                 mint_amount = mint_amount
             );
             (manifest, Vec::new())
@@ -190,14 +190,14 @@ fn minting_of_non_fungible_resource_succeeds() {
         |account_address,
          minter_badge_resource_address,
          mintable_non_fungible_resource_address,
-         bech32_encoder| {
+         address_bech32_encoder| {
             let manifest = replace_variables!(
                 include_str!("../../transaction/examples/resources/mint/non_fungible/mint.rtm"),
-                account_address = account_address.display(bech32_encoder),
+                account_address = account_address.display(address_bech32_encoder),
                 mintable_non_fungible_resource_address =
-                    mintable_non_fungible_resource_address.display(bech32_encoder),
+                    mintable_non_fungible_resource_address.display(address_bech32_encoder),
                 minter_badge_resource_address =
-                    minter_badge_resource_address.display(bech32_encoder),
+                    minter_badge_resource_address.display(address_bech32_encoder),
                 non_fungible_local_id = "#1#"
             );
             (manifest, Vec::new())
@@ -212,12 +212,13 @@ fn changing_account_default_deposit_rule_succeeds() {
         |account_address,
          minter_badge_resource_address,
          mintable_resource_address,
-         bech32_encoder| {
+         address_bech32_encoder| {
             let manifest = replace_variables!(
                 include_str!("../../transaction/examples/account/deposit_modes.rtm"),
-                account_address = account_address.display(bech32_encoder),
-                first_resource_address = mintable_resource_address.display(bech32_encoder),
-                second_resource_address = minter_badge_resource_address.display(bech32_encoder)
+                account_address = account_address.display(address_bech32_encoder),
+                first_resource_address = mintable_resource_address.display(address_bech32_encoder),
+                second_resource_address =
+                    minter_badge_resource_address.display(address_bech32_encoder)
             );
             (manifest, Vec::new())
         },
@@ -226,7 +227,7 @@ fn changing_account_default_deposit_rule_succeeds() {
 
 fn run_manifest<F>(string_manifest_builder: F) -> TransactionReceipt
 where
-    F: Fn(&ComponentAddress, &Bech32Encoder) -> (String, Vec<Vec<u8>>),
+    F: Fn(&ComponentAddress, &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
     let mut test_runner = TestRunner::builder().build();
@@ -237,10 +238,11 @@ where
 
     // Defining the network and the bech32 encoder to use
     let network = NetworkDefinition::simulator();
-    let bech32_encoder = Bech32Encoder::new(&network);
+    let address_bech32_encoder = AddressBech32Encoder::new(&network);
 
     // Run the function and get the manifest string
-    let (manifest_string, blobs) = string_manifest_builder(&component_address, &bech32_encoder);
+    let (manifest_string, blobs) =
+        string_manifest_builder(&component_address, &address_bech32_encoder);
     let manifest = compile(
         &manifest_string,
         &network,
@@ -259,7 +261,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
         &ComponentAddress,
         &ResourceAddress,
         &ResourceAddress,
-        &Bech32Encoder,
+        &AddressBech32Encoder,
     ) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
@@ -271,14 +273,14 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     // Defining the network and the bech32 encoder to use
     let network = NetworkDefinition::simulator();
-    let bech32_encoder = Bech32Encoder::new(&network);
+    let address_bech32_encoder = AddressBech32Encoder::new(&network);
 
     // Creating the minter badge and the requested resource
     let minter_badge_resource_address =
         test_runner.create_fungible_resource(dec!("1"), 0, component_address);
 
     let access_rules = BTreeMap::from([(
-        ResourceMethodAuthKey::Mint,
+        ResourceAction::Mint,
         (
             rule!(require(minter_badge_resource_address)),
             rule!(deny_all),
@@ -308,7 +310,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
         &component_address,
         &minter_badge_resource_address,
         &mintable_non_fungible_resource_address,
-        &bech32_encoder,
+        &address_bech32_encoder,
     );
     let manifest = compile(
         &manifest_string,
@@ -324,7 +326,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
 fn test_manifest_with_additional_accounts<F>(accounts_required: u16, string_manifest_builder: F)
 where
-    F: Fn(&ComponentAddress, &[ComponentAddress], &Bech32Encoder) -> (String, Vec<Vec<u8>>),
+    F: Fn(&ComponentAddress, &[ComponentAddress], &AddressBech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating a new test runner
     let mut test_runner = TestRunner::builder().without_trace().build();
@@ -340,11 +342,11 @@ where
 
     // Defining the network and the bech32 encoder to use
     let network = NetworkDefinition::simulator();
-    let bech32_encoder = Bech32Encoder::new(&network);
+    let address_bech32_encoder = AddressBech32Encoder::new(&network);
 
     // Run the function and get the manifest string
     let (manifest_string, blobs) =
-        string_manifest_builder(&component_address, &accounts, &bech32_encoder);
+        string_manifest_builder(&component_address, &accounts, &address_bech32_encoder);
     let manifest = compile(
         &manifest_string,
         &network,

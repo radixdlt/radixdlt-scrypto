@@ -5,14 +5,14 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::constants::ROYALTY_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::RoyaltyConfig;
+use radix_engine_interface::types::ComponentRoyaltyConfig;
 use sbor::rust::prelude::*;
 
 pub struct ComponentRoyalty;
 
 impl ComponentRoyalty {
     pub fn create<Y, E: Debug + ScryptoDecode>(
-        royalty_config: RoyaltyConfig,
+        royalty_config: ComponentRoyaltyConfig,
         api: &mut Y,
     ) -> Result<Own, E>
     where

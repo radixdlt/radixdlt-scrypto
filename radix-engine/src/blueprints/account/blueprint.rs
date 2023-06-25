@@ -1,6 +1,4 @@
-use crate::blueprints::util::{
-    PresecurifiedAccessRules, SecurifiedAccessRules, SecurifiedRoleEntry,
-};
+use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
@@ -56,10 +54,6 @@ struct SecurifiedAccount;
 impl SecurifiedAccessRules for SecurifiedAccount {
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
-
-    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
-        btreemap!()
-    }
 }
 
 impl PresecurifiedAccessRules for SecurifiedAccount {}
@@ -81,7 +75,7 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
             ObjectModuleId::AccessRules => access_rules.0,
@@ -192,8 +186,7 @@ impl AccountBlueprint {
         Ok((address, bucket))
     }
 
-    // FIXME: Remove
-    pub fn create_local<Y>(api: &mut Y) -> Result<Own, RuntimeError>
+    fn create_local<Y>(api: &mut Y) -> Result<Own, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

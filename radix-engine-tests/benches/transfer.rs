@@ -32,7 +32,7 @@ fn bench_transfer(c: &mut Criterion) {
     // Create two accounts
     let accounts = (0..2)
         .map(|_| {
-            let owner_rule = OwnerRole::Updateable(rule!(require(
+            let owner_rule = OwnerRole::Updatable(rule!(require(
                 NonFungibleGlobalId::from_public_key(&public_key)
             )));
             let manifest = ManifestBuilder::new()

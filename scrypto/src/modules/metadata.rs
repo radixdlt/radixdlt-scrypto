@@ -49,6 +49,19 @@ impl Metadata {
         Self(ModuleHandle::Own(metadata))
     }
 
+    pub fn new_with_data(data: MetadataInit) -> Self {
+        let rtn = ScryptoEnv
+            .call_function(
+                METADATA_MODULE_PACKAGE,
+                METADATA_BLUEPRINT,
+                METADATA_CREATE_WITH_DATA_IDENT,
+                scrypto_encode(&MetadataCreateWithDataInput { data }).unwrap(),
+            )
+            .unwrap();
+        let metadata: Own = scrypto_decode(&rtn).unwrap();
+        Self(ModuleHandle::Own(metadata))
+    }
+
     pub fn set<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
         // Manual encoding to avoid large code size
         // TODO: to replace with EnumVariant when it's ready
@@ -127,10 +140,14 @@ impl Metadata {
 
 pub struct MetadataRoles<T> {
     pub metadata_admin: T,
+    pub metadata_admin_updater: T,
 }
 
 impl<T> MetadataRoles<T> {
     pub fn list(self) -> Vec<(&'static str, T)> {
-        vec![(METADATA_ADMIN_ROLE, self.metadata_admin)]
+        vec![
+            (METADATA_ADMIN_ROLE, self.metadata_admin),
+            (METADATA_ADMIN_UPDATER_ROLE, self.metadata_admin_updater),
+        ]
     }
 }

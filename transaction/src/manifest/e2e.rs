@@ -1,8 +1,8 @@
-use radix_engine_common::prelude::{Bech32Encoder, PACKAGE_PACKAGE};
+use radix_engine_common::prelude::{AddressBech32Encoder, PACKAGE_PACKAGE};
 use utils::ContextualDisplay;
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::internal_prelude::*;
     use crate::manifest::*;
@@ -256,6 +256,68 @@ RECALL_VAULT
     }
 
     #[test]
+    fn test_vault_freeze() {
+        compile_and_decompile_with_inversion_test(
+            "vault_freeze",
+            apply_address_replacements(include_str!("../../examples/resources/freeze.rtm")),
+            &NetworkDefinition::simulator(),
+            vec![],
+            apply_address_replacements(
+                r##"
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        1u32
+    )
+;
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        2u32
+    )
+;
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        4u32
+    )
+;
+FREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        7u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        1u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        2u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        4u32
+    )
+;
+UNFREEZE_VAULT
+    Address("${vault_address}")
+    Tuple(
+        7u32
+    )
+;
+"##,
+            ),
+        );
+    }
+
+    #[test]
     fn test_call_function() {
         compile_and_decompile_with_inversion_test(
             "call_function",
@@ -290,7 +352,7 @@ CALL_METHOD
     Decimal("1")
     PreciseDecimal("2")
 ;
-SET_COMPONENT_ROYALTY_CONFIG
+SET_COMPONENT_ROYALTY
     Address("${component_address}")
     "my_method"
     Enum<0u8>()
@@ -434,15 +496,19 @@ CALL_METHOD
             vec![],
             apply_address_replacements(
                 r##"
-SET_COMPONENT_ROYALTY_CONFIG
+SET_COMPONENT_ROYALTY
     Address("${account_address}")
     "my_method"
     Enum<0u8>()
 ;
-CLAIM_PACKAGE_ROYALTY
+LOCK_COMPONENT_ROYALTY
+    Address("${account_address}")
+    "my_method"
+;
+CLAIM_PACKAGE_ROYALTIES
     Address("${package_address}")
 ;
-CLAIM_COMPONENT_ROYALTY
+CLAIM_COMPONENT_ROYALTIES
     Address("${account_address}")
 ;
 "##,
@@ -600,6 +666,18 @@ SET_METADATA
         )
     )
 ;
+LOCK_METADATA
+    Address("${package_address}")
+    "field_name"
+;
+LOCK_METADATA
+    Address("${account_address}")
+    "field_name"
+;
+LOCK_METADATA
+    Address("${resource_address}")
+    "field_name"
+;
 REMOVE_METADATA
     Address("${package_address}")
     "field_name"
@@ -626,11 +704,32 @@ REMOVE_METADATA
             vec![],
             apply_address_replacements(
                 r##"
-UPDATE_ROLE
+SET_OWNER_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+;
+LOCK_OWNER_ROLE
+    Address("${resource_address}")
+;
+SET_AND_LOCK_OWNER_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+;
+SET_ROLE
     Address("${resource_address}")
     Enum<0u8>()
     "hello"
     Enum<0u8>()
+;
+LOCK_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+    "hello"
+;
+SET_AND_LOCK_ROLE
+    Address("${resource_address}")
+    Enum<0u8>()
+    "hello"
     Enum<0u8>()
 ;
 "##,
@@ -658,15 +757,24 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     false
     18u8
-    Map<String, Enum>(
-        "name" => Enum<0u8>(
-            "MyResource"
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<0u8>(
+                "MyResource"
+            ),
+            true
         ),
-        "symbol" => Enum<0u8>(
-            "RSRC"
+        "symbol" => Tuple(
+            Enum<0u8>(
+                "RSRC"
+            ),
+            true
         ),
-        "description" => Enum<0u8>(
-            "A very innovative and important resource"
+        "description" => Tuple(
+            Enum<0u8>(
+                "A very innovative and important resource"
+            ),
+            true
         )
     )
     Map<Enum, Tuple>(
@@ -711,15 +819,24 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     false
     18u8
-    Map<String, Enum>(
-        "name" => Enum<0u8>(
-            "MyResource"
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<0u8>(
+                "MyResource"
+            ),
+            true
         ),
-        "symbol" => Enum<0u8>(
-            "RSRC"
+        "symbol" => Tuple(
+            Enum<0u8>(
+                "RSRC"
+            ),
+            true
         ),
-        "description" => Enum<0u8>(
-            "A very innovative and important resource"
+        "description" => Tuple(
+            Enum<0u8>(
+                "A very innovative and important resource"
+            ),
+            true
         )
     )
     Map<Enum, Tuple>(
@@ -771,12 +888,18 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         ),
         Array<String>()
     )
-    Map<String, Enum>(
-        "name" => Enum<0u8>(
-            "MyResource"
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<0u8>(
+                "MyResource"
+            ),
+            true
         ),
-        "description" => Enum<0u8>(
-            "A very innovative and important resource"
+        "description" => Tuple(
+            Enum<0u8>(
+                "A very innovative and important resource"
+            ),
+            false
         )
     )
     Map<Enum, Tuple>(
@@ -841,12 +964,18 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
-    Map<String, Enum>(
-        "name" => Enum<0u8>(
-            "MyResource"
+    Map<String, Tuple>(
+        "name" => Tuple(
+            Enum<0u8>(
+                "MyResource"
+            ),
+            true
         ),
-        "description" => Enum<0u8>(
-            "A very innovative and important resource"
+        "description" => Tuple(
+            Enum<0u8>(
+                "A very innovative and important resource"
+            ),
+            false
         )
     )
     Map<Enum, Tuple>(
@@ -1076,11 +1205,11 @@ CALL_METHOD
 CALL_METHOD
     Address("${account_address}")
     "withdraw"
-    Address("${fungible_resource_address}")
+    Address("${xrd_resource_address}")
     Decimal("123")
 ;
 TAKE_FROM_WORKTOP
-    Address("${fungible_resource_address}")
+    Address("${xrd_resource_address}")
     Decimal("123")
     Bucket("bucket1")
 ;
@@ -1223,6 +1352,7 @@ CALL_METHOD
 
         // If you use the following output for test cases, make sure you've checked the diff
         println!("{}", recompiled_decompiled);
+
         let intent = build_intent(
             expected_canonical.as_ref(),
             network,
@@ -1232,7 +1362,12 @@ CALL_METHOD
         .to_payload_bytes()
         .unwrap();
 
+        let intent_hash = PreparedIntentV1::prepare_from_payload(&intent)
+            .unwrap()
+            .intent_hash();
+
         print_blob(name, intent);
+        print_blob(&format!("{}_HASH", name), intent_hash.0.to_vec());
 
         // Check round-trip property
         assert_eq!(original_binary, recompiled_binary);
@@ -1248,18 +1383,20 @@ CALL_METHOD
         );
     }
 
-    fn print_blob(name: &str, blob: Vec<u8>) {
-        print!(
-            "const TX_{}: [u8; {}] = [",
-            name.clone().to_uppercase(),
-            blob.len()
-        );
+    pub fn print_blob(name: &str, blob: Vec<u8>) {
+        std::env::var("PRINT_TEST_VECTORS").ok().map(|_| {
+            print!(
+                "pub const TX_{}: [u8; {}] = [",
+                name.clone().to_uppercase(),
+                blob.len()
+            );
 
-        for &byte in blob.iter() {
-            print!("{:#04x}, ", byte);
-        }
+            for &byte in blob.iter() {
+                print!("{:#04x}, ", byte);
+            }
 
-        println!("];");
+            println!("];");
+        });
     }
 
     fn build_intent(
@@ -1323,26 +1460,26 @@ pub fn apply_address_replacements(input: impl ToString) -> String {
     // For other addresses, uncomment the below:;
     // {
     //     // Generate addresses
-    //     use radix_engine_common::address::{Bech32Decoder, Bech32Encoder};
+    //     use radix_engine_common::address::{AddressBech32Decoder, AddressBech32Encoder};
     //     use radix_engine_common::types::EntityType;
     //     use radix_engine_interface::constants::*;
 
     //     // Random address from resim new-account
     //     let account_address = "account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q";
 
-    //     println!("{}", Bech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(CONSENSUS_MANAGER.as_node_id().as_bytes()).unwrap());
 
-    //     let (_, mut pseudo_random_bytes) = Bech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
+    //     let (_, mut pseudo_random_bytes) = AddressBech32Decoder::for_simulator().validate_and_decode(account_address).unwrap();
     //     pseudo_random_bytes[0] = EntityType::InternalFungibleVault as u8;
-    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
     //     pseudo_random_bytes[0] = EntityType::GlobalValidator as u8;
-    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
     //     pseudo_random_bytes[0] = EntityType::GlobalAccessController as u8;
-    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
     //     pseudo_random_bytes[0] = EntityType::GlobalGenericComponent as u8;
-    //     println!("{}", Bech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
+    //     println!("{}", AddressBech32Encoder::for_simulator().encode(pseudo_random_bytes.as_ref()).unwrap());
     // };
-    let package_package_address = PACKAGE_PACKAGE.to_string(&Bech32Encoder::for_simulator());
+    let package_package_address = PACKAGE_PACKAGE.to_string(&AddressBech32Encoder::for_simulator());
     let replacement_vectors = sbor::prelude::BTreeMap::from([
         (
             "${xrd_resource_address}",

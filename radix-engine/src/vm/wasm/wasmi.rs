@@ -15,7 +15,7 @@ use crate::types::*;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
-use crate::vm::wasm::WasmEngine;
+use crate::vm::wasm::{WasmEngine, DEFAULT_CACHE_SIZE};
 
 type FakeHostState = FakeWasmiInstanceEnv;
 type HostState = WasmiInstanceEnv;
@@ -523,7 +523,7 @@ fn generate_ruid(caller: Caller<'_, HostState>) -> Result<u64, InvokeError<WasmR
     runtime.generate_ruid().map(|buffer| buffer.0)
 }
 
-fn log_message(
+fn emit_log(
     mut caller: Caller<'_, HostState>,
     level_ptr: u32,
     level_len: u32,
@@ -535,7 +535,7 @@ fn log_message(
     let level = read_memory(caller.as_context_mut(), memory, level_ptr, level_len)?;
     let message = read_memory(caller.as_context_mut(), memory, message_ptr, message_len)?;
 
-    runtime.log_message(level, message)
+    runtime.emit_log(level, message)
 }
 
 fn panic(
@@ -934,7 +934,7 @@ impl WasmiModule {
             },
         );
 
-        let host_log_message = Func::wrap(
+        let host_emit_log = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              level_ptr: u32,
@@ -942,7 +942,7 @@ impl WasmiModule {
              message_ptr: u32,
              message_len: u32|
              -> Result<(), Trap> {
-                log_message(caller, level_ptr, level_len, message_ptr, message_len)
+                emit_log(caller, level_ptr, level_len, message_ptr, message_len)
                     .map_err(|e| e.into())
             },
         );
@@ -1054,7 +1054,7 @@ impl WasmiModule {
             host_consume_cost_units
         );
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
-        linker_define!(linker, LOG_MESSAGE_FUNCTION_NAME, host_log_message);
+        linker_define!(linker, EMIT_LOG_FUNCTION_NAME, host_emit_log);
         linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
         linker_define!(
             linker,
@@ -1212,7 +1212,7 @@ impl WasmInstance for WasmiInstance {
 
 #[derive(Debug, Clone)]
 pub struct EngineOptions {
-    max_cache_size_bytes: usize,
+    max_cache_size: usize,
 }
 
 pub struct WasmiEngine {
@@ -1229,7 +1229,7 @@ pub struct WasmiEngine {
 impl Default for WasmiEngine {
     fn default() -> Self {
         Self::new(EngineOptions {
-            max_cache_size_bytes: 200 * 1024 * 1024,
+            max_cache_size: DEFAULT_CACHE_SIZE,
         })
     }
 }
@@ -1238,18 +1238,18 @@ impl WasmiEngine {
     pub fn new(options: EngineOptions) -> Self {
         #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
-            NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
+            NonZeroUsize::new(options.max_cache_size).unwrap(),
         ));
         #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
-            .weigher(|_key: &MeteredCodeKey, value: &Arc<WasmiModule>| -> u32 {
-                // Approximate the module entry size by the code size
-                value.code_size_bytes.try_into().unwrap_or(u32::MAX)
+            .weigher(|_key: &MeteredCodeKey, _value: &Arc<WasmiModule>| -> u32 {
+                // No sophisticated weighing mechanism, just keep a fixed size cache
+                1u32
             })
-            .max_capacity(options.max_cache_size_bytes as u64)
+            .max_capacity(options.max_cache_size as u64)
             .build();
         #[cfg(feature = "radix_engine_fuzzing")]
-        let modules_cache = options.max_cache_size_bytes;
+        let modules_cache = options.max_cache_size;
 
         Self { modules_cache }
     }

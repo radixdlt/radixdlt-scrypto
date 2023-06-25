@@ -160,8 +160,8 @@ impl Publish {
                 let def = BlueprintDefinition {
                     interface: BlueprintInterface {
                         generics: s.schema.generics,
-                        outer_blueprint: s.outer_blueprint,
-                        features: s.feature_set,
+                        blueprint_type: s.blueprint_type,
+                        feature_set: s.feature_set,
                         functions,
                         events,
                         state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),
@@ -236,7 +236,7 @@ impl Publish {
                     out,
                     "Success! New Package: {}",
                     receipt.expect_commit(true).new_package_addresses()[0]
-                        .display(&Bech32Encoder::for_simulator())
+                        .display(&AddressBech32Encoder::for_simulator())
                         .to_string()
                         .green()
                 )

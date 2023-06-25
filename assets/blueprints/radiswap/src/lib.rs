@@ -1,25 +1,16 @@
-use scrypto::blueprints::pool::*;
 use scrypto::prelude::*;
-
-// =================================================================================================
-// TODO: The interface of this can be made better once we have a way to generate stubs for native
-//       blueprints such that we're storing `Global<Radiswap>` instead of `Global<AnyComponent>`
-//       and this also applies to function and method calls on the package and component.
-// =================================================================================================
 
 #[blueprint]
 mod radiswap {
     enable_package_royalties! {
-        new => Xrd(5.into()),
-        add_liquidity => Xrd(1.into()),
-        remove_liquidity => Xrd(1.into()),
-        swap => Xrd(2.into()),
+        new => Xrd(5.into());
+        add_liquidity => Xrd(1.into());
+        remove_liquidity => Xrd(1.into());
+        swap => Xrd(2.into());
     }
 
     struct Radiswap {
-        // TODO: We need a stub for native blueprints so that we're not using `AnyComponent`.
-        /// The liquidity pool used by Radiswap and that manages all of the pool unit tokens.
-        pool_component: Global<AnyComponent>,
+        pool_component: Global<TwoResourcePool>,
     }
 
     impl Radiswap {
@@ -35,15 +26,9 @@ mod radiswap {
             // Creating a new pool will check the following for us:
             // 1. That both resources are not the same.
             // 2. That none of the resources are non-fungible
-            let pool_component = Runtime::call_function::<_, _, Global<AnyComponent>>(
-                POOL_PACKAGE,
-                "TwoResourcePool",
-                TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
-                scrypto_encode(&TwoResourcePoolInstantiateInput {
-                    pool_manager_rule: rule!(require(global_component_caller_badge)),
-                    resource_addresses: (resource_address1, resource_address2),
-                })
-                .unwrap(),
+            let pool_component = Blueprint::<TwoResourcePool>::instantiate(
+                (resource_address1, resource_address2),
+                rule!(require(global_component_caller_badge)),
             );
 
             Self { pool_component }
@@ -61,13 +46,7 @@ mod radiswap {
             // All the checks for correctness of buckets and everything else is handled by the pool
             // component! Just pass it the resources and it will either return the pool units back
             // if it succeeds or abort on failure.
-            self.pool_component
-                .call::<TwoResourcePoolContributeInput, TwoResourcePoolContributeOutput>(
-                    TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-                    &TwoResourcePoolContributeInput {
-                        buckets: (resource1, resource2),
-                    },
-                )
+            self.pool_component.contribute((resource1, resource2))
         }
 
         /// This method does not need to be here - the pool units are redeemable without it by the
@@ -75,11 +54,7 @@ mod radiswap {
         /// so that users are only interacting with one component and do not need to know about the
         /// address of Radiswap and the address of the Radiswap pool.
         pub fn remove_liquidity(&mut self, pool_units: Bucket) -> (Bucket, Bucket) {
-            self.pool_component
-                .call::<TwoResourcePoolRedeemInput, TwoResourcePoolRedeemOutput>(
-                    TWO_RESOURCE_POOL_REDEEM_IDENT,
-                    &TwoResourcePoolRedeemInput { bucket: pool_units },
-                )
+            self.pool_component.redeem(pool_units)
         }
 
         pub fn swap(&mut self, input_bucket: Bucket) -> Bucket {
@@ -99,30 +74,16 @@ mod radiswap {
         }
 
         fn vault_reserves(&self) -> BTreeMap<ResourceAddress, Decimal> {
-            self.pool_component
-                .call::<TwoResourcePoolGetVaultAmountsInput, TwoResourcePoolGetVaultAmountsOutput>(
-                    TWO_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
-                    &TwoResourcePoolGetVaultAmountsInput,
-                )
+            self.pool_component.get_vault_amounts()
         }
 
         fn deposit(&mut self, bucket: Bucket) {
-            self.pool_component
-                .call::<TwoResourcePoolProtectedDepositInput, TwoResourcePoolProtectedDepositOutput>(
-                    TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-                    &TwoResourcePoolProtectedDepositInput { bucket },
-                )
+            self.pool_component.protected_deposit(bucket)
         }
 
         fn withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket {
             self.pool_component
-                .call::<TwoResourcePoolProtectedWithdrawInput, TwoResourcePoolProtectedWithdrawOutput>(
-                    TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                    &TwoResourcePoolProtectedWithdrawInput {
-                        resource_address,
-                        amount,
-                    }
-                )
+                .protected_withdraw(resource_address, amount)
         }
     }
 }

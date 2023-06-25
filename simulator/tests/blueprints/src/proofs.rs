@@ -4,10 +4,10 @@ use scrypto::prelude::*;
 mod proofs {
     enable_method_auth! {
         roles {
-            auth
+            auth => updatable_by: [];
         },
         methods {
-            organizational_authenticated_method => auth;
+            organizational_authenticated_method => restrict_to: [auth];
         }
     }
 
@@ -35,7 +35,7 @@ mod proofs {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles! {
-                    auth => organizational_access_rule;
+                    auth => organizational_access_rule, locked;
                 })
                 .globalize();
             (

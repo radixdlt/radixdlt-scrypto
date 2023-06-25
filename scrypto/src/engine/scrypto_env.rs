@@ -109,14 +109,6 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn attach_access_rules(
-        &mut self,
-        _node_id: &NodeId,
-        _access_rules_node_id: &NodeId,
-    ) -> Result<(), ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
     fn globalize(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
@@ -366,6 +358,14 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
+    fn actor_is_feature_enabled(
+        &mut self,
+        _: ObjectHandle,
+        _feature: &str,
+    ) -> Result<bool, ClientApiError> {
+        unimplemented!("Not available for Scrypto")
+    }
+
     fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
@@ -443,9 +443,9 @@ impl ClientTransactionRuntimeApi<ClientApiError> for ScryptoEnv {
         Ok(())
     }
 
-    fn log_message(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), ClientApiError> {
         let level = scrypto_encode(&level).unwrap();
-        unsafe { log_message(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
+        unsafe { emit_log(level.as_ptr(), level.len(), message.as_ptr(), message.len()) }
         Ok(())
     }
 

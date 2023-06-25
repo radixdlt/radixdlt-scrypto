@@ -81,7 +81,6 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
             resource_address,
             match amount {
                 Some(amount) => {
-                    // FIXME: add test
                     NonFungiblesSpecification::Some(amount.to_string().parse().map_err(|_| {
                         RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
                             AuthZoneError::ComposeProofError(ComposeProofError::InvalidAmount),
@@ -161,7 +160,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
             .blueprint_name
             .eq(FUNGIBLE_PROOF_BLUEPRINT)
         {
-            let proof_resource = ResourceAddress::new_or_panic(info.outer_object.unwrap().into());
+            let proof_resource = ResourceAddress::new_or_panic(info.get_outer_object().into());
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),
@@ -213,7 +212,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
             .blueprint_name
             .eq(NON_FUNGIBLE_PROOF_BLUEPRINT)
         {
-            let proof_resource = ResourceAddress::new_or_panic(info.outer_object.unwrap().into());
+            let proof_resource = ResourceAddress::new_or_panic(info.get_outer_object().into());
             if proof_resource == resource_address {
                 let handle = api.kernel_lock_substate(
                     proof.0.as_node_id(),

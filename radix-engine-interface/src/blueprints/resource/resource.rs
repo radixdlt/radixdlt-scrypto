@@ -1,6 +1,7 @@
 use crate::data::scrypto::model::*;
 use crate::math::*;
 use crate::*;
+use radix_engine_interface::blueprints::resource::VaultFreezeFlags;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -14,6 +15,20 @@ pub enum ResourceError {
 pub struct LiquidFungibleResource {
     /// The total amount.
     amount: Decimal,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct VaultFrozenFlag {
+    pub frozen: VaultFreezeFlags,
+}
+
+impl Default for VaultFrozenFlag {
+    fn default() -> Self {
+        Self {
+            frozen: VaultFreezeFlags::empty(),
+        }
+    }
 }
 
 impl LiquidFungibleResource {

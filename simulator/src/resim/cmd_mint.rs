@@ -37,7 +37,7 @@ pub struct Mint {
 
 impl Mint {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let bech32_decoder = Bech32Decoder::for_simulator();
+        let address_bech32_decoder = AddressBech32Decoder::for_simulator();
 
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
@@ -47,7 +47,7 @@ impl Mint {
             manifest_builder = manifest_builder.borrow_mut(|builder| {
                 create_proof_from_account(
                     builder,
-                    &bech32_decoder,
+                    &address_bech32_decoder,
                     default_account,
                     resource_specifier,
                 )

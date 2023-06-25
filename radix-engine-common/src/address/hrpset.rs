@@ -5,20 +5,29 @@ use sbor::rust::prelude::*;
 /// Represents an HRP set (typically corresponds to a network).
 #[derive(Debug, Clone)]
 pub struct HrpSet {
-    package: String,
-    resource: String,
-    component: String,
-    account: String,
-    identity: String,
-    consensus_manager: String,
-    validator: String,
-    access_controller: String,
-    pool: String,
-    transaction_tracker: String,
-    internal_vault: String,
-    internal_account: String,
-    internal_component: String,
-    internal_key_value_store: String,
+    /* Entities */
+    pub package: String,
+    pub resource: String,
+    pub component: String,
+    pub account: String,
+    pub identity: String,
+    pub consensus_manager: String,
+    pub validator: String,
+    pub access_controller: String,
+    pub pool: String,
+    pub transaction_tracker: String,
+    pub internal_vault: String,
+    pub internal_account: String,
+    pub internal_component: String,
+    pub internal_key_value_store: String,
+
+    /* Transaction Parts */
+    pub transaction_intent: String,
+    pub signed_transaction_intent: String,
+    pub notarized_transaction: String,
+    pub round_update_transaction: String,
+    pub system_transaction: String,
+    pub ledger_transaction: String,
 }
 
 impl HrpSet {
@@ -54,6 +63,7 @@ impl From<&NetworkDefinition> for HrpSet {
     fn from(network_definition: &NetworkDefinition) -> Self {
         let suffix = &network_definition.hrp_suffix;
         HrpSet {
+            /* Entities */
             package: format!("package_{}", suffix),
             resource: format!("resource_{}", suffix),
             component: format!("component_{}", suffix),
@@ -68,6 +78,14 @@ impl From<&NetworkDefinition> for HrpSet {
             internal_account: format!("internal_account_{}", suffix),
             internal_component: format!("internal_component_{}", suffix),
             internal_key_value_store: format!("internal_keyvaluestore_{}", suffix),
+
+            /* Transaction Parts */
+            transaction_intent: format!("txid_{}", suffix),
+            signed_transaction_intent: format!("signedintent_{}", suffix),
+            notarized_transaction: format!("notarizedtransaction_{}", suffix),
+            round_update_transaction: format!("roundupdatetransaction_{}", suffix),
+            system_transaction: format!("systemtransaction_{}", suffix),
+            ledger_transaction: format!("ledgertransaction_{}", suffix),
         }
     }
 }

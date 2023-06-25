@@ -1,14 +1,13 @@
 use radix_engine::types::*;
-use sbor::rust::prelude::*;
 
 // Import and re-export these types so they are available easily with a single import
 pub use radix_engine::blueprints::access_controller::*;
 pub use radix_engine::blueprints::account::*;
 pub use radix_engine::blueprints::consensus_manager::*;
 pub use radix_engine::blueprints::package::*;
-pub use radix_engine::blueprints::pool::multi_resource_pool::*;
-pub use radix_engine::blueprints::pool::one_resource_pool::*;
-pub use radix_engine::blueprints::pool::two_resource_pool::*;
+pub use radix_engine::blueprints::pool::multi_resource_pool;
+pub use radix_engine::blueprints::pool::one_resource_pool;
+pub use radix_engine::blueprints::pool::two_resource_pool;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::blueprints::transaction_tracker::*;
 pub use radix_engine::system::node_modules::access_rules::*;
@@ -100,14 +99,13 @@ pub enum TypedTypeInfoModuleSubstateKey {
 pub enum TypedAccessRulesSubstateKey {
     AccessRulesField(AccessRulesField),
     Rule(ModuleRoleKey),
-    Mutability(ModuleRoleKey),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedRoyaltyModuleSubstateKey {
     RoyaltyField(RoyaltyField),
-    /// This is the method ident
-    RoyaltyConfigEntryKey(String),
+    /// The key is the method ident
+    RoyaltyMethodRoyaltyEntryKey(String),
 }
 
 #[derive(Debug, Clone)]
@@ -198,16 +196,16 @@ pub fn to_typed_substate_key(
                 RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
             ))
         }
-        ROYALTY_CONFIG_PARTITION => {
-            TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyConfigEntryKey(
+        ROYALTY_CONFIG_PARTITION => TypedSubstateKey::RoyaltyModule(
+            TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(
                 scrypto_decode(
                     substate_key
                         .for_map()
                         .ok_or_else(|| error("RoyaltyConfigEntryFnIdent key"))?,
                 )
                 .map_err(|_| error("string RoyaltyConfigEntryFnIdent key"))?,
-            ))
-        }
+            ),
+        ),
         ACCESS_RULES_FIELDS_PARTITION => {
             TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::AccessRulesField(
                 AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
@@ -219,14 +217,6 @@ pub fn to_typed_substate_key(
                 .ok_or_else(|| error("Access Rules key"))?;
             TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(
                 scrypto_decode(&key).map_err(|_| error("Access Rules key"))?,
-            ))
-        }
-        ACCESS_RULES_MUTABILITY_PARTITION => {
-            let key = substate_key
-                .for_map()
-                .ok_or_else(|| error("Access Rules Mutability key"))?;
-            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Mutability(
-                scrypto_decode(&key).map_err(|_| error("Access Rules Mutability key"))?,
             ))
         }
         partition_num @ _ if partition_num >= MAIN_BASE_PARTITION => {
@@ -450,16 +440,14 @@ pub enum TypedTypeInfoModuleSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesModuleSubstateValue {
-    OwnerRole(OwnerRole),
+    OwnerRole(OwnerRoleSubstate),
     Rule(KeyValueEntrySubstate<AccessRule>),
-    Mutability(KeyValueEntrySubstate<RoleList>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedRoyaltyModuleSubstateValue {
-    ComponentRoyaltyAccumulator(ComponentRoyaltyAccumulatorSubstate),
-    /// For a given method
-    ComponentRoyaltyConfig(ComponentRoyaltyConfigSubstate),
+    ComponentRoyalty(ComponentRoyaltySubstate),
+    ComponentMethodRoyalty(ComponentMethodRoyaltySubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -477,7 +465,7 @@ pub enum TypedMainModuleSubstateValue {
     PackageSchema(KeyValueEntrySubstate<ScryptoSchema>),
     PackageCode(KeyValueEntrySubstate<PackageCodeSubstate>),
     PackageAuthTemplate(KeyValueEntrySubstate<AuthConfig>),
-    PackageRoyalty(KeyValueEntrySubstate<RoyaltyConfig>),
+    PackageRoyalty(KeyValueEntrySubstate<ComponentRoyaltyConfig>),
     FungibleResource(TypedFungibleResourceManagerFieldValue),
     NonFungibleResource(TypedNonFungibleResourceManagerFieldValue),
     NonFungibleResourceData(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
@@ -503,7 +491,6 @@ pub enum TypedMainModuleSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedPackageFieldValue {
-    Code(PackageCodeSubstate),
     Royalty(PackageRoyaltyAccumulatorSubstate),
 }
 
@@ -523,11 +510,13 @@ pub enum TypedNonFungibleResourceManagerFieldValue {
 #[derive(Debug, Clone)]
 pub enum TypedFungibleVaultFieldValue {
     Balance(FungibleVaultBalanceSubstate),
+    VaultFrozenFlag(VaultFrozenFlag),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleVaultFieldValue {
     Balance(NonFungibleVaultBalanceSubstate),
+    VaultFrozenFlag(VaultFrozenFlag),
 }
 
 #[derive(Debug, Clone)]
@@ -544,6 +533,7 @@ pub enum TypedConsensusManagerFieldValue {
 #[derive(Debug, Clone)]
 pub enum TypedValidatorFieldValue {
     Validator(ValidatorSubstate),
+    AcceptsDelegatedStakeFlag(ValidatorAcceptsDelegatedStakeFlag),
 }
 
 #[derive(Debug, Clone)]
@@ -563,17 +553,17 @@ pub enum TypedAccountFieldValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedOneResourcePoolFieldValue {
-    OneResourcePool(OneResourcePoolSubstate),
+    OneResourcePool(one_resource_pool::OneResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedTwoResourcePoolFieldValue {
-    TwoResourcePool(TwoResourcePoolSubstate),
+    TwoResourcePool(two_resource_pool::TwoResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedMultiResourcePoolFieldValue {
-    MultiResourcePool(MultiResourcePoolSubstate),
+    MultiResourcePool(multi_resource_pool::MultiResourcePoolSubstate),
 }
 
 #[derive(Debug, Clone)]
@@ -621,19 +611,14 @@ fn to_typed_substate_value_internal(
             TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(
                 TypedAccessRulesModuleSubstateValue::Rule(scrypto_decode(data)?),
             ),
-            TypedAccessRulesSubstateKey::Mutability(_) => TypedSubstateValue::AccessRulesModule(
-                TypedAccessRulesModuleSubstateValue::Mutability(scrypto_decode(data)?),
-            ),
         },
         TypedSubstateKey::RoyaltyModule(royalty_module_key) => {
             TypedSubstateValue::RoyaltyModule(match royalty_module_key {
                 TypedRoyaltyModuleSubstateKey::RoyaltyField(RoyaltyField::RoyaltyAccumulator) => {
-                    TypedRoyaltyModuleSubstateValue::ComponentRoyaltyAccumulator(scrypto_decode(
-                        data,
-                    )?)
+                    TypedRoyaltyModuleSubstateValue::ComponentRoyalty(scrypto_decode(data)?)
                 }
-                TypedRoyaltyModuleSubstateKey::RoyaltyConfigEntryKey(_) => {
-                    TypedRoyaltyModuleSubstateValue::ComponentRoyaltyConfig(scrypto_decode(data)?)
+                TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(_) => {
+                    TypedRoyaltyModuleSubstateValue::ComponentMethodRoyalty(scrypto_decode(data)?)
                 }
             })
         }
@@ -712,6 +697,9 @@ fn to_typed_object_substate_value(
                 }
                 // This shouldn't be persistable - so use a bizarre (but temporary!) placeholder error code here!
                 FungibleVaultField::LockedFungible => Err(DecodeError::InvalidCustomValue)?,
+                FungibleVaultField::VaultFrozenFlag => {
+                    TypedFungibleVaultFieldValue::VaultFrozenFlag(scrypto_decode(data)?)
+                }
             })
         }
         TypedMainModuleSubstateKey::NonFungibleVaultField(offset) => {
@@ -721,6 +709,9 @@ fn to_typed_object_substate_value(
                 }
                 // This shouldn't be persistable - so use a bizarre (but temporary!) placeholder error code here!
                 NonFungibleVaultField::LockedNonFungible => Err(DecodeError::InvalidCustomValue)?,
+                NonFungibleVaultField::VaultFrozenFlag => {
+                    TypedNonFungibleVaultFieldValue::VaultFrozenFlag(scrypto_decode(data)?)
+                }
             })
         }
         TypedMainModuleSubstateKey::NonFungibleVaultContentsIndexKey(_) => {
@@ -762,6 +753,9 @@ fn to_typed_object_substate_value(
             TypedMainModuleSubstateValue::Validator(match offset {
                 ValidatorField::Validator => {
                     TypedValidatorFieldValue::Validator(scrypto_decode(data)?)
+                }
+                ValidatorField::AcceptsDelegatedStakeFlag => {
+                    TypedValidatorFieldValue::AcceptsDelegatedStakeFlag(scrypto_decode(data)?)
                 }
             })
         }

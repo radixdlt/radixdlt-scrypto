@@ -37,10 +37,20 @@ pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
 }
 
 impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
+    pub fn create_kernel_for_test_only(&mut self) -> Kernel<SystemConfig<V>, S> {
+        Kernel {
+            heap: Heap::new(),
+            store: self.store,
+            id_allocator: self.id_allocator,
+            current_frame: CallFrame::new_root(Actor::Root),
+            prev_frame_stack: vec![],
+            callback: self.callback,
+        }
+    }
+
     /// Executes a transaction
     pub fn call_transaction_processor<'a>(
         self,
-        transaction_hash: &'a Hash,
         manifest_encoded_instructions: &'a [u8],
         pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
         references: &'a IndexSet<Reference>,
@@ -145,7 +155,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,
             scrypto_encode(&TransactionProcessorRunInputEfficientEncodable {
-                transaction_hash,
                 manifest_encoded_instructions,
                 global_address_reservations,
                 references,
@@ -415,16 +424,17 @@ where
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_id: blueprint,
-                    outer_object,
-                    ..
-                }) if blueprint.package_address == RESOURCE_PACKAGE
-                    && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                        || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
+                TypeInfoSubstate::Object(info)
+                    if info.blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (info.blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                            || info.blueprint_id.blueprint_name
+                                == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                 {
-                    let is_fungible = blueprint.blueprint_name.eq(FUNGIBLE_BUCKET_BLUEPRINT);
-                    let parent = outer_object.unwrap();
+                    let is_fungible = info
+                        .blueprint_id
+                        .blueprint_name
+                        .eq(FUNGIBLE_BUCKET_BLUEPRINT);
+                    let parent = info.get_outer_object();
                     let resource_address: ResourceAddress =
                         ResourceAddress::new_or_panic(parent.as_ref().clone().try_into().unwrap());
                     (is_fungible, resource_address)

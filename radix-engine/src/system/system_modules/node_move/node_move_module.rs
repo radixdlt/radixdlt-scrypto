@@ -31,19 +31,21 @@ impl NodeMoveModule {
         // TODO: Make this more generic?
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
         match type_info {
-            TypeInfoSubstate::Object(ObjectInfo {
-                blueprint_id: blueprint,
-                outer_object,
-                ..
-            }) if blueprint.package_address.eq(&RESOURCE_PACKAGE)
-                && blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) =>
+            TypeInfoSubstate::Object(info)
+                if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                    && info
+                        .blueprint_id
+                        .blueprint_name
+                        .eq(FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(outer_object.unwrap().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
                 {
                     return Ok(());
                 }
 
-                if matches!(callee, Actor::Function { .. }) && callee.blueprint().eq(&blueprint) {
+                if matches!(callee, Actor::Function { .. })
+                    && callee.blueprint_id().eq(&info.blueprint_id)
+                {
                     return Ok(());
                 }
 
@@ -91,19 +93,21 @@ impl NodeMoveModule {
                     api.kernel_drop_lock(handle)?;
                 }
             }
-            TypeInfoSubstate::Object(ObjectInfo {
-                blueprint_id: blueprint,
-                outer_object,
-                ..
-            }) if blueprint.package_address.eq(&RESOURCE_PACKAGE)
-                && blueprint.blueprint_name.eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
+            TypeInfoSubstate::Object(info)
+                if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                    && info
+                        .blueprint_id
+                        .blueprint_name
+                        .eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(outer_object.unwrap().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
                 {
                     return Ok(());
                 }
 
-                if matches!(callee, Actor::Function { .. }) && callee.blueprint().eq(&blueprint) {
+                if matches!(callee, Actor::Function { .. })
+                    && callee.blueprint_id().eq(&info.blueprint_id)
+                {
                     return Ok(());
                 }
 

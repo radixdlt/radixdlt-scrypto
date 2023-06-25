@@ -175,12 +175,6 @@ macro_rules! define_wrapped_hash {
             }
         }
 
-        impl fmt::Display for $name {
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                write!(f, "{}", &self.0)
-            }
-        }
-
         impl IsHash for $name {}
     };
 }

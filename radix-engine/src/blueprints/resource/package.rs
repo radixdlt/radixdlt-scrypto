@@ -6,11 +6,12 @@ use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::costing::{FIXED_HIGH_FEE, FIXED_LOW_FEE, FIXED_MEDIUM_FEE};
 use crate::types::*;
-use crate::{event_schema, method_auth_template};
+use crate::{event_schema, method_auth_template, roles_template};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+    PackageDefinition, RoleSpecification, StaticRoles,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
@@ -328,9 +329,15 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::Outer,
+                feature_set: btreeset!(
+                    TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                    VAULT_FREEZE_FEATURE.to_string(),
+                    VAULT_RECALL_FEATURE.to_string(),
+                    MINT_FEATURE.to_string(),
+                    BURN_FEATURE.to_string(),
+                ),
                 dependencies: btreeset!(),
-                feature_set: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,
@@ -344,26 +351,36 @@ impl ResourceManagerNativePackage {
                         virtual_lazy_load_functions: btreemap!(),
                     },
                 },
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                        FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                    ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth_template! {
-                            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
-                            RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];
-                            RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodPermission::Public;
-                            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodPermission::Public;
-                            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodPermission::Public;
-                            RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodPermission::Public;
-                            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodPermission::Public;
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
+                        roles {
+                            MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
+                            MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
+                            BURNER_ROLE => updaters: [BURNER_UPDATER_ROLE];
+                            BURNER_UPDATER_ROLE => updaters: [BURNER_UPDATER_ROLE];
+                            WITHDRAWER_ROLE => updaters: [WITHDRAWER_UPDATER_ROLE];
+                            WITHDRAWER_UPDATER_ROLE => updaters: [WITHDRAWER_UPDATER_ROLE];
+                            DEPOSITOR_ROLE => updaters: [DEPOSITOR_UPDATER_ROLE];
+                            DEPOSITOR_UPDATER_ROLE => updaters: [DEPOSITOR_UPDATER_ROLE];
+                            RECALLER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
+                            RECALLER_UPDATER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
+                            FREEZER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
+                            FREEZER_UPDATER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
+                            RESOURCE_PACKAGE_ROLE;
                         },
-                        outer_auth: btreemap!(),
-                    },
+                        methods {
+                            FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINTER_ROLE];
+                            RESOURCE_MANAGER_BURN_IDENT => [BURNER_ROLE];
+                            RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
+                        }
+                    }),
                 },
             }
         };
@@ -641,9 +658,15 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::Outer,
+                feature_set: btreeset!(
+                    TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
+                    VAULT_FREEZE_FEATURE.to_string(),
+                    VAULT_RECALL_FEATURE.to_string(),
+                    MINT_FEATURE.to_string(),
+                    BURN_FEATURE.to_string(),
+                ),
                 dependencies: btreeset!(),
-                feature_set: btreeset!(TRACK_TOTAL_SUPPLY_FEATURE.to_string()),
                 schema: BlueprintSchemaInit {
                     generics: vec![Generic::Any],
                     schema,
@@ -658,32 +681,43 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT.to_string() => rule!(allow_all),
-                    ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: method_auth_template! {
-                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINT_ROLE];
-                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT => [MINT_ROLE];
-                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => [MINT_ROLE];
-                            RESOURCE_MANAGER_BURN_IDENT => [BURN_ROLE];
-                            RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => [UPDATE_NON_FUNGIBLE_DATA_ROLE];
-                            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodPermission::Public;
-                            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodPermission::Public;
-                            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodPermission::Public;
-                            RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodPermission::Public;
-                            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT => MethodPermission::Public;
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(roles_template! {
+                        roles {
+                            MINTER_ROLE => updaters: [MINTER_UPDATER_ROLE];
+                            MINTER_UPDATER_ROLE => updaters: [MINTER_UPDATER_ROLE];
+                            BURNER_ROLE => updaters: [BURNER_UPDATER_ROLE];
+                            BURNER_UPDATER_ROLE => updaters: [BURNER_UPDATER_ROLE];
+                            WITHDRAWER_ROLE => updaters: [WITHDRAWER_UPDATER_ROLE];
+                            WITHDRAWER_UPDATER_ROLE => updaters: [WITHDRAWER_UPDATER_ROLE];
+                            DEPOSITOR_ROLE => updaters: [DEPOSITOR_UPDATER_ROLE];
+                            DEPOSITOR_UPDATER_ROLE => updaters: [DEPOSITOR_UPDATER_ROLE];
+                            RECALLER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
+                            RECALLER_UPDATER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
+                            FREEZER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
+                            FREEZER_UPDATER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
+                            NON_FUNGIBLE_DATA_UPDATER_ROLE => updaters: [NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE];
+                            NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE => updaters: [NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE];
+                            RESOURCE_PACKAGE_ROLE;
                         },
-                        outer_auth: btreemap!(),
-                    },
+                        methods {
+                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINTER_ROLE];
+                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT => [MINTER_ROLE];
+                            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => [MINTER_ROLE];
+                            RESOURCE_MANAGER_BURN_IDENT => [BURNER_ROLE];
+                            RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => [NON_FUNGIBLE_DATA_UPDATER_ROLE];
+                            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT => MethodAccessibility::Public;
+                        }
+                    }),
                 },
             }
         };
@@ -698,6 +732,10 @@ impl ResourceManagerNativePackage {
             ));
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedFungibleResource>(),
+            ));
+            fields.push(FieldSchema::if_outer_feature(
+                aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
+                VAULT_FREEZE_FEATURE,
             ));
 
             let mut functions = BTreeMap::new();
@@ -879,7 +917,9 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -897,47 +937,26 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
-
-                    method_auth: MethodAuthTemplate::Static {
-                        // This is the mapping from Vault methods to Vault roles
-                        // NOTE: This is an extra filter on top of the ResourceManager filter
-                        // This is for use with the freezing feature
-                        // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
-                        auth: method_auth_template! {
-                            VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_RECALL_IDENT => MethodPermission::Public;
-                            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => MethodPermission::Public;
-                            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_FREEZE_IDENT => MethodPermission::Public;
-                            VAULT_UNFREEZE_IDENT => MethodPermission::Public;
-                            VAULT_PUT_IDENT => MethodPermission::Public;
-                            VAULT_BURN_IDENT => MethodPermission::Public;
-                            FUNGIBLE_VAULT_LOCK_FEE_IDENT => [VAULT_WITHDRAW_ROLE];
-                            VAULT_TAKE_IDENT => [VAULT_WITHDRAW_ROLE];
-                        },
-
-                        // This is the mapping to ResourceManager roles
-                        // NOTE: This is an extra filter on top of the Vault filter
-                        outer_auth: method_auth_template! {
-                            VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_FREEZE_IDENT => [FREEZE_ROLE];
-                            VAULT_UNFREEZE_IDENT => [UNFREEZE_ROLE];
-                            VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
-                            FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAW_ROLE];
-                            VAULT_RECALL_IDENT => [RECALL_ROLE];
-                            VAULT_PUT_IDENT => [DEPOSIT_ROLE];
-                            VAULT_BURN_IDENT => [BURN_ROLE];
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                        roles: RoleSpecification::UseOuter,
+                        methods: method_auth_template! {
+                            VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                            VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                            VAULT_FREEZE_IDENT => [FREEZER_ROLE];
+                            VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
+                            VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                            FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAWER_ROLE];
+                            VAULT_RECALL_IDENT => [RECALLER_ROLE];
+                            VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
+                            VAULT_BURN_IDENT => [BURNER_ROLE];
                             FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                             FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                         },
-                    },
+                    }),
                 },
             }
         };
@@ -952,6 +971,10 @@ impl ResourceManagerNativePackage {
             ));
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<LockedNonFungibleResource>(),
+            ));
+            fields.push(FieldSchema::if_outer_feature(
+                aggregator.add_child_type_and_descendents::<VaultFrozenFlag>(),
+                VAULT_FREEZE_FEATURE,
             ));
 
             let mut collections = Vec::new();
@@ -1184,7 +1207,9 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1202,54 +1227,32 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static {
-                        // This is the mapping from Vault methods to Vault roles
-                        // NOTE: This is an extra filter on top of the ResourceManager filter
-                        // This is for use with the freezing feature
-                        // Any roles mentioned here have to be added as Public in create_empty_vault else you'll get spurious errors
-                        auth: method_auth_template! {
-                            VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            VAULT_RECALL_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            VAULT_FREEZE_IDENT => MethodPermission::Public;
-                            VAULT_UNFREEZE_IDENT => MethodPermission::Public;
-                            VAULT_PUT_IDENT => MethodPermission::Public;
-                            VAULT_BURN_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => MethodPermission::Public;
-                            VAULT_TAKE_IDENT => [VAULT_WITHDRAW_ROLE];
-                            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [VAULT_WITHDRAW_ROLE];
-                        },
-                        // This is the mapping to ResourceManager roles
-                        // NOTE: This is an extra filter on top of the Vault filter
-                        outer_auth: method_auth_template! {
-                            VAULT_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                        roles: RoleSpecification::UseOuter,
+                        methods: method_auth_template! {
+                            VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
+                            VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
-                            VAULT_TAKE_IDENT => [WITHDRAW_ROLE];
-                            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAW_ROLE];
-                            VAULT_RECALL_IDENT => [RECALL_ROLE];
-                            VAULT_FREEZE_IDENT => [FREEZE_ROLE];
-                            VAULT_UNFREEZE_IDENT => [UNFREEZE_ROLE];
-                            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALL_ROLE];
-                            VAULT_PUT_IDENT => [DEPOSIT_ROLE];
-                            VAULT_BURN_IDENT => [BURN_ROLE];
-                            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURN_ROLE];
+                            VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                            NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAWER_ROLE];
+                            VAULT_RECALL_IDENT => [RECALLER_ROLE];
+                            VAULT_FREEZE_IDENT => [FREEZER_ROLE];
+                            VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
+                            NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => [RECALLER_ROLE];
+                            VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
+                            VAULT_BURN_IDENT => [BURNER_ROLE];
+                            NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURNER_ROLE];
+
                             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                         },
-                    },
+                    }),
                 },
             }
         };
@@ -1397,7 +1400,9 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1415,24 +1420,24 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: method_auth_template! {
-                            BUCKET_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            BUCKET_PUT_IDENT => MethodPermission::Public;
-                            BUCKET_TAKE_IDENT => MethodPermission::Public;
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                        methods: method_auth_template! {
+                            BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                            BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                            BUCKET_PUT_IDENT => MethodAccessibility::Public;
+                            BUCKET_TAKE_IDENT => MethodAccessibility::Public;
 
                             FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                             FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
                         },
-                    },
+                        roles: RoleSpecification::UseOuter,
+                    }),
                 },
             }
         };
@@ -1611,7 +1616,9 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1629,26 +1636,27 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: method_auth_template! {
-                            BUCKET_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodPermission::Public;
-                            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodPermission::Public;
-                            BUCKET_PUT_IDENT => MethodPermission::Public;
-                            BUCKET_TAKE_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodPermission::Public;
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::StaticRoles(StaticRoles {
+                        methods: method_auth_template! {
+                            BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
+                            BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
+                            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                            BUCKET_PUT_IDENT => MethodAccessibility::Public;
+                            BUCKET_TAKE_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
+                            NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
                             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
                         },
-                    },
+                        roles: RoleSpecification::UseOuter,
+                    }),
                 },
             }
         };
@@ -1722,7 +1730,9 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1740,20 +1750,10 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-                    ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: method_auth_template!(
-                            PROOF_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
-                            PROOF_CLONE_IDENT => MethodPermission::Public;
-                            PROOF_DROP_IDENT => MethodPermission::Public;
-                            PROOF_GET_AMOUNT_IDENT => MethodPermission::Public;
-                        ),
-                    },
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -1843,7 +1843,9 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: Some(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string()),
+                blueprint_type: BlueprintType::Inner {
+                    outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                },
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1861,21 +1863,10 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        PROOF_DROP_IDENT.to_string() => rule!(allow_all),
-                    ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: method_auth_template!(
-                            PROOF_GET_RESOURCE_ADDRESS_IDENT => MethodPermission::Public;
-                            PROOF_CLONE_IDENT => MethodPermission::Public;
-                            PROOF_DROP_IDENT => MethodPermission::Public;
-                            PROOF_GET_AMOUNT_IDENT => MethodPermission::Public;
-                            NON_FUNGIBLE_PROOF_GET_LOCAL_IDS_IDENT => MethodPermission::Public;
-                        ),
-                    },
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -2011,7 +2002,7 @@ impl ResourceManagerNativePackage {
             let schema = generate_full_schema(aggregator);
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -2029,15 +2020,10 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        WORKTOP_DROP_IDENT.to_string() => rule!(allow_all),
-                    ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: btreemap!(),
-                    },
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -2194,7 +2180,7 @@ impl ResourceManagerNativePackage {
             };
 
             BlueprintDefinitionInit {
-                outer_blueprint: None,
+                blueprint_type: BlueprintType::default(),
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -2209,13 +2195,10 @@ impl ResourceManagerNativePackage {
                     },
                 },
 
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: btreemap!(),
-                    },
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         };
@@ -2615,19 +2598,19 @@ impl ResourceManagerNativePackage {
             FUNGIBLE_VAULT_FREEZE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: VaultFreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultFreezeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleVaultBlueprint::freeze(api)?;
+                let rtn = FungibleVaultBlueprint::freeze(input.to_freeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleVaultBlueprint::unfreeze(api)?;
+                let rtn = FungibleVaultBlueprint::unfreeze(input.to_unfreeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_PUT_EXPORT_NAME => {
@@ -2734,19 +2717,19 @@ impl ResourceManagerNativePackage {
             NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: VaultFreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultFreezeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleVaultBlueprint::freeze(api)?;
+                let rtn = NonFungibleVaultBlueprint::freeze(input.to_freeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME => {
                 api.consume_cost_units(FIXED_MEDIUM_FEE, ClientCostingReason::RunNative)?;
 
-                let _input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
+                let input: VaultUnfreezeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = NonFungibleVaultBlueprint::unfreeze(api)?;
+                let rtn = NonFungibleVaultBlueprint::unfreeze(input.to_unfreeze, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {

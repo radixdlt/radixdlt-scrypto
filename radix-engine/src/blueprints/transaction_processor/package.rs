@@ -6,7 +6,8 @@ use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, MethodAuthTemplate, PackageDefinition,
+    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
+    PackageDefinition,
 };
 use radix_engine_interface::blueprints::transaction_processor::*;
 use radix_engine_interface::schema::{
@@ -44,9 +45,9 @@ impl TransactionProcessorNativePackage {
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             TRANSACTION_PROCESSOR_BLUEPRINT.to_string() => BlueprintDefinitionInit {
-                outer_blueprint: None,
-                dependencies: btreeset!(),
+                blueprint_type: BlueprintType::default(),
                 feature_set: btreeset!(),
+                dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {
                     generics: vec![],
                     schema,
@@ -60,15 +61,13 @@ impl TransactionProcessorNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                 },
-                royalty_config: RoyaltyConfig::default(),
+                royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
-                    function_auth: btreemap!(
-                        TRANSACTION_PROCESSOR_RUN_IDENT.to_string() => rule!(allow_all), // FIXME: Change to only allow root to call? and add auditors' tests
-                    ),
-                    method_auth: MethodAuthTemplate::Static {
-                        auth: btreemap!(),
-                        outer_auth: btreemap!(),
-                    },
+                    /// Only allow the root call frame to call any function in transaction processor.
+                    /// This is a safety precaution to reduce surface area of attack. This may be removed
+                    /// if/when the transaction processor is verified to be safe.
+                    function_auth: FunctionAuth::RootOnly,
+                    method_auth: MethodAuthTemplate::AllowAll,
                 },
             }
         );

@@ -105,16 +105,71 @@ pub struct EpochChangeCondition {
     pub target_duration_millis: u64,
 }
 
+pub enum EpochChangeOutcome {
+    NoChange,
+    Change {
+        next_epoch_effective_start_millis: i64,
+    },
+}
+
 impl EpochChangeCondition {
     /// Determines whether this condition is met by the given actual state.
     /// See the condition's field definitions for exact rules.
-    pub fn is_met(&self, duration_millis: i64, round: Round) -> bool {
+    pub fn should_epoch_change(
+        &self,
+        effective_start: i64,
+        current_time: i64,
+        round: Round,
+    ) -> EpochChangeOutcome {
+        let epoch_duration_millis =
+            // The application invariants in `check_non_decreasing_and_update_timestamps`
+            // ensures that current_time > effective_start, and genesis should ensure
+            // effective_start > 0.
+            // This is just a sanity-check to avoid overflow if something invaraint fails.
+            if current_time >= 0 && effective_start >= 0 && current_time > effective_start {
+                (current_time - effective_start) as u64
+            } else {
+                0
+            };
+        if self.is_change_criterion_met(epoch_duration_millis, round) {
+            // The following aims to prevent small systematic drift in the epoch length each epoch,
+            // due to overheads / time noticing end of epoch.
+            // If the actual epoch length is sufficiently close to the target epoch length, we just
+            // pretend the effective epoch length was actually the target epoch length.
+            let next_epoch_effective_start_millis =
+                if self.is_actual_duration_close_to_target(epoch_duration_millis) {
+                    effective_start.saturating_add_unsigned(self.target_duration_millis)
+                } else {
+                    current_time
+                };
+            EpochChangeOutcome::Change {
+                next_epoch_effective_start_millis,
+            }
+        } else {
+            EpochChangeOutcome::NoChange
+        }
+    }
+
+    fn is_actual_duration_close_to_target(&self, actual_duration_millis: u64) -> bool {
+        let bounds_are_compatible_with_calculation =
+            actual_duration_millis >= 1000 && self.target_duration_millis >= 1000;
+        if !bounds_are_compatible_with_calculation {
+            // Need to avoid issues with divide by zero etc
+            return false;
+        }
+        let proportion_difference = (Decimal::from(actual_duration_millis)
+            - Decimal::from(self.target_duration_millis))
+            / Decimal::from(self.target_duration_millis);
+        proportion_difference <= dec!("0.1")
+    }
+
+    fn is_change_criterion_met(&self, duration_millis: u64, round: Round) -> bool {
         if round.number() >= self.max_round_count {
             true
         } else if round.number() < self.min_round_count {
             false
         } else {
-            duration_millis >= 0 && (duration_millis as u64) >= self.target_duration_millis
+            duration_millis >= self.target_duration_millis
         }
     }
 }
@@ -275,6 +330,15 @@ pub const VALIDATOR_UNREGISTER_IDENT: &str = "unregister";
 pub struct ValidatorUnregisterInput {}
 
 pub type ValidatorUnregisterOutput = ();
+
+pub const VALIDATOR_STAKE_AS_OWNER_IDENT: &str = "stake_as_owner";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
+pub struct ValidatorStakeAsOwnerInput {
+    pub stake: Bucket,
+}
+
+pub type ValidatorStakeAsOwnerOutput = Bucket;
 
 pub const VALIDATOR_STAKE_IDENT: &str = "stake";
 

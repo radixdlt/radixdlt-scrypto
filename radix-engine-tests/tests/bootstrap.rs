@@ -1,10 +1,12 @@
 use radix_engine::blueprints::consensus_manager::ProposerMinuteTimestampSubstate;
 use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubstate;
+use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
 use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
@@ -12,7 +14,8 @@ use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::CustomGenesis;
+use scrypto_unit::{CustomGenesis, TestRunner};
+use transaction::prelude::ManifestBuilder;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
@@ -397,4 +400,55 @@ fn test_genesis_time() {
         .unwrap();
 
     assert_eq!(proposer_minute_timestamp.epoch_minute, 123);
+}
+
+#[test]
+fn should_not_be_able_to_create_genesis_helper() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_function(
+            GENESIS_HELPER_PACKAGE,
+            GENESIS_HELPER_BLUEPRINT,
+            "new",
+            manifest_args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
+}
+
+#[test]
+fn should_not_be_able_to_call_genesis_helper() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(GENESIS_HELPER, "wrap_up", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                ..
+            )))
+        )
+    });
 }

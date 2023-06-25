@@ -132,6 +132,11 @@ impl CostingModule {
                     |fee_table| fee_table.kernel_api_cost(CostingEntry::SubstateReadFromDbNotFound),
                     1,
                 )?,
+                StoreAccess::DeleteFromTrack => self.apply_execution_cost(
+                    costing_reason.clone(),
+                    |fee_table| fee_table.kernel_api_cost(CostingEntry::SubstateDeleteFromTrack),
+                    1,
+                )?,
             }
         }
         Ok(())
@@ -223,7 +228,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
         let (blueprint, ident, optional_component) = {
-            let blueprint = callee.blueprint();
+            let blueprint = callee.blueprint_id();
             let (maybe_component, ident) = match &callee {
                 Actor::Method(MethodActor { node_id, ident, .. }) => {
                     if node_id.is_global_component() {

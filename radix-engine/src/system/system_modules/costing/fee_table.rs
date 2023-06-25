@@ -9,8 +9,8 @@ const COSTING_COEFFICENT_CPU: u64 = 335;
 const COSTING_COEFFICENT_CPU_DIV_BITS: u64 = 4; // used to divide by shift left operator
 const COSTING_COEFFICENT_CPU_DIV_BITS_ADDON: u64 = 6; // used to scale up or down all cpu instruction costing
 
-const COSTING_COEFFICENT_STORAGE: u64 = 10;
-const COSTING_COEFFICENT_STORAGE_DIV_BITS: u64 = 6; // used to scale up or down all storage costing
+const COSTING_COEFFICENT_STORAGE: u64 = 14;
+const COSTING_COEFFICENT_STORAGE_DIV_BITS: u64 = 8; // used to scale up or down all storage costing
 
 pub enum CostingEntry<'a> {
     /* invoke */
@@ -56,6 +56,7 @@ pub enum CostingEntry<'a> {
         size_old: u32,
         size_new: u32,
     },
+    SubstateDeleteFromTrack,
     // FIXME: more costing after API becomes stable.
 }
 
@@ -323,6 +324,7 @@ impl FeeTable {
                 size_old: _,
                 size_new: _,
             } => 0,
+            CostingEntry::SubstateDeleteFromTrack => 0,
         }) as u64
             * COSTING_COEFFICENT_CPU
             >> (COSTING_COEFFICENT_CPU_DIV_BITS + COSTING_COEFFICENT_CPU_DIV_BITS_ADDON))
@@ -336,20 +338,54 @@ impl FeeTable {
                 actor: _,
             } => 10 * input_size,
             CostingEntry::SubstateReadFromDb { size } => {
-                // f(size) = 0.0008698330531784841 * size + 24.999130166946998
-                let mut value: u64 = *size as u64;
-                value *= 57; // ~0.0008698330531784841 << 16
-                value += (value >> 16) + 25; // ~24.999130166946998
-                value as u32
+                if *size <= 25 * 1024 {
+                    // apply constant value
+                    400u32
+                } else {
+                    // apply function: f(size) = 0.0009622109 * size + 389.5155
+                    // approximated integer representation: f(size) = (63 * size) / 2^16 + 390
+                    let mut value: u64 = *size as u64;
+                    value *= 63; // 0.0009622109 * 2^16
+                    value += (value >> 16) + 390;
+                    value.try_into().unwrap_or(u32::MAX)
+                }
             }
-            // FIXME: update numbers below
-            CostingEntry::SubstateReadFromDbNotFound => 1,
-            CostingEntry::SubstateReadFromTrack { size } => 10 * size,
-            CostingEntry::SubstateWriteToTrack { size } => 10 * size,
+            CostingEntry::SubstateReadFromDbNotFound => 322, // average value from benchmark
             CostingEntry::SubstateRewriteToTrack {
                 size_old: _,
-                size_new,
-            } => 10 * size_new,
+                size_new: size,
+            }
+            | CostingEntry::SubstateWriteToTrack { size } => {
+                let size =
+                    if let CostingEntry::SubstateRewriteToTrack { size_old, size_new } = entry {
+                        if size_new == size_old {
+                            return 0;
+                        }
+                        // TODO: refund for reduced write size?
+                        if size_new < size_old {
+                            return 0;
+                        }
+                        size_new - size_old
+                    } else {
+                        *size
+                    };
+
+                // apply function: f(size) = 0.0004 * size + 1000
+                // approximated integer representation: f(size) = (262 * size) / 2^16 + 1000
+                let mut value: u64 = size as u64;
+                value *= 262; // 0.0004 * 2^16
+                value += (value >> 16) + 1000;
+                value.try_into().unwrap_or(u32::MAX)
+            }
+            CostingEntry::SubstateReadFromTrack { size } => {
+                // apply function: f(size) = 0.00012232433 * size + 1.4939442
+                // approximated integer representation: f(size) = (8 * size) / 2^16 + 1
+                let mut value: u64 = *size as u64;
+                value *= 8; // 0.00082827697 * 2^16
+                value += (value >> 16) + 1;
+                value.try_into().unwrap_or(u32::MAX)
+            }
+            CostingEntry::SubstateDeleteFromTrack => 191, // Averga of P95 points from benchmark
             _ => 0,
         }) as u64
             * COSTING_COEFFICENT_STORAGE

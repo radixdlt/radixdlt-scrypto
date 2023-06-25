@@ -105,27 +105,27 @@ impl<T: AnyResourceType> Default for InProgressResourceBuilder<T, NoAuth> {
 }
 
 pub trait ConfiguredAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>;
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)>;
 }
 
 pub struct NoAuth;
 impl ConfiguredAuth for NoAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
         BTreeMap::new()
     }
 }
 
-pub struct AccessRuleAuth(BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>);
+pub struct AccessRuleAuth(BTreeMap<ResourceAction, (AccessRule, AccessRule)>);
 
 impl ConfiguredAuth for AccessRuleAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
         self.0
     }
 }
 
 pub struct OwnerBadgeAuth(NonFungibleGlobalId);
 impl ConfiguredAuth for OwnerBadgeAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
         resource_access_rules_from_owner_badge(&self.0)
     }
 }
@@ -297,34 +297,6 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
         self.add_auth(Freeze, method_auth, mutability.into())
     }
 
-    /// Sets the resource to have unfreezeable vaults.
-    ///
-    /// * The first parameter is the access rule which allows unfreezing of the vault.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
-    ///
-    /// ### Examples
-    ///
-    /// ```no_run
-    /// use scrypto::prelude::*;
-    ///
-    /// # let resource_address = RADIX_TOKEN;
-    /// // Sets the resource to be unfreezeable with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_fungible()
-    ///    .unfreezeable(rule!(require(resource_address)), LOCKED);
-    ///
-    /// # let resource_address = RADIX_TOKEN;
-    /// // Sets the resource to not be unfreezeable, but this is can be changed in future by the second rule
-    /// ResourceBuilder::new_fungible()
-    ///    .unfreezeable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
-    /// ```
-    fn unfreezeable<R: Into<AccessRule>>(
-        self,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self::OutputBuilder {
-        self.add_auth(Unfreeze, method_auth, mutability.into())
-    }
-
     /// Sets the resource to not be freely withdrawable from a vault.
     ///
     /// * The first parameter is the access rule which allows withdrawing from a vault.
@@ -394,14 +366,14 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to allow its metadata to be updated with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
-    ///    .updateable_metadata(rule!(require(resource_address)), LOCKED);
+    ///    .updatable_metadata(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not allow its metadata to be updated, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_fungible()
-    ///    .updateable_metadata(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .updatable_metadata(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
-    fn updateable_metadata<R: Into<AccessRule>>(
+    fn updatable_metadata<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
         mutability: R,
@@ -432,14 +404,14 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// }
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>()
-    ///    .updateable_non_fungible_data(rule!(require(resource_address)), LOCKED);
+    ///    .updatable_non_fungible_data(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>()
-    ///    .updateable_non_fungible_data(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .updatable_non_fungible_data(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
-    fn updateable_non_fungible_data<R: Into<AccessRule>>(
+    fn updatable_non_fungible_data<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
         mutability: R,
@@ -478,7 +450,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     scrypto_encode(&FungibleResourceManagerCreateInput {
                         divisibility,
                         track_total_supply: true,
-                        metadata,
+                        metadata: metadata.into(),
                         access_rules,
                     })
                     .unwrap(),
@@ -499,7 +471,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                         id_type,
                         track_total_supply: true,
                         non_fungible_schema,
-                        metadata,
+                        metadata: metadata.into(),
                         access_rules,
                     })
                     .unwrap(),
@@ -556,7 +528,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     track_total_supply: true,
                     divisibility: self.resource_type.divisibility,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     initial_supply: amount.into(),
                 })
@@ -609,7 +581,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -662,7 +634,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -715,7 +687,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata: self.metadata.into(),
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -771,7 +743,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
                         non_fungible_schema,
                         track_total_supply: true,
-                        metadata: self.metadata,
+                        metadata: self.metadata.into(),
                         access_rules: self.auth.into_access_rules(),
                         entries: entries
                             .into_iter()
@@ -827,7 +799,7 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, No
 
     fn add_auth(
         self,
-        method: ResourceMethodAuthKey,
+        method: ResourceAction,
         method_auth: AccessRule,
         mutability: AccessRule,
     ) -> Self::OutputBuilder {
@@ -844,7 +816,7 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, Ac
 
     fn add_auth(
         mut self,
-        method: ResourceMethodAuthKey,
+        method: ResourceAction,
         method_auth: AccessRule,
         mutability: AccessRule,
     ) -> Self::OutputBuilder {
@@ -909,7 +881,7 @@ mod private {
     use super::*;
     use radix_engine_interface::{
         api::node_modules::metadata::MetadataValue,
-        blueprints::resource::{AccessRule, NonFungibleGlobalId, ResourceMethodAuthKey},
+        blueprints::resource::{AccessRule, NonFungibleGlobalId, ResourceAction},
     };
 
     pub trait CanAddMetadata: Sized {
@@ -923,7 +895,7 @@ mod private {
 
         fn add_auth(
             self,
-            method: ResourceMethodAuthKey,
+            method: ResourceAction,
             auth: AccessRule,
             mutability: AccessRule,
         ) -> Self::OutputBuilder;
@@ -943,13 +915,13 @@ mod private {
         Fungible {
             divisibility: u8,
             metadata: BTreeMap<String, MetadataValue>,
-            access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+            access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         },
         NonFungible {
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
             metadata: BTreeMap<String, MetadataValue>,
-            access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+            access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         },
     }
 }

@@ -1,6 +1,5 @@
 use sbor::*;
 use scrypto::prelude::*;
-use scrypto::schema::*;
 
 #[blueprint]
 mod schema_component {
@@ -213,17 +212,14 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
     );
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
-        outer_blueprint: None,
+        blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema,
-        royalty_config: RoyaltyConfig::default(),
+        royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {
-            function_auth,
-            method_auth: scrypto::blueprints::package::MethodAuthTemplate::Static {
-                auth: btreemap!(),
-                outer_auth: btreemap!(),
-            },
+            function_auth: scrypto::blueprints::package::FunctionAuth::AccessRules(function_auth),
+            method_auth: scrypto::blueprints::package::MethodAuthTemplate::AllowAll,
         },
     };
 

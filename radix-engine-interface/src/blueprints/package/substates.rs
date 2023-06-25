@@ -1,3 +1,4 @@
+use crate::blueprints::package::BlueprintType;
 use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
@@ -8,18 +9,18 @@ use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
 
-pub const PACKAGE_CODE_ID: u8 = 0u8;
-pub const RESOURCE_MANAGER_CODE_ID: u8 = 1u8;
-pub const IDENTITY_CODE_ID: u8 = 2u8;
-pub const CONSENSUS_MANAGER_CODE_ID: u8 = 3u8;
-pub const ACCOUNT_CODE_ID: u8 = 5u8;
-pub const ACCESS_CONTROLLER_CODE_ID: u8 = 6u8;
-pub const TRANSACTION_PROCESSOR_CODE_ID: u8 = 7u8;
-pub const METADATA_CODE_ID: u8 = 10u8;
-pub const ROYALTY_CODE_ID: u8 = 11u8;
-pub const ACCESS_RULES_CODE_ID: u8 = 12u8;
-pub const POOL_CODE_ID: u8 = 13u8;
-pub const TRANSACTION_TRACKER_CODE_ID: u8 = 14u8;
+pub const PACKAGE_CODE_ID: u64 = 0u64;
+pub const RESOURCE_MANAGER_CODE_ID: u64 = 1u64;
+pub const IDENTITY_CODE_ID: u64 = 2u64;
+pub const CONSENSUS_MANAGER_CODE_ID: u64 = 3u64;
+pub const ACCOUNT_CODE_ID: u64 = 5u64;
+pub const ACCESS_CONTROLLER_CODE_ID: u64 = 6u64;
+pub const TRANSACTION_PROCESSOR_CODE_ID: u64 = 7u64;
+pub const METADATA_CODE_ID: u64 = 10u64;
+pub const ROYALTY_CODE_ID: u64 = 11u64;
+pub const ACCESS_RULES_CODE_ID: u64 = 12u64;
+pub const POOL_CODE_ID: u64 = 13u64;
+pub const TRANSACTION_TRACKER_CODE_ID: u64 = 14u64;
 
 pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8);
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
@@ -144,9 +145,9 @@ pub struct BlueprintDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintInterface {
-    pub outer_blueprint: Option<String>,
+    pub blueprint_type: BlueprintType,
     pub generics: Vec<Generic>,
-    pub features: BTreeSet<String>,
+    pub feature_set: BTreeSet<String>,
     pub state: IndexedStateSchema,
     pub functions: BTreeMap<String, FunctionSchema>,
     pub events: BTreeMap<String, TypePointer>,

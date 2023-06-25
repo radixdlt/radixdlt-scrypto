@@ -38,7 +38,7 @@ pub struct PackagePublishWasmAdvancedInput {
     pub code: Vec<u8>,
     pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub owner_rule: OwnerRole,
+    pub owner_role: OwnerRole,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -47,7 +47,7 @@ pub struct PackagePublishWasmAdvancedManifestInput {
     pub code: ManifestBlobRef,
     pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
-    pub owner_rule: OwnerRole,
+    pub owner_role: OwnerRole,
 }
 
 pub type PackagePublishWasmAdvancedOutput = PackageAddress;
@@ -57,7 +57,7 @@ pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct PackagePublishNativeInput {
     pub package_address: Option<GlobalAddressReservation>,
-    pub native_package_code_id: u8,
+    pub native_package_code_id: u64,
     pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
@@ -65,7 +65,7 @@ pub struct PackagePublishNativeInput {
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishNativeManifestInput {
     pub package_address: Option<ManifestAddressReservation>,
-    pub native_package_code_id: u8,
+    pub native_package_code_id: u64,
     pub setup: PackageDefinition,
     pub metadata: BTreeMap<String, MetadataValue>,
 }
@@ -87,25 +87,35 @@ pub struct PackageDefinition {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintType {
+    Outer,
+    Inner { outer_blueprint: String },
+}
+
+impl Default for BlueprintType {
+    fn default() -> Self {
+        BlueprintType::Outer
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinitionInit {
-    pub outer_blueprint: Option<String>,
+    pub blueprint_type: BlueprintType,
     pub feature_set: BTreeSet<String>,
     pub dependencies: BTreeSet<GlobalAddress>,
-
     pub schema: BlueprintSchemaInit,
-
-    pub royalty_config: RoyaltyConfig,
+    pub royalty_config: PackageRoyaltyConfig,
     pub auth_config: AuthConfig,
 }
 
 impl Default for BlueprintDefinitionInit {
     fn default() -> Self {
         Self {
-            outer_blueprint: None,
-            dependencies: BTreeSet::default(),
+            blueprint_type: BlueprintType::default(),
             feature_set: BTreeSet::default(),
+            dependencies: BTreeSet::default(),
             schema: BlueprintSchemaInit::default(),
-            royalty_config: RoyaltyConfig::default(),
+            royalty_config: PackageRoyaltyConfig::default(),
             auth_config: AuthConfig::default(),
         }
     }
@@ -113,37 +123,62 @@ impl Default for BlueprintDefinitionInit {
 
 #[derive(Debug, Clone, Eq, PartialEq, Default, ScryptoSbor, ManifestSbor)]
 pub struct AuthConfig {
-    pub function_auth: BTreeMap<String, AccessRule>,
+    pub function_auth: FunctionAuth,
     pub method_auth: MethodAuthTemplate,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub enum MethodAuthTemplate {
-    Static {
-        auth: BTreeMap<MethodKey, MethodPermission>,
-        outer_auth: BTreeMap<MethodKey, MethodPermission>,
-    },
+pub enum FunctionAuth {
+    /// All functions are accessible
+    AllowAll,
+    /// Functions are protected by an access rule
+    AccessRules(BTreeMap<String, AccessRule>),
+    /// Only the root call frame may call all functions.
+    /// Used primarily for transaction processor functions, any other use would
+    /// essentially make the function inaccessible for any normal transaction
+    RootOnly,
 }
 
-impl MethodAuthTemplate {
-    pub fn auth(self) -> BTreeMap<MethodKey, MethodPermission> {
-        match self {
-            MethodAuthTemplate::Static { auth, .. } => auth,
-        }
+impl Default for FunctionAuth {
+    fn default() -> Self {
+        FunctionAuth::AllowAll
     }
+}
 
-    pub fn outer_auth(self) -> BTreeMap<MethodKey, MethodPermission> {
-        match self {
-            MethodAuthTemplate::Static { outer_auth, .. } => outer_auth,
-        }
-    }
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum MethodAuthTemplate {
+    /// All methods are accessible
+    AllowAll,
+    /// Methods are protected by a static method to roles mapping
+    StaticRoles(StaticRoles),
 }
 
 impl Default for MethodAuthTemplate {
     fn default() -> Self {
-        MethodAuthTemplate::Static {
-            auth: BTreeMap::default(),
-            outer_auth: BTreeMap::default(),
+        MethodAuthTemplate::StaticRoles(StaticRoles::default())
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub enum RoleSpecification {
+    /// Roles are specified in the current blueprint and defined in the instantiated object.
+    Normal(BTreeMap<RoleKey, RoleList>),
+    /// Roles are specified in the *outer* blueprint and defined in the instantiated *outer* object.
+    /// This may only be used by inner blueprints and is currently used by the Vault blueprints
+    UseOuter,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct StaticRoles {
+    pub roles: RoleSpecification,
+    pub methods: BTreeMap<MethodKey, MethodAccessibility>,
+}
+
+impl Default for StaticRoles {
+    fn default() -> Self {
+        Self {
+            methods: BTreeMap::new(),
+            roles: RoleSpecification::Normal(BTreeMap::new()),
         }
     }
 }

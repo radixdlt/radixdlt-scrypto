@@ -17,6 +17,7 @@ serde = { version = "1.0.144", default-features = false, optional = true }
 lazy_static = "1.4.0"
 strum = { version = "0.24.1", default-features = false, features = ["derive"], optional = true }
 strum_macros = { version = "0.24.3", default-features = false, optional = true }
+bech32 = { version = "0.9.0", default-features = false }
 
 [dev-dependencies]
 scrypto = { path = "../scrypto" }

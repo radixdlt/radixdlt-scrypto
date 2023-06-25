@@ -1,5 +1,5 @@
 use crate::blueprints::consensus_manager::*;
-use crate::blueprints::util::{SecurifiedAccessRules, SecurifiedRoleEntry};
+use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
@@ -11,10 +11,6 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesGetRoleInput, AccessRulesUpdateRoleInput, ACCESS_RULES_GET_ROLE_IDENT,
-    ACCESS_RULES_UPDATE_ROLE_IDENT,
-};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -108,6 +104,12 @@ pub struct ValidatorSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct ValidatorAcceptsDelegatedStakeFlag {
+    pub accepts_delegated_stake: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct UnstakeData {
     /// An epoch number at (or after) which the pending unstaked XRD may be claimed.
     /// Note: on unstake, it is fixed to be [`ConsensusManagerConfigSubstate.num_unstake_epochs`] away.
@@ -142,6 +144,7 @@ pub enum ValidatorError {
     EpochUnlockHasNotOccurredYet,
     PendingOwnerStakeWithdrawalLimitReached,
     InvalidValidatorFeeFactor,
+    ValidatorIsNotAcceptingDelegatedStake,
 }
 
 pub struct ValidatorBlueprint;
@@ -161,7 +164,37 @@ impl ValidatorBlueprint {
         Self::register_update(false, api)
     }
 
+    pub fn stake_as_owner<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::stake_internal(xrd_bucket, api)
+    }
+
     pub fn stake<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::AcceptsDelegatedStakeFlag.into(),
+            LockFlags::read_only(),
+        )?;
+        let substate: ValidatorAcceptsDelegatedStakeFlag = api.field_lock_read_typed(handle)?;
+        api.field_lock_release(handle)?;
+        if !substate.accepts_delegated_stake {
+            // TODO: Should this be an Option returned instead similar to Account?
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(
+                    ValidatorError::ValidatorIsNotAcceptingDelegatedStake,
+                ),
+            ));
+        }
+
+        Self::stake_internal(xrd_bucket, api)
+    }
+
+    fn stake_internal<Y>(xrd_bucket: Bucket, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -527,35 +560,15 @@ impl ValidatorBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let rule = if accept_delegated_stake {
-            AccessRule::AllowAll
-        } else {
-            let rtn = api.actor_call_module_method(
-                OBJECT_HANDLE_SELF,
-                ObjectModuleId::AccessRules,
-                ACCESS_RULES_GET_ROLE_IDENT,
-                scrypto_encode(&AccessRulesGetRoleInput {
-                    module: ObjectModuleId::Main,
-                    role_key: RoleKey::new(OWNER_ROLE),
-                })
-                .unwrap(),
-            )?;
-            let rule: Option<AccessRule> = scrypto_decode(&rtn).unwrap();
-            rule.unwrap()
-        };
-
-        api.actor_call_module_method(
+        let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
-            ObjectModuleId::AccessRules,
-            ACCESS_RULES_UPDATE_ROLE_IDENT,
-            scrypto_encode(&AccessRulesUpdateRoleInput {
-                module: ObjectModuleId::Main,
-                role_key: RoleKey::new(STAKE_ROLE),
-                rule: Some(rule),
-                mutability: None,
-            })
-            .unwrap(),
+            ValidatorField::AcceptsDelegatedStakeFlag.into(),
+            LockFlags::MUTABLE,
         )?;
+        let mut substate: ValidatorAcceptsDelegatedStakeFlag = api.field_lock_read_typed(handle)?;
+        substate.accepts_delegated_stake = accept_delegated_stake;
+        api.field_lock_write_typed(handle, substate)?;
+        api.field_lock_release(handle)?;
 
         Runtime::emit_event(
             api,
@@ -991,21 +1004,11 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
     u16::MAX - stake_u16
 }
 
-pub const STAKE_ROLE: &'static str = "stake";
-
 struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = None;
-
-    fn role_definitions() -> BTreeMap<RoleKey, SecurifiedRoleEntry> {
-        btreemap!(
-            RoleKey::new(VALIDATOR_APPLY_EMISSION_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
-            RoleKey::new(VALIDATOR_APPLY_REWARD_AUTHORITY) => SecurifiedRoleEntry::Normal(RoleEntry::immutable(rule!(require(global_caller(CONSENSUS_MANAGER))))),
-            RoleKey::new(STAKE_ROLE) => SecurifiedRoleEntry::Owner { mutable: [SELF_ROLE].into(), mutable_mutable: false },
-        )
-    }
 }
 
 pub(crate) struct ValidatorCreator;
@@ -1049,7 +1052,6 @@ impl ValidatorCreator {
         Y: ClientApi<RuntimeError>,
     {
         let mut unstake_nft_auth = BTreeMap::new();
-
         unstake_nft_auth.insert(
             Mint,
             (rule!(require(global_caller(address))), rule!(deny_all)),
@@ -1113,14 +1115,21 @@ impl ValidatorCreator {
             already_unlocked_owner_stake_unit_amount: Decimal::zero(),
         };
 
+        let accepts_delegated_stake = ValidatorAcceptsDelegatedStakeFlag {
+            accepts_delegated_stake: false,
+        };
+
         let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
-            vec![scrypto_encode(&substate).unwrap()],
+            vec![
+                scrypto_encode(&substate).unwrap(),
+                scrypto_encode(&accepts_delegated_stake).unwrap(),
+            ],
         )?;
 
         let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
         let metadata = Metadata::create(api)?;
-        let royalty = ComponentRoyalty::create(RoyaltyConfig::default(), api)?;
+        let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
             btreemap!(

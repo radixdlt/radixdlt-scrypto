@@ -4,17 +4,15 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use lazy_static::lazy_static;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::runtime::Runtime;
 use num_traits::pow::Pow;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::{ClientApi, ObjectModuleId, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::FungibleResourceManagerField;
 use radix_engine_interface::*;
-use sbor::rust::vec::Vec;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
@@ -29,6 +27,8 @@ pub enum FungibleResourceManagerError {
     MaxMintAmountExceeded,
     InvalidDivisibility(u8),
     DropNonEmptyBucket,
+    NotMintable,
+    NotBurnable,
 }
 
 pub type FungibleResourceManagerDivisibilitySubstate = u8;
@@ -37,7 +37,7 @@ pub type FungibleResourceManagerTotalSupplySubstate = Decimal;
 pub fn verify_divisibility(divisibility: u8) -> Result<(), RuntimeError> {
     if divisibility > DIVISIBILITY_MAXIMUM {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::ResourceManagerError(
+            ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::InvalidDivisibility(divisibility),
             ),
         ));
@@ -49,16 +49,15 @@ pub fn verify_divisibility(divisibility: u8) -> Result<(), RuntimeError> {
 fn check_mint_amount(divisibility: u8, amount: Decimal) -> Result<(), RuntimeError> {
     if !check_fungible_amount(&amount, divisibility) {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::ResourceManagerError(FungibleResourceManagerError::InvalidAmount(
-                amount,
-                divisibility,
-            )),
+            ApplicationError::FungibleResourceManagerError(
+                FungibleResourceManagerError::InvalidAmount(amount, divisibility),
+            ),
         ));
     }
 
     if amount > *MAX_MINT_AMOUNT {
         return Err(RuntimeError::ApplicationError(
-            ApplicationError::ResourceManagerError(
+            ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::MaxMintAmountExceeded,
             ),
         ));
@@ -73,8 +72,8 @@ impl FungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
         track_total_supply: bool,
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        metadata: MetadataInit,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
@@ -82,10 +81,7 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let mut features = Vec::new();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
+        let features = features(track_total_supply, &access_rules);
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -111,8 +107,8 @@ impl FungibleResourceManagerBlueprint {
     pub(crate) fn create_with_initial_supply<Y>(
         track_total_supply: bool,
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        metadata: MetadataInit,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
@@ -138,8 +134,8 @@ impl FungibleResourceManagerBlueprint {
     pub(crate) fn create_with_initial_supply_and_address<Y>(
         track_total_supply: bool,
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        metadata: MetadataInit,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
         resource_address_reservation: GlobalAddressReservation,
         api: &mut Y,
@@ -149,10 +145,7 @@ impl FungibleResourceManagerBlueprint {
     {
         verify_divisibility(divisibility)?;
 
-        let mut features = Vec::new();
-        if track_total_supply {
-            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-        }
+        let features = features(track_total_supply, &access_rules);
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -183,6 +176,8 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_mintable(api)?;
+
         let divisibility = {
             let divisibility_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
@@ -202,11 +197,7 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
@@ -240,6 +231,8 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::assert_burnable(api)?;
+
         // Drop other bucket
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
@@ -253,11 +246,7 @@ impl FungibleResourceManagerBlueprint {
 
         // Update total supply
         // TODO: Could be further cleaned up by using event
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
@@ -282,7 +271,7 @@ impl FungibleResourceManagerBlueprint {
             Ok(())
         } else {
             Err(RuntimeError::ApplicationError(
-                ApplicationError::ResourceManagerError(
+                ApplicationError::FungibleResourceManagerError(
                     FungibleResourceManagerError::DropNonEmptyBucket,
                 ),
             ))
@@ -320,24 +309,9 @@ impl FungibleResourceManagerBlueprint {
             vec![
                 scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
                 scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                scrypto_encode(&VaultFrozenFlag::default()).unwrap(),
             ],
         )?;
-
-        // These roles define an extra filter on top of the roles defined on the resource manager
-        // The purpose of these roles is to enable freezing of individual vaults
-        // TODO: Figure out how to use SELF_ROLE rather than package
-        let mut roles = Roles::new();
-        roles.define_role(
-            RESOURCE_PACKAGE_ROLE,
-            RoleEntry::immutable(rule!(require(package_of_direct_caller(RESOURCE_PACKAGE)))),
-        );
-        roles.define_role(
-            VAULT_WITHDRAW_ROLE,
-            RoleEntry::new(AccessRule::AllowAll, [RESOURCE_PACKAGE_ROLE], true),
-        );
-        let roles = btreemap!(ObjectModuleId::Main => roles);
-        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?;
-        api.attach_access_rules(&vault_id, access_rules.0.as_node_id())?;
 
         Runtime::emit_event(api, VaultCreationEvent { vault_id })?;
 
@@ -364,11 +338,7 @@ impl FungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if api
-            .actor_get_info()?
-            .features
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
             let total_supply_handle = api.actor_lock_field(
                 OBJECT_HANDLE_SELF,
                 FungibleResourceManagerField::TotalSupply.into(),
@@ -379,5 +349,35 @@ impl FungibleResourceManagerBlueprint {
         } else {
             Ok(None)
         }
+    }
+
+    fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, MINT_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::FungibleResourceManagerError(
+                    FungibleResourceManagerError::NotMintable,
+                ),
+            ));
+        }
+
+        return Ok(());
+    }
+
+    fn assert_burnable<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, BURN_FEATURE)? {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::FungibleResourceManagerError(
+                    FungibleResourceManagerError::NotBurnable,
+                ),
+            ));
+        }
+
+        return Ok(());
     }
 }

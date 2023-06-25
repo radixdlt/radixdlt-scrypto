@@ -83,10 +83,9 @@ lazy_static! {
         known_enum!(
             m,
             enum AccessRuleNode {
-                Authority = 0;
-                ProofRule = 1;
-                AnyOf = 2;
-                AllOf = 3;
+                ProofRule = 0;
+                AnyOf = 1;
+                AllOf = 2;
             }
         );
 
@@ -113,7 +112,7 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum ResourceMethodAuthKey {
+            enum ResourceAction {
                 Mint = 0;
                 Burn = 1;
                 UpdateNonFungibleData = 2;
@@ -182,7 +181,7 @@ lazy_static! {
             enum OwnerRole {
                 None = 0;
                 Fixed = 1;
-                Updateable = 2;
+                Updatable = 2;
             }
         );
 

@@ -39,15 +39,18 @@ pub extern crate self as radix_engine_interface;
 /// The idea is that we can just include the current crate's prelude and avoid messing around with tons of includes.
 /// This makes refactors easier, and makes integration into the node less painful.
 pub mod prelude {
+    // Extern crates for the purposes of EG being visible from
+    // scrypto macros
+    pub extern crate radix_engine_common;
+
     // Exports from upstream crates
     pub use radix_engine_common::prelude::*;
 
     // Exports from this crate
     pub use crate::blueprints::resource::NonFungibleGlobalId;
-    pub use crate::data::manifest::model::*;
-    pub use crate::data::manifest::*;
-    pub use crate::data::scrypto::model::*;
-    pub use crate::data::scrypto::*;
     pub use crate::macros::*;
+    pub use crate::schema::*;
+    pub use crate::traits::*;
     pub use crate::types::*;
+    pub use crate::{access_and_or, access_rule_node, role_entry, roles2, rule};
 }

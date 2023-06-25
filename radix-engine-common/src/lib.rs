@@ -49,6 +49,7 @@ pub extern crate self as radix_engine_common;
 /// This makes refactors easier, and makes integration into the node less painful.
 pub mod prelude {
     // Exports from upstream libaries
+    pub use radix_engine_constants::*;
     pub use radix_engine_derive::{
         ManifestCategorize, ManifestDecode, ManifestEncode, ManifestSbor, ScryptoCategorize,
         ScryptoDecode, ScryptoEncode, ScryptoEvent, ScryptoSbor,
@@ -59,13 +60,22 @@ pub mod prelude {
     // Exports from this crate
     pub use super::address::*;
     pub use super::crypto::*;
-    pub use super::data::manifest::*;
-    pub use super::data::scrypto::model::*;
-    pub use super::data::scrypto::*;
+    pub use super::data::manifest::prelude::*;
+    pub use super::data::scrypto::prelude::*;
     pub use super::macros::*;
+    pub use super::math::*;
     pub use super::native_addresses::*;
     pub use super::network::*;
     pub use super::time::*;
     pub use super::types::*;
-    pub use crate::{dec, define_wrapped_hash, manifest_args, pdec, scrypto_args};
+    pub use crate::{
+        dec, define_wrapped_hash, manifest_args, pdec, scrypto_args, to_manifest_value_and_unwrap,
+    };
+}
+
+pub(crate) mod internal_prelude {
+    pub use super::prelude::*;
+    pub use sbor::representations::*;
+    pub use sbor::traversal::*;
+    pub use sbor::*;
 }

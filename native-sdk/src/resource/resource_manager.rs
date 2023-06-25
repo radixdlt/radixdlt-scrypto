@@ -21,7 +21,7 @@ impl ResourceManager {
         track_total_supply: bool,
         divisibility: u8,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -33,7 +33,7 @@ impl ResourceManager {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateInput {
                 track_total_supply,
-                metadata,
+                metadata: metadata.into(),
                 access_rules,
                 divisibility,
             })
@@ -49,7 +49,7 @@ impl ResourceManager {
         divisibility: u8,
         amount: Decimal,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
@@ -61,7 +61,7 @@ impl ResourceManager {
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                 track_total_supply,
-                metadata,
+                metadata: metadata.into(),
                 access_rules,
                 divisibility,
                 initial_supply: amount,
@@ -77,7 +77,7 @@ impl ResourceManager {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -92,7 +92,7 @@ impl ResourceManager {
                 id_type,
                 track_total_supply,
                 non_fungible_schema,
-                metadata,
+                metadata: metadata.into(),
                 access_rules,
             })
             .unwrap(),
@@ -105,7 +105,7 @@ impl ResourceManager {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: BTreeMap<String, MetadataValue>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         address_reservation: GlobalAddressReservation,
         api: &mut Y,
     ) -> Result<Self, E>
@@ -120,7 +120,7 @@ impl ResourceManager {
                 id_type,
                 track_total_supply,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),
-                metadata,
+                metadata: metadata.into(),
                 access_rules,
                 resource_address: address_reservation,
             })

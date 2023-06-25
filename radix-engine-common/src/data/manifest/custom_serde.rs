@@ -1,10 +1,7 @@
 use super::converter::*;
 use super::model::*;
 use super::*;
-use crate::*;
-use sbor::representations::*;
-use sbor::rust::prelude::*;
-use sbor::traversal::*;
+use crate::internal_prelude::*;
 
 impl SerializableCustomExtension for ManifestCustomExtension {
     fn map_value_for_serialization<'s, 'de, 'a, 't, 's1, 's2>(
@@ -15,7 +12,7 @@ impl SerializableCustomExtension for ManifestCustomExtension {
         let (serialization, include_type_tag_in_simple_mode) = match custom_value.0 {
             ManifestCustomValue::Address(value) => match value {
                 ManifestAddress::Static(node_id) => {
-                    if let Some(encoder) = context.custom_context.bech32_encoder {
+                    if let Some(encoder) = context.custom_context.address_bech32_encoder {
                         if let Ok(bech32) = encoder.encode(node_id.as_ref()) {
                             (SerializableType::String(bech32), false)
                         } else {
@@ -95,7 +92,7 @@ impl SerializableCustomExtension for ManifestCustomExtension {
 mod tests {
     use super::*;
     use crate::address::test_addresses::*;
-    use crate::address::Bech32Encoder;
+    use crate::address::AddressBech32Encoder;
     use crate::types::*;
     use sbor::rust::vec;
     use serde::Serialize;
@@ -152,7 +149,7 @@ mod tests {
         let value = ManifestCustomValue::Address(ManifestAddress::Static(
             FUNGIBLE_RESOURCE.as_node_id().clone(),
         ));
-        let encoder = Bech32Encoder::for_simulator();
+        let encoder = AddressBech32Encoder::for_simulator();
 
         let expected_natural = json!(FUNGIBLE_RESOURCE_SIM_ADDRESS);
         let expected_programmatic = json!({
@@ -167,7 +164,7 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")] // Workaround for VS Code "Run Test" feature
     fn test_complex_encoding_with_network() {
-        let encoder = Bech32Encoder::for_simulator();
+        let encoder = AddressBech32Encoder::for_simulator();
         let value = (
             ManifestValue::Custom {
                 value: ManifestCustomValue::Address(ManifestAddress::Static(

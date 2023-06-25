@@ -6,6 +6,7 @@ use crate::types::*;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
+use crate::vm::wasm::DEFAULT_CACHE_SIZE;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
@@ -614,7 +615,7 @@ impl WasmerModule {
             runtime.emit_event(event_name, event_data)
         }
 
-        fn log_message(
+        fn emit_log(
             env: &WasmerInstanceEnv,
             level_ptr: u32,
             level_len: u32,
@@ -626,7 +627,7 @@ impl WasmerModule {
             let level = read_memory(&instance, level_ptr, level_len)?;
             let message = read_memory(&instance, message_ptr, message_len)?;
 
-            runtime.log_message(level, message)
+            runtime.emit_log(level, message)
         }
 
         fn panic(
@@ -702,7 +703,7 @@ impl WasmerModule {
                 ASSERT_ACCESS_RULE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), assert_access_rule),
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
                 EMIT_EVENT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_event),
-                LOG_MESSAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), log_message),
+                EMIT_LOG_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), emit_log),
                 PANIC_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), panic),
                 GET_TRANSACTION_HASH_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_transaction_hash),
                 GENERATE_RUID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), generate_ruid),
@@ -780,13 +781,13 @@ impl WasmInstance for WasmerInstance {
 
 #[derive(Debug, Clone)]
 pub struct EngineOptions {
-    max_cache_size_bytes: usize,
+    max_cache_size: usize,
 }
 
 impl Default for WasmerEngine {
     fn default() -> Self {
         Self::new(EngineOptions {
-            max_cache_size_bytes: 200 * 1024 * 1024,
+            max_cache_size: DEFAULT_CACHE_SIZE,
         })
     }
 }
@@ -797,20 +798,20 @@ impl WasmerEngine {
 
         #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
-            NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
+            NonZeroUsize::new(options.max_cache_size).unwrap(),
         ));
         #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
             .weigher(
-                |_metered_code_key: &MeteredCodeKey, value: &Arc<WasmerModule>| -> u32 {
-                    // Approximate the module entry size by the code size
-                    value.code_size_bytes.try_into().unwrap_or(u32::MAX)
+                |_metered_code_key: &MeteredCodeKey, _value: &Arc<WasmerModule>| -> u32 {
+                    // No sophisticated weighing mechanism, just keep a fixed size cache
+                    1u32
                 },
             )
-            .max_capacity(options.max_cache_size_bytes as u64)
+            .max_capacity(options.max_cache_size as u64)
             .build();
         #[cfg(feature = "radix_engine_fuzzing")]
-        let modules_cache = options.max_cache_size_bytes;
+        let modules_cache = options.max_cache_size;
 
         Self {
             store: Store::new(&Universal::new(compiler).engine()),

@@ -19,6 +19,7 @@ use crate::kernel::call_frame::{
 };
 use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
+use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::limits::TransactionLimitsError;
@@ -304,7 +305,7 @@ pub enum PayloadValidationAgainstSchemaError {
     KeyValueStoreKeyDoesNotExist,
     KeyValueStoreValueDoesNotExist,
     EventDoesNotExist(String),
-    SchemaValidationError(String),
+    PayloadValidationError(String),
     InstanceSchemaDoesNotExist,
     SchemaNotFound,
 }
@@ -424,6 +425,8 @@ pub enum ApplicationError {
 
     MetadataError(MetadataPanicError),
 
+    ComponentRoyaltyError(ComponentRoyaltyError),
+
     //===================
     // Blueprint errors
     //===================
@@ -435,7 +438,7 @@ pub enum ApplicationError {
 
     ValidatorError(ValidatorError),
 
-    ResourceManagerError(FungibleResourceManagerError),
+    FungibleResourceManagerError(FungibleResourceManagerError),
 
     NonFungibleResourceManagerError(NonFungibleResourceManagerError),
 
@@ -482,7 +485,7 @@ impl From<ConsensusManagerError> for ApplicationError {
 
 impl From<FungibleResourceManagerError> for ApplicationError {
     fn from(value: FungibleResourceManagerError) -> Self {
-        Self::ResourceManagerError(value)
+        Self::FungibleResourceManagerError(value)
     }
 }
 

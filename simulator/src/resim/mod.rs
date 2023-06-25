@@ -83,7 +83,6 @@ use radix_engine_store_interface::{
     interface::SubstateDatabase,
 };
 use radix_engine_stores::rocks_db::RocksdbSubstateStore;
-use sbor::rust::prelude::*;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -198,7 +197,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
     );
 
     if print_receipt {
-        let encoder = Bech32Encoder::for_simulator();
+        let encoder = AddressBech32Encoder::for_simulator();
         let display_context = TransactionReceiptDisplayContextBuilder::new()
             .encoder(&encoder)
             .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
@@ -269,7 +268,7 @@ pub fn handle_manifest<O: std::io::Write>(
             );
 
             if print_receipt {
-                let encoder = Bech32Encoder::for_simulator();
+                let encoder = AddressBech32Encoder::for_simulator();
                 let display_context = TransactionReceiptDisplayContextBuilder::new()
                     .encoder(&encoder)
                     .schema_lookup_callback(|event_type_identifier: &EventTypeIdentifier| {
@@ -522,7 +521,8 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
         )
         .unwrap_or_else(|| ConsensusManagerSubstate {
             epoch: Epoch::zero(),
-            epoch_start_milli: 0,
+            effective_epoch_start_milli: 0,
+            actual_epoch_start_milli: 0,
             round: Round::zero(),
             current_leader: Some(0),
         });

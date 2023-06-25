@@ -1,10 +1,6 @@
-use crate::data::scrypto::model::*;
-use crate::data::scrypto::*;
-use crate::math::{Decimal, PreciseDecimal};
+use crate::internal_prelude::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use sbor::value_kind::*;
-use sbor::*;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq)]

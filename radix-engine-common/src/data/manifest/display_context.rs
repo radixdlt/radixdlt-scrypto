@@ -1,12 +1,12 @@
 use super::model::*;
-use crate::address::Bech32Encoder;
+use crate::address::AddressBech32Encoder;
 use sbor::rust::prelude::*;
 
 /// Note - this is quite similar to ManifestDecompilationDisplayContext
 /// - except this is used with formatting of an encoded payload, rather than a ManifestValue itself
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ManifestValueDisplayContext<'a> {
-    pub bech32_encoder: Option<&'a Bech32Encoder>,
+    pub address_bech32_encoder: Option<&'a AddressBech32Encoder>,
     pub bucket_names: Option<&'a NonIterMap<ManifestBucket, String>>,
     pub proof_names: Option<&'a NonIterMap<ManifestProof, String>>,
     pub address_reservation_names: Option<&'a NonIterMap<ManifestAddressReservation, String>>,
@@ -18,22 +18,22 @@ impl<'a> ManifestValueDisplayContext<'a> {
         Self::default()
     }
 
-    pub fn with_optional_bech32(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+    pub fn with_optional_bech32(address_bech32_encoder: Option<&'a AddressBech32Encoder>) -> Self {
         Self {
-            bech32_encoder,
+            address_bech32_encoder,
             ..Default::default()
         }
     }
 
     pub fn with_bech32_and_names(
-        bech32_encoder: Option<&'a Bech32Encoder>,
+        address_bech32_encoder: Option<&'a AddressBech32Encoder>,
         bucket_names: &'a NonIterMap<ManifestBucket, String>,
         proof_names: &'a NonIterMap<ManifestProof, String>,
         address_reservation_names: &'a NonIterMap<ManifestAddressReservation, String>,
         address_names: &'a NonIterMap<u32, String>,
     ) -> Self {
         Self {
-            bech32_encoder,
+            address_bech32_encoder,
             bucket_names: Some(bucket_names),
             proof_names: Some(proof_names),
             address_reservation_names: Some(address_reservation_names),
@@ -65,13 +65,13 @@ impl<'a> ManifestValueDisplayContext<'a> {
     }
 }
 
-impl<'a> Into<ManifestValueDisplayContext<'a>> for &'a Bech32Encoder {
+impl<'a> Into<ManifestValueDisplayContext<'a>> for &'a AddressBech32Encoder {
     fn into(self) -> ManifestValueDisplayContext<'a> {
         ManifestValueDisplayContext::with_optional_bech32(Some(self))
     }
 }
 
-impl<'a> Into<ManifestValueDisplayContext<'a>> for Option<&'a Bech32Encoder> {
+impl<'a> Into<ManifestValueDisplayContext<'a>> for Option<&'a AddressBech32Encoder> {
     fn into(self) -> ManifestValueDisplayContext<'a> {
         ManifestValueDisplayContext::with_optional_bech32(self)
     }

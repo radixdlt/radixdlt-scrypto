@@ -753,7 +753,7 @@ impl WasmModule {
                                 }
                             }
                         }
-                        LOG_MESSAGE_FUNCTION_NAME => {
+                        EMIT_LOG_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -1086,6 +1086,7 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
+    use radix_engine_interface::blueprints::package::BlueprintType;
     use radix_engine_interface::schema::{
         BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
         FunctionSchemaInit, TypeRef,
@@ -1248,9 +1249,9 @@ mod tests {
         blueprints.insert(
             "Test".to_string(),
             BlueprintDefinitionInit {
-                outer_blueprint: None,
-                dependencies: btreeset!(),
+                blueprint_type: BlueprintType::default(),
                 feature_set: btreeset!(),
+                dependencies: btreeset!(),
 
                 schema: BlueprintSchemaInit {
                     generics: vec![],

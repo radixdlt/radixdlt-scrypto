@@ -4,12 +4,13 @@ use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::kernel::call_frame::LockSubstateError;
 use radix_engine::kernel::heap::HeapLockSubstateError;
 use radix_engine::track::interface::AcquireLockError;
-use radix_engine::transaction::TransactionReceipt;
+use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::*;
+use transaction::prelude::PreviewFlags;
 use utils::ContextualDisplay;
 
 fn run_manifest<F>(f: F) -> TransactionReceipt
@@ -66,7 +67,10 @@ fn should_be_aborted_when_loan_repaid() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let duration = start.elapsed();
     println!("Time elapsed is: {:?}", duration);
-    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
+    println!(
+        "{}",
+        receipt.display(&AddressBech32Encoder::for_simulator())
+    );
     receipt.expect_commit_failure();
 }
 
@@ -477,4 +481,92 @@ fn test_contingent_fee_accounting_failure() {
         account1_balance - effective_price * summary.execution_cost_sum
     );
     assert_eq!(account2_new_balance, account2_balance);
+}
+
+#[test]
+fn locked_fees_are_correct_in_execution_trace() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_account(false);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account, dec!("4.676"))
+        .build();
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        vec![public_key.into()],
+        0,
+        PreviewFlags::default(),
+    );
+
+    // Assert
+    let commit = receipt.expect_commit_success();
+    assert_eq!(
+        commit.execution_trace.fee_locks,
+        FeeLocks {
+            lock: dec!("4.676"),
+            contingent_lock: Decimal::ZERO
+        }
+    )
+}
+
+#[test]
+fn multiple_locked_fees_are_correct_in_execution_trace() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key1, _, account1) = test_runner.new_account(false);
+    let (public_key2, _, account2) = test_runner.new_account(false);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account1, dec!("4.676"))
+        .lock_fee(account2, dec!("2.180"))
+        .build();
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        vec![public_key1.into(), public_key2.into()],
+        0,
+        PreviewFlags::default(),
+    );
+
+    // Assert
+    let commit = receipt.expect_commit_success();
+    assert_eq!(
+        commit.execution_trace.fee_locks,
+        FeeLocks {
+            lock: dec!("6.856"),
+            contingent_lock: Decimal::ZERO
+        }
+    )
+}
+
+#[test]
+fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key1, _, account1) = test_runner.new_account(false);
+    let (public_key2, _, account2) = test_runner.new_account(false);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(account1, dec!("4.676"))
+        .lock_contingent_fee(account2, dec!("2.180"))
+        .build();
+    let receipt = test_runner.preview_manifest(
+        manifest,
+        vec![public_key1.into(), public_key2.into()],
+        0,
+        PreviewFlags::default(),
+    );
+
+    // Assert
+    let commit = receipt.expect_commit_success();
+    assert_eq!(
+        commit.execution_trace.fee_locks,
+        FeeLocks {
+            lock: dec!("4.676"),
+            contingent_lock: dec!("2.180")
+        }
+    )
 }

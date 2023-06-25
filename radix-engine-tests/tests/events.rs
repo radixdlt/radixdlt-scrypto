@@ -7,7 +7,6 @@ use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{
     ApplicationError, PayloadValidationAgainstSchemaError, RuntimeError, SystemError,
 };
-use radix_engine::system::node_modules::access_rules::UpdateRoleEvent;
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -18,7 +17,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use scrypto::prelude::Mutability::LOCKED;
-use scrypto::prelude::{AccessRule, FromPublicKey, ResourceMethodAuthKey};
+use scrypto::prelude::{AccessRule, FromPublicKey, ResourceAction};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -284,9 +283,9 @@ fn vault_non_fungible_recall_emits_correct_events() {
     let (_, _, account) = test_runner.new_account(false);
     let (recallable_resource_address, non_fungible_local_id) = {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Recall, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Recall, (rule!(allow_all), LOCKED));
 
         let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
 
@@ -391,7 +390,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             false,
             18,
             Default::default(),
-            BTreeMap::<ResourceMethodAuthKey, (AccessRule, AccessRule)>::new(),
+            BTreeMap::<ResourceAction, (AccessRule, AccessRule)>::new(),
             Some(1.into()),
         )
         .call_method(
@@ -448,10 +447,10 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Burn, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Mint, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Burn, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
@@ -527,10 +526,10 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceMethodAuthKey::Burn, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Mint, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceAction::Burn, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
@@ -896,7 +895,7 @@ fn validator_staking_emits_correct_event() {
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .withdraw_from_account(account, RADIX_TOKEN, 100.into())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
-            builder.stake_validator(validator_address, bucket)
+            builder.stake_validator_as_owner(validator_address, bucket)
         })
         .call_method(
             account,
@@ -1331,11 +1330,10 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         5 Events:
         1. Vault lock fee event
         2. Withdraw event
-        3. AccessRule set rule
-        4. Validator update delegation state
-        5. Deposit event
+        3. Validator update delegation state
+        4. Deposit event
          */
-        assert_eq!(events.len(), 5);
+        assert_eq!(events.len(), 4);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1347,16 +1345,6 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
             _ => false,
         });
         assert!(match events.get(2) {
-            Some((
-                event_identifier @ EventTypeIdentifier(
-                    Emitter::Method(_, ObjectModuleId::AccessRules),
-                    ..,
-                ),
-                ..,
-            )) if test_runner.is_event_name_equal::<UpdateRoleEvent>(event_identifier) => true,
-            _ => false,
-        });
-        assert!(match events.get(3) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1387,7 +1375,7 @@ fn setting_metadata_emits_correct_events() {
 
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
-        .set_metadata(resource_address.into(), "key".into(), MetadataValue::I32(1))
+        .set_metadata(resource_address.into(), "key", MetadataValue::I32(1))
         .build();
 
     // Act
@@ -1467,13 +1455,13 @@ fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -
 
 fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress {
     let access_rules = [
-        ResourceMethodAuthKey::Burn,
-        ResourceMethodAuthKey::Deposit,
-        ResourceMethodAuthKey::Withdraw,
-        ResourceMethodAuthKey::Mint,
-        ResourceMethodAuthKey::Burn,
-        ResourceMethodAuthKey::UpdateMetadata,
-        ResourceMethodAuthKey::UpdateNonFungibleData,
+        ResourceAction::Burn,
+        ResourceAction::Deposit,
+        ResourceAction::Withdraw,
+        ResourceAction::Mint,
+        ResourceAction::Burn,
+        ResourceAction::UpdateMetadata,
+        ResourceAction::UpdateNonFungibleData,
     ]
     .into_iter()
     .map(|method| (method, (AccessRule::AllowAll, AccessRule::AllowAll)))

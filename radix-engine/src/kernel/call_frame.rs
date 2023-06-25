@@ -314,8 +314,8 @@ impl<L: Clone> CallFrame<L> {
                 if let Some(global_address) = global_address {
                     additional_global_refs.push(global_address.clone());
                 }
-                if let Some(outer_global_object) = object_info.outer_object {
-                    additional_global_refs.push(outer_global_object.clone());
+                if let ObjectBlueprintInfo::Inner { outer_object } = object_info.blueprint_info {
+                    additional_global_refs.push(outer_object.clone());
                 }
                 if let Some(instance_context) = instance_context {
                     additional_global_refs.push(instance_context.outer_object.clone());
@@ -452,7 +452,7 @@ impl<L: Clone> CallFrame<L> {
             store_handle = Some(handle);
             store_access = store_access_info;
             let (value, read_store_access_info) = store.read_substate(handle);
-            store_access.push(&read_store_access_info);
+            store_access.extend(&read_store_access_info);
             value
         };
 
@@ -532,7 +532,7 @@ impl<L: Clone> CallFrame<L> {
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate = if let Some(handle) = substate_lock.store_handle {
                 let (substate, read_store_access) = store.read_substate(handle);
-                store_access.push(&read_store_access);
+                store_access.extend(&read_store_access);
                 substate
             } else {
                 heap.get_substate(node_id, partition_num, substate_key)
@@ -638,7 +638,7 @@ impl<L: Clone> CallFrame<L> {
 
         // Release track lock
         if let Some(handle) = substate_lock.store_handle {
-            store_access.push(&store.release_lock(handle));
+            store_access.extend(&store.release_lock(handle));
         }
 
         Ok(store_access)

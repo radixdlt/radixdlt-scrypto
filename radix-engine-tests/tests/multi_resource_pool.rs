@@ -1,17 +1,53 @@
+use radix_engine::errors::SystemError;
 use radix_engine::{
     blueprints::pool::multi_resource_pool::*,
     errors::{ApplicationError, RuntimeError},
     transaction::{BalanceChange, TransactionReceipt},
     types::*,
 };
+use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
-use scrypto::prelude::*;
 use scrypto_unit::{is_auth_error, TestRunner};
 use transaction::prelude::{ManifestBuilder, TransactionManifestV1};
 
 #[test]
 fn multi_resource_pool_can_be_instantiated() {
     TestEnvironment::<3>::new([18, 18, 18]);
+}
+
+pub fn cannot_set_locked_metadata(key: &str, expect_success: bool) {
+    let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
+    let receipt = test_runner.set_metadata(key, MetadataValue::U8(2u8), true);
+    if expect_success {
+        receipt.expect_commit_success();
+    } else {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+            )
+        });
+    }
+}
+
+#[test]
+pub fn cannot_set_pool_vault_number_metadata() {
+    cannot_set_locked_metadata("pool_vault_number", false);
+}
+
+#[test]
+pub fn cannot_set_pool_resources_metadata() {
+    cannot_set_locked_metadata("pool_resources", false);
+}
+
+#[test]
+pub fn cannot_set_pool_unit_metadata() {
+    cannot_set_locked_metadata("pool_unit", false);
+}
+
+#[test]
+pub fn can_set_some_arbitrary_data() {
+    cannot_set_locked_metadata("some_other_key", true);
 }
 
 #[test]
@@ -596,6 +632,18 @@ impl<const N: usize> TestEnvironment<N> {
             account_public_key: public_key.into(),
             account_component_address: account,
         }
+    }
+
+    fn set_metadata<S: ToString>(
+        &mut self,
+        key: S,
+        value: MetadataValue,
+        sign: bool,
+    ) -> TransactionReceipt {
+        let manifest = ManifestBuilder::new()
+            .set_metadata(self.pool_component_address.into(), key, value)
+            .build();
+        self.execute_manifest(manifest, sign)
     }
 
     pub fn contribute(

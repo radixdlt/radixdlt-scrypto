@@ -1,10 +1,10 @@
 use arbitrary::{Arbitrary, Unstructured};
-use radix_engine::types::blueprints::package::*;
+use radix_engine_interface::blueprints::package::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::{
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT
 };
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::account::*;
@@ -668,8 +668,18 @@ impl TxFuzzer {
                         args: manifest_args!(method, amount),
                     })
                 }
-                // SetMetadata
+                // LockComponentRoyalty
                 46 => {
+                    let method = String::arbitrary(&mut unstructured).unwrap();
+
+                    Some(InstructionV1::CallRoyaltyMethod {
+                        address: component_address.into(),
+                        method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
+                        args: manifest_args!(method),
+                    })
+                }
+                // SetMetadata
+                47 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
@@ -681,12 +691,22 @@ impl TxFuzzer {
                         args: manifest_args!(key, value),
                     })
                 }
-                // TakeAllFromWorktop
-                46 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
-                // TakeAllFromWorktop
-                47 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
-                // TakeFromWorktop
+                // LockMetadata
                 48 => {
+                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let key = String::arbitrary(&mut unstructured).unwrap();
+
+                    Some(InstructionV1::CallMetadataMethod {
+                        address: address.into(),
+                        method_name: METADATA_LOCK_IDENT.to_string(),
+                        args: manifest_args!(key),
+                    })
+                }
+                // TakeAllFromWorktop
+                49 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
+                // TakeFromWorktop
+                50 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::TakeFromWorktop {
@@ -695,12 +715,12 @@ impl TxFuzzer {
                     })
                 }
                 // TakeNonFungiblesFromWorktop
-                49 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
+                51 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
                     ids: non_fungible_ids.clone(),
                     resource_address,
                 }),
                 // UnfreezeVault
-                50 => {
+                52 => {
                     let vault_id = {
                         let vaults = self
                             .runner
@@ -724,16 +744,91 @@ impl TxFuzzer {
                         Err(_) => None,
                     }
                 }
-                // UpdateRole
-                51 => {
+                // SetOwnerRole
+                53 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let input = AccessRulesUpdateRoleInput::arbitrary(&mut unstructured).unwrap();
+                    let input = AccessRulesSetOwnerRoleInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
                             address: address.into(),
-                            method_name: ACCESS_RULES_UPDATE_ROLE_IDENT.to_string(),
+                            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
+                }
+                // LockRole
+                54 => {
+                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let input = AccessRulesLockOwnerRoleInput::arbitrary(&mut unstructured).unwrap();
+
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                            address: address.into(),
+                            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
+                }
+                // SetAndLockRole
+                55 => {
+                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let input = AccessRulesSetAndLockOwnerRoleInput::arbitrary(&mut unstructured).unwrap();
+
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                            address: address.into(),
+                            method_name: ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
+                }
+                // SetRole
+                56 => {
+                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let input = AccessRulesSetRoleInput::arbitrary(&mut unstructured).unwrap();
+
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                            address: address.into(),
+                            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
+                }
+                // LockRole
+                57 => {
+                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let input = AccessRulesLockRoleInput::arbitrary(&mut unstructured).unwrap();
+
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                            address: address.into(),
+                            method_name: ACCESS_RULES_LOCK_ROLE_IDENT.to_string(),
+                            args,
+                        }),
+                        Err(_) => None,
+                    }
+                }
+                // SetAndLockRole
+                58 => {
+                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
+                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
+                    let input = AccessRulesSetAndLockRoleInput::arbitrary(&mut unstructured).unwrap();
+
+                    match to_manifest_value(&input) {
+                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                            address: address.into(),
+                            method_name: ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT.to_string(),
                             args,
                         }),
                         Err(_) => None,

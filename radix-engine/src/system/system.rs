@@ -1,7 +1,7 @@
 use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
-use super::system_modules::costing::CostingReason;
+use super::system_modules::costing::{CostingReason, FIXED_HIGH_FEE};
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
     InvalidModuleSet, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
@@ -177,7 +177,7 @@ where
                 )
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                        PayloadValidationAgainstSchemaError::SchemaValidationError(
+                        PayloadValidationAgainstSchemaError::PayloadValidationError(
                             err.error_message(&schema),
                         ),
                     ))
@@ -208,7 +208,7 @@ where
                 )
                 .map_err(|err| {
                     RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                        PayloadValidationAgainstSchemaError::SchemaValidationError(
+                        PayloadValidationAgainstSchemaError::PayloadValidationError(
                             err.error_message(&instance_schema.schema),
                         ),
                     ))
@@ -240,33 +240,14 @@ where
     fn validate_instance_schema_and_state(
         &mut self,
         blueprint_id: &BlueprintId,
-        features: &BTreeSet<String>,
+        blueprint_interface: &BlueprintInterface,
+        blueprint_features: &BTreeSet<String>,
+        outer_blueprint_features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
-    ) -> Result<
-        (
-            Option<String>,
-            BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>,
-        ),
-        RuntimeError,
-    > {
-        let blueprint_interface = self.get_blueprint_default_interface(
-            blueprint_id.package_address,
-            blueprint_id.blueprint_name.as_str(),
-        )?;
-
-        // Validate features
-        {
-            for feature in features {
-                if !blueprint_interface.features.contains(feature) {
-                    return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
-                        feature.to_string(),
-                    )));
-                }
-            }
-        }
-
+    ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError>
+    {
         // Validate instance schema
         {
             if let Some(instance_schema) = instance_schema {
@@ -305,10 +286,18 @@ where
 
                 for (i, field) in fields.iter().enumerate() {
                     // Check for any feature conditions
-                    if let Condition::IfFeature(feature) = &field_schemas[i].condition {
-                        if !features.contains(feature) {
-                            continue;
+                    match &field_schemas[i].condition {
+                        Condition::IfFeature(feature) => {
+                            if !blueprint_features.contains(feature) {
+                                continue;
+                            }
                         }
+                        Condition::IfOuterFeature(feature) => {
+                            if !outer_blueprint_features.contains(feature) {
+                                continue;
+                            }
+                        }
+                        Condition::Always => {}
                     }
 
                     let pointer = blueprint_interface
@@ -332,11 +321,20 @@ where
 
                 for (i, field) in fields.into_iter().enumerate() {
                     // Check for any feature conditions
-                    if let Condition::IfFeature(feature) = &field_schemas[i].condition {
-                        if !features.contains(feature) {
-                            continue;
+                    match &field_schemas[i].condition {
+                        Condition::IfFeature(feature) => {
+                            if !blueprint_features.contains(feature) {
+                                continue;
+                            }
                         }
+                        Condition::IfOuterFeature(feature) => {
+                            if !outer_blueprint_features.contains(feature) {
+                                continue;
+                            }
+                        }
+                        Condition::Always => {}
                     }
+
                     partition.insert(
                         SubstateKey::Field(i as u8),
                         IndexedScryptoValue::from_vec(field)
@@ -423,9 +421,7 @@ where
             }
         }
 
-        let parent_blueprint = blueprint_interface.outer_blueprint.clone();
-
-        Ok((parent_blueprint, partitions))
+        Ok(partitions)
     }
 
     pub fn get_schema(
@@ -587,9 +583,9 @@ where
                 },
                 version: BlueprintVersion::default(),
 
-                outer_object: None,
+                blueprint_info: ObjectBlueprintInfo::default(),
+                features: btreeset!(MINT_FEATURE.to_string(), BURN_FEATURE.to_string(),),
                 instance_schema: None,
-                features: btreeset!(),
             }));
         } else if node_id.eq(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
             || node_id.eq(ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
@@ -610,9 +606,9 @@ where
                 },
                 version: BlueprintVersion::default(),
 
-                outer_object: None,
-                instance_schema: None,
+                blueprint_info: ObjectBlueprintInfo::default(),
                 features: btreeset!(),
+                instance_schema: None,
             }));
         }
 
@@ -639,39 +635,69 @@ where
 
     fn new_object_internal(
         &mut self,
-        blueprint: &BlueprintId,
+        blueprint_id: &BlueprintId,
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
     ) -> Result<NodeId, RuntimeError> {
-        let features: BTreeSet<String> = features.into_iter().map(|s| s.to_string()).collect();
+        let blueprint_interface = self.get_blueprint_default_interface(
+            blueprint_id.package_address,
+            blueprint_id.blueprint_name.as_str(),
+        )?;
+        let expected_outer_blueprint = blueprint_interface.blueprint_type.clone();
 
-        let (expected_blueprint_parent, user_substates) = self.validate_instance_schema_and_state(
-            blueprint,
-            &features,
+        let (blueprint_info, object_features, outer_object_features) =
+            if let BlueprintType::Inner { outer_blueprint } = &expected_outer_blueprint {
+                match instance_context {
+                    Some(context) if context.outer_blueprint.eq(outer_blueprint) => {
+                        let outer_object_info =
+                            self.get_object_info(context.outer_object.as_node_id())?;
+
+                        (
+                            ObjectBlueprintInfo::Inner {
+                                outer_object: context.outer_object,
+                            },
+                            BTreeSet::new(),
+                            outer_object_info.get_features(),
+                        )
+                    }
+                    _ => {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::InvalidChildObjectCreation,
+                        ));
+                    }
+                }
+            } else {
+                let features: BTreeSet<String> =
+                    features.into_iter().map(|s| s.to_string()).collect();
+
+                // Validate features
+                for feature in &features {
+                    if !blueprint_interface.feature_set.contains(feature) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
+                            feature.to_string(),
+                        )));
+                    }
+                }
+
+                (ObjectBlueprintInfo::Outer, features, BTreeSet::new())
+            };
+
+        let user_substates = self.validate_instance_schema_and_state(
+            blueprint_id,
+            &blueprint_interface,
+            &object_features,
+            &outer_object_features,
             &instance_schema,
             fields,
             kv_entries,
         )?;
 
-        let outer_object = if let Some(parent) = &expected_blueprint_parent {
-            match instance_context {
-                Some(context) if context.outer_blueprint.eq(parent) => Some(context.outer_object),
-                _ => {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidChildObjectCreation,
-                    ));
-                }
-            }
-        } else {
-            None
-        };
-
         let node_id = self.api.kernel_allocate_node_id(
             IDAllocation::Object {
-                blueprint_id: blueprint.clone(),
+                blueprint_id: blueprint_id.clone(),
                 global: false,
             }
             .entity_type(),
@@ -682,12 +708,12 @@ where
                 TypeInfoSubstate::Object(ObjectInfo {
                     global:false,
 
-                    blueprint_id: blueprint.clone(),
+                    blueprint_id: blueprint_id.clone(),
                     version: BlueprintVersion::default(),
 
-                    outer_object,
+                    blueprint_info,
+                    features: object_features,
                     instance_schema,
-                    features,
                 })
             ),
         );
@@ -736,7 +762,7 @@ where
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
         match actor_object_type {
             ActorObjectType::OuterObject => {
-                let address = method.module_object_info.outer_object.unwrap();
+                let address = method.module_object_info.get_outer_object();
                 let info = self.get_object_info(address.as_node_id())?;
 
                 let blueprint_interface = self.get_blueprint_default_interface(
@@ -785,13 +811,26 @@ where
                 ))
             })?;
 
-        if let Condition::IfFeature(feature) = field_schema.condition {
-            if !info.features.contains(&feature) {
-                return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                    info.blueprint_id.clone(),
-                    field_index,
-                )));
+        match field_schema.condition {
+            Condition::IfFeature(feature) => {
+                if !self.is_feature_enabled(&node_id, feature.as_str())? {
+                    return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                        info.blueprint_id.clone(),
+                        field_index,
+                    )));
+                }
             }
+            Condition::IfOuterFeature(feature) => {
+                if !self
+                    .is_feature_enabled(info.get_outer_object().as_node_id(), feature.as_str())?
+                {
+                    return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
+                        info.blueprint_id.clone(),
+                        field_index,
+                    )));
+                }
+            }
+            Condition::Always => {}
         }
 
         let pointer = field_schema.field;
@@ -1131,6 +1170,17 @@ where
         let actor = self.api.kernel_get_system_state().current;
         Ok(actor.fn_identifier())
     }
+
+    pub fn is_feature_enabled(
+        &mut self,
+        node_id: &NodeId,
+        feature: &str,
+    ) -> Result<bool, RuntimeError> {
+        let object_info = self.get_object_info(node_id)?;
+        let enabled = object_info.features.contains(feature);
+
+        Ok(enabled)
+    }
 }
 
 impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1226,33 +1276,6 @@ where
             fields,
             kv_entries,
         )
-    }
-
-    fn attach_access_rules(
-        &mut self,
-        node_id: &NodeId,
-        access_rules_node_id: &NodeId,
-    ) -> Result<(), RuntimeError> {
-        // Move and drop
-        let blueprint_id = self.get_object_info(&access_rules_node_id)?.blueprint_id;
-        let interface = self.get_blueprint_default_interface(
-            blueprint_id.package_address,
-            blueprint_id.blueprint_name.as_str(),
-        )?;
-        let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
-        for offset in 0u8..interface.state.num_partitions {
-            let src = MAIN_BASE_PARTITION
-                .at_offset(PartitionOffset(offset))
-                .unwrap();
-            let dest = module_base_partition
-                .at_offset(PartitionOffset(offset))
-                .unwrap();
-
-            self.kernel_move_module(access_rules_node_id, src, node_id, dest)?;
-        }
-        self.kernel_drop_node(access_rules_node_id)?;
-
-        Ok(())
     }
 
     #[trace_resources]
@@ -1392,9 +1415,9 @@ where
                     blueprint_id: object_module_id.static_blueprint().unwrap(),
                     version: BlueprintVersion::default(),
 
-                    outer_object: None,
-                    instance_schema: None,
+                    blueprint_info: ObjectBlueprintInfo::default(),
                     features: btreeset!(),
+                    instance_schema: None,
                 },
                 None,
             ),
@@ -1413,17 +1436,17 @@ where
                 }),
             }
         } else {
-            match &module_object_info.outer_object {
-                None => None,
-                Some(blueprint_parent) => {
+            match &module_object_info.blueprint_info {
+                ObjectBlueprintInfo::Inner { outer_object } => {
                     // TODO: do this recursively until global?
                     // FIXME: is unwrap safe?
-                    let parent_info = self.get_object_info(blueprint_parent.as_node_id()).unwrap();
+                    let outer_info = self.get_object_info(outer_object.as_node_id()).unwrap();
                     Some(InstanceContext {
-                        outer_object: blueprint_parent.clone(),
-                        outer_blueprint: parent_info.blueprint_id.blueprint_name.clone(),
+                        outer_object: outer_object.clone(),
+                        outer_blueprint: outer_info.blueprint_id.blueprint_name.clone(),
                     })
                 }
+                ObjectBlueprintInfo::Outer { .. } => None,
             }
         };
 
@@ -1431,7 +1454,6 @@ where
             actor: Actor::method(
                 global_address,
                 identifier,
-                node_object_info,
                 module_object_info,
                 instance_context,
                 direct_access,
@@ -1481,13 +1503,17 @@ where
         // FIXME: what's the right model, trading off between flexibility and security?
 
         // If the actor is the object's outer object
-        if let Some(outer_object) = info.outer_object {
-            if let Some(instance_context) = actor.instance_context() {
-                if instance_context.outer_object.eq(&outer_object) {
-                    is_drop_allowed = true;
+        match info.blueprint_info {
+            ObjectBlueprintInfo::Inner { outer_object } => {
+                if let Some(instance_context) = actor.instance_context() {
+                    if instance_context.outer_object.eq(&outer_object) {
+                        is_drop_allowed = true;
+                    }
                 }
             }
+            ObjectBlueprintInfo::Outer { .. } => {}
         }
+
         // If the actor is a function within the same blueprint
         if let Actor::Function {
             blueprint_id: blueprint,
@@ -2147,7 +2173,7 @@ where
         self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
 
         let actor = self.api.kernel_get_system_state().current;
-        Ok(actor.blueprint().clone())
+        Ok(actor.blueprint_id().clone())
     }
 
     #[trace_resources]
@@ -2165,16 +2191,33 @@ where
                     .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?
                     .0
             }
-            ActorObjectType::OuterObject => self
-                .actor_get_info()?
-                .outer_object
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::OuterObjectDoesNotExist,
-                ))?
-                .into_node_id(),
+            ActorObjectType::OuterObject => match self.actor_get_info()?.blueprint_info {
+                ObjectBlueprintInfo::Inner { outer_object } => outer_object.into_node_id(),
+                ObjectBlueprintInfo::Outer { .. } => {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::OuterObjectDoesNotExist,
+                    ));
+                }
+            },
         };
 
         self.call_method_advanced(&node_id, false, module_id, method_name, args)
+    }
+
+    #[trace_resources]
+    fn actor_is_feature_enabled(
+        &mut self,
+        object_handle: ObjectHandle,
+        feature: &str,
+    ) -> Result<bool, RuntimeError> {
+        let actor_object_type: ActorObjectType = object_handle.try_into()?;
+        let node_id = match actor_object_type {
+            ActorObjectType::SELF => self.actor_get_node_id()?,
+            ActorObjectType::OuterObject => {
+                self.actor_get_info()?.get_outer_object().into_node_id()
+            }
+        };
+        self.is_feature_enabled(&node_id, feature)
     }
 }
 
@@ -2337,7 +2380,8 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+        // TODO: apply linear costing based on size?
+        self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
 
         // Locking the package info substate associated with the emitter's package
         let type_pointer = {
@@ -2413,18 +2457,36 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .add_event(event_type_identifier, event_data);
+            .add_event(event_type_identifier, event_data)?;
 
         Ok(())
     }
 
     #[trace_resources]
-    fn log_message(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        // TODO: apply linear costing based on size?
+        self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
 
-        self.api.kernel_get_system().modules.add_log(level, message);
+        self.api
+            .kernel_get_system()
+            .modules
+            .add_log(level, message)?;
 
         Ok(())
+    }
+
+    fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
+        // TODO: apply linear costing based on size?
+        self.consume_cost_units(FIXED_HIGH_FEE, ClientCostingReason::RunSystem)?;
+
+        self.api
+            .kernel_get_system()
+            .modules
+            .set_panic_message(message.clone())?;
+
+        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+            message,
+        )))
     }
 
     #[trace_resources]
@@ -2451,16 +2513,6 @@ where
                 SystemError::TransactionRuntimeModuleNotEnabled,
             ))
         }
-    }
-
-    // FIXME: update costing for runtime data, such as logs, error messages and events.
-
-    fn panic(&mut self, message: String) -> Result<(), RuntimeError> {
-        self.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunSystem)?;
-
-        Err(RuntimeError::ApplicationError(ApplicationError::Panic(
-            message.to_string(),
-        )))
     }
 }
 

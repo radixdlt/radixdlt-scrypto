@@ -151,7 +151,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.outer_object.unwrap().into());
+            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
         Ok(address)
     }
 
