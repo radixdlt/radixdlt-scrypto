@@ -321,8 +321,8 @@ fn test_default_substate_size_limit() {
 
     // Assert #2
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
-            LimitingError::MaxSubstateWriteSizeExceeded(_),
+        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+            TransactionLimitsError::MaxSubstateWriteSizeExceeded(_),
         )) => true,
         _ => false,
     })
@@ -377,8 +377,8 @@ fn test_default_invoke_payload_size_limit() {
 
     // Assert #2
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
-            LimitingError::MaxInvokePayloadSizeExceeded(_),
+        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+            TransactionLimitsError::MaxInvokePayloadSizeExceeded(_),
         )) => true,
         _ => false,
     })
