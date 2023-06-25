@@ -12,7 +12,7 @@ fn test_component() {
 
     // Create component
     let manifest1 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "ComponentTest",
@@ -28,7 +28,7 @@ fn test_component() {
 
     // Call functions & methods
     let manifest2 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "ComponentTest",
@@ -58,7 +58,7 @@ fn invalid_blueprint_name_should_cause_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_addr,
             "NonExistentBlueprint",

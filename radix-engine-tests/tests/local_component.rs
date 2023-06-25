@@ -1,5 +1,5 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::costing::CostingError;
+use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -13,7 +13,7 @@ fn local_component_should_return_correct_info() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "Secret",
@@ -35,7 +35,7 @@ fn local_component_should_be_callable_read_only() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "Secret",
@@ -57,7 +57,7 @@ fn local_component_should_be_callable_with_write() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "Secret",
@@ -81,7 +81,7 @@ fn recursion_bomb() {
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(4u32))
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
@@ -115,7 +115,7 @@ fn recursion_bomb_to_failure() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(100u32))
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
@@ -140,8 +140,8 @@ fn recursion_bomb_to_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::MaxCallDepthLimitReached
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxCallDepthLimitReached
             ))
         )
     });
@@ -157,7 +157,7 @@ fn recursion_bomb_2() {
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(4u32))
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
@@ -191,7 +191,7 @@ fn recursion_bomb_2_to_failure() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(100u32))
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
@@ -216,8 +216,8 @@ fn recursion_bomb_2_to_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::MaxCallDepthLimitReached
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxCallDepthLimitReached
             ))
         )
     });

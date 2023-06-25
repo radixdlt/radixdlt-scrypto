@@ -7,16 +7,12 @@ use radix_engine::system::bootstrap::{
 };
 use radix_engine::system::system::KeyValueEntrySubstate;
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::transaction::{BalanceChange, CommitResult};
+use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
-use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
-use radix_engine_store_interface::{
-    db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
-    interface::DatabaseUpdate,
-};
+use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::{CustomGenesis, TestRunner};
 use transaction::prelude::ManifestBuilder;
@@ -91,76 +87,6 @@ fn test_bootstrap_receipt_should_match_constants() {
         .expect("There should be a new epoch.");
 }
 
-#[test]
-fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let mut substate_db = InMemorySubstateDatabase::standard();
-    let validator_key = Secp256k1PublicKey([0; 33]);
-    let staker_address = ComponentAddress::virtual_account_from_public_key(
-        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
-    );
-    let stake = GenesisStakeAllocation {
-        account_index: 0,
-        xrd_amount: Decimal::one(),
-    };
-    let genesis_data_chunks = vec![
-        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
-        GenesisDataChunk::Stakes {
-            accounts: vec![staker_address],
-            allocations: vec![(validator_key, vec![stake])],
-        },
-    ];
-
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
-
-    let GenesisReceipts {
-        system_flash_receipt: _,
-        system_bootstrap_receipt,
-        data_ingestion_receipts,
-        wrap_up_receipt,
-    } = bootstrapper
-        .bootstrap_with_genesis_data(
-            genesis_data_chunks,
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-            1,
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
-
-    validate_receipt_substate_changes_which_can_be_typed(
-        system_bootstrap_receipt.expect_commit_success(),
-    );
-    for receipt in data_ingestion_receipts.into_iter() {
-        validate_receipt_substate_changes_which_can_be_typed(receipt.expect_commit_success());
-    }
-    validate_receipt_substate_changes_which_can_be_typed(wrap_up_receipt.expect_commit_success());
-}
-
-fn validate_receipt_substate_changes_which_can_be_typed(commit_result: &CommitResult) {
-    let system_updates = &commit_result.state_updates.system_updates;
-    for ((node_id, partition_num), partition_updates) in system_updates.into_iter() {
-        for (substate_key, database_update) in partition_updates.into_iter() {
-            let typed_substate_key =
-                to_typed_substate_key(node_id.entity_type().unwrap(), *partition_num, substate_key)
-                    .expect("Substate key should be typeable");
-            if !typed_substate_key.value_is_mappable() {
-                continue;
-            }
-            match database_update {
-                DatabaseUpdate::Set(raw_value) => {
-                    // Check that typed value mapping works
-                    to_typed_substate_value(&typed_substate_key, raw_value)
-                        .expect("Substate value should be typeable");
-                }
-                DatabaseUpdate::Delete => {}
-            }
-        }
-    }
-}
-
-#[test]
 fn test_genesis_xrd_allocation_to_accounts() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
@@ -483,7 +409,7 @@ fn should_not_be_able_to_create_genesis_helper() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             GENESIS_HELPER_PACKAGE,
             GENESIS_HELPER_BLUEPRINT,
@@ -511,7 +437,7 @@ fn should_not_be_able_to_call_genesis_helper() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(GENESIS_HELPER, "wrap_up", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -107,11 +107,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_drop_node(api, node_id)
     }
 
-    fn after_drop_node<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn after_drop_node<Y>(api: &mut Y, total_substate_size: usize) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_drop_node(api)
+        SystemModuleMixer::after_drop_node(api, total_substate_size)
     }
 
     fn before_create_node<Y>(
@@ -192,11 +192,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_scan_substate(api, store_access)
     }
 
-    fn on_set_substate<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_set_substate<Y>(
+        value_size: usize,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_set_substate(api, store_access)
+        SystemModuleMixer::on_set_substate(api, value_size, store_access)
     }
 
     fn on_take_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
@@ -208,13 +212,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn after_create_node<Y>(
         node_id: &NodeId,
+        total_substate_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_create_node(api, node_id, store_access)
+        SystemModuleMixer::after_create_node(api, node_id, total_substate_size, store_access)
     }
 
     fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>

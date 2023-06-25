@@ -2,7 +2,6 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::system_callback::SystemLockData;
-use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{
@@ -14,7 +13,6 @@ use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FunctionSchemaInit, TypeRef,
 };
-use resources_tracker_macro::trace_resources;
 
 use super::TransactionProcessorBlueprint;
 use super::TransactionProcessorRunInput;
@@ -75,7 +73,6 @@ impl TransactionProcessorNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,
@@ -86,8 +83,6 @@ impl TransactionProcessorNativePackage {
     {
         match export_name {
             TRANSACTION_PROCESSOR_RUN_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;

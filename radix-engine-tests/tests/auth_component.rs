@@ -10,7 +10,7 @@ fn create_secured_component(
     package_address: PackageAddress,
 ) -> ComponentAddress {
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "CrossComponent",
@@ -41,7 +41,7 @@ fn create_component(
     package_address: PackageAddress,
 ) -> ComponentAddress {
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "CrossComponent",
@@ -67,7 +67,7 @@ fn cannot_make_cross_component_call_without_correct_global_caller_authorization(
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             my_component,
             "cross_component_call",
@@ -92,7 +92,7 @@ fn can_make_cross_component_call_with_correct_global_caller_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             my_component,
             "cross_component_call",
@@ -117,7 +117,7 @@ fn cannot_make_cross_component_call_without_resource_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             my_component,
             "cross_component_call",
@@ -140,7 +140,7 @@ fn can_make_cross_component_call_with_resource_authorization() {
         create_resource_secured_component(&mut test_runner, account, package_address);
     let my_component = create_component(&mut test_runner, package_address);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .withdraw_non_fungibles_from_account(
             account,
             auth_id.resource_address(),
@@ -160,7 +160,7 @@ fn can_make_cross_component_call_with_resource_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             my_component,
             "cross_component_call",
@@ -185,7 +185,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .create_proof_from_account(account, auth_id.resource_address())
         .call_method(
             my_component,

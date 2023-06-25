@@ -20,7 +20,7 @@ fn test_mini_resource_system(test_case: &str, expected: ExpectedBehavior) {
     // Run test case
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .call_function(package_address, "MiniUser", test_case, manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

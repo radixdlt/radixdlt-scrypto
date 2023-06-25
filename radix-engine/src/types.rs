@@ -1,9 +1,9 @@
-pub use radix_engine_constants::*;
 pub use radix_engine_interface::address::{
     AddressBech32DecodeError, AddressBech32Decoder, AddressBech32EncodeError, AddressBech32Encoder,
 };
 pub use radix_engine_interface::blueprints::resource::*;
 pub use radix_engine_interface::constants::*;
+#[allow(ambiguous_glob_reexports)]
 pub use radix_engine_interface::prelude::*;
 pub mod blueprints {
     pub use radix_engine_interface::blueprints::*;

@@ -17,7 +17,7 @@ fn test_trace_resource_transfers() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 10.into())
+        .lock_fee(account, 50.into())
         .call_function(
             package_address,
             "ExecutionTraceTest",
@@ -121,7 +121,7 @@ fn test_trace_fee_payments() {
 
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .call_function(
             package_address,
@@ -143,7 +143,7 @@ fn test_trace_fee_payments() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             funded_component.clone(),
             "test_lock_contingent_fee",
@@ -177,7 +177,7 @@ fn test_instruction_traces() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
@@ -407,7 +407,7 @@ fn test_worktop_changes() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 10.into())
+        .lock_fee(account, 50.into())
         .withdraw_from_account(account, fungible_resource, 100.into())
         .withdraw_non_fungibles_from_account(
             account,
