@@ -132,17 +132,14 @@ impl FeeTable {
 
     #[inline]
     pub fn run_native_code_cost(&self, package_address: &PackageAddress, export_name: &str) -> u32 {
-        const COSTING_COEFFICIENT_CPU: u32 = 335;
-        const COSTING_COEFFICIENT_CPU_DIV_BITS: u32 = 4; // used to divide by shift left operator
-        const COSTING_COEFFICIENT_CPU_DIV_BITS_ADDON: u32 = 6; // used to scale up or down all cpu instruction costing
-
         let cpu_instructions = NATIVE_FUNCTION_BASE_COSTS
             .get(package_address)
             .and_then(|x| x.get(export_name).cloned())
-            .unwrap_or(411524);
+            .unwrap_or(411524); // FIXME: this should just be not-found exports after the costing for all native function are added, i.e. to reduce.
 
-        mul(cpu_instructions, COSTING_COEFFICIENT_CPU)
-            >> (COSTING_COEFFICIENT_CPU_DIV_BITS + COSTING_COEFFICIENT_CPU_DIV_BITS_ADDON)
+        // FIXME: figure out the right conversion rate from CPU instructions to execution time
+
+        mul(cpu_instructions / 1_000, 100)
     }
 
     #[inline]
@@ -152,9 +149,11 @@ impl FeeTable {
         _export_name: &str,
         gas: u32,
     ) -> u32 {
-        const COST_UNITS_PER_GAS: u32 = 5;
+        // FIXME: update the costing for wasm instructions
 
-        mul(COST_UNITS_PER_GAS, gas)
+        // FIXME: figure out the right conversion rate from gas to execution time
+
+        mul(gas / 20, 100)
     }
 
     //======================
