@@ -36,6 +36,8 @@ use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
+use crate::system::node_modules::access_rules;
+use crate::vm::VmValidation;
 
 pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
 
@@ -523,7 +525,7 @@ fn globalize_package<Y>(
     package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
     auth_configs: BTreeMap<String, AuthConfig>,
     metadata: BTreeMap<String, MetadataValue>,
-    access_rules: Option<AccessRules>,
+    access_rules: AccessRules,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
 where
@@ -620,12 +622,6 @@ where
 
     // FIXME: Dont use
     let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
-
-    let access_rules = if let Some(access_rules) = access_rules {
-        access_rules
-    } else {
-        AccessRules::create(OwnerRole::None, btreemap!(), api)?
-    };
 
     let address = api.globalize(
         btreemap!(
@@ -902,21 +898,6 @@ impl PackageNativePackage {
         BTreeMap<String, AuthConfig>,
         BTreeMap<String, PackageRoyaltyConfig>,
     ), RuntimeError> {
-        // Validate VM specific properties
-        match vm_type {
-            VmType::Native => {}
-            VmType::ScryptoV1 => {
-                // Validate WASM
-                WasmValidator::default()
-                    .validate(&code, definition.blueprints.values())
-                    .map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::PackageError(
-                            PackageError::InvalidWasm(e),
-                        ))
-                    })?;
-            }
-        }
-
         // Validate schema
         validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
@@ -924,6 +905,9 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
         validate_auth(&definition)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
+
+        // Validate VM specific properties
+        VmValidation::validate(&definition, vm_type, &code)?;
 
         // Build Package structure
         let mut blueprints = BTreeMap::new();
@@ -1071,6 +1055,8 @@ impl PackageNativePackage {
             native_package_code_id.to_be_bytes().to_vec(),
         )?;
 
+        let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?;
+
         globalize_package(
             package_address,
             blueprints,
@@ -1080,7 +1066,7 @@ impl PackageNativePackage {
             package_royalties,
             auth_configs,
             metadata,
-            None,
+            access_rules,
             api,
         )
     }
@@ -1095,8 +1081,32 @@ impl PackageNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
-        let address =
-            Self::publish_wasm_internal(None, code, definition, metadata, access_rules, api)?;
+
+        let (
+            blueprints,
+            blueprint_dependencies,
+            schemas,
+            code_substates,
+            auth_configs,
+            package_royalties,
+        ) = Self::validate_and_build_package_structure(
+            definition,
+            VmType::ScryptoV1,
+            code,
+        )?;
+
+        let address = globalize_package(
+            None,
+            blueprints,
+            blueprint_dependencies,
+            schemas,
+            code_substates,
+            package_royalties,
+            auth_configs,
+            metadata,
+            access_rules,
+            api,
+        )?;
 
         Ok((address, bucket))
     }
@@ -1113,97 +1123,6 @@ impl PackageNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         let access_rules = SecurifiedPackage::create_advanced(owner_rule, api)?;
-        let address = Self::publish_wasm_internal(
-            package_address,
-            code,
-            definition,
-            metadata,
-            access_rules,
-            api,
-        )?;
-
-        Ok(address)
-    }
-
-    fn publish_wasm_internal<Y>(
-        package_address: Option<GlobalAddressReservation>,
-        code: Vec<u8>,
-        definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
-        access_rules: AccessRules,
-        api: &mut Y,
-    ) -> Result<PackageAddress, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        for BlueprintDefinitionInit {
-            blueprint_type,
-            feature_set,
-            schema:
-                BlueprintSchemaInit {
-                    generics,
-                    state: BlueprintStateSchemaInit { collections, .. },
-                    functions,
-                    ..
-                },
-            ..
-        } in definition.blueprints.values()
-        {
-            match blueprint_type {
-                BlueprintType::Outer => {}
-                BlueprintType::Inner { .. } => {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::PackageError(PackageError::WasmUnsupported(
-                            "Inner blueprints not supported".to_string(),
-                        )),
-                    ));
-                }
-            }
-
-            if !feature_set.is_empty() {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::PackageError(PackageError::WasmUnsupported(
-                        "Feature set not supported".to_string(),
-                    )),
-                ));
-            }
-
-            if !collections.is_empty() {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::PackageError(PackageError::WasmUnsupported(
-                        "Static collections not supported".to_string(),
-                    )),
-                ));
-            }
-
-            if !functions.virtual_lazy_load_functions.is_empty() {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::PackageError(PackageError::WasmUnsupported(
-                        "Lazy load functions not supported".to_string(),
-                    )),
-                ));
-            }
-
-            for (_name, schema) in &functions.functions {
-                if let Some(info) = &schema.receiver {
-                    if info.ref_types != RefTypes::NORMAL {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::PackageError(PackageError::WasmUnsupported(
-                                "Irregular ref types not supported".to_string(),
-                            )),
-                        ));
-                    }
-                }
-            }
-
-            if !generics.is_empty() {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::PackageError(PackageError::WasmUnsupported(
-                        "Generics not supported".to_string(),
-                    )),
-                ));
-            }
-        }
 
         let (
             blueprints,
@@ -1211,7 +1130,7 @@ impl PackageNativePackage {
             schemas,
             code_substates,
             auth_configs,
-            royalties,
+            package_royalties,
         ) = Self::validate_and_build_package_structure(
             definition,
             VmType::ScryptoV1,
@@ -1224,10 +1143,10 @@ impl PackageNativePackage {
             blueprint_dependencies,
             schemas,
             code_substates,
-            royalties,
+            package_royalties,
             auth_configs,
             metadata,
-            Some(access_rules),
+            access_rules,
             api,
         )
     }

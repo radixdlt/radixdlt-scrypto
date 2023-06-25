@@ -1,5 +1,4 @@
 use crate::blueprints::package::BlueprintType;
-use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
 use crate::*;
@@ -31,7 +30,7 @@ pub const PACKAGE_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
 pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
 pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmType {
     Native,
     ScryptoV1,
