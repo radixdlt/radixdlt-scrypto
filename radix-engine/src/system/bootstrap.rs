@@ -4,7 +4,7 @@ use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::{create_package_partitions, PackageNativePackage};
 use crate::blueprints::pool::PoolNativePackage;
-use crate::blueprints::resource::ResourceManagerNativePackage;
+use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
@@ -368,6 +368,9 @@ pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BT
         (PACKAGE_PACKAGE, PackageNativePackage::definition(), PACKAGE_CODE_ID),
         (TRANSACTION_PROCESSOR_PACKAGE, TransactionProcessorNativePackage::definition(), TRANSACTION_PROCESSOR_CODE_ID),
         (METADATA_MODULE_PACKAGE, MetadataNativePackage::definition(), METADATA_CODE_ID),
+        (ACCESS_RULES_MODULE_PACKAGE, AccessRulesNativePackage::definition(), ACCESS_RULES_CODE_ID),
+        (RESOURCE_PACKAGE, ResourceNativePackage::definition(), RESOURCE_CODE_ID),
+        (ROYALTY_MODULE_PACKAGE, RoyaltyNativePackage::definition(), ROYALTY_CODE_ID),
     ];
 
     let mut to_flash = BTreeMap::new();
@@ -481,7 +484,6 @@ pub fn create_system_bootstrap_transaction(
             }),
         });
     }
-     */
 
     // Access Rules Package
     {
@@ -501,8 +503,10 @@ pub fn create_system_bootstrap_transaction(
             }),
         });
     }
+     */
 
     // Resource Package
+    /*
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -520,8 +524,10 @@ pub fn create_system_bootstrap_transaction(
             }),
         });
     }
+     */
 
     // Royalty Package
+    /*
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
@@ -539,6 +545,7 @@ pub fn create_system_bootstrap_transaction(
             }),
         });
     }
+     */
 
     // XRD Token
     {

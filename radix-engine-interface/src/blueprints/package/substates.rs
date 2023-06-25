@@ -10,7 +10,7 @@ use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
 
 pub const PACKAGE_CODE_ID: u64 = 0u64;
-pub const RESOURCE_MANAGER_CODE_ID: u64 = 1u64;
+pub const RESOURCE_CODE_ID: u64 = 1u64;
 pub const IDENTITY_CODE_ID: u64 = 2u64;
 pub const CONSENSUS_MANAGER_CODE_ID: u64 = 3u64;
 pub const ACCOUNT_CODE_ID: u64 = 5u64;
