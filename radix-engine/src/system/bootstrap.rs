@@ -13,8 +13,9 @@ use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::track::SystemUpdates;
 use crate::transaction::{
-    execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
+    execute_transaction, ExecutionConfig, FeeReserveConfig, StateUpdateSummary, TransactionReceipt,
 };
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
@@ -33,7 +34,7 @@ use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{metadata_init, metadata_init_set_entry, rule};
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::interface::DatabaseUpdate;
+use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, SubstateDatabase},
@@ -160,9 +161,17 @@ pub struct ManifestGenesisResource {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct GenesisReceipts {
+    pub system_flash_receipt: FlashReceipt,
     pub system_bootstrap_receipt: TransactionReceipt,
     pub data_ingestion_receipts: Vec<TransactionReceipt>,
     pub wrap_up_receipt: TransactionReceipt,
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct FlashReceipt {
+    pub database_updates: DatabaseUpdates,
+    pub system_updates: SystemUpdates,
+    pub state_update_summary: StateUpdateSummary,
 }
 
 pub struct Bootstrapper<'s, 'i, S, W>
@@ -236,8 +245,7 @@ where
             );
 
         if first_typed_info.is_none() {
-            // FIXME: Add flash receipt
-            self.flash_substates(substate_flash);
+            let system_flash_receipt = self.flash_substates(substate_flash);
 
             let system_bootstrap_receipt = self.execute_system_bootstrap(
                 initial_epoch,
@@ -255,6 +263,7 @@ where
             let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(faucet_supply);
 
             Some(GenesisReceipts {
+                system_flash_receipt,
                 system_bootstrap_receipt,
                 data_ingestion_receipts,
                 wrap_up_receipt: genesis_wrap_up_receipt,
@@ -267,22 +276,50 @@ where
     fn flash_substates(
         &mut self,
         substates: BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>>,
-    ) {
-        let mut updates = index_map_new();
+    ) -> FlashReceipt {
+        let mut database_updates = index_map_new();
+        let mut system_updates = SystemUpdates::default();
+        let mut new_packages = Vec::new();
+        let mut new_components = Vec::new();
+        let mut new_resources = Vec::new();
 
         for ((node_id, partition_num), substates) in substates {
             let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_num);
             let mut partition_updates = index_map_new();
+            let mut substate_updates = index_map_new();
             for (substate_key, value) in substates {
                 let key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
                 let update = DatabaseUpdate::Set(value);
-                partition_updates.insert(key, update);
+                partition_updates.insert(key, update.clone());
+                substate_updates.insert(substate_key, update);
             }
 
-            updates.insert(partition_key, partition_updates);
+            database_updates.insert(partition_key, partition_updates);
+            system_updates.insert((node_id, partition_num), substate_updates);
+            if node_id.is_global_package() {
+                new_packages.push(PackageAddress::new_or_panic(node_id.0));
+            }
+            if node_id.is_global_component() {
+                new_components.push(ComponentAddress::new_or_panic(node_id.0));
+            }
+            if node_id.is_global_resource_manager() {
+                new_resources.push(ResourceAddress::new_or_panic(node_id.0));
+            }
         }
 
-        self.substate_db.commit(&updates);
+        self.substate_db.commit(&database_updates);
+
+        FlashReceipt {
+            database_updates,
+            system_updates,
+            state_update_summary: StateUpdateSummary {
+                new_packages,
+                new_components,
+                new_resources,
+                balance_changes: index_map_new(),
+                direct_vault_updates: index_map_new(),
+            },
+        }
     }
 
     fn execute_system_bootstrap(
