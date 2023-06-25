@@ -890,17 +890,33 @@ impl PackageNativePackage {
         }
     }
 
-    pub fn validate_and_build_native_package_structure(
+    pub fn validate_and_build_package_structure(
         definition: PackageDefinition,
         vm_type: VmType,
         code: Vec<u8>,
     ) -> Result<(
         BTreeMap<String, BlueprintDefinition>,
         BTreeMap<String, BlueprintDependencies>,
-        BTreeMap<String, AuthConfig>,
         BTreeMap<Hash, ScryptoSchema>,
         BTreeMap<Hash, PackageCodeSubstate>,
+        BTreeMap<String, AuthConfig>,
+        BTreeMap<String, PackageRoyaltyConfig>,
     ), RuntimeError> {
+        // Validate VM specific properties
+        match vm_type {
+            VmType::Native => {}
+            VmType::ScryptoV1 => {
+                // Validate WASM
+                WasmValidator::default()
+                    .validate(&code, definition.blueprints.values())
+                    .map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::PackageError(
+                            PackageError::InvalidWasm(e),
+                        ))
+                    })?;
+            }
+        }
+
         // Validate schema
         validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
@@ -909,12 +925,13 @@ impl PackageNativePackage {
         validate_auth(&definition)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
-        // Build node init
+        // Build Package structure
         let mut blueprints = BTreeMap::new();
         let mut blueprint_dependencies = BTreeMap::new();
-        let mut auth_configs = BTreeMap::new();
         let mut schemas = BTreeMap::new();
         let mut code_substates = BTreeMap::new();
+        let mut royalties = BTreeMap::new();
+        let mut auth_configs = BTreeMap::new();
 
         let code_hash = {
             let code = PackageCodeSubstate {
@@ -925,7 +942,6 @@ impl PackageNativePackage {
             code_substates.insert(code_hash, code);
             code_hash
         };
-
 
         {
             for (blueprint, definition_init) in definition.blueprints {
@@ -1017,16 +1033,18 @@ impl PackageNativePackage {
                     dependencies: definition_init.dependencies,
                 };
                 blueprint_dependencies.insert(blueprint.clone(), minor_version_config);
+
+                royalties.insert(blueprint.clone(), definition_init.royalty_config);
             }
         };
-
 
         Ok((
             blueprints,
             blueprint_dependencies,
-            auth_configs,
             schemas,
             code_substates,
+            auth_configs,
+            royalties,
         ))
     }
 
@@ -1043,10 +1061,11 @@ impl PackageNativePackage {
         let (
             blueprints,
             blueprint_dependencies,
-            auth_configs,
             schemas,
             code_substates,
-        ) = Self::validate_and_build_native_package_structure(
+            auth_configs,
+            package_royalties,
+        ) = Self::validate_and_build_package_structure(
             definition,
             VmType::Native,
             native_package_code_id.to_be_bytes().to_vec(),
@@ -1058,7 +1077,7 @@ impl PackageNativePackage {
             blueprint_dependencies,
             schemas,
             code_substates,
-            btreemap!(),
+            package_royalties,
             auth_configs,
             metadata,
             None,
@@ -1117,14 +1136,6 @@ impl PackageNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        // Validate schema
-        validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_package_event_schema(definition.blueprints.values())
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-        validate_auth(&definition)
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
-
         for BlueprintDefinitionInit {
             blueprint_type,
             feature_set,
@@ -1194,130 +1205,18 @@ impl PackageNativePackage {
             }
         }
 
-        // Validate WASM
-        WasmValidator::default()
-            .validate(&code, definition.blueprints.values())
-            .map_err(|e| {
-                RuntimeError::ApplicationError(ApplicationError::PackageError(
-                    PackageError::InvalidWasm(e),
-                ))
-            })?;
-
-
-        let mut auth_templates = BTreeMap::new();
-
-        let mut blueprints = BTreeMap::new();
-        let mut schemas = BTreeMap::new();
-        let mut royalties = BTreeMap::new();
-        let mut blueprint_dependencies = BTreeMap::new();
-        let mut code_substates = BTreeMap::new();
-
-        let code_hash = {
-            let code = PackageCodeSubstate {
-                vm_type: VmType::ScryptoV1,
-                code,
-            };
-            let code_hash = hash(scrypto_encode(&code).unwrap());
-            code_substates.insert(code_hash, code);
-            code_hash
-        };
-
-
-        // Build node init
-        {
-            for (blueprint, definition_init) in definition.blueprints {
-                auth_templates.insert(blueprint.clone(), definition_init.auth_config);
-
-                let blueprint_schema = definition_init.schema.schema.clone();
-                let schema_hash = hash(scrypto_encode(&blueprint_schema).unwrap());
-                schemas.insert(schema_hash, blueprint_schema);
-
-                let mut functions = BTreeMap::new();
-                let mut function_exports = BTreeMap::new();
-                for (function, function_schema_init) in definition_init.schema.functions.functions {
-                    let input = match function_schema_init.input {
-                        TypeRef::Static(input_type_index) => input_type_index,
-                        TypeRef::Generic(..) => {
-                            return Err(RuntimeError::ApplicationError(
-                                ApplicationError::PackageError(PackageError::WasmUnsupported(
-                                    "Generics not supported".to_string(),
-                                )),
-                            ))
-                        }
-                    };
-                    let output = match function_schema_init.output {
-                        TypeRef::Static(output_type_index) => output_type_index,
-                        TypeRef::Generic(..) => {
-                            return Err(RuntimeError::ApplicationError(
-                                ApplicationError::PackageError(PackageError::WasmUnsupported(
-                                    "Generics not supported".to_string(),
-                                )),
-                            ))
-                        }
-                    };
-                    functions.insert(
-                        function.clone(),
-                        FunctionSchema {
-                            receiver: function_schema_init.receiver,
-                            input: TypePointer::Package(schema_hash, input),
-                            output: TypePointer::Package(schema_hash, output),
-                        },
-                    );
-                    let export = PackageExport {
-                        code_hash,
-                        export_name: function_schema_init.export.clone(),
-                    };
-                    function_exports.insert(function, export);
-                }
-
-                let mut events = BTreeMap::new();
-
-                for (key, type_ref) in definition_init.schema.events.event_schema {
-                    let index = match type_ref {
-                        TypeRef::Static(index) => TypePointer::Package(schema_hash, index),
-                        TypeRef::Generic(index) => TypePointer::Instance(index),
-                    };
-                    events.insert(key, index);
-                }
-
-                let definition = BlueprintDefinition {
-                    interface: BlueprintInterface {
-                        blueprint_type: definition_init.blueprint_type,
-                        generics: definition_init.schema.generics,
-                        feature_set: definition_init.feature_set,
-                        functions,
-                        events,
-                        state: IndexedStateSchema::from_schema(
-                            schema_hash,
-                            definition_init.schema.state,
-                        ),
-                    },
-                    function_exports,
-                    virtual_lazy_load_functions: definition_init
-                        .schema
-                        .functions
-                        .virtual_lazy_load_functions
-                        .into_iter()
-                        .map(|(key, export_name)| {
-                            (
-                                key,
-                                PackageExport {
-                                    code_hash,
-                                    export_name,
-                                },
-                            )
-                        })
-                        .collect(),
-                };
-                blueprints.insert(blueprint.clone(), definition);
-                royalties.insert(blueprint.clone(), definition_init.royalty_config);
-
-                let dependencies = BlueprintDependencies {
-                    dependencies: definition_init.dependencies,
-                };
-                blueprint_dependencies.insert(blueprint.clone(), dependencies);
-            }
-        }
+        let (
+            blueprints,
+            blueprint_dependencies,
+            schemas,
+            code_substates,
+            auth_configs,
+            royalties,
+        ) = Self::validate_and_build_package_structure(
+            definition,
+            VmType::ScryptoV1,
+            code,
+        )?;
 
         globalize_package(
             package_address,
@@ -1326,7 +1225,7 @@ impl PackageNativePackage {
             schemas,
             code_substates,
             royalties,
-            auth_templates,
+            auth_configs,
             metadata,
             Some(access_rules),
             api,

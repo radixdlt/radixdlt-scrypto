@@ -380,10 +380,11 @@ pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BT
             let (
                 blueprints,
                 blueprint_dependencies,
-                auth_configs,
                 schemas,
                 code_substates,
-            ) = PackageNativePackage::validate_and_build_native_package_structure(
+                auth_configs,
+                _royalties,
+            ) = PackageNativePackage::validate_and_build_package_structure(
                 definition,
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
