@@ -59,7 +59,7 @@ pub struct ExecutionMetrics {
     pub substate_write_size: usize,
     /// Substate write count.
     pub substate_write_count: usize,
-    /// Peak WASM memory usage during transactino execution.
+    /// Peak WASM memory usage during transaction execution.
     /// This is the highest sum of all nested WASM instances.
     pub max_wasm_memory_used: usize,
     /// The highest invoke payload size during transaction execution.

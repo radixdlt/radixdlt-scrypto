@@ -1,20 +1,20 @@
-Total Cost Units              ,  15952564
-Total Fee                     , 1.5952564
-AllocateNodeId                ,     11236
-CloseSubstate                 ,     56900
-CreateNode                    ,    188528
-DropNode                      ,    187892
-EmitEvent                     ,    110000
-GenerateRuid                  ,       300
-Invoke                        ,     75080
-LockFee                       ,       100
-OpenSubstate                  ,   8242705
-QueryActor                    ,      3000
-QueryAuthZone                 ,       400
-ReadSubstate                  ,   1095674
-RunNativeCode                 ,   4400190
+Total Cost Units              ,  16690004
+Total Fee                     ,  8.345002
+AllocateNodeId                ,     26500
+CloseSubstate                 ,    284500
+CreateNode                    ,     38272
+DropNode                      ,     38272
+EmitEvent                     ,      6730
+GenerateRuid                  ,       500
+Invoke                        ,     25508
+LockFee                       ,       500
+OpenSubstate                  ,  13207500
+QueryActor                    ,     15000
+QueryAuthZone                 ,      2000
+ReadSubstate                  ,    331858
+RunNativeCode                 ,   1342700
 RunWasmCode                   ,   1250000
-TxBaseCost                    ,     50000
-TxPayloadCost                 ,      2570
-TxSignatureVerification       ,    100000
-WriteSubstate                 ,    177989
+TxBaseCost                    ,     40000
+TxPayloadCost                 ,     25700
+TxSignatureVerification       ,      7000
+WriteSubstate                 ,     47464
