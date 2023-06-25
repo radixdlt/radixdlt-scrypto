@@ -40,7 +40,7 @@ fn publishing_many_packages_should_not_cause_system_failure() {
     // Act
     for _ in 0..(DEFAULT_CACHE_SIZE + 200) {
         let manifest = ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 100.into())
+            .lock_fee(test_runner.faucet_component(), 50.into())
             .publish_package_advanced(
                 code.clone(),
                 single_function_package_definition("Test", "f"),
@@ -53,7 +53,7 @@ fn publishing_many_packages_should_not_cause_system_failure() {
         let package_address = result.new_package_addresses()[0];
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 100.into())
+            .lock_fee(test_runner.faucet_component(), 50.into())
             .call_function(package_address, "Test", "f", manifest_args!())
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);

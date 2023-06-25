@@ -145,7 +145,7 @@ fn run_basic_transfer(mode: Mode) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 500u32.into())
+        .lock_fee(account1, 50u32.into())
         .withdraw_from_account(account1, RADIX_TOKEN, 100u32.into())
         .call_method(
             account2,
@@ -188,7 +188,7 @@ fn run_radiswap(mode: Mode) {
     let component_address: ComponentAddress = test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(account2, 500u32.into())
+                .lock_fee(account2, 50u32.into())
                 .call_function(package_address, "Radiswap", "new", manifest_args!(btc, eth))
                 .call_method(
                     account2,
@@ -207,7 +207,7 @@ fn run_radiswap(mode: Mode) {
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(account2, 500u32.into())
+                .lock_fee(account2, 50u32.into())
                 .withdraw_from_account(account2, btc, btc_init_amount)
                 .withdraw_from_account(account2, eth, eth_init_amount)
                 .take_all_from_worktop(btc, |builder, bucket1| {
@@ -234,7 +234,7 @@ fn run_radiswap(mode: Mode) {
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(account2, 500u32.into())
+                .lock_fee(account2, 50u32.into())
                 .withdraw_from_account(account2, btc, btc_amount)
                 .call_method(
                     account3,
@@ -251,7 +251,7 @@ fn run_radiswap(mode: Mode) {
     let btc_to_swap = Decimal::from(2000);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account3, 500u32.into())
+            .lock_fee(account3, 50u32.into())
             .withdraw_from_account(account3, btc, btc_to_swap)
             .take_all_from_worktop(btc, |builder, bucket| {
                 builder.call_method(component_address, "swap", manifest_args!(bucket))
@@ -296,7 +296,7 @@ fn run_flash_loan(mode: Mode) {
     let (component_address, promise_token_address) = test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(account2, 500u32.into())
+                .lock_fee(account2, 50u32.into())
                 .withdraw_from_account(account2, RADIX_TOKEN, xrd_init_amount)
                 .take_all_from_worktop(RADIX_TOKEN, |builder, bucket1| {
                     builder.call_function(
@@ -323,7 +323,7 @@ fn run_flash_loan(mode: Mode) {
     let old_balance = test_runner.account_balance(account3, RADIX_TOKEN).unwrap();
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account3, 500u32.into())
+            .lock_fee(account3, 50u32.into())
             .call_method(component_address, "take_loan", manifest_args!(loan_amount))
             .withdraw_from_account(account3, RADIX_TOKEN, dec!(10))
             .take_from_worktop(RADIX_TOKEN, repay_amount, |builder, bucket1| {
@@ -374,7 +374,7 @@ fn test_publish_large_package() {
         "i".repeat(1024 * 1024 - 1024)
     ));
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 100.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .publish_package_advanced(
             code,
             PackageDefinition::default(),
@@ -398,7 +398,7 @@ fn should_be_able_run_large_manifest() {
 
     // Act
     let mut builder = ManifestBuilder::new();
-    builder.lock_fee(account, 100u32.into());
+    builder.lock_fee(account, 50u32.into());
     builder.withdraw_from_account(account, RADIX_TOKEN, 100u32.into());
     for _ in 0..40 {
         builder.take_from_worktop(RADIX_TOKEN, 1.into(), |builder, bid| {
@@ -434,7 +434,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     for _ in 0..5 {
         builder.create_proof_from_account_of_amount(account, resource_address, 1.into());
     }
-    builder.lock_fee(account, 100u32.into());
+    builder.lock_fee(account, 50u32.into());
     let manifest = builder.build();
 
     let (receipt, _) = execute_with_time_logging(
@@ -456,7 +456,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
     let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
+            .lock_fee(account, 50u32.into())
             .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));

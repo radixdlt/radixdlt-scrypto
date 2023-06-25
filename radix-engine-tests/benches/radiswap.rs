@@ -36,7 +36,7 @@ fn bench_radiswap(c: &mut Criterion) {
     let component_address: ComponentAddress = test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(account2, 10u32.into())
+                .lock_fee(account2, 50u32.into())
                 .call_function(package_address, "Radiswap", "new", manifest_args!(btc, eth))
                 .call_method(
                     account2,
@@ -55,7 +55,7 @@ fn bench_radiswap(c: &mut Criterion) {
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(account2, 10u32.into())
+                .lock_fee(account2, 50u32.into())
                 .withdraw_from_account(account2, btc, btc_init_amount)
                 .withdraw_from_account(account2, eth, eth_init_amount)
                 .take_all_from_worktop(btc, |builder, bucket1| {
@@ -82,7 +82,7 @@ fn bench_radiswap(c: &mut Criterion) {
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(account2, 10u32.into())
+                .lock_fee(account2, 50u32.into())
                 .withdraw_from_account(account2, btc, btc_amount)
                 .call_method(
                     account3,
@@ -98,7 +98,7 @@ fn bench_radiswap(c: &mut Criterion) {
     // Swap 1 BTC into ETH
     let btc_to_swap = Decimal::from(1);
     let manifest = ManifestBuilder::new()
-        .lock_fee(account3, 10u32.into())
+        .lock_fee(account3, 50u32.into())
         .withdraw_from_account(account3, btc, btc_to_swap)
         .take_all_from_worktop(btc, |builder, bucket| {
             builder.call_method(component_address, "swap", manifest_args!(bucket))

@@ -1010,7 +1010,7 @@ fn validator_unstake_emits_correct_events() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .withdraw_from_account(
             account_with_su,
             validator_substate.stake_unit_resource,
@@ -1054,7 +1054,7 @@ fn validator_unstake_emits_correct_events() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 50.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -1161,7 +1161,7 @@ fn validator_claim_xrd_emits_correct_events() {
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .withdraw_from_account(
             account_with_su,
             validator_substate.stake_unit_resource,

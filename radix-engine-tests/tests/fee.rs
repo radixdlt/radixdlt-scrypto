@@ -33,7 +33,7 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
+            .lock_fee(account, 50u32.into())
             .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
@@ -240,7 +240,7 @@ fn test_fee_accounting_success() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 10.into())
+        .lock_fee(account1, 50.into())
         .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
         .call_method(
             account2,
@@ -295,7 +295,7 @@ fn test_fee_accounting_failure() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 10.into())
+        .lock_fee(account1, 50.into())
         .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
         .call_method(
             account2,

@@ -76,7 +76,7 @@ fn compiled_notarized_transaction() -> Vec<u8> {
 
     let manifest = {
         let mut builder = ManifestBuilder::new();
-        builder.lock_fee(component_address, 10.into());
+        builder.lock_fee(component_address, 50.into());
         builder.create_non_fungible_resource(
             NonFungibleIdType::Integer,
             false,
