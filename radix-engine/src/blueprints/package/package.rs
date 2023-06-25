@@ -355,37 +355,23 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
-fn globalize_package<Y, L: Default>(
-    package_address_reservation: Option<GlobalAddressReservation>,
+pub fn create_package_partitions(
     blueprints: BTreeMap<String, BlueprintDefinition>,
     blueprint_dependencies: BTreeMap<String, BlueprintDependencies>,
-
     schemas: BTreeMap<Hash, ScryptoSchema>,
     code: PackageCodeSubstate,
     code_hash: Hash,
-
     package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
-
     auth_configs: BTreeMap<String, AuthConfig>,
-
     metadata: BTreeMap<String, MetadataValue>,
-    access_rules: Option<AccessRules>,
-    api: &mut Y,
-) -> Result<PackageAddress, RuntimeError>
-where
-    Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
-{
-    // Use kernel API to commit substates directly.
-    // Can't use the ClientApi because of chicken-and-egg issue.
-
+) -> NodeSubstates {
     let mut partitions: NodeSubstates = BTreeMap::new();
-
-    let royalty = PackageRoyaltyAccumulatorSubstate {
-        royalty_vault: None,
-    };
 
     // Prepare node init.
     {
+        let royalty = PackageRoyaltyAccumulatorSubstate {
+            royalty_vault: None,
+        };
         let main_partition = btreemap!(
             PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
         );
@@ -552,6 +538,41 @@ where
         metadata_partition
     };
     partitions.insert(METADATA_KV_STORE_PARTITION, metadata_partition);
+
+    partitions
+}
+
+
+fn globalize_package<Y, L: Default>(
+    package_address_reservation: Option<GlobalAddressReservation>,
+    blueprints: BTreeMap<String, BlueprintDefinition>,
+    blueprint_dependencies: BTreeMap<String, BlueprintDependencies>,
+    schemas: BTreeMap<Hash, ScryptoSchema>,
+    code: PackageCodeSubstate,
+    code_hash: Hash,
+    package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
+    auth_configs: BTreeMap<String, AuthConfig>,
+    metadata: BTreeMap<String, MetadataValue>,
+    access_rules: Option<AccessRules>,
+    api: &mut Y,
+) -> Result<PackageAddress, RuntimeError>
+where
+    Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
+{
+
+    let partitions = create_package_partitions(
+        blueprints,
+        blueprint_dependencies,
+        schemas,
+        code,
+        code_hash,
+        package_royalties,
+        auth_configs,
+        metadata,
+    );
+
+    // Use kernel API to commit substates directly.
+    // Can't use the ClientApi because of chicken-and-egg issue.
 
     let package_address = if let Some(address_reservation) = package_address_reservation {
         // TODO: Can we use `global_object` API?
@@ -883,16 +904,16 @@ impl PackageNativePackage {
         }
     }
 
-    pub(crate) fn publish_native<Y, L: Default>(
-        package_address: Option<GlobalAddressReservation>,
-        native_package_code_id: u64,
+    pub fn validate_native_package_definition(
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
-        api: &mut Y,
-    ) -> Result<PackageAddress, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
-    {
+        native_package_code_id: u64,
+    ) -> Result<(
+        BTreeMap<String, BlueprintDefinition>,
+        BTreeMap<String, BlueprintDependencies>,
+        BTreeMap<String, AuthConfig>,
+        BTreeMap<Hash, ScryptoSchema>,
+        (Hash, PackageCodeSubstate),
+    ), RuntimeError> {
         // Validate schema
         validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
@@ -902,10 +923,10 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Build node init
-        let mut auth_configs = BTreeMap::new();
-        let mut schemas = BTreeMap::new();
         let mut blueprints = BTreeMap::new();
         let mut blueprint_dependencies = BTreeMap::new();
+        let mut auth_configs = BTreeMap::new();
+        let mut schemas = BTreeMap::new();
 
         let code = PackageCodeSubstate {
             vm_type: VmType::Native,
@@ -1006,6 +1027,34 @@ impl PackageNativePackage {
                 blueprint_dependencies.insert(blueprint.clone(), minor_version_config);
             }
         };
+
+
+        Ok((
+            blueprints,
+            blueprint_dependencies,
+            auth_configs,
+            schemas,
+            (code_hash, code),
+        ))
+    }
+
+    pub(crate) fn publish_native<Y, L: Default>(
+        package_address: Option<GlobalAddressReservation>,
+        native_package_code_id: u64,
+        definition: PackageDefinition,
+        metadata: BTreeMap<String, MetadataValue>,
+        api: &mut Y,
+    ) -> Result<PackageAddress, RuntimeError>
+    where
+        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
+    {
+        let (
+            blueprints,
+            blueprint_dependencies,
+            auth_configs,
+            schemas,
+            (code_hash, code),
+        ) = Self::validate_native_package_definition(definition, native_package_code_id)?;
 
         globalize_package(
             package_address,

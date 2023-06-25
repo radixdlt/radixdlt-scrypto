@@ -2,7 +2,7 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
-use crate::blueprints::package::PackageNativePackage;
+use crate::blueprints::package::{create_package_partitions, PackageNativePackage};
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceManagerNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
@@ -363,6 +363,27 @@ where
 }
 
 pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>> {
+    /*
+    pre_allocated_addresses.push((
+        BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+        GlobalAddress::from(PACKAGE_PACKAGE),
+    ));
+    instructions.push(InstructionV1::CallFunction {
+        package_address: PACKAGE_PACKAGE.into(),
+        blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+        function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+        args: to_manifest_value_and_unwrap!(&),
+    });
+
+    PackagePublishNativeManifestInput {
+        package_address: Some(id_allocator.new_address_reservation_id()),
+        native_package_code_id: PACKAGE_CODE_ID,
+        setup: PackageNativePackage::definition(),
+        metadata: BTreeMap::new(),
+    }
+
+    create_package_partitions()
+     */
     btreemap!()
 }
 
