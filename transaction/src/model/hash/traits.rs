@@ -25,3 +25,9 @@ impl HashHasHrp for NotarizedTransactionHash {
         &hrp_set.notarized_transaction
     }
 }
+
+impl HashHasHrp for SystemTransactionHash {
+    fn hrp<'h>(hrp_set: &'h HrpSet) -> &'h str {
+        &hrp_set.system_transaction
+    }
+}

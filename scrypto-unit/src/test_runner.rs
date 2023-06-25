@@ -70,6 +70,9 @@ use transaction::model::{
 };
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
+use transaction::validation::{
+    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
+};
 
 pub struct Compile;
 
@@ -448,9 +451,7 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltySubstate>(
                 component_address.as_node_id(),
-                ROYALTY_BASE_PARTITION
-                    .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
-                    .unwrap(),
+                ROYALTY_FIELDS_PARTITION,
                 &RoyaltyField::RoyaltyAccumulator.into(),
             )
             .unwrap();
@@ -835,7 +836,7 @@ impl TestRunner {
                         setup: definition,
                         metadata: btreemap!(),
                         package_address: Some(ManifestAddressReservation(0)),
-                        owner_rule: OwnerRole::Fixed(AccessRule::AllowAll),
+                        owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),
                 }]),
                 blobs: BlobsV1 {
@@ -945,6 +946,22 @@ impl TestRunner {
             },
         );
         self.execute_manifest(manifest, initial_proofs)
+    }
+
+    pub fn execute_raw_transaction(
+        &mut self,
+        network: &NetworkDefinition,
+        raw_transaction: &RawNotarizedTransaction,
+    ) -> TransactionReceipt {
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
+        let validated = validator
+            .validate_from_raw(&raw_transaction)
+            .expect("Expected raw transaction to be valid");
+        self.execute_transaction(
+            validated.get_executable(),
+            FeeReserveConfig::default(),
+            ExecutionConfig::for_notarized_transaction(),
+        )
     }
 
     pub fn execute_manifest<T>(

@@ -146,6 +146,8 @@ pub enum TransactionStatus {
     Cancelled,
 }
 
+pub type TransactionStatusSubstateContents = TransactionStatus;
+
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct TransactionTrackerSubstate {
     pub start_epoch: u64,

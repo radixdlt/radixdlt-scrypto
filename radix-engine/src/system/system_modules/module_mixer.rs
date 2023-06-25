@@ -1,5 +1,5 @@
 use super::costing::CostingEntry;
-use super::limits::LimitingError;
+use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
@@ -430,15 +430,17 @@ impl SystemModuleMixer {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
             if self.transaction_runtime.logs.len() >= self.limits.config().max_number_of_logs {
                 return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::LimitingError(LimitingError::TooManyLogs),
+                    SystemModuleError::TransactionLimitsError(TransactionLimitsError::TooManyLogs),
                 ));
             }
             if message.len() > self.limits.config().max_log_size {
                 return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::LimitingError(LimitingError::LogSizeTooLarge {
-                        actual: message.len(),
-                        max: self.limits.config().max_log_size,
-                    }),
+                    SystemModuleError::TransactionLimitsError(
+                        TransactionLimitsError::LogSizeTooLarge {
+                            actual: message.len(),
+                            max: self.limits.config().max_log_size,
+                        },
+                    ),
                 ));
             }
         }
@@ -461,15 +463,19 @@ impl SystemModuleMixer {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
             if self.transaction_runtime.events.len() >= self.limits.config().max_number_of_events {
                 return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::LimitingError(LimitingError::TooManyEvents),
+                    SystemModuleError::TransactionLimitsError(
+                        TransactionLimitsError::TooManyEvents,
+                    ),
                 ));
             }
             if data.len() > self.limits.config().max_event_size {
                 return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::LimitingError(LimitingError::EventSizeTooLarge {
-                        actual: data.len(),
-                        max: self.limits.config().max_event_size,
-                    }),
+                    SystemModuleError::TransactionLimitsError(
+                        TransactionLimitsError::EventSizeTooLarge {
+                            actual: data.len(),
+                            max: self.limits.config().max_event_size,
+                        },
+                    ),
                 ));
             }
         }
@@ -488,10 +494,12 @@ impl SystemModuleMixer {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
             if message.len() > self.limits.config().max_panic_message_size {
                 return Err(RuntimeError::SystemModuleError(
-                    SystemModuleError::LimitingError(LimitingError::PanicMessageSizeTooLarge {
-                        actual: message.len(),
-                        max: self.limits.config().max_panic_message_size,
-                    }),
+                    SystemModuleError::TransactionLimitsError(
+                        TransactionLimitsError::PanicMessageSizeTooLarge {
+                            actual: message.len(),
+                            max: self.limits.config().max_panic_message_size,
+                        },
+                    ),
                 ));
             }
         }

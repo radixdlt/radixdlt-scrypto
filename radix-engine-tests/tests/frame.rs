@@ -1,5 +1,5 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::limits::LimitingError;
+use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use scrypto_unit::*;
@@ -56,8 +56,8 @@ fn test_max_call_depth_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
-                LimitingError::MaxCallDepthLimitReached
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxCallDepthLimitReached
             ))
         )
     });

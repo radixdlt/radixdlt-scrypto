@@ -5,9 +5,10 @@ use crate::*;
 use radix_engine_common::types::RoyaltyAmount;
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentRoyaltyCreateInput,
-    ComponentSetRoyaltyInput, COMPONENT_ROYALTY_ADMIN_ROLE, COMPONENT_ROYALTY_BLUEPRINT,
-    COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_CREATE_IDENT,
-    COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+    ComponentSetRoyaltyInput, COMPONENT_ROYALTY_ADMIN_ROLE, COMPONENT_ROYALTY_ADMIN_UPDATER_ROLE,
+    COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
+    COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -85,10 +86,17 @@ impl Royalty {
 
 pub struct RoyaltyRoles<T> {
     pub royalty_admin: T,
+    pub royalty_admin_updater: T,
 }
 
 impl<T> RoyaltyRoles<T> {
     pub fn list(self) -> Vec<(&'static str, T)> {
-        vec![(COMPONENT_ROYALTY_ADMIN_ROLE, self.royalty_admin)]
+        vec![
+            (COMPONENT_ROYALTY_ADMIN_ROLE, self.royalty_admin),
+            (
+                COMPONENT_ROYALTY_ADMIN_UPDATER_ROLE,
+                self.royalty_admin_updater,
+            ),
+        ]
     }
 }
