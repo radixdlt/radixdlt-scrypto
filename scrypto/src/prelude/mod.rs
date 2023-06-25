@@ -24,7 +24,6 @@ pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,
     sign::Signed,
 };
-pub use radix_engine_interface::api::*;
 pub use radix_engine_interface::blueprints::resource::*;
 pub use radix_engine_interface::crypto::*;
 pub use radix_engine_interface::math::*;
