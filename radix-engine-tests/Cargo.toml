@@ -35,6 +35,10 @@ paste = { version = "1.0.12" }
 
 
 [[bench]]
+name = "costing"
+harness = false
+
+[[bench]]
 name = "validation"
 harness = false
 

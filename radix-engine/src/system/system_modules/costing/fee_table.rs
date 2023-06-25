@@ -62,66 +62,49 @@ impl FeeTable {
     }
 
     fn data_processing_cost(size: usize) -> u32 {
-        add(mul(cast(size), 10), 1000)
+        // Based on benchmark `bench_decode_sbor`
+        // Time for processing a byte: 10.244 us / 1068 = 0.00959176029
+        cast(size)
     }
 
     fn store_access_cost(store_access: &StoreAccessInfo) -> u32 {
-        const COSTING_COEFFICIENT_STORAGE: u32 = 14;
-        const COSTING_COEFFICIENT_STORAGE_DIV_BITS: u32 = 8; // used to scale up or down all storage costing
-
         let mut sum = 0;
         for info in &store_access.0 {
             let cost = match info {
                 StoreAccess::ReadFromDb(size) => {
-                    if *size <= 25 * 1024 {
-                        // apply constant value
-                        400u32
-                    } else {
-                        // apply function: f(size) = 0.0009622109 * size + 389.5155
-                        // approximated integer representation: f(size) = (63 * size) / 2^16 + 390
-                        let mut value: u64 = *size as u64;
-                        value *= 63; // 0.0009622109 * 2^16
-                        value += (value >> 16) + 390;
-                        value.try_into().unwrap_or(u32::MAX)
-                    }
+                    // Apply function: f(size) = 0.0009622109 * size + 389.5155
+                    add(cast(*size) / 1_000, 400)
                 }
-                StoreAccess::ReadFromDbNotFound => 10000u32,
+                StoreAccess::ReadFromDbNotFound => {
+                    // The cost for not found varies. Apply the max.
+                    4_000
+                }
                 StoreAccess::ReadFromTrack(size) => {
-                    // apply function: f(size) = 0.00012232433 * size + 1.4939442
-                    // approximated integer representation: f(size) = (8 * size) / 2^16 + 1
-                    let mut value: u64 = *size as u64;
-                    value *= 8; // 0.00082827697 * 2^16
-                    value += (value >> 16) + 1;
-                    value.try_into().unwrap_or(u32::MAX)
+                    // Apply function: f(size) = 0.00012232433 * size + 1.4939442
+                    add(cast(*size) / 10_000, 2)
                 }
                 StoreAccess::WriteToTrack(size) => {
-                    // apply function: f(size) = 0.0004 * size + 1000
-                    // approximated integer representation: f(size) = (262 * size) / 2^16 + 1000
-                    let mut value: u64 = *size as u64;
-                    value *= 262; // 0.0004 * 2^16
-                    value += (value >> 16) + 1000;
-                    value.try_into().unwrap_or(u32::MAX)
+                    // Apply function: f(size) = 0.0004 * size + 1000
+                    add(cast(*size) / 2_500, 1_000)
                 }
                 StoreAccess::RewriteToTrack(size_old, size_new) => {
                     if size_new <= size_old {
                         // TODO: refund for reduced write size?
                         0
                     } else {
-                        // calculate the delta
-                        let mut value: u64 = (size_new - size_old) as u64;
-                        value *= 262; // 0.0004 * 2^16
-                        value += value >> 16;
-                        value.try_into().unwrap_or(u32::MAX)
+                        // The non-constant part of write cost
+                        cast(size_new - size_old) / 2_500
                     }
                 }
                 StoreAccess::DeleteFromTrack => {
-                    191 // Average of P95 points from benchmark
+                    // The constant part of write cost (RocksDB tombstones a deleted entry)
+                    1_000
                 }
             };
             sum = add(sum, cost);
         }
 
-        mul(sum, COSTING_COEFFICIENT_STORAGE) >> COSTING_COEFFICIENT_STORAGE_DIV_BITS
+        mul(sum, 100 /* 1 us = 100 cost units */)
     }
 
     //======================
