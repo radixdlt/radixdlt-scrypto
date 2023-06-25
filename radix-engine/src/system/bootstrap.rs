@@ -36,11 +36,14 @@ use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, SubstateDatabase},
 };
+use radix_engine_store_interface::db_key_mapper::MappedCommittableSubstateDatabase;
+use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
 use transaction::model::{
     BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayload,
 };
 use transaction::prelude::{BlobV1, PreAllocatedAddress};
 use transaction::validation::ManifestIdAllocator;
+use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -222,6 +225,9 @@ where
         initial_current_leader: Option<ValidatorIndex>,
         faucet_supply: Decimal,
     ) -> Option<GenesisReceipts> {
+        let substate_flash = create_system_bootstrap_flash();
+
+        // FIXME: use substate flash data
         let xrd_info = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
@@ -231,6 +237,8 @@ where
             );
 
         if xrd_info.is_none() {
+            self.flash_substates(substate_flash);
+
             let system_bootstrap_receipt = self.execute_system_bootstrap(
                 initial_epoch,
                 initial_config,
@@ -254,6 +262,24 @@ where
         } else {
             None
         }
+    }
+
+    fn flash_substates(&mut self, substates: BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>>) {
+        let mut updates = index_map_new();
+
+        for ((node_id, partition_num), substates) in substates {
+            let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_num);
+            let mut partition_updates = index_map_new();
+            for (substate_key, value) in substates {
+                let key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
+                let update = DatabaseUpdate::Set(value);
+                partition_updates.insert(key, update);
+            }
+
+            updates.insert(partition_key, partition_updates);
+        }
+
+        self.substate_db.commit(&updates);
     }
 
     fn execute_system_bootstrap(
@@ -334,6 +360,10 @@ where
 
         receipt
     }
+}
+
+pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>> {
+    btreemap!()
 }
 
 pub fn create_system_bootstrap_transaction(
