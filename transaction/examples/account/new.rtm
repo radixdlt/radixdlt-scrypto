@@ -1,7 +1,7 @@
 # The below just gives some example syntax
 # You shouldn't configure your account to have an "AllowAll" access! (apart from maybe for testing)
 CREATE_ACCOUNT_ADVANCED
-    Enum<OwnerRole::Updateable>(
+    Enum<OwnerRole::Updatable>(
         Enum<AccessRule::AllowAll>()
     )
 ;

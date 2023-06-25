@@ -1,6 +1,6 @@
 use radix_engine::{
     errors::{RuntimeError, SystemModuleError},
-    system::system_modules::limits::LimitingError,
+    system::system_modules::limits::TransactionLimitsError,
     types::*,
 };
 use scrypto_unit::*;
@@ -102,7 +102,7 @@ fn test_emit_large_logs() {
         DEFAULT_MAX_LOG_SIZE + 1,
         1,
         Some(RuntimeError::SystemModuleError(
-            SystemModuleError::LimitingError(LimitingError::LogSizeTooLarge {
+            SystemModuleError::TransactionLimitsError(TransactionLimitsError::LogSizeTooLarge {
                 actual: DEFAULT_MAX_LOG_SIZE + 1,
                 max: DEFAULT_MAX_LOG_SIZE,
             }),
@@ -115,7 +115,7 @@ fn test_emit_lots_of_logs() {
         DEFAULT_MAX_LOG_SIZE,
         1_000_000,
         Some(RuntimeError::SystemModuleError(
-            SystemModuleError::LimitingError(LimitingError::TooManyLogs),
+            SystemModuleError::TransactionLimitsError(TransactionLimitsError::TooManyLogs),
         )),
     );
 }

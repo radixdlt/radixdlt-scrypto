@@ -1,5 +1,5 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
-use radix_engine::system::system_modules::limits::LimitingError;
+use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
@@ -140,8 +140,8 @@ fn recursion_bomb_to_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
-                LimitingError::MaxCallDepthLimitReached
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxCallDepthLimitReached
             ))
         )
     });
@@ -216,8 +216,8 @@ fn recursion_bomb_2_to_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::LimitingError(
-                LimitingError::MaxCallDepthLimitReached
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::MaxCallDepthLimitReached
             ))
         )
     });

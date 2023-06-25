@@ -79,6 +79,7 @@ impl FeeTable {
                 }
                 StoreAccess::WriteToTrack(size) => {
                     // Apply function: f(size) = 0.0004 * size + 1000
+                    // FIXME: add costing for state expansion
                     add(cast(*size) / 2_500, 1_000)
                 }
                 StoreAccess::RewriteToTrack(size_old, size_new) => {
