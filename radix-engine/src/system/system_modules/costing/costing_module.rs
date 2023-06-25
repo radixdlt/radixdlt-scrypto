@@ -153,10 +153,25 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             api.kernel_get_system()
                 .modules
                 .costing
-                .apply_execution_cost(CostingEntry::Invoke {
+                .apply_execution_cost(CostingEntry::BeforeInvoke {
                     actor: &invocation.actor,
                     input_size: invocation.len(),
                 })?;
+        }
+
+        Ok(())
+    }
+
+    fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        output_size: usize,
+    ) -> Result<(), RuntimeError> {
+        // Skip invocation costing for transaction processor
+        if api.kernel_get_current_depth() > 0 {
+            api.kernel_get_system()
+                .modules
+                .costing
+                .apply_execution_cost(CostingEntry::AfterInvoke { output_size })?;
         }
 
         Ok(())

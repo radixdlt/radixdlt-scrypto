@@ -30,9 +30,12 @@ pub enum CostingEntry<'a> {
     },
 
     /* invoke */
-    Invoke {
+    BeforeInvoke {
         actor: &'a Actor,
         input_size: usize,
+    },
+    AfterInvoke {
+        output_size: usize,
     },
 
     /* node */
@@ -124,7 +127,10 @@ impl<'a> CostingEntry<'a> {
                 export_name,
                 gas,
             } => ft.run_wasm_code_cost(package_address, export_name, *gas),
-            CostingEntry::Invoke { actor, input_size } => ft.invoke_cost(actor, *input_size),
+            CostingEntry::BeforeInvoke { actor, input_size } => {
+                ft.before_invoke_cost(actor, *input_size)
+            }
+            CostingEntry::AfterInvoke { output_size } => ft.after_invoke_cost(*output_size),
             CostingEntry::AllocateNodeId => ft.allocate_node_id_cost(),
             CostingEntry::CreateNode {
                 node_id,

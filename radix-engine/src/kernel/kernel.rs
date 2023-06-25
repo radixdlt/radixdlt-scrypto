@@ -603,7 +603,9 @@ where
 
         let (lock_handle, value_size, store_access): (u32, usize, StoreAccessInfo) =
             match &maybe_lock_handle {
-                Ok((lock_handle, value_size, store_access)) => (*lock_handle, store_access.clone()),
+                Ok((lock_handle, value_size, store_access)) => {
+                    (*lock_handle, *value_size, store_access.clone())
+                }
                 Err(LockSubstateError::TrackError(track_err)) => {
                     if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                         let retry = M::on_substate_lock_fault(
