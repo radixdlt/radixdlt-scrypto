@@ -75,7 +75,7 @@ pub const DEFAULT_FREE_CREDIT_IN_XRD: &str = "100";
 /// The default cost unit price.
 pub const DEFAULT_COST_UNIT_PRICE: &str = "0.0000005";
 
-/// The default USD price
+/// The default USD price, roughly 1 XRD = 0.07 USD
 pub const DEFAULT_USD_PRICE: &str = "14";
 
 pub const DEFAULT_MAX_EXECUTION_TRACE_DEPTH: usize = 1;
