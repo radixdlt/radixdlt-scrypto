@@ -364,6 +364,7 @@ impl FinalizingFeeReserve for SystemLoanFeeReserve {
             execution_cost_breakdown: BTreeMap::new(),
             execution_cost_sum: self.execution_committed_sum,
             royalty_cost_breakdown,
+            fee_payments: index_map_new(),
         };
 
         // Sanity check

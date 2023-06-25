@@ -89,7 +89,6 @@ pub struct CommitResult {
     pub state_update_summary: StateUpdateSummary,
     pub outcome: TransactionOutcome,
     pub fee_summary: FeeSummary,
-    pub fee_payments: IndexMap<NodeId, Decimal>,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
     /// Metrics gathered during transaction execution.

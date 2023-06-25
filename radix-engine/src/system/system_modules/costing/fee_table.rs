@@ -123,7 +123,7 @@ impl FeeTable {
         // Based on benchmark `bench_validate_secp256k1`
         // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7_000
         // The cost for a transfer transaction with two signatures will be 2 * 7_000 * 0.000005 = 0.07 XRD
-        mul(cast(size), 7_000)
+        mul(cast(n), 7_000)
     }
 
     //======================
@@ -173,7 +173,7 @@ impl FeeTable {
     #[inline]
     pub fn create_node_cost(
         &self,
-        node_id: &NodeId,
+        _node_id: &NodeId,
         total_substate_size: usize,
         store_access: &StoreAccessInfo,
     ) -> u32 {

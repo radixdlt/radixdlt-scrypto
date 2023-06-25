@@ -282,6 +282,7 @@ where
                             .into_iter()
                             .map(|(k, v)| (k.to_string(), v))
                             .collect();
+                        fee_summary.fee_payments = fee_payments.clone();
 
                         // Update intent hash status
                         if let Some(next_epoch) = Self::read_epoch(&mut track) {
@@ -316,7 +317,6 @@ where
                                 Err(e) => TransactionOutcome::Failure(e),
                             },
                             fee_summary,
-                            fee_payments,
                             application_events,
                             application_logs,
                             execution_metrics,
