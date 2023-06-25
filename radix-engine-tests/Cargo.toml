@@ -68,7 +68,7 @@ harness = false
 # You should enable either `std` or `alloc`
 default = ["std"]
 std = ["sbor/std", "transaction/std", "transaction-scenarios/std", "radix-engine/std", "radix-engine-interface/std", "radix-engine-stores/std", "radix-engine-store-interface/std", "radix-engine-queries/std", "utils/std", "scrypto/std", "scrypto-unit/std"]
-alloc = ["sbor/alloc", "transaction/alloc", "transaction-scenarios/std", "radix-engine/alloc", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine-store-interface/alloc", "radix-engine-queries/alloc", "utils/alloc", "scrypto/alloc", "scrypto-unit/alloc"]
+alloc = ["sbor/alloc", "transaction/alloc", "transaction-scenarios/alloc", "radix-engine/alloc", "radix-engine-interface/alloc", "radix-engine-stores/alloc", "radix-engine-store-interface/alloc", "radix-engine-queries/alloc", "utils/alloc", "scrypto/alloc", "scrypto-unit/alloc"]
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
