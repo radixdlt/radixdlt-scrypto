@@ -40,19 +40,11 @@ lazy_static! {
 ///
 /// FIXME: fee table is actively adjusted at this point of time!
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct FeeTable {
-    tx_base_cost: u32,
-    tx_payload_cost_per_byte: u32,
-    tx_signature_verification_cost_per_sig: u32,
-}
+pub struct FeeTable;
 
 impl FeeTable {
     pub fn new() -> Self {
-        Self {
-            tx_base_cost: 50_000,
-            tx_payload_cost_per_byte: 5,
-            tx_signature_verification_cost_per_sig: 100_000,
-        }
+        Self
     }
 
     fn transient_data_cost(size: usize) -> u32 {
@@ -63,7 +55,7 @@ impl FeeTable {
 
     fn data_processing_cost(size: usize) -> u32 {
         // Based on benchmark `bench_decode_sbor`
-        // Time for processing a byte: 10.244 us / 1068 = 0.00959176029
+        // Time for processing a byte: 10.244 µs / 1068 = 0.00959176029
         cast(size)
     }
 
@@ -113,18 +105,27 @@ impl FeeTable {
 
     #[inline]
     pub fn tx_base_cost(&self) -> u32 {
-        self.tx_base_cost
+        // 40_000 * 0.000005 = 0.2 XRD
+        40_000
     }
 
     #[inline]
-    pub fn tx_payload_cost_per_byte(&self) -> u32 {
-        self.tx_payload_cost_per_byte
+    pub fn tx_payload_cost(&self, size: usize) -> u32 {
+        // Rational:
+        // Transaction payload is propagated over a P2P network.
+        // Larger size may slows down the network performance.
+        // The size of a typical transfer transaction is 400 bytes, so the cost is 400 * 50 * 0.000005 = 0.1 XRD
+        mul(cast(size), 50)
     }
 
     #[inline]
-    pub fn tx_signature_verification_cost_per_sig(&self) -> u32 {
-        self.tx_signature_verification_cost_per_sig
+    pub fn tx_signature_verification_cost(&self, n: usize) -> u32 {
+        // Based on benchmark `bench_validate_secp256k1`
+        // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7_000
+        // The cost for a transfer transaction with two signatures will be 2 * 7_000 * 0.000005 = 0.07 XRD
+        mul(cast(size), 7_000)
     }
+
     //======================
     // VM execution costs
     //======================
