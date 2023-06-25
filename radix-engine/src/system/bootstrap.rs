@@ -394,7 +394,6 @@ pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BT
                 schemas,
                 code,
                 code_hash,
-                btreemap!(),
                 auth_configs,
                 btreemap!(),
             )
@@ -422,48 +421,6 @@ pub fn create_system_bootstrap_transaction(
     let mut instructions = Vec::new();
     let mut pre_allocated_addresses = vec![];
     let mut blobs = vec![];
-
-    // Package Package
-    {
-        /*
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(PACKAGE_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: PACKAGE_CODE_ID,
-                setup: PackageNativePackage::definition(),
-                metadata: BTreeMap::new(),
-            }),
-        });
-         */
-    }
-
-    // TransactionProcessor Package
-    {
-        /*
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(TRANSACTION_PROCESSOR_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: TransactionProcessorNativePackage::definition(),
-                metadata: BTreeMap::new(),
-                native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
-            }),
-        });
-         */
-    }
 
     // Metadata Package
     /*

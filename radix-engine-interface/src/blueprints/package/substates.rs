@@ -4,6 +4,7 @@ use crate::schema::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::crypto::Hash;
+use radix_engine_interface::blueprints::resource::Vault;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
@@ -55,14 +56,18 @@ impl Debug for PackageCodeSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageRoyaltyAccumulatorSubstate {
     /// The vault for collecting package royalties.
-    ///
-    /// It's optional to break circular dependency - creating package royalty vaults
-    /// requires the `resource` package existing in the first place.
-    /// TODO: Cleanup
-    pub royalty_vault: Option<Own>,
+    pub royalty_vault: Vault,
+}
+
+impl Clone for PackageRoyaltyAccumulatorSubstate {
+    fn clone(&self) -> Self {
+        Self {
+            royalty_vault: Vault(self.royalty_vault.0.clone())
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]

@@ -15,7 +15,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF, ClientObjectApi};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
@@ -84,6 +84,8 @@ pub enum PackageError {
     },
 
     InvalidMetadataKey(String),
+
+    RoyaltiesNotEnabled,
 }
 
 fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
@@ -358,12 +360,13 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 }
 
 pub fn create_package_partitions(
+    //features: BTreeSet<String>,
     blueprints: BTreeMap<String, BlueprintDefinition>,
     blueprint_dependencies: BTreeMap<String, BlueprintDependencies>,
     schemas: BTreeMap<Hash, ScryptoSchema>,
     code: PackageCodeSubstate,
     code_hash: Hash,
-    package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
+    //package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
     auth_configs: BTreeMap<String, AuthConfig>,
     metadata: BTreeMap<String, MetadataValue>,
 ) -> NodeSubstates {
@@ -371,18 +374,22 @@ pub fn create_package_partitions(
 
     // Prepare node init.
     {
-        let royalty = PackageRoyaltyAccumulatorSubstate {
-            royalty_vault: None,
-        };
-        let main_partition = btreemap!(
-            PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
-        );
-        partitions.insert(
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_FIELDS_PARTITION_OFFSET)
-                .unwrap(),
-            main_partition,
-        );
+        /*
+        if features.contains("royalty") {
+            let royalty = PackageRoyaltyAccumulatorSubstate {
+                royalty_vault: None,
+            };
+            let main_partition = btreemap!(
+                PackageField::Royalty.into() => IndexedScryptoValue::from_typed(&royalty),
+            );
+            partitions.insert(
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_FIELDS_PARTITION_OFFSET)
+                    .unwrap(),
+                main_partition,
+            );
+        }
+         */
     }
 
     {
@@ -467,6 +474,7 @@ pub fn create_package_partitions(
         );
     };
 
+    /*
     {
         let royalty_partition = package_royalties
             .into_iter()
@@ -490,6 +498,7 @@ pub fn create_package_partitions(
             royalty_partition,
         );
     };
+     */
 
     {
         let auth_partition = auth_configs
@@ -564,8 +573,9 @@ where
 
     let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>> = BTreeMap::new();
 
+    let vault = ResourceManager(XRD).new_empty_vault(api)?;
     let royalty = PackageRoyaltyAccumulatorSubstate {
-        royalty_vault: None,
+        royalty_vault: Vault(vault),
     };
 
     {
@@ -641,7 +651,7 @@ where
 
     let package_object = api.new_object(
         PACKAGE_BLUEPRINT,
-        vec![],
+        vec!["royalty"],
         None,
         vec![scrypto_encode(&royalty).unwrap()],
         kv_entries,
@@ -679,8 +689,9 @@ impl PackageNativePackage {
         let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
 
         let mut fields = Vec::new();
-        fields.push(FieldSchema::static_field(
+        fields.push(FieldSchema::if_feature(
             aggregator.add_child_type_and_descendents::<PackageRoyaltyAccumulatorSubstate>(),
+            "royalty",
         ));
 
         let mut collections = Vec::new();
@@ -803,7 +814,9 @@ impl PackageNativePackage {
         let blueprints = btreemap!(
             PACKAGE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
-                feature_set: btreeset!(),
+                feature_set: btreeset!(
+                    "royalty".to_string(),
+                ),
                 dependencies: btreeset!(
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     PACKAGE_OWNER_BADGE.into(),
@@ -1362,6 +1375,14 @@ impl PackageRoyaltyNativeBlueprint {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
+        {
+            let mut service = SystemService::new(api);
+            let object_info = service.get_object_info(receiver)?;
+            if !object_info.features.contains("royalty") {
+                return Ok(());
+            }
+        }
+
         let handle = api.kernel_lock_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
@@ -1399,18 +1420,10 @@ impl PackageRoyaltyNativeBlueprint {
                 SystemLockData::default(),
             )?;
 
-            let mut substate: PackageRoyaltyAccumulatorSubstate =
+            let substate: PackageRoyaltyAccumulatorSubstate =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            let vault_id = if let Some(vault) = substate.royalty_vault {
-                vault
-            } else {
-                let mut system = SystemService::new(api);
-                let new_vault = ResourceManager(RADIX_TOKEN).new_empty_vault(&mut system)?;
-                substate.royalty_vault = Some(new_vault);
-                api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate))?;
-                new_vault
-            };
+            let vault_id = substate.royalty_vault.0;
             let package_address = PackageAddress::new_or_panic(receiver.0);
             apply_royalty_cost(
                 api,
@@ -1429,17 +1442,18 @@ impl PackageRoyaltyNativeBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, "royalty")? {
+            return Err(RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::RoyaltiesNotEnabled)));
+        }
+
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
             PackageField::Royalty.into(),
             LockFlags::read_only(),
         )?;
 
-        let substate: PackageRoyaltyAccumulatorSubstate = api.field_lock_read_typed(handle)?;
-        let bucket = match substate.royalty_vault.clone() {
-            Some(vault) => Vault(vault).take_all(api)?,
-            None => ResourceManager(RADIX_TOKEN).new_empty_bucket(api)?,
-        };
+        let mut substate: PackageRoyaltyAccumulatorSubstate = api.field_lock_read_typed(handle)?;
+        let bucket = substate.royalty_vault.take_all(api)?;
 
         Ok(bucket)
     }
