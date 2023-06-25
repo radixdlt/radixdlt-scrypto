@@ -1,6 +1,9 @@
+use sbor::*;
 use scrypto::api::key_value_entry_api::ClientKeyValueEntryApi;
 use scrypto::api::key_value_store_api::ClientKeyValueStoreApi;
+use scrypto::api::*;
 use scrypto::prelude::scrypto_env::ScryptoEnv;
+use scrypto::prelude::wasm_api::kv_entry_set;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -57,17 +60,24 @@ mod transaction_limits_substate {
 
     impl TransactionLimitSubstateTest {
         pub fn write_large_value(raw_array_size: usize) -> Global<TransactionLimitSubstateTest> {
-            let mut vec = Vec::<u8>::with_capacity(raw_array_size);
-            unsafe {
-                vec.set_len(raw_array_size);
-            }
+            // SBOR encoding of Vec<u8>
+            let mut buf = Vec::new();
+            let mut encoder = VecEncoder::<ScryptoCustomValueKind>::new(&mut buf, 100);
+            encoder
+                .write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+                .unwrap();
+            encoder.write_value_kind(ValueKind::Array).unwrap();
+            encoder.write_value_kind(ValueKind::U8).unwrap();
+            encoder.write_size(raw_array_size).unwrap();
+            buf.reserve(raw_array_size);
+            let new_len = buf.len() + raw_array_size;
+            unsafe { buf.set_len(new_len) };
 
             // Create a KVStore
             let kv_store = KeyValueStore::<u32, Vec<u8>>::new();
 
             // Insert into store
             let key_payload = scrypto_encode(&1u32).unwrap();
-            let value_payload = scrypto_encode(&vec).unwrap();
             let handle = ScryptoEnv
                 .key_value_store_lock_entry(
                     kv_store.id.as_node_id(),
@@ -75,9 +85,7 @@ mod transaction_limits_substate {
                     LockFlags::MUTABLE,
                 )
                 .unwrap();
-            ScryptoEnv
-                .key_value_entry_set(handle, value_payload)
-                .unwrap();
+            unsafe { kv_entry_set(handle, buf.as_ptr(), buf.len()) };
             ScryptoEnv.key_value_entry_release(handle).unwrap();
 
             // Put the kv store into a component
@@ -95,16 +103,26 @@ mod invoke_limits {
 
     impl InvokeLimitsTest {
         pub fn call(raw_array_size: usize) {
-            let mut vec = Vec::<u8>::with_capacity(raw_array_size);
-            unsafe {
-                vec.set_len(raw_array_size);
-            }
+            // SBOR encoding of (Vec<u8>)
+            let mut buf = Vec::new();
+            let mut encoder = VecEncoder::<ScryptoCustomValueKind>::new(&mut buf, 100);
+            encoder
+                .write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+                .unwrap();
+            encoder.write_value_kind(ValueKind::Tuple).unwrap();
+            encoder.write_size(1).unwrap();
+            encoder.write_value_kind(ValueKind::Array).unwrap();
+            encoder.write_value_kind(ValueKind::U8).unwrap();
+            encoder.write_size(raw_array_size).unwrap();
+            buf.reserve(raw_array_size);
+            let new_len = buf.len() + raw_array_size;
+            unsafe { buf.set_len(new_len) };
 
             Runtime::call_function(
                 Runtime::package_address(),
                 "InvokeLimitsTest",
                 "callee",
-                scrypto_args!(vec),
+                buf,
             )
         }
 

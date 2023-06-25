@@ -5,18 +5,22 @@ use crate::vm::wasm::*;
 use sbor::rust::vec::Vec;
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
-pub struct NopWasmRuntime {
-    fee_reserve: SystemLoanFeeReserve,
+pub struct NoOpWasmRuntime<'a> {
+    pub fee_reserve: SystemLoanFeeReserve,
+    pub gas_consumed: &'a mut u32,
 }
 
-impl NopWasmRuntime {
-    pub fn new(fee_reserve: SystemLoanFeeReserve) -> Self {
-        Self { fee_reserve }
+impl<'a> NoOpWasmRuntime<'a> {
+    pub fn new(fee_reserve: SystemLoanFeeReserve, gas_consumed: &'a mut u32) -> Self {
+        Self {
+            fee_reserve,
+            gas_consumed,
+        }
     }
 }
 
 #[allow(unused_variables)]
-impl WasmRuntime for NopWasmRuntime {
+impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
     fn allocate_buffer(
         &mut self,
         buffer: Vec<u8>,
@@ -177,6 +181,7 @@ impl WasmRuntime for NopWasmRuntime {
     }
 
     fn consume_gas(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.gas_consumed.add_assign(n);
         self.fee_reserve
             .consume_execution(n)
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::FeeReserveError(e)))

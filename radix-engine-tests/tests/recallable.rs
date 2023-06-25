@@ -16,7 +16,7 @@ fn non_existing_vault_should_cause_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .recall(non_existing_address, Decimal::one())
         .call_method(
             account,
@@ -48,7 +48,7 @@ fn cannot_take_on_non_recallable_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .recall(
             InternalAddress::new_or_panic(vault_id.into()),
             Decimal::one(),
@@ -85,7 +85,7 @@ fn can_take_on_recallable_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .recall(
             InternalAddress::new_or_panic(vault_id.into()),
             Decimal::one(),
@@ -130,7 +130,7 @@ fn test_recall_on_internal_vault() {
     // Instantiate component
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
+            .lock_fee(account, 50u32.into())
             .call_function(package_address, "RecallTest", "new", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -140,7 +140,7 @@ fn test_recall_on_internal_vault() {
     // Recall
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .call_method(
                 component_address,
                 "recall_on_internal_vault",
@@ -176,7 +176,7 @@ fn test_recall_on_received_direct_access_reference() {
     let vault_id = test_runner.get_component_vaults(account, recallable_token_address)[0];
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .call_function(
                 package_address,
                 "RecallTest",

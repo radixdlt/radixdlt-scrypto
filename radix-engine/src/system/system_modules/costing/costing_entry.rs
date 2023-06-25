@@ -107,23 +107,13 @@ pub enum CostingEntry<'a> {
     },
 }
 
-#[inline]
-pub fn checked_mul_or_max(base: u32, multiplier: usize) -> u32 {
-    u32::try_from(multiplier)
-        .ok()
-        .and_then(|x| base.checked_mul(x))
-        .unwrap_or(u32::MAX)
-}
-
 impl<'a> CostingEntry<'a> {
     pub fn to_cost_units(&self, ft: &FeeTable) -> u32 {
         match self {
             CostingEntry::TxBaseCost => ft.tx_base_cost(),
-            CostingEntry::TxPayloadCost { size } => {
-                checked_mul_or_max(ft.tx_payload_cost_per_byte(), *size)
-            }
+            CostingEntry::TxPayloadCost { size } => ft.tx_payload_cost(*size),
             CostingEntry::TxSignatureVerification { num_signatures } => {
-                checked_mul_or_max(ft.tx_signature_verification_cost_per_sig(), *num_signatures)
+                ft.tx_signature_verification_cost(*num_signatures)
             }
             CostingEntry::RunNativeCode {
                 package_address,

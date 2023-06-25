@@ -22,7 +22,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             CONSENSUS_MANAGER,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
@@ -57,7 +57,7 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "ClockTest",
@@ -85,7 +85,7 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             CONSENSUS_MANAGER,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
@@ -116,7 +116,7 @@ fn test_date_time_conversions() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "ClockTest",

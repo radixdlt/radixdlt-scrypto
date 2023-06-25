@@ -36,6 +36,10 @@ paste = { version = "1.0.12" }
 
 
 [[bench]]
+name = "costing"
+harness = false
+
+[[bench]]
 name = "validation"
 harness = false
 
@@ -49,10 +53,6 @@ harness = false
 
 [[bench]]
 name = "transfer"
-harness = false
-
-[[bench]]
-name = "spin_loop"
 harness = false
 
 [[bench]]

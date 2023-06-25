@@ -23,7 +23,7 @@ fn set_up_package_and_component() -> (
     let (code, definition) = Compile::compile("./tests/blueprints/royalty-auth");
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
+            .lock_fee(account, 50u32.into())
             .publish_package_with_owner(code, definition, owner_badge_addr.clone())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -33,7 +33,7 @@ fn set_up_package_and_component() -> (
     // Instantiate component
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
+            .lock_fee(account, 50u32.into())
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
@@ -78,7 +78,7 @@ fn test_only_package_owner_can_claim_royalty() {
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
@@ -98,7 +98,7 @@ fn test_only_package_owner_can_claim_royalty() {
     // Negative case
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .claim_package_royalties(package_address)
             .call_method(
                 account,
@@ -126,7 +126,7 @@ fn test_component_owner_can_set_royalty() {
     // Act
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
@@ -154,7 +154,7 @@ fn test_non_component_owner_cannot_set_royalty() {
     // Negative case
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .set_component_royalty(
                 component_address,
                 "paid_method".to_string(),
@@ -181,7 +181,7 @@ fn test_cannot_set_royalty_after_freezing() {
     ) = set_up_package_and_component();
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
@@ -196,7 +196,7 @@ fn test_cannot_set_royalty_after_freezing() {
     // Act
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
@@ -235,7 +235,7 @@ fn test_component_owner_can_claim_royalty() {
     // Act
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
@@ -264,7 +264,7 @@ fn test_non_component_owner_cannot_claim_royalty() {
     // Act
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .claim_component_royalties(component_address)
             .call_method(
                 account,

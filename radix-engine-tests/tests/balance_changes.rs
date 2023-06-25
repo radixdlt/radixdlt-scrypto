@@ -22,7 +22,7 @@ fn test_balance_changes_when_success() {
     // Instantiate component
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
+            .lock_fee(account, 50u32.into())
             .call_function(
                 package_address,
                 "BalanceChangesTest",
@@ -40,7 +40,7 @@ fn test_balance_changes_when_success() {
     // Call the put method
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 100.into())
+            .lock_fee(test_runner.faucet_component(), 50.into())
             .withdraw_from_account(account, RADIX_TOKEN, Decimal::ONE)
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(component_address, "put", manifest_args!(bucket))
@@ -93,7 +93,7 @@ fn test_balance_changes_when_failure() {
     // Instantiate component
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 10u32.into())
+            .lock_fee(account, 50u32.into())
             .call_function(
                 package_address,
                 "BalanceChangesTest",
@@ -111,7 +111,7 @@ fn test_balance_changes_when_failure() {
     // Call the put method
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 100.into())
+            .lock_fee(test_runner.faucet_component(), 50.into())
             .withdraw_from_account(account, RADIX_TOKEN, Decimal::ONE)
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(component_address, "boom", manifest_args!(bucket))
@@ -148,7 +148,7 @@ fn test_balance_changes_when_recall() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .recall(
             InternalAddress::new_or_panic(vault_id.into()),
             Decimal::one(),
@@ -198,7 +198,7 @@ fn test_balance_changes_when_transferring_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .withdraw_from_account(account, resource_address, dec!("1.0"))
         .call_method(
             other_account,

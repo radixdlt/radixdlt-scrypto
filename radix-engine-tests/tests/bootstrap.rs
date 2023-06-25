@@ -409,7 +409,7 @@ fn should_not_be_able_to_create_genesis_helper() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             GENESIS_HELPER_PACKAGE,
             GENESIS_HELPER_BLUEPRINT,
@@ -437,7 +437,7 @@ fn should_not_be_able_to_call_genesis_helper() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(GENESIS_HELPER, "wrap_up", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

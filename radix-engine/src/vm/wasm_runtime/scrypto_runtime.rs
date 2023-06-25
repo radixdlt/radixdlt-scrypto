@@ -366,7 +366,7 @@ where
         }
 
         // Request from system
-        let amount = ((n - 1) / 10_000 + 1) * 10_000;
+        let amount = ((n - 1) / 1_000 + 1) * 1_000;
         self.api
             .consume_cost_units(ClientCostingEntry::RunWasmCode {
                 package_address: &self.package_address,

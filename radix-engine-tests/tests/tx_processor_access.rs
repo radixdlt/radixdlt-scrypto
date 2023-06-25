@@ -26,7 +26,7 @@ fn should_not_be_able_to_call_tx_processor_in_tx_processor() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .call_function(
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,
@@ -62,7 +62,7 @@ fn calling_transaction_processor_from_scrypto_should_not_panic() {
     let manifest_encoded_instructions: Vec<u8> = vec![0u8];
     let references: Vec<Reference> = vec![];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .call_function(
             package_address,
             "ExecuteManifest",
@@ -94,7 +94,7 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
         .call_function(
             package_address,
             "ExecuteManifest",

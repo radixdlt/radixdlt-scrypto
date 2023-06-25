@@ -51,7 +51,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     if update_auth {
         let (module, role_key) = action.get_role();
         let manifest = ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 100u32.into())
+            .lock_fee(test_runner.faucet_component(), 50u32.into())
             .create_proof_from_account(account, admin_auth)
             .update_role(
                 token_address.into(),
@@ -84,7 +84,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     // Act
     let mut builder = ManifestBuilder::new();
-    builder.lock_fee(test_runner.faucet_component(), 10u32.into());
+    builder.lock_fee(test_runner.faucet_component(), 50u32.into());
     builder.create_proof_from_account_of_amount(account, auth_to_use, Decimal::one());
 
     match action {
