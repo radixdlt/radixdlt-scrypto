@@ -35,7 +35,7 @@ mod non_fungible_test {
                     rule!(deny_all),
                 )
                 .burnable(rule!(allow_all), rule!(deny_all))
-                .updateable_non_fungible_data(
+                .updatable_non_fungible_data(
                     rule!(require(mint_badge.resource_address())),
                     rule!(deny_all),
                 )

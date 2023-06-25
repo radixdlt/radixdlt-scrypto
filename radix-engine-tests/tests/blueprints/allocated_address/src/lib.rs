@@ -84,7 +84,7 @@ mod apa {
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata!(
                     init {
-                        "key" => GlobalAddress::from(address)
+                        "key" => GlobalAddress::from(address), locked;
                     }
                 ))
                 .with_address(own)

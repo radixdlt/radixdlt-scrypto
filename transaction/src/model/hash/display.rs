@@ -25,50 +25,31 @@ impl<'a> From<Option<&'a TransactionHashBech32Encoder>> for TransactionHashDispl
     }
 }
 
-impl<'a> ContextualDisplay<TransactionHashDisplayContext<'a>> for IntentHash {
-    type Error = fmt::Error;
+macro_rules! impl_contextual_display {
+    ($($type: ty),* $(,)?) => {
+        $(
+            impl<'a> ContextualDisplay<TransactionHashDisplayContext<'a>> for $type {
+                type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
-        &self,
-        f: &mut F,
-        context: &TransactionHashDisplayContext<'a>,
-    ) -> Result<(), Self::Error> {
-        if let Some(encoder) = context.encoder {
-            encoder.encode_to_fmt(f, self).map_err(|_| fmt::Error)
-        } else {
-            write!(f, "{}", self.0)
-        }
-    }
+                fn contextual_format<F: fmt::Write>(
+                    &self,
+                    f: &mut F,
+                    context: &TransactionHashDisplayContext<'a>,
+                ) -> Result<(), Self::Error> {
+                    if let Some(encoder) = context.encoder {
+                        encoder.encode_to_fmt(f, self).map_err(|_| fmt::Error)
+                    } else {
+                        write!(f, "{}", self.0)
+                    }
+                }
+            }
+        )*
+    };
 }
 
-impl<'a> ContextualDisplay<TransactionHashDisplayContext<'a>> for SignedIntentHash {
-    type Error = fmt::Error;
-
-    fn contextual_format<F: fmt::Write>(
-        &self,
-        f: &mut F,
-        context: &TransactionHashDisplayContext<'a>,
-    ) -> Result<(), Self::Error> {
-        if let Some(encoder) = context.encoder {
-            encoder.encode_to_fmt(f, self).map_err(|_| fmt::Error)
-        } else {
-            write!(f, "{}", self.0)
-        }
-    }
-}
-
-impl<'a> ContextualDisplay<TransactionHashDisplayContext<'a>> for NotarizedTransactionHash {
-    type Error = fmt::Error;
-
-    fn contextual_format<F: fmt::Write>(
-        &self,
-        f: &mut F,
-        context: &TransactionHashDisplayContext<'a>,
-    ) -> Result<(), Self::Error> {
-        if let Some(encoder) = context.encoder {
-            encoder.encode_to_fmt(f, self).map_err(|_| fmt::Error)
-        } else {
-            write!(f, "{}", self.0)
-        }
-    }
-}
+impl_contextual_display![
+    IntentHash,
+    SignedIntentHash,
+    NotarizedTransactionHash,
+    SystemTransactionHash
+];
