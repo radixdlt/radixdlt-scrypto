@@ -39,7 +39,7 @@ pub use radix_engine_interface::blueprints::package::{
 use crate::system::node_modules::access_rules;
 use crate::vm::VmValidation;
 
-pub const PACKAGE_ROYALTY_AUTHORITY: &str = "package_royalty";
+pub const PACKAGE_ROYALTY_FEATURE: &str = "package-royalty";
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PackageError {
@@ -602,7 +602,7 @@ where
 
     let package_object = api.new_object(
         PACKAGE_BLUEPRINT,
-        vec!["royalty"],
+        vec![PACKAGE_ROYALTY_FEATURE],
         None,
         vec![scrypto_encode(&royalty).unwrap()],
         kv_entries,
@@ -642,7 +642,7 @@ impl PackageNativePackage {
         let mut fields = Vec::new();
         fields.push(FieldSchema::if_feature(
             aggregator.add_child_type_and_descendents::<PackageRoyaltyAccumulatorSubstate>(),
-            "royalty",
+            PACKAGE_ROYALTY_FEATURE,
         ));
 
         let mut collections = Vec::new();
@@ -766,7 +766,7 @@ impl PackageNativePackage {
             PACKAGE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
                 feature_set: btreeset!(
-                    "royalty".to_string(),
+                    PACKAGE_ROYALTY_FEATURE.to_string(),
                 ),
                 dependencies: btreeset!(
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
@@ -1125,7 +1125,7 @@ impl PackageRoyaltyNativeBlueprint {
         {
             let mut service = SystemService::new(api);
             let object_info = service.get_object_info(receiver)?;
-            if !object_info.features.contains("royalty") {
+            if !object_info.features.contains(PACKAGE_ROYALTY_FEATURE) {
                 return Ok(());
             }
         }
@@ -1189,7 +1189,7 @@ impl PackageRoyaltyNativeBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, "royalty")? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, PACKAGE_ROYALTY_FEATURE)? {
             return Err(RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::RoyaltiesNotEnabled)));
         }
 
