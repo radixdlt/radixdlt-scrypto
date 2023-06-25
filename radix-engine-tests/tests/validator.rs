@@ -1,24 +1,10 @@
-use radix_engine::blueprints::consensus_manager::{
-    Validator, ValidatorEmissionAppliedEvent, ValidatorError,
-};
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
-use radix_engine::system::bootstrap::*;
+use radix_engine::blueprints::consensus_manager::ValidatorError;
+use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_queries::typed_substate_layout::{
-    ConsensusManagerError, ValidatorRewardAppliedEvent,
-};
-use rand::prelude::SliceRandom;
-use rand::Rng;
-use rand_chacha;
-use rand_chacha::rand_core::SeedableRng;
-use rand_chacha::ChaCha8Rng;
 use scrypto_unit::*;
-use transaction::builder::{ManifestBuilder, TransactionManifestV1};
-use transaction::model::InstructionV1;
+use transaction::builder::ManifestBuilder;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn signal_protocol_update_test<F>(as_owner: bool, name_len: usize, result_check: F)

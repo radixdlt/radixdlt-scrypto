@@ -640,8 +640,6 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: ValidatorSignalProtocolUpdateReadinessInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
