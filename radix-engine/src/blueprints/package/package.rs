@@ -10,6 +10,8 @@ use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
+use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -543,7 +545,7 @@ pub fn create_package_partitions(
 }
 
 
-fn globalize_package<Y, L: Default>(
+fn globalize_package<Y>(
     package_address_reservation: Option<GlobalAddressReservation>,
     blueprints: BTreeMap<String, BlueprintDefinition>,
     blueprint_dependencies: BTreeMap<String, BlueprintDependencies>,
@@ -557,104 +559,117 @@ fn globalize_package<Y, L: Default>(
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
 where
-    Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
+    Y: ClientApi<RuntimeError>,
 {
 
-    let partitions = create_package_partitions(
-        blueprints,
-        blueprint_dependencies,
-        schemas,
-        code,
-        code_hash,
-        package_royalties,
-        auth_configs,
-        metadata,
-    );
+    let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>> = BTreeMap::new();
 
-    // Use kernel API to commit substates directly.
-    // Can't use the ClientApi because of chicken-and-egg issue.
-
-    let package_address = if let Some(address_reservation) = package_address_reservation {
-        // TODO: Can we use `global_object` API?
-
-        // Check global address reservation
-        let global_address = {
-            let substates = api.kernel_drop_node(address_reservation.0.as_node_id())?;
-
-            let type_info: Option<TypeInfoSubstate> = substates
-                .get(&TYPE_INFO_FIELD_PARTITION)
-                .and_then(|x| x.get(&TypeInfoField::TypeInfo.into()))
-                .and_then(|x| x.as_typed().ok());
-
-            match type_info {
-                Some(TypeInfoSubstate::GlobalAddressReservation(x)) => x,
-                _ => {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidGlobalAddressReservation,
-                    ));
-                }
-            }
-        };
-
-        // Check blueprint id
-        let reserved_blueprint_id = {
-            let lock_handle = api.kernel_lock_substate(
-                global_address.as_node_id(),
-                TYPE_INFO_FIELD_PARTITION,
-                &TypeInfoField::TypeInfo.into(),
-                LockFlags::MUTABLE, // This is to ensure the substate is lock free!
-                L::default(),
-            )?;
-            let type_info: TypeInfoSubstate =
-                api.kernel_read_substate(lock_handle)?.as_typed().unwrap();
-            api.kernel_drop_lock(lock_handle)?;
-            match type_info {
-                TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom { blueprint_id }) => {
-                    blueprint_id
-                }
-                _ => unreachable!(),
-            }
-        };
-
-        if reserved_blueprint_id.package_address != PACKAGE_PACKAGE
-            || reserved_blueprint_id.blueprint_name != PACKAGE_BLUEPRINT
-        {
-            return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-                CannotGlobalizeError::InvalidBlueprintId,
-            )));
-        }
-        PackageAddress::new_or_panic(global_address.into())
-    } else {
-        PackageAddress::new_or_panic(
-            api.kernel_allocate_node_id(EntityType::GlobalPackage)?
-                .into(),
-        )
+    let royalty = PackageRoyaltyAccumulatorSubstate {
+        royalty_vault: None,
     };
 
-    api.kernel_create_node(package_address.into_node_id(), partitions)?;
-
-    if let Some(access_rules) = access_rules {
-        let module_base_partition = ObjectModuleId::AccessRules.base_partition_num();
-        for offset in 0u8..2u8 {
-            let src = MAIN_BASE_PARTITION
-                .at_offset(PartitionOffset(offset))
-                .unwrap();
-            let dest = module_base_partition
-                .at_offset(PartitionOffset(offset))
-                .unwrap();
-
-            api.kernel_move_module(
-                access_rules.0.as_node_id(),
-                src,
-                package_address.as_node_id(),
-                dest,
-            )?;
+    {
+        let mut definition_partition = BTreeMap::new();
+        for (blueprint, definition) in blueprints {
+            let key = BlueprintVersionKey::new_default(blueprint);
+            definition_partition.insert(
+                scrypto_encode(&key).unwrap(),
+                (scrypto_encode(&definition).unwrap(), true),
+            );
         }
-
-        api.kernel_drop_node(access_rules.0.as_node_id())?;
+        kv_entries.insert(0u8, definition_partition);
     }
 
-    Ok(package_address)
+    {
+        let mut dependency_partition = BTreeMap::new();
+        for (blueprint, dependencies) in blueprint_dependencies {
+            let key = BlueprintVersionKey::new_default(blueprint);
+            dependency_partition.insert(
+                scrypto_encode(&key).unwrap(),
+                (scrypto_encode(&dependencies).unwrap(), true),
+            );
+        }
+        kv_entries.insert(1u8, dependency_partition);
+    }
+
+    {
+        let mut schemas_partition = BTreeMap::new();
+        for (hash, schema) in schemas {
+            schemas_partition.insert(
+                scrypto_encode(&hash).unwrap(),
+                (scrypto_encode(&schema).unwrap(), true),
+            );
+        }
+        kv_entries.insert(2u8, schemas_partition);
+    }
+
+    {
+        let mut code_partition = BTreeMap::new();
+        //for (hash, schema) in schemas {
+            //let key = BlueprintVersionKey::new_default(blueprint);
+            code_partition.insert(
+                scrypto_encode(&code_hash).unwrap(),
+                (scrypto_encode(&code).unwrap(), true),
+            );
+        //}
+        kv_entries.insert(3u8, code_partition);
+    }
+
+    {
+        let mut package_royalties_partition = BTreeMap::new();
+        for (blueprint, package_royalty) in package_royalties {
+            let key = BlueprintVersionKey::new_default(blueprint);
+            package_royalties_partition.insert(
+                scrypto_encode(&key).unwrap(),
+                (scrypto_encode(&package_royalty).unwrap(), true),
+            );
+        }
+        kv_entries.insert(4u8, package_royalties_partition);
+    }
+
+    {
+        let mut auth_partition = BTreeMap::new();
+        for (blueprint, auth_config) in auth_configs {
+            let key = BlueprintVersionKey::new_default(blueprint);
+            auth_partition.insert(
+                scrypto_encode(&key).unwrap(),
+                (scrypto_encode(&auth_config).unwrap(), true),
+            );
+        }
+        kv_entries.insert(5u8, auth_partition);
+    }
+
+    let package_object = api.new_object(
+        PACKAGE_BLUEPRINT,
+        vec![],
+        None,
+        vec![scrypto_encode(&royalty).unwrap()],
+        kv_entries,
+    )?;
+
+    // FIXME: use MetadataInit
+    let metadata = Metadata::create_with_data(metadata.into(), api)?;
+
+    // FIXME: Dont use
+    let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
+
+    let access_rules = if let Some(access_rules) = access_rules {
+        access_rules
+    } else {
+        AccessRules::create(OwnerRole::None, btreemap!(), api)?
+    };
+
+    let address = api.globalize(
+        btreemap!(
+            ObjectModuleId::Main => package_object,
+            ObjectModuleId::Metadata => metadata.0,
+            ObjectModuleId::Royalty => royalty.0,
+            ObjectModuleId::AccessRules => access_rules.0.0,
+        ),
+        package_address_reservation,
+    )?;
+
+    Ok(PackageAddress::new_or_panic(address.into_node_id().0))
 }
 
 pub struct PackageNativePackage;
@@ -715,7 +730,7 @@ impl PackageNativePackage {
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
                 value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<ComponentRoyaltyConfig>(),
+                    aggregator.add_child_type_and_descendents::<PackageRoyaltyConfig>(),
                 ),
                 can_own: false,
             },
@@ -835,13 +850,13 @@ impl PackageNativePackage {
     }
 
     #[trace_resources(log=export_name)]
-    pub fn invoke_export<Y, L: Default>(
+    pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         match export_name {
             PACKAGE_PUBLISH_NATIVE_IDENT => {
@@ -1038,7 +1053,7 @@ impl PackageNativePackage {
         ))
     }
 
-    pub(crate) fn publish_native<Y, L: Default>(
+    pub(crate) fn publish_native<Y>(
         package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u64,
         definition: PackageDefinition,
@@ -1046,7 +1061,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let (
             blueprints,
@@ -1071,14 +1086,14 @@ impl PackageNativePackage {
         )
     }
 
-    pub(crate) fn publish_wasm<Y, L: Default>(
+    pub(crate) fn publish_wasm<Y>(
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
         let address =
@@ -1087,7 +1102,7 @@ impl PackageNativePackage {
         Ok((address, bucket))
     }
 
-    pub(crate) fn publish_wasm_advanced<Y, L: Default>(
+    pub(crate) fn publish_wasm_advanced<Y>(
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
@@ -1096,7 +1111,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let access_rules = SecurifiedPackage::create_advanced(owner_rule, api)?;
         let address = Self::publish_wasm_internal(
@@ -1111,7 +1126,7 @@ impl PackageNativePackage {
         Ok(address)
     }
 
-    fn publish_wasm_internal<Y, L: Default>(
+    fn publish_wasm_internal<Y>(
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
@@ -1120,7 +1135,7 @@ impl PackageNativePackage {
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
-        Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         // Validate schema
         validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
