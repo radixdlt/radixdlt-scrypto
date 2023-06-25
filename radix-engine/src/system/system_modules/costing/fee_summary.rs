@@ -1,4 +1,4 @@
-use super::{CostingReason, RoyaltyRecipient};
+use super::RoyaltyRecipient;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::*;
@@ -20,11 +20,13 @@ pub struct FeeSummary {
     /// The vaults locked for XRD payment
     pub locked_fees: Vec<(NodeId, LiquidFungibleResource, bool)>,
     /// The execution cost breakdown
-    pub execution_cost_breakdown: BTreeMap<CostingReason, u32>,
+    pub execution_cost_breakdown: BTreeMap<String, u32>,
     /// The total number of cost units consumed (excluding royalties).
     pub execution_cost_sum: u32,
     /// The royalty cost breakdown
     pub royalty_cost_breakdown: BTreeMap<RoyaltyRecipient, (NodeId, Decimal)>,
+    /// The actual fee payments
+    pub fee_payments: IndexMap<NodeId, Decimal>,
 }
 
 impl FeeSummary {

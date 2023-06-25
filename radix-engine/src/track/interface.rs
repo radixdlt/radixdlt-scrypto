@@ -136,8 +136,8 @@ pub trait SubstateStore {
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);
 }
 
-#[derive(Clone)]
-pub struct StoreAccessInfo(Vec<StoreAccess>);
+#[derive(Debug, Clone)]
+pub struct StoreAccessInfo(pub Vec<StoreAccess>);
 
 impl StoreAccessInfo {
     pub fn new() -> Self {
@@ -209,7 +209,7 @@ impl StoreAccessInfo {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum StoreAccess {
     ReadFromDb(usize),
     ReadFromDbNotFound,

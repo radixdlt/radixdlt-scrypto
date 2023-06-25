@@ -19,7 +19,7 @@ fn test_too_many_locals() {
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 50u32.into())
             .publish_package(code, definition)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

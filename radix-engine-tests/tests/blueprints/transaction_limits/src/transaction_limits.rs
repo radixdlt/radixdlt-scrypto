@@ -1,3 +1,9 @@
+use sbor::*;
+use scrypto::api::key_value_entry_api::ClientKeyValueEntryApi;
+use scrypto::api::key_value_store_api::ClientKeyValueStoreApi;
+use scrypto::api::*;
+use scrypto::prelude::scrypto_env::ScryptoEnv;
+use scrypto::prelude::wasm_api::kv_entry_set;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -53,16 +59,112 @@ mod transaction_limits_substate {
     }
 
     impl TransactionLimitSubstateTest {
-        pub fn write_large_value(size: u32) -> Global<TransactionLimitSubstateTest> {
-            let kv_store = KeyValueStore::new();
-            let mut vector: Vec<u8> = Vec::new();
-            for _i in 0..size as usize {
-                vector.push(0);
-            }
+        pub fn write_large_value(raw_array_size: usize) -> Global<TransactionLimitSubstateTest> {
+            // SBOR encoding of Vec<u8>
+            let mut buf = Vec::new();
+            let mut encoder = VecEncoder::<ScryptoCustomValueKind>::new(&mut buf, 100);
+            encoder
+                .write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+                .unwrap();
+            encoder.write_value_kind(ValueKind::Array).unwrap();
+            encoder.write_value_kind(ValueKind::U8).unwrap();
+            encoder.write_size(raw_array_size).unwrap();
+            buf.reserve(raw_array_size);
+            let new_len = buf.len() + raw_array_size;
+            unsafe { buf.set_len(new_len) };
 
-            kv_store.insert(0, vector);
+            // Create a KVStore
+            let kv_store = KeyValueStore::<u32, Vec<u8>>::new();
 
+            // Insert into store
+            let key_payload = scrypto_encode(&1u32).unwrap();
+            let handle = ScryptoEnv
+                .key_value_store_lock_entry(
+                    kv_store.id.as_node_id(),
+                    &key_payload,
+                    LockFlags::MUTABLE,
+                )
+                .unwrap();
+            unsafe { kv_entry_set(handle, buf.as_ptr(), buf.len()) };
+            ScryptoEnv.key_value_entry_release(handle).unwrap();
+
+            // Put the kv store into a component
             TransactionLimitSubstateTest { kv_store }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize()
+        }
+    }
+}
+
+#[blueprint]
+mod invoke_limits {
+    struct InvokeLimitsTest {}
+
+    impl InvokeLimitsTest {
+        pub fn call(raw_array_size: usize) {
+            // SBOR encoding of (Vec<u8>)
+            let mut buf = Vec::new();
+            let mut encoder = VecEncoder::<ScryptoCustomValueKind>::new(&mut buf, 100);
+            encoder
+                .write_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
+                .unwrap();
+            encoder.write_value_kind(ValueKind::Tuple).unwrap();
+            encoder.write_size(1).unwrap();
+            encoder.write_value_kind(ValueKind::Array).unwrap();
+            encoder.write_value_kind(ValueKind::U8).unwrap();
+            encoder.write_size(raw_array_size).unwrap();
+            buf.reserve(raw_array_size);
+            let new_len = buf.len() + raw_array_size;
+            unsafe { buf.set_len(new_len) };
+
+            Runtime::call_function(
+                Runtime::package_address(),
+                "InvokeLimitsTest",
+                "callee",
+                buf,
+            )
+        }
+
+        pub fn callee(_: Vec<u8>) {}
+    }
+}
+
+#[blueprint]
+mod sbor_overflow {
+    struct SborOverflow {
+        kv_store: KeyValueStore<u32, Vec<u8>>,
+    }
+
+    impl SborOverflow {
+        pub fn write_large_value() -> Global<SborOverflow> {
+            // Construct large SBOR payload
+            let mut vec = Vec::<u8>::with_capacity(1 * 1024 * 1024);
+            unsafe {
+                vec.set_len(1 * 1024 * 1024);
+            }
+            (&mut vec[0..7]).copy_from_slice(&[92, 32, 7, 249, 193, 215, 47]);
+
+            // Create a KVStore
+            let kv_store = KeyValueStore::<u32, Vec<u8>>::new();
+
+            // Insert into store
+            let key_payload = scrypto_encode(&1u32).unwrap();
+            let value_payload = vec;
+            let handle = ScryptoEnv
+                .key_value_store_lock_entry(
+                    kv_store.id.as_node_id(),
+                    &key_payload,
+                    LockFlags::MUTABLE,
+                )
+                .unwrap();
+            ScryptoEnv
+                .key_value_entry_set(handle, value_payload)
+                .unwrap();
+            ScryptoEnv.key_value_entry_release(handle).unwrap();
+
+            // Put the kv store into a component
+            SborOverflow { kv_store }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize()

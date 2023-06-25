@@ -1,398 +1,344 @@
-use crate::kernel::actor::Actor;
-use crate::types::*;
+use crate::{
+    kernel::actor::Actor,
+    track::interface::{StoreAccess, StoreAccessInfo},
+    types::*,
+};
+use lazy_static::lazy_static;
 
-pub const FIXED_LOW_FEE: u32 = 500;
-pub const FIXED_MEDIUM_FEE: u32 = 2500;
-pub const FIXED_HIGH_FEE: u32 = 5000;
-
-const COSTING_COEFFICENT_CPU: u64 = 335;
-const COSTING_COEFFICENT_CPU_DIV_BITS: u64 = 4; // used to divide by shift left operator
-const COSTING_COEFFICENT_CPU_DIV_BITS_ADDON: u64 = 6; // used to scale up or down all cpu instruction costing
-
-const COSTING_COEFFICENT_STORAGE: u64 = 14;
-const COSTING_COEFFICENT_STORAGE_DIV_BITS: u64 = 8; // used to scale up or down all storage costing
-
-pub enum CostingEntry<'a> {
-    /* invoke */
-    Invoke {
-        input_size: u32,
-        actor: &'a Actor,
-    },
-
-    /* node */
-    CreateNode {
-        node_id: &'a NodeId,
-    },
-    DropNode,
-    AllocateNodeId,
-
-    /* substate */
-    LockSubstate {
-        node_id: &'a NodeId,
-        partition_num: &'a PartitionNumber,
-        substate_key: &'a SubstateKey,
-    },
-    ReadSubstate {
-        size: u32,
-    },
-    WriteSubstate {
-        size: u32,
-    },
-    ScanSubstate,
-    SetSubstate,
-    TakeSubstate,
-    DropLock,
-    SubstateReadFromDb {
-        size: u32,
-    },
-    SubstateReadFromDbNotFound,
-    SubstateReadFromTrack {
-        size: u32,
-    },
-    SubstateWriteToTrack {
-        size: u32,
-    },
-    SubstateRewriteToTrack {
-        size_old: u32,
-        size_new: u32,
-    },
-    SubstateDeleteFromTrack,
-    // FIXME: more costing after API becomes stable.
+lazy_static! {
+    pub static ref NATIVE_FUNCTION_BASE_COSTS: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = {
+        let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = index_map_new();
+        include_str!("../../../../../assets/native_function_base_costs.csv")
+            .split("\n")
+            .filter(|x| x.len() > 0)
+            .for_each(|x| {
+                let mut tokens = x.split(",");
+                let package_address =
+                    PackageAddress::try_from_hex(tokens.next().unwrap().trim()).unwrap();
+                let export_name = tokens.next().unwrap().trim();
+                let cost = u32::from_str(tokens.next().unwrap().trim()).unwrap();
+                costs
+                    .entry(package_address)
+                    .or_default()
+                    .insert(export_name, cost);
+            });
+        costs
+    };
 }
 
+/// Fee table specifies how each costing entry should be costed.
+///
+/// ## High Level Guideline
+/// - Max cost unit limit: 100,000,000
+/// - Cost unit price: 0.000005 XRD per cost unit
+/// - Max execution costing, excluding tips: 500 XRD
+/// - Basic transfer transaction cost: < 5 XRD
+/// - Publishing a WASM package of max size costs: ~ 500 XRD
+/// - Execution time for 100,000,000 cost units' worth of computation: <= 1 second
+/// - Baseline: 1 microsecond = 100 cost units
+/// - Non-time based costing will make the actual execution time less than anticipated
+///
+/// FIXME: fee table is actively adjusted at this point of time!
 #[derive(Debug, Clone, ScryptoSbor)]
-pub struct FeeTable {
-    tx_base_fee: u32,
-    tx_payload_cost_per_byte: u32,
-    tx_signature_verification_per_sig: u32,
-    tx_blob_price_per_byte: u32,
-}
+pub struct FeeTable;
 
 impl FeeTable {
     pub fn new() -> Self {
-        Self {
-            tx_base_fee: 50_000,
-            tx_payload_cost_per_byte: 5,
-            tx_signature_verification_per_sig: 100_000,
-            tx_blob_price_per_byte: 5,
-        }
+        Self
     }
 
-    pub fn tx_base_fee(&self) -> u32 {
-        self.tx_base_fee
+    fn transient_data_cost(size: usize) -> u32 {
+        // Rationality:
+        // To limit transient data to 64 MB, the cost for a byte should be 100,000,000 / 64,000,000 = 1.56.
+        mul(cast(size), 2)
     }
 
-    pub fn tx_payload_cost_per_byte(&self) -> u32 {
-        self.tx_payload_cost_per_byte
+    fn data_processing_cost(size: usize) -> u32 {
+        // FIXME: add payload against schema validation costs
+
+        // Based on benchmark `bench_decode_sbor`
+        // Time for processing a byte: 10.244 µs / 1068 = 0.00959176029
+        cast(size)
     }
 
-    pub fn tx_signature_verification_per_sig(&self) -> u32 {
-        self.tx_signature_verification_per_sig
-    }
-
-    pub fn tx_blob_price_per_byte(&self) -> u32 {
-        self.tx_blob_price_per_byte
-    }
-
-    /// CPU instructions usage numbers obtained from test runs with 'resource_tracker` feature enabled
-    /// and transformed (classified and groupped) using convert.py script.
-    fn kernel_api_cost_cpu_usage(&self, entry: &CostingEntry) -> u32 {
-        ((match entry {
-            CostingEntry::AllocateNodeId => 212,
-            CostingEntry::CreateNode { node_id } => match node_id.entity_type() {
-                Some(EntityType::GlobalAccessController) => 1736,
-                Some(EntityType::GlobalAccount) => 1640,
-                Some(EntityType::GlobalConsensusManager) => 1203,
-                Some(EntityType::GlobalFungibleResourceManager) => 1160,
-                Some(EntityType::GlobalGenericComponent) => 2370,
-                Some(EntityType::GlobalIdentity) => 838,
-                Some(EntityType::GlobalNonFungibleResourceManager) => 1587,
-                Some(EntityType::GlobalPackage) => 1493,
-                Some(EntityType::GlobalValidator) => 2374,
-                Some(EntityType::GlobalVirtualSecp256k1Account) => 1590,
-                Some(EntityType::GlobalVirtualSecp256k1Identity) => 906,
-                Some(EntityType::InternalAccount) => 329,
-                Some(EntityType::InternalFungibleVault) => 368,
-                Some(EntityType::InternalGenericComponent) => 336,
-                Some(EntityType::InternalKeyValueStore) => 828,
-                Some(EntityType::InternalNonFungibleVault) => 356,
-                _ => 1182, // average of above values
-            },
-            CostingEntry::DropLock => 114,
-            CostingEntry::DropNode => 324, // average of gathered data
-            CostingEntry::Invoke {
-                input_size,
-                actor: identifier,
-            } => {
-                let FnIdentifier {
-                    blueprint_id: blueprint,
-                    ident,
-                } = identifier.fn_identifier();
-                match &ident {
-                    FnIdent::Application(fn_name) => {
-                        match (blueprint.blueprint_name.as_str(), fn_name.as_str()) {
-                            ("AccessController", "cancel_recovery_role_recovery_proposal") => {
-                                150860
-                            }
-                            ("AccessController", "create_global") => 625871,
-                            ("AccessController", "create_proof") => 348146,
-                            ("AccessController", "initiate_recovery_as_primary") => 153643,
-                            ("AccessController", "initiate_recovery_as_recovery") => 180020,
-                            ("AccessController", "lock_primary_role") => 148500,
-                            (
-                                "AccessController",
-                                "quick_confirm_primary_role_recovery_proposal",
-                            ) => 496785,
-                            (
-                                "AccessController",
-                                "quick_confirm_recovery_role_recovery_proposal",
-                            ) => 472253,
-                            ("AccessController", "stop_timed_recovery") => 220240,
-                            ("AccessController", "timed_confirm_recovery") => 502227,
-                            ("AccessController", "unlock_primary_role") => 149792,
-                            ("AccessRules", "create") => 62071,
-                            ("AccessRules", "set_authority_access_rule") => 49335,
-                            ("AccessRules", "set_authority_access_rule_and_mutability") => 58507,
-                            ("AccessRules", "set_authority_mutability") => 143886,
-                            ("AccessRules", "set_method_access_rule") => 49944,
-                            ("AccessRules", "set_method_access_rule_and_mutability") => 58830,
-                            ("AccessRules", "set_method_mutability") => 144136,
-                            ("Account", "create_advanced") => 214769,
-                            ("Account", "create_proof") => 270726,
-                            ("Account", "create_proof_of_amount") => 188957,
-                            ("Account", "create_proof_of_non_fungibles") => 268647,
-                            ("Account", "deposit") => 451134,
-                            ("Account", "deposit_batch") => 548662,
-                            ("Account", "lock_contingent_fee") => 195753,
-                            ("Account", "lock_fee") => 272297,
-                            ("Account", "lock_fee_and_withdraw") => 487906,
-                            ("Account", "lock_fee_and_withdraw_non_fungibles") => 491586,
-                            ("Account", "securify") => 504675,
-                            ("Account", "withdraw") => 256821,
-                            ("Account", "withdraw_non_fungibles") => 274091,
-                            ("AuthZone", "clear") => 70545,
-                            ("AuthZone", "clear_signature_proofs") => 69885,
-                            ("AuthZone", "create_proof") => 304813,
-                            ("AuthZone", "create_proof_of_amount") => 374357,
-                            ("AuthZone", "create_proof_of_non_fungibles") => 420809,
-                            ("AuthZone", "drain") => 70903,
-                            ("AuthZone", "pop") => 68617,
-                            ("AuthZone", "push") => 70544,
-                            ("Bucket", "Bucket_create_proof") => 136828,
-                            ("Bucket", "Bucket_drop_empty") => 138335,
-                            ("Bucket", "Bucket_get_amount") => 71523,
-                            ("Bucket", "Bucket_get_non_fungible_local_ids") => 73029,
-                            ("Bucket", "Bucket_get_resource_address") => 69372,
-                            ("Bucket", "Bucket_lock_amount") => 71538,
-                            ("Bucket", "Bucket_lock_non_fungibles") => 72278,
-                            ("Bucket", "Bucket_put") => 73970,
-                            ("Bucket", "Bucket_take") => 132523,
-                            ("Bucket", "Bucket_take_non_fungibles") => 133129,
-                            ("Bucket", "Bucket_unlock_amount") => 72000,
-                            ("Bucket", "Bucket_unlock_non_fungibles") => 71782,
-                            ("Bucket", "burn_bucket") => 146562,
-                            ("ComponentRoyalty", "claim_royalty") => 338240,
-                            ("ComponentRoyalty", "create") => 11210,
-                            ("ComponentRoyalty", "set_royalty_config") => 164577,
-                            ("ConsensusManager", "create") => 362236,
-                            ("ConsensusManager", "create_validator") => 1598879,
-                            ("ConsensusManager", "get_current_epoch") => 44925,
-                            ("ConsensusManager", "compare_current_time") => 21977,
-                            ("ConsensusManager", "get_current_time") => 27418,
-                            ("ConsensusManager", "next_round") => 61384,
-                            ("ConsensusManager", "update_validator") => 37241,
-                            ("Faucet", "free") => 640620,
-                            ("Faucet", "lock_fee") => 462708,
-                            ("Faucet", "new") => 6535050,
-                            ("FungibleResourceManager", "burn") => 212493,
-                            ("FungibleResourceManager", "create") => 261408,
-                            ("FungibleResourceManager", "create_bucket") => 206080,
-                            ("FungibleResourceManager", "create_vault") => 255636,
-                            ("FungibleResourceManager", "create_with_initial_supply") => 323158,
-                            (
-                                "FungibleResourceManager",
-                                "create_with_initial_supply_and_address",
-                            ) => 351778,
-                            ("FungibleResourceManager", "get_resource_type") => 143996,
-                            ("FungibleResourceManager", "get_total_supply") => 145197,
-                            ("FungibleResourceManager", "mint") => 333785,
-                            ("FungibleVault", "create_proof_of_all") => 203485,
-                            ("FungibleVault", "create_proof_of_amount") => 139486,
-                            ("FungibleVault", "get_amount") => 78722,
-                            ("FungibleVault", "lock_fee") => 207640,
-                            ("FungibleVault", "lock_fungible_amount") => 77750,
-                            ("FungibleVault", "put") => 134713,
-                            ("FungibleVault", "recall") => 266062,
-                            ("FungibleVault", "take") => 203677,
-                            ("FungibleVault", "unlock_fungible_amount") => 132108,
-                            ("GenesisHelper", "init") => 4567874,
-                            ("Identity", "create") => 567462,
-                            ("Identity", "create_advanced") => 199867,
-                            ("Identity", "securify") => 468393,
-                            ("Metadata", "create") => 18465,
-                            ("Metadata", "create_with_data") => 18385,
-                            ("Metadata", "get") => 20114,
-                            ("Metadata", "remove") => 37509,
-                            ("Metadata", "set") => 36472,
-                            ("NonFungibleResourceManager", "burn") => 240244,
-                            ("NonFungibleResourceManager", "create") => 278588,
-                            ("NonFungibleResourceManager", "create_bucket") => 222832,
-                            ("NonFungibleResourceManager", "create_non_fungible_with_address") => {
-                                248723
-                            }
-                            (
-                                "NonFungibleResourceManager",
-                                "create_ruid_non_fungible_with_initial_supply",
-                            ) => 371965,
-                            ("NonFungibleResourceManager", "create_vault") => 290686,
-                            ("NonFungibleResourceManager", "create_with_initial_supply") => 348024,
-                            ("NonFungibleResourceManager", "get_non_fungible") => 161527,
-                            ("NonFungibleResourceManager", "get_resource_type") => 157541,
-                            ("NonFungibleResourceManager", "get_total_supply") => 161935,
-                            ("NonFungibleResourceManager", "mint") => 370268,
-                            ("NonFungibleResourceManager", "mint_single_ruid") => 304487,
-                            ("NonFungibleResourceManager", "mint_ruid") => 304126,
-                            ("NonFungibleResourceManager", "non_fungible_exists") => 161135,
-                            ("NonFungibleResourceManager", "update_non_fungible_data") => 237009,
-                            ("NonFungibleVault", "create_proof_of_all") => 212614,
-                            ("NonFungibleVault", "create_proof_of_amount") => 206574,
-                            ("NonFungibleVault", "create_proof_of_non_fungibles") => 208925,
-                            ("NonFungibleVault", "get_amount") => 78340,
-                            ("NonFungibleVault", "get_non_fungible_local_ids") => 79115,
-                            ("NonFungibleVault", "lock_non_fungibles") => 140379,
-                            ("NonFungibleVault", "put") => 142043,
-                            ("NonFungibleVault", "recall") => 267245,
-                            ("NonFungibleVault", "take") => 209884,
-                            ("NonFungibleVault", "take_non_fungibles") => 210402,
-                            ("NonFungibleVault", "unlock_non_fungibles") => 140611,
-                            ("Package", "PackageRoyalty_claim_royalty") => 460102,
-                            ("Package", "PackageRoyalty_set_royalty_config") => 217143,
-                            ("Package", "publish_wasm") => 458988,
-                            ("Proof", "Proof_drop") => 198758,
-                            ("Proof", "Proof_get_amount") => 69914,
-                            ("Proof", "Proof_get_non_fungible_local_ids") => 71120,
-                            ("Proof", "Proof_get_resource_address") => 67936,
-                            ("Proof", "clone") => 205434,
-                            ("Radiswap", "instantiate_pool") => 10609872,
-                            ("Radiswap", "swap") => 3181336,
-                            ("TransactionProcessor", "run") => 1770226,
-                            ("Validator", "claim_xrd") => 899795,
-                            ("Validator", "register") => 280382,
-                            ("Validator", "stake") => 1113263,
-                            ("Validator", "unregister") => 239553,
-                            ("Validator", "unstake") => 1432558,
-                            ("Validator", "update_accept_delegated_stake") => 256401,
-                            ("Validator", "update_key") => 312758,
-                            ("Worktop", "Worktop_drain") => 69013,
-                            ("Worktop", "Worktop_drop") => 66830,
-                            ("Worktop", "Worktop_put") => 212750,
-                            ("Worktop", "Worktop_take") => 277865,
-                            ("Worktop", "Worktop_take_all") => 68365,
-                            ("Worktop", "Worktop_take_non_fungibles") => 146198,
-                            ("Package", "publish_native") => (input_size * 13 + 10910) >> 2, // calculated using linear regression on gathered data
-                            ("Package", "publish_wasm_advanced") => input_size * 22 + 289492, // calculated using linear regression on gathered data
-                            _ => 411524, // average of above values without Package::publish_native and Package::publish_wasm_advanced
-                        }
-                    }
-                    FnIdent::System(value) => {
-                        match (blueprint.blueprint_name.as_str(), value) {
-                            ("Identity", 0) => 252633,
-                            ("Account", 0) => 220211,
-                            _ => 236422, // average of above values
-                        }
-                    }
+    fn store_access_cost(store_access: &StoreAccessInfo) -> u32 {
+        let mut sum = 0;
+        for info in &store_access.0 {
+            let cost = match info {
+                StoreAccess::ReadFromDb(size) => {
+                    // Apply function: f(size) = 0.0009622109 * size + 389.5155
+                    add(cast(*size) / 1_000, 400)
                 }
-            }
-            // FIXME update numbers below
-            CostingEntry::LockSubstate {
-                node_id: _,
-                partition_num: _,
-                substate_key: _,
-            } => 100,
-            CostingEntry::ScanSubstate => 16,
-            CostingEntry::SetSubstate => 16,
-            CostingEntry::TakeSubstate => 16,
-            CostingEntry::ReadSubstate { size: _ } => 174,
-            CostingEntry::WriteSubstate { size: _ } => 126,
-
-            // following variants are used in storage usage part only
-            CostingEntry::SubstateReadFromDb { size: _ } => 0,
-            CostingEntry::SubstateReadFromDbNotFound => 0,
-            CostingEntry::SubstateReadFromTrack { size: _ } => 0,
-            CostingEntry::SubstateWriteToTrack { size: _ } => 0,
-            CostingEntry::SubstateRewriteToTrack {
-                size_old: _,
-                size_new: _,
-            } => 0,
-            CostingEntry::SubstateDeleteFromTrack => 0,
-        }) as u64
-            * COSTING_COEFFICENT_CPU
-            >> (COSTING_COEFFICENT_CPU_DIV_BITS + COSTING_COEFFICENT_CPU_DIV_BITS_ADDON))
-            as u32
-    }
-
-    fn kernel_api_cost_storage_usage(&self, entry: &CostingEntry) -> u32 {
-        ((match entry {
-            CostingEntry::Invoke {
-                input_size,
-                actor: _,
-            } => 10 * input_size,
-            CostingEntry::SubstateReadFromDb { size } => {
-                if *size <= 25 * 1024 {
-                    // apply constant value
-                    400u32
-                } else {
-                    // apply function: f(size) = 0.0009622109 * size + 389.5155
-                    // approximated integer representation: f(size) = (63 * size) / 2^16 + 390
-                    let mut value: u64 = *size as u64;
-                    value *= 63; // 0.0009622109 * 2^16
-                    value += (value >> 16) + 390;
-                    value.try_into().unwrap_or(u32::MAX)
+                StoreAccess::ReadFromDbNotFound => {
+                    // The cost for not found varies. Apply the max.
+                    4_000
                 }
-            }
-            CostingEntry::SubstateReadFromDbNotFound => 322, // average value from benchmark
-            CostingEntry::SubstateRewriteToTrack {
-                size_old: _,
-                size_new: size,
-            }
-            | CostingEntry::SubstateWriteToTrack { size } => {
-                let size =
-                    if let CostingEntry::SubstateRewriteToTrack { size_old, size_new } = entry {
-                        if size_new == size_old {
-                            return 0;
-                        }
+                StoreAccess::ReadFromTrack(size) => {
+                    // Apply function: f(size) = 0.00012232433 * size + 1.4939442
+                    add(cast(*size) / 10_000, 2)
+                }
+                StoreAccess::WriteToTrack(size) => {
+                    // Apply function: f(size) = 0.0004 * size + 1000
+                    // FIXME: add costing for state expansion
+                    add(cast(*size) / 2_500, 1_000)
+                }
+                StoreAccess::RewriteToTrack(size_old, size_new) => {
+                    if size_new <= size_old {
                         // TODO: refund for reduced write size?
-                        if size_new < size_old {
-                            return 0;
-                        }
-                        size_new - size_old
+                        0
                     } else {
-                        *size
-                    };
+                        // The non-constant part of write cost
+                        cast(size_new - size_old) / 2_500
+                    }
+                }
+                StoreAccess::DeleteFromTrack => {
+                    // The constant part of write cost (RocksDB tombstones a deleted entry)
+                    1_000
+                }
+            };
+            sum = add(sum, cost);
+        }
 
-                // apply function: f(size) = 0.0004 * size + 1000
-                // approximated integer representation: f(size) = (262 * size) / 2^16 + 1000
-                let mut value: u64 = size as u64;
-                value *= 262; // 0.0004 * 2^16
-                value += (value >> 16) + 1000;
-                value.try_into().unwrap_or(u32::MAX)
-            }
-            CostingEntry::SubstateReadFromTrack { size } => {
-                // apply function: f(size) = 0.00012232433 * size + 1.4939442
-                // approximated integer representation: f(size) = (8 * size) / 2^16 + 1
-                let mut value: u64 = *size as u64;
-                value *= 8; // 0.00082827697 * 2^16
-                value += (value >> 16) + 1;
-                value.try_into().unwrap_or(u32::MAX)
-            }
-            CostingEntry::SubstateDeleteFromTrack => 191, // Averga of P95 points from benchmark
-            _ => 0,
-        }) as u64
-            * COSTING_COEFFICENT_STORAGE
-            >> COSTING_COEFFICENT_STORAGE_DIV_BITS) as u32
+        mul(sum, 100 /* 1 us = 100 cost units */)
     }
 
-    pub fn kernel_api_cost(&self, entry: CostingEntry) -> u32 {
-        self.kernel_api_cost_cpu_usage(&entry) + self.kernel_api_cost_storage_usage(&entry)
+    //======================
+    // Transaction costs
+    //======================
+
+    #[inline]
+    pub fn tx_base_cost(&self) -> u32 {
+        // 40_000 * 0.000005 = 0.2 XRD
+        40_000
     }
+
+    #[inline]
+    pub fn tx_payload_cost(&self, size: usize) -> u32 {
+        // Rational:
+        // Transaction payload is propagated over a P2P network.
+        // Larger size may slows down the network performance.
+        // The size of a typical transfer transaction is 400 bytes, so the cost is 400 * 50 * 0.000005 = 0.1 XRD
+        mul(cast(size), 50)
+    }
+
+    #[inline]
+    pub fn tx_signature_verification_cost(&self, n: usize) -> u32 {
+        // Based on benchmark `bench_validate_secp256k1`
+        // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7_000
+        // The cost for a transfer transaction with two signatures will be 2 * 7_000 * 0.000005 = 0.07 XRD
+        mul(cast(n), 7_000)
+    }
+
+    //======================
+    // VM execution costs
+    //======================
+
+    #[inline]
+    pub fn run_native_code_cost(&self, package_address: &PackageAddress, export_name: &str) -> u32 {
+        let cpu_instructions = NATIVE_FUNCTION_BASE_COSTS
+            .get(package_address)
+            .and_then(|x| x.get(export_name).cloned())
+            .unwrap_or(411524); // FIXME: this should be for not found only, when the costing for all native function are added, i.e. should be reduced.
+
+        // FIXME: figure out the right conversion rate from CPU instructions to execution time
+
+        mul(cpu_instructions / 1_000, 100)
+    }
+
+    #[inline]
+    pub fn run_wasm_code_cost(
+        &self,
+        _package_address: &PackageAddress,
+        _export_name: &str,
+        gas: u32,
+    ) -> u32 {
+        // FIXME: update the costing for wasm instructions
+
+        // FIXME: figure out the right conversion rate from gas to execution time
+
+        // From `costing::spin_loop`, it takes 1.8851 ms to for 8011 gas' worth of execution.
+        // Therefore, cost for gas: 1.8851 * 1000 / 8011 * 100
+
+        mul(gas / 5, 100)
+    }
+
+    //======================
+    // Kernel costs
+    //======================
+
+    #[inline]
+    pub fn invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {
+        add(500, Self::data_processing_cost(input_size))
+    }
+
+    #[inline]
+    pub fn allocate_node_id_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn create_node_cost(
+        &self,
+        _node_id: &NodeId,
+        total_substate_size: usize,
+        store_access: &StoreAccessInfo,
+    ) -> u32 {
+        add3(
+            500,
+            Self::data_processing_cost(total_substate_size),
+            Self::store_access_cost(store_access),
+        )
+    }
+
+    #[inline]
+    pub fn drop_node_cost(&self, size: usize) -> u32 {
+        add(500, Self::data_processing_cost(size))
+    }
+
+    #[inline]
+    pub fn move_modules_cost(&self) -> u32 {
+        // FIXME: add rule
+        500
+    }
+
+    #[inline]
+    pub fn open_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
+        add3(
+            500,
+            Self::data_processing_cost(size),
+            Self::store_access_cost(store_access),
+        )
+    }
+
+    #[inline]
+    pub fn read_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
+        add3(
+            500,
+            Self::data_processing_cost(size),
+            Self::store_access_cost(store_access),
+        )
+    }
+
+    #[inline]
+    pub fn write_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
+        add3(
+            500,
+            Self::data_processing_cost(size),
+            Self::store_access_cost(store_access),
+        )
+    }
+
+    #[inline]
+    pub fn close_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
+        add(500, Self::store_access_cost(store_access))
+    }
+
+    #[inline]
+    pub fn set_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
+        add3(
+            500,
+            Self::data_processing_cost(size),
+            Self::store_access_cost(store_access),
+        )
+    }
+
+    #[inline]
+    pub fn remove_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
+        add(500, Self::store_access_cost(store_access))
+    }
+
+    #[inline]
+    pub fn scan_sorted_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
+        add(500, Self::store_access_cost(store_access))
+    }
+
+    #[inline]
+    pub fn scan_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
+        add(500, Self::store_access_cost(store_access))
+    }
+
+    #[inline]
+    pub fn take_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
+        add(500, Self::store_access_cost(store_access))
+    }
+
+    //======================
+    // System costs
+    //======================
+
+    #[inline]
+    pub fn lock_fee_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn query_fee_reserve_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn query_actor_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn query_auth_zone_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn assert_access_rule_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn query_transaction_hash_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn generate_ruid_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn emit_event_cost(&self, size: usize) -> u32 {
+        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+    }
+
+    #[inline]
+    pub fn emit_log_cost(&self, size: usize) -> u32 {
+        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+    }
+
+    #[inline]
+    pub fn panic_cost(&self, size: usize) -> u32 {
+        500 + Self::data_processing_cost(size) + Self::transient_data_cost(size)
+    }
+
+    //======================
+    // System module costs
+    //======================
+    // FIXME: add more costing rules
+    // We should account for running system modules, such as auth and royalty.
+}
+
+#[inline]
+fn cast(a: usize) -> u32 {
+    u32::try_from(a).unwrap_or(u32::MAX)
+}
+
+#[inline]
+fn add(a: u32, b: u32) -> u32 {
+    a.checked_add(b).unwrap_or(u32::MAX)
+}
+
+#[inline]
+fn add3(a: u32, b: u32, c: u32) -> u32 {
+    add(add(a, b), c)
+}
+
+#[inline]
+fn mul(a: u32, b: u32) -> u32 {
+    a.checked_mul(b).unwrap_or(u32::MAX)
 }

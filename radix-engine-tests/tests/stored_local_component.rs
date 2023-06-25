@@ -10,7 +10,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "StoredSecret",
@@ -32,7 +32,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "StoredSecret",
@@ -52,7 +52,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "StoredSecret",
@@ -65,7 +65,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(component_address, "parent_get_secret", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -81,7 +81,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "StoredSecret",
@@ -94,7 +94,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             component_address,
             "parent_set_secret",
@@ -117,7 +117,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "StoredKVLocal",
@@ -139,7 +139,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "StoredKVLocal",
@@ -159,7 +159,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "StoredKVLocal",
@@ -172,7 +172,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(component_address, "parent_get_secret", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -188,7 +188,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "StoredKVLocal",
@@ -201,7 +201,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_method(
             component_address,
             "parent_set_secret",

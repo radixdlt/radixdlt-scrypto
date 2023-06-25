@@ -53,7 +53,7 @@ impl ValidatedNotarizedTransactionV1 {
                 },
                 fee_payment: FeePayment {
                     tip_percentage: intent.header.inner.tip_percentage,
-                    free_credit_in_xrd: 0,
+                    free_credit_in_xrd: Decimal::ZERO,
                 },
                 pre_allocated_addresses: vec![],
             },

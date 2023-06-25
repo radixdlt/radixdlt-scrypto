@@ -72,7 +72,7 @@ impl NewBadgeFixed {
         };
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 100.into())
+            .lock_fee(FAUCET, 50u32.into())
             .new_badge_fixed(metadata, self.total_supply)
             .call_method(
                 default_account,

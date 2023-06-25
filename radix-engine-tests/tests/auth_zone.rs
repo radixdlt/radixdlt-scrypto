@@ -10,7 +10,7 @@ fn test_auth_zone_create_proof_of_all_for_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 10u32.into())
+        .lock_fee(account, 50u32.into())
         .create_proof_from_account_of_amount(account, RADIX_TOKEN, 10.into())
         .create_proof_from_auth_zone_of_all(RADIX_TOKEN, |builder, proof_id| {
             builder.drop_proof(proof_id)
@@ -34,7 +34,7 @@ fn test_auth_zone_create_proof_of_all_for_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 10u32.into())
+        .lock_fee(account, 50u32.into())
         .create_proof_from_account_of_amount(account, resource_address, 2.into())
         .create_proof_from_auth_zone_of_all(resource_address, |builder, proof_id| {
             builder.drop_proof(proof_id)
