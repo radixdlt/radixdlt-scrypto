@@ -184,20 +184,17 @@ impl<'a> CostingEntry<'a> {
 impl<'a> CostingEntry<'a> {
     pub fn to_trace_key(&self) -> String {
         match self {
-            CostingEntry::RunNativeCode {
-                package_address, ..
-            } => format!(
-                "RunNativeCode::{:?}",
-                package_address.as_node_id().entity_type().unwrap()
-            ),
-            CostingEntry::RunWasmCode {
-                package_address, ..
-            } => format!(
-                "RunWasmCode::{:?}",
-                package_address.as_node_id().entity_type().unwrap()
-            ),
+            CostingEntry::RunNativeCode { export_name, .. } => {
+                format!("RunNativeCode::{}", export_name)
+            }
+            CostingEntry::RunWasmCode { export_name, .. } => {
+                format!("RunWasmCode::{}", export_name)
+            }
             CostingEntry::OpenSubstate { node_id, .. } => {
-                format!("OpenSubstate::{:?}", node_id.entity_type().unwrap())
+                format!(
+                    "OpenSubstate::{}",
+                    node_id.entity_type().map(|x| x.into()).unwrap_or("?")
+                )
             }
             x => Into::<&'static str>::into(x).to_string(),
         }
