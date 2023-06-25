@@ -92,7 +92,11 @@ pub trait VmInvoke {
 pub struct VmValidation;
 
 impl VmValidation {
-    pub fn validate(definition: &PackageDefinition, vm_type: VmType, code: &[u8]) -> Result<(), RuntimeError> {
+    pub fn validate(
+        definition: &PackageDefinition,
+        vm_type: VmType,
+        code: &[u8],
+    ) -> Result<(), RuntimeError> {
         match vm_type {
             VmType::Native => {}
             VmType::ScryptoV1 => {
@@ -109,12 +113,12 @@ impl VmValidation {
                     blueprint_type,
                     feature_set,
                     schema:
-                    BlueprintSchemaInit {
-                        generics,
-                        state: BlueprintStateSchemaInit { collections, .. },
-                        functions,
-                        ..
-                    },
+                        BlueprintSchemaInit {
+                            generics,
+                            state: BlueprintStateSchemaInit { collections, .. },
+                            functions,
+                            ..
+                        },
                     ..
                 } in definition.blueprints.values()
                 {

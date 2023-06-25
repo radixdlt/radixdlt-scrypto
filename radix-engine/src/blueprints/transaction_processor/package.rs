@@ -88,9 +88,9 @@ impl TransactionProcessorNativePackage {
             TRANSACTION_PROCESSOR_RUN_IDENT => {
                 api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
 
-                let input: TransactionProcessorRunInput = input
-                    .as_typed()
-                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
+                let input: TransactionProcessorRunInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
 
                 let rtn = TransactionProcessorBlueprint::run(
                     input.manifest_encoded_instructions,

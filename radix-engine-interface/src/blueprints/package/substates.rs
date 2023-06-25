@@ -64,7 +64,7 @@ pub struct PackageRoyaltyAccumulatorSubstate {
 impl Clone for PackageRoyaltyAccumulatorSubstate {
     fn clone(&self) -> Self {
         Self {
-            royalty_vault: Vault(self.royalty_vault.0.clone())
+            royalty_vault: Vault(self.royalty_vault.0.clone()),
         }
     }
 }

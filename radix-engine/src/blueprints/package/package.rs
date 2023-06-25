@@ -1,6 +1,6 @@
 use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelApi, KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{
@@ -8,20 +8,22 @@ use crate::system::system_modules::costing::{
 };
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
-use crate::vm::wasm::{PrepareError, WasmValidator};
+use crate::vm::wasm::PrepareError;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF, ClientObjectApi};
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_interface::api::{
+    ClientApi, ClientObjectApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
+};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
-    FunctionSchemaInit, RefTypes, TypeRef,
+    FunctionSchemaInit, TypeRef,
 };
 use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
@@ -33,11 +35,10 @@ use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
+use crate::vm::VmValidation;
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
-use crate::system::node_modules::access_rules;
-use crate::vm::VmValidation;
 
 pub const PACKAGE_ROYALTY_FEATURE: &str = "package-royalty";
 
@@ -363,12 +364,13 @@ impl SecurifiedAccessRules for SecurifiedPackage {
 
 pub fn create_bootstrap_package_partitions(
     package_structure: PackageStructure,
-    metadata: BTreeMap<String, MetadataValue>,
+    metadata: MetadataInit,
 ) -> NodeSubstates {
     let mut partitions: NodeSubstates = BTreeMap::new();
 
     {
-        let blueprints_partition = package_structure.definitions
+        let blueprints_partition = package_structure
+            .definitions
             .into_iter()
             .map(|(blueprint, definition)| {
                 let key = BlueprintVersionKey {
@@ -392,7 +394,8 @@ pub fn create_bootstrap_package_partitions(
     };
 
     {
-        let minor_version_configs = package_structure.dependencies
+        let minor_version_configs = package_structure
+            .dependencies
             .into_iter()
             .map(|(blueprint, minor_version_config)| {
                 let key = BlueprintVersionKey {
@@ -417,7 +420,8 @@ pub fn create_bootstrap_package_partitions(
     };
 
     {
-        let schemas_partition = package_structure.schemas
+        let schemas_partition = package_structure
+            .schemas
             .into_iter()
             .map(|(hash, schema)| {
                 let value = KeyValueEntrySubstate::immutable_entry(schema);
@@ -438,7 +442,8 @@ pub fn create_bootstrap_package_partitions(
     }
 
     {
-        let code_partition = package_structure.code
+        let code_partition = package_structure
+            .code
             .into_iter()
             .map(|(hash, code_substate)| {
                 let value = KeyValueEntrySubstate::immutable_entry(code_substate);
@@ -459,7 +464,8 @@ pub fn create_bootstrap_package_partitions(
     };
 
     {
-        let auth_partition = package_structure.auth_configs
+        let auth_partition = package_structure
+            .auth_configs
             .into_iter()
             .map(|(blueprint, auth_template)| {
                 let key = BlueprintVersionKey {
@@ -484,8 +490,12 @@ pub fn create_bootstrap_package_partitions(
 
     {
         let mut metadata_partition = BTreeMap::new();
-        for (key, value) in metadata {
-            let value = KeyValueEntrySubstate::entry(value);
+        for (key, value) in metadata.data {
+            let value = if value.lock {
+                KeyValueEntrySubstate::immutable_entry(value.value)
+            } else {
+                KeyValueEntrySubstate::entry(value.value)
+            };
             metadata_partition.insert(
                 SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 IndexedScryptoValue::from_typed(&value),
@@ -511,7 +521,6 @@ pub fn create_bootstrap_package_partitions(
     partitions
 }
 
-
 fn globalize_package<Y>(
     package_address_reservation: Option<GlobalAddressReservation>,
     package_structure: PackageStructure,
@@ -522,7 +531,6 @@ fn globalize_package<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-
     let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>> = BTreeMap::new();
 
     let vault = ResourceManager(XRD).new_empty_vault(api)?;
@@ -908,10 +916,7 @@ impl PackageNativePackage {
         let mut auth_configs = BTreeMap::new();
 
         let code_hash = {
-            let code = PackageCodeSubstate {
-                vm_type,
-                code,
-            };
+            let code = PackageCodeSubstate { vm_type, code };
             let code_hash = hash(scrypto_encode(&code).unwrap());
             code_substates.insert(code_hash, code);
             code_hash
@@ -1028,7 +1033,7 @@ impl PackageNativePackage {
         package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u64,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
@@ -1040,7 +1045,7 @@ impl PackageNativePackage {
             native_package_code_id.to_be_bytes().to_vec(),
         )?;
         let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?;
-        let metadata = Metadata::create_with_data(metadata.into(), api)?;
+        let metadata = Metadata::create_with_data(metadata_init, api)?;
 
         globalize_package(
             package_address,
@@ -1054,28 +1059,19 @@ impl PackageNativePackage {
     pub(crate) fn publish_wasm<Y>(
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let package_structure = Self::validate_and_build_package_structure(
-            definition,
-            VmType::ScryptoV1,
-            code,
-        )?;
+        let package_structure =
+            Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code)?;
 
         let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
-        let metadata = Metadata::create_with_data(metadata.into(), api)?;
+        let metadata = Metadata::create_with_data(metadata_init, api)?;
 
-        let address = globalize_package(
-            None,
-            package_structure,
-            metadata,
-            access_rules,
-            api,
-        )?;
+        let address = globalize_package(None, package_structure, metadata, access_rules, api)?;
 
         Ok((address, bucket))
     }
@@ -1084,19 +1080,16 @@ impl PackageNativePackage {
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata_init: MetadataInit,
         owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let package_structure = Self::validate_and_build_package_structure(
-            definition,
-            VmType::ScryptoV1,
-            code,
-        )?;
-        let metadata = Metadata::create_with_data(metadata.into(), api)?;
+        let package_structure =
+            Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code)?;
+        let metadata = Metadata::create_with_data(metadata_init, api)?;
         let access_rules = SecurifiedPackage::create_advanced(owner_rule, api)?;
 
         globalize_package(
@@ -1190,7 +1183,9 @@ impl PackageRoyaltyNativeBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, PACKAGE_ROYALTY_FEATURE)? {
-            return Err(RuntimeError::ApplicationError(ApplicationError::PackageError(PackageError::RoyaltiesNotEnabled)));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::PackageError(PackageError::RoyaltiesNotEnabled),
+            ));
         }
 
         let handle = api.actor_lock_field(

@@ -19,5 +19,5 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(
         Map<String, Tuple>()
     )
-    Map<String, Enum>()        # Metadata
+    Map<String, Tuple>()       # Metadata
     Enum<0u8>();               # Owner AccessRule

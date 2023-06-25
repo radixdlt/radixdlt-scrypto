@@ -14,7 +14,6 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
-use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;

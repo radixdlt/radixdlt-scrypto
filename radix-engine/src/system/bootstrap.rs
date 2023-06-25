@@ -32,18 +32,17 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{metadata_init, metadata_init_set_entry, rule};
+use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
+use radix_engine_store_interface::interface::DatabaseUpdate;
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, SubstateDatabase},
 };
-use radix_engine_store_interface::db_key_mapper::MappedCommittableSubstateDatabase;
-use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
 use transaction::model::{
     BlobsV1, InstructionV1, InstructionsV1, SystemTransactionV1, TransactionPayload,
 };
 use transaction::prelude::{BlobV1, PreAllocatedAddress};
 use transaction::validation::ManifestIdAllocator;
-use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -265,7 +264,10 @@ where
         }
     }
 
-    fn flash_substates(&mut self, substates: BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>>) {
+    fn flash_substates(
+        &mut self,
+        substates: BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>>,
+    ) {
         let mut updates = index_map_new();
 
         for ((node_id, partition_num), substates) in substates {
@@ -363,14 +365,39 @@ where
     }
 }
 
-pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>> {
+pub fn create_system_bootstrap_flash(
+) -> BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>> {
     let package_flashes = [
-        (PACKAGE_PACKAGE, PackageNativePackage::definition(), PACKAGE_CODE_ID),
-        (TRANSACTION_PROCESSOR_PACKAGE, TransactionProcessorNativePackage::definition(), TRANSACTION_PROCESSOR_CODE_ID),
-        (METADATA_MODULE_PACKAGE, MetadataNativePackage::definition(), METADATA_CODE_ID),
-        (ACCESS_RULES_MODULE_PACKAGE, AccessRulesNativePackage::definition(), ACCESS_RULES_CODE_ID),
-        (RESOURCE_PACKAGE, ResourceNativePackage::definition(), RESOURCE_CODE_ID),
-        (ROYALTY_MODULE_PACKAGE, RoyaltyNativePackage::definition(), ROYALTY_CODE_ID),
+        (
+            PACKAGE_PACKAGE,
+            PackageNativePackage::definition(),
+            PACKAGE_CODE_ID,
+        ),
+        (
+            TRANSACTION_PROCESSOR_PACKAGE,
+            TransactionProcessorNativePackage::definition(),
+            TRANSACTION_PROCESSOR_CODE_ID,
+        ),
+        (
+            METADATA_MODULE_PACKAGE,
+            MetadataNativePackage::definition(),
+            METADATA_CODE_ID,
+        ),
+        (
+            ACCESS_RULES_MODULE_PACKAGE,
+            AccessRulesNativePackage::definition(),
+            ACCESS_RULES_CODE_ID,
+        ),
+        (
+            RESOURCE_PACKAGE,
+            ResourceNativePackage::definition(),
+            RESOURCE_CODE_ID,
+        ),
+        (
+            ROYALTY_MODULE_PACKAGE,
+            RoyaltyNativePackage::definition(),
+            ROYALTY_CODE_ID,
+        ),
     ];
 
     let mut to_flash = BTreeMap::new();
@@ -381,12 +408,10 @@ pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BT
                 definition,
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
-            ).expect("Invalid Package Package definition");
-
-            create_bootstrap_package_partitions(
-                package_structure,
-                btreemap!(),
             )
+            .expect("Invalid Package Package definition");
+
+            create_bootstrap_package_partitions(package_structure, MetadataInit::default())
         };
 
         for (partition_num, partition_substates) in partitions {
@@ -660,7 +685,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: IdentityNativePackage::definition(),
                 native_package_code_id: IDENTITY_CODE_ID,
-                metadata: BTreeMap::new(),
+                metadata: metadata_init!(),
             }),
         });
     }
@@ -679,7 +704,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
-                metadata: BTreeMap::new(),
+                metadata: metadata_init!(),
             }),
         });
     }
@@ -728,7 +753,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: AccountNativePackage::definition(),
                 native_package_code_id: ACCOUNT_CODE_ID,
-                metadata: BTreeMap::new(),
+                metadata: MetadataInit::default(),
             }),
         });
     }
@@ -746,7 +771,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: AccessControllerNativePackage::definition(),
-                metadata: BTreeMap::new(),
+                metadata: MetadataInit::default(),
                 native_package_code_id: ACCESS_CONTROLLER_CODE_ID,
             }),
         });
@@ -765,12 +790,11 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 setup: PoolNativePackage::definition(),
-                metadata: BTreeMap::new(),
+                metadata: MetadataInit::default(),
                 native_package_code_id: POOL_CODE_ID,
             }),
         });
     }
-
 
     // ECDSA Secp256k1
     {
@@ -865,7 +889,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 code: ManifestBlobRef(faucet_code_hash.0),
                 setup: manifest_decode(&faucet_abi).unwrap(),
-                metadata: BTreeMap::new(),
+                metadata: MetadataInit::default(),
                 owner_role: OwnerRole::None,
             }),
         });
@@ -891,7 +915,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 code: ManifestBlobRef(genesis_helper_code_hash.0),
                 setup: manifest_decode(&genesis_helper_abi).unwrap(),
-                metadata: BTreeMap::new(),
+                metadata: MetadataInit::default(),
                 owner_role: OwnerRole::None,
             }),
         });
@@ -954,7 +978,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: TRANSACTION_TRACKER_CODE_ID,
                 setup: TransactionTrackerNativePackage::definition(),
-                metadata: BTreeMap::new(),
+                metadata: MetadataInit::default(),
             }),
         });
     }

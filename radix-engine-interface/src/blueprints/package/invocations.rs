@@ -3,7 +3,7 @@ use crate::types::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
@@ -18,14 +18,14 @@ pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 pub struct PackagePublishWasmInput {
     pub code: Vec<u8>,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmManifestInput {
     pub code: ManifestBlobRef,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
 }
 
 pub type PackagePublishWasmOutput = (PackageAddress, Bucket);
@@ -37,7 +37,7 @@ pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub code: Vec<u8>,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
     pub owner_role: OwnerRole,
 }
 
@@ -46,7 +46,7 @@ pub struct PackagePublishWasmAdvancedManifestInput {
     pub package_address: Option<ManifestAddressReservation>,
     pub code: ManifestBlobRef,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
     pub owner_role: OwnerRole,
 }
 
@@ -59,7 +59,7 @@ pub struct PackagePublishNativeInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub native_package_code_id: u64,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -67,7 +67,7 @@ pub struct PackagePublishNativeManifestInput {
     pub package_address: Option<ManifestAddressReservation>,
     pub native_package_code_id: u64,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
 }
 
 pub type PackagePublishNativeOutput = PackageAddress;

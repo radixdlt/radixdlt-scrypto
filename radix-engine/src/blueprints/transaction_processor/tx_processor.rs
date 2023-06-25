@@ -118,17 +118,14 @@ impl TransactionProcessorBlueprint {
             ),
         )?;
         let worktop = Worktop(Own(worktop_node_id));
-        let instructions = manifest_decode::<Vec<InstructionV1>>(
-            &manifest_encoded_instructions,
-        )
-        .map_err(|e| {
-            // This error should never occur if being called from root since this is constructed
-            // by the transaction executor. This error is more to protect against application
-            // space calling this function if/when possible
-            RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-        })?;
-        let mut processor =
-            TransactionProcessor::new(blobs, global_address_reservations);
+        let instructions = manifest_decode::<Vec<InstructionV1>>(&manifest_encoded_instructions)
+            .map_err(|e| {
+                // This error should never occur if being called from root since this is constructed
+                // by the transaction executor. This error is more to protect against application
+                // space calling this function if/when possible
+                RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+            })?;
+        let mut processor = TransactionProcessor::new(blobs, global_address_reservations);
         let mut outputs = Vec::new();
         for (index, inst) in instructions.into_iter().enumerate() {
             api.update_instruction_index(index)?;

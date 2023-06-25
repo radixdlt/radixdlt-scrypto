@@ -60,9 +60,7 @@ impl VmInvoke for NativeVmInstance {
     {
         match self.native_package_code_id {
             PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api),
-            RESOURCE_CODE_ID => {
-                ResourceNativePackage::invoke_export(export_name, input, api)
-            }
+            RESOURCE_CODE_ID => ResourceNativePackage::invoke_export(export_name, input, api),
             CONSENSUS_MANAGER_CODE_ID => {
                 ConsensusManagerNativePackage::invoke_export(export_name, input, api)
             }
