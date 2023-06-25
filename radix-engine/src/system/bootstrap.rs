@@ -383,9 +383,10 @@ pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BT
                 auth_configs,
                 schemas,
                 code_substates,
-            ) = PackageNativePackage::validate_native_package_definition(
+            ) = PackageNativePackage::validate_and_build_native_package_structure(
                 definition,
-                native_code_id,
+                VmType::Native,
+                native_code_id.to_be_bytes().to_vec(),
             ).expect("Invalid Package Package definition");
 
             create_package_partitions(

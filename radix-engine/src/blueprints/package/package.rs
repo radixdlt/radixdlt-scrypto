@@ -890,9 +890,10 @@ impl PackageNativePackage {
         }
     }
 
-    pub fn validate_native_package_definition(
+    pub fn validate_and_build_native_package_structure(
         definition: PackageDefinition,
-        native_package_code_id: u64,
+        vm_type: VmType,
+        code: Vec<u8>,
     ) -> Result<(
         BTreeMap<String, BlueprintDefinition>,
         BTreeMap<String, BlueprintDependencies>,
@@ -917,8 +918,8 @@ impl PackageNativePackage {
 
         let code_hash = {
             let code = PackageCodeSubstate {
-                vm_type: VmType::Native,
-                code: native_package_code_id.to_be_bytes().to_vec(),
+                vm_type,
+                code,
             };
             let code_hash = hash(scrypto_encode(&code).unwrap());
             code_substates.insert(code_hash, code);
@@ -1045,7 +1046,11 @@ impl PackageNativePackage {
             auth_configs,
             schemas,
             code_substates,
-        ) = Self::validate_native_package_definition(definition, native_package_code_id)?;
+        ) = Self::validate_and_build_native_package_structure(
+            definition,
+            VmType::Native,
+            native_package_code_id.to_be_bytes().to_vec(),
+        )?;
 
         globalize_package(
             package_address,
