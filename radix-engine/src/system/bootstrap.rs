@@ -364,58 +364,45 @@ where
 }
 
 pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>> {
-    /*
-    pre_allocated_addresses.push((
-        BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-        GlobalAddress::from(PACKAGE_PACKAGE),
-    ));
-    instructions.push(InstructionV1::CallFunction {
-        package_address: PACKAGE_PACKAGE.into(),
-        blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-        function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-        args: to_manifest_value_and_unwrap!(&),
-    });
-
-    PackagePublishNativeManifestInput {
-        package_address: Some(id_allocator.new_address_reservation_id()),
-        native_package_code_id: PACKAGE_CODE_ID,
-        setup: PackageNativePackage::definition(),
-        metadata: BTreeMap::new(),
-    }
-
-    create_package_partitions()
-     */
-
-    let (
-        blueprints,
-        blueprint_dependencies,
-        auth_configs,
-        schemas,
-        (code_hash, code),
-    ) = PackageNativePackage::validate_native_package_definition(
-        PackageNativePackage::definition(),
-        PACKAGE_CODE_ID,
-    ).expect("Invalid Package Package definition");
-
-    let partitions = create_package_partitions(
-        blueprints,
-        blueprint_dependencies,
-        schemas,
-        code,
-        code_hash,
-        btreemap!(),
-        auth_configs,
-        btreemap!(),
-    );
+    let package_flashes = [
+        (PACKAGE_PACKAGE, PackageNativePackage::definition(), PACKAGE_CODE_ID),
+        (TRANSACTION_PROCESSOR_PACKAGE, TransactionProcessorNativePackage::definition(), TRANSACTION_PROCESSOR_CODE_ID),
+    ];
 
     let mut to_flash = BTreeMap::new();
 
-    for (partition_num, partition_substates) in partitions {
-        let mut substates = BTreeMap::new();
-        for (key, value) in partition_substates {
-            substates.insert(key, value.into());
+    for (address, definition, native_code_id) in package_flashes {
+        let partitions = {
+            let (
+                blueprints,
+                blueprint_dependencies,
+                auth_configs,
+                schemas,
+                (code_hash, code),
+            ) = PackageNativePackage::validate_native_package_definition(
+                definition,
+                native_code_id,
+            ).expect("Invalid Package Package definition");
+
+            create_package_partitions(
+                blueprints,
+                blueprint_dependencies,
+                schemas,
+                code,
+                code_hash,
+                btreemap!(),
+                auth_configs,
+                btreemap!(),
+            )
+        };
+
+        for (partition_num, partition_substates) in partitions {
+            let mut substates = BTreeMap::new();
+            for (key, value) in partition_substates {
+                substates.insert(key, value.into());
+            }
+            to_flash.insert((address.into_node_id(), partition_num), substates);
         }
-        to_flash.insert((PACKAGE_PACKAGE.into_node_id(), partition_num), substates);
     }
 
     to_flash
@@ -427,9 +414,6 @@ pub fn create_system_bootstrap_transaction(
     initial_time_ms: i64,
     initial_current_leader: Option<ValidatorIndex>,
 ) -> SystemTransactionV1 {
-    // NOTES
-    // * Create resources before packages to avoid circular dependencies.
-
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
     let mut pre_allocated_addresses = vec![];
@@ -458,6 +442,7 @@ pub fn create_system_bootstrap_transaction(
 
     // TransactionProcessor Package
     {
+        /*
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(TRANSACTION_PROCESSOR_PACKAGE),
@@ -473,6 +458,7 @@ pub fn create_system_bootstrap_transaction(
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
             }),
         });
+         */
     }
 
     // Metadata Package
