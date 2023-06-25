@@ -380,8 +380,9 @@ mod tests {
             prepared_system_transaction.system_transaction_hash()
         );
         assert_eq!(
-            expected_system_transaction_hash.to_string(),
-            "a9135b8f1c038a439872c9e43f5ce48a5d3820a4d4d7052683e68678448c4238"
+            expected_system_transaction_hash
+                .to_string(&TransactionHashBech32Encoder::for_simulator()),
+            "systemtransaction_sim14yf4hrcuqw9y8xrje8jr7h8y3fwnsg9y6nts2f5ru6r8s3yvgguq2da744"
         );
         assert_eq!(
             hex::encode(system_transaction_payload_bytes),
