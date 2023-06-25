@@ -237,6 +237,7 @@ where
             );
 
         if xrd_info.is_none() {
+            // FIXME: Add flash receipt
             self.flash_substates(substate_flash);
 
             let system_bootstrap_receipt = self.execute_system_bootstrap(
