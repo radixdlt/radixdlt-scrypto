@@ -366,14 +366,14 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to allow its metadata to be updated with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible()
-    ///    .updateable_metadata(rule!(require(resource_address)), LOCKED);
+    ///    .updatable_metadata(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not allow its metadata to be updated, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_fungible()
-    ///    .updateable_metadata(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .updatable_metadata(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
-    fn updateable_metadata<R: Into<AccessRule>>(
+    fn updatable_metadata<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
         mutability: R,
@@ -404,14 +404,14 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// }
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>()
-    ///    .updateable_non_fungible_data(rule!(require(resource_address)), LOCKED);
+    ///    .updatable_non_fungible_data(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>()
-    ///    .updateable_non_fungible_data(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .updatable_non_fungible_data(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
-    fn updateable_non_fungible_data<R: Into<AccessRule>>(
+    fn updatable_non_fungible_data<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
         mutability: R,

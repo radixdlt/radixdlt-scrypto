@@ -1,4 +1,3 @@
-use radix_engine::blueprints::transaction_tracker::TransactionTrackerSubstate;
 use radix_engine::types::*;
 
 // Import and re-export these types so they are available easily with a single import
@@ -10,12 +9,14 @@ pub use radix_engine::blueprints::pool::multi_resource_pool;
 pub use radix_engine::blueprints::pool::one_resource_pool;
 pub use radix_engine::blueprints::pool::two_resource_pool;
 pub use radix_engine::blueprints::resource::*;
+pub use radix_engine::blueprints::transaction_tracker::*;
 pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
-use radix_engine::system::system::KeyValueEntrySubstate;
+pub use radix_engine::system::system::KeyValueEntrySubstate;
 pub use radix_engine_interface::api::node_modules::royalty::*;
+use transaction::prelude::IntentHash;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -63,13 +64,12 @@ pub use radix_engine_interface::api::node_modules::royalty::*;
 // }
 //=========================================================================
 
-/// By node module (roughly SysModule)
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
-    TypeInfoModuleField(TypeInfoField),
+    TypeInfoModule(TypedTypeInfoModuleSubstateKey),
     AccessRulesModule(TypedAccessRulesSubstateKey),
-    RoyaltyModuleField(RoyaltyField),
-    MetadataModuleEntryKey(String),
+    RoyaltyModule(TypedRoyaltyModuleSubstateKey),
+    MetadataModule(TypedMetadataModuleSubstateKey),
     MainModule(TypedMainModuleSubstateKey),
 }
 
@@ -91,9 +91,26 @@ impl TypedSubstateKey {
 }
 
 #[derive(Debug, Clone)]
+pub enum TypedTypeInfoModuleSubstateKey {
+    TypeInfoField(TypeInfoField),
+}
+
+#[derive(Debug, Clone)]
 pub enum TypedAccessRulesSubstateKey {
     AccessRulesField(AccessRulesField),
     Rule(ModuleRoleKey),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedRoyaltyModuleSubstateKey {
+    RoyaltyField(RoyaltyField),
+    /// The key is the method ident
+    RoyaltyMethodRoyaltyEntryKey(String),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedMetadataModuleSubstateKey {
+    MetadataEntryKey(String),
 }
 
 /// Doesn't include non-object modules, nor transient nodes.
@@ -124,7 +141,7 @@ pub enum TypedMainModuleSubstateKey {
     TwoResourcePoolField(TwoResourcePoolField),
     MultiResourcePoolField(MultiResourcePoolField),
     TransactionTrackerField(TransactionTrackerField),
-    TransactionTrackerCollectionEntry(Hash),
+    TransactionTrackerCollectionEntry(IntentHash),
     // Generic Scrypto Components
     GenericScryptoComponentField(ComponentField),
     // Substates for Generic KV Stores
@@ -159,19 +176,35 @@ pub fn to_typed_substate_key(
     substate_key: &SubstateKey,
 ) -> Result<TypedSubstateKey, String> {
     let substate_type = match partition_num {
-        TYPE_INFO_FIELD_PARTITION => TypedSubstateKey::TypeInfoModuleField(
-            TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
-        ),
-        METADATA_KV_STORE_PARTITION => TypedSubstateKey::MetadataModuleEntryKey(
-            scrypto_decode(
-                substate_key
-                    .for_map()
-                    .ok_or_else(|| error("Metadata key"))?,
-            )
-            .map_err(|_| error("string Metadata key"))?,
-        ),
-        ROYALTY_BASE_PARTITION => TypedSubstateKey::RoyaltyModuleField(
-            RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
+        TYPE_INFO_FIELD_PARTITION => {
+            TypedSubstateKey::TypeInfoModule(TypedTypeInfoModuleSubstateKey::TypeInfoField(
+                TypeInfoField::try_from(substate_key).map_err(|_| error("TypeInfoField"))?,
+            ))
+        }
+        METADATA_KV_STORE_PARTITION => {
+            TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(
+                scrypto_decode(
+                    substate_key
+                        .for_map()
+                        .ok_or_else(|| error("Metadata key"))?,
+                )
+                .map_err(|_| error("string Metadata key"))?,
+            ))
+        }
+        ROYALTY_FIELDS_PARTITION => {
+            TypedSubstateKey::RoyaltyModule(TypedRoyaltyModuleSubstateKey::RoyaltyField(
+                RoyaltyField::try_from(substate_key).map_err(|_| error("RoyaltyField"))?,
+            ))
+        }
+        ROYALTY_CONFIG_PARTITION => TypedSubstateKey::RoyaltyModule(
+            TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(
+                scrypto_decode(
+                    substate_key
+                        .for_map()
+                        .ok_or_else(|| error("RoyaltyConfigEntryFnIdent key"))?,
+                )
+                .map_err(|_| error("string RoyaltyConfigEntryFnIdent key"))?,
+            ),
         ),
         ACCESS_RULES_FIELDS_PARTITION => {
             TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::AccessRulesField(
@@ -375,7 +408,7 @@ fn to_typed_object_substate_key_internal(
             } else {
                 if let Some(key) = substate_key.for_map() {
                     TypedMainModuleSubstateKey::TransactionTrackerCollectionEntry(
-                        scrypto_decode(&key).map_err(|_| ())?,
+                        IntentHash::from_hash(Hash(key.clone().try_into().map_err(|_| ())?)),
                     )
                 } else {
                     return Err(());
@@ -393,27 +426,33 @@ fn to_typed_object_substate_key_internal(
 
 #[derive(Debug, Clone)]
 pub enum TypedSubstateValue {
-    TypeInfoModuleFieldValue(TypedTypeInfoModuleFieldValue),
-    AccessRulesModule(TypedAccessRulesModule),
-    RoyaltyModuleFieldValue(TypedRoyaltyModuleFieldValue),
-    MetadataModuleEntryValue(MetadataValueSubstate),
+    TypeInfoModule(TypedTypeInfoModuleSubstateValue),
+    AccessRulesModule(TypedAccessRulesModuleSubstateValue),
+    RoyaltyModule(TypedRoyaltyModuleSubstateValue),
+    MetadataModule(TypedMetadataModuleSubstateValue),
     MainModule(TypedMainModuleSubstateValue),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedTypeInfoModuleFieldValue {
+pub enum TypedTypeInfoModuleSubstateValue {
     TypeInfo(TypeInfoSubstate),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedAccessRulesModule {
+pub enum TypedAccessRulesModuleSubstateValue {
     OwnerRole(OwnerRoleSubstate),
     Rule(KeyValueEntrySubstate<AccessRule>),
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedRoyaltyModuleFieldValue {
-    ComponentRoyaltyAccumulator(ComponentRoyaltySubstate),
+pub enum TypedRoyaltyModuleSubstateValue {
+    ComponentRoyalty(ComponentRoyaltySubstate),
+    ComponentMethodRoyalty(ComponentMethodRoyaltySubstate),
+}
+
+#[derive(Debug, Clone)]
+pub enum TypedMetadataModuleSubstateValue {
+    MetadataEntry(MetadataEntrySubstate),
 }
 
 /// Contains all the main module substate values, by each known partition layout
@@ -439,12 +478,12 @@ pub enum TypedMainModuleSubstateValue {
     AccessController(TypedAccessControllerFieldValue),
     Account(TypedAccountFieldValue),
     AccountVaultIndex(KeyValueEntrySubstate<Own>),
-    AccountResourceDepositRuleIndex(AccountResourceDepositRuleEntry),
+    AccountResourceDepositRuleIndex(KeyValueEntrySubstate<AccountResourceDepositRuleEntry>),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
     TransactionTracker(TypedTransactionTrackerFieldValue),
-    TransactionTrackerCollectionEntry(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
+    TransactionTrackerCollectionEntry(KeyValueEntrySubstate<TransactionStatusSubstateContents>),
     // Generic Scrypto Components and KV Stores
     GenericScryptoComponent(GenericScryptoComponentFieldValue),
     GenericKeyValueStore(KeyValueEntrySubstate<ScryptoOwnedRawValue>),
@@ -554,10 +593,10 @@ fn to_typed_substate_value_internal(
     data: &[u8],
 ) -> Result<TypedSubstateValue, DecodeError> {
     let substate_value = match substate_key {
-        TypedSubstateKey::TypeInfoModuleField(type_info_offset) => {
-            TypedSubstateValue::TypeInfoModuleFieldValue(match type_info_offset {
-                TypeInfoField::TypeInfo => {
-                    TypedTypeInfoModuleFieldValue::TypeInfo(scrypto_decode(data)?)
+        TypedSubstateKey::TypeInfoModule(type_info_key) => {
+            TypedSubstateValue::TypeInfoModule(match type_info_key {
+                TypedTypeInfoModuleSubstateKey::TypeInfoField(TypeInfoField::TypeInfo) => {
+                    TypedTypeInfoModuleSubstateValue::TypeInfo(scrypto_decode(data)?)
                 }
             })
         }
@@ -565,23 +604,30 @@ fn to_typed_substate_value_internal(
             TypedAccessRulesSubstateKey::AccessRulesField(access_rules_field_offset) => {
                 match access_rules_field_offset {
                     AccessRulesField::OwnerRole => TypedSubstateValue::AccessRulesModule(
-                        TypedAccessRulesModule::OwnerRole(scrypto_decode(data)?),
+                        TypedAccessRulesModuleSubstateValue::OwnerRole(scrypto_decode(data)?),
                     ),
                 }
             }
             TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(
-                TypedAccessRulesModule::Rule(scrypto_decode(data)?),
+                TypedAccessRulesModuleSubstateValue::Rule(scrypto_decode(data)?),
             ),
         },
-        TypedSubstateKey::RoyaltyModuleField(royalty_offset) => {
-            TypedSubstateValue::RoyaltyModuleFieldValue(match royalty_offset {
-                RoyaltyField::RoyaltyAccumulator => {
-                    TypedRoyaltyModuleFieldValue::ComponentRoyaltyAccumulator(scrypto_decode(data)?)
+        TypedSubstateKey::RoyaltyModule(royalty_module_key) => {
+            TypedSubstateValue::RoyaltyModule(match royalty_module_key {
+                TypedRoyaltyModuleSubstateKey::RoyaltyField(RoyaltyField::RoyaltyAccumulator) => {
+                    TypedRoyaltyModuleSubstateValue::ComponentRoyalty(scrypto_decode(data)?)
+                }
+                TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(_) => {
+                    TypedRoyaltyModuleSubstateValue::ComponentMethodRoyalty(scrypto_decode(data)?)
                 }
             })
         }
-        TypedSubstateKey::MetadataModuleEntryKey(_) => {
-            TypedSubstateValue::MetadataModuleEntryValue(scrypto_decode(data)?)
+        TypedSubstateKey::MetadataModule(metadata_module_key) => {
+            TypedSubstateValue::MetadataModule(match metadata_module_key {
+                TypedMetadataModuleSubstateKey::MetadataEntryKey(_) => {
+                    TypedMetadataModuleSubstateValue::MetadataEntry(scrypto_decode(data)?)
+                }
+            })
         }
         TypedSubstateKey::MainModule(object_substate_key) => TypedSubstateValue::MainModule(
             to_typed_object_substate_value(object_substate_key, data)?,

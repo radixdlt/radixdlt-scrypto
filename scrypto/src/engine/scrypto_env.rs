@@ -32,8 +32,7 @@ pub struct ScryptoEnv;
 impl ClientCostingApi<ClientApiError> for ScryptoEnv {
     fn consume_cost_units(
         &mut self,
-        _units: u32,
-        _reason: types::ClientCostingReason,
+        _costing_entry: types::ClientCostingEntry,
     ) -> Result<(), ClientApiError> {
         unimplemented!("Not exposed to scrypto")
     }

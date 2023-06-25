@@ -16,7 +16,7 @@ fn can_mint_non_fungible_with_global() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleWithGlobalTest",
@@ -47,7 +47,7 @@ fn create_non_fungible_mutable() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -76,7 +76,7 @@ fn can_burn_non_fungible() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -98,7 +98,7 @@ fn can_burn_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .withdraw_from_account(account, resource_address, 1.into())
         .burn_non_fungible(non_fungible_global_id.clone())
         .call_function(
@@ -131,7 +131,7 @@ fn test_take_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -159,7 +159,7 @@ fn test_take_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -184,7 +184,7 @@ fn can_update_non_fungible_when_mutable() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -210,7 +210,7 @@ fn cannot_update_non_fungible_when_not_mutable() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -243,7 +243,7 @@ fn cannot_update_non_fungible_when_does_not_exist() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -283,7 +283,7 @@ fn can_call_non_fungible_data_reference() {
     );
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -304,7 +304,7 @@ fn can_call_non_fungible_data_reference() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -326,7 +326,7 @@ fn cannot_have_non_fungible_data_ownership() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -357,7 +357,7 @@ fn can_update_and_get_non_fungible() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -383,7 +383,7 @@ fn can_update_and_get_non_fungible_reference() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -410,7 +410,7 @@ fn test_non_fungible() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -473,7 +473,7 @@ fn test_singleton_non_fungible() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -503,7 +503,7 @@ fn test_mint_update_and_withdraw() {
 
     // create non-fungible
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -525,7 +525,7 @@ fn test_mint_update_and_withdraw() {
 
     // update data (the NFT is referenced within a Proof)
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .withdraw_from_account(account, badge_resource_address, 1.into())
         .create_proof_from_account_of_amount(account, nft_resource_address, 1.into())
         .take_all_from_worktop(badge_resource_address, |builder, bucket_id| {
@@ -552,7 +552,7 @@ fn test_mint_update_and_withdraw() {
 
     // transfer
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .withdraw_from_account(account, nft_resource_address, 1.into())
         .call_method(
             account,
@@ -576,7 +576,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -607,7 +607,7 @@ fn create_bytes_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -635,7 +635,7 @@ fn create_string_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -663,7 +663,7 @@ fn create_ruid_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -693,7 +693,7 @@ fn can_get_total_supply() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -717,7 +717,7 @@ fn can_mint_ruid_non_fungible_in_scrypto() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -758,7 +758,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -771,7 +771,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .mint_ruid_non_fungible(
             resource_address,
             vec![Sandwich {
@@ -801,7 +801,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -814,7 +814,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .mint_ruid_non_fungible(
             resource_address,
             vec![Sandwich {
@@ -844,7 +844,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(
             package,
             "NonFungibleTest",
@@ -864,7 +864,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .withdraw_from_account(account, resource_address, 1.into())
         .burn_non_fungible(non_fungible_global_id.clone())
         .build();

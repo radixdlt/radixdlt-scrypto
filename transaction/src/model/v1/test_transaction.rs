@@ -68,7 +68,7 @@ impl PreparedTestTransaction {
                 },
                 fee_payment: FeePayment {
                     tip_percentage: 0,
-                    free_credit_in_xrd: 0,
+                    free_credit_in_xrd: Decimal::ZERO,
                 },
                 pre_allocated_addresses: vec![],
             },

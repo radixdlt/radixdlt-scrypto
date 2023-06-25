@@ -70,6 +70,9 @@ use transaction::model::{
 };
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
+use transaction::validation::{
+    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
+};
 
 pub struct Compile;
 
@@ -416,7 +419,7 @@ impl TestRunner {
         proof: NonFungibleGlobalId,
     ) {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
+            .lock_fee(self.faucet_component(), 50u32.into())
             .set_metadata(
                 address,
                 key.to_string(),
@@ -449,9 +452,7 @@ impl TestRunner {
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltySubstate>(
                 component_address.as_node_id(),
-                ROYALTY_BASE_PARTITION
-                    .at_offset(ROYALTY_FIELDS_PARTITION_OFFSET)
-                    .unwrap(),
+                ROYALTY_FIELDS_PARTITION,
                 &RoyaltyField::RoyaltyAccumulator.into(),
             )
             .unwrap();
@@ -661,7 +662,7 @@ impl TestRunner {
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
+            .lock_fee(self.faucet_component(), 50u32.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(
@@ -769,7 +770,7 @@ impl TestRunner {
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let manifest = ManifestBuilder::new()
-                .lock_fee(self.faucet_component(), 10.into())
+                .lock_fee(self.faucet_component(), 50.into())
                 .create_identity_advanced(OwnerRole::Fixed(rule!(require(owner_id))))
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
@@ -782,7 +783,7 @@ impl TestRunner {
 
     pub fn new_securified_identity(&mut self, account: ComponentAddress) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 10.into())
+            .lock_fee(self.faucet_component(), 50.into())
             .create_identity()
             .call_method(
                 account,
@@ -803,7 +804,7 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 10.into())
+            .lock_fee(self.faucet_component(), 50.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, |builder, bucket| {
                 builder.create_validator(pub_key, Decimal::ONE, bucket);
@@ -870,7 +871,7 @@ impl TestRunner {
         owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
+            .lock_fee(self.faucet_component(), 50u32.into())
             .publish_package_advanced(code, definition, metadata, owner_rule)
             .build();
 
@@ -885,7 +886,7 @@ impl TestRunner {
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
+            .lock_fee(self.faucet_component(), 50u32.into())
             .publish_package_with_owner(code, definition, owner_badge)
             .build();
 
@@ -950,6 +951,22 @@ impl TestRunner {
             },
         );
         self.execute_manifest(manifest, initial_proofs)
+    }
+
+    pub fn execute_raw_transaction(
+        &mut self,
+        network: &NetworkDefinition,
+        raw_transaction: &RawNotarizedTransaction,
+    ) -> TransactionReceipt {
+        let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
+        let validated = validator
+            .validate_from_raw(&raw_transaction)
+            .expect("Expected raw transaction to be valid");
+        self.execute_transaction(
+            validated.get_executable(),
+            FeeReserveConfig::default(),
+            ExecutionConfig::for_notarized_transaction(),
+        )
     }
 
     pub fn execute_manifest<T>(
@@ -1130,7 +1147,7 @@ impl TestRunner {
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
+            .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(true, 0, BTreeMap::new(), access_rules, Some(5.into()))
             .call_method(
                 to,
@@ -1309,7 +1326,7 @@ impl TestRunner {
         entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
+            .lock_fee(self.faucet_component(), 50u32.into())
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
                 false,
@@ -1337,7 +1354,7 @@ impl TestRunner {
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
+            .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(
                 true,
                 divisibility,
@@ -1367,7 +1384,7 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(require(admin_auth)), LOCKED));
         access_rules.insert(Burn, (rule!(require(admin_auth)), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
+            .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(true, 1u8, BTreeMap::new(), access_rules, None)
             .call_method(
                 account,
@@ -1391,7 +1408,7 @@ impl TestRunner {
         access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
+            .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(true, divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,
@@ -1415,7 +1432,7 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 100u32.into())
+            .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(true, divisibility, BTreeMap::new(), access_rules, amount)
             .call_method(
                 account,

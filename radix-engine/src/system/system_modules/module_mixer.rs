@@ -1,3 +1,5 @@
+use super::costing::CostingEntry;
+use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
@@ -25,9 +27,6 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
-
-use super::costing::CostingReason;
-use super::limits::TransactionLimitsError;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -142,6 +141,8 @@ impl SystemModuleMixer {
                 max_call_depth: execution_config.max_call_depth,
                 payload_len,
                 num_of_signatures,
+                enable_cost_breakdown: execution_config.enable_cost_breakdown,
+                costing_traces: index_map_new(),
             },
             node_move: NodeMoveModule {},
             auth: AuthModule {
@@ -310,9 +311,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
+        total_substate_size: usize,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_create_node(api, node_id, store_access))
+        internal_call_dispatch!(
+            api,
+            after_create_node(api, node_id, total_substate_size, store_access)
+        )
     }
 
     #[trace_resources]
@@ -324,8 +329,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_drop_node(api))
+    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        total_substate_size: usize,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, after_drop_node(api, total_substate_size))
     }
 
     #[trace_resources]
@@ -398,9 +406,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
+        value_size: usize,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_set_substate(api, store_access))
+        internal_call_dispatch!(api, on_set_substate(api, value_size, store_access))
     }
 
     #[trace_resources]
@@ -570,18 +579,12 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn apply_execution_cost<F>(
+    pub fn apply_execution_cost(
         &mut self,
-        reason: CostingReason,
-        base_price: F,
-        multiplier: usize,
-    ) -> Result<(), RuntimeError>
-    where
-        F: Fn(&FeeTable) -> u32,
-    {
+        costing_entry: CostingEntry,
+    ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
-            self.costing
-                .apply_execution_cost(reason, base_price, multiplier)
+            self.costing.apply_execution_cost(costing_entry)
         } else {
             Ok(())
         }

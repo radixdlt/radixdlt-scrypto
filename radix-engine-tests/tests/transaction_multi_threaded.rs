@@ -40,7 +40,7 @@ mod multi_threaded_test {
         let accounts = (0..2)
             .map(|i| {
                 let manifest = ManifestBuilder::new()
-                    .lock_fee(FAUCET, 100.into())
+                    .lock_fee(FAUCET, 50u32.into())
                     .new_account_advanced(OwnerRole::Fixed(rule!(require(
                         NonFungibleGlobalId::from_public_key(&public_key)
                     ))))
@@ -68,7 +68,7 @@ mod multi_threaded_test {
 
         // Fill first account
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 100.into())
+            .lock_fee(FAUCET, 50u32.into())
             .call_method(FAUCET, "free", manifest_args!())
             .call_method(
                 account1,
@@ -92,7 +92,7 @@ mod multi_threaded_test {
 
         // Create a transfer manifest
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 100.into())
+            .lock_fee(FAUCET, 50u32.into())
             .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
             .call_method(
                 account2,

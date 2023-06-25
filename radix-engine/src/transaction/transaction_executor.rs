@@ -26,16 +26,16 @@ use transaction::model::*;
 
 #[derive(Debug, Clone)]
 pub struct FeeReserveConfig {
-    pub cost_unit_price: u128,
-    pub usd_price: u128,
+    pub cost_unit_price: Decimal,
+    pub usd_price: Decimal,
     pub system_loan: u32,
 }
 
 impl Default for FeeReserveConfig {
     fn default() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE,
-            usd_price: DEFAULT_USD_PRICE,
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE.try_into().unwrap(),
+            usd_price: DEFAULT_USD_PRICE.try_into().unwrap(),
             system_loan: DEFAULT_SYSTEM_LOAN,
         }
     }
@@ -54,6 +54,7 @@ pub struct ExecutionConfig {
     pub max_substate_writes_per_transaction: usize,
     pub max_substate_size: usize,
     pub max_invoke_input_size: usize,
+    pub enable_cost_breakdown: bool,
     pub max_event_size: usize,
     pub max_log_size: usize,
     pub max_panic_message_size: usize,
@@ -77,6 +78,7 @@ impl ExecutionConfig {
             max_substate_writes_per_transaction: DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
             max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
+            enable_cost_breakdown: false,
             max_event_size: DEFAULT_MAX_EVENT_SIZE,
             max_log_size: DEFAULT_MAX_LOG_SIZE,
             max_panic_message_size: DEFAULT_MAX_PANIC_MESSAGE_SIZE,
@@ -111,6 +113,7 @@ impl ExecutionConfig {
     pub fn for_test_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_test_transaction(),
+            enable_cost_breakdown: true,
             ..Self::default()
         }
     }
@@ -272,8 +275,14 @@ where
                         }
 
                         // Distribute fees
-                        let (fee_summary, fee_payments) =
+                        let (mut fee_summary, fee_payments) =
                             Self::finalize_fees(&mut track, costing_module.fee_reserve, is_success);
+                        fee_summary.execution_cost_breakdown = costing_module
+                            .costing_traces
+                            .into_iter()
+                            .map(|(k, v)| (k.to_string(), v))
+                            .collect();
+                        fee_summary.fee_payments = fee_payments.clone();
 
                         // Update intent hash status
                         if let Some(next_epoch) = Self::read_epoch(&mut track) {
@@ -308,7 +317,6 @@ where
                                 Err(e) => TransactionOutcome::Failure(e),
                             },
                             fee_summary,
-                            fee_payments,
                             application_events,
                             application_logs,
                             execution_metrics,
@@ -823,14 +831,8 @@ where
         match &receipt.transaction_result {
             TransactionResult::Commit(commit) => {
                 println!("{:-^80}", "Cost Breakdown");
-                let break_down = commit
-                    .fee_summary
-                    .execution_cost_breakdown
-                    .iter()
-                    .map(|(k, v)| (k.to_string(), v))
-                    .collect::<BTreeMap<String, &u32>>();
-                for (k, v) in break_down {
-                    println!("        + {} /* {} */", v, k);
+                for (k, v) in &commit.fee_summary.execution_cost_breakdown {
+                    println!("{:<30}: {:>10}", k, v);
                 }
 
                 println!("{:-^80}", "Cost Totals");
