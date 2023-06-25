@@ -1,9 +1,8 @@
+use super::FeeTable;
 use crate::kernel::actor::Actor;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use radix_engine_interface::*;
-
-use super::FeeTable;
 
 #[derive(Debug, IntoStaticStr)]
 pub enum CostingEntry<'a> {
@@ -50,6 +49,7 @@ pub enum CostingEntry<'a> {
     },
     MoveModules,
     OpenSubstate {
+        node_id: &'a NodeId,
         value_size: usize,
         store_access: &'a StoreAccessInfo,
     },
@@ -142,6 +142,7 @@ impl<'a> CostingEntry<'a> {
             } => ft.drop_node_cost(*total_substate_size),
             CostingEntry::MoveModules => ft.move_modules_cost(),
             CostingEntry::OpenSubstate {
+                node_id: _,
                 value_size,
                 store_access,
             } => ft.open_substate_cost(*value_size, store_access),
@@ -176,6 +177,29 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::Panic { size } => ft.panic_cost(*size),
             CostingEntry::RoyaltyModule { direct_charge } => *direct_charge,
             CostingEntry::AuthModule { direct_charge } => *direct_charge,
+        }
+    }
+}
+
+impl<'a> CostingEntry<'a> {
+    pub fn to_trace_key(&self) -> String {
+        match self {
+            CostingEntry::RunNativeCode {
+                package_address, ..
+            } => format!(
+                "RunNativeCode::{:?}",
+                package_address.as_node_id().entity_type().unwrap()
+            ),
+            CostingEntry::RunWasmCode {
+                package_address, ..
+            } => format!(
+                "RunWasmCode::{:?}",
+                package_address.as_node_id().entity_type().unwrap()
+            ),
+            CostingEntry::OpenSubstate { node_id, .. } => {
+                format!("OpenSubstate::{:?}", node_id.entity_type().unwrap())
+            }
+            x => Into::<&'static str>::into(x).to_string(),
         }
     }
 }

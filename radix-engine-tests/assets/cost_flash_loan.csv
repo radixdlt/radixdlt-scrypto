@@ -1,20 +1,27 @@
-Total Cost Units              ,  20126544
-Total Fee                     , 10.063272
-AllocateNodeId                ,     26500
-CloseSubstate                 ,    284500
-CreateNode                    ,     38272
-DropNode                      ,     38272
-EmitEvent                     ,      6730
-GenerateRuid                  ,       500
-Invoke                        ,     25508
-LockFee                       ,       500
-OpenSubstate                  ,  13207500
-QueryActor                    ,     15000
-QueryAuthZone                 ,      2000
-ReadSubstate                  ,   1158398
-RunNativeCode                 ,   1342700
-RunWasmCode                   ,   3860000
-TxBaseCost                    ,     40000
-TxPayloadCost                 ,     25700
-TxSignatureVerification       ,      7000
-WriteSubstate                 ,     47464
+Total Cost Units                                  ,  20995323
+Total Fee                                         ,10.4976615
+AfterInvoke                                       ,       974
+AllocateNodeId                                    ,     26500
+BeforeInvoke                                      ,     25508
+CloseSubstate                                     ,    284500
+CreateNode                                        ,     38272
+DropNode                                          ,     38272
+EmitEvent                                         ,      6730
+GenerateRuid                                      ,       500
+LockFee                                           ,       500
+OpenSubstate::GlobalAccount                       ,   1208155
+OpenSubstate::GlobalFungibleResourceManager       ,   1008416
+OpenSubstate::GlobalGenericComponent              ,    283430
+OpenSubstate::GlobalNonFungibleResourceManager    ,   1080953
+OpenSubstate::GlobalPackage                       ,   9187540
+OpenSubstate::InternalFungibleVault               ,   1142667
+OpenSubstate::InternalGenericComponent            ,    164144
+QueryActor                                        ,     15000
+QueryAuthZone                                     ,      2000
+ReadSubstate                                      ,   1158398
+RunNativeCode::GlobalPackage                      ,   1342700
+RunWasmCode::GlobalPackage                        ,   3860000
+TxBaseCost                                        ,     40000
+TxPayloadCost                                     ,     25700
+TxSignatureVerification                           ,      7000
+WriteSubstate                                     ,     47464

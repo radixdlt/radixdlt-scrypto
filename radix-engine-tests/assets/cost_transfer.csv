@@ -1,17 +1,22 @@
-Total Cost Units              ,   6719020
-Total Fee                     ,   3.35951
-AllocateNodeId                ,      6500
-CloseSubstate                 ,     72000
-CreateNode                    ,      9485
-DropNode                      ,      9485
-EmitEvent                     ,      1830
-Invoke                        ,      5731
-LockFee                       ,       500
-OpenSubstate                  ,   6033800
-QueryActor                    ,      4000
-ReadSubstate                  ,    103556
-RunNativeCode                 ,    401100
-TxBaseCost                    ,     40000
-TxPayloadCost                 ,     13450
-TxSignatureVerification       ,      7000
-WriteSubstate                 ,     10583
+Total Cost Units                                  ,   6750186
+Total Fee                                         ,  3.375093
+AfterInvoke                                       ,       150
+AllocateNodeId                                    ,      6500
+BeforeInvoke                                      ,      5731
+CloseSubstate                                     ,     72000
+CreateNode                                        ,      9485
+DropNode                                          ,      9485
+EmitEvent                                         ,      1830
+LockFee                                           ,       500
+OpenSubstate::GlobalAccount                       ,   1488155
+OpenSubstate::GlobalFungibleResourceManager       ,    568512
+OpenSubstate::GlobalPackage                       ,   3406007
+OpenSubstate::InternalFungibleVault               ,    565280
+OpenSubstate::InternalGenericComponent            ,     36862
+QueryActor                                        ,      4000
+ReadSubstate                                      ,    103556
+RunNativeCode::GlobalPackage                      ,    401100
+TxBaseCost                                        ,     40000
+TxPayloadCost                                     ,     13450
+TxSignatureVerification                           ,      7000
+WriteSubstate                                     ,     10583

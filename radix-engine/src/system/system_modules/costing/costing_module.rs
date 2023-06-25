@@ -39,7 +39,7 @@ pub struct CostingModule {
     pub payload_len: usize,
     pub num_of_signatures: usize,
     pub enable_cost_breakdown: bool,
-    pub costing_traces: IndexMap<&'static str, u32>,
+    pub costing_traces: IndexMap<String, u32>,
 }
 
 impl CostingModule {
@@ -62,7 +62,7 @@ impl CostingModule {
             })?;
 
         if self.enable_cost_breakdown {
-            let key: &'static str = costing_entry.into();
+            let key = costing_entry.to_trace_key();
             self.costing_traces
                 .entry(key)
                 .or_default()
@@ -85,7 +85,7 @@ impl CostingModule {
         })?;
 
         if self.enable_cost_breakdown {
-            let key: &'static str = costing_entry.into();
+            let key = costing_entry.to_trace_key();
             self.costing_traces
                 .entry(key)
                 .or_default()
@@ -266,6 +266,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _handle: LockHandle,
+        node_id: &NodeId,
         store_access: &StoreAccessInfo,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -273,7 +274,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .modules
             .costing
             .apply_execution_cost(CostingEntry::OpenSubstate {
-                store_access: store_access,
+                node_id,
+                store_access,
                 value_size,
             })?;
 

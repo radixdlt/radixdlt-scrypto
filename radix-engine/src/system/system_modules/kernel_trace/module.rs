@@ -131,10 +131,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
+        node_id: &NodeId,
         _store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Substate locked: handle = {:?}", handle);
+        log!(
+            api,
+            "Substate locked: node id = {:?}, handle = {:?}",
+            node_id,
+            handle
+        );
         Ok(())
     }
 

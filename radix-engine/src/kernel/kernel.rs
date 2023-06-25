@@ -651,7 +651,7 @@ where
                 }
             };
 
-        M::after_lock_substate(lock_handle, value_size, &store_access, self)?;
+        M::after_lock_substate(lock_handle, node_id, value_size, &store_access, self)?;
 
         Ok(lock_handle)
     }
