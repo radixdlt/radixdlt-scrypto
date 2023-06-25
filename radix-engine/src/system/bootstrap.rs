@@ -2,7 +2,7 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::AccountNativePackage;
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
-use crate::blueprints::package::{create_package_partitions, PackageNativePackage};
+use crate::blueprints::package::{create_bootstrap_package_partitions, PackageNativePackage};
 use crate::blueprints::pool::PoolNativePackage;
 use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
@@ -377,25 +377,14 @@ pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BT
 
     for (address, definition, native_code_id) in package_flashes {
         let partitions = {
-            let (
-                blueprints,
-                blueprint_dependencies,
-                schemas,
-                code_substates,
-                auth_configs,
-                _royalties,
-            ) = PackageNativePackage::validate_and_build_package_structure(
+            let package_structure = PackageNativePackage::validate_and_build_package_structure(
                 definition,
                 VmType::Native,
                 native_code_id.to_be_bytes().to_vec(),
             ).expect("Invalid Package Package definition");
 
-            create_package_partitions(
-                blueprints,
-                blueprint_dependencies,
-                schemas,
-                code_substates,
-                auth_configs,
+            create_bootstrap_package_partitions(
+                package_structure,
                 btreemap!(),
             )
         };

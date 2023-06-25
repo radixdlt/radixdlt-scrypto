@@ -361,18 +361,14 @@ impl SecurifiedAccessRules for SecurifiedPackage {
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
-pub fn create_package_partitions(
-    blueprints: BTreeMap<String, BlueprintDefinition>,
-    blueprint_dependencies: BTreeMap<String, BlueprintDependencies>,
-    schemas: BTreeMap<Hash, ScryptoSchema>,
-    code: BTreeMap<Hash, PackageCodeSubstate>,
-    auth_configs: BTreeMap<String, AuthConfig>,
+pub fn create_bootstrap_package_partitions(
+    package_structure: PackageStructure,
     metadata: BTreeMap<String, MetadataValue>,
 ) -> NodeSubstates {
     let mut partitions: NodeSubstates = BTreeMap::new();
 
     {
-        let blueprints_partition = blueprints
+        let blueprints_partition = package_structure.definitions
             .into_iter()
             .map(|(blueprint, definition)| {
                 let key = BlueprintVersionKey {
@@ -396,7 +392,7 @@ pub fn create_package_partitions(
     };
 
     {
-        let minor_version_configs = blueprint_dependencies
+        let minor_version_configs = package_structure.dependencies
             .into_iter()
             .map(|(blueprint, minor_version_config)| {
                 let key = BlueprintVersionKey {
@@ -421,7 +417,7 @@ pub fn create_package_partitions(
     };
 
     {
-        let schemas_partition = schemas
+        let schemas_partition = package_structure.schemas
             .into_iter()
             .map(|(hash, schema)| {
                 let value = KeyValueEntrySubstate::immutable_entry(schema);
@@ -442,7 +438,7 @@ pub fn create_package_partitions(
     }
 
     {
-        let code_partition = code
+        let code_partition = package_structure.code
             .into_iter()
             .map(|(hash, code_substate)| {
                 let value = KeyValueEntrySubstate::immutable_entry(code_substate);
@@ -463,7 +459,7 @@ pub fn create_package_partitions(
     };
 
     {
-        let auth_partition = auth_configs
+        let auth_partition = package_structure.auth_configs
             .into_iter()
             .map(|(blueprint, auth_template)| {
                 let key = BlueprintVersionKey {
@@ -518,13 +514,8 @@ pub fn create_package_partitions(
 
 fn globalize_package<Y>(
     package_address_reservation: Option<GlobalAddressReservation>,
-    blueprints: BTreeMap<String, BlueprintDefinition>,
-    blueprint_dependencies: BTreeMap<String, BlueprintDependencies>,
-    schemas: BTreeMap<Hash, ScryptoSchema>,
-    code_substates: BTreeMap<Hash, PackageCodeSubstate>,
-    package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
-    auth_configs: BTreeMap<String, AuthConfig>,
-    metadata: BTreeMap<String, MetadataValue>,
+    package_structure: PackageStructure,
+    metadata: Own,
     access_rules: AccessRules,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
@@ -541,7 +532,7 @@ where
 
     {
         let mut definition_partition = BTreeMap::new();
-        for (blueprint, definition) in blueprints {
+        for (blueprint, definition) in package_structure.definitions {
             let key = BlueprintVersionKey::new_default(blueprint);
             definition_partition.insert(
                 scrypto_encode(&key).unwrap(),
@@ -553,7 +544,7 @@ where
 
     {
         let mut dependency_partition = BTreeMap::new();
-        for (blueprint, dependencies) in blueprint_dependencies {
+        for (blueprint, dependencies) in package_structure.dependencies {
             let key = BlueprintVersionKey::new_default(blueprint);
             dependency_partition.insert(
                 scrypto_encode(&key).unwrap(),
@@ -565,7 +556,7 @@ where
 
     {
         let mut schemas_partition = BTreeMap::new();
-        for (hash, schema) in schemas {
+        for (hash, schema) in package_structure.schemas {
             schemas_partition.insert(
                 scrypto_encode(&hash).unwrap(),
                 (scrypto_encode(&schema).unwrap(), true),
@@ -576,7 +567,7 @@ where
 
     {
         let mut code_partition = BTreeMap::new();
-        for (hash, code_substate) in code_substates {
+        for (hash, code_substate) in package_structure.code {
             code_partition.insert(
                 scrypto_encode(&hash).unwrap(),
                 (scrypto_encode(&code_substate).unwrap(), true),
@@ -587,7 +578,7 @@ where
 
     {
         let mut package_royalties_partition = BTreeMap::new();
-        for (blueprint, package_royalty) in package_royalties {
+        for (blueprint, package_royalty) in package_structure.package_royalties {
             let key = BlueprintVersionKey::new_default(blueprint);
             package_royalties_partition.insert(
                 scrypto_encode(&key).unwrap(),
@@ -599,7 +590,7 @@ where
 
     {
         let mut auth_partition = BTreeMap::new();
-        for (blueprint, auth_config) in auth_configs {
+        for (blueprint, auth_config) in package_structure.auth_configs {
             let key = BlueprintVersionKey::new_default(blueprint);
             auth_partition.insert(
                 scrypto_encode(&key).unwrap(),
@@ -617,9 +608,6 @@ where
         kv_entries,
     )?;
 
-    // FIXME: use MetadataInit
-    let metadata = Metadata::create_with_data(metadata.into(), api)?;
-
     // FIXME: Dont use
     let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
 
@@ -634,6 +622,15 @@ where
     )?;
 
     Ok(PackageAddress::new_or_panic(address.into_node_id().0))
+}
+
+pub struct PackageStructure {
+    pub definitions: BTreeMap<String, BlueprintDefinition>,
+    pub dependencies: BTreeMap<String, BlueprintDependencies>,
+    pub schemas: BTreeMap<Hash, ScryptoSchema>,
+    pub code: BTreeMap<Hash, PackageCodeSubstate>,
+    pub auth_configs: BTreeMap<String, AuthConfig>,
+    pub package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
 }
 
 pub struct PackageNativePackage;
@@ -890,14 +887,7 @@ impl PackageNativePackage {
         definition: PackageDefinition,
         vm_type: VmType,
         code: Vec<u8>,
-    ) -> Result<(
-        BTreeMap<String, BlueprintDefinition>,
-        BTreeMap<String, BlueprintDependencies>,
-        BTreeMap<Hash, ScryptoSchema>,
-        BTreeMap<Hash, PackageCodeSubstate>,
-        BTreeMap<String, AuthConfig>,
-        BTreeMap<String, PackageRoyaltyConfig>,
-    ), RuntimeError> {
+    ) -> Result<PackageStructure, RuntimeError> {
         // Validate schema
         validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
@@ -910,11 +900,11 @@ impl PackageNativePackage {
         VmValidation::validate(&definition, vm_type, &code)?;
 
         // Build Package structure
-        let mut blueprints = BTreeMap::new();
-        let mut blueprint_dependencies = BTreeMap::new();
+        let mut definitions = BTreeMap::new();
+        let mut dependencies = BTreeMap::new();
         let mut schemas = BTreeMap::new();
         let mut code_substates = BTreeMap::new();
-        let mut royalties = BTreeMap::new();
+        let mut package_royalties = BTreeMap::new();
         let mut auth_configs = BTreeMap::new();
 
         let code_hash = {
@@ -1011,25 +1001,27 @@ impl PackageNativePackage {
                         })
                         .collect(),
                 };
-                blueprints.insert(blueprint.clone(), definition);
+                definitions.insert(blueprint.clone(), definition);
 
                 let minor_version_config = BlueprintDependencies {
                     dependencies: definition_init.dependencies,
                 };
-                blueprint_dependencies.insert(blueprint.clone(), minor_version_config);
+                dependencies.insert(blueprint.clone(), minor_version_config);
 
-                royalties.insert(blueprint.clone(), definition_init.royalty_config);
+                package_royalties.insert(blueprint.clone(), definition_init.royalty_config);
             }
         };
 
-        Ok((
-            blueprints,
-            blueprint_dependencies,
+        let package_structure = PackageStructure {
+            definitions,
+            dependencies,
             schemas,
-            code_substates,
+            code: code_substates,
             auth_configs,
-            royalties,
-        ))
+            package_royalties,
+        };
+
+        Ok(package_structure)
     }
 
     pub(crate) fn publish_native<Y>(
@@ -1042,29 +1034,17 @@ impl PackageNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (
-            blueprints,
-            blueprint_dependencies,
-            schemas,
-            code_substates,
-            auth_configs,
-            package_royalties,
-        ) = Self::validate_and_build_package_structure(
+        let package_structure = Self::validate_and_build_package_structure(
             definition,
             VmType::Native,
             native_package_code_id.to_be_bytes().to_vec(),
         )?;
-
         let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?;
+        let metadata = Metadata::create_with_data(metadata.into(), api)?;
 
         globalize_package(
             package_address,
-            blueprints,
-            blueprint_dependencies,
-            schemas,
-            code_substates,
-            package_royalties,
-            auth_configs,
+            package_structure,
             metadata,
             access_rules,
             api,
@@ -1080,29 +1060,18 @@ impl PackageNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
-
-        let (
-            blueprints,
-            blueprint_dependencies,
-            schemas,
-            code_substates,
-            auth_configs,
-            package_royalties,
-        ) = Self::validate_and_build_package_structure(
+        let package_structure = Self::validate_and_build_package_structure(
             definition,
             VmType::ScryptoV1,
             code,
         )?;
 
+        let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
+        let metadata = Metadata::create_with_data(metadata.into(), api)?;
+
         let address = globalize_package(
             None,
-            blueprints,
-            blueprint_dependencies,
-            schemas,
-            code_substates,
-            package_royalties,
-            auth_configs,
+            package_structure,
             metadata,
             access_rules,
             api,
@@ -1122,29 +1091,17 @@ impl PackageNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedPackage::create_advanced(owner_rule, api)?;
-
-        let (
-            blueprints,
-            blueprint_dependencies,
-            schemas,
-            code_substates,
-            auth_configs,
-            package_royalties,
-        ) = Self::validate_and_build_package_structure(
+        let package_structure = Self::validate_and_build_package_structure(
             definition,
             VmType::ScryptoV1,
             code,
         )?;
+        let metadata = Metadata::create_with_data(metadata.into(), api)?;
+        let access_rules = SecurifiedPackage::create_advanced(owner_rule, api)?;
 
         globalize_package(
             package_address,
-            blueprints,
-            blueprint_dependencies,
-            schemas,
-            code_substates,
-            package_royalties,
-            auth_configs,
+            package_structure,
             metadata,
             access_rules,
             api,
