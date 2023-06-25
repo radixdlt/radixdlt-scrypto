@@ -11,8 +11,8 @@ mod metadata {
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
                     roles {
-                        metadata_admin => rule!(allow_all);
-                        metadata_admin_updater => rule!(deny_all);
+                        metadata_admin => rule!(allow_all), locked;
+                        metadata_admin_updater => rule!(deny_all), locked;
                     },
                     init {
                     }

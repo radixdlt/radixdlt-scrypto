@@ -1,5 +1,5 @@
-Total Cost Units              ,   8642435
-Total Fee                     , 0.8642435
+Total Cost Units              ,   9024880
+Total Fee                     ,  0.902488
 AllocateNodeId                ,      6360
 CloseSubstate                 ,     34100
 CreateNode                    ,    108112
@@ -7,7 +7,7 @@ DropNode                      ,    104856
 EmitEvent                     ,     80000
 Invoke                        ,     41560
 LockFee                       ,       100
-OpenSubstate                  ,   4102941
+OpenSubstate                  ,   4485386
 QueryActor                    ,      1300
 ReadSubstate                  ,    626248
 RunNativeCode                 ,   2645361
