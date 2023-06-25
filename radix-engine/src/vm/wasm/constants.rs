@@ -1,7 +1,7 @@
 use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
 
 pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
-pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
+pub const CONSUME_GAS_FUNCTION_NAME: &str = "gas";
 pub const COST_UNIT_LIMIT_FUNCTION_NAME: &str = "cost_unit_limit";
 pub const COST_UNIT_PRICE_FUNCTION_NAME: &str = "cost_unit_price";
 pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";

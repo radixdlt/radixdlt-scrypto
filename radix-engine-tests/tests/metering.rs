@@ -1,12 +1,47 @@
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_constants::DEFAULT_MAX_INVOKE_INPUT_SIZE;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::*;
 use utils::ContextualDisplay;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
+
+#[cfg(not(feature = "alloc"))]
+#[test]
+#[ignore = "Run this to update expected costs"]
+fn update_expected_costs() {
+    run_basic_transfer(Mode::OutputCosting(
+        "./assets/cost_transfer.csv".to_string(),
+    ));
+    run_radiswap(Mode::OutputCosting(
+        "./assets/cost_radiswap.csv".to_string(),
+    ));
+    run_flash_loan(Mode::OutputCosting(
+        "./assets/cost_flash_loan.csv".to_string(),
+    ));
+}
+
+#[test]
+fn test_basic_transfer() {
+    run_basic_transfer(Mode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_transfer.csv"
+    ))));
+}
+
+#[test]
+fn test_radiswap() {
+    run_radiswap(Mode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_radiswap.csv"
+    ))));
+}
+
+#[test]
+fn test_flash_loan() {
+    run_flash_loan(Mode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_flash_loan.csv"
+    ))));
+}
 
 #[cfg(feature = "std")]
 fn execute_with_time_logging(
@@ -34,8 +69,77 @@ fn execute_with_time_logging(
     (receipt, 0)
 }
 
-#[test]
-fn test_basic_transfer() {
+pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
+    let mut breakdown = BTreeMap::<String, u32>::new();
+    content
+        .split("\n")
+        .filter(|x| x.len() > 0)
+        .skip(2)
+        .for_each(|x| {
+            let mut tokens = x.split(",");
+            let entry = tokens.next().unwrap().trim();
+            let cost = tokens.next().unwrap().trim();
+            breakdown.insert(entry.to_string(), u32::from_str(cost).unwrap());
+        });
+    breakdown
+}
+
+#[cfg(feature = "alloc")]
+pub fn write_cost_breakdown(_breakdown: &BTreeMap<String, u32>, _file: &str) {}
+
+#[cfg(not(feature = "alloc"))]
+pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
+    use std::fs::File;
+    use std::io::Write;
+
+    use radix_engine::system::system_modules::costing::transmute_u128_as_decimal;
+
+    let mut buffer = String::new();
+    buffer.push_str(
+        format!(
+            "{:<30},{:>10}\n",
+            "Total Cost Units",
+            breakdown.values().sum::<u32>()
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<30},{:>10}\n",
+            "Total Fee",
+            (Decimal::from(breakdown.values().sum::<u32>())
+                * transmute_u128_as_decimal(DEFAULT_COST_UNIT_PRICE))
+            .to_string()
+        )
+        .as_str(),
+    );
+    for (k, v) in breakdown {
+        buffer.push_str(format!("{:<30},{:>10}\n", k, v).as_str());
+    }
+
+    let mut f = File::create(file).unwrap();
+    f.write_all(buffer.as_bytes()).unwrap();
+}
+
+pub enum Mode {
+    OutputCosting(String),
+    AssertCosting(BTreeMap<String, u32>),
+}
+
+impl Mode {
+    pub fn run(&self, breakdown: &BTreeMap<String, u32>) {
+        match self {
+            Mode::OutputCosting(file) => {
+                write_cost_breakdown(breakdown, file.as_str());
+            }
+            Mode::AssertCosting(expected) => {
+                assert_eq!(breakdown, expected);
+            }
+        }
+    }
+}
+
+fn run_basic_transfer(mode: Mode) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
@@ -59,31 +163,10 @@ fn test_basic_transfer() {
     );
     let commit_result = receipt.expect_commit(true);
 
-    // Assert
-    // NOTE: If this test fails, it should print out the actual fee table in the error logs.
-    // Or you can run just this test with the below:
-    // cargo test -p radix-engine-tests --test metering -- test_basic_transfer
-    assert_eq!(
-        commit_result.fee_summary.execution_cost_sum,
-        0
-        + 897 /* AllocateNodeId */
-        + 1417 /* CreateNode */
-        + 5328 /* DropLock */
-        + 1365 /* DropNode */
-        + 735425 /* Invoke */
-        + 327388 /* LockSubstate */
-        + 8120 /* ReadSubstate */
-        + 57500 /* RunNative */
-        + 75000 /* RunSystem */
-        + 50000 /* TxBaseCost */
-        + 1345 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 697 /* WriteSubstate */
-    );
+    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
 }
 
-#[test]
-fn test_radiswap() {
+fn run_radiswap(mode: Mode) {
     let mut test_runner = TestRunner::builder().build();
 
     // Scrypto developer
@@ -189,37 +272,10 @@ fn test_radiswap() {
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
     let commit_result = receipt.expect_commit(true);
 
-    // NOTE: If this test fails, it should print out the actual fee table in the error logs.
-    // Or you can run just this test with the below:
-    // cargo test -p radix-engine-tests --test metering -- test_radiswap
-    assert_eq!(
-        commit_result.fee_summary.execution_cost_sum,
-        0
-        + 2070 /* AllocateNodeId */
-        + 3281 /* CreateNode */
-        + 12617 /* DropLock */
-        + 3045 /* DropNode */
-        + 3107898 /* Invoke */
-        + 4119545 /* LockSubstate */
-        + 19152 /* ReadSubstate */
-        + 122500 /* RunNative */
-        + 200000 /* RunSystem */
-        + 604600 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 1765 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 2056 /* WriteSubstate */
-    );
-
-    assert_eq!(
-        commit_result.fee_summary.total_execution_cost_xrd,
-        dec!("0.8348529"),
-    );
-    assert_eq!(commit_result.fee_summary.total_royalty_cost_xrd, dec!("2"));
+    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
 }
 
-#[test]
-fn test_flash_loan() {
+fn run_flash_loan(mode: Mode) {
     let mut test_runner = TestRunner::builder().build();
 
     // Scrypto developer
@@ -300,28 +356,7 @@ fn test_flash_loan() {
             + commit_result.fee_summary.total_royalty_cost_xrd
             + (repay_amount - loan_amount)
     );
-
-    // NOTE: If this test fails, it should print out the actual fee table in the error logs.
-    // Or you can run just this test with the below:
-    // cargo test -p radix-engine-tests --test metering -- test_flash_loan
-    assert_eq!(
-        commit_result.fee_summary.execution_cost_sum,
-        0
-        + 3657 /* AllocateNodeId */
-        + 5777 /* CreateNode */
-        + 21053 /* DropLock */
-        + 5565 /* DropNode */
-        + 4091947 /* Invoke */
-        + 7590781 /* LockSubstate */
-        + 32536 /* ReadSubstate */
-        + 192500 /* RunNative */
-        + 287500 /* RunSystem */
-        + 1201445 /* RunWasm */
-        + 50000 /* TxBaseCost */
-        + 2570 /* TxPayloadCost */
-        + 100000 /* TxSignatureVerification */
-        + 4967 /* WriteSubstate */
-    );
+    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
 }
 
 #[test]
@@ -338,7 +373,7 @@ fn test_publish_large_package() {
                     (export "memory" (memory $0))
                 )
             "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 1024)
+        "i".repeat(1024 * 1024 - 1024)
     ));
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 100.into())

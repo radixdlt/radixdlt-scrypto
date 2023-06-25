@@ -35,6 +35,8 @@ pub enum TransactionLimitsError {
     /// as parameter actual payload size is returned.
     MaxInvokePayloadSizeExceeded(usize),
 
+    MaxCallDepthLimitReached,
+
     LogSizeTooLarge {
         actual: usize,
         max: usize,
@@ -247,6 +249,15 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api: &mut Y,
         invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
+        let current_depth = api.kernel_get_current_depth();
+        if current_depth == api.kernel_get_system().modules.costing.max_call_depth {
+            return Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
+                    TransactionLimitsError::MaxCallDepthLimitReached,
+                ),
+            ));
+        }
+
         let tlimit = &mut api.kernel_get_system().modules.limits;
         let input_size = invocation.len();
         if input_size > tlimit.invoke_payload_max_size {
