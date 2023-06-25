@@ -110,6 +110,20 @@ fn bench_radiswap(c: &mut Criterion) {
         )
         .build();
 
+    // Drain the faucet
+    for i in 0..100 {
+        test_runner
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee(FAUCET_COMPONENT, 50u32.into())
+                    .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+                    .try_deposit_batch_or_abort(account3)
+                    .build(),
+                vec![],
+            )
+            .expect_commit_success();
+    }
+
     let transaction_payload = TransactionBuilder::new()
         .header(TransactionHeaderV1 {
             network_id: NetworkDefinition::simulator().id,
