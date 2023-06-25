@@ -384,7 +384,40 @@ pub fn create_system_bootstrap_flash() -> BTreeMap<(NodeId, PartitionNumber), BT
 
     create_package_partitions()
      */
-    btreemap!()
+
+    let (
+        blueprints,
+        blueprint_dependencies,
+        auth_configs,
+        schemas,
+        (code_hash, code),
+    ) = PackageNativePackage::validate_native_package_definition(
+        PackageNativePackage::definition(),
+        PACKAGE_CODE_ID,
+    ).expect("Invalid Package Package definition");
+
+    let partitions = create_package_partitions(
+        blueprints,
+        blueprint_dependencies,
+        schemas,
+        code,
+        code_hash,
+        btreemap!(),
+        auth_configs,
+        btreemap!(),
+    );
+
+    let mut to_flash = BTreeMap::new();
+
+    for (partition_num, partition_substates) in partitions {
+        let mut substates = BTreeMap::new();
+        for (key, value) in partition_substates {
+            substates.insert(key, value.into());
+        }
+        to_flash.insert((PACKAGE_PACKAGE.into_node_id(), partition_num), substates);
+    }
+
+    to_flash
 }
 
 pub fn create_system_bootstrap_transaction(
@@ -403,6 +436,7 @@ pub fn create_system_bootstrap_transaction(
 
     // Package Package
     {
+        /*
         pre_allocated_addresses.push((
             BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
             GlobalAddress::from(PACKAGE_PACKAGE),
@@ -418,6 +452,7 @@ pub fn create_system_bootstrap_transaction(
                 metadata: BTreeMap::new(),
             }),
         });
+         */
     }
 
     // TransactionProcessor Package

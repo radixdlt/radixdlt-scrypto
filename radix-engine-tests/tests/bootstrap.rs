@@ -59,10 +59,12 @@ fn test_bootstrap_receipt_should_match_constants() {
         )
         .unwrap();
 
+    /*
     assert!(system_bootstrap_receipt
         .expect_commit_success()
         .new_package_addresses()
         .contains(&PACKAGE_PACKAGE));
+     */
 
     assert!(system_bootstrap_receipt
         .expect_commit_success()
