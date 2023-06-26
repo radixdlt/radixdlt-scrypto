@@ -2,9 +2,11 @@ use crate::blueprints::access_controller::*;
 use crate::blueprints::account::{AccountNativePackage, AccountOwnerBadgeData};
 use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::{IdentityNativePackage, IdentityOwnerBadgeData};
-use crate::blueprints::package::{PackageNativePackage, PackageOwnerBadgeData};
+use crate::blueprints::package::{
+    create_bootstrap_package_partitions, PackageNativePackage, PackageOwnerBadgeData,
+};
 use crate::blueprints::pool::PoolNativePackage;
-use crate::blueprints::resource::ResourceManagerNativePackage;
+use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
@@ -13,8 +15,10 @@ use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::track::SystemUpdates;
 use crate::transaction::{
-    execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
+    execute_transaction, ExecutionConfig, FeeReserveConfig, StateUpdateSummary, TransactionReceipt,
+    TransactionResult,
 };
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
@@ -31,6 +35,8 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{metadata_init, rule};
+use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
+use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
 use radix_engine_store_interface::{
     db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, SubstateDatabase},
@@ -157,6 +163,13 @@ pub struct GenesisReceipts {
     pub wrap_up_receipt: TransactionReceipt,
 }
 
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct FlashReceipt {
+    pub database_updates: DatabaseUpdates,
+    pub system_updates: SystemUpdates,
+    pub state_update_summary: StateUpdateSummary,
+}
+
 pub struct Bootstrapper<'s, 'i, S, W>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
@@ -217,21 +230,63 @@ where
         initial_current_leader: Option<ValidatorIndex>,
         faucet_supply: Decimal,
     ) -> Option<GenesisReceipts> {
-        let xrd_info = self
+        let substate_flash = create_system_bootstrap_flash();
+
+        let ((package_node_id, _partition_num), _substates) = substate_flash.iter().next().unwrap();
+        let first_typed_info = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
-                &RADIX_TOKEN.into(),
+                package_node_id,
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             );
 
-        if xrd_info.is_none() {
-            let system_bootstrap_receipt = self.execute_system_bootstrap(
+        if first_typed_info.is_none() {
+            let system_flash_receipt = self.flash_substates(substate_flash);
+
+            let mut system_bootstrap_receipt = self.execute_system_bootstrap(
                 initial_epoch,
                 initial_config,
                 initial_time_ms,
                 initial_current_leader,
             );
+
+            // Merge system_flash_receipt into system_bootstrap_receipt
+            // This is currently a necessary hack in order to not change GenesisReceipt with
+            // the addition of a new system_flash_receipt.
+            match &mut system_bootstrap_receipt.transaction_result {
+                TransactionResult::Commit(result) => {
+                    let mut new_packages = system_flash_receipt.state_update_summary.new_packages;
+                    new_packages.extend(result.state_update_summary.new_packages.drain(..));
+                    let mut new_components =
+                        system_flash_receipt.state_update_summary.new_components;
+                    new_components.extend(result.state_update_summary.new_components.drain(..));
+                    let mut new_resources = system_flash_receipt.state_update_summary.new_resources;
+                    new_resources.extend(result.state_update_summary.new_resources.drain(..));
+
+                    result.state_update_summary.new_packages = new_packages;
+                    result.state_update_summary.new_components = new_components;
+                    result.state_update_summary.new_resources = new_resources;
+
+                    // A sanity check
+                    for (txn_key, txn_updates) in &result.state_updates.system_updates {
+                        for (flash_key, _) in &system_flash_receipt.system_updates {
+                            if txn_key.eq(flash_key) && !txn_updates.is_empty() {
+                                panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
+                            }
+                        }
+                    }
+
+                    let mut system_updates = system_flash_receipt.system_updates;
+                    system_updates.extend(result.state_updates.system_updates.drain(..));
+                    let mut database_updates = system_flash_receipt.database_updates;
+                    database_updates.extend(result.state_updates.database_updates.drain(..));
+
+                    result.state_updates.system_updates = system_updates;
+                    result.state_updates.database_updates = database_updates;
+                }
+                _ => {}
+            }
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
@@ -248,6 +303,55 @@ where
             })
         } else {
             None
+        }
+    }
+
+    fn flash_substates(
+        &mut self,
+        substates: BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>>,
+    ) -> FlashReceipt {
+        let mut database_updates = index_map_new();
+        let mut system_updates = SystemUpdates::default();
+        let mut new_packages = Vec::new();
+        let mut new_components = Vec::new();
+        let mut new_resources = Vec::new();
+
+        for ((node_id, partition_num), substates) in substates {
+            let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_num);
+            let mut partition_updates = index_map_new();
+            let mut substate_updates = index_map_new();
+            for (substate_key, value) in substates {
+                let key = SpreadPrefixKeyMapper::to_db_sort_key(&substate_key);
+                let update = DatabaseUpdate::Set(value);
+                partition_updates.insert(key, update.clone());
+                substate_updates.insert(substate_key, update);
+            }
+
+            database_updates.insert(partition_key, partition_updates);
+            system_updates.insert((node_id, partition_num), substate_updates);
+            if node_id.is_global_package() {
+                new_packages.push(PackageAddress::new_or_panic(node_id.0));
+            }
+            if node_id.is_global_component() {
+                new_components.push(ComponentAddress::new_or_panic(node_id.0));
+            }
+            if node_id.is_global_resource_manager() {
+                new_resources.push(ResourceAddress::new_or_panic(node_id.0));
+            }
+        }
+
+        self.substate_db.commit(&database_updates);
+
+        FlashReceipt {
+            database_updates,
+            system_updates,
+            state_update_summary: StateUpdateSummary {
+                new_packages,
+                new_components,
+                new_resources,
+                balance_changes: index_map_new(),
+                direct_vault_updates: index_map_new(),
+            },
         }
     }
 
@@ -331,129 +435,101 @@ where
     }
 }
 
+pub fn create_system_bootstrap_flash(
+) -> BTreeMap<(NodeId, PartitionNumber), BTreeMap<SubstateKey, Vec<u8>>> {
+    let package_flashes = [
+        (
+            PACKAGE_PACKAGE,
+            PackageNativePackage::definition(),
+            PACKAGE_CODE_ID,
+            metadata_init! {
+                "name" => "Package Package".to_owned(), locked;
+                "description" => "A native package that is called to create a new package on the network.".to_owned(), locked;
+            },
+        ),
+        (
+            TRANSACTION_PROCESSOR_PACKAGE,
+            TransactionProcessorNativePackage::definition(),
+            TRANSACTION_PROCESSOR_CODE_ID,
+            metadata_init! {
+                "name" => "Transaction Processor Package".to_owned(), locked;
+                "description" => "A native package that defines the logic of the processing of manifest instructions and transaction runtime.".to_owned(), locked;
+            },
+        ),
+        (
+            METADATA_MODULE_PACKAGE,
+            MetadataNativePackage::definition(),
+            METADATA_CODE_ID,
+            metadata_init! {
+                "name" => "Metadata Package".to_owned(), locked;
+                "description" => "A native package that defines the logic of the metadata module that is used by resources, components, and packages.".to_owned(), locked;
+            },
+        ),
+        (
+            ACCESS_RULES_MODULE_PACKAGE,
+            AccessRulesNativePackage::definition(),
+            ACCESS_RULES_CODE_ID,
+            metadata_init! {
+                "name" => "Access Rules Package".to_owned(), locked;
+                "description" => "A native package that defines the logic of the access rules module that is used by resources, components, and packages.".to_owned(), locked;
+            },
+        ),
+        (
+            RESOURCE_PACKAGE,
+            ResourceNativePackage::definition(),
+            RESOURCE_CODE_ID,
+            metadata_init! {
+                "name" => "Resource Package".to_owned(), locked;
+                "description" => "A native package that is called to create a new resource manager on the network.".to_owned(), locked;
+            },
+        ),
+        (
+            ROYALTY_MODULE_PACKAGE,
+            RoyaltyNativePackage::definition(),
+            ROYALTY_CODE_ID,
+            metadata_init! {
+                "name" => "Royalty Package".to_owned(), locked;
+                "description" => "A native package that defines the logic of the royalty module used by components.".to_owned(), locked;
+            },
+        ),
+    ];
+
+    let mut to_flash = BTreeMap::new();
+
+    for (address, definition, native_code_id, metadata_init) in package_flashes {
+        let partitions = {
+            let package_structure = PackageNativePackage::validate_and_build_package_structure(
+                definition,
+                VmType::Native,
+                native_code_id.to_be_bytes().to_vec(),
+            )
+            .expect("Invalid Package Package definition");
+
+            create_bootstrap_package_partitions(package_structure, metadata_init)
+        };
+
+        for (partition_num, partition_substates) in partitions {
+            let mut substates = BTreeMap::new();
+            for (key, value) in partition_substates {
+                substates.insert(key, value.into());
+            }
+            to_flash.insert((address.into_node_id(), partition_num), substates);
+        }
+    }
+
+    to_flash
+}
+
 pub fn create_system_bootstrap_transaction(
     initial_epoch: Epoch,
     initial_config: ConsensusManagerConfig,
     initial_time_ms: i64,
     initial_current_leader: Option<ValidatorIndex>,
 ) -> SystemTransactionV1 {
-    // NOTES
-    // * Create resources before packages to avoid circular dependencies.
-
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
     let mut pre_allocated_addresses = vec![];
     let mut blobs = vec![];
-
-    // Package Package
-    {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(PACKAGE_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: PACKAGE_CODE_ID,
-                setup: PackageNativePackage::definition(),
-                metadata: metadata_init! {
-                    "name" => "Package Package".to_owned(), locked;
-                    "description" => "A native package that is called to create a new package on the network.".to_owned(), locked;
-                },
-            }),
-        });
-    }
-
-    // Metadata Package
-    {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(METADATA_MODULE_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: METADATA_CODE_ID,
-                setup: MetadataNativePackage::definition(),
-                metadata: metadata_init! {
-                    "name" => "Metadata Package".to_owned(), locked;
-                    "description" => "A native package that defines the logic of the metadata module that is used by resources, components, and packages.".to_owned(), locked;
-                },
-            }),
-        });
-    }
-
-    // Royalty Package
-    {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(ROYALTY_MODULE_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: ROYALTY_CODE_ID,
-                setup: RoyaltyNativePackage::definition(),
-                metadata: metadata_init! {
-                    "name" => "Royalty Package".to_owned(), locked;
-                    "description" => "A native package that defines the logic of the royalty module used by components.".to_owned(), locked;
-                },
-            }),
-        });
-    }
-
-    // Access Rules Package
-    {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(ACCESS_RULES_MODULE_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: ACCESS_RULES_CODE_ID,
-                setup: AccessRulesNativePackage::definition(),
-                metadata: metadata_init! {
-                    "name" => "Access Rules Package".to_owned(), locked;
-                    "description" => "A native package that defines the logic of the access rules module that is used by resources, components, and packages.".to_owned(), locked;
-                },
-            }),
-        });
-    }
-
-    // Resource Manager Package
-    {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(RESOURCE_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                native_package_code_id: RESOURCE_MANAGER_CODE_ID,
-                setup: ResourceManagerNativePackage::definition(),
-                metadata: metadata_init! {
-                    "name" => "Resource Package".to_owned(), locked;
-                    "description" => "A native package that is called to create a new resource manager on the network.".to_owned(), locked;
-                },
-            }),
-        });
-    }
 
     // XRD Token
     {
@@ -779,28 +855,6 @@ pub fn create_system_bootstrap_transaction(
                     "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
                 },
                 native_package_code_id: POOL_CODE_ID,
-            }),
-        });
-    }
-
-    // TransactionProcessor Package
-    {
-        pre_allocated_addresses.push((
-            BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-            GlobalAddress::from(TRANSACTION_PROCESSOR_PACKAGE),
-        ));
-        instructions.push(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: TransactionProcessorNativePackage::definition(),
-                metadata: metadata_init! {
-                    "name" => "Transaction Processor Package".to_owned(), locked;
-                    "description" => "A native package that defines the logic of the processing of manifest instructions and transaction runtime.".to_owned(), locked;
-                },
-                native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
             }),
         });
     }

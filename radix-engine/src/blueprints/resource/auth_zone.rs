@@ -25,7 +25,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_lock_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -45,7 +45,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_lock_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -78,7 +78,7 @@ impl AuthZoneBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_lock_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::read_only(),
@@ -144,7 +144,7 @@ impl AuthZoneBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_lock_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -186,7 +186,7 @@ impl AuthZoneBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_lock_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -229,7 +229,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -251,7 +251,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -268,7 +268,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_lock_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -296,7 +296,7 @@ impl AuthZoneBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Detach proofs from the auth zone
-        let handle = api.kernel_lock_substate(
+        let handle = api.kernel_open_substate(
             input.auth_zone.0.as_node_id(),
             MAIN_BASE_PARTITION,
             &AuthZoneField::AuthZone.into(),
@@ -307,7 +307,7 @@ impl AuthZoneBlueprint {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         let proofs = core::mem::replace(&mut auth_zone_substate.proofs, Vec::new());
         api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&auth_zone_substate))?;
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         // Destroy all proofs
         // Note: the current auth zone will be used for authentication; It's just empty.

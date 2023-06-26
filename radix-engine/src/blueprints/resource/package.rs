@@ -136,9 +136,9 @@ const NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_NonFungibleProof";
 
-pub struct ResourceManagerNativePackage;
+pub struct ResourceNativePackage;
 
-impl ResourceManagerNativePackage {
+impl ResourceNativePackage {
     pub fn definition() -> PackageDefinition {
         //====================================================================================
 

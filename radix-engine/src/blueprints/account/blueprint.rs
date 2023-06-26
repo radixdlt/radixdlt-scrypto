@@ -563,7 +563,7 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = AccountField::Account.into();
-        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
+        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
         let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
 
         account.default_deposit_rule = default_deposit_rule;
@@ -586,7 +586,7 @@ impl AccountBlueprint {
 
         match resource_deposit_configuration {
             ResourceDepositRule::Allowed | ResourceDepositRule::Disallowed => {
-                let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+                let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
                     OBJECT_HANDLE_SELF,
                     ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
                     &encoded_key,
@@ -619,7 +619,7 @@ impl AccountBlueprint {
     {
         let substate_key = AccountField::Account.into();
         let handle =
-            api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+            api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
         let account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
         let default_deposit_rule = account.default_deposit_rule;
         api.field_lock_release(handle)?;
@@ -639,7 +639,7 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             ACCOUNT_VAULT_INDEX,
             &encoded_key,
@@ -723,7 +723,7 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(resource_address).expect("Impossible Case!");
 
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             ACCOUNT_VAULT_INDEX,
             &encoded_key,
@@ -754,7 +754,7 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
             &encoded_key,

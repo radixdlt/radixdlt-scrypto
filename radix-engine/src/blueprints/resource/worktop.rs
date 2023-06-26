@@ -48,7 +48,7 @@ impl WorktopBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Detach buckets from worktop
-        let handle = api.kernel_lock_substate(
+        let handle = api.kernel_open_substate(
             input.worktop.0.as_node_id(),
             MAIN_BASE_PARTITION,
             &WorktopField::Worktop.into(),
@@ -59,7 +59,7 @@ impl WorktopBlueprint {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         let resources = core::mem::replace(&mut worktop_substate.resources, BTreeMap::new());
         api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&worktop_substate))?;
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         // Recursively drop buckets
         for (_, bucket) in resources {
@@ -91,7 +91,7 @@ impl WorktopBlueprint {
             input.bucket.drop_empty(api)?;
             Ok(IndexedScryptoValue::from_typed(&()))
         } else {
-            let worktop_handle = api.actor_lock_field(
+            let worktop_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 WorktopField::Worktop.into(),
                 LockFlags::MUTABLE,
@@ -126,7 +126,7 @@ impl WorktopBlueprint {
             let bucket = ResourceManager(resource_address).new_empty_bucket(api)?;
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
-            let worktop_handle = api.actor_lock_field(
+            let worktop_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 WorktopField::Worktop.into(),
                 LockFlags::MUTABLE,
@@ -175,7 +175,7 @@ impl WorktopBlueprint {
             let bucket = ResourceManager(resource_address).new_empty_bucket(api)?;
             Ok(IndexedScryptoValue::from_typed(&bucket))
         } else {
-            let worktop_handle = api.actor_lock_field(
+            let worktop_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 WorktopField::Worktop.into(),
                 LockFlags::MUTABLE,
@@ -218,7 +218,7 @@ impl WorktopBlueprint {
             .as_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
-        let worktop_handle = api.actor_lock_field(
+        let worktop_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             WorktopField::Worktop.into(),
             LockFlags::MUTABLE,
@@ -247,7 +247,7 @@ impl WorktopBlueprint {
             .as_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
-        let worktop_handle = api.actor_lock_field(
+        let worktop_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             WorktopField::Worktop.into(),
             LockFlags::read_only(),
@@ -278,7 +278,7 @@ impl WorktopBlueprint {
             .as_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
-        let worktop_handle = api.actor_lock_field(
+        let worktop_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             WorktopField::Worktop.into(),
             LockFlags::read_only(),
@@ -309,7 +309,7 @@ impl WorktopBlueprint {
             .as_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
-        let worktop_handle = api.actor_lock_field(
+        let worktop_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             WorktopField::Worktop.into(),
             LockFlags::read_only(),
@@ -341,7 +341,7 @@ impl WorktopBlueprint {
             .as_typed()
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
-        let worktop_handle = api.actor_lock_field(
+        let worktop_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             WorktopField::Worktop.into(),
             LockFlags::MUTABLE,

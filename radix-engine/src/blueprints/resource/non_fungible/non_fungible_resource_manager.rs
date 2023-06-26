@@ -61,7 +61,7 @@ where
             ));
         }
 
-        let non_fungible_handle = api.actor_lock_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &non_fungible_local_id.to_key(),
@@ -326,7 +326,7 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
         let id_type = {
-            let handle = api.actor_lock_field(
+            let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::read_only(),
@@ -346,7 +346,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update total supply
         // TODO: Could be further cleaned up by using event
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
-            let total_supply_handle = api.actor_lock_field(
+            let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
@@ -385,7 +385,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Check id_type
         let id_type = {
-            let id_type_handle = api.actor_lock_field(
+            let id_type_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::MUTABLE,
@@ -407,7 +407,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update Total Supply
         // TODO: Could be further cleaned up by using event
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
-            let total_supply_handle = api.actor_lock_field(
+            let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
@@ -449,7 +449,7 @@ impl NonFungibleResourceManagerBlueprint {
 
         // Check type
         let id_type = {
-            let handle = api.actor_lock_field(
+            let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::MUTABLE,
@@ -470,7 +470,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
-            let total_supply_handle = api.actor_lock_field(
+            let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
@@ -512,7 +512,7 @@ impl NonFungibleResourceManagerBlueprint {
     {
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
-        let data_schema_handle = api.actor_lock_field(
+        let data_schema_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleResourceManagerField::MutableFields.into(),
             LockFlags::read_only(),
@@ -547,7 +547,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let non_fungible_handle = api.actor_lock_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &id.to_key(),
@@ -586,7 +586,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let non_fungible_handle = api.actor_lock_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &id.to_key(),
@@ -609,7 +609,7 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
-        let non_fungible_handle = api.actor_lock_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &id.to_key(),
@@ -690,7 +690,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update total supply
         // TODO: there might be better for maintaining total supply, especially for non-fungibles
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
-            let total_supply_handle = api.actor_lock_field(
+            let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
@@ -703,7 +703,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update
         {
             for id in other_bucket.liquid.into_ids() {
-                let handle = api.actor_lock_key_value_entry(
+                let handle = api.actor_open_key_value_entry(
                     OBJECT_HANDLE_SELF,
                     NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
                     &id.to_key(),
@@ -763,7 +763,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleResourceManagerField::IdType.into(),
             LockFlags::read_only(),
@@ -780,7 +780,7 @@ impl NonFungibleResourceManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         if api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, TRACK_TOTAL_SUPPLY_FEATURE)? {
-            let total_supply_handle = api.actor_lock_field(
+            let total_supply_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::read_only(),

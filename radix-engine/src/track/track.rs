@@ -986,7 +986,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         ))
     }
 
-    fn release_lock(&mut self, handle: u32) -> StoreAccessInfo {
+    fn close_substate(&mut self, handle: u32) -> StoreAccessInfo {
         let (node_id, partition_num, substate_key, flags) =
             self.locks.remove(&handle).expect("Invalid lock handle");
 

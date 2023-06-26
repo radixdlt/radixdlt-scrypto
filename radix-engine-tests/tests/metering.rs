@@ -9,7 +9,7 @@ use utils::ContextualDisplay;
 
 #[cfg(not(feature = "alloc"))]
 #[test]
-#[ignore = "Run this to update expected costs"]
+#[ignore = "Run this test to update expected costs"]
 fn update_expected_costs() {
     run_basic_transfer(Mode::OutputCosting(
         "./assets/cost_transfer.csv".to_string(),
@@ -95,7 +95,7 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
     let mut buffer = String::new();
     buffer.push_str(
         format!(
-            "{:<30},{:>10}\n",
+            "{:<80},{:>10}\n",
             "Total Cost Units",
             breakdown.values().sum::<u32>()
         )
@@ -103,7 +103,7 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<30},{:>10}\n",
+            "{:<80},{:>10}\n",
             "Total Fee",
             (Decimal::from(breakdown.values().sum::<u32>())
                 * Decimal::try_from(DEFAULT_COST_UNIT_PRICE).unwrap())
@@ -112,7 +112,7 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
         .as_str(),
     );
     for (k, v) in breakdown {
-        buffer.push_str(format!("{:<30},{:>10}\n", k, v).as_str());
+        buffer.push_str(format!("{:<80},{:>10}\n", k, v).as_str());
     }
 
     let mut f = File::create(file).unwrap();

@@ -353,7 +353,7 @@ fn lock_key_value_store_entry(
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.key_value_store_lock_entry(node_id, substate_key, flags)
+    runtime.key_value_store_open_entry(node_id, substate_key, flags)
 }
 
 fn key_value_entry_get(
@@ -406,10 +406,10 @@ fn lock_field(
     flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.actor_lock_field(object_handle, field as u8, flags)
+    runtime.actor_open_field(object_handle, field as u8, flags)
 }
 
-fn read_substate(
+fn field_lock_read(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -418,7 +418,7 @@ fn read_substate(
     runtime.field_lock_read(handle).map(|buffer| buffer.0)
 }
 
-fn write_substate(
+fn field_lock_write(
     mut caller: Caller<'_, HostState>,
     handle: u32,
     data_ptr: u32,
@@ -431,7 +431,7 @@ fn write_substate(
     runtime.field_lock_write(handle, data)
 }
 
-fn drop_lock(
+fn field_lock_release(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
@@ -845,28 +845,28 @@ impl WasmiModule {
             },
         );
 
-        let host_read_substate = Func::wrap(
+        let host_field_lock_read = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
-                read_substate(caller, handle).map_err(|e| e.into())
+                field_lock_read(caller, handle).map_err(|e| e.into())
             },
         );
 
-        let host_write_substate = Func::wrap(
+        let host_field_lock_write = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              handle: u32,
              data_ptr: u32,
              data_len: u32|
              -> Result<(), Trap> {
-                write_substate(caller, handle, data_ptr, data_len).map_err(|e| e.into())
+                field_lock_write(caller, handle, data_ptr, data_len).map_err(|e| e.into())
             },
         );
 
-        let host_drop_lock = Func::wrap(
+        let host_field_lock_release = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
-                drop_lock(caller, handle).map_err(|e| e.into())
+                field_lock_release(caller, handle).map_err(|e| e.into())
             },
         );
 
@@ -984,14 +984,10 @@ impl WasmiModule {
         linker_define!(linker, COST_UNIT_PRICE_FUNCTION_NAME, host_cost_unit_price);
         linker_define!(linker, TIP_PERCENTAGE_FUNCTION_NAME, host_tip_percentage);
         linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
-        linker_define!(
-            linker,
-            GLOBALIZE_OBJECT_FUNCTION_NAME,
-            host_globalize_object
-        );
+        linker_define!(linker, GLOBALIZE_FUNCTION_NAME, host_globalize_object);
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
-        linker_define!(linker, ACTOR_LOCK_FIELD_FUNCTION_NAME, host_lock_field);
+        linker_define!(linker, ACTOR_OPEN_FIELD_FUNCTION_NAME, host_lock_field);
         linker_define!(
             linker,
             ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME,
@@ -1005,7 +1001,7 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME,
+            KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME,
             host_lock_key_value_store_entry
         );
         linker_define!(
@@ -1029,9 +1025,17 @@ impl WasmiModule {
             host_key_value_entry_remove
         );
 
-        linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_read_substate);
-        linker_define!(linker, FIELD_LOCK_WRITE_FUNCTION_NAME, host_write_substate);
-        linker_define!(linker, FIELD_LOCK_RELEASE_FUNCTION_NAME, host_drop_lock);
+        linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_field_lock_read);
+        linker_define!(
+            linker,
+            FIELD_LOCK_WRITE_FUNCTION_NAME,
+            host_field_lock_write
+        );
+        linker_define!(
+            linker,
+            FIELD_LOCK_RELEASE_FUNCTION_NAME,
+            host_field_lock_release
+        );
         linker_define!(linker, GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
         linker_define!(
             linker,

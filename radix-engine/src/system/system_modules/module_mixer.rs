@@ -338,7 +338,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn before_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         partition_number: &PartitionNumber,
@@ -347,18 +347,22 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api,
-            before_lock_substate(api, node_id, partition_number, substate_key, flags)
+            before_open_substate(api, node_id, partition_number, substate_key, flags)
         )
     }
 
     #[trace_resources(log=size)]
-    fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
+        node_id: &NodeId,
         store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_lock_substate(api, handle, store_access, size))
+        internal_call_dispatch!(
+            api,
+            after_open_substate(api, handle, node_id, store_access, size)
+        )
     }
 
     #[trace_resources(log=value_size)]
@@ -388,12 +392,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
+    fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_drop_lock(api, lock_handle, store_access))
+        internal_call_dispatch!(api, on_close_substate(api, lock_handle, store_access))
     }
 
     #[trace_resources]

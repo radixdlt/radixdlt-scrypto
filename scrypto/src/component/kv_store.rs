@@ -54,7 +54,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
-            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::read_only())
+            .key_value_store_open_entry(self.id.as_node_id(), &key_payload, LockFlags::read_only())
             .unwrap();
         let raw_bytes = env.key_value_entry_get(handle).unwrap();
 
@@ -76,7 +76,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(key).unwrap();
         let handle = env
-            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+            .key_value_store_open_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
         let raw_bytes = env.key_value_entry_get(handle).unwrap();
 
@@ -99,7 +99,7 @@ impl<
         let mut env = ScryptoEnv;
         let key_payload = scrypto_encode(&key).unwrap();
         let handle = env
-            .key_value_store_lock_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
+            .key_value_store_open_entry(self.id.as_node_id(), &key_payload, LockFlags::MUTABLE)
             .unwrap();
         let value_payload = scrypto_encode(&value).unwrap();
 

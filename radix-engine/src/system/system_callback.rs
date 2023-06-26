@@ -14,7 +14,6 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
-use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
@@ -126,7 +125,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_create_node(api, node_id, node_module_init)
     }
 
-    fn before_lock_substate<Y>(
+    fn before_open_substate<Y>(
         node_id: &NodeId,
         partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
@@ -136,11 +135,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_lock_substate(api, node_id, partition_num, substate_key, flags)
+        SystemModuleMixer::before_open_substate(api, node_id, partition_num, substate_key, flags)
     }
 
-    fn after_lock_substate<Y>(
+    fn after_open_substate<Y>(
         handle: LockHandle,
+        node_id: &NodeId,
         size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -148,10 +148,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_lock_substate(api, handle, store_access, size)
+        SystemModuleMixer::after_open_substate(api, handle, node_id, store_access, size)
     }
 
-    fn on_drop_lock<Y>(
+    fn on_close_substate<Y>(
         lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -159,7 +159,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_drop_lock(api, lock_handle, store_access)
+        SystemModuleMixer::on_close_substate(api, lock_handle, store_access)
     }
 
     fn on_read_substate<Y>(
@@ -295,64 +295,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             ident,
         } = system.actor_get_fn_identifier()?;
 
-        let output = if blueprint_id.package_address.eq(&PACKAGE_PACKAGE) {
-            // FIXME: check invocation against schema
-            // Do we need to check against the abi? Probably not since we should be able to verify this
-            // in the native package itself.
-            let export_name = match ident {
-                FnIdent::Application(ident) => ident,
-                FnIdent::System(..) => {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::SystemFunctionCallNotAllowed,
-                    ))
-                }
-            };
-
-            // FIXME: Load dependent resources/components
-
-            let mut vm_instance = {
-                NativeVm::create_instance(
-                    &blueprint_id.package_address,
-                    &PACKAGE_CODE_ID.to_be_bytes(),
-                )?
-            };
-            let output = { vm_instance.invoke(&export_name, input, &mut system)? };
-
-            output
-        } else if blueprint_id
-            .package_address
-            .eq(&TRANSACTION_PROCESSOR_PACKAGE)
-        {
-            // FIXME: check invocation against schema
-
-            let export_name = match ident {
-                FnIdent::Application(ident) => ident,
-                FnIdent::System(..) => {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::SystemFunctionCallNotAllowed,
-                    ))
-                }
-            };
-
-            // FIXME: Load dependent resources/components
-
-            let mut vm_instance = {
-                NativeVm::create_instance(
-                    &blueprint_id.package_address,
-                    &TRANSACTION_PROCESSOR_CODE_ID.to_be_bytes(),
-                )?
-            };
-            let output = { vm_instance.invoke(&export_name, input, &mut system)? };
-
-            output
-        } else {
+        let output = {
             // Make dependent resources/components visible
             let key = BlueprintVersionKey {
                 blueprint: blueprint_id.blueprint_name.clone(),
                 version: BlueprintVersion::default(),
             };
 
-            let handle = system.kernel_lock_substate_with_default(
+            let handle = system.kernel_open_substate_with_default(
                 blueprint_id.package_address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
@@ -366,7 +316,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 SystemLockData::default(),
             )?;
             system.kernel_read_substate(handle)?;
-            system.kernel_drop_lock(handle)?;
+            system.kernel_close_substate(handle)?;
 
             //  Validate input
             let definition = system.get_blueprint_definition(
@@ -514,7 +464,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
         // Detach proofs from the auth zone
         if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
-            let handle = api.kernel_lock_substate(
+            let handle = api.kernel_open_substate(
                 &auth_zone_id,
                 MAIN_BASE_PARTITION,
                 &AuthZoneField::AuthZone.into(),
@@ -528,7 +478,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 handle,
                 IndexedScryptoValue::from_typed(&auth_zone_substate),
             )?;
-            api.kernel_drop_lock(handle)?;
+            api.kernel_close_substate(handle)?;
 
             // Drop the proofs
             let mut system = SystemService::new(api);

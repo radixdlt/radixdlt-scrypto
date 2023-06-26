@@ -5,7 +5,6 @@ use radix_engine::{
     types::*,
     vm::wasm::WASM_MEMORY_PAGE_SIZE,
 };
-use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::{builder::ManifestBuilder, model::TestTransaction};
 
@@ -205,87 +204,6 @@ fn transaction_limit_exceeded_substate_read_size_should_fail() {
         )) => *size > execution_config.max_substate_size,
         _ => false,
     });
-}
-
-#[test]
-fn transaction_limit_exceeded_substate_write_size_should_fail() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
-
-    const SIZE: usize = 5000;
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
-        .call_function(
-            package_address,
-            "TransactionLimitSubstateTest",
-            "write_large_value",
-            manifest_args!(SIZE),
-        )
-        .build();
-
-    let transactions = TestTransaction::new_from_nonce(manifest, 10);
-    let prepared = transactions.prepare().unwrap();
-    let fee_config = FeeReserveConfig::default();
-    let mut execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
-    execution_config.max_substate_size = SIZE + 8 /* SBOR prefix */ - 1 /* lower limit to trigger error */;
-    let receipt = test_runner.execute_transaction(
-        prepared.get_executable(btreeset!()),
-        fee_config,
-        execution_config,
-    );
-
-    // Assert
-    receipt.expect_specific_failure(|e| match e {
-        RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxSubstateWriteSizeExceeded(x),
-        )) => *x == SIZE as usize + 13, /* SBOR prefix + Substate wrapper */
-        _ => false,
-    })
-}
-
-#[test]
-fn transaction_limit_exceeded_invoke_input_size_should_fail() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-
-    // Act
-    let code = wat2wasm(&format!(
-        r#"
-            (module
-                (data (i32.const 0) "{}")
-                (memory $0 64)
-                (export "memory" (memory $0))
-            )
-        "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE)
-    ));
-    assert!(code.len() > DEFAULT_MAX_INVOKE_INPUT_SIZE);
-    let manifest = ManifestBuilder::new()
-        .publish_package_advanced(
-            None,
-            code,
-            PackageDefinition::default(),
-            BTreeMap::new(),
-            OwnerRole::None,
-        )
-        .build();
-
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_specific_rejection(|e| {
-        matches!(
-            e,
-            RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxInvokePayloadSizeExceeded(_)
-                )
-            ))
-        )
-    })
 }
 
 #[test]

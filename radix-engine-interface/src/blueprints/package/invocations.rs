@@ -1,9 +1,9 @@
-use crate::api::node_modules::metadata::MetadataInit;
 use crate::blueprints::resource::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;

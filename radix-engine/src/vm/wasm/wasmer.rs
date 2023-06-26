@@ -388,7 +388,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn key_value_store_lock_entry(
+        pub fn key_value_store_open_entry(
             env: &WasmerInstanceEnv,
             node_id_ptr: u32,
             node_id_len: u32,
@@ -399,7 +399,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .key_value_store_lock_entry(
+                .key_value_store_open_entry(
                     read_memory(&instance, node_id_ptr, node_id_len)?,
                     read_memory(&instance, key_ptr, key_len)?,
                     flags,
@@ -487,7 +487,7 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn actor_lock_field(
+        pub fn actor_open_field(
             env: &WasmerInstanceEnv,
             object_handle: u32,
             field: u8,
@@ -496,7 +496,7 @@ impl WasmerModule {
             let (_instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .actor_lock_field(object_handle, field, flags)
+                .actor_open_field(object_handle, field, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)
@@ -512,7 +512,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn write_substate(
+        pub fn field_lock_write(
             env: &WasmerInstanceEnv,
             handle: u32,
             data_ptr: u32,
@@ -529,7 +529,10 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn drop_lock(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
+        pub fn field_lock_release(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+        ) -> Result<(), RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             runtime
@@ -682,20 +685,20 @@ impl WasmerModule {
                 COST_UNIT_PRICE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), cost_unit_price),
                 TIP_PERCENTAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), tip_percentage),
                 FEE_BALANCE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), fee_balance),
-                GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
+                GLOBALIZE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
-                ACTOR_LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_lock_field),
+                ACTOR_OPEN_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_open_field),
                 ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_call_module_method),
                 KEY_VALUE_STORE_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_new),
-                KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_lock_entry),
+                KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_open_entry),
                 KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_remove_entry),
                 KEY_VALUE_ENTRY_GET_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_get),
                 KEY_VALUE_ENTRY_SET_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_set),
                 KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_release),
                 FIELD_LOCK_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_read),
-                FIELD_LOCK_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
-                FIELD_LOCK_RELEASE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_lock),
+                FIELD_LOCK_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_write),
+                FIELD_LOCK_RELEASE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_release),
                 GET_NODE_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_node_id),
                 GET_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_global_address),
                 GET_BLUEPRINT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint),

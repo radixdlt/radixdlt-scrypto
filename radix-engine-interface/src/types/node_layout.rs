@@ -176,7 +176,6 @@ pub enum ConsensusManagerField {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum ValidatorField {
     Validator,
-    AcceptsDelegatedStakeFlag,
     ProtocolUpdateReadinessSignal,
 }
 

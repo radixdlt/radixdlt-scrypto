@@ -1,5 +1,6 @@
 use sbor::Sbor;
 use strum::FromRepr;
+use strum::IntoStaticStr;
 
 //=========================================================================
 // Please update REP-60 after updating types/configs defined in this file!
@@ -8,7 +9,9 @@ use strum::FromRepr;
 
 /// An enum which represents the different addressable entities.
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, Hash, PartialOrd, FromRepr, Sbor)]
+#[derive(
+    Clone, Copy, Debug, PartialEq, Eq, Ord, Hash, PartialOrd, FromRepr, Sbor, IntoStaticStr,
+)]
 #[sbor(use_repr_discriminators)]
 pub enum EntityType {
     //=========================================================================

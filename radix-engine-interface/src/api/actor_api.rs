@@ -7,7 +7,7 @@ use sbor::rust::vec::Vec;
 /// Api which exposes methods in the context of the actor
 pub trait ClientActorApi<E: Debug> {
     /// Lock a field in the current object actor for reading/writing
-    fn actor_lock_field(
+    fn actor_open_field(
         &mut self,
         object_handle: ObjectHandle,
         field: FieldIndex,

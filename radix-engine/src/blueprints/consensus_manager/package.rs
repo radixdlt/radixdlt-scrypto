@@ -215,9 +215,6 @@ impl ConsensusManagerNativePackage {
                 aggregator.add_child_type_and_descendents::<ValidatorSubstate>(),
             ));
             fields.push(FieldSchema::static_field(
-                aggregator.add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeFlag>(),
-            ));
-            fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ValidatorProtocolUpdateReadinessSignalSubstate>(),
             ));
 
