@@ -94,7 +94,7 @@ fn test_normal_transaction_flow() {
     let mut scrypto_interpreter = ScryptoVm {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_instrumenter_config: WasmInstrumenterConfigV1::V0,
+        wasm_instrumenter_config: WasmInstrumenterConfigV1::new(),
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, true)

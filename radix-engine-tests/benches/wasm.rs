@@ -22,7 +22,7 @@ fn bench_wasm_instantiation(c: &mut Criterion) {
     let package_address = package_address(EntityType::GlobalPackage, 77);
     let code = include_bytes!("../../assets/faucet.wasm").to_vec();
     let pretend_instrumented_code = InstrumentedCode {
-        metered_code_key: (package_address, WasmInstrumenterConfigV1::V0),
+        metered_code_key: (package_address, WasmInstrumenterConfigV1::new().version()),
         code: Arc::new(code),
     };
     c.bench_function("WASM::instantiate_wasm", |b| {
@@ -37,7 +37,7 @@ fn bench_wasm_instantiation_pre_loaded(c: &mut Criterion) {
     let package_address = package_address(EntityType::GlobalPackage, 99);
     let code = include_bytes!("../../assets/faucet.wasm").to_vec();
     let pretend_instrumented_code = InstrumentedCode {
-        metered_code_key: (package_address, WasmInstrumenterConfigV1::V0),
+        metered_code_key: (package_address, WasmInstrumenterConfigV1::new().version()),
         code: Arc::new(code),
     };
     let engine = DefaultWasmEngine::default();
