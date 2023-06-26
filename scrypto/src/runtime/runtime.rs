@@ -1,5 +1,4 @@
-use crate::modules::{AccessRules, Attachable, Metadata};
-use crate::prelude::Attached;
+use crate::prelude::{AnyComponent, Global};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
@@ -18,7 +17,7 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use scrypto::prelude::Royalty;
+use crate::component::ObjectStubHandle;
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -38,16 +37,14 @@ impl Runtime {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn access_rules() -> Attached<'static, AccessRules> {
-        Attached::new(AccessRules::self_attached())
+    pub fn global_component() -> Global<AnyComponent> {
+        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
+        Global(AnyComponent(ObjectStubHandle::Global(address)))
     }
 
-    pub fn metadata() -> Attached<'static, Metadata> {
-        Attached::new(Metadata::self_attached())
-    }
-
-    pub fn royalty() -> Attached<'static, Royalty> {
-        Attached::new(Royalty::self_attached())
+    pub fn global_address() -> ComponentAddress {
+        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
+        ComponentAddress::new_or_panic(address.into())
     }
 
     /// Returns the running entity.
@@ -57,11 +54,6 @@ impl Runtime {
 
     pub fn node_id() -> NodeId {
         ScryptoEnv.actor_get_node_id().unwrap()
-    }
-
-    pub fn global_address() -> ComponentAddress {
-        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
-        ComponentAddress::new_or_panic(address.into())
     }
 
     /// Returns the current package address.
