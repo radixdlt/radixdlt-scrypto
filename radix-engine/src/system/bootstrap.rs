@@ -798,7 +798,7 @@ pub fn create_system_bootstrap_transaction(
                 setup: TransactionProcessorNativePackage::definition(),
                 metadata: metadata_init! {
                     "name" => "Transaction Processor Package".to_owned(), locked;
-                    "description" => "".to_owned(), locked;
+                    "description" => "A native package that defines the logic of the processing of manifest instructions and transaction runtime.".to_owned(), locked;
                 },
                 native_package_code_id: TRANSACTION_PROCESSOR_CODE_ID,
             }),

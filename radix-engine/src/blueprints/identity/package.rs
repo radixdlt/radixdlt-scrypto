@@ -214,7 +214,7 @@ impl IdentityBlueprint {
         let modules = Self::create_object(
             access_rules,
             metadata_init!(
-                "owner_badge" => "".to_owned(), locked; // TODO: Need ability to lock field with no data
+                "owner_badge" => EMPTY, locked;
             ),
             api,
         )?;

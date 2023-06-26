@@ -1780,7 +1780,7 @@ mod tests {
                 )
                 Map<String, Tuple>(
                     "name" => Tuple(
-                        Enum<Metadata::String>("Token"),
+                        Enum<Option::Some>(Enum<Metadata::String>("Token")),
                         true
                     ),
                 )
@@ -1873,10 +1873,7 @@ mod tests {
                     Array<String>()
                 )
                 Map<String, Tuple>(
-                    "name" => Tuple(
-                        Enum<Metadata::String>("Token"),
-                        false
-                    ),
+                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1942,10 +1939,7 @@ mod tests {
                 false
                 18u8
                 Map<String, Tuple>(
-                    "name" => Tuple(
-                        Enum<Metadata::String>("Token"),
-                        false
-                    ),
+                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1990,10 +1984,7 @@ mod tests {
                 false
                 18u8
                 Map<String, Tuple>(
-                    "name" => Tuple(
-                        Enum<Metadata::String>("Token"),
-                        false
-                    ),
+                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(

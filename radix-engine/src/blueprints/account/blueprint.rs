@@ -182,7 +182,7 @@ impl AccountBlueprint {
         let mut modules = Self::create_modules(
             access_rules,
             metadata_init!(
-                "owner_badge" => "".to_owned(), locked; // TODO: Need ability to lock field with no data
+                "owner_badge" => EMPTY, locked;
             ),
             api,
         )?;
