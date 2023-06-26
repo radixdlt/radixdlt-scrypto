@@ -1,7 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
 use crate::runtime::Runtime;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::{MetadataInit, MetadataValue};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -90,7 +90,7 @@ impl ResourceBuilder {
 #[must_use]
 pub struct InProgressResourceBuilder<T: AnyResourceType, A: ConfiguredAuth> {
     resource_type: T,
-    metadata: BTreeMap<String, MetadataValue>,
+    metadata: MetadataInit,
     auth: A,
 }
 
@@ -98,7 +98,7 @@ impl<T: AnyResourceType> Default for InProgressResourceBuilder<T, NoAuth> {
     fn default() -> Self {
         Self {
             resource_type: T::default(),
-            metadata: BTreeMap::new(),
+            metadata: MetadataInit::new(),
             auth: NoAuth,
         }
     }
@@ -450,7 +450,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     scrypto_encode(&FungibleResourceManagerCreateInput {
                         divisibility,
                         track_total_supply: true,
-                        metadata: metadata.into(),
+                        metadata,
                         access_rules,
                     })
                     .unwrap(),
@@ -471,7 +471,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                         id_type,
                         track_total_supply: true,
                         non_fungible_schema,
-                        metadata: metadata.into(),
+                        metadata,
                         access_rules,
                     })
                     .unwrap(),
@@ -528,7 +528,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     track_total_supply: true,
                     divisibility: self.resource_type.divisibility,
-                    metadata: self.metadata.into(),
+                    metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     initial_supply: amount.into(),
                 })
@@ -581,7 +581,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    metadata: self.metadata.into(),
+                    metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -634,7 +634,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    metadata: self.metadata.into(),
+                    metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -687,7 +687,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
                     non_fungible_schema,
-                    metadata: self.metadata.into(),
+                    metadata: self.metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -743,7 +743,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
                         non_fungible_schema,
                         track_total_supply: true,
-                        metadata: self.metadata.into(),
+                        metadata: self.metadata,
                         access_rules: self.auth.into_access_rules(),
                         entries: entries
                             .into_iter()
@@ -789,7 +789,7 @@ impl<T: AnyResourceType, A: ConfiguredAuth> private::CanAddMetadata
     type OutputBuilder = Self;
 
     fn add_metadata(mut self, key: String, value: MetadataValue) -> Self::OutputBuilder {
-        self.metadata.insert(key, value);
+        self.metadata.set_metadata(key, value);
         self
     }
 }
@@ -914,13 +914,13 @@ mod private {
     pub enum CreateWithNoSupply {
         Fungible {
             divisibility: u8,
-            metadata: BTreeMap<String, MetadataValue>,
+            metadata: MetadataInit,
             access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         },
         NonFungible {
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
-            metadata: BTreeMap<String, MetadataValue>,
+            metadata: MetadataInit,
             access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         },
     }
