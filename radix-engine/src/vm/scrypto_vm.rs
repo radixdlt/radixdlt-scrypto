@@ -11,7 +11,7 @@ pub struct ScryptoVm<W: WasmEngine> {
     /// WASM Instrumenter
     pub wasm_instrumenter: WasmInstrumenter,
     /// WASM metering config
-    pub wasm_instrumenter_config: WasmInstrumenterConfig,
+    pub wasm_instrumenter_config: WasmInstrumenterConfigV1,
 }
 
 impl<W: WasmEngine + Default> Default for ScryptoVm<W> {
@@ -19,7 +19,7 @@ impl<W: WasmEngine + Default> Default for ScryptoVm<W> {
         Self {
             wasm_engine: W::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
-            wasm_instrumenter_config: WasmInstrumenterConfig::v1(),
+            wasm_instrumenter_config: WasmInstrumenterConfigV1::new(),
         }
     }
 }
@@ -32,7 +32,7 @@ impl<W: WasmEngine> ScryptoVm<W> {
     ) -> ScryptoVmInstance<W::WasmInstance> {
         let instrumented_code = self
             .wasm_instrumenter
-            .instrument(*package_address, code, self.wasm_instrumenter_config)
+            .instrument(*package_address, code, &self.wasm_instrumenter_config)
             .expect("Failed to re-instrument");
         ScryptoVmInstance {
             instance: self.wasm_engine.instantiate(&instrumented_code),

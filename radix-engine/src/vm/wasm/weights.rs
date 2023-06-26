@@ -156,7 +156,7 @@ impl Weight {
 ///    individual values to derive (by subtraction) the weight of all other instructions
 ///    that use them as supporting instructions. Supporting means mainly pushing arguments
 ///    and dropping return values in order to maintain a valid module.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstructionWeights {
     /// Version of the instruction weights.
     ///

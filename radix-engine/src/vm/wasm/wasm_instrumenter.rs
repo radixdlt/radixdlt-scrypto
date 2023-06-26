@@ -1,6 +1,6 @@
 use super::{CodeKey, MeteredCodeKey, PrepareError};
 use crate::types::*;
-use crate::vm::wasm::{WasmInstrumenterConfig, WasmModule};
+use crate::vm::wasm::{WasmInstrumenterConfigV1, WasmModule};
 use sbor::rust::sync::Arc;
 
 pub const DEFAULT_CACHE_SIZE: usize = 1000;
@@ -64,9 +64,9 @@ impl WasmInstrumenter {
         &self,
         code_key: CodeKey,
         code: &[u8],
-        wasm_instrumenter_config: WasmInstrumenterConfig,
+        wasm_instrumenter_config: &WasmInstrumenterConfigV1,
     ) -> Result<InstrumentedCode, PrepareError> {
-        let metered_code_key = (code_key, wasm_instrumenter_config);
+        let metered_code_key = (code_key, wasm_instrumenter_config.version());
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
@@ -88,7 +88,7 @@ impl WasmInstrumenter {
             }
         }
 
-        let instrumented_ref = Arc::new(self.instrument_no_cache(code, wasm_instrumenter_config)?);
+        let instrumented_ref = Arc::new(self.instrument_no_cache(code, &wasm_instrumenter_config)?);
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
@@ -110,14 +110,72 @@ impl WasmInstrumenter {
     pub fn instrument_no_cache(
         &self,
         code: &[u8],
-        instrumenter_config: WasmInstrumenterConfig,
+        instrumenter_config: &WasmInstrumenterConfigV1,
     ) -> Result<Vec<u8>, PrepareError> {
         WasmModule::init(code)
-            .and_then(|m| {
-                m.inject_instruction_metering(instrumenter_config.instruction_cost_rules())
-            })
+            .and_then(|m| m.inject_instruction_metering(instrumenter_config))
             .and_then(|m| m.inject_stack_metering(instrumenter_config.max_stack_size()))
             .and_then(|m| m.to_bytes())
             .map(|m| m.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::vm::wasm::{WasmInstrumenterConfigV1, WasmModule};
+    use wabt::wat2wasm;
+
+    #[test]
+    fn test_cost_rules() {
+        let code = wat2wasm(
+            r#"
+            (module
+                (func (param $p0 i32) (result i32)
+                    local.get $p0
+                    i32.const 5
+                    i32.mul
+                )
+                (func (param $p0 i32) (result i32)
+                    local.get $p0
+                    call 0
+                )
+            )
+            "#,
+        )
+        .unwrap();
+        let config = WasmInstrumenterConfigV1::new();
+        let transformed = WasmModule::init(&code)
+            .unwrap()
+            .inject_instruction_metering(&config)
+            .unwrap()
+            .to_bytes()
+            .unwrap()
+            .0;
+
+        // Costs:
+        // 3 = 1 (local.get) + 1 (i32.const) + 1 (i32.mul)
+        // 2 = 1 (local.get) + 1 (call)
+        let expected = wat2wasm(
+            r#"
+            (module
+                (type (;0;) (func (param i32) (result i32)))
+                (type (;1;) (func (param i32)))
+                (import "env" "gas" (func (;0;) (type 1)))
+                (func (;1;) (type 0) (param i32) (result i32)
+                  i32.const 3
+                  call 0
+                  local.get 0
+                  i32.const 5
+                  i32.mul)
+                (func (;2;) (type 0) (param i32) (result i32)
+                  i32.const 2
+                  call 0
+                  local.get 0
+                  call 1))
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(transformed, expected);
     }
 }

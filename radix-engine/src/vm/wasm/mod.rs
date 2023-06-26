@@ -1,5 +1,4 @@
 mod constants;
-mod cost_rules;
 mod errors;
 mod prepare;
 mod traits;
@@ -15,7 +14,6 @@ mod weights;
 pub use self::wasmer::*;
 pub use self::wasmi::*;
 pub use constants::*;
-pub use cost_rules::*;
 pub use errors::*;
 pub use prepare::*;
 pub use traits::*;
@@ -36,4 +34,4 @@ pub type DefaultWasmInstance = WasmiInstance;
 
 // FIXME: change to code hash
 pub type CodeKey = radix_engine_interface::types::PackageAddress;
-pub type MeteredCodeKey = (CodeKey, WasmInstrumenterConfig);
+pub type MeteredCodeKey = (CodeKey, u8);
