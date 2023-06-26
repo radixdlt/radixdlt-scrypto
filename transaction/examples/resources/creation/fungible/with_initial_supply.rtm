@@ -20,16 +20,22 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
     Map<String, Tuple>(
         "name" => Tuple(
-            Enum<Metadata::String>("MyResource"),                                       # Resource Name
-            true                                                                        # Locked Resource Name
+            Enum<Option::Some>(
+                Enum<Metadata::String>("MyResource")                               # Resource Name
+            ),
+            true                                                                   # Locked Resource Name
         ),
         "symbol" => Tuple(
-            Enum<Metadata::String>("RSRC"),                                             # Resource Symbol
-            true                                                                        # Locked Resource Symbol
+            Enum<Option::Some>(
+                Enum<Metadata::String>("RSRC"),                                   # Resource Symbol
+            ),
+            true                                                                   # Locked Resource Symbol
         ),
         "description" => Tuple(
-            Enum<Metadata::String>("A very innovative and important resource"),    # Resource Description
-            true                                                                   # Locked Resource Description
+            Enum<Option::Some>(
+                Enum<Metadata::String>("A very innovative and important resource")    # Resource Description
+            ),
+            true                                                                      # Locked Resource Description
         )
     )
     Map<Enum, Tuple>(
