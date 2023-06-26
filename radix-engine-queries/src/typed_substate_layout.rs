@@ -533,7 +533,6 @@ pub enum TypedConsensusManagerFieldValue {
 #[derive(Debug, Clone)]
 pub enum TypedValidatorFieldValue {
     Validator(ValidatorSubstate),
-    AcceptsDelegatedStakeFlag(ValidatorAcceptsDelegatedStakeFlag),
     ProtocolUpdateReadinessSignal(ValidatorProtocolUpdateReadinessSignalSubstate),
 }
 
@@ -754,9 +753,6 @@ fn to_typed_object_substate_value(
             TypedMainModuleSubstateValue::Validator(match offset {
                 ValidatorField::Validator => {
                     TypedValidatorFieldValue::Validator(scrypto_decode(data)?)
-                }
-                ValidatorField::AcceptsDelegatedStakeFlag => {
-                    TypedValidatorFieldValue::AcceptsDelegatedStakeFlag(scrypto_decode(data)?)
                 }
                 ValidatorField::ProtocolUpdateReadinessSignal => {
                     TypedValidatorFieldValue::ProtocolUpdateReadinessSignal(scrypto_decode(data)?)
