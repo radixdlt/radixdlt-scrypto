@@ -70,8 +70,10 @@ for path in os.listdir(input_folder):
             invoke_size = resolve_size[0].attrib["arg0"]
         resolve = child.xpath("./self::kernel_invoke/invoke")
         if resolve:
-            native = resolve[0].attrib["info"]
-            pkg = resolve[0].attrib["arg0"].replace('"','')
+            native = "no_native"
+            if resolve[0].attrib["arg0"]:
+                native = "native"
+            pkg = resolve[0].attrib["arg1"].replace('"','')
             fcn_name = resolve[0].attrib["export_name"]
             if fcn_name in kernel_invoke_divide_by_size:
                 key += "::" + native + "::" + pkg + "::" + fcn_name + "::" + invoke_size
