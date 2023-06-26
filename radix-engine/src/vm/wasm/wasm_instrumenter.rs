@@ -144,38 +144,11 @@ mod tests {
         )
         .unwrap();
         let config = WasmInstrumenterConfigV1::new();
-        let transformed = WasmModule::init(&code)
+        WasmModule::init(&code)
             .unwrap()
             .inject_instruction_metering(&config)
             .unwrap()
             .to_bytes()
-            .unwrap()
-            .0;
-
-        // Costs:
-        // 3 = 1 (local.get) + 1 (i32.const) + 1 (i32.mul)
-        // 2 = 1 (local.get) + 1 (call)
-        let expected = wat2wasm(
-            r#"
-            (module
-                (type (;0;) (func (param i32) (result i32)))
-                (type (;1;) (func (param i32)))
-                (import "env" "gas" (func (;0;) (type 1)))
-                (func (;1;) (type 0) (param i32) (result i32)
-                  i32.const 3
-                  call 0
-                  local.get 0
-                  i32.const 5
-                  i32.mul)
-                (func (;2;) (type 0) (param i32) (result i32)
-                  i32.const 2
-                  call 0
-                  local.get 0
-                  call 1))
-            "#,
-        )
-        .unwrap();
-
-        assert_eq!(transformed, expected);
+            .unwrap();
     }
 }

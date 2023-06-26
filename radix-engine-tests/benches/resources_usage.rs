@@ -130,7 +130,7 @@ fn transfer_test(c: &mut Criterion) {
     let mut scrypto_interpreter = ScryptoInterpreter {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_instrumenter_config: WasmInstrumenterConfig::V0,
+        wasm_instrumenter_config: WasmInstrumenterConfig::new(),
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
     let _ = Bootstrapper::new(&mut substate_db, &scrypto_interpreter)
