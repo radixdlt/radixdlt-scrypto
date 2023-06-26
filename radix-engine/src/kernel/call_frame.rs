@@ -161,7 +161,7 @@ pub enum OpenSubstateError {
 
 /// Represents an error when dropping a substate lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum UnlockSubstateError {
+pub enum CloseSubstateError {
     LockNotFound(LockHandle),
     ContainsDuplicatedOwns,
     TakeNodeError(TakeNodeError),
@@ -518,11 +518,11 @@ impl<L: Clone> CallFrame<L> {
         heap: &mut Heap,
         store: &mut S,
         lock_handle: LockHandle,
-    ) -> Result<StoreAccessInfo, UnlockSubstateError> {
+    ) -> Result<StoreAccessInfo, CloseSubstateError> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
-            .ok_or_else(|| UnlockSubstateError::LockNotFound(lock_handle))?;
+            .ok_or_else(|| CloseSubstateError::LockNotFound(lock_handle))?;
 
         let node_id = &substate_lock.node_id;
         let partition_num = substate_lock.partition_num;
@@ -546,19 +546,19 @@ impl<L: Clone> CallFrame<L> {
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
             for own in substate.owned_nodes() {
                 if !new_owned_nodes.insert(own.clone()) {
-                    return Err(UnlockSubstateError::ContainsDuplicatedOwns);
+                    return Err(CloseSubstateError::ContainsDuplicatedOwns);
                 }
             }
             for own in &new_owned_nodes {
                 if !substate_lock.owned_nodes.contains(own) {
                     // Node no longer owned by frame
                     self.take_node_internal(own)
-                        .map_err(UnlockSubstateError::TakeNodeError)?;
+                        .map_err(CloseSubstateError::TakeNodeError)?;
 
                     // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
                         Self::move_node_to_store(heap, store, own)
-                            .map_err(UnlockSubstateError::PersistNodeError)?;
+                            .map_err(CloseSubstateError::PersistNodeError)?;
                     }
                 }
             }
@@ -566,7 +566,7 @@ impl<L: Clone> CallFrame<L> {
                 if !new_owned_nodes.contains(own) {
                     // Node detached
                     if !heap.contains_node(node_id) {
-                        return Err(UnlockSubstateError::CantDropNodeInStore(own.clone()));
+                        return Err(CloseSubstateError::CantDropNodeInStore(own.clone()));
                     }
                     // Owned nodes discarded by the substate go back to the call frame,
                     // and must be explicitly dropped.
@@ -592,11 +592,11 @@ impl<L: Clone> CallFrame<L> {
                         .get_node_visibility(reference)
                         .can_be_referenced_in_substate()
                     {
-                        return Err(UnlockSubstateError::RefNotFound(reference.clone()));
+                        return Err(CloseSubstateError::RefNotFound(reference.clone()));
                     }
 
                     if !heap.contains_node(node_id) && !reference.is_global() {
-                        return Err(UnlockSubstateError::NonGlobalRefNotAllowed(*reference));
+                        return Err(CloseSubstateError::NonGlobalRefNotAllowed(*reference));
                     }
 
                     if heap.contains_node(reference) {
@@ -1075,7 +1075,7 @@ impl<L: Clone> CallFrame<L> {
         &mut self,
         heap: &mut Heap,
         store: &mut S,
-    ) -> Result<(), UnlockSubstateError> {
+    ) -> Result<(), CloseSubstateError> {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
         for lock_handle in lock_handles {

@@ -260,7 +260,7 @@ where
             // Auto drop locks
             self.current_frame
                 .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::UnlockSubstateError)
+                .map_err(CallFrameError::CloseSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
             // Run
@@ -270,7 +270,7 @@ where
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
                 .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::UnlockSubstateError)
+                .map_err(CallFrameError::CloseSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
             // Handle execution finish
@@ -673,7 +673,7 @@ where
         let store_access = self
             .current_frame
             .close_substate(&mut self.heap, self.store, lock_handle)
-            .map_err(CallFrameError::UnlockSubstateError)
+            .map_err(CallFrameError::CloseSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
         M::on_close_substate(lock_handle, &store_access, self)?;

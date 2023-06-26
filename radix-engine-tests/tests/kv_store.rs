@@ -1,6 +1,6 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
-    CreateNodeError, OpenSubstateError, TakeNodeError, UnlockSubstateError,
+    CreateNodeError, OpenSubstateError, TakeNodeError, CloseSubstateError,
 };
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -134,7 +134,7 @@ fn cannot_remove_kv_stores() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(_))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
             ))
         )
     });
@@ -169,7 +169,7 @@ fn cannot_overwrite_kv_stores() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(_))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
             ))
         )
     });
@@ -496,7 +496,7 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(..))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(..))
             ))
         )
     });

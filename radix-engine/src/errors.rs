@@ -15,7 +15,7 @@ use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
     CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError,
     CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError, OpenSubstateError,
-    PassMessageError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
+    PassMessageError, ReadSubstateError, CloseSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
@@ -87,9 +87,9 @@ pub enum RuntimeError {
 }
 
 impl RuntimeError {
-    pub const fn update_substate(e: UnlockSubstateError) -> Self {
+    pub const fn update_substate(e: CloseSubstateError) -> Self {
         Self::KernelError(KernelError::CallFrameError(
-            CallFrameError::UnlockSubstateError(e),
+            CallFrameError::CloseSubstateError(e),
         ))
     }
 }
@@ -185,7 +185,7 @@ pub enum CallFrameError {
     MoveModuleError(MoveModuleError),
 
     OpenSubstateError(OpenSubstateError),
-    UnlockSubstateError(UnlockSubstateError),
+    CloseSubstateError(CloseSubstateError),
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
 
@@ -537,9 +537,9 @@ impl From<OpenSubstateError> for CallFrameError {
     }
 }
 
-impl From<UnlockSubstateError> for CallFrameError {
-    fn from(value: UnlockSubstateError) -> Self {
-        Self::UnlockSubstateError(value)
+impl From<CloseSubstateError> for CallFrameError {
+    fn from(value: CloseSubstateError) -> Self {
+        Self::CloseSubstateError(value)
     }
 }
 

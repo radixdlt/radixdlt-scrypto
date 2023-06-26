@@ -2,7 +2,7 @@ use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
-use radix_engine::kernel::call_frame::{CreateNodeError, TakeNodeError, UnlockSubstateError};
+use radix_engine::kernel::call_frame::{CreateNodeError, TakeNodeError, CloseSubstateError};
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
@@ -235,7 +235,7 @@ fn cannot_overwrite_vault_in_map() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(_))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
             ))
         )
     });
@@ -292,7 +292,7 @@ fn cannot_remove_vaults() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(_))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
             ))
         )
     });
