@@ -5,6 +5,7 @@ use radix_engine::errors::RejectionError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use radix_engine_interface::metadata_init;
 use radix_engine_queries::typed_substate_layout::PackagePublishWasmAdvancedManifestInput;
 use radix_engine_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
 use radix_engine_queries::typed_substate_layout::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
@@ -136,7 +137,7 @@ fn test_non_existent_blob_hash() {
                 setup: PackageDefinition {
                     blueprints: btreemap!(),
                 },
-                metadata: BTreeMap::new().into(),
+                metadata: metadata_init!(),
                 owner_role: OwnerRole::None,
                 package_address: None,
             }),

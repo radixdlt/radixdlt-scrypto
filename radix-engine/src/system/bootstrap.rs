@@ -999,7 +999,7 @@ pub fn create_system_bootstrap_transaction(
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: TRANSACTION_TRACKER_CODE_ID,
                 setup: TransactionTrackerNativePackage::definition(),
-                metadata: BTreeMap::new().into(),
+                metadata: metadata_init!(),
             }),
         });
     }

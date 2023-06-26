@@ -9,6 +9,7 @@ use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, PackageDefinition,
     PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
 };
+use radix_engine_interface::metadata_init;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
     BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit, TypeRef,
@@ -309,7 +310,7 @@ fn should_not_be_able_to_publish_native_packages() {
                 package_address: None,
                 native_package_code_id: 0u64,
                 setup: PackageDefinition::default(),
-                metadata: btreemap!().into(),
+                metadata: metadata_init!(),
             }),
         )
         .build();

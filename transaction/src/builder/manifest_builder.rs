@@ -830,7 +830,7 @@ impl ManifestBuilder {
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata: BTreeMap::new().into(),
+                metadata: metadata_init!(),
             }),
         });
         self
@@ -854,7 +854,7 @@ impl ManifestBuilder {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata: BTreeMap::new().into(),
+                metadata: metadata_init!(),
                 owner_role: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
         });
