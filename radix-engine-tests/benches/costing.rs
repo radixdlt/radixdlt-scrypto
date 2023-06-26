@@ -50,7 +50,7 @@ fn bench_spin_loop(c: &mut Criterion) {
     let instrumented_code = InstrumentedCode {
         metered_code_key: (
             PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]),
-            validator.metering_config,
+            validator.instrumenter_config,
         ),
         code: Arc::new(
             validator

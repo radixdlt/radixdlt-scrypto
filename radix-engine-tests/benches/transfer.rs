@@ -4,7 +4,7 @@ use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::WasmInstrumenter;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmMeteringConfig};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenterConfig};
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
@@ -18,7 +18,7 @@ fn bench_transfer(c: &mut Criterion) {
     let mut scrypto_interpreter = ScryptoVm {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_metering_config: WasmMeteringConfig::V0,
+        wasm_instrumenter_config: WasmInstrumenterConfig::V0,
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)

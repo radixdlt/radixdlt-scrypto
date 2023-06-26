@@ -1,6 +1,6 @@
-use super::{CodeKey, MeteredCodeKey, PrepareError, WasmMeteringParams};
+use super::{CodeKey, MeteredCodeKey, PrepareError};
 use crate::types::*;
-use crate::vm::wasm::{WasmMeteringConfig, WasmModule};
+use crate::vm::wasm::{WasmInstrumenterConfig, WasmModule};
 use sbor::rust::sync::Arc;
 
 pub const DEFAULT_CACHE_SIZE: usize = 1000;
@@ -64,9 +64,9 @@ impl WasmInstrumenter {
         &self,
         code_key: CodeKey,
         code: &[u8],
-        wasm_metering_config: WasmMeteringConfig,
+        wasm_instrumenter_config: WasmInstrumenterConfig,
     ) -> Result<InstrumentedCode, PrepareError> {
-        let metered_code_key = (code_key, wasm_metering_config);
+        let metered_code_key = (code_key, wasm_instrumenter_config);
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
@@ -88,8 +88,7 @@ impl WasmInstrumenter {
             }
         }
 
-        let instrumented_ref =
-            Arc::new(self.instrument_no_cache(code, wasm_metering_config.parameters())?);
+        let instrumented_ref = Arc::new(self.instrument_no_cache(code, wasm_instrumenter_config)?);
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
@@ -111,11 +110,13 @@ impl WasmInstrumenter {
     pub fn instrument_no_cache(
         &self,
         code: &[u8],
-        metering_params: WasmMeteringParams,
+        instrumenter_config: WasmInstrumenterConfig,
     ) -> Result<Vec<u8>, PrepareError> {
         WasmModule::init(code)
-            .and_then(|m| m.inject_instruction_metering(metering_params.instruction_cost_rules()))
-            .and_then(|m| m.inject_stack_metering(metering_params.max_stack_size()))
+            .and_then(|m| {
+                m.inject_instruction_metering(instrumenter_config.instruction_cost_rules())
+            })
+            .and_then(|m| m.inject_stack_metering(instrumenter_config.max_stack_size()))
             .and_then(|m| m.to_bytes())
             .map(|m| m.0)
     }
