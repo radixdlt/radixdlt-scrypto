@@ -223,10 +223,8 @@ mod genesis_helper {
                     )
                     .mint_initial_supply(1);
 
-                owner_badge
-                    .resource_manager()
-                    .metadata()
-                    .set("tags", vec!["badge".to_string()]);
+                let resource_mgr = owner_badge.resource_manager();
+                resource_mgr.set_metadata("tags", vec!["badge".to_string()]);
 
                 access_rules.insert(
                     Mint,

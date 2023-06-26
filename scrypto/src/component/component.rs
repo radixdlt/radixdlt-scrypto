@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{AccessRules, Attachable, Royalty};
+use crate::modules::{AccessRules, Attachable, HasMetadata, Royalty};
 use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
@@ -9,9 +9,7 @@ use radix_engine_common::prelude::well_known_scrypto_custom_types::{
 use radix_engine_common::prelude::{
     OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataInit, METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
-};
+use radix_engine_interface::api::node_modules::metadata::{MetadataInit, METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT, MetadataVal, MetadataError};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
@@ -339,7 +337,7 @@ impl<O: HasStub> Global<O> {
         ComponentAddress::new_or_panic(self.handle().as_node_id().0)
     }
 
-    pub fn metadata(&self) -> Attached<Metadata> {
+    fn metadata(&self) -> Attached<Metadata> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let metadata = Metadata::attached(address);
         Attached(metadata, PhantomData::default())
@@ -355,6 +353,20 @@ impl<O: HasStub> Global<O> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let royalty = Royalty::attached(address);
         Attached(royalty, PhantomData::default())
+    }
+}
+
+impl<O: HasStub> HasMetadata for Global<O> {
+    fn set_metadata<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
+        self.metadata().set(name, value);
+    }
+
+    fn get_metadata<K: ToString, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError> {
+        self.metadata().get(name)
+    }
+
+    fn remove_metadata<K: ToString>(&self, name: K) -> bool {
+        self.metadata().remove(name)
     }
 }
 
