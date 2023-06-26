@@ -248,7 +248,7 @@ impl ConsensusManagerBlueprint {
                 RuntimeError,
                 _,
             >(
-                NonFungibleIdType::RUID,
+                NonFungibleIdType::Bytes,
                 true,
                 metadata_init! {
                     "name" => "Validator Owner Badges".to_owned(), locked;

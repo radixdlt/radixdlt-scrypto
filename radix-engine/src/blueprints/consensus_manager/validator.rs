@@ -1203,7 +1203,7 @@ impl ValidatorCreator {
                 name: "Validator Owner Badge".to_owned(),
                 validator: address.try_into().expect("Impossible Case!"),
             },
-            None,
+            Some(NonFungibleLocalId::bytes(address.as_node_id().0).unwrap()),
             api,
         )?;
         let owner_badge_local_id = owner_token_bucket
