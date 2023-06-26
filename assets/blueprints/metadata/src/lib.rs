@@ -15,6 +15,7 @@ mod metadata {
                         metadata_admin_updater => rule!(deny_all), locked;
                     },
                     init {
+                        "empty_locked" => EMPTY, locked;
                     }
                 })
                 .globalize()

@@ -75,6 +75,11 @@ impl ObjectModuleId {
     }
 }
 
+pub struct KVEntry {
+    pub value: Option<Vec<u8>>,
+    pub locked: bool,
+}
+
 /// A high level interface to manipulate objects in the actor's call frame
 pub trait ClientObjectApi<E> {
     /// Creates a new simple blueprint object of a given blueprint type
@@ -93,7 +98,7 @@ pub trait ClientObjectApi<E> {
         features: Vec<&str>,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;
 
     /// Drops an object, returns the fields of the object

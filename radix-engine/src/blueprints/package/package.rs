@@ -14,7 +14,7 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{
-    ClientApi, ClientObjectApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
+    ClientApi, ClientObjectApi, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
 };
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
@@ -430,7 +430,7 @@ pub fn create_bootstrap_package_partitions(
                     blueprint,
                     version: BlueprintVersion::default(),
                 };
-                let value = KeyValueEntrySubstate::immutable_entry(definition);
+                let value = KeyValueEntrySubstate::locked_entry(definition);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -456,7 +456,7 @@ pub fn create_bootstrap_package_partitions(
                     version: BlueprintVersion::default(),
                 };
 
-                let value = KeyValueEntrySubstate::immutable_entry(minor_version_config);
+                let value = KeyValueEntrySubstate::locked_entry(minor_version_config);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -477,7 +477,7 @@ pub fn create_bootstrap_package_partitions(
             .schemas
             .into_iter()
             .map(|(hash, schema)| {
-                let value = KeyValueEntrySubstate::immutable_entry(schema);
+                let value = KeyValueEntrySubstate::locked_entry(schema);
 
                 (
                     SubstateKey::Map(scrypto_encode(&hash).unwrap()),
@@ -499,8 +499,7 @@ pub fn create_bootstrap_package_partitions(
             .code
             .into_iter()
             .map(|(hash, code_substate)| {
-                let value = KeyValueEntrySubstate::immutable_entry(code_substate);
-
+                let value = KeyValueEntrySubstate::locked_entry(code_substate);
                 (
                     SubstateKey::Map(scrypto_encode(&hash).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -514,7 +513,7 @@ pub fn create_bootstrap_package_partitions(
                 .unwrap(),
             code_partition,
         );
-    };
+    }
 
     {
         let auth_partition = package_structure
@@ -525,7 +524,7 @@ pub fn create_bootstrap_package_partitions(
                     blueprint,
                     version: BlueprintVersion::default(),
                 };
-                let value = KeyValueEntrySubstate::immutable_entry(auth_template);
+                let value = KeyValueEntrySubstate::locked_entry(auth_template);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -545,7 +544,7 @@ pub fn create_bootstrap_package_partitions(
         let mut metadata_partition = BTreeMap::new();
         for (key, value) in metadata.data {
             let value = if value.lock {
-                KeyValueEntrySubstate::immutable_entry(value.value)
+                KeyValueEntrySubstate::locked_entry(value.value)
             } else {
                 KeyValueEntrySubstate::entry(value.value)
             };
@@ -584,7 +583,7 @@ fn globalize_package<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>> = BTreeMap::new();
+    let mut kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>> = BTreeMap::new();
 
     let vault = ResourceManager(XRD).new_empty_vault(api)?;
     let royalty = PackageRoyaltyAccumulatorSubstate {
@@ -595,10 +594,11 @@ where
         let mut definition_partition = BTreeMap::new();
         for (blueprint, definition) in package_structure.definitions {
             let key = BlueprintVersionKey::new_default(blueprint);
-            definition_partition.insert(
-                scrypto_encode(&key).unwrap(),
-                (scrypto_encode(&definition).unwrap(), true),
-            );
+            let entry = KVEntry {
+                value: Some(scrypto_encode(&definition).unwrap()),
+                locked: true,
+            };
+            definition_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
         kv_entries.insert(0u8, definition_partition);
     }
@@ -607,10 +607,11 @@ where
         let mut dependency_partition = BTreeMap::new();
         for (blueprint, dependencies) in package_structure.dependencies {
             let key = BlueprintVersionKey::new_default(blueprint);
-            dependency_partition.insert(
-                scrypto_encode(&key).unwrap(),
-                (scrypto_encode(&dependencies).unwrap(), true),
-            );
+            let entry = KVEntry {
+                value: Some(scrypto_encode(&dependencies).unwrap()),
+                locked: true,
+            };
+            dependency_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
         kv_entries.insert(1u8, dependency_partition);
     }
@@ -618,10 +619,11 @@ where
     {
         let mut schemas_partition = BTreeMap::new();
         for (hash, schema) in package_structure.schemas {
-            schemas_partition.insert(
-                scrypto_encode(&hash).unwrap(),
-                (scrypto_encode(&schema).unwrap(), true),
-            );
+            let entry = KVEntry {
+                value: Some(scrypto_encode(&schema).unwrap()),
+                locked: true,
+            };
+            schemas_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
         kv_entries.insert(2u8, schemas_partition);
     }
@@ -629,10 +631,11 @@ where
     {
         let mut code_partition = BTreeMap::new();
         for (hash, code_substate) in package_structure.code {
-            code_partition.insert(
-                scrypto_encode(&hash).unwrap(),
-                (scrypto_encode(&code_substate).unwrap(), true),
-            );
+            let entry = KVEntry {
+                value: Some(scrypto_encode(&code_substate).unwrap()),
+                locked: true,
+            };
+            code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
         }
         kv_entries.insert(3u8, code_partition);
     }
@@ -641,10 +644,11 @@ where
         let mut package_royalties_partition = BTreeMap::new();
         for (blueprint, package_royalty) in package_structure.package_royalties {
             let key = BlueprintVersionKey::new_default(blueprint);
-            package_royalties_partition.insert(
-                scrypto_encode(&key).unwrap(),
-                (scrypto_encode(&package_royalty).unwrap(), true),
-            );
+            let entry = KVEntry {
+                value: Some(scrypto_encode(&package_royalty).unwrap()),
+                locked: true,
+            };
+            package_royalties_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
         kv_entries.insert(4u8, package_royalties_partition);
     }
@@ -653,10 +657,11 @@ where
         let mut auth_partition = BTreeMap::new();
         for (blueprint, auth_config) in package_structure.auth_configs {
             let key = BlueprintVersionKey::new_default(blueprint);
-            auth_partition.insert(
-                scrypto_encode(&key).unwrap(),
-                (scrypto_encode(&auth_config).unwrap(), true),
-            );
+            let entry = KVEntry {
+                value: Some(scrypto_encode(&auth_config).unwrap()),
+                locked: true,
+            };
+            auth_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
         kv_entries.insert(5u8, auth_partition);
     }
