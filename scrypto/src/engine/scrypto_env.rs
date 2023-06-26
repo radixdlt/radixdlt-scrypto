@@ -267,14 +267,14 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn key_value_store_lock_entry(
+    fn key_value_store_open_entry(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, ClientApiError> {
         let handle = unsafe {
-            kv_store_lock_entry(
+            kv_store_open_entry(
                 node_id.as_ref().as_ptr(),
                 node_id.as_ref().len(),
                 key.as_ptr(),
@@ -355,13 +355,13 @@ impl ClientFieldLockApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn actor_lock_field(
+    fn actor_open_field(
         &mut self,
         object_handle: u32,
         field: u8,
         flags: LockFlags,
     ) -> Result<LockHandle, ClientApiError> {
-        let handle = unsafe { actor_lock_field(object_handle, u32::from(field), flags.bits()) };
+        let handle = unsafe { actor_open_field(object_handle, u32::from(field), flags.bits()) };
 
         Ok(handle)
     }

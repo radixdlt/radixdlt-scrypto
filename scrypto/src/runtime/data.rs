@@ -113,7 +113,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     pub fn get(&self) -> DataRef<V> {
         let mut env = ScryptoEnv;
         let lock_handle = env
-            .actor_lock_field(
+            .actor_open_field(
                 OBJECT_HANDLE_SELF,
                 ComponentField::State0 as u8,
                 LockFlags::read_only(),
@@ -127,7 +127,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
     pub fn get_mut(&mut self) -> DataRefMut<V> {
         let mut env = ScryptoEnv;
         let lock_handle = env
-            .actor_lock_field(
+            .actor_open_field(
                 OBJECT_HANDLE_SELF,
                 ComponentField::State0 as u8,
                 LockFlags::MUTABLE,

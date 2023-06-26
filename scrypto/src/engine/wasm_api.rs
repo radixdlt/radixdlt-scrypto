@@ -76,7 +76,7 @@ extern "C" {
         key_value_store_id_len: usize,
     ) -> Buffer;
 
-    pub fn kv_store_lock_entry(
+    pub fn kv_store_open_entry(
         key_value_store_id_ptr: *const u8,
         key_value_store_id_len: usize,
         offset: *const u8,
@@ -133,7 +133,7 @@ extern "C" {
     //===============
 
     // Locks a field
-    pub fn actor_lock_field(object_handle: u32, field: u32, flags: u32) -> u32;
+    pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
 
     pub fn actor_call_module_method(
         _object_handle: u32,
@@ -264,7 +264,7 @@ pub unsafe fn kv_store_get_info(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_store_lock_entry(
+pub unsafe fn kv_store_open_entry(
     _key_value_store_id_ptr: *const u8,
     _key_value_store_id_len: usize,
     _offset: *const u8,
@@ -337,7 +337,7 @@ pub unsafe fn drop_object(_node_id_ptr: *const u8, _node_id_len: usize) {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn actor_lock_field(_object_handle: u32, _field: u32, _flags: u32) -> u32 {
+pub unsafe fn actor_open_field(_object_handle: u32, _field: u32, _flags: u32) -> u32 {
     unreachable!()
 }
 

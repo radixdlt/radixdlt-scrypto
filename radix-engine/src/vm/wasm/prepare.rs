@@ -266,7 +266,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => {
+                        KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -285,7 +285,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -367,7 +367,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        ACTOR_LOCK_FIELD_FUNCTION_NAME => {
+                        ACTOR_OPEN_FIELD_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -380,7 +380,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        ACTOR_LOCK_FIELD_FUNCTION_NAME.to_string(),
+                                        ACTOR_OPEN_FIELD_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -663,7 +663,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GLOBALIZE_OBJECT_FUNCTION_NAME => {
+                        GLOBALIZE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -680,7 +680,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GLOBALIZE_OBJECT_FUNCTION_NAME.to_string(),
+                                        GLOBALIZE_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }

@@ -1200,7 +1200,7 @@ impl PackageRoyaltyNativeBlueprint {
             }
         }
 
-        let handle = api.kernel_lock_substate_with_default(
+        let handle = api.kernel_open_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
@@ -1216,7 +1216,7 @@ impl PackageRoyaltyNativeBlueprint {
 
         let substate: KeyValueEntrySubstate<PackageRoyaltyConfig> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         let royalty_charge = substate
             .value
@@ -1229,7 +1229,7 @@ impl PackageRoyaltyNativeBlueprint {
             .unwrap_or(RoyaltyAmount::Free);
 
         if royalty_charge.is_non_zero() {
-            let handle = api.kernel_lock_substate(
+            let handle = api.kernel_open_substate(
                 receiver,
                 MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),
@@ -1249,7 +1249,7 @@ impl PackageRoyaltyNativeBlueprint {
                 vault_id.0,
             )?;
 
-            api.kernel_drop_lock(handle)?;
+            api.kernel_close_substate(handle)?;
         }
 
         Ok(())
@@ -1265,7 +1265,7 @@ impl PackageRoyaltyNativeBlueprint {
             ));
         }
 
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             PackageField::Royalty.into(),
             LockFlags::read_only(),
@@ -1344,7 +1344,7 @@ impl PackageAuthNativeBlueprint {
             return Ok(auth_template.clone());
         }
 
-        let handle = api.kernel_lock_substate_with_default(
+        let handle = api.kernel_open_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)
@@ -1360,7 +1360,7 @@ impl PackageAuthNativeBlueprint {
 
         let auth_template: KeyValueEntrySubstate<AuthConfig> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         let template = match auth_template.value {
             Some(template) => template,

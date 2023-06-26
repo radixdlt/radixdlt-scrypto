@@ -55,7 +55,7 @@ pub struct LockInfo<L> {
 /// API for managing substates within nodes
 pub trait KernelSubstateApi<L> {
     /// Locks a substate to make available for reading and/or writing
-    fn kernel_lock_substate_with_default(
+    fn kernel_open_substate_with_default(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -65,7 +65,7 @@ pub trait KernelSubstateApi<L> {
         lock_data: L,
     ) -> Result<LockHandle, RuntimeError>;
 
-    fn kernel_lock_substate(
+    fn kernel_open_substate(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -73,7 +73,7 @@ pub trait KernelSubstateApi<L> {
         flags: LockFlags,
         lock_data: L,
     ) -> Result<LockHandle, RuntimeError> {
-        self.kernel_lock_substate_with_default(
+        self.kernel_open_substate_with_default(
             node_id,
             partition_num,
             substate_key,
@@ -91,7 +91,7 @@ pub trait KernelSubstateApi<L> {
 
     /// Drops a lock on some substate, if the lock is writable, updates are flushed to
     /// the store at this point.
-    fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
+    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
     /// Reads the value of the substate locked by the given lock handle
     fn kernel_read_substate(

@@ -125,7 +125,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_create_node(api, node_id, node_module_init)
     }
 
-    fn before_lock_substate<Y>(
+    fn before_open_substate<Y>(
         node_id: &NodeId,
         partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
@@ -135,10 +135,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_lock_substate(api, node_id, partition_num, substate_key, flags)
+        SystemModuleMixer::before_open_substate(api, node_id, partition_num, substate_key, flags)
     }
 
-    fn after_lock_substate<Y>(
+    fn after_open_substate<Y>(
         handle: LockHandle,
         node_id: &NodeId,
         size: usize,
@@ -148,10 +148,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_lock_substate(api, handle, node_id, store_access, size)
+        SystemModuleMixer::after_open_substate(api, handle, node_id, store_access, size)
     }
 
-    fn on_drop_lock<Y>(
+    fn on_close_substate<Y>(
         lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -159,7 +159,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_drop_lock(api, lock_handle, store_access)
+        SystemModuleMixer::on_close_substate(api, lock_handle, store_access)
     }
 
     fn on_read_substate<Y>(
@@ -302,7 +302,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 version: BlueprintVersion::default(),
             };
 
-            let handle = system.kernel_lock_substate_with_default(
+            let handle = system.kernel_open_substate_with_default(
                 blueprint_id.package_address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
@@ -316,7 +316,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 SystemLockData::default(),
             )?;
             system.kernel_read_substate(handle)?;
-            system.kernel_drop_lock(handle)?;
+            system.kernel_close_substate(handle)?;
 
             //  Validate input
             let definition = system.get_blueprint_definition(
@@ -464,7 +464,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
         // Detach proofs from the auth zone
         if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
-            let handle = api.kernel_lock_substate(
+            let handle = api.kernel_open_substate(
                 &auth_zone_id,
                 MAIN_BASE_PARTITION,
                 &AuthZoneField::AuthZone.into(),
@@ -478,7 +478,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 handle,
                 IndexedScryptoValue::from_typed(&auth_zone_substate),
             )?;
-            api.kernel_drop_lock(handle)?;
+            api.kernel_close_substate(handle)?;
 
             // Drop the proofs
             let mut system = SystemService::new(api);

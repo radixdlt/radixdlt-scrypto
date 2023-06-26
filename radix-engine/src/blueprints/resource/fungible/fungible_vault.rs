@@ -19,7 +19,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_OUTER_OBJECT,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
@@ -103,7 +103,7 @@ impl FungibleVaultBlueprint {
         }
 
         // Lock the substate (with special flags)
-        let vault_handle = api.actor_lock_field(
+        let vault_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
@@ -163,7 +163,7 @@ impl FungibleVaultBlueprint {
     {
         Self::assert_freezable(api)?;
 
-        let frozen_flag_handle = api.actor_lock_field(
+        let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::MUTABLE,
@@ -182,7 +182,7 @@ impl FungibleVaultBlueprint {
     {
         Self::assert_freezable(api)?;
 
-        let frozen_flag_handle = api.actor_lock_field(
+        let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::MUTABLE,
@@ -272,7 +272,7 @@ impl FungibleVaultBlueprint {
             return Ok(());
         }
 
-        let frozen_flag_handle = api.actor_lock_field(
+        let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::MUTABLE,
@@ -322,7 +322,7 @@ impl FungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::read_only(),
@@ -337,7 +337,7 @@ impl FungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LockedFungible.into(),
             LockFlags::read_only(),
@@ -352,7 +352,7 @@ impl FungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE,
@@ -381,7 +381,7 @@ impl FungibleVault {
 
         let event = DepositResourceEvent::Amount(resource.amount());
 
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE,
@@ -405,7 +405,7 @@ impl FungibleVault {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LockedFungible.into(),
             LockFlags::MUTABLE,
@@ -440,7 +440,7 @@ impl FungibleVault {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LockedFungible.into(),
             LockFlags::MUTABLE,

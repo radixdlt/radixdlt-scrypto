@@ -12,7 +12,7 @@ pub trait ClientKeyValueStoreApi<E> {
     fn key_value_store_get_info(&mut self, node_id: &NodeId) -> Result<KeyValueStoreSchema, E>;
 
     /// Lock a key value store entry for reading/writing
-    fn key_value_store_lock_entry(
+    fn key_value_store_open_entry(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,

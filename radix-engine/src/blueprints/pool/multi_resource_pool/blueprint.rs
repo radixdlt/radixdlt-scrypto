@@ -578,7 +578,7 @@ impl MultiResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = MultiResourcePoolField::MultiResourcePool.into();
-        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
+        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
         let multi_resource_pool = api.field_lock_read_typed(handle)?;
 
         Ok((multi_resource_pool, handle))

@@ -76,7 +76,7 @@ impl FungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let moveable = {
-            let handle = api.actor_lock_field(
+            let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 FungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
@@ -87,7 +87,7 @@ impl FungibleProofBlueprint {
             moveable
         };
 
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -114,7 +114,7 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -141,7 +141,7 @@ impl FungibleProofBlueprint {
         // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
 
         // Notify underlying buckets/vaults
-        let handle = api.kernel_lock_substate(
+        let handle = api.kernel_open_substate(
             proof.0.as_node_id(),
             MAIN_BASE_PARTITION,
             &NonFungibleProofField::ProofRefs.into(),
@@ -151,7 +151,7 @@ impl FungibleProofBlueprint {
         let proof_substate: FungibleProofSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         proof_substate.drop_proof(api)?;
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         // Drop self
         api.drop_object(proof.0.as_node_id())?;

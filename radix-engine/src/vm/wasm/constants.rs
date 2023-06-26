@@ -1,45 +1,70 @@
 use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
 
+//=================
+// WASM Shim
+//=================
 pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
+
+//=================
+// Costing
+//=================
 pub const CONSUME_GAS_FUNCTION_NAME: &str = "gas";
 pub const COST_UNIT_LIMIT_FUNCTION_NAME: &str = "cost_unit_limit";
 pub const COST_UNIT_PRICE_FUNCTION_NAME: &str = "cost_unit_price";
 pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
 pub const FEE_BALANCE_FUNCTION_NAME: &str = "fee_balance";
 
+//=================
+// Blueprint/Object
+//=================
 pub const ALLOCATE_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "allocate_global_address";
-
 pub const NEW_OBJECT_FUNCTION_NAME: &str = "new_object";
-pub const GLOBALIZE_OBJECT_FUNCTION_NAME: &str = "globalize";
+pub const GLOBALIZE_FUNCTION_NAME: &str = "globalize";
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
 pub const GET_OBJECT_INFO_FUNCTION_NAME: &str = "get_object_info";
 pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 
+//=================
+// Key Value Store
+//=================
 pub const KEY_VALUE_STORE_NEW_FUNCTION_NAME: &str = "kv_store_new";
 pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME: &str = "kv_store_get_info";
-pub const KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME: &str = "kv_store_lock_entry";
+pub const KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME: &str = "kv_store_open_entry";
 pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME: &str = "kv_store_remove_entry";
+
+//=================
+// KV Entry Handle
+//=================
 pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "kv_entry_get";
 pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "kv_entry_set";
 pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME: &str = "kv_entry_release";
 
-pub const ACTOR_LOCK_FIELD_FUNCTION_NAME: &str = "actor_lock_field";
-pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_method";
-
+//=================
+// Field Handle
+//=================
 pub const FIELD_LOCK_READ_FUNCTION_NAME: &str = "field_lock_read";
 pub const FIELD_LOCK_WRITE_FUNCTION_NAME: &str = "field_lock_write";
 pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
 
-pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
-pub const EMIT_LOG_FUNCTION_NAME: &str = "emit_log";
-pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
-pub const GENERATE_RUID_FUNCTION_NAME: &str = "generate_ruid";
+//=================
+// Actor
+//=================
+pub const ACTOR_OPEN_FIELD_FUNCTION_NAME: &str = "actor_open_field";
+pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_method";
 pub const GET_GLOBAL_ADDRESS_FUNCTION_NAME: &str = "get_global_address";
 pub const GET_BLUEPRINT_FUNCTION_NAME: &str = "get_blueprint";
 pub const GET_AUTH_ZONE_FUNCTION_NAME: &str = "get_auth_zone";
 pub const ASSERT_ACCESS_RULE_FUNCTION_NAME: &str = "assert_access_rule";
 pub const GET_NODE_ID_FUNCTION_NAME: &str = "get_node_id";
+
+//=================
+// Environment
+//=================
+pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
+pub const EMIT_LOG_FUNCTION_NAME: &str = "emit_log";
+pub const GET_TRANSACTION_HASH_FUNCTION_NAME: &str = "get_transaction_hash";
+pub const GENERATE_RUID_FUNCTION_NAME: &str = "generate_ruid";
 pub const PANIC_FUNCTION_NAME: &str = "panic";
 
 pub const MODULE_ENV_NAME: &str = "env";

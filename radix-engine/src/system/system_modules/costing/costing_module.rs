@@ -265,7 +265,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _handle: LockHandle,
         node_id: &NodeId,
@@ -318,7 +318,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
+    fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         store_access: &StoreAccessInfo,

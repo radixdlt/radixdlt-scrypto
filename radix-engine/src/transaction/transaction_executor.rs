@@ -380,7 +380,7 @@ where
             }
         };
         let substate: ConsensusManagerSubstate = track.read_substate(handle).0.as_typed().unwrap();
-        track.release_lock(handle);
+        track.close_substate(handle);
         Some(substate.epoch)
     }
 
@@ -421,7 +421,7 @@ where
             .0;
         let substate: TransactionTrackerSubstate =
             track.read_substate(handle).0.as_typed().unwrap();
-        track.release_lock(handle);
+        track.close_substate(handle);
 
         let partition_number = substate
             .partition_for_expiry_epoch(expiry_epoch)
@@ -444,7 +444,7 @@ where
             .0;
         let substate: KeyValueEntrySubstate<TransactionStatus> =
             track.read_substate(handle).0.as_typed().unwrap();
-        track.release_lock(handle);
+        track.close_substate(handle);
 
         match substate.value {
             Some(status) => match status {
@@ -606,7 +606,7 @@ where
             let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
             substate.put(LiquidFungibleResource::new(amount));
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.release_lock(handle);
+            track.close_substate(handle);
         }
 
         // Take fee payments
@@ -643,7 +643,7 @@ where
             let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
             substate.put(locked);
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.release_lock(handle);
+            track.close_substate(handle);
 
             // Record final payments
             *fee_payments.entry(vault_id).or_default() += amount;
@@ -675,7 +675,7 @@ where
             let substate: ConsensusManagerSubstate =
                 track.read_substate(handle).0.as_typed().unwrap();
             let current_leader = substate.current_leader;
-            track.release_lock(handle);
+            track.close_substate(handle);
 
             // Update validator rewards
             let handle = track
@@ -707,7 +707,7 @@ where
             };
             let vault_node_id = substate.rewards_vault.0 .0;
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.release_lock(handle);
+            track.close_substate(handle);
 
             // Put validator rewards into the vault
             let handle = track
@@ -727,7 +727,7 @@ where
                     .unwrap(),
             );
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.release_lock(handle);
+            track.close_substate(handle);
         }
 
         (fee_summary, fee_payments)
@@ -788,7 +788,7 @@ where
                         mutability: SubstateMutability::Mutable,
                     }),
                 );
-                track.release_lock(handle);
+                track.close_substate(handle);
             } else {
                 panic!("No partition for an expiry epoch")
             }
@@ -814,7 +814,7 @@ where
             handle,
             IndexedScryptoValue::from_typed(&transaction_tracker),
         );
-        track.release_lock(handle);
+        track.close_substate(handle);
     }
 
     #[cfg(not(feature = "alloc"))]

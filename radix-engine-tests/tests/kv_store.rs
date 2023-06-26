@@ -1,6 +1,6 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
-    CreateNodeError, LockSubstateError, TakeNodeError, UnlockSubstateError,
+    CloseSubstateError, CreateNodeError, OpenSubstateError, TakeNodeError,
 };
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -68,7 +68,7 @@ fn cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -134,7 +134,7 @@ fn cannot_remove_kv_stores() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(_))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
             ))
         )
     });
@@ -169,7 +169,7 @@ fn cannot_overwrite_kv_stores() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(_))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
             ))
         )
     });
@@ -308,7 +308,7 @@ fn cannot_directly_reference_inserted_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -337,7 +337,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -366,7 +366,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -496,7 +496,7 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(..))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(..))
             ))
         )
     });

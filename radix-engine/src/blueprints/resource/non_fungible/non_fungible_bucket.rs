@@ -14,7 +14,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
@@ -29,7 +29,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Locked.into(),
             LockFlags::read_only(),
@@ -46,7 +46,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
@@ -63,7 +63,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Locked.into(),
             LockFlags::read_only(),
@@ -78,7 +78,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
@@ -101,7 +101,7 @@ impl NonFungibleBucket {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
@@ -124,7 +124,7 @@ impl NonFungibleBucket {
             return Ok(());
         }
 
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
@@ -149,7 +149,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
@@ -203,7 +203,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
@@ -247,7 +247,7 @@ impl NonFungibleBucket {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,

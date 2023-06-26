@@ -62,7 +62,7 @@ pub trait WasmRuntime {
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn key_value_store_lock_entry(
+    fn key_value_store_open_entry(
         &mut self,
         node_id: Vec<u8>,
         key: Vec<u8>,
@@ -94,7 +94,7 @@ pub trait WasmRuntime {
 
     fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn actor_lock_field(
+    fn actor_open_field(
         &mut self,
         object_handle: u32,
         field: u8,

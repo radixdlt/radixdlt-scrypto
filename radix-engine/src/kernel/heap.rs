@@ -30,7 +30,7 @@ pub enum HeapRemoveNodeError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum HeapLockSubstateError {
+pub enum HeapOpenSubstateError {
     LockUnmodifiedBaseOnHeapNode,
     SubstateNotFound(NodeId, PartitionNumber, SubstateKey),
 }
