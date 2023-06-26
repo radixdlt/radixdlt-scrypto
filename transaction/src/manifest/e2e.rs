@@ -1119,9 +1119,21 @@ CREATE_ACCOUNT;
             vec![],
             apply_address_replacements(
                 r##"
+CALL_METHOD
+    Address("${this_account_address}")
+    "withdraw"
+    Address("${xrd_resource_address}")
+    Decimal("1000")
+;
+TAKE_FROM_WORKTOP
+    Address("${xrd_resource_address}")
+    Decimal("1000")
+    Bucket("bucket1")
+;
 CREATE_VALIDATOR
     Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5")
     Decimal("1")
+    Bucket("bucket1")
 ;
 "##,
             ),

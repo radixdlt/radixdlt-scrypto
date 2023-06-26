@@ -512,9 +512,12 @@ impl TxFuzzer {
                 }
                 // CreateValidator
                 31 => {
-                    let input = ConsensusManagerCreateValidatorInput {
+                    let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
+
+                    let input = ConsensusManagerCreateValidatorManifestInput {
                         key: public_key,
                         fee_factor: Decimal::ONE,
+                        xrd_payment: bucket_id,
                     };
 
                     match to_manifest_value(&input) {

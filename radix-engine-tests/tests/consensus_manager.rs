@@ -412,6 +412,77 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
     assert!(result.next_epoch().is_none());
 }
 
+fn create_validator_with_wrong_payment_amount_should_fail(amount: Decimal) {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 10u32.into())
+            .withdraw_from_account(account, XRD, amount)
+            .take_all_from_worktop(XRD, |builder, bucket| {
+                builder.create_validator(public_key, Decimal::ONE, bucket);
+                builder
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                ConsensusManagerError::InvalidXrdPayment { .. }
+            ))
+        )
+    });
+}
+
+#[test]
+fn create_validator_with_not_enough_payment_should_fail() {
+    create_validator_with_wrong_payment_amount_should_fail(*DEFAULT_VALIDATOR_XRD_COST - dec!("1"))
+}
+
+#[test]
+fn create_validator_with_too_much_payment_should_fail() {
+    create_validator_with_wrong_payment_amount_should_fail(*DEFAULT_VALIDATOR_XRD_COST + dec!("1"))
+}
+
+#[test]
+fn create_validator_with_wrong_resource_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource_address =
+        test_runner.create_fungible_resource(*DEFAULT_VALIDATOR_XRD_COST, 0u8, account);
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee(account, 10u32.into())
+            .withdraw_from_account(account, resource_address, *DEFAULT_VALIDATOR_XRD_COST)
+            .take_all_from_worktop(resource_address, |builder, bucket| {
+                builder.create_validator(public_key, Decimal::ONE, bucket);
+                builder
+            })
+            .build(),
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
+                ConsensusManagerError::NotXrd
+            ))
+        )
+    });
+}
+
 #[test]
 fn register_validator_with_auth_succeeds() {
     // Arrange
