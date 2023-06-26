@@ -89,9 +89,9 @@ pub trait VmInvoke {
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>;
 }
 
-pub struct VmValidation;
+pub struct VmPackageValidation;
 
-impl VmValidation {
+impl VmPackageValidation {
     pub fn validate(
         definition: &PackageDefinition,
         vm_type: VmType,

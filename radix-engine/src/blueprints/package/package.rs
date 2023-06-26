@@ -32,7 +32,7 @@ use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
-use crate::vm::VmValidation;
+use crate::vm::VmPackageValidation;
 pub use radix_engine_interface::blueprints::package::{
     PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
@@ -893,7 +893,7 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Validate VM specific properties
-        VmValidation::validate(&definition, vm_type, &code)?;
+        VmPackageValidation::validate(&definition, vm_type, &code)?;
 
         // Build Package structure
         let mut definitions = BTreeMap::new();
