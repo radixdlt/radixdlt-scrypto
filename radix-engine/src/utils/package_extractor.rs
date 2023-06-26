@@ -1,11 +1,10 @@
-use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageDefinition};
-use sbor::rust::iter;
-
 use crate::errors::InvokeError;
 use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::types::*;
 use crate::vm::wasm::*;
-use crate::vm::NopWasmRuntime;
+use crate::vm::wasm_runtime::NoOpWasmRuntime;
+use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageDefinition};
+use sbor::rust::iter;
 use sbor::rust::sync::Arc;
 
 #[derive(Debug)]
@@ -45,8 +44,11 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
 
     // Execute with empty state (with default cost unit limit)
     let wasm_engine = DefaultWasmEngine::default();
-    let fee_reserve = SystemLoanFeeReserve::default().with_free_credit(DEFAULT_FREE_CREDIT_IN_XRD);
-    let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
+    let fee_reserve = SystemLoanFeeReserve::default()
+        .with_free_credit(Decimal::try_from(DEFAULT_FREE_CREDIT_IN_XRD).unwrap());
+    let mut gas_consumed = 0;
+    let mut runtime: Box<dyn WasmRuntime> =
+        Box::new(NoOpWasmRuntime::new(fee_reserve, &mut gas_consumed));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = BTreeMap::new();
     for function_export in function_exports {

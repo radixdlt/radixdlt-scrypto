@@ -25,6 +25,8 @@ use super::{
     UpdateAcceptingStakeDelegationStateEvent,
 };
 
+pub const VALIDATOR_PROTOCOL_VERSION_NAME_LEN: usize = 32;
+
 /// A performance-driven limit on the number of simultaneously pending "delayed withdrawal"
 /// operations on any validator's owner's stake units vault.
 pub const OWNER_STAKE_UNITS_PENDING_WITHDRAWALS_LIMIT: usize = 100;
@@ -112,6 +114,12 @@ pub struct ValidatorAcceptsDelegatedStakeFlag {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct ValidatorProtocolUpdateReadinessSignalSubstate {
+    pub protocol_version_name: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct UnstakeData {
     pub name: String,
 
@@ -149,6 +157,7 @@ pub enum ValidatorError {
     PendingOwnerStakeWithdrawalLimitReached,
     InvalidValidatorFeeFactor,
     ValidatorIsNotAcceptingDelegatedStake,
+    InvalidProtocolVersionNameLength { expected: usize, actual: usize },
 }
 
 pub struct ValidatorBlueprint;
@@ -329,6 +338,45 @@ impl ValidatorBlueprint {
         )?;
 
         Ok(unstake_bucket)
+    }
+
+    pub fn signal_protocol_update_readiness<Y>(
+        protocol_version_name: String,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if protocol_version_name.len() != VALIDATOR_PROTOCOL_VERSION_NAME_LEN {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(
+                    ValidatorError::InvalidProtocolVersionNameLength {
+                        expected: VALIDATOR_PROTOCOL_VERSION_NAME_LEN,
+                        actual: protocol_version_name.len(),
+                    },
+                ),
+            ));
+        }
+
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::ProtocolUpdateReadinessSignal.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut signal: ValidatorProtocolUpdateReadinessSignalSubstate =
+            api.field_lock_read_typed(handle)?;
+        signal.protocol_version_name = Some(protocol_version_name.clone());
+        api.field_lock_write_typed(handle, signal)?;
+        api.field_lock_release(handle)?;
+
+        Runtime::emit_event(
+            api,
+            ProtocolUpdateReadinessSignalEvent {
+                protocol_version_name,
+            },
+        )?;
+
+        Ok(())
     }
 
     fn register_update<Y>(new_registered: bool, api: &mut Y) -> Result<(), RuntimeError>
@@ -1137,11 +1185,16 @@ impl ValidatorCreator {
             accepts_delegated_stake: false,
         };
 
+        let protocol_update_readiness_signal = ValidatorProtocolUpdateReadinessSignalSubstate {
+            protocol_version_name: None,
+        };
+
         let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
             vec![
                 scrypto_encode(&substate).unwrap(),
                 scrypto_encode(&accepts_delegated_stake).unwrap(),
+                scrypto_encode(&protocol_update_readiness_signal).unwrap(),
             ],
         )?;
 

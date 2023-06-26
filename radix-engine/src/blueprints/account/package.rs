@@ -1,5 +1,8 @@
+use super::AccountSubstate;
+use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use crate::roles_template;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
@@ -14,14 +17,6 @@ use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
-
-use crate::blueprints::account::{AccountBlueprint, SECURIFY_ROLE};
-use crate::roles_template;
-use crate::system::system_modules::costing::FIXED_LOW_FEE;
-use radix_engine_interface::types::ClientCostingReason;
-use resources_tracker_macro::trace_resources;
-
-use super::AccountSubstate;
 
 const ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
 const ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519";
@@ -445,7 +440,6 @@ impl AccountNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,
@@ -456,8 +450,6 @@ impl AccountNativePackage {
     {
         match export_name {
             ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -467,8 +459,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -477,8 +467,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_ADVANCED_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountCreateAdvancedInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -488,8 +476,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let _input: AccountCreateInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -499,8 +485,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_SECURIFY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let receiver = Runtime::get_node_id(api)?;
                 let _input: AccountSecurifyInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -510,8 +494,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountLockFeeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -519,8 +501,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountLockContingentFeeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -529,8 +509,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_DEPOSIT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountDepositInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -539,8 +517,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_DEPOSIT_BATCH_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountDepositBatchInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -549,8 +525,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountTryDepositOrRefundInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -559,8 +533,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountTryDepositBatchOrRefundInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -569,8 +541,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountTryDepositOrAbortInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -579,8 +549,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountTryDepositBatchOrAbortInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -589,8 +557,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountWithdrawInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -599,8 +565,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_WITHDRAW_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountWithdrawNonFungiblesInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -612,8 +576,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_BURN_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountBurnInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -622,8 +584,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_BURN_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountBurnNonFungiblesInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -632,8 +592,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountLockFeeAndWithdrawInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -646,8 +604,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountLockFeeAndWithdrawNonFungiblesInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -661,8 +617,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_PROOF_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountCreateProofInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -670,8 +624,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountCreateProofOfAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -683,8 +635,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: AccountCreateProofOfNonFungiblesInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -697,8 +647,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let AccountChangeDefaultDepositRuleInput {
                     default_deposit_rule,
                 } = input.as_typed().map_err(|e| {
@@ -711,8 +659,6 @@ impl AccountNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let AccountConfigureResourceDepositRuleInput {
                     resource_address,
                     resource_deposit_configuration,

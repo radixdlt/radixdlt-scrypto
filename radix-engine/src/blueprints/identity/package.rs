@@ -1,7 +1,6 @@
 use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::roles_template;
-use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
@@ -23,7 +22,6 @@ use radix_engine_interface::schema::{
     TypeRef,
 };
 use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
-use resources_tracker_macro::trace_resources;
 
 const IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
 const IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519";
@@ -127,7 +125,6 @@ impl IdentityNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,
@@ -138,8 +135,6 @@ impl IdentityNativePackage {
     {
         match export_name {
             IDENTITY_CREATE_ADVANCED_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: IdentityCreateAdvancedInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -149,8 +144,6 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_CREATE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let _input: IdentityCreateInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -160,8 +153,6 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_SECURIFY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let receiver = Runtime::get_node_id(api)?;
                 let _input: IdentitySecurifyToSingleBadgeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -172,8 +163,6 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -183,8 +172,6 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;

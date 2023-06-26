@@ -1,6 +1,18 @@
+CALL_METHOD
+    Address("${this_account_address}")
+    "withdraw"
+    Address("${xrd_resource_address}")
+    Decimal("1000");
+
+TAKE_FROM_WORKTOP
+    Address("${xrd_resource_address}")
+    Decimal("1000")
+    Bucket("xrd_payment");
+
 CREATE_VALIDATOR
     # Secp256k1 Public Key Bytes
     Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5")
     # Validator fee factor
     Decimal("1")
-;
+    # XRD payment
+    Bucket("xrd_payment");

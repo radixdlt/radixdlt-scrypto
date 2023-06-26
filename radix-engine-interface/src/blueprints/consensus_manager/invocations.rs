@@ -2,11 +2,13 @@ use crate::api::actor_sorted_index_api::SortedKey;
 use crate::blueprints::resource::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
+use radix_engine_common::prelude::ManifestBucket;
 use radix_engine_common::time::{Instant, TimeComparisonOperator};
 use radix_engine_common::types::*;
 use radix_engine_interface::crypto::Secp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::fmt::Debug;
+use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 pub const CONSENSUS_MANAGER_BLUEPRINT: &str = "ConsensusManager";
@@ -45,6 +47,8 @@ pub struct ConsensusManagerConfig {
     pub min_validator_reliability: Decimal,
     pub num_owner_stake_units_unlock_epochs: u64,
     pub num_fee_increase_delay_epochs: u64,
+
+    pub validator_creation_xrd_cost: Decimal,
 }
 
 impl ConsensusManagerConfig {
@@ -285,10 +289,18 @@ pub type ConsensusManagerNextRoundOutput = ();
 
 pub const CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT: &str = "create_validator";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ConsensusManagerCreateValidatorInput {
     pub key: Secp256k1PublicKey,
     pub fee_factor: Decimal,
+    pub xrd_payment: Bucket,
+}
+
+#[derive(Debug, Eq, PartialEq, ManifestSbor)]
+pub struct ConsensusManagerCreateValidatorManifestInput {
+    pub key: Secp256k1PublicKey,
+    pub fee_factor: Decimal,
+    pub xrd_payment: ManifestBucket,
 }
 
 pub type ConsensusManagerCreateValidatorOutput = (ComponentAddress, Bucket);
@@ -395,6 +407,15 @@ pub struct ValidatorUpdateAcceptDelegatedStakeInput {
 }
 
 pub type ValidatorUpdateAcceptDelegatedStakeOutput = ();
+
+pub const VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS: &str = "signal_protocol_update_readiness";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ValidatorSignalProtocolUpdateReadinessInput {
+    pub vote: String,
+}
+
+pub type ValidatorSignalProtocolUpdateReadinessOutput = ();
 
 pub const VALIDATOR_APPLY_EMISSION_IDENT: &str = "apply_emission";
 

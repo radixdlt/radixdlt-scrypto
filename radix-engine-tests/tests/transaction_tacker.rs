@@ -113,7 +113,7 @@ fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransacti
         })
         .manifest(
             ManifestBuilder::new()
-                .lock_fee(FAUCET, 10.into())
+                .lock_fee(FAUCET, 50.into())
                 .clear_auth_zone()
                 .build(),
         )

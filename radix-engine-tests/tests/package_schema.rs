@@ -17,7 +17,7 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(package_address, "SchemaComponent2", method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

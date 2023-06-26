@@ -17,12 +17,13 @@ use crate::types::*;
 use crate::vm::VmInvoke;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
+use resources_tracker_macro::trace_resources;
 
 pub struct NativeVm;
 
 impl NativeVm {
     pub fn create_instance(
-        _package_address: &PackageAddress,
+        package_address: &PackageAddress,
         code: &[u8],
     ) -> Result<NativeVmInstance, RuntimeError> {
         let code: [u8; 8] = match code.clone().try_into() {
@@ -37,6 +38,7 @@ impl NativeVm {
         let native_package_code_id = u64::from_be_bytes(code);
 
         let instance = NativeVmInstance {
+            package_address: *package_address,
             native_package_code_id,
         };
 
@@ -45,10 +47,14 @@ impl NativeVm {
 }
 
 pub struct NativeVmInstance {
+    // Used by profiling
+    #[allow(dead_code)]
+    package_address: PackageAddress,
     native_package_code_id: u64,
 }
 
 impl VmInvoke for NativeVmInstance {
+    #[trace_resources(log=self.package_address.to_hex(),log=export_name)]
     fn invoke<Y>(
         &mut self,
         export_name: &str,
@@ -58,6 +64,11 @@ impl VmInvoke for NativeVmInstance {
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
+        api.consume_cost_units(ClientCostingEntry::RunNativeCode {
+            package_address: &self.package_address,
+            export_name: export_name,
+        })?;
+
         match self.native_package_code_id {
             PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api),
             RESOURCE_MANAGER_CODE_ID => {

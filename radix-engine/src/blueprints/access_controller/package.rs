@@ -2,7 +2,6 @@ use super::events::*;
 use super::state_machine::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
-use crate::system::system_modules::costing::FIXED_LOW_FEE;
 use crate::types::*;
 use crate::{event_schema, roles_template};
 use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
@@ -25,10 +24,8 @@ use radix_engine_interface::schema::{
     FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 use radix_engine_interface::time::Instant;
-use radix_engine_interface::types::ClientCostingReason;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
-use resources_tracker_macro::trace_resources;
 use sbor::rust::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -489,7 +486,6 @@ impl AccessControllerNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,
@@ -499,106 +495,56 @@ impl AccessControllerNativePackage {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         match export_name {
-            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                Self::create_global(input, api)
-            }
-            ACCESS_CONTROLLER_CREATE_PROOF_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                Self::create_proof(input, api)
-            }
+            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT => Self::create_global(input, api),
+            ACCESS_CONTROLLER_CREATE_PROOF_IDENT => Self::create_proof(input, api),
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_PRIMARY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 Self::initiate_recovery_as_primary(input, api)
             }
             ACCESS_CONTROLLER_INITIATE_RECOVERY_AS_RECOVERY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 Self::initiate_recovery_as_recovery(input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let receiver = Runtime::get_node_id(api)?;
                 Self::quick_confirm_primary_role_recovery_proposal(&receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let receiver = Runtime::get_node_id(api)?;
                 Self::quick_confirm_recovery_role_recovery_proposal(&receiver, input, api)
             }
             ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let receiver = Runtime::get_node_id(api)?;
                 Self::timed_confirm_recovery(&receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_RECOVERY_PROPOSAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 Self::cancel_primary_role_recovery_proposal(input, api)
             }
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_RECOVERY_PROPOSAL_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 Self::cancel_recovery_role_recovery_proposal(input, api)
             }
-            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                Self::lock_primary_role(input, api)
-            }
-            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                Self::unlock_primary_role(input, api)
-            }
-            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                Self::stop_timed_recovery(input, api)
-            }
+            ACCESS_CONTROLLER_LOCK_PRIMARY_ROLE_IDENT => Self::lock_primary_role(input, api),
+            ACCESS_CONTROLLER_UNLOCK_PRIMARY_ROLE_IDENT => Self::unlock_primary_role(input, api),
+            ACCESS_CONTROLLER_STOP_TIMED_RECOVERY_IDENT => Self::stop_timed_recovery(input, api),
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_PRIMARY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 Self::initiate_badge_withdraw_attempt_as_primary(input, api)
             }
             ACCESS_CONTROLLER_INITIATE_BADGE_WITHDRAW_ATTEMPT_AS_RECOVERY_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 Self::initiate_badge_withdraw_attempt_as_recovery(input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let receiver = Runtime::get_node_id(api)?;
                 Self::quick_confirm_primary_role_badge_withdraw_attempt(&receiver, input, api)
             }
             ACCESS_CONTROLLER_QUICK_CONFIRM_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 let receiver = Runtime::get_node_id(api)?;
                 Self::quick_confirm_recovery_role_badge_withdraw_attempt(&receiver, input, api)
             }
             ACCESS_CONTROLLER_CANCEL_PRIMARY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 Self::cancel_primary_role_badge_withdraw_attempt(input, api)
             }
             ACCESS_CONTROLLER_CANCEL_RECOVERY_ROLE_BADGE_WITHDRAW_ATTEMPT_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
                 Self::cancel_recovery_role_badge_withdraw_attempt(input, api)
             }
-            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => {
-                api.consume_cost_units(FIXED_LOW_FEE, ClientCostingReason::RunNative)?;
-
-                Self::mint_recovery_badges(input, api)
-            }
+            ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT => Self::mint_recovery_badges(input, api),
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),

@@ -94,7 +94,7 @@ impl ResourceManager {
         access_rules.set_role(FREEZER_ROLE, access_rule);
     }
 
-    pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
+    pub fn set_updatable_non_fungible_data(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
         access_rules.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
     }
@@ -109,7 +109,7 @@ impl ResourceManager {
         access_rules.lock_role(BURNER_ROLE);
     }
 
-    pub fn lock_updateable_non_fungible_data(&self) {
+    pub fn lock_updatable_non_fungible_data(&self) {
         let access_rules = self.0.access_rules();
         access_rules.lock_role(NON_FUNGIBLE_DATA_UPDATER_ROLE);
     }
@@ -134,12 +134,12 @@ impl ResourceManager {
         access_rules.lock_role(FREEZER_ROLE);
     }
 
-    pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
+    pub fn set_updatable_metadata(&self, access_rule: AccessRule) {
         let access_rules = self.0.access_rules();
         access_rules.set_metadata_role(METADATA_ADMIN_ROLE, access_rule);
     }
 
-    pub fn lock_updateable_metadata(&self) {
+    pub fn lock_updatable_metadata(&self) {
         let access_rules = self.0.access_rules();
         access_rules.lock_metadata_role(METADATA_ADMIN_ROLE);
     }
@@ -167,6 +167,13 @@ impl ResourceManagerStub {
         self.call(
             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT,
             &ResourceManagerCreateEmptyVaultInput {},
+        )
+    }
+
+    pub fn create_empty_bucket(&self) -> Bucket {
+        self.call(
+            RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT,
+            &ResourceManagerCreateEmptyBucketInput {},
         )
     }
 

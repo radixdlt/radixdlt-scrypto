@@ -64,8 +64,7 @@ impl From<(BlueprintId, GlobalAddress)> for PreAllocatedAddress {
 pub struct FeePayment {
     pub tip_percentage: u16,
     /// Free credit for execution, for preview only!
-    /// It's the `u128` representation of Decimal, see `transmute_decimal_as_u128`.
-    pub free_credit_in_xrd: u128,
+    pub free_credit_in_xrd: Decimal,
 }
 
 /// Executable form of transaction, post stateless validation.

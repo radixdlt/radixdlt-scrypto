@@ -328,7 +328,12 @@ where
             .map_err(CallFrameError::DropNodeError)
             .map_err(KernelError::CallFrameError)?;
 
-        M::after_drop_node(self)?;
+        let total_substate_size = node
+            .values()
+            .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+            .sum::<usize>();
+
+        M::after_drop_node(self, total_substate_size)?;
 
         Ok(node)
     }
@@ -348,6 +353,11 @@ where
     ) -> Result<(), RuntimeError> {
         M::before_create_node(&node_id, &node_substates, self)?;
 
+        let total_substate_size = node_substates
+            .values()
+            .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+            .sum::<usize>();
+
         let store_access = self
             .current_frame
             .create_node(
@@ -360,7 +370,7 @@ where
             .map_err(CallFrameError::CreateNodeError)
             .map_err(KernelError::CallFrameError)?;
 
-        M::after_create_node(&node_id, &store_access, self)?;
+        M::after_create_node(&node_id, total_substate_size, &store_access, self)?;
 
         Ok(())
     }
@@ -719,6 +729,7 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
+        let value_size = value.len();
         let store_access = self
             .current_frame
             .set_substate(
@@ -733,7 +744,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_set_substate(&store_access, self)?;
+        M::on_set_substate(value_size, &store_access, self)?;
 
         Ok(())
     }

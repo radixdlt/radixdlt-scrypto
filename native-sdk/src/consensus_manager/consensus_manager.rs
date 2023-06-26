@@ -18,6 +18,7 @@ impl ConsensusManager {
         &self,
         key: Secp256k1PublicKey,
         fee_factor: Decimal,
+        xrd_payment: Bucket,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), E>
     where
@@ -26,7 +27,12 @@ impl ConsensusManager {
         let rtn = api.call_method(
             self.0.as_node_id(),
             CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
-            scrypto_encode(&ConsensusManagerCreateValidatorInput { key, fee_factor }).unwrap(),
+            scrypto_encode(&ConsensusManagerCreateValidatorInput {
+                key,
+                fee_factor,
+                xrd_payment,
+            })
+            .unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
