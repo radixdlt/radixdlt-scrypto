@@ -8,6 +8,7 @@ mod royalty_test {
         paid_method_panic => Xrd(2.into());
         free_method => Free;
         create_component_with_royalty_enabled => Free;
+        create_component_with_royalty => Free;
     }
 
     struct RoyaltyTest {}
@@ -39,10 +40,29 @@ mod royalty_test {
                         royalty_admin_updater => rule!(deny_all), locked;
                     },
                     init {
-                        free_method => Free, locked;
-                        paid_method => Xrd(1.into()), locked;
-                        paid_method_usd => Usd(1.into()), locked;
-                        paid_method_panic => Xrd(1.into()), locked;
+                        free_method => Free, updatable;
+                        paid_method => Xrd(1.into()), updatable;
+                        paid_method_usd => Usd(1.into()), updatable;
+                        paid_method_panic => Xrd(1.into()), updatable;
+                    }
+                })
+                .globalize()
+        }
+
+        pub fn create_component_with_royalty(amount: Decimal) -> Global<RoyaltyTest> {
+            Self {}
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .enable_component_royalties(component_royalties! {
+                    roles {
+                        royalty_admin => rule!(allow_all), locked;
+                        royalty_admin_updater => rule!(deny_all), locked;
+                    },
+                    init {
+                        free_method => Free, updatable;
+                        paid_method => Xrd(amount), updatable;
+                        paid_method_usd => Usd(1.into()), updatable;
+                        paid_method_panic => Xrd(1.into()), updatable;
                     }
                 })
                 .globalize()

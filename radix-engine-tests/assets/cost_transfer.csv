@@ -1,20 +1,20 @@
-Total Cost Units                                                                ,   6750186
-Total Fee                                                                       ,  3.375093
+Total Cost Units                                                                ,   7183684
+Total Fee                                                                       ,  3.591842
 AfterInvoke                                                                     ,       150
 AllocateNodeId                                                                  ,      6500
 BeforeInvoke                                                                    ,      5731
-CloseSubstate                                                                   ,     72000
+CloseSubstate                                                                   ,     75500
 CreateNode                                                                      ,      9485
 DropNode                                                                        ,      9485
 EmitEvent                                                                       ,      1830
 LockFee                                                                         ,       500
 OpenSubstate::GlobalAccount                                                     ,   1488155
-OpenSubstate::GlobalFungibleResourceManager                                     ,    568512
-OpenSubstate::GlobalPackage                                                     ,   3406007
+OpenSubstate::GlobalFungibleResourceManager                                     ,    568562
+OpenSubstate::GlobalPackage                                                     ,   3830956
 OpenSubstate::InternalFungibleVault                                             ,    565280
 OpenSubstate::InternalGenericComponent                                          ,     36862
 QueryActor                                                                      ,      4000
-ReadSubstate                                                                    ,    103556
+ReadSubstate                                                                    ,    108555
 RunNativeCode::Worktop_drain                                                    ,      6900
 RunNativeCode::Worktop_drop                                                     ,      6600
 RunNativeCode::Worktop_put                                                      ,     21200

@@ -114,3 +114,10 @@ pub const DEFAULT_MAX_LOG_SIZE: usize = 64 * 1024;
 pub const DEFAULT_MAX_PANIC_MESSAGE_SIZE: usize = 64 * 1024;
 pub const DEFAULT_MAX_NUMBER_OF_EVENTS: usize = 256;
 pub const DEFAULT_MAX_NUMBER_OF_LOGS: usize = 256;
+
+/// The default maximum that a package or component owner is allowed to set their method royalty to
+pub const DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD: &str = "150.0";
+
+/* Metadata */
+pub const DEFAULT_MAX_METADATA_KEY_STRING_LEN: usize = 100;
+pub const DEFAULT_MAX_METADATA_VALUE_SBOR_LEN: usize = 512;

@@ -87,50 +87,6 @@ fn test_bootstrap_receipt_should_match_constants() {
 }
 
 #[test]
-fn test_genesis_xrd_allocation_to_accounts() {
-    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let mut substate_db = InMemorySubstateDatabase::standard();
-    let account_public_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
-    let account_component_address = ComponentAddress::virtual_account_from_public_key(
-        &PublicKey::Secp256k1(account_public_key.clone()),
-    );
-    let allocation_amount = dec!("100");
-    let genesis_data_chunks = vec![GenesisDataChunk::XrdBalances(vec![(
-        account_component_address,
-        allocation_amount,
-    )])];
-
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
-
-    let GenesisReceipts {
-        data_ingestion_receipts,
-        ..
-    } = bootstrapper
-        .bootstrap_with_genesis_data(
-            genesis_data_chunks,
-            Epoch::of(1),
-            CustomGenesis::default_consensus_manager_config(),
-            1,
-            Some(0),
-            Decimal::zero(),
-        )
-        .unwrap();
-
-    let receipt = &data_ingestion_receipts[0];
-    assert_eq!(
-        receipt
-            .expect_commit_success()
-            .state_update_summary
-            .balance_changes
-            .get(&GlobalAddress::from(account_component_address))
-            .unwrap()
-            .get(&RADIX_TOKEN)
-            .unwrap(),
-        &BalanceChange::Fungible(allocation_amount)
-    );
-}
-
-#[test]
 fn test_genesis_resource_with_initial_allocation() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();

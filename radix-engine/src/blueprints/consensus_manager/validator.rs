@@ -11,10 +11,12 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::metadata_init;
 use radix_engine_interface::rule;
 use sbor::rust::mem;
 
@@ -22,6 +24,8 @@ use super::{
     ClaimXrdEvent, RegisterValidatorEvent, StakeEvent, UnregisterValidatorEvent, UnstakeEvent,
     UpdateAcceptingStakeDelegationStateEvent,
 };
+
+pub const VALIDATOR_PROTOCOL_VERSION_NAME_LEN: usize = 32;
 
 /// A performance-driven limit on the number of simultaneously pending "delayed withdrawal"
 /// operations on any validator's owner's stake units vault.
@@ -69,7 +73,7 @@ pub struct ValidatorSubstate {
     /// A type of non-fungible token used as a receipt for unstaked stake units.
     /// Unstaking burns the SUs and inactivates the staked XRDs (i.e. moves it from the regular
     /// [`stake_xrd_vault_id`] to the [`pending_xrd_withdraw_vault_id`]), and then requires to claim
-    /// the XRDs using this NFT after a delay (see [`UnstakeData.epoch_unlocked`]).
+    /// the XRDs using this NFT after a delay (see [`UnstakeData.claim_epoch`]).
     pub unstake_nft: ResourceAddress,
 
     /// A vault holding the XRDs that were unstaked (see the [`unstake_nft`]) but not yet claimed.
@@ -110,13 +114,21 @@ pub struct ValidatorAcceptsDelegatedStakeFlag {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[sbor(transparent)]
+pub struct ValidatorProtocolUpdateReadinessSignalSubstate {
+    pub protocol_version_name: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct UnstakeData {
+    pub name: String,
+
     /// An epoch number at (or after) which the pending unstaked XRD may be claimed.
     /// Note: on unstake, it is fixed to be [`ConsensusManagerConfigSubstate.num_unstake_epochs`] away.
-    pub epoch_unlocked: Epoch,
+    pub claim_epoch: Epoch,
 
     /// An XRD amount to be claimed.
-    pub amount: Decimal,
+    pub claim_amount: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -145,6 +157,7 @@ pub enum ValidatorError {
     PendingOwnerStakeWithdrawalLimitReached,
     InvalidValidatorFeeFactor,
     ValidatorIsNotAcceptingDelegatedStake,
+    InvalidProtocolVersionNameLength { expected: usize, actual: usize },
 }
 
 pub struct ValidatorBlueprint;
@@ -290,10 +303,11 @@ impl ValidatorBlueprint {
                 api.field_lock_read_typed(config_handle)?;
             api.field_lock_release(config_handle)?;
 
-            let epoch_unlocked = current_epoch.after(config_substate.config.num_unstake_epochs);
+            let claim_epoch = current_epoch.after(config_substate.config.num_unstake_epochs);
             let data = UnstakeData {
-                epoch_unlocked,
-                amount: xrd_amount,
+                name: "Stake Claim".into(),
+                claim_epoch,
+                claim_amount: xrd_amount,
             };
 
             let bucket = stake_vault.take(xrd_amount, api)?;
@@ -324,6 +338,45 @@ impl ValidatorBlueprint {
         )?;
 
         Ok(unstake_bucket)
+    }
+
+    pub fn signal_protocol_update_readiness<Y>(
+        protocol_version_name: String,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if protocol_version_name.len() != VALIDATOR_PROTOCOL_VERSION_NAME_LEN {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(
+                    ValidatorError::InvalidProtocolVersionNameLength {
+                        expected: VALIDATOR_PROTOCOL_VERSION_NAME_LEN,
+                        actual: protocol_version_name.len(),
+                    },
+                ),
+            ));
+        }
+
+        let handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::ProtocolUpdateReadinessSignal.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut signal: ValidatorProtocolUpdateReadinessSignalSubstate =
+            api.field_lock_read_typed(handle)?;
+        signal.protocol_version_name = Some(protocol_version_name.clone());
+        api.field_lock_write_typed(handle, signal)?;
+        api.field_lock_release(handle)?;
+
+        Runtime::emit_event(
+            api,
+            ProtocolUpdateReadinessSignalEvent {
+                protocol_version_name,
+            },
+        )?;
+
+        Ok(())
     }
 
     fn register_update<Y>(new_registered: bool, api: &mut Y) -> Result<(), RuntimeError>
@@ -441,12 +494,12 @@ impl ValidatorBlueprint {
 
         for id in bucket.non_fungible_local_ids(api)? {
             let data: UnstakeData = nft_resman.get_non_fungible_data(id, api)?;
-            if current_epoch < data.epoch_unlocked {
+            if current_epoch < data.claim_epoch {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(ValidatorError::EpochUnlockHasNotOccurredYet),
                 ));
             }
-            unstake_amount += data.amount;
+            unstake_amount += data.claim_amount;
         }
         nft_resman.burn(bucket, api)?;
 
@@ -1007,6 +1060,7 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
 struct SecurifiedValidator;
 
 impl SecurifiedAccessRules for SecurifiedValidator {
+    type OwnerBadgeNonFungibleData = ValidatorOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = None;
 }
@@ -1036,7 +1090,13 @@ impl ValidatorCreator {
         let stake_unit_resman = ResourceManager::new_fungible(
             true,
             18,
-            BTreeMap::new(),
+            metadata_init! {
+                "name" => "Liquid Stake Units".to_owned(), locked;
+                "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
+                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-liquid_stake_units.png".to_owned()), locked;
+                "validator" => GlobalAddress::from(address), locked;
+                "tags" => Vec::<String>::new(), locked;
+            },
             stake_unit_resource_auth,
             api,
         )?;
@@ -1063,10 +1123,16 @@ impl ValidatorCreator {
         unstake_nft_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError>(
+        let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError, _>(
             NonFungibleIdType::RUID,
             true,
-            BTreeMap::new(),
+            metadata_init! {
+                "name" => "Stake Claims NFTs".to_owned(), locked;
+                "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;
+                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
+                "validator" => GlobalAddress::from(address), locked;
+                "tags" => Vec::<String>::new(), locked;
+            },
             unstake_nft_auth,
             api,
         )?;
@@ -1119,16 +1185,39 @@ impl ValidatorCreator {
             accepts_delegated_stake: false,
         };
 
+        let protocol_update_readiness_signal = ValidatorProtocolUpdateReadinessSignalSubstate {
+            protocol_version_name: None,
+        };
+
         let validator_id = api.new_simple_object(
             VALIDATOR_BLUEPRINT,
             vec![
                 scrypto_encode(&substate).unwrap(),
                 scrypto_encode(&accepts_delegated_stake).unwrap(),
+                scrypto_encode(&protocol_update_readiness_signal).unwrap(),
             ],
         )?;
 
-        let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(api)?;
-        let metadata = Metadata::create(api)?;
+        let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(
+            ValidatorOwnerBadgeData {
+                name: "Validator Owner Badge".to_owned(),
+                validator: address.try_into().expect("Impossible Case!"),
+            },
+            Some(NonFungibleLocalId::bytes(address.as_node_id().0).unwrap()),
+            api,
+        )?;
+        let owner_badge_local_id = owner_token_bucket
+            .non_fungible_local_ids(api)?
+            .first()
+            .expect("Impossible Case")
+            .clone();
+        let metadata = Metadata::create_with_data(
+            metadata_init! {
+                "owner_badge" => owner_badge_local_id, locked;
+                "pool_unit" => GlobalAddress::from(stake_unit_resource), locked;
+            },
+            api,
+        )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
@@ -1163,4 +1252,14 @@ mod tests {
         let max_xrd_supply = dec!(24) * dec!(10).powi(12);
         assert_eq!(create_sort_prefix_from_stake(max_xrd_supply), 0);
     }
+}
+
+#[derive(ScryptoSbor)]
+pub struct ValidatorOwnerBadgeData {
+    pub name: String,
+    pub validator: ComponentAddress,
+}
+
+impl NonFungibleData for ValidatorOwnerBadgeData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }

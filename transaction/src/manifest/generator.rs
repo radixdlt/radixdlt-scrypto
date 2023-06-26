@@ -1510,9 +1510,8 @@ mod tests {
     use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::AddressBech32Decoder;
-    use radix_engine_interface::api::node_modules::metadata::MetadataInit;
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-    use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorInput;
+    use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintRuidManifestInput, ResourceAction, Roles,
@@ -1781,9 +1780,9 @@ mod tests {
                 )
                 Map<String, Tuple>(
                     "name" => Tuple(
-                        Enum<Metadata::String>("Token"),
+                        Enum<Option::Some>(Enum<Metadata::String>("Token")),
                         true
-                    )
+                    ),
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1874,7 +1873,7 @@ mod tests {
                     Array<String>()
                 )
                 Map<String, Tuple>(
-                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
+                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1940,7 +1939,7 @@ mod tests {
                 false
                 18u8
                 Map<String, Tuple>(
-                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
+                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1985,7 +1984,7 @@ mod tests {
                 false
                 18u8
                 Map<String, Tuple>(
-                    "name" => Tuple(Enum<Metadata::String>("Token"), false)
+                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -2093,18 +2092,38 @@ mod tests {
 
     #[test]
     fn test_create_validator_instruction() {
-        generate_instruction_ok!(
+        let tokens = tokenize(
             r#"
-            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Decimal("1");
-            "#,
-            InstructionV1::CallMethod {
+            CREATE_VALIDATOR Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5") Decimal("1") Bucket("xrd_bucket");
+            "#
+        ).unwrap();
+        let instruction = Parser::new(tokens, PARSER_MAX_DEPTH)
+            .parse_instruction()
+            .unwrap();
+        let mut id_validator = ManifestValidator::new();
+        let mut resolver = NameResolver::new();
+        resolver
+            .named_buckets
+            .insert("xrd_bucket".to_string(), ManifestBucket(0u32));
+        assert_eq!(
+            generate_instruction(
+                &instruction,
+                &mut id_validator,
+                &mut resolver,
+                &AddressBech32Decoder::new(&NetworkDefinition::simulator()),
+                &MockBlobProvider::default()
+            ),
+            Ok(InstructionV1::CallMethod {
                 address: CONSENSUS_MANAGER.into(),
                 method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&ConsensusManagerCreateValidatorInput {
-                    key: Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key(),
-                    fee_factor: Decimal::ONE,
-                }),
-            },
+                args: to_manifest_value_and_unwrap!(
+                    &ConsensusManagerCreateValidatorManifestInput {
+                        key: Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key(),
+                        fee_factor: Decimal::ONE,
+                        xrd_payment: ManifestBucket(0u32)
+                    }
+                ),
+            })
         );
     }
 

@@ -72,9 +72,16 @@ impl<V> KeyValueEntrySubstate<V> {
         }
     }
 
-    pub fn immutable_entry(value: V) -> Self {
+    pub fn locked_entry(value: V) -> Self {
         Self {
             value: Some(value),
+            mutability: SubstateMutability::Immutable,
+        }
+    }
+
+    pub fn locked_empty_entry() -> Self {
+        Self {
+            value: None,
             mutability: SubstateMutability::Immutable,
         }
     }
@@ -243,7 +250,7 @@ where
         outer_blueprint_features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError>
     {
         // Validate instance schema
@@ -349,43 +356,51 @@ where
             for (collection_index, entries) in kv_entries {
                 let mut partition = BTreeMap::new();
 
-                for (key, (value, freeze)) in entries {
-                    let key_type_pointer = blueprint_interface
-                        .get_kv_key_type_pointer(collection_index)
-                        .ok_or_else(|| {
-                            RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::KeyValueStoreKeyDoesNotExist
-                            ),
-                        )
-                        })?;
+                for (key, kv_entry) in entries {
+                    let (kv_entry, value_can_own) = if let Some(value) = kv_entry.value {
+                        let key_type_pointer = blueprint_interface
+                            .get_kv_key_type_pointer(collection_index)
+                            .ok_or_else(|| {
+                                RuntimeError::SystemError(
+                                    SystemError::PayloadValidationAgainstSchemaError(
+                                        PayloadValidationAgainstSchemaError::KeyValueStoreKeyDoesNotExist
+                                    ),
+                                )
+                            })?;
 
-                    let (value_type_pointer, value_can_own) = blueprint_interface
-                        .get_kv_value_type_pointer(collection_index)
-                        .ok_or_else(|| {
-                            RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::KeyValueStoreValueDoesNotExist
-                            ),
-                        )
-                        })?;
+                        let (value_type_pointer, value_can_own) = blueprint_interface
+                            .get_kv_value_type_pointer(collection_index)
+                            .ok_or_else(|| {
+                                RuntimeError::SystemError(
+                                    SystemError::PayloadValidationAgainstSchemaError(
+                                        PayloadValidationAgainstSchemaError::KeyValueStoreValueDoesNotExist
+                                    ),
+                                )
+                            })?;
 
-                    self.validate_payload_against_blueprint_schema(
-                        &blueprint_id,
-                        instance_schema,
-                        &[(&key, key_type_pointer), (&value, value_type_pointer)],
-                    )?;
+                        self.validate_payload_against_blueprint_schema(
+                            &blueprint_id,
+                            instance_schema,
+                            &[(&key, key_type_pointer), (&value, value_type_pointer)],
+                        )?;
 
-                    let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                    let kv_entry = if freeze {
-                        KeyValueEntrySubstate::immutable_entry(value)
+                        let value: ScryptoValue = scrypto_decode(&value).unwrap();
+                        let kv_entry = if kv_entry.locked {
+                            KeyValueEntrySubstate::locked_entry(value)
+                        } else {
+                            KeyValueEntrySubstate::entry(value)
+                        };
+                        (kv_entry, value_can_own)
                     } else {
-                        KeyValueEntrySubstate::entry(value)
+                        if kv_entry.locked {
+                            (KeyValueEntrySubstate::locked_empty_entry(), true)
+                        } else {
+                            continue;
+                        }
                     };
 
                     let value = IndexedScryptoValue::from_typed(&kv_entry);
-
-                    if value_can_own {
+                    if !value_can_own {
                         if !value.owned_nodes().is_empty() {
                             return Err(RuntimeError::SystemError(
                                 SystemError::InvalidKeyValueStoreOwnership,
@@ -638,7 +653,7 @@ where
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let blueprint_interface = self.get_blueprint_default_interface(
             blueprint_id.package_address,
@@ -1263,7 +1278,7 @@ where
         features: Vec<&str>,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.package_address().clone();
@@ -2110,6 +2125,26 @@ where
 
         if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
             Ok(fee_reserve.cost_unit_price())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
+    }
+
+    fn usd_price(&mut self) -> Result<Decimal, RuntimeError> {
+        if let Some(fee_reserve) = self.api.kernel_get_system().modules.fee_reserve() {
+            Ok(fee_reserve.usd_price())
+        } else {
+            Err(RuntimeError::SystemError(
+                SystemError::CostingModuleNotEnabled,
+            ))
+        }
+    }
+
+    fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, RuntimeError> {
+        if let Some(costing) = self.api.kernel_get_system().modules.costing() {
+            Ok(costing.max_per_function_royalty_in_xrd)
         } else {
             Err(RuntimeError::SystemError(
                 SystemError::CostingModuleNotEnabled,

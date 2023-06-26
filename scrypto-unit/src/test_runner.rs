@@ -172,6 +172,7 @@ impl CustomGenesis {
             min_validator_reliability: Decimal::one(),
             num_owner_stake_units_unlock_epochs: 2,
             num_fee_increase_delay_epochs: 4,
+            validator_creation_xrd_cost: *DEFAULT_VALIDATOR_XRD_COST,
         }
     }
 
@@ -466,28 +467,21 @@ impl TestRunner {
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        if let Some(output) = self
+        let output = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltyAccumulatorSubstate>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),
+            )?;
+
+        self.substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                output.royalty_vault.0.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &FungibleVaultField::LiquidFungible.into(),
             )
-        {
-            output
-                .royalty_vault
-                .and_then(|vault| {
-                    self.substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
-                            vault.as_node_id(),
-                            MAIN_BASE_PARTITION,
-                            &FungibleVaultField::LiquidFungible.into(),
-                        )
-                })
-                .map(|r| r.amount())
-        } else {
-            None
-        }
+            .map(|r| r.amount())
     }
 
     pub fn account_balance(
@@ -804,7 +798,11 @@ impl TestRunner {
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50.into())
-            .create_validator(pub_key, Decimal::ONE)
+            .call_method(self.faucet_component(), "free", manifest_args!())
+            .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, |builder, bucket| {
+                builder.create_validator(pub_key, Decimal::ONE, bucket);
+                builder
+            })
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -834,7 +832,7 @@ impl TestRunner {
                     args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
                         setup: definition,
-                        metadata: btreemap!(),
+                        metadata: metadata_init!(),
                         package_address: Some(ManifestAddressReservation(0)),
                         owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),

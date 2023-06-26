@@ -1,10 +1,10 @@
-use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator};
-use crate::blueprints::consensus_manager::{START_ROLE, VALIDATOR_ROLE};
+use super::{EpochChangeEvent, RoundChangeEvent, ValidatorCreator, ValidatorOwnerBadgeData};
+use crate::blueprints::consensus_manager::VALIDATOR_ROLE;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
+use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
@@ -12,12 +12,12 @@ use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::rule;
+use radix_engine_interface::{metadata_init, rule};
 
 const MILLIS_IN_SECOND: i64 = 1000;
 const SECONDS_IN_MINUTE: i64 = 60;
@@ -30,6 +30,8 @@ pub struct ConsensusManagerConfigSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ConsensusManagerSubstate {
+    /// Whether the consensus process has started
+    pub started: bool,
     /// The current epoch.
     pub epoch: Epoch,
     /// The effective start-time of the epoch.
@@ -179,7 +181,7 @@ impl ProposalStatistic {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub enum ConsensusManagerError {
     InvalidRoundUpdate {
         from: Round,
@@ -196,6 +198,12 @@ pub enum ConsensusManagerError {
     InvalidValidatorIndex {
         index: ValidatorIndex,
         count: usize,
+    },
+    AlreadyStarted,
+    NotXrd,
+    InvalidXrdPayment {
+        expected: Decimal,
+        actual: Decimal,
     },
 }
 
@@ -223,7 +231,6 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         {
-            let metadata: BTreeMap<String, MetadataValue> = BTreeMap::new();
             let mut access_rules = BTreeMap::new();
 
             // TODO: remove mint and premint all tokens
@@ -235,10 +242,20 @@ impl ConsensusManagerBlueprint {
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
-            ResourceManager::new_non_fungible_with_address::<(), Y, RuntimeError>(
-                NonFungibleIdType::RUID,
+            ResourceManager::new_non_fungible_with_address::<
+                ValidatorOwnerBadgeData,
+                Y,
+                RuntimeError,
+                _,
+            >(
+                NonFungibleIdType::Bytes,
                 true,
-                metadata,
+                metadata_init! {
+                    "name" => "Validator Owner Badges".to_owned(), locked;
+                    "description" => "Badges created by the Radix system that provide individual control over the validator components created for validator node-runners.".to_owned(), locked;
+                    "tags" => vec!["badge".to_owned(), "validator".to_owned()], locked;
+                    "icon_url" => Url("https://assets.radixdlt.com/icons/icon-validator_owner_badge.png".to_owned()), locked;
+                },
                 access_rules,
                 validator_token_address_reservation,
                 api,
@@ -250,6 +267,7 @@ impl ConsensusManagerBlueprint {
                 config: initial_config,
             };
             let consensus_manager = ConsensusManagerSubstate {
+                started: false,
                 epoch: initial_epoch,
                 actual_epoch_start_milli: initial_time_milli,
                 effective_epoch_start_milli: initial_time_milli,
@@ -291,12 +309,17 @@ impl ConsensusManagerBlueprint {
 
         let role_definitions = roles2! {
             VALIDATOR_ROLE => rule!(require(AuthAddresses::validator_role()));
-            START_ROLE => rule!(require(AuthAddresses::system_role())), updatable;
         };
 
         let roles = btreemap!(ObjectModuleId::Main => role_definitions);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
-        let metadata = Metadata::create(api)?;
+        let metadata = Metadata::create_with_data(
+            metadata_init! {
+                "name" => "Consensus Manager".to_owned(), locked;
+                "description" => "A component that keeps track of various consensus related concepts such as the epoch, round, current validator set, and so on.".to_owned(), locked;
+            },
+            api,
+        )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         api.globalize(
@@ -327,37 +350,42 @@ impl ConsensusManagerBlueprint {
         Ok(consensus_manager.epoch)
     }
 
-    pub(crate) fn start<Y>(receiver: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    pub(crate) fn start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let config_handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            ConsensusManagerField::Config.into(),
-            LockFlags::read_only(),
-        )?;
-        let config_substate: ConsensusManagerConfigSubstate =
-            api.field_lock_read_typed(config_handle)?;
-        api.field_lock_release(config_handle)?;
+        let config_substate = {
+            let config_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                ConsensusManagerField::Config.into(),
+                LockFlags::read_only(),
+            )?;
+            let config_substate: ConsensusManagerConfigSubstate =
+                api.field_lock_read_typed(config_handle)?;
+            api.field_lock_release(config_handle)?;
+            config_substate
+        };
 
-        let manager_handle = api.actor_lock_field(
-            OBJECT_HANDLE_SELF,
-            ConsensusManagerField::ConsensusManager.into(),
-            LockFlags::read_only(),
-        )?;
-        let manager_substate: ConsensusManagerSubstate =
-            api.field_lock_read_typed(manager_handle)?;
-        api.field_lock_release(manager_handle)?;
+        let manager_substate = {
+            let manager_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                ConsensusManagerField::ConsensusManager.into(),
+                LockFlags::MUTABLE,
+            )?;
+            let mut manager_substate: ConsensusManagerSubstate =
+                api.field_lock_read_typed(manager_handle)?;
+            if manager_substate.started {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(ConsensusManagerError::AlreadyStarted),
+                ));
+            }
+            manager_substate.started = true;
+            api.field_lock_write_typed(manager_handle, manager_substate.clone())?;
+            api.field_lock_release(manager_handle)?;
+            manager_substate
+        };
 
         Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
-
-        let access_rules = AttachedAccessRules(*receiver);
-        access_rules.set_and_lock_role(
-            ObjectModuleId::Main,
-            RoleKey::new(START_ROLE),
-            AccessRule::DenyAll,
-            api,
-        )?;
 
         Ok(())
     }
@@ -500,14 +528,71 @@ impl ConsensusManagerBlueprint {
         Ok(())
     }
 
+    fn get_validator_xrd_cost<Y>(api: &mut Y) -> Result<Option<Decimal>, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let manager_handle = api.actor_lock_field(
+            OBJECT_HANDLE_SELF,
+            ConsensusManagerField::ConsensusManager.into(),
+            LockFlags::read_only(),
+        )?;
+        let manager_substate: ConsensusManagerSubstate =
+            api.field_lock_read_typed(manager_handle)?;
+
+        let validator_creation_xrd_cost = if manager_substate.started {
+            let config_handle = api.actor_lock_field(
+                OBJECT_HANDLE_SELF,
+                ConsensusManagerField::Config.into(),
+                LockFlags::read_only(),
+            )?;
+            let manager_config: ConsensusManagerConfigSubstate =
+                api.field_lock_read_typed(config_handle)?;
+            api.field_lock_release(config_handle)?;
+            Some(manager_config.config.validator_creation_xrd_cost)
+        } else {
+            None
+        };
+
+        api.field_lock_release(manager_handle)?;
+
+        Ok(validator_creation_xrd_cost)
+    }
+
     pub(crate) fn create_validator<Y>(
         key: Secp256k1PublicKey,
         fee_factor: Decimal,
+        xrd_payment: Bucket,
         api: &mut Y,
     ) -> Result<(ComponentAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        if !xrd_payment.resource_address(api)?.eq(&XRD) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(ConsensusManagerError::NotXrd),
+            ));
+        }
+
+        let validator_xrd_cost = Self::get_validator_xrd_cost(api)?;
+        if let Some(xrd_cost) = validator_xrd_cost {
+            let payment_amount = xrd_payment.amount(api)?;
+            if !payment_amount.eq(&xrd_cost) {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ConsensusManagerError(
+                        ConsensusManagerError::InvalidXrdPayment {
+                            actual: payment_amount,
+                            expected: xrd_cost,
+                        },
+                    ),
+                ));
+            }
+
+            xrd_payment.burn(api)?;
+        } else {
+            xrd_payment.drop_empty(api)?;
+        }
+
         let (validator_address, owner_token_bucket) =
             ValidatorCreator::create(key, false, fee_factor, api)?;
 

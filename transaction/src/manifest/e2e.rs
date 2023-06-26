@@ -40,7 +40,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(
         Map<String, Tuple>()
     )
-    Map<String, Enum>()
+    Map<String, Tuple>()
     Enum<0u8>()
 ;
 CALL_FUNCTION
@@ -75,7 +75,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(
         Map<String, Tuple>()
     )
-    Map<String, Enum>()
+    Map<String, Tuple>()
     Enum<0u8>()
 ;
 "##,
@@ -759,20 +759,26 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     18u8
     Map<String, Tuple>(
         "name" => Tuple(
-            Enum<0u8>(
-                "MyResource"
+            Enum<1u8>(
+                Enum<0u8>(
+                    "MyResource"
+                )
             ),
             true
         ),
         "symbol" => Tuple(
-            Enum<0u8>(
-                "RSRC"
+            Enum<1u8>(
+                Enum<0u8>(
+                    "RSRC"
+                )
             ),
             true
         ),
         "description" => Tuple(
-            Enum<0u8>(
-                "A very innovative and important resource"
+            Enum<1u8>(
+                Enum<0u8>(
+                    "A very innovative and important resource"
+                )
             ),
             true
         )
@@ -821,20 +827,26 @@ CREATE_FUNGIBLE_RESOURCE
     18u8
     Map<String, Tuple>(
         "name" => Tuple(
-            Enum<0u8>(
-                "MyResource"
+            Enum<1u8>(
+                Enum<0u8>(
+                    "MyResource"
+                )
             ),
             true
         ),
         "symbol" => Tuple(
-            Enum<0u8>(
-                "RSRC"
+            Enum<1u8>(
+                Enum<0u8>(
+                    "RSRC"
+                )
             ),
             true
         ),
         "description" => Tuple(
-            Enum<0u8>(
-                "A very innovative and important resource"
+            Enum<1u8>(
+                Enum<0u8>(
+                    "A very innovative and important resource"
+                )
             ),
             true
         )
@@ -890,14 +902,18 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     )
     Map<String, Tuple>(
         "name" => Tuple(
-            Enum<0u8>(
-                "MyResource"
+            Enum<1u8>(
+                Enum<0u8>(
+                    "MyResource"
+                )
             ),
             true
         ),
         "description" => Tuple(
-            Enum<0u8>(
-                "A very innovative and important resource"
+            Enum<1u8>(
+                Enum<0u8>(
+                    "A very innovative and important resource"
+                )
             ),
             false
         )
@@ -966,14 +982,18 @@ CREATE_NON_FUNGIBLE_RESOURCE
     )
     Map<String, Tuple>(
         "name" => Tuple(
-            Enum<0u8>(
-                "MyResource"
+            Enum<1u8>(
+                Enum<0u8>(
+                    "MyResource"
+                )
             ),
             true
         ),
         "description" => Tuple(
-            Enum<0u8>(
-                "A very innovative and important resource"
+            Enum<1u8>(
+                Enum<0u8>(
+                    "A very innovative and important resource"
+                )
             ),
             false
         )
@@ -1099,9 +1119,21 @@ CREATE_ACCOUNT;
             vec![],
             apply_address_replacements(
                 r##"
+CALL_METHOD
+    Address("${this_account_address}")
+    "withdraw"
+    Address("${xrd_resource_address}")
+    Decimal("1000")
+;
+TAKE_FROM_WORKTOP
+    Address("${xrd_resource_address}")
+    Decimal("1000")
+    Bucket("bucket1")
+;
 CREATE_VALIDATOR
     Bytes("02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5")
     Decimal("1")
+    Bucket("bucket1")
 ;
 "##,
             ),

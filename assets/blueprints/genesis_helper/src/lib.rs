@@ -86,6 +86,12 @@ mod genesis_helper {
             .instantiate()
             .prepare_to_globalize(OwnerRole::Updatable(rule!(require(system_role.clone()))))
             .with_address(address_reservation)
+            .metadata(metadata! {
+                init {
+                    "name" => "Genesis Helper".to_owned(), locked;
+                    "description" => "A component with various utility and helper methods used in the creation of the Babylon Genesis.".to_owned(), locked;
+                }
+            })
             .globalize()
         }
 
@@ -112,8 +118,16 @@ mod genesis_helper {
         }
 
         fn create_validator(&mut self, validator: GenesisValidator) {
+            let xrd_payment = ResourceManager(XRD)
+                .new_empty_bucket(&mut ScryptoEnv)
+                .unwrap();
             let (validator_address, owner_token_bucket) = ConsensusManager(self.consensus_manager)
-                .create_validator(validator.key, validator.fee_factor, &mut ScryptoEnv)
+                .create_validator(
+                    validator.key,
+                    validator.fee_factor,
+                    xrd_payment,
+                    &mut ScryptoEnv,
+                )
                 .unwrap();
 
             // Deposit the badge to the owner account

@@ -1,4 +1,5 @@
 use crate::engine::wasm_api::*;
+use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
@@ -6,11 +7,11 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::api::{
     ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
 };
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
+use radix_engine_interface::api::{KVEntry, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
@@ -55,6 +56,14 @@ impl ClientCostingApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
+    fn usd_price(&mut self) -> Result<Decimal, ClientApiError> {
+        unimplemented!("Not exposed to scrypto")
+    }
+
+    fn max_per_function_royalty_in_xrd(&mut self) -> Result<Decimal, ClientApiError> {
+        unimplemented!("Not exposed to scrypto")
+    }
+
     fn tip_percentage(&mut self) -> Result<u32, ClientApiError> {
         Ok(unsafe { tip_percentage() })
     }
@@ -92,7 +101,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _features: Vec<&str>,
         _schema: Option<InstanceSchema>,
         _fields: Vec<Vec<u8>>,
-        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
+        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }

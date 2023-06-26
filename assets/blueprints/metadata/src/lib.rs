@@ -15,6 +15,23 @@ mod metadata {
                         metadata_admin_updater => rule!(deny_all), locked;
                     },
                     init {
+                        "empty_locked" => EMPTY, locked;
+                    }
+                })
+                .globalize()
+        }
+
+        pub fn new_with_initial_metadata(key: String, value: String) -> Global<MetadataTest> {
+            Self {}
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .metadata(metadata! {
+                    roles {
+                        metadata_admin => rule!(allow_all), locked;
+                        metadata_admin_updater => rule!(deny_all), locked;
+                    },
+                    init {
+                        key => value, locked;
                     }
                 })
                 .globalize()
