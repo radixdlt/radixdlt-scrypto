@@ -47,6 +47,9 @@ pub struct ValidatorSubstate {
     /// Whether this validator is currently interested in participating in the consensus.
     pub is_registered: bool,
 
+    /// Whether this validator is currently accepting delegated stake or not
+    pub accepts_delegated_stake: bool,
+
     /// A fraction of the effective emission amount which gets transferred to the validator's owner
     /// (by staking it and depositing the stake units to the [`locked_owner_stake_unit_vault_id`]).
     /// Note: it is a decimal factor, not a percentage (i.e. `0.015` means "1.5%" here).
@@ -105,12 +108,6 @@ pub struct ValidatorSubstate {
     /// in the [`pending_owner_stake_unit_withdrawals`] and was automatically moved from there.
     /// The very next [`finish_unlock_owner_stake_units()`] operation will release this amount.
     pub already_unlocked_owner_stake_unit_amount: Decimal,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-#[sbor(transparent)]
-pub struct ValidatorAcceptsDelegatedStakeFlag {
-    pub accepts_delegated_stake: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -190,10 +187,10 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
-            ValidatorField::AcceptsDelegatedStakeFlag.into(),
+            ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
-        let substate: ValidatorAcceptsDelegatedStakeFlag = api.field_lock_read_typed(handle)?;
+        let substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         api.field_lock_release(handle)?;
         if !substate.accepts_delegated_stake {
             // TODO: Should this be an Option returned instead similar to Account?
@@ -615,10 +612,10 @@ impl ValidatorBlueprint {
     {
         let handle = api.actor_lock_field(
             OBJECT_HANDLE_SELF,
-            ValidatorField::AcceptsDelegatedStakeFlag.into(),
+            ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorAcceptsDelegatedStakeFlag = api.field_lock_read_typed(handle)?;
+        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
         substate.accepts_delegated_stake = accept_delegated_stake;
         api.field_lock_write_typed(handle, substate)?;
         api.field_lock_release(handle)?;
@@ -1169,6 +1166,7 @@ impl ValidatorCreator {
             sorted_key: None,
             key,
             is_registered,
+            accepts_delegated_stake: false,
             validator_fee_factor: fee_factor,
             validator_fee_change_request: None,
             stake_unit_resource,
@@ -1181,10 +1179,6 @@ impl ValidatorCreator {
             already_unlocked_owner_stake_unit_amount: Decimal::zero(),
         };
 
-        let accepts_delegated_stake = ValidatorAcceptsDelegatedStakeFlag {
-            accepts_delegated_stake: false,
-        };
-
         let protocol_update_readiness_signal = ValidatorProtocolUpdateReadinessSignalSubstate {
             protocol_version_name: None,
         };
@@ -1193,7 +1187,6 @@ impl ValidatorCreator {
             VALIDATOR_BLUEPRINT,
             vec![
                 scrypto_encode(&substate).unwrap(),
-                scrypto_encode(&accepts_delegated_stake).unwrap(),
                 scrypto_encode(&protocol_update_readiness_signal).unwrap(),
             ],
         )?;
