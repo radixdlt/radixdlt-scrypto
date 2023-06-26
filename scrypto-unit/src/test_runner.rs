@@ -172,6 +172,7 @@ impl CustomGenesis {
             min_validator_reliability: Decimal::one(),
             num_owner_stake_units_unlock_epochs: 2,
             num_fee_increase_delay_epochs: 4,
+            validator_creation_xrd_cost: *DEFAULT_VALIDATOR_XRD_COST,
         }
     }
 
@@ -804,7 +805,11 @@ impl TestRunner {
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50.into())
-            .create_validator(pub_key, Decimal::ONE)
+            .call_method(self.faucet_component(), "free", manifest_args!())
+            .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, |builder, bucket| {
+                builder.create_validator(pub_key, Decimal::ONE, bucket);
+                builder
+            })
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
