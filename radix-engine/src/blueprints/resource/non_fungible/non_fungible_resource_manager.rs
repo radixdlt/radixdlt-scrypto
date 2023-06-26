@@ -6,7 +6,7 @@ use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, KVEntry, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
@@ -212,9 +212,14 @@ impl NonFungibleResourceManagerBlueprint {
                 ));
             }
 
+            let kv_entry = KVEntry {
+                value: Some(scrypto_encode(&value).unwrap()),
+                locked: false,
+            };
+
             non_fungibles.insert(
                 scrypto_encode(&id).unwrap(),
-                (scrypto_encode(&value).unwrap(), false),
+                kv_entry,
             );
         }
 
@@ -266,9 +271,13 @@ impl NonFungibleResourceManagerBlueprint {
             let ruid = Runtime::generate_ruid(api)?;
             let id = NonFungibleLocalId::ruid(ruid);
             ids.insert(id.clone());
+            let kv_entry = KVEntry {
+                value: Some(scrypto_encode(&entry).unwrap()),
+                locked: false,
+            };
             non_fungibles.insert(
                 scrypto_encode(&id).unwrap(),
-                (scrypto_encode(&entry).unwrap(), false),
+                    kv_entry,
             );
         }
 

@@ -402,7 +402,7 @@ where
                     blueprint,
                     version: BlueprintVersion::default(),
                 };
-                let value = KeyValueEntrySubstate::immutable_entry(definition);
+                let value = KeyValueEntrySubstate::locked_entry(definition);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -427,7 +427,7 @@ where
                     version: BlueprintVersion::default(),
                 };
 
-                let value = KeyValueEntrySubstate::immutable_entry(minor_version_config);
+                let value = KeyValueEntrySubstate::locked_entry(minor_version_config);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -447,7 +447,7 @@ where
         let schemas_partition = schemas
             .into_iter()
             .map(|(hash, schema)| {
-                let value = KeyValueEntrySubstate::immutable_entry(schema);
+                let value = KeyValueEntrySubstate::locked_entry(schema);
 
                 (
                     SubstateKey::Map(scrypto_encode(&hash).unwrap()),
@@ -465,7 +465,7 @@ where
     }
 
     {
-        let value = KeyValueEntrySubstate::immutable_entry(code);
+        let value = KeyValueEntrySubstate::locked_entry(code);
         partitions.insert(
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
@@ -484,7 +484,7 @@ where
                     blueprint,
                     version: BlueprintVersion::default(),
                 };
-                let value = KeyValueEntrySubstate::immutable_entry(royalty);
+                let value = KeyValueEntrySubstate::locked_entry(royalty);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),
@@ -508,7 +508,7 @@ where
                     blueprint,
                     version: BlueprintVersion::default(),
                 };
-                let value = KeyValueEntrySubstate::immutable_entry(auth_template);
+                let value = KeyValueEntrySubstate::locked_entry(auth_template);
                 (
                     SubstateKey::Map(scrypto_encode(&key).unwrap()),
                     IndexedScryptoValue::from_typed(&value),

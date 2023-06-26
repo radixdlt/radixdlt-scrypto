@@ -6,7 +6,7 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::api::{KVEntry, LockFlags};
 use radix_engine_interface::api::{
     ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
 };
@@ -92,7 +92,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _features: Vec<&str>,
         _schema: Option<InstanceSchema>,
         _fields: Vec<Vec<u8>>,
-        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
+        _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
