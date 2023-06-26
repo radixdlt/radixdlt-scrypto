@@ -16,7 +16,8 @@ use radix_engine_interface::blueprints::access_controller::{
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerCreateValidatorInput, CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
-    VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_AS_OWNER_IDENT,
+    VALIDATOR_CLAIM_XRD_IDENT, VALIDATOR_REGISTER_IDENT,
+    VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS, VALIDATOR_STAKE_AS_OWNER_IDENT,
     VALIDATOR_STAKE_IDENT, VALIDATOR_UNREGISTER_IDENT, VALIDATOR_UNSTAKE_IDENT,
 };
 use radix_engine_interface::blueprints::identity::{
@@ -586,6 +587,19 @@ impl ManifestBuilder {
             address: validator_address.into(),
             method_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
             args: manifest_args!(),
+        });
+        self
+    }
+
+    pub fn signal_protocol_update_readiness(
+        &mut self,
+        validator_address: ComponentAddress,
+        protocol_version_name: &str,
+    ) -> &mut Self {
+        self.add_instruction(InstructionV1::CallMethod {
+            address: validator_address.into(),
+            method_name: VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS.to_string(),
+            args: manifest_args!(protocol_version_name.to_string()),
         });
         self
     }

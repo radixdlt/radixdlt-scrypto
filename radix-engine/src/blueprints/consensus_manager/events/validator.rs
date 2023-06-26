@@ -27,6 +27,11 @@ pub struct UpdateAcceptingStakeDelegationStateEvent {
     pub accepts_delegation: bool,
 }
 
+#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
+pub struct ProtocolUpdateReadinessSignalEvent {
+    pub protocol_version_name: String,
+}
+
 #[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct ValidatorEmissionAppliedEvent {
     /// An epoch number of the *concluded* epoch (i.e. for which this emission applies).

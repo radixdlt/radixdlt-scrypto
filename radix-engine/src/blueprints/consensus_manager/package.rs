@@ -220,6 +220,9 @@ impl ConsensusManagerNativePackage {
             fields.push(FieldSchema::static_field(
                 aggregator.add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeFlag>(),
             ));
+            fields.push(FieldSchema::static_field(
+                aggregator.add_child_type_and_descendents::<ValidatorProtocolUpdateReadinessSignalSubstate>(),
+            ));
 
             let mut functions = BTreeMap::new();
             functions.insert(
@@ -338,6 +341,17 @@ impl ConsensusManagerNativePackage {
                 },
             );
             functions.insert(
+                VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ValidatorSignalProtocolUpdateReadinessInput>()),
+                    output: TypeRef::Static(aggregator
+                        .add_child_type_and_descendents::<ValidatorSignalProtocolUpdateReadinessOutput>()),
+                    export: VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS.to_string(),
+                },
+            );
+            functions.insert(
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -409,6 +423,7 @@ impl ConsensusManagerNativePackage {
                     StakeEvent,
                     UnstakeEvent,
                     ClaimXrdEvent,
+                    ProtocolUpdateReadinessSignalEvent,
                     UpdateAcceptingStakeDelegationStateEvent,
                     ValidatorEmissionAppliedEvent,
                     ValidatorRewardAppliedEvent
@@ -453,6 +468,7 @@ impl ConsensusManagerNativePackage {
                             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
                             VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT => [OWNER_ROLE];
                             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT => [OWNER_ROLE];
+                            VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS => [OWNER_ROLE];
                             VALIDATOR_APPLY_EMISSION_IDENT => MethodAccessibility::OuterObjectOnly;
                             VALIDATOR_APPLY_REWARD_IDENT => MethodAccessibility::OuterObjectOnly;
                         }
@@ -621,6 +637,14 @@ impl ConsensusManagerNativePackage {
                     input.accept_delegated_stake,
                     api,
                 )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS => {
+                let input: ValidatorSignalProtocolUpdateReadinessInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = ValidatorBlueprint::signal_protocol_update_readiness(input.vote, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT => {

@@ -20,6 +20,22 @@ mod metadata {
                 .globalize()
         }
 
+        pub fn new_with_initial_metadata(key: String, value: String) -> Global<MetadataTest> {
+            Self {}
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .metadata(metadata! {
+                    roles {
+                        metadata_admin => rule!(allow_all), locked;
+                        metadata_admin_updater => rule!(deny_all), locked;
+                    },
+                    init {
+                        key => value, locked;
+                    }
+                })
+                .globalize()
+        }
+
         pub fn set_string(&self, key: String, value: String) {
             let global: Global<MetadataTest> = Runtime::global_address().into();
             let metadata = global.metadata();
