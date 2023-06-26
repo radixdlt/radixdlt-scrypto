@@ -217,10 +217,7 @@ impl NonFungibleResourceManagerBlueprint {
                 locked: false,
             };
 
-            non_fungibles.insert(
-                scrypto_encode(&id).unwrap(),
-                kv_entry,
-            );
+            non_fungibles.insert(scrypto_encode(&id).unwrap(), kv_entry);
         }
 
         let instance_schema = InstanceSchema {
@@ -275,10 +272,7 @@ impl NonFungibleResourceManagerBlueprint {
                 value: Some(scrypto_encode(&entry).unwrap()),
                 locked: false,
             };
-            non_fungibles.insert(
-                scrypto_encode(&id).unwrap(),
-                    kv_entry,
-            );
+            non_fungibles.insert(scrypto_encode(&id).unwrap(), kv_entry);
         }
 
         let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {

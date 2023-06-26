@@ -26,17 +26,26 @@ impl<K: Ord, V> KeyValueStoreInit<K, V> {
     }
 
     pub fn set<E: Into<K>>(&mut self, key: E, value: V) {
-        let entry = KeyValueStoreInitEntry { value: Some(value), lock: false };
+        let entry = KeyValueStoreInitEntry {
+            value: Some(value),
+            lock: false,
+        };
         self.data.insert(key.into(), entry);
     }
 
     pub fn set_and_lock<E: Into<K>>(&mut self, key: E, value: V) {
-        let entry = KeyValueStoreInitEntry { value: Some(value), lock: true };
+        let entry = KeyValueStoreInitEntry {
+            value: Some(value),
+            lock: true,
+        };
         self.data.insert(key.into(), entry);
     }
 
     pub fn lock_empty<E: Into<K>>(&mut self, key: E) {
-        let entry = KeyValueStoreInitEntry { value: None, lock: true };
+        let entry = KeyValueStoreInitEntry {
+            value: None,
+            lock: true,
+        };
         self.data.insert(key.into(), entry);
     }
 }
