@@ -44,7 +44,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn before_lock_substate<Y>(
+    fn before_open_substate<Y>(
         node_id: &NodeId,
         partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
@@ -54,7 +54,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_lock_substate<Y>(
+    fn after_open_substate<Y>(
         handle: LockHandle,
         size: usize,
         store_access: &StoreAccessInfo,

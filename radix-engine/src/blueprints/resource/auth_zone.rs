@@ -296,7 +296,7 @@ impl AuthZoneBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Detach proofs from the auth zone
-        let handle = api.kernel_lock_substate(
+        let handle = api.kernel_open_substate(
             input.auth_zone.0.as_node_id(),
             MAIN_BASE_PARTITION,
             &AuthZoneField::AuthZone.into(),

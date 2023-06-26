@@ -452,7 +452,7 @@ where
             return Ok(schema.clone());
         }
 
-        let handle = self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_open_substate_with_default(
             package_address.as_node_id(),
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
@@ -513,7 +513,7 @@ where
             return Ok(definition.clone());
         }
 
-        let handle = self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_open_substate_with_default(
             package_address.as_node_id(),
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
@@ -626,7 +626,7 @@ where
         }
 
         self.api
-            .kernel_lock_substate(
+            .kernel_open_substate(
                 node_id,
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
@@ -980,7 +980,7 @@ where
 
         // Check blueprint id
         let reserved_blueprint_id = {
-            let lock_handle = self.kernel_lock_substate(
+            let lock_handle = self.kernel_open_substate(
                 global_address.as_node_id(),
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
@@ -1045,7 +1045,7 @@ where
                 (node_id, ObjectModuleId::Main),
                 (*global_address.as_node_id(), ObjectModuleId::Main),
             );
-        let lock_handle = self.api.kernel_lock_substate(
+        let lock_handle = self.api.kernel_open_substate(
             &node_id,
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
@@ -1804,7 +1804,7 @@ where
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)
         };
 
-        let handle = self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_open_substate_with_default(
             &node_id,
             MAIN_BASE_PARTITION,
             &SubstateKey::Map(key.clone()),
@@ -2225,7 +2225,7 @@ where
             FieldLockData::Read
         };
 
-        self.api.kernel_lock_substate(
+        self.api.kernel_open_substate(
             &node_id,
             partition_num,
             &SubstateKey::Field(field_index),
@@ -2380,7 +2380,7 @@ where
             KeyValueEntryLockData::Read
         };
 
-        let handle = self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_open_substate_with_default(
             &node_id,
             partition_num,
             &SubstateKey::Map(key.to_vec()),
@@ -2711,7 +2711,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_lock_substate_with_default(
+    fn kernel_open_substate_with_default(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -2720,7 +2720,7 @@ where
         default: Option<fn() -> IndexedScryptoValue>,
         data: SystemLockData,
     ) -> Result<LockHandle, RuntimeError> {
-        self.api.kernel_lock_substate_with_default(
+        self.api.kernel_open_substate_with_default(
             node_id,
             partition_num,
             substate_key,

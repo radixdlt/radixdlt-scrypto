@@ -250,7 +250,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _handle: LockHandle,
         store_access: &StoreAccessInfo,

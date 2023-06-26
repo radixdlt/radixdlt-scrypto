@@ -141,7 +141,7 @@ impl FungibleProofBlueprint {
         // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
 
         // Notify underlying buckets/vaults
-        let handle = api.kernel_lock_substate(
+        let handle = api.kernel_open_substate(
             proof.0.as_node_id(),
             MAIN_BASE_PARTITION,
             &NonFungibleProofField::ProofRefs.into(),

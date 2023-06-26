@@ -1,5 +1,5 @@
 use super::actor::{Actor, MethodActor};
-use super::call_frame::{CallFrame, LockSubstateError, NodeVisibility};
+use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
@@ -579,7 +579,7 @@ where
     S: SubstateStore,
 {
     #[trace_resources(log=node_id.entity_type(), log=partition_num)]
-    fn kernel_lock_substate_with_default(
+    fn kernel_open_substate_with_default(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -588,7 +588,7 @@ where
         default: Option<fn() -> IndexedScryptoValue>,
         data: M::LockData,
     ) -> Result<LockHandle, RuntimeError> {
-        M::before_lock_substate(&node_id, &partition_num, substate_key, &flags, self)?;
+        M::before_open_substate(&node_id, &partition_num, substate_key, &flags, self)?;
 
         let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,
@@ -603,7 +603,7 @@ where
 
         let (lock_handle, store_access): (u32, StoreAccessInfo) = match &maybe_lock_handle {
             Ok((lock_handle, store_access)) => (*lock_handle, store_access.clone()),
-            Err(LockSubstateError::TrackError(track_err)) => {
+            Err(OpenSubstateError::TrackError(track_err)) => {
                 if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
                     let retry =
                         M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
@@ -620,18 +620,18 @@ where
                                 None,
                                 M::LockData::default(),
                             )
-                            .map_err(CallFrameError::LockSubstateError)
+                            .map_err(CallFrameError::OpenSubstateError)
                             .map_err(KernelError::CallFrameError)?
                     } else {
                         return maybe_lock_handle
                             .map(|(lock_handle, _)| lock_handle)
-                            .map_err(CallFrameError::LockSubstateError)
+                            .map_err(CallFrameError::OpenSubstateError)
                             .map_err(KernelError::CallFrameError)
                             .map_err(RuntimeError::KernelError);
                     }
                 } else {
                     return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                        CallFrameError::LockSubstateError(LockSubstateError::TrackError(
+                        CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(
                             track_err.clone(),
                         )),
                     )));
@@ -639,13 +639,13 @@ where
             }
             Err(err) => {
                 return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::LockSubstateError(err.clone()),
+                    CallFrameError::OpenSubstateError(err.clone()),
                 )));
             }
         };
 
         // FIXME: pass the right size
-        M::after_lock_substate(lock_handle, 0, &store_access, self)?;
+        M::after_open_substate(lock_handle, 0, &store_access, self)?;
 
         Ok(lock_handle)
     }

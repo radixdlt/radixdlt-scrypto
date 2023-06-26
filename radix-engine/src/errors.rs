@@ -14,7 +14,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
     CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError,
-    CreateNodeError, DropNodeError, ListNodeModuleError, LockSubstateError, MoveModuleError,
+    CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError, OpenSubstateError,
     PassMessageError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesError;
@@ -184,7 +184,7 @@ pub enum CallFrameError {
     ListNodeModuleError(ListNodeModuleError),
     MoveModuleError(MoveModuleError),
 
-    LockSubstateError(LockSubstateError),
+    OpenSubstateError(OpenSubstateError),
     UnlockSubstateError(UnlockSubstateError),
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
@@ -531,9 +531,9 @@ impl fmt::Display for RuntimeError {
     }
 }
 
-impl From<LockSubstateError> for CallFrameError {
-    fn from(value: LockSubstateError) -> Self {
-        Self::LockSubstateError(value)
+impl From<OpenSubstateError> for CallFrameError {
+    fn from(value: OpenSubstateError) -> Self {
+        Self::OpenSubstateError(value)
     }
 }
 

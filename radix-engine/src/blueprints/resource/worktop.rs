@@ -48,7 +48,7 @@ impl WorktopBlueprint {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
 
         // Detach buckets from worktop
-        let handle = api.kernel_lock_substate(
+        let handle = api.kernel_open_substate(
             input.worktop.0.as_node_id(),
             MAIN_BASE_PARTITION,
             &WorktopField::Worktop.into(),

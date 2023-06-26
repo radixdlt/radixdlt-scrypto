@@ -630,7 +630,7 @@ where
 
         // Check blueprint id
         let reserved_blueprint_id = {
-            let lock_handle = api.kernel_lock_substate(
+            let lock_handle = api.kernel_open_substate(
                 global_address.as_node_id(),
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
@@ -1344,7 +1344,7 @@ impl PackageRoyaltyNativeBlueprint {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        let handle = api.kernel_lock_substate_with_default(
+        let handle = api.kernel_open_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_ROYALTY_PARTITION_OFFSET)
@@ -1373,7 +1373,7 @@ impl PackageRoyaltyNativeBlueprint {
             .unwrap_or(RoyaltyAmount::Free);
 
         if royalty_charge.is_non_zero() {
-            let handle = api.kernel_lock_substate(
+            let handle = api.kernel_open_substate(
                 receiver,
                 MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),
@@ -1493,7 +1493,7 @@ impl PackageAuthNativeBlueprint {
             return Ok(auth_template.clone());
         }
 
-        let handle = api.kernel_lock_substate_with_default(
+        let handle = api.kernel_open_substate_with_default(
             receiver,
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)

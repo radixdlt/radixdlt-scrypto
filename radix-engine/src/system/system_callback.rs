@@ -126,7 +126,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_create_node(api, node_id, node_module_init)
     }
 
-    fn before_lock_substate<Y>(
+    fn before_open_substate<Y>(
         node_id: &NodeId,
         partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
@@ -136,10 +136,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_lock_substate(api, node_id, partition_num, substate_key, flags)
+        SystemModuleMixer::before_open_substate(api, node_id, partition_num, substate_key, flags)
     }
 
-    fn after_lock_substate<Y>(
+    fn after_open_substate<Y>(
         handle: LockHandle,
         size: usize,
         store_access: &StoreAccessInfo,
@@ -148,7 +148,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_lock_substate(api, handle, store_access, size)
+        SystemModuleMixer::after_open_substate(api, handle, store_access, size)
     }
 
     fn on_drop_lock<Y>(
@@ -352,7 +352,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 version: BlueprintVersion::default(),
             };
 
-            let handle = system.kernel_lock_substate_with_default(
+            let handle = system.kernel_open_substate_with_default(
                 blueprint_id.package_address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
@@ -514,7 +514,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
         // Detach proofs from the auth zone
         if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
-            let handle = api.kernel_lock_substate(
+            let handle = api.kernel_open_substate(
                 &auth_zone_id,
                 MAIN_BASE_PARTITION,
                 &AuthZoneField::AuthZone.into(),

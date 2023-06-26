@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
 use super::actor::{Actor, MethodActor};
-use super::heap::{Heap, HeapLockSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
+use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
 
 /// A message used for communication between call frames.
@@ -153,9 +153,9 @@ pub enum PassMessageError {
 
 /// Represents an error when attempting to lock a substate.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum LockSubstateError {
+pub enum OpenSubstateError {
     NodeNotVisible(NodeId),
-    HeapError(HeapLockSubstateError),
+    HeapError(HeapOpenSubstateError),
     TrackError(Box<AcquireLockError>),
 }
 
@@ -415,10 +415,10 @@ impl<L: Clone> CallFrame<L> {
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
-    ) -> Result<(LockHandle, StoreAccessInfo), LockSubstateError> {
+    ) -> Result<(LockHandle, StoreAccessInfo), OpenSubstateError> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(LockSubstateError::NodeNotVisible(node_id.clone()));
+            return Err(OpenSubstateError::NodeNotVisible(node_id.clone()));
         }
 
         // Lock and read the substate
@@ -427,8 +427,8 @@ impl<L: Clone> CallFrame<L> {
         let substate_value = if heap.contains_node(node_id) {
             // FIXME: we will have to move locking logic to heap because references moves between frames.
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
-                return Err(LockSubstateError::HeapError(
-                    HeapLockSubstateError::LockUnmodifiedBaseOnHeapNode,
+                return Err(OpenSubstateError::HeapError(
+                    HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode,
                 ));
             }
             if let Some(compute_default) = default {
@@ -436,7 +436,7 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 heap.get_substate(node_id, partition_num, substate_key)
                     .ok_or_else(|| {
-                        LockSubstateError::HeapError(HeapLockSubstateError::SubstateNotFound(
+                        OpenSubstateError::HeapError(HeapOpenSubstateError::SubstateNotFound(
                             node_id.clone(),
                             partition_num,
                             substate_key.clone(),
@@ -448,7 +448,7 @@ impl<L: Clone> CallFrame<L> {
                 .acquire_lock_virtualize(node_id, partition_num, substate_key, flags, || {
                     default.map(|f| f())
                 })
-                .map_err(|x| LockSubstateError::TrackError(Box::new(x)))?;
+                .map_err(|x| OpenSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
             store_access = store_access_info;
             let (value, read_store_access_info) = store.read_substate(handle);

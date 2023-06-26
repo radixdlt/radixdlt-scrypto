@@ -30,7 +30,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
         W: WasmEngine,
     {
         let package_code = {
-            let handle = api.kernel_lock_substate_with_default(
+            let handle = api.kernel_open_substate_with_default(
                 address.as_node_id(),
                 MAIN_BASE_PARTITION
                     .at_offset(PACKAGE_CODE_PARTITION_OFFSET)

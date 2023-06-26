@@ -110,7 +110,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn before_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         module_id: &PartitionNumber,
@@ -128,7 +128,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
         _store_access: &StoreAccessInfo,
