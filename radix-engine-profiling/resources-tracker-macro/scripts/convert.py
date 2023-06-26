@@ -71,7 +71,7 @@ for path in os.listdir(input_folder):
         resolve = child.xpath("./self::kernel_invoke/invoke")
         if resolve:
             native = "no_native"
-            if resolve[0].attrib["arg0"]:
+            if resolve[0].attrib["arg0"] == "true":
                 native = "native"
             pkg = resolve[0].attrib["arg1"].replace('"','')
             fcn_name = resolve[0].attrib["export_name"]
@@ -191,3 +191,15 @@ else:
         f.write("\n")
     f.close()
 
+    f = open("/tmp/native_function_base_costs.csv", "w")
+    # skip header row
+    for row in output_tab[1:]:
+        token = "kernel_invoke::native::"
+        if type(row[1]) == str and row[1].find(token) == 0:
+            package_address_and_function = str(row[1][len(token):])
+            if package_address_and_function.count("::") == 1:
+                package_address_and_function = package_address_and_function.replace("::",",")
+                f.write( package_address_and_function + "," + str(row[2]))
+                f.write("\n")
+            #else: function with additional size parameter
+    f.close()
