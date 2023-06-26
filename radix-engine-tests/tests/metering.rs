@@ -9,7 +9,7 @@ use utils::ContextualDisplay;
 
 #[cfg(not(feature = "alloc"))]
 #[test]
-#[ignore = "Run this to update expected costs"]
+#[ignore = "Run this test to update expected costs"]
 fn update_expected_costs() {
     run_basic_transfer(Mode::OutputCosting(
         "./assets/cost_transfer.csv".to_string(),
