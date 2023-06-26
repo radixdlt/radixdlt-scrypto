@@ -53,6 +53,7 @@ const XRD_ICON_URL: &str = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
+    pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal = dec!("1000");
 }
 
 //==========================================================================================
@@ -217,6 +218,7 @@ where
                 min_validator_reliability: Decimal::one(),
                 num_owner_stake_units_unlock_epochs: 2,
                 num_fee_increase_delay_epochs: 1,
+                validator_creation_xrd_cost: *DEFAULT_VALIDATOR_XRD_COST,
             },
             1,
             Some(0),
@@ -480,6 +482,13 @@ pub fn create_system_bootstrap_transaction(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         access_rules.insert(
             Mint,
+            (
+                rule!(require(global_caller(CONSENSUS_MANAGER))),
+                rule!(deny_all),
+            ),
+        );
+        access_rules.insert(
+            Burn,
             (
                 rule!(require(global_caller(CONSENSUS_MANAGER))),
                 rule!(deny_all),

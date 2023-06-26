@@ -2,7 +2,6 @@ use crate::blueprints::consensus_manager::{ConsensusManagerBlueprint, ValidatorB
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::{event_schema, roles_template, types::*};
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::consensus_manager::*;
@@ -20,7 +19,6 @@ use radix_engine_interface::schema::{
 use super::*;
 
 pub const VALIDATOR_ROLE: &str = "validator";
-pub const START_ROLE: &str = "start";
 
 pub struct ConsensusManagerNativePackage;
 
@@ -193,11 +191,10 @@ impl ConsensusManagerNativePackage {
                     )),
                     method_auth: MethodAuthTemplate::StaticRoles(roles_template!(
                         roles {
-                            START_ROLE => updaters: [SELF_ROLE];
                             VALIDATOR_ROLE;
                         },
                         methods {
-                            CONSENSUS_MANAGER_START_IDENT => [START_ROLE];
+                            CONSENSUS_MANAGER_START_IDENT => []; // Genesis is able to call this by skipping auth
                             CONSENSUS_MANAGER_NEXT_ROUND_IDENT => [VALIDATOR_ROLE];
 
                             CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT => MethodAccessibility::Public;
@@ -519,11 +516,10 @@ impl ConsensusManagerNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             CONSENSUS_MANAGER_START_IDENT => {
-                let receiver = Runtime::get_node_id(api)?;
                 let _input: ConsensusManagerStartInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = ConsensusManagerBlueprint::start(&receiver, api)?;
+                let rtn = ConsensusManagerBlueprint::start(api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -567,8 +563,12 @@ impl ConsensusManagerNativePackage {
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn =
-                    ConsensusManagerBlueprint::create_validator(input.key, input.fee_factor, api)?;
+                let rtn = ConsensusManagerBlueprint::create_validator(
+                    input.key,
+                    input.fee_factor,
+                    input.xrd_payment,
+                    api,
+                )?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

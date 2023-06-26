@@ -28,6 +28,7 @@ use sbor::LocalTypeIndex;
 // Import and re-export substate types
 use crate::roles_template;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
+use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::{KeyValueEntrySubstate, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -81,6 +82,20 @@ pub enum PackageError {
     MissingFunctionPermission {
         blueprint: String,
         ident: String,
+    },
+
+    UnexpectedNumberOfFunctionRoyalties {
+        blueprint: String,
+        expected: usize,
+        actual: usize,
+    },
+    MissingFunctionRoyalty {
+        blueprint: String,
+        ident: String,
+    },
+    RoyaltyAmountIsGreaterThanAllowed {
+        max: RoyaltyAmount,
+        actual: RoyaltyAmount,
     },
 
     InvalidMetadataKey(String),
@@ -220,6 +235,47 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
                     expected: expected_event_name.to_string(),
                     actual: actual_event_name,
                 })?
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_royalties<Y>(definition: &PackageDefinition, api: &mut Y) -> Result<(), RuntimeError>
+where
+    Y: ClientApi<RuntimeError>,
+{
+    for (blueprint, definition_init) in &definition.blueprints {
+        match &definition_init.royalty_config {
+            PackageRoyaltyConfig::Disabled => {}
+            PackageRoyaltyConfig::Enabled(function_royalties) => {
+                let num_functions = definition_init.schema.functions.functions.len();
+
+                if num_functions != function_royalties.len() {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::PackageError(
+                            PackageError::UnexpectedNumberOfFunctionRoyalties {
+                                blueprint: blueprint.clone(),
+                                expected: num_functions,
+                                actual: function_royalties.len(),
+                            },
+                        ),
+                    ));
+                }
+
+                for name in definition_init.schema.functions.functions.keys() {
+                    if !function_royalties.contains_key(name) {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::MissingFunctionRoyalty {
+                                blueprint: blueprint.clone(),
+                                ident: name.clone(),
+                            }),
+                        ));
+                    }
+                }
+
+                RoyaltyUtil::verify_royalty_amounts(function_royalties.values(), false, api)?;
             }
         }
     }
@@ -1027,6 +1083,7 @@ impl PackageNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
+        validate_royalties(&definition, api)?;
         let package_structure = Self::validate_and_build_package_structure(
             definition,
             VmType::Native,
@@ -1053,6 +1110,7 @@ impl PackageNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
+        validate_royalties(&definition, api)?;
         let package_structure =
             Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code)?;
 
@@ -1075,6 +1133,7 @@ impl PackageNativePackage {
     where
         Y: ClientApi<RuntimeError>,
     {
+        validate_royalties(&definition, api)?;
         let package_structure =
             Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
