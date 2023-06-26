@@ -409,7 +409,7 @@ fn lock_field(
     runtime.actor_open_field(object_handle, field as u8, flags)
 }
 
-fn read_substate(
+fn field_lock_read(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -418,7 +418,7 @@ fn read_substate(
     runtime.field_lock_read(handle).map(|buffer| buffer.0)
 }
 
-fn write_substate(
+fn field_lock_write(
     mut caller: Caller<'_, HostState>,
     handle: u32,
     data_ptr: u32,
@@ -431,7 +431,7 @@ fn write_substate(
     runtime.field_lock_write(handle, data)
 }
 
-fn close_substate(
+fn field_lock_release(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
@@ -845,28 +845,28 @@ impl WasmiModule {
             },
         );
 
-        let host_read_substate = Func::wrap(
+        let host_field_lock_read = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
-                read_substate(caller, handle).map_err(|e| e.into())
+                field_lock_read(caller, handle).map_err(|e| e.into())
             },
         );
 
-        let host_write_substate = Func::wrap(
+        let host_field_lock_write = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              handle: u32,
              data_ptr: u32,
              data_len: u32|
              -> Result<(), Trap> {
-                write_substate(caller, handle, data_ptr, data_len).map_err(|e| e.into())
+                field_lock_write(caller, handle, data_ptr, data_len).map_err(|e| e.into())
             },
         );
 
-        let host_close_substate = Func::wrap(
+        let host_field_lock_release = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
-                close_substate(caller, handle).map_err(|e| e.into())
+                field_lock_release(caller, handle).map_err(|e| e.into())
             },
         );
 
@@ -1025,12 +1025,16 @@ impl WasmiModule {
             host_key_value_entry_remove
         );
 
-        linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_read_substate);
-        linker_define!(linker, FIELD_LOCK_WRITE_FUNCTION_NAME, host_write_substate);
+        linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_field_lock_read);
+        linker_define!(
+            linker,
+            FIELD_LOCK_WRITE_FUNCTION_NAME,
+            host_field_lock_write
+        );
         linker_define!(
             linker,
             FIELD_LOCK_RELEASE_FUNCTION_NAME,
-            host_close_substate
+            host_field_lock_release
         );
         linker_define!(linker, GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
         linker_define!(

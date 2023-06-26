@@ -512,7 +512,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn write_substate(
+        pub fn field_lock_write(
             env: &WasmerInstanceEnv,
             handle: u32,
             data_ptr: u32,
@@ -529,7 +529,10 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn close_substate(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
+        pub fn field_lock_release(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+        ) -> Result<(), RuntimeError> {
             let (_instance, runtime) = grab_runtime!(env);
 
             runtime
@@ -694,8 +697,8 @@ impl WasmerModule {
                 KEY_VALUE_ENTRY_SET_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_set),
                 KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_release),
                 FIELD_LOCK_READ_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_read),
-                FIELD_LOCK_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
-                FIELD_LOCK_RELEASE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), close_substate),
+                FIELD_LOCK_WRITE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_write),
+                FIELD_LOCK_RELEASE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), field_lock_release),
                 GET_NODE_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_node_id),
                 GET_GLOBAL_ADDRESS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_global_address),
                 GET_BLUEPRINT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint),
