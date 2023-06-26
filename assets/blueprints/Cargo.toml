@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "example",
     "faucet",
     "metadata",
     "radiswap",
