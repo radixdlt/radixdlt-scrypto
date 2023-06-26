@@ -16,6 +16,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
+use radix_engine_interface::metadata_init;
 use scrypto::prelude::Mutability::LOCKED;
 use scrypto::prelude::{AccessRule, FromPublicKey, ResourceAction};
 use scrypto::NonFungibleData;
@@ -389,7 +390,7 @@ fn resource_manager_new_vault_emits_correct_events() {
         .create_fungible_resource(
             false,
             18,
-            Default::default(),
+            metadata_init!(),
             BTreeMap::<ResourceAction, (AccessRule, AccessRule)>::new(),
             Some(1.into()),
         )
@@ -454,7 +455,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
-            .create_fungible_resource(false, 18, Default::default(), access_rules, None)
+            .create_fungible_resource(false, 18, metadata_init!(), access_rules, None)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
