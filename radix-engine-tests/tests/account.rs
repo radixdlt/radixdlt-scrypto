@@ -337,11 +337,9 @@ fn account_created_with_create_advanced_has_an_empty_owner_badge() {
     assert!(is_metadata_empty(&metadata))
 }
 
-// For now "metadata empty" means an empty metadata string, but we would like the be able to easily
-// lock the field as empty which doesn't seem to be possible now.
 fn is_metadata_empty(metadata_value: &Option<MetadataValue>) -> bool {
-    if let Some(MetadataValue::String(string)) = metadata_value {
-        string.is_empty()
+    if let None = metadata_value {
+        true
     } else {
         false
     }
