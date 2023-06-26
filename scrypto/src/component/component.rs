@@ -88,6 +88,8 @@ impl HasStub for AnyComponent {
 }
 
 impl ObjectStub for AnyComponent {
+    type AddressType = ComponentAddress;
+
     fn new(handle: ObjectStubHandle) -> Self {
         Self(handle)
     }
@@ -337,9 +339,12 @@ impl<O: HasStub> DerefMut for Global<O> {
 }
 
 impl<O: HasStub> Global<O> {
-    // FIXME: Change to GlobalAddress?
-    pub fn component_address(&self) -> ComponentAddress {
-        ComponentAddress::new_or_panic(self.handle().as_node_id().0)
+    pub fn address(&self) -> <<O as HasStub>::Stub as ObjectStub>::AddressType {
+        let rtn = <<O as HasStub>::Stub as ObjectStub>::AddressType::try_from(self.handle().as_node_id().0);
+        match rtn {
+            Ok(address) => address,
+            Err(..) => panic!("Invalid address type"),
+        }
     }
 
     fn metadata(&self) -> Attached<Metadata> {

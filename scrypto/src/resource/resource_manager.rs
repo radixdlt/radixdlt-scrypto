@@ -138,6 +138,8 @@ impl HasStub for ResourceManagerStub {
 pub struct ResourceManagerStub(pub ObjectStubHandle);
 
 impl ObjectStub for ResourceManagerStub {
+    type AddressType = ResourceAddress;
+
     fn new(handle: ObjectStubHandle) -> Self {
         Self(handle)
     }

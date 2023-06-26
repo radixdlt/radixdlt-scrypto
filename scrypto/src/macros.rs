@@ -311,6 +311,8 @@ macro_rules! extern_blueprint_internal {
         }
 
         impl ::scrypto::component::ObjectStub for $blueprint {
+            type AddressType = ComponentAddress;
+
             fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                 Self {
                     handle
