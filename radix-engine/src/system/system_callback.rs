@@ -140,6 +140,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn after_lock_substate<Y>(
         handle: LockHandle,
+        node_id: &NodeId,
         size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -147,7 +148,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_lock_substate(api, handle, store_access, size)
+        SystemModuleMixer::after_lock_substate(api, handle, node_id, store_access, size)
     }
 
     fn on_drop_lock<Y>(

@@ -355,10 +355,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
+        node_id: &NodeId,
         store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_lock_substate(api, handle, store_access, size))
+        internal_call_dispatch!(
+            api,
+            after_lock_substate(api, handle, node_id, store_access, size)
+        )
     }
 
     #[trace_resources(log=value_size)]

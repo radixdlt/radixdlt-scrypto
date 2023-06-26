@@ -156,7 +156,7 @@ impl FeeTable {
 
         // FIXME: figure out the right conversion rate from gas to execution time
 
-        // From `costing::spin_loop`, it takes 1.8851 ms to for 8011 gas' worth of execution.
+        // From `costing::spin_loop`, it takes 1.8851 ms for 8011 gas' worth of execution.
         // Therefore, cost for gas: 1.8851 * 1000 / 8011 * 100
 
         mul(gas / 5, 100)
@@ -167,8 +167,13 @@ impl FeeTable {
     //======================
 
     #[inline]
-    pub fn invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {
+    pub fn before_invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {
         add(500, Self::data_processing_cost(input_size))
+    }
+
+    #[inline]
+    pub fn after_invoke_cost(&self, input_size: usize) -> u32 {
+        Self::data_processing_cost(input_size)
     }
 
     #[inline]
