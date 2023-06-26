@@ -9,6 +9,7 @@ mod wasm_validator;
 #[cfg(feature = "wasmer")]
 mod wasmer;
 mod wasmi;
+mod weights;
 
 #[cfg(feature = "wasmer")]
 pub use self::wasmer::*;
@@ -21,6 +22,7 @@ pub use traits::*;
 pub use wasm_instrumenter::*;
 pub use wasm_metering_config::*;
 pub use wasm_validator::*;
+pub use weights::*;
 
 #[cfg(feature = "wasmer")]
 pub type DefaultWasmEngine = WasmerEngine;
