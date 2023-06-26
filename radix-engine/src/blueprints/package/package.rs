@@ -2,6 +2,7 @@ use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
+use crate::system::node_modules::metadata::MetadataEntrySubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::track::interface::NodeSubstates;
@@ -10,7 +11,7 @@ use crate::vm::wasm::{PrepareError, WasmValidator};
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
@@ -25,7 +26,7 @@ use sbor::LocalTypeIndex;
 use crate::roles_template;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::royalty::RoyaltyUtil;
-use crate::system::system::{KeyValueEntrySubstate, SystemService};
+use crate::system::system::{KeyValueEntrySubstate, SubstateMutability, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
@@ -405,6 +406,7 @@ const SECURIFY_OWNER_ROLE: &str = "securify_owner";
 struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
+    type OwnerBadgeNonFungibleData = PackageOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
@@ -421,7 +423,7 @@ fn globalize_package<Y, L: Default>(
 
     auth_configs: BTreeMap<String, AuthConfig>,
 
-    metadata: BTreeMap<String, MetadataValue>,
+    metadata: MetadataInit,
     access_rules: Option<AccessRules>,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
@@ -595,8 +597,17 @@ where
     );
     let metadata_partition = {
         let mut metadata_partition = BTreeMap::new();
-        for (key, value) in metadata {
-            let value = KeyValueEntrySubstate::entry(value);
+        for (key, value) in metadata.data {
+            let mutability = if value.lock {
+                SubstateMutability::Immutable
+            } else {
+                SubstateMutability::Mutable
+            };
+            let value = MetadataEntrySubstate {
+                value: value.value,
+                mutability,
+            };
+
             metadata_partition.insert(
                 SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 IndexedScryptoValue::from_typed(&value),
@@ -932,7 +943,7 @@ impl PackageNativePackage {
         package_address: Option<GlobalAddressReservation>,
         native_package_code_id: u64,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
@@ -1070,15 +1081,32 @@ impl PackageNativePackage {
     pub(crate) fn publish_wasm<Y, L: Default>(
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         api: &mut Y,
     ) -> Result<(PackageAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
-        let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
-        let address =
-            Self::publish_wasm_internal(None, code, definition, metadata, access_rules, api)?;
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+        })?;
+        let (access_rules, bucket) = SecurifiedPackage::create_securified(
+            PackageOwnerBadgeData {
+                name: "Package Owner Badge".to_owned(),
+                package: address.try_into().expect("Impossible Case"),
+            },
+            None,
+            api,
+        )?;
+        let address = Self::publish_wasm_internal(
+            Some(address_reservation),
+            code,
+            definition,
+            metadata,
+            access_rules,
+            api,
+        )?;
 
         Ok((address, bucket))
     }
@@ -1087,7 +1115,7 @@ impl PackageNativePackage {
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         owner_rule: OwnerRole,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -1111,7 +1139,7 @@ impl PackageNativePackage {
         package_address: Option<GlobalAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: MetadataInit,
         access_rules: AccessRules,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
@@ -1527,4 +1555,14 @@ impl PackageAuthNativeBlueprint {
 
         Ok(template)
     }
+}
+
+#[derive(ScryptoSbor)]
+pub struct PackageOwnerBadgeData {
+    pub name: String,
+    pub package: PackageAddress,
+}
+
+impl NonFungibleData for PackageOwnerBadgeData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }

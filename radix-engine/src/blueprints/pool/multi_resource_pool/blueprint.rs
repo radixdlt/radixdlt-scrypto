@@ -8,7 +8,6 @@ use native_sdk::resource::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -70,7 +69,15 @@ impl MultiResourcePoolBlueprint {
             //    the pool component in the metadata of the pool unit resource (currently results in
             //    an error because we're passing a reference to a node that doesn't exist).
 
-            ResourceManager::new_fungible(true, 18, Default::default(), access_rules, api)?
+            ResourceManager::new_fungible(
+                true,
+                18,
+                metadata_init! {
+                    "pool" => address, locked;
+                },
+                access_rules,
+                api,
+            )?
         };
 
         // Creating the pool nodes
@@ -78,15 +85,9 @@ impl MultiResourcePoolBlueprint {
             AccessRules::create(OwnerRole::Updatable(pool_manager_rule), btreemap!(), api)?.0;
         let metadata = Metadata::create_with_data(
             metadata_init! {
-                "pool_vault_number" => 2u8, locked;
-                "pool_resources" => {
-                    let addresses: Vec<GlobalAddress> = resource_addresses.iter().cloned().map(Into::into).collect();
-                    addresses
-                }, locked;
-                "pool_unit" => {
-                    let address: GlobalAddress = pool_unit_resource_manager.0.into();
-                    address
-                }, locked;
+                "pool_vault_number" => resource_addresses.len() as u64, locked;
+                "pool_resources" => resource_addresses.iter().cloned().map(GlobalAddress::from).collect::<Vec<_>>(), locked;
+                "pool_unit" => GlobalAddress::from(pool_unit_resource_manager.0), locked;
             },
             api,
         )?;

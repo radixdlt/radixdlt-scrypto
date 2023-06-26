@@ -40,7 +40,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(
         Map<String, Tuple>()
     )
-    Map<String, Enum>()
+    Map<String, Tuple>()
     Enum<0u8>()
 ;
 CALL_FUNCTION
@@ -75,7 +75,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(
         Map<String, Tuple>()
     )
-    Map<String, Enum>()
+    Map<String, Tuple>()
     Enum<0u8>()
 ;
 "##,

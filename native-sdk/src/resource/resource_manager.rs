@@ -1,5 +1,5 @@
 use radix_engine_derive::ScryptoSbor;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
@@ -17,10 +17,10 @@ use sbor::rust::prelude::*;
 pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
-    pub fn new_fungible<Y, E: Debug + ScryptoDecode>(
+    pub fn new_fungible<Y, E: Debug + ScryptoDecode, M: Into<MetadataInit>>(
         track_total_supply: bool,
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: M,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<Self, E>
@@ -44,11 +44,11 @@ impl ResourceManager {
         Ok(ResourceManager(resource_address))
     }
 
-    pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(
+    pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode, M: Into<MetadataInit>>(
         track_total_supply: bool,
         divisibility: u8,
         amount: Decimal,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: M,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
@@ -73,10 +73,15 @@ impl ResourceManager {
         Ok((ResourceManager(resource_address), bucket))
     }
 
-    pub fn new_non_fungible<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
+    pub fn new_non_fungible<
+        N: NonFungibleData,
+        Y,
+        E: Debug + ScryptoDecode,
+        M: Into<MetadataInit>,
+    >(
         id_type: NonFungibleIdType,
         track_total_supply: bool,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: M,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<Self, E>
@@ -101,10 +106,15 @@ impl ResourceManager {
         Ok(ResourceManager(resource_address))
     }
 
-    pub fn new_non_fungible_with_address<N: NonFungibleData, Y, E: Debug + ScryptoDecode>(
+    pub fn new_non_fungible_with_address<
+        N: NonFungibleData,
+        Y,
+        E: Debug + ScryptoDecode,
+        M: Into<MetadataInit>,
+    >(
         id_type: NonFungibleIdType,
         track_total_supply: bool,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: M,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         address_reservation: GlobalAddressReservation,
         api: &mut Y,
@@ -146,6 +156,35 @@ impl ResourceManager {
             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT,
             scrypto_encode(&NonFungibleResourceManagerMintSingleRuidInput { entry: value })
                 .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    /// Mints non-fungible resources
+    pub fn mint_non_fungible<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
+        &self,
+        data: BTreeMap<NonFungibleLocalId, T>,
+        api: &mut Y,
+    ) -> Result<NonFungibleResourceManagerMintOutput, E>
+    where
+        Y: ClientObjectApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT,
+            scrypto_encode(&NonFungibleResourceManagerMintInput {
+                entries: data
+                    .into_iter()
+                    .map(|(key, value)| {
+                        (
+                            key,
+                            (scrypto_decode(&scrypto_encode(&value).unwrap()).unwrap(),),
+                        )
+                    })
+                    .collect(),
+            })
+            .unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

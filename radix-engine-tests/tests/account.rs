@@ -263,3 +263,84 @@ fn account_to_bucket_to_allocated_account() {
 fn account_to_bucket_to_virtual_account() {
     account_to_bucket_to_account_internal(true);
 }
+
+#[test]
+fn virtual_account_has_expected_owner_key() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_account(true);
+
+    // Act
+    let metadata = test_runner
+        .get_metadata(account.into(), "owner_badge")
+        .unwrap();
+
+    // Assert
+    assert_eq!(
+        metadata,
+        MetadataValue::NonFungibleLocalId(
+            NonFungibleLocalId::bytes(account.as_node_id().0).unwrap()
+        )
+    )
+}
+
+#[test]
+fn securified_account_is_owned_by_correct_owner_badge() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (pk, _, account) = test_runner.new_account(true);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 10.into())
+        .call_method(
+            account,
+            ACCOUNT_SECURIFY_IDENT,
+            to_manifest_value_and_unwrap!(&AccountSecurifyInput {}),
+        )
+        .call_method(
+            account,
+            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    let balance_changes = receipt.expect_commit_success().balance_changes();
+    let balance_change = balance_changes
+        .get(&GlobalAddress::from(account))
+        .unwrap()
+        .get(&ACCOUNT_OWNER_BADGE)
+        .unwrap()
+        .clone();
+    assert_eq!(
+        balance_change,
+        BalanceChange::NonFungible {
+            added: btreeset![NonFungibleLocalId::bytes(account.as_node_id().0).unwrap()],
+            removed: btreeset![]
+        }
+    )
+}
+
+#[test]
+fn account_created_with_create_advanced_has_an_empty_owner_badge() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let account = test_runner.new_account_advanced(OwnerRole::None);
+
+    // Act
+    let metadata = test_runner.get_metadata(account.into(), "owner_badge");
+
+    // Assert
+    assert!(is_metadata_empty(&metadata))
+}
+
+fn is_metadata_empty(metadata_value: &Option<MetadataValue>) -> bool {
+    if let None = metadata_value {
+        true
+    } else {
+        false
+    }
+}

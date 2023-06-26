@@ -1510,7 +1510,6 @@ mod tests {
     use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::AddressBech32Decoder;
-    use radix_engine_interface::api::node_modules::metadata::MetadataInit;
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
     use radix_engine_interface::blueprints::resource::{
@@ -1783,7 +1782,7 @@ mod tests {
                     "name" => Tuple(
                         Enum<Option::Some>(Enum<Metadata::String>("Token")),
                         true
-                    )
+                    ),
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
