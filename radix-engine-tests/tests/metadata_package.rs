@@ -14,6 +14,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 50.into())
         .publish_package_advanced(
+            None,
             code,
             single_function_package_definition("Test", "f"),
             BTreeMap::new(),

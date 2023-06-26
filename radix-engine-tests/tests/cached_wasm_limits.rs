@@ -42,6 +42,7 @@ fn publishing_many_packages_should_not_cause_system_failure() {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 50.into())
             .publish_package_advanced(
+                None,
                 code.clone(),
                 single_function_package_definition("Test", "f"),
                 BTreeMap::new(),

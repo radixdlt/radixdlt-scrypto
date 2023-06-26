@@ -872,7 +872,7 @@ impl TestRunner {
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
-            .publish_package_advanced(code, definition, metadata, owner_rule)
+            .publish_package_advanced(None, code, definition, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -1250,7 +1250,7 @@ impl TestRunner {
 
         let receipt = self.execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .create_non_fungible_resource::<_, Vec<_>, ()>(
+                .create_non_fungible_resource::<_, Vec<_>, (), _>(
                     NonFungibleIdType::Integer,
                     false,
                     BTreeMap::new(),

@@ -265,6 +265,7 @@ fn transaction_limit_exceeded_invoke_input_size_should_fail() {
     assert!(code.len() > DEFAULT_MAX_INVOKE_INPUT_SIZE);
     let manifest = ManifestBuilder::new()
         .publish_package_advanced(
+            None,
             code,
             PackageDefinition::default(),
             BTreeMap::new(),
