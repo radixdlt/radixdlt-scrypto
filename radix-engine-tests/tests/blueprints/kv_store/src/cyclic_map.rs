@@ -32,7 +32,7 @@ mod cyclic_map {
             };
 
             let handle = ScryptoEnv
-                .key_value_store_lock_entry(node_id, &key, LockFlags::MUTABLE)
+                .key_value_store_open_entry(node_id, &key, LockFlags::MUTABLE)
                 .unwrap();
             ScryptoEnv
                 .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())
@@ -57,7 +57,7 @@ mod cyclic_map {
             };
 
             let handle = ScryptoEnv
-                .key_value_store_lock_entry(node_id, &key, LockFlags::MUTABLE)
+                .key_value_store_open_entry(node_id, &key, LockFlags::MUTABLE)
                 .unwrap();
             ScryptoEnv
                 .key_value_entry_set(handle, scrypto_encode(&substate).unwrap())

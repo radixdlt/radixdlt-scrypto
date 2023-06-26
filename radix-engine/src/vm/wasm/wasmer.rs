@@ -388,7 +388,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn key_value_store_lock_entry(
+        pub fn key_value_store_open_entry(
             env: &WasmerInstanceEnv,
             node_id_ptr: u32,
             node_id_len: u32,
@@ -399,7 +399,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .key_value_store_lock_entry(
+                .key_value_store_open_entry(
                     read_memory(&instance, node_id_ptr, node_id_len)?,
                     read_memory(&instance, key_ptr, key_len)?,
                     flags,
@@ -688,7 +688,7 @@ impl WasmerModule {
                 ACTOR_OPEN_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_open_field),
                 ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_call_module_method),
                 KEY_VALUE_STORE_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_new),
-                KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_lock_entry),
+                KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_open_entry),
                 KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_remove_entry),
                 KEY_VALUE_ENTRY_GET_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_get),
                 KEY_VALUE_ENTRY_SET_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_entry_set),

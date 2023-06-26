@@ -79,7 +79,7 @@ mod transaction_limits_substate {
             // Insert into store
             let key_payload = scrypto_encode(&1u32).unwrap();
             let handle = ScryptoEnv
-                .key_value_store_lock_entry(
+                .key_value_store_open_entry(
                     kv_store.id.as_node_id(),
                     &key_payload,
                     LockFlags::MUTABLE,
@@ -152,7 +152,7 @@ mod sbor_overflow {
             let key_payload = scrypto_encode(&1u32).unwrap();
             let value_payload = vec;
             let handle = ScryptoEnv
-                .key_value_store_lock_entry(
+                .key_value_store_open_entry(
                     kv_store.id.as_node_id(),
                     &key_payload,
                     LockFlags::MUTABLE,

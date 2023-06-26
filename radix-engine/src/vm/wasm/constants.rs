@@ -18,7 +18,7 @@ pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 
 pub const KEY_VALUE_STORE_NEW_FUNCTION_NAME: &str = "kv_store_new";
 pub const KEY_VALUE_STORE_GET_INFO_FUNCTION_NAME: &str = "kv_store_get_info";
-pub const KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME: &str = "kv_store_lock_entry";
+pub const KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME: &str = "kv_store_lock_entry";
 pub const KEY_VALUE_STORE_REMOVE_ENTRY_FUNCTION_NAME: &str = "kv_store_remove_entry";
 pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "kv_entry_get";
 pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "kv_entry_set";

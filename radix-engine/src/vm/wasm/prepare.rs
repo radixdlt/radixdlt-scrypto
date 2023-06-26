@@ -266,7 +266,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => {
+                        KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -285,7 +285,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }

@@ -1766,7 +1766,7 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn key_value_store_lock_entry(
+    fn key_value_store_open_entry(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,
@@ -1838,7 +1838,7 @@ where
         node_id: &NodeId,
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let handle = self.key_value_store_lock_entry(node_id, key, LockFlags::MUTABLE)?;
+        let handle = self.key_value_store_open_entry(node_id, key, LockFlags::MUTABLE)?;
         self.key_value_entry_remove_and_close_substate(handle)
     }
 }

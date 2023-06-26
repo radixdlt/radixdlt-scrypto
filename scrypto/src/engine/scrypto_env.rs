@@ -267,7 +267,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn key_value_store_lock_entry(
+    fn key_value_store_open_entry(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,

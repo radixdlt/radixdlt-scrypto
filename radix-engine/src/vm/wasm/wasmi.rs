@@ -353,7 +353,7 @@ fn lock_key_value_store_entry(
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.key_value_store_lock_entry(node_id, substate_key, flags)
+    runtime.key_value_store_open_entry(node_id, substate_key, flags)
 }
 
 fn key_value_entry_get(
@@ -1005,7 +1005,7 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME,
+            KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME,
             host_lock_key_value_store_entry
         );
         linker_define!(
