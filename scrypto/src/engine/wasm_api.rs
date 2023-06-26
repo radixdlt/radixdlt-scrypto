@@ -76,7 +76,7 @@ extern "C" {
         key_value_store_id_len: usize,
     ) -> Buffer;
 
-    pub fn kv_store_lock_entry(
+    pub fn kv_store_open_entry(
         key_value_store_id_ptr: *const u8,
         key_value_store_id_len: usize,
         offset: *const u8,
@@ -264,7 +264,7 @@ pub unsafe fn kv_store_get_info(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn kv_store_lock_entry(
+pub unsafe fn kv_store_open_entry(
     _key_value_store_id_ptr: *const u8,
     _key_value_store_id_len: usize,
     _offset: *const u8,

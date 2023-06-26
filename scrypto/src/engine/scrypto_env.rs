@@ -274,7 +274,7 @@ impl ClientKeyValueStoreApi<ClientApiError> for ScryptoEnv {
         flags: LockFlags,
     ) -> Result<KeyValueEntryHandle, ClientApiError> {
         let handle = unsafe {
-            kv_store_lock_entry(
+            kv_store_open_entry(
                 node_id.as_ref().as_ptr(),
                 node_id.as_ref().len(),
                 key.as_ptr(),

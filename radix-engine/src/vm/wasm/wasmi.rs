@@ -984,11 +984,7 @@ impl WasmiModule {
         linker_define!(linker, COST_UNIT_PRICE_FUNCTION_NAME, host_cost_unit_price);
         linker_define!(linker, TIP_PERCENTAGE_FUNCTION_NAME, host_tip_percentage);
         linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
-        linker_define!(
-            linker,
-            GLOBALIZE_OBJECT_FUNCTION_NAME,
-            host_globalize_object
-        );
+        linker_define!(linker, GLOBALIZE_FUNCTION_NAME, host_globalize_object);
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, ACTOR_OPEN_FIELD_FUNCTION_NAME, host_lock_field);
@@ -1031,7 +1027,11 @@ impl WasmiModule {
 
         linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_read_substate);
         linker_define!(linker, FIELD_LOCK_WRITE_FUNCTION_NAME, host_write_substate);
-        linker_define!(linker, CLOSE_SUBSTATE_FUNCTION_NAME, host_close_substate);
+        linker_define!(
+            linker,
+            FIELD_LOCK_RELEASE_FUNCTION_NAME,
+            host_close_substate
+        );
         linker_define!(linker, GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
         linker_define!(
             linker,
