@@ -177,6 +177,7 @@ pub enum ConsensusManagerField {
 pub enum ValidatorField {
     Validator,
     AcceptsDelegatedStakeFlag,
+    ProtocolUpdateReadinessSignal,
 }
 
 #[repr(u8)]

@@ -7,6 +7,7 @@ use radix_engine_common::types::*;
 use radix_engine_interface::crypto::Secp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
 use sbor::rust::fmt::Debug;
+use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 pub const CONSENSUS_MANAGER_BLUEPRINT: &str = "ConsensusManager";
@@ -395,6 +396,15 @@ pub struct ValidatorUpdateAcceptDelegatedStakeInput {
 }
 
 pub type ValidatorUpdateAcceptDelegatedStakeOutput = ();
+
+pub const VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS: &str = "signal_protocol_update_readiness";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ValidatorSignalProtocolUpdateReadinessInput {
+    pub vote: String,
+}
+
+pub type ValidatorSignalProtocolUpdateReadinessOutput = ();
 
 pub const VALIDATOR_APPLY_EMISSION_IDENT: &str = "apply_emission";
 
