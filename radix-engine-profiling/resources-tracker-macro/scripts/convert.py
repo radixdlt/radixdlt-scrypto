@@ -65,20 +65,18 @@ for path in os.listdir(input_folder):
 
         # handle kernel_inovke
         invoke_size = 0
-        resolve = child.xpath("./self::kernel_invoke/before_invoke")
+        resolve_size = child.xpath("./self::kernel_invoke/before_invoke")
+        if resolve_size:
+            invoke_size = resolve_size[0].attrib["arg0"]
+        resolve = child.xpath("./self::kernel_invoke/invoke")
         if resolve:
-            blueprint_name = resolve[0].attrib["arg1"].replace('"','')
-            fcn_name = resolve[0].attrib["arg2"].replace('"','')
-            receiver = resolve[0].attrib["arg3"].replace('"','') # not used
-            if receiver == "None":
-                receiver = ""
-            else:
-                receiver = "::" + receiver
+            native = resolve[0].attrib["info"]
+            pkg = resolve[0].attrib["arg0"].replace('"','')
+            fcn_name = resolve[0].attrib["export_name"]
             if fcn_name in kernel_invoke_divide_by_size:
-                invoke_size = resolve[0].attrib["input_size"]
-                key += "::" + blueprint_name + "::" + fcn_name + "::" + invoke_size
+                key += "::" + native + "::" + pkg + "::" + fcn_name + "::" + invoke_size
             else:
-                key += "::" + blueprint_name + "::" + fcn_name
+                key += "::" + native + "::" + pkg + "::" + fcn_name
 
         # handle kernel_create_node
         param = child.xpath("./self::kernel_create_node/@arg0")

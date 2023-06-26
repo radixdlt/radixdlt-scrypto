@@ -47,7 +47,7 @@ pub struct ScryptoVmInstance<I: WasmInstance> {
 }
 
 impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
-    #[trace_resources(log=self.package_address.to_hex(),log=export_name)]
+    #[trace_resources(info="scrypto", log=self.package_address.to_hex(),log=export_name)]
     fn invoke<Y>(
         &mut self,
         export_name: &str,

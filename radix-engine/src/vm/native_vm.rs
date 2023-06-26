@@ -54,7 +54,7 @@ pub struct NativeVmInstance {
 }
 
 impl VmInvoke for NativeVmInstance {
-    #[trace_resources(log=self.package_address.to_hex(),log=export_name)]
+    #[trace_resources(info="native", log=self.package_address.to_hex(),log=export_name)]
     fn invoke<Y>(
         &mut self,
         export_name: &str,
