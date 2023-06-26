@@ -29,7 +29,7 @@ pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_meth
 
 pub const FIELD_LOCK_READ_FUNCTION_NAME: &str = "field_lock_read";
 pub const FIELD_LOCK_WRITE_FUNCTION_NAME: &str = "field_lock_write";
-pub const FIELD_LOCK_RELEASE_FUNCTION_NAME: &str = "field_lock_release";
+pub const CLOSE_SUBSTATE_FUNCTION_NAME: &str = "field_lock_release";
 
 pub const EMIT_EVENT_FUNCTION_NAME: &str = "emit_event";
 pub const EMIT_LOG_FUNCTION_NAME: &str = "emit_log";

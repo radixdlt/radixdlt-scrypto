@@ -151,7 +151,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_open_substate(api, handle, node_id, store_access, size)
     }
 
-    fn on_drop_lock<Y>(
+    fn on_close_substate<Y>(
         lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -159,7 +159,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_drop_lock(api, lock_handle, store_access)
+        SystemModuleMixer::on_close_substate(api, lock_handle, store_access)
     }
 
     fn on_read_substate<Y>(
@@ -316,7 +316,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 SystemLockData::default(),
             )?;
             system.kernel_read_substate(handle)?;
-            system.kernel_drop_lock(handle)?;
+            system.kernel_close_substate(handle)?;
 
             //  Validate input
             let definition = system.get_blueprint_definition(
@@ -478,7 +478,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 handle,
                 IndexedScryptoValue::from_typed(&auth_zone_substate),
             )?;
-            api.kernel_drop_lock(handle)?;
+            api.kernel_close_substate(handle)?;
 
             // Drop the proofs
             let mut system = SystemService::new(api);

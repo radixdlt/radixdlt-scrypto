@@ -174,7 +174,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_drop_lock<Y: KernelApi<M>>(
+    fn on_close_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
         _store_access: &StoreAccessInfo,

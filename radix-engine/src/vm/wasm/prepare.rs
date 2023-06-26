@@ -445,7 +445,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        FIELD_LOCK_RELEASE_FUNCTION_NAME => {
+                        CLOSE_SUBSTATE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -458,7 +458,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        FIELD_LOCK_RELEASE_FUNCTION_NAME.to_string(),
+                                        CLOSE_SUBSTATE_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }

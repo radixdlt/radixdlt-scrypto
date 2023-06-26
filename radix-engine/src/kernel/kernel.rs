@@ -105,7 +105,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 .map_err(|_| KernelError::InvalidReference(*node_id))?;
             let (substate_ref, _store_access) = kernel.store.read_substate(handle);
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            kernel.store.release_lock(handle);
+            kernel.store.close_substate(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint_id: blueprint,
@@ -669,14 +669,14 @@ where
     }
 
     #[trace_resources]
-    fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         let store_access = self
             .current_frame
-            .drop_lock(&mut self.heap, self.store, lock_handle)
+            .close_substate(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::UnlockSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
-        M::on_drop_lock(lock_handle, &store_access, self)?;
+        M::on_close_substate(lock_handle, &store_access, self)?;
 
         Ok(())
     }

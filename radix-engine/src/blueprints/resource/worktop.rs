@@ -59,7 +59,7 @@ impl WorktopBlueprint {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         let resources = core::mem::replace(&mut worktop_substate.resources, BTreeMap::new());
         api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&worktop_substate))?;
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         // Recursively drop buckets
         for (_, bucket) in resources {

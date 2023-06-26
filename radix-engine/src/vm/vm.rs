@@ -45,7 +45,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
             )?;
             let code = api.kernel_read_substate(handle)?;
             let package_code: KeyValueEntrySubstate<PackageCodeSubstate> = code.as_typed().unwrap();
-            api.kernel_drop_lock(handle)?;
+            api.kernel_close_substate(handle)?;
             package_code
                 .value
                 .expect(&format!("Code not found: {:?}", export))

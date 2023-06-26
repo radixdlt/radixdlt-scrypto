@@ -468,7 +468,7 @@ where
 
         let substate: KeyValueEntrySubstate<ScryptoSchema> =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        self.api.kernel_drop_lock(handle)?;
+        self.api.kernel_close_substate(handle)?;
 
         let schema = substate.value.unwrap();
 
@@ -529,7 +529,7 @@ where
 
         let substate: KeyValueEntrySubstate<BlueprintDefinition> =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        self.api.kernel_drop_lock(handle)?;
+        self.api.kernel_close_substate(handle)?;
 
         let definition = match substate.value {
             Some(definition) => definition,
@@ -639,7 +639,7 @@ where
                     .and_then(|x| Ok(x.as_typed::<TypeInfoSubstate>().unwrap()))
                     .and_then(|substate| {
                         self.api
-                            .kernel_drop_lock(lock_handle)
+                            .kernel_close_substate(lock_handle)
                             .and_then(|_| Ok(substate))
                     })
             })
@@ -743,7 +743,7 @@ where
         Ok(node_id.into())
     }
 
-    fn key_value_entry_remove_and_release_lock(
+    fn key_value_entry_remove_and_close_substate(
         &mut self,
         handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -758,7 +758,7 @@ where
         let value = kv_entry.remove();
         self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
 
-        self.kernel_drop_lock(handle)?;
+        self.kernel_close_substate(handle)?;
 
         let current_value = scrypto_encode(&value).unwrap();
 
@@ -989,7 +989,7 @@ where
             )?;
             let type_info: TypeInfoSubstate =
                 self.kernel_read_substate(lock_handle)?.as_typed().unwrap();
-            self.kernel_drop_lock(lock_handle)?;
+            self.kernel_close_substate(lock_handle)?;
             match type_info {
                 TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom { blueprint_id }) => {
                     blueprint_id
@@ -1057,7 +1057,7 @@ where
             .kernel_read_substate(lock_handle)?
             .as_typed()
             .unwrap();
-        self.api.kernel_drop_lock(lock_handle)?;
+        self.api.kernel_close_substate(lock_handle)?;
 
         let blueprint_id = match &mut type_info {
             TypeInfoSubstate::Object(ObjectInfo {
@@ -1261,7 +1261,7 @@ where
             }
         }
 
-        self.api.kernel_drop_lock(handle)
+        self.api.kernel_close_substate(handle)
     }
 }
 
@@ -1713,7 +1713,7 @@ where
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
 
-        self.api.kernel_drop_lock(handle)
+        self.api.kernel_close_substate(handle)
     }
 }
 
@@ -1839,7 +1839,7 @@ where
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let handle = self.key_value_store_lock_entry(node_id, key, LockFlags::MUTABLE)?;
-        self.key_value_entry_remove_and_release_lock(handle)
+        self.key_value_entry_remove_and_close_substate(handle)
     }
 }
 
@@ -2419,7 +2419,7 @@ where
             key,
             LockFlags::MUTABLE,
         )?;
-        self.key_value_entry_remove_and_release_lock(handle)
+        self.key_value_entry_remove_and_close_substate(handle)
     }
 }
 
@@ -2737,8 +2737,8 @@ where
         self.api.kernel_get_lock_info(lock_handle)
     }
 
-    fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        self.api.kernel_drop_lock(lock_handle)
+    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+        self.api.kernel_close_substate(lock_handle)
     }
 
     fn kernel_read_substate(

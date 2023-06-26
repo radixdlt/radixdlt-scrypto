@@ -119,7 +119,7 @@ impl Authorization {
         }
 
         for handle in handles {
-            api.kernel_drop_lock(handle)?;
+            api.kernel_close_substate(handle)?;
         }
 
         Ok(pass)
@@ -352,7 +352,7 @@ impl Authorization {
             )?;
             let substate: KeyValueEntrySubstate<AccessRule> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
-            api.kernel_drop_lock(handle)?;
+            api.kernel_close_substate(handle)?;
 
             match substate.value {
                 Some(access_rule) => access_rule,
@@ -369,7 +369,7 @@ impl Authorization {
 
                     let owner_role_substate: OwnerRoleSubstate =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
-                    api.kernel_drop_lock(handle)?;
+                    api.kernel_close_substate(handle)?;
                     owner_role_substate.owner_role_entry.rule
                 }
             }

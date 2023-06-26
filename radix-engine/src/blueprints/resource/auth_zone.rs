@@ -307,7 +307,7 @@ impl AuthZoneBlueprint {
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         let proofs = core::mem::replace(&mut auth_zone_substate.proofs, Vec::new());
         api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&auth_zone_substate))?;
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         // Destroy all proofs
         // Note: the current auth zone will be used for authentication; It's just empty.

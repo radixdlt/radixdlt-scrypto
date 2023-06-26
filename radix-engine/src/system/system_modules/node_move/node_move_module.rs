@@ -71,7 +71,7 @@ impl NodeMoveModule {
 
                     proof.change_to_restricted();
                     api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
-                    api.kernel_drop_lock(handle)?;
+                    api.kernel_close_substate(handle)?;
                 } else if callee.is_auth_zone() {
                     let handle = api.kernel_open_substate(
                         &node_id,
@@ -90,7 +90,7 @@ impl NodeMoveModule {
                             )),
                         ));
                     }
-                    api.kernel_drop_lock(handle)?;
+                    api.kernel_close_substate(handle)?;
                 }
             }
             TypeInfoSubstate::Object(info)
@@ -133,7 +133,7 @@ impl NodeMoveModule {
 
                     proof.change_to_restricted();
                     api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
-                    api.kernel_drop_lock(handle)?;
+                    api.kernel_close_substate(handle)?;
                 } else if callee.is_auth_zone() {
                     let handle = api.kernel_open_substate(
                         &node_id,
@@ -152,7 +152,7 @@ impl NodeMoveModule {
                             )),
                         ));
                     }
-                    api.kernel_drop_lock(handle)?;
+                    api.kernel_close_substate(handle)?;
                 }
             }
             _ => {}

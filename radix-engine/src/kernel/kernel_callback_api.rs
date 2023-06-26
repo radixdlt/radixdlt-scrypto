@@ -64,7 +64,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_drop_lock<Y>(
+    fn on_close_substate<Y>(
         lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
         api: &mut Y,

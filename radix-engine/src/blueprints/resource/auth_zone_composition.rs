@@ -178,7 +178,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
                         max.insert(container.clone(), locked_amount.clone());
                     }
                 }
-                api.kernel_drop_lock(handle)?;
+                api.kernel_close_substate(handle)?;
             }
         }
     }

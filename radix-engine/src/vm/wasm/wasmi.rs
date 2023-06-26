@@ -431,7 +431,7 @@ fn write_substate(
     runtime.field_lock_write(handle, data)
 }
 
-fn drop_lock(
+fn close_substate(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
@@ -863,10 +863,10 @@ impl WasmiModule {
             },
         );
 
-        let host_drop_lock = Func::wrap(
+        let host_close_substate = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
-                drop_lock(caller, handle).map_err(|e| e.into())
+                close_substate(caller, handle).map_err(|e| e.into())
             },
         );
 
@@ -1031,7 +1031,7 @@ impl WasmiModule {
 
         linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_read_substate);
         linker_define!(linker, FIELD_LOCK_WRITE_FUNCTION_NAME, host_write_substate);
-        linker_define!(linker, FIELD_LOCK_RELEASE_FUNCTION_NAME, host_drop_lock);
+        linker_define!(linker, CLOSE_SUBSTATE_FUNCTION_NAME, host_close_substate);
         linker_define!(linker, GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
         linker_define!(
             linker,

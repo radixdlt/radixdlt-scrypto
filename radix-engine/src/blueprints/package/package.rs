@@ -1216,7 +1216,7 @@ impl PackageRoyaltyNativeBlueprint {
 
         let substate: KeyValueEntrySubstate<PackageRoyaltyConfig> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         let royalty_charge = substate
             .value
@@ -1249,7 +1249,7 @@ impl PackageRoyaltyNativeBlueprint {
                 vault_id.0,
             )?;
 
-            api.kernel_drop_lock(handle)?;
+            api.kernel_close_substate(handle)?;
         }
 
         Ok(())
@@ -1360,7 +1360,7 @@ impl PackageAuthNativeBlueprint {
 
         let auth_template: KeyValueEntrySubstate<AuthConfig> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         let template = match auth_template.value {
             Some(template) => template,

@@ -398,7 +398,7 @@ impl<L: Clone> CallFrame<L> {
             LockFlags::read_only(),
         ) {
             let type_info: TypeInfoSubstate = store.read_substate(handle).0.as_typed().unwrap();
-            store.release_lock(handle);
+            store.close_substate(handle);
             Some(type_info)
         } else {
             None
@@ -513,7 +513,7 @@ impl<L: Clone> CallFrame<L> {
         Ok((lock_handle, substate_value.len(), store_access))
     }
 
-    pub fn drop_lock<S: SubstateStore>(
+    pub fn close_substate<S: SubstateStore>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
@@ -638,7 +638,7 @@ impl<L: Clone> CallFrame<L> {
 
         // Release track lock
         if let Some(handle) = substate_lock.store_handle {
-            store_access.extend(&store.release_lock(handle));
+            store_access.extend(&store.close_substate(handle));
         }
 
         Ok(store_access)
@@ -1079,7 +1079,7 @@ impl<L: Clone> CallFrame<L> {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
         for lock_handle in lock_handles {
-            self.drop_lock(heap, store, lock_handle)?;
+            self.close_substate(heap, store, lock_handle)?;
         }
 
         Ok(())

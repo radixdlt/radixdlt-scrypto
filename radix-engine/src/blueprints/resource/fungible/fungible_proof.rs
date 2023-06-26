@@ -151,7 +151,7 @@ impl FungibleProofBlueprint {
         let proof_substate: FungibleProofSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         proof_substate.drop_proof(api)?;
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         // Drop self
         api.drop_object(proof.0.as_node_id())?;
