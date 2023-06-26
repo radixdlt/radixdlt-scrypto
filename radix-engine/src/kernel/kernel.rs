@@ -374,8 +374,8 @@ where
 
         Ok(())
     }
-    // FIXME: Add costing rules for moving module and listing modules.
 
+    #[trace_resources]
     fn kernel_move_module(
         &mut self,
         src_node_id: &NodeId,
@@ -722,6 +722,7 @@ where
         M::on_write_substate(lock_handle, value_size, &store_access, self)
     }
 
+    #[trace_resources]
     fn kernel_set_substate(
         &mut self,
         node_id: &NodeId,
@@ -749,6 +750,7 @@ where
         Ok(())
     }
 
+    #[trace_resources]
     fn kernel_remove_substate(
         &mut self,
         node_id: &NodeId,
@@ -773,6 +775,7 @@ where
         Ok(substate)
     }
 
+    #[trace_resources]
     fn kernel_scan_sorted_substates(
         &mut self,
         node_id: &NodeId,
@@ -791,6 +794,7 @@ where
         Ok(substates)
     }
 
+    #[trace_resources]
     fn kernel_scan_substates(
         &mut self,
         node_id: &NodeId,
@@ -809,6 +813,7 @@ where
         Ok(substeates)
     }
 
+    #[trace_resources]
     fn kernel_take_substates(
         &mut self,
         node_id: &NodeId,
