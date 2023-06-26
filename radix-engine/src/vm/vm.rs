@@ -66,6 +66,10 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         .create_instance(address, &package_code.code)
                 };
 
+                api.consume_cost_units(ClientCostingEntry::RunWasmCodePrepare {
+                    size: package_code.code.len(),
+                })?;
+
                 let output =
                     { scrypto_vm_instance.invoke(export.export_name.as_str(), input, api)? };
 

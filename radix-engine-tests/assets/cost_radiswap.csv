@@ -1,5 +1,5 @@
-Total Cost Units                                                                ,  14443248
-Total Fee                                                                       ,  7.221624
+Total Cost Units                                                                ,  14851148
+Total Fee                                                                       ,  7.425574
 AfterInvoke                                                                     ,       650
 AllocateNodeId                                                                  ,     15000
 BeforeInvoke                                                                    ,     14156
@@ -35,6 +35,7 @@ RunNativeCode::take_FungibleVault                                               
 RunNativeCode::try_deposit_batch_or_abort                                       ,     41152
 RunNativeCode::withdraw                                                         ,     25682
 RunWasmCode::Radiswap_swap                                                      ,     96908
+RunWasmCodePrepare                                                              ,    407900
 TxBaseCost                                                                      ,     40000
 TxPayloadCost                                                                   ,     17650
 TxSignatureVerification                                                         ,      7000

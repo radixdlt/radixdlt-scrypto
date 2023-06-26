@@ -74,6 +74,7 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
                 .invoke_export(export_name, input, &mut runtime)?
         };
 
+        // FIXME: would the delay cause problem? add tests to verify
         let consumed = self.instance.consumed_memory()?;
         api.update_wasm_memory_usage(consumed)?;
 
