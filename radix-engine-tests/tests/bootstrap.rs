@@ -41,7 +41,6 @@ fn test_bootstrap_receipt_should_match_constants() {
     let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
 
     let GenesisReceipts {
-        system_flash_receipt,
         system_bootstrap_receipt,
         wrap_up_receipt,
         ..
@@ -56,9 +55,9 @@ fn test_bootstrap_receipt_should_match_constants() {
         )
         .unwrap();
 
-    assert!(system_flash_receipt
-        .state_update_summary
-        .new_packages
+    assert!(system_bootstrap_receipt
+        .expect_commit_success()
+        .new_package_addresses()
         .contains(&PACKAGE_PACKAGE));
 
     assert!(system_bootstrap_receipt

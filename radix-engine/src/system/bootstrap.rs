@@ -16,6 +16,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::SystemUpdates;
 use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, StateUpdateSummary, TransactionReceipt,
+    TransactionResult,
 };
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
@@ -162,7 +163,6 @@ pub struct ManifestGenesisResource {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct GenesisReceipts {
-    pub system_flash_receipt: FlashReceipt,
     pub system_bootstrap_receipt: TransactionReceipt,
     pub data_ingestion_receipts: Vec<TransactionReceipt>,
     pub wrap_up_receipt: TransactionReceipt,
@@ -249,12 +249,49 @@ where
         if first_typed_info.is_none() {
             let system_flash_receipt = self.flash_substates(substate_flash);
 
-            let system_bootstrap_receipt = self.execute_system_bootstrap(
+            let mut system_bootstrap_receipt = self.execute_system_bootstrap(
                 initial_epoch,
                 initial_config,
                 initial_time_ms,
                 initial_current_leader,
             );
+
+            // Merge system_flash_receipt into system_bootstrap_receipt
+            // This is currently a necessary hack in order to not change GenesisReceipt with
+            // the addition of a new system_flash_receipt.
+            match &mut system_bootstrap_receipt.transaction_result {
+                TransactionResult::Commit(result) => {
+                    let mut new_packages = system_flash_receipt.state_update_summary.new_packages;
+                    new_packages.extend(result.state_update_summary.new_packages.drain(..));
+                    let mut new_components =
+                        system_flash_receipt.state_update_summary.new_components;
+                    new_components.extend(result.state_update_summary.new_components.drain(..));
+                    let mut new_resources = system_flash_receipt.state_update_summary.new_resources;
+                    new_resources.extend(result.state_update_summary.new_resources.drain(..));
+
+                    result.state_update_summary.new_packages = new_packages;
+                    result.state_update_summary.new_components = new_components;
+                    result.state_update_summary.new_resources = new_resources;
+
+                    // A sanity check
+                    for (txn_key, txn_updates) in &result.state_updates.system_updates {
+                        for (flash_key, _) in &system_flash_receipt.system_updates {
+                            if txn_key.eq(flash_key) && !txn_updates.is_empty() {
+                                panic!("Invalid genesis creation: Transactions overwriting initial flash substates");
+                            }
+                        }
+                    }
+
+                    let mut system_updates = system_flash_receipt.system_updates;
+                    system_updates.extend(result.state_updates.system_updates.drain(..));
+                    let mut database_updates = system_flash_receipt.database_updates;
+                    database_updates.extend(result.state_updates.database_updates.drain(..));
+
+                    result.state_updates.system_updates = system_updates;
+                    result.state_updates.database_updates = database_updates;
+                }
+                _ => {}
+            }
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
@@ -265,7 +302,6 @@ where
             let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(faucet_supply);
 
             Some(GenesisReceipts {
-                system_flash_receipt,
                 system_bootstrap_receipt,
                 data_ingestion_receipts,
                 wrap_up_receipt: genesis_wrap_up_receipt,
