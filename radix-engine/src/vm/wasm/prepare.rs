@@ -367,7 +367,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        ACTOR_LOCK_FIELD_FUNCTION_NAME => {
+                        ACTOR_OPEN_FIELD_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -380,7 +380,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        ACTOR_LOCK_FIELD_FUNCTION_NAME.to_string(),
+                                        ACTOR_OPEN_FIELD_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }

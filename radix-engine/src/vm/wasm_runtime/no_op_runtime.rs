@@ -139,7 +139,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn actor_lock_field(
+    fn actor_open_field(
         &mut self,
         object_handle: u32,
         field: u8,

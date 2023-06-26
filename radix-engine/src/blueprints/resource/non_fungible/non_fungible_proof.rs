@@ -81,7 +81,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let moveable = {
-            let handle = api.actor_lock_field(
+            let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
@@ -91,7 +91,7 @@ impl NonFungibleProofBlueprint {
             api.field_lock_release(handle)?;
             moveable
         };
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -118,7 +118,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -135,7 +135,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),

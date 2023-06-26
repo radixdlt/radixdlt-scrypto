@@ -406,7 +406,7 @@ fn lock_field(
     flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.actor_lock_field(object_handle, field as u8, flags)
+    runtime.actor_open_field(object_handle, field as u8, flags)
 }
 
 fn read_substate(
@@ -991,7 +991,7 @@ impl WasmiModule {
         );
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
-        linker_define!(linker, ACTOR_LOCK_FIELD_FUNCTION_NAME, host_lock_field);
+        linker_define!(linker, ACTOR_OPEN_FIELD_FUNCTION_NAME, host_lock_field);
         linker_define!(
             linker,
             ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME,

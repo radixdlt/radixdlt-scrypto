@@ -2190,7 +2190,7 @@ where
 {
     // Costing through kernel
     #[trace_resources]
-    fn actor_lock_field(
+    fn actor_open_field(
         &mut self,
         object_handle: ObjectHandle,
         field_index: u8,

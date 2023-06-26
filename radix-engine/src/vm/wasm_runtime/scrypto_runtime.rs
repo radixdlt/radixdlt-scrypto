@@ -281,14 +281,14 @@ where
         self.allocate_buffer(rtn)
     }
 
-    fn actor_lock_field(
+    fn actor_open_field(
         &mut self,
         object_handle: u32,
         field: u8,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.actor_lock_field(object_handle, field, flags)?;
+        let handle = self.api.actor_open_field(object_handle, field, flags)?;
 
         Ok(handle)
     }

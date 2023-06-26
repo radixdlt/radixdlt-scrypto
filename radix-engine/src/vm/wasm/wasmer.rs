@@ -487,7 +487,7 @@ impl WasmerModule {
             Ok(())
         }
 
-        pub fn actor_lock_field(
+        pub fn actor_open_field(
             env: &WasmerInstanceEnv,
             object_handle: u32,
             field: u8,
@@ -496,7 +496,7 @@ impl WasmerModule {
             let (_instance, runtime) = grab_runtime!(env);
 
             let handle = runtime
-                .actor_lock_field(object_handle, field, flags)
+                .actor_open_field(object_handle, field, flags)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(handle)
@@ -685,7 +685,7 @@ impl WasmerModule {
                 GLOBALIZE_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
                 GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
-                ACTOR_LOCK_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_lock_field),
+                ACTOR_OPEN_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_open_field),
                 ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_call_module_method),
                 KEY_VALUE_STORE_NEW_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_new),
                 KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), key_value_store_lock_entry),

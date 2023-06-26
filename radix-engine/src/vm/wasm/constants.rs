@@ -24,7 +24,7 @@ pub const KEY_VALUE_ENTRY_GET_FUNCTION_NAME: &str = "kv_entry_get";
 pub const KEY_VALUE_ENTRY_SET_FUNCTION_NAME: &str = "kv_entry_set";
 pub const KEY_VALUE_ENTRY_RELEASE_FUNCTION_NAME: &str = "kv_entry_release";
 
-pub const ACTOR_LOCK_FIELD_FUNCTION_NAME: &str = "actor_lock_field";
+pub const ACTOR_OPEN_FIELD_FUNCTION_NAME: &str = "actor_open_field";
 pub const ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME: &str = "actor_call_module_method";
 
 pub const FIELD_LOCK_READ_FUNCTION_NAME: &str = "field_lock_read";

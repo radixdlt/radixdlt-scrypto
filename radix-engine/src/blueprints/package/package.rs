@@ -1265,7 +1265,7 @@ impl PackageRoyaltyNativeBlueprint {
             ));
         }
 
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             PackageField::Royalty.into(),
             LockFlags::read_only(),
