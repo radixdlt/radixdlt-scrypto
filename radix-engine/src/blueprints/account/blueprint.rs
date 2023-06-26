@@ -18,6 +18,7 @@ use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
+use radix_engine_interface::metadata_init;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
@@ -52,6 +53,7 @@ pub const SECURIFY_ROLE: &'static str = "securify";
 struct SecurifiedAccount;
 
 impl SecurifiedAccessRules for SecurifiedAccount {
+    type OwnerBadgeNonFungibleData = AccountOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
@@ -69,12 +71,13 @@ pub struct AccountBlueprint;
 impl AccountBlueprint {
     fn create_modules<Y>(
         access_rules: AccessRules,
+        metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let metadata = Metadata::create(api)?;
+        let metadata = Metadata::create_with_data(metadata_init, api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
@@ -115,31 +118,36 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let owner_badge = {
+            let bytes = public_key_hash.get_hash_bytes();
+            let entity_type = match public_key_hash {
+                PublicKeyHash::Ed25519(..) => EntityType::GlobalVirtualEd25519Account,
+                PublicKeyHash::Secp256k1(..) => EntityType::GlobalVirtualSecp256k1Account,
+            };
+
+            let mut id_bytes = vec![entity_type as u8];
+            id_bytes.extend(bytes);
+
+            NonFungibleLocalId::bytes(id_bytes).unwrap()
+        };
+
         let account = Self::create_local(api)?;
         let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
         let access_rules = SecurifiedAccount::create_presecurified(owner_id, api)?;
-        let mut modules = Self::create_modules(access_rules, api)?;
-
-        {
-            // Set up metadata
-            // TODO: Improve this when the Metadata module API is nicer
-            let metadata = modules.get(&ObjectModuleId::Metadata).unwrap();
-            // NOTE:
-            // This is the owner key for ROLA.
-            // We choose to set this explicitly to simplify the security-critical logic off-ledger.
-            // In particular, we want an owner to be able to explicitly delete the owner keys.
-            // If we went with a "no metadata = assume default public key hash", then this could cause unexpeted
-            // security-critical behaviour if a user expected that deleting the metadata removed the owner keys.
-            api.call_method(
-                &metadata.0,
-                METADATA_SET_IDENT,
-                scrypto_encode(&MetadataSetInput {
-                    key: "owner_keys".to_string(),
-                    value: MetadataValue::PublicKeyHashArray(vec![public_key_hash]),
-                })
-                .unwrap(),
-            )?;
-        }
+        let mut modules = Self::create_modules(
+            access_rules,
+            metadata_init!(
+                // NOTE:
+                // This is the owner key for ROLA. We choose to set this explicitly to simplify the
+                // security-critical logic off-ledger. In particular, we want an owner to be able to
+                // explicitly delete the owner keys. If we went with a "no metadata = assume default
+                // public key hash", then this could cause unexpected security-critical behavior if
+                // a user expected that deleting the metadata removed the owner keys.
+                "owner_keys" => vec![public_key_hash], updatable;
+                "owner_badge" => owner_badge, locked;
+            ),
+            api,
+        )?;
 
         modules.insert(ObjectModuleId::Main, account);
 
@@ -150,7 +158,16 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        SecurifiedAccount::securify(receiver, api)
+        let owner_badge_data = AccountOwnerBadgeData {
+            name: "Account Owner Badge".into(),
+            account: ComponentAddress::new_or_panic(receiver.0),
+        };
+        SecurifiedAccount::securify(
+            receiver,
+            owner_badge_data,
+            Some(NonFungibleLocalId::bytes(receiver.0).unwrap()),
+            api,
+        )
     }
 
     pub fn create_advanced<Y>(
@@ -162,7 +179,13 @@ impl AccountBlueprint {
     {
         let account = Self::create_local(api)?;
         let access_rules = SecurifiedAccount::create_advanced(owner_rule, api)?;
-        let mut modules = Self::create_modules(access_rules, api)?;
+        let mut modules = Self::create_modules(
+            access_rules,
+            metadata_init!(
+                "owner_badge" => EMPTY, locked;
+            ),
+            api,
+        )?;
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
@@ -175,13 +198,31 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+        })?;
+
         let account = Self::create_local(api)?;
-        let (access_rules, bucket) = SecurifiedAccount::create_securified(api)?;
-        let mut modules = Self::create_modules(access_rules, api)?;
+        let (access_rules, bucket) = SecurifiedAccount::create_securified(
+            AccountOwnerBadgeData {
+                name: "Account Owner Badge".into(),
+                account: address.try_into().expect("Impossible Case"),
+            },
+            Some(NonFungibleLocalId::bytes(address.as_node_id().0).unwrap()),
+            api,
+        )?;
+        let mut modules = Self::create_modules(
+            access_rules,
+            metadata_init! {
+                "owner_badge" => NonFungibleLocalId::bytes(address.as_node_id().0).unwrap(), locked;
+            },
+            api,
+        )?;
         modules.insert(ObjectModuleId::Main, account);
         let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
 
-        let address = api.globalize(modules, None)?;
+        let address = api.globalize(modules, Some(address_reservation))?;
 
         Ok((address, bucket))
     }
@@ -734,4 +775,14 @@ impl AccountBlueprint {
 
         Ok(resource_deposit_configuration)
     }
+}
+
+#[derive(ScryptoSbor)]
+pub struct AccountOwnerBadgeData {
+    pub name: String,
+    pub account: ComponentAddress,
+}
+
+impl NonFungibleData for AccountOwnerBadgeData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }

@@ -601,51 +601,57 @@ where
             data,
         );
 
-        let (lock_handle, store_access): (u32, StoreAccessInfo) = match &maybe_lock_handle {
-            Ok((lock_handle, store_access)) => (*lock_handle, store_access.clone()),
-            Err(OpenSubstateError::TrackError(track_err)) => {
-                if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
-                    let retry =
-                        M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
+        let (lock_handle, value_size, store_access): (u32, usize, StoreAccessInfo) =
+            match &maybe_lock_handle {
+                Ok((lock_handle, value_size, store_access)) => {
+                    (*lock_handle, *value_size, store_access.clone())
+                }
+                Err(OpenSubstateError::TrackError(track_err)) => {
+                    if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
+                        let retry = M::on_substate_lock_fault(
+                            *node_id,
+                            partition_num,
+                            &substate_key,
+                            self,
+                        )?;
 
-                    if retry {
-                        self.current_frame
-                            .acquire_lock(
-                                &mut self.heap,
-                                self.store,
-                                &node_id,
-                                partition_num,
-                                &substate_key,
-                                flags,
-                                None,
-                                M::LockData::default(),
-                            )
-                            .map_err(CallFrameError::OpenSubstateError)
-                            .map_err(KernelError::CallFrameError)?
+                        if retry {
+                            self.current_frame
+                                .acquire_lock(
+                                    &mut self.heap,
+                                    self.store,
+                                    &node_id,
+                                    partition_num,
+                                    &substate_key,
+                                    flags,
+                                    None,
+                                    M::LockData::default(),
+                                )
+                                .map_err(CallFrameError::OpenSubstateError)
+                                .map_err(KernelError::CallFrameError)?
+                        } else {
+                            return maybe_lock_handle
+                                .map(|(lock_handle, _, _)| lock_handle)
+                                .map_err(CallFrameError::OpenSubstateError)
+                                .map_err(KernelError::CallFrameError)
+                                .map_err(RuntimeError::KernelError);
+                        }
                     } else {
-                        return maybe_lock_handle
-                            .map(|(lock_handle, _)| lock_handle)
-                            .map_err(CallFrameError::OpenSubstateError)
-                            .map_err(KernelError::CallFrameError)
-                            .map_err(RuntimeError::KernelError);
+                        return Err(RuntimeError::KernelError(KernelError::CallFrameError(
+                            CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(
+                                track_err.clone(),
+                            )),
+                        )));
                     }
-                } else {
+                }
+                Err(err) => {
                     return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                        CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(
-                            track_err.clone(),
-                        )),
+                        CallFrameError::OpenSubstateError(err.clone()),
                     )));
                 }
-            }
-            Err(err) => {
-                return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::OpenSubstateError(err.clone()),
-                )));
-            }
-        };
+            };
 
-        // FIXME: pass the right size
-        M::after_open_substate(lock_handle, 0, &store_access, self)?;
+        M::after_open_substate(lock_handle, node_id, value_size, &store_access, self)?;
 
         Ok(lock_handle)
     }
@@ -680,19 +686,12 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let (value, mut store_access) = self
+        let (value, store_access) = self
             .current_frame
             .read_substate(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
-        let mut value_size = value.len();
-
-        // FIXME: revisit package special costing rules
-        let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
-        if lock_info.node_id.is_global_package() {
-            store_access.clear();
-            value_size = 0;
-        }
+        let value_size = value.len();
 
         M::on_read_substate(lock_handle, value_size, &store_access, self)?;
 
@@ -842,10 +841,7 @@ where
 
         let rtn = self.invoke(invocation)?;
 
-        M::after_invoke(
-            0, // FIXME: Pass the right size
-            self,
-        )?;
+        M::after_invoke(rtn.len(), self)?;
 
         Ok(rtn)
     }

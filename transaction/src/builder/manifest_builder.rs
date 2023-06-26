@@ -808,11 +808,11 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package_advanced(
+    pub fn publish_package_advanced<M: Into<MetadataInit>>(
         &mut self,
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: M,
         owner_role: OwnerRole,
     ) -> &mut Self {
         let code_hash = hash(&code);
@@ -825,7 +825,7 @@ impl ManifestBuilder {
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata,
+                metadata: metadata.into(),
                 package_address: None,
                 owner_role,
             }),
@@ -845,7 +845,7 @@ impl ManifestBuilder {
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata: BTreeMap::new(),
+                metadata: metadata_init!(),
             }),
         });
         self
@@ -869,7 +869,7 @@ impl ManifestBuilder {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata: BTreeMap::new(),
+                metadata: metadata_init!(),
                 owner_role: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
         });

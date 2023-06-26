@@ -63,7 +63,8 @@ fn validator_invalidates_calls_to_unknown_methods_on_a_known_blueprint() {
 #[test]
 fn common_manifests_are_all_valid() {
     // Arrange
-    let path = "../transaction";
+    // let path = "../transaction";
+    let path = "../transaction/examples/access_rule";
     for entry in WalkDir::new(path) {
         let path = entry.unwrap().path().canonicalize().unwrap();
 

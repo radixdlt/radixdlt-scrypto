@@ -467,28 +467,21 @@ impl TestRunner {
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        if let Some(output) = self
+        let output = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltyAccumulatorSubstate>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),
+            )?;
+
+        self.substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                output.royalty_vault.0.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &FungibleVaultField::LiquidFungible.into(),
             )
-        {
-            output
-                .royalty_vault
-                .and_then(|vault| {
-                    self.substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
-                            vault.as_node_id(),
-                            MAIN_BASE_PARTITION,
-                            &FungibleVaultField::LiquidFungible.into(),
-                        )
-                })
-                .map(|r| r.amount())
-        } else {
-            None
-        }
+            .map(|r| r.amount())
     }
 
     pub fn account_balance(
@@ -839,7 +832,7 @@ impl TestRunner {
                     args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
                         setup: definition,
-                        metadata: btreemap!(),
+                        metadata: metadata_init!(),
                         package_address: Some(ManifestAddressReservation(0)),
                         owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),

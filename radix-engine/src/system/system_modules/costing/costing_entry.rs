@@ -1,9 +1,8 @@
+use super::FeeTable;
 use crate::kernel::actor::Actor;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use radix_engine_interface::*;
-
-use super::FeeTable;
 
 #[derive(Debug, IntoStaticStr)]
 pub enum CostingEntry<'a> {
@@ -30,9 +29,12 @@ pub enum CostingEntry<'a> {
     },
 
     /* invoke */
-    Invoke {
+    BeforeInvoke {
         actor: &'a Actor,
         input_size: usize,
+    },
+    AfterInvoke {
+        output_size: usize,
     },
 
     /* node */
@@ -47,6 +49,7 @@ pub enum CostingEntry<'a> {
     },
     MoveModules,
     OpenSubstate {
+        node_id: &'a NodeId,
         value_size: usize,
         store_access: &'a StoreAccessInfo,
     },
@@ -124,7 +127,10 @@ impl<'a> CostingEntry<'a> {
                 export_name,
                 gas,
             } => ft.run_wasm_code_cost(package_address, export_name, *gas),
-            CostingEntry::Invoke { actor, input_size } => ft.invoke_cost(actor, *input_size),
+            CostingEntry::BeforeInvoke { actor, input_size } => {
+                ft.before_invoke_cost(actor, *input_size)
+            }
+            CostingEntry::AfterInvoke { output_size } => ft.after_invoke_cost(*output_size),
             CostingEntry::AllocateNodeId => ft.allocate_node_id_cost(),
             CostingEntry::CreateNode {
                 node_id,
@@ -136,6 +142,7 @@ impl<'a> CostingEntry<'a> {
             } => ft.drop_node_cost(*total_substate_size),
             CostingEntry::MoveModules => ft.move_modules_cost(),
             CostingEntry::OpenSubstate {
+                node_id: _,
                 value_size,
                 store_access,
             } => ft.open_substate_cost(*value_size, store_access),
@@ -170,6 +177,26 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::Panic { size } => ft.panic_cost(*size),
             CostingEntry::RoyaltyModule { direct_charge } => *direct_charge,
             CostingEntry::AuthModule { direct_charge } => *direct_charge,
+        }
+    }
+}
+
+impl<'a> CostingEntry<'a> {
+    pub fn to_trace_key(&self) -> String {
+        match self {
+            CostingEntry::RunNativeCode { export_name, .. } => {
+                format!("RunNativeCode::{}", export_name)
+            }
+            CostingEntry::RunWasmCode { export_name, .. } => {
+                format!("RunWasmCode::{}", export_name)
+            }
+            CostingEntry::OpenSubstate { node_id, .. } => {
+                format!(
+                    "OpenSubstate::{}",
+                    node_id.entity_type().map(|x| x.into()).unwrap_or("?")
+                )
+            }
+            x => Into::<&'static str>::into(x).to_string(),
         }
     }
 }

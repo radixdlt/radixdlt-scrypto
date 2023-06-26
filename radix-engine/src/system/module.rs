@@ -146,6 +146,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn after_open_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
+        _node_id: &NodeId,
         _store_access: &StoreAccessInfo,
         _size: usize,
     ) -> Result<(), RuntimeError> {

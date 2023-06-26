@@ -415,7 +415,7 @@ impl<L: Clone> CallFrame<L> {
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
-    ) -> Result<(LockHandle, StoreAccessInfo), OpenSubstateError> {
+    ) -> Result<(LockHandle, usize, StoreAccessInfo), OpenSubstateError> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(OpenSubstateError::NodeNotVisible(node_id.clone()));
@@ -510,7 +510,7 @@ impl<L: Clone> CallFrame<L> {
             *counter += 1;
         }
 
-        Ok((lock_handle, store_access))
+        Ok((lock_handle, substate_value.len(), store_access))
     }
 
     pub fn drop_lock<S: SubstateStore>(

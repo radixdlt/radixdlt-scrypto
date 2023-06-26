@@ -56,6 +56,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn after_open_substate<Y>(
         handle: LockHandle,
+        node_id: &NodeId,
         size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
