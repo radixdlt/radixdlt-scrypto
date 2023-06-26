@@ -16,6 +16,15 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
+pub trait HasAccessRules {
+    fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
+    fn lock_role(&self, name: &str);
+    fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
+    fn lock_metadata_role(&self, name: &str);
+    fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
+    fn lock_component_royalties_role(&self, name: &str);
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AccessRules(pub ModuleHandle);
 
@@ -33,46 +42,49 @@ impl AccessRules {
         Self(ModuleHandle::Own(access_rules))
     }
 
-    pub fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+    fn internal_set_role<A: Into<AccessRule>>(&self, module: ObjectModuleId, name: &str, rule: A) {
         self.call_ignore_rtn(
             ACCESS_RULES_SET_ROLE_IDENT,
             &AccessRulesSetRoleInput {
-                module: ObjectModuleId::Main,
+                module,
                 role_key: RoleKey::new(name),
                 rule: rule.into(),
             },
         );
+    }
+
+    fn internal_lock_role(&self, module: ObjectModuleId, name: &str) {
+        self.call_ignore_rtn(
+            ACCESS_RULES_LOCK_ROLE_IDENT,
+            &AccessRulesLockRoleInput {
+                module,
+                role_key: RoleKey::new(name),
+            },
+        );
+    }
+
+    pub fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.internal_set_role(ObjectModuleId::Main, name, rule);
     }
 
     pub fn lock_role(&self, name: &str) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_LOCK_ROLE_IDENT,
-            &AccessRulesLockRoleInput {
-                module: ObjectModuleId::Main,
-                role_key: RoleKey::new(name),
-            },
-        );
+        self.internal_lock_role(ObjectModuleId::Main, name);
     }
 
     pub fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_SET_ROLE_IDENT,
-            &AccessRulesSetRoleInput {
-                module: ObjectModuleId::Metadata,
-                role_key: RoleKey::new(name),
-                rule: rule.into(),
-            },
-        );
+        self.internal_set_role(ObjectModuleId::Metadata, name, rule);
     }
 
     pub fn lock_metadata_role(&self, name: &str) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_LOCK_ROLE_IDENT,
-            &AccessRulesLockRoleInput {
-                module: ObjectModuleId::Metadata,
-                role_key: RoleKey::new(name),
-            },
-        );
+        self.internal_lock_role(ObjectModuleId::Metadata, name);
+    }
+
+    pub fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.internal_set_role(ObjectModuleId::Royalty, name, rule);
+    }
+
+    pub fn lock_component_royalties_role(&self, name: &str) {
+        self.internal_lock_role(ObjectModuleId::Royalty, name);
     }
 }
 

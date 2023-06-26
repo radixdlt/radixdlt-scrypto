@@ -1,6 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::modules::{AccessRules, Attachable, HasMetadata, Royalty};
-use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
+use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle, HasAccessRules};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
@@ -12,7 +12,7 @@ use radix_engine_common::prelude::{
 use radix_engine_interface::api::node_modules::metadata::{MetadataInit, METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT, MetadataVal, MetadataError};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
+use radix_engine_interface::blueprints::resource::{AccessRule, MethodAccessibility, OwnerRole, Roles};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -343,7 +343,7 @@ impl<O: HasStub> Global<O> {
         Attached(metadata, PhantomData::default())
     }
 
-    pub fn access_rules(&self) -> Attached<AccessRules> {
+    fn access_rules(&self) -> Attached<AccessRules> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let access_rules = AccessRules::attached(address);
         Attached(access_rules, PhantomData::default())
@@ -367,6 +367,32 @@ impl<O: HasStub> HasMetadata for Global<O> {
 
     fn remove_metadata<K: ToString>(&self, name: K) -> bool {
         self.metadata().remove(name)
+    }
+}
+
+impl<O: HasStub> HasAccessRules for Global<O> {
+    fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.access_rules().set_role(name, rule);
+    }
+
+    fn lock_role(&self, name: &str) {
+        self.access_rules().lock_role(name);
+    }
+
+    fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.access_rules().set_metadata_role(name, rule);
+    }
+
+    fn lock_metadata_role(&self, name: &str) {
+        self.access_rules().lock_role(name);
+    }
+
+    fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.access_rules().set_component_royalties_role(name, rule);
+    }
+
+    fn lock_component_royalties_role(&self, name: &str) {
+        self.access_rules().lock_component_royalties_role(name);
     }
 }
 

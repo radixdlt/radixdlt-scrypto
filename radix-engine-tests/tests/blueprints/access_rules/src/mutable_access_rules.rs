@@ -39,11 +39,6 @@ mod mutable_access_rules_component {
                 .globalize()
         }
 
-        pub fn access_rules_function(component_address: ComponentAddress) {
-            let component: Global<AnyComponent> = component_address.into();
-            let _access_rules = component.access_rules();
-        }
-
         pub fn set_authority_rules(&self, role: String, rule: AccessRule) {
             let access_rules = Runtime::access_rules();
             access_rules.set_role(role.as_str(), rule);
