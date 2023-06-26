@@ -61,10 +61,6 @@ impl ResourceManager {
         Self(Global(stub))
     }
 
-    pub fn resource_address(&self) -> ResourceAddress {
-        ResourceAddress::new_or_panic(self.0 .0 .0.as_node_id().0.clone())
-    }
-
     pub fn set_mintable(&self, access_rule: AccessRule) {
         self.0.set_role(MINTER_ROLE, access_rule);
     }
