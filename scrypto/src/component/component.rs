@@ -358,8 +358,13 @@ impl<O: HasStub> Global<O> {
         let access_rules = AccessRules::attached(address);
         Attached(access_rules, PhantomData::default())
     }
+}
 
-    // FIXME: Remove for Resources and Packages
+impl<O, S> Global<O>
+    where
+        O: HasStub<Stub = S>,
+        S: ObjectStub<AddressType = ComponentAddress>,
+{
     fn component_royalties(&self) -> Attached<Royalty> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let royalty = Royalty::attached(address);
@@ -436,7 +441,11 @@ impl<O: HasStub> HasAccessRules for Global<O> {
     }
 }
 
-impl<O: HasStub> HasComponentRoyalties for Global<O> {
+impl<O, S> HasComponentRoyalties for Global<O>
+    where
+        O: HasStub<Stub = S>,
+        S: ObjectStub<AddressType = ComponentAddress>
+{
     fn set_royalty<M: ToString>(&self, method: M, amount: RoyaltyAmount) {
         self.component_royalties().set_royalty(method, amount);
     }
