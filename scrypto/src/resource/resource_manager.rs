@@ -1,3 +1,4 @@
+use crate::modules::HasAccessRules;
 use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
 use radix_engine_interface::api::node_modules::metadata::METADATA_ADMIN_ROLE;
@@ -16,7 +17,6 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::component::HasStub;
-use crate::modules::HasAccessRules;
 
 #[derive(Debug, Clone, Copy, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
