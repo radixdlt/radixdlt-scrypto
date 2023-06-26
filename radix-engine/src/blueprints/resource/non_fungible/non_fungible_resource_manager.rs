@@ -61,7 +61,7 @@ where
             ));
         }
 
-        let non_fungible_handle = api.actor_lock_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &non_fungible_local_id.to_key(),
@@ -547,7 +547,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        let non_fungible_handle = api.actor_lock_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &id.to_key(),
@@ -586,7 +586,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let non_fungible_handle = api.actor_lock_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &id.to_key(),
@@ -609,7 +609,7 @@ impl NonFungibleResourceManagerBlueprint {
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_global_address()?.into());
 
-        let non_fungible_handle = api.actor_lock_key_value_entry(
+        let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
             &id.to_key(),
@@ -703,7 +703,7 @@ impl NonFungibleResourceManagerBlueprint {
         // Update
         {
             for id in other_bucket.liquid.into_ids() {
-                let handle = api.actor_lock_key_value_entry(
+                let handle = api.actor_open_key_value_entry(
                     OBJECT_HANDLE_SELF,
                     NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE,
                     &id.to_key(),

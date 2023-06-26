@@ -2351,7 +2351,7 @@ where
 {
     // Costing through kernel
     #[trace_resources]
-    fn actor_lock_key_value_entry(
+    fn actor_open_key_value_entry(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
@@ -2413,7 +2413,7 @@ where
         collection_index: CollectionIndex,
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let handle = self.actor_lock_key_value_entry(
+        let handle = self.actor_open_key_value_entry(
             object_handle,
             collection_index,
             key,

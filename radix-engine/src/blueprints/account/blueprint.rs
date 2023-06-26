@@ -586,7 +586,7 @@ impl AccountBlueprint {
 
         match resource_deposit_configuration {
             ResourceDepositRule::Allowed | ResourceDepositRule::Disallowed => {
-                let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+                let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
                     OBJECT_HANDLE_SELF,
                     ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
                     &encoded_key,
@@ -639,7 +639,7 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             ACCOUNT_VAULT_INDEX,
             &encoded_key,
@@ -723,7 +723,7 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(resource_address).expect("Impossible Case!");
 
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             ACCOUNT_VAULT_INDEX,
             &encoded_key,
@@ -754,7 +754,7 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let kv_store_entry_lock_handle = api.actor_lock_key_value_entry(
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX,
             &encoded_key,
