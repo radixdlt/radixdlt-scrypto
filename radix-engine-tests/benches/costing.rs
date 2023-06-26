@@ -43,7 +43,7 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 
 fn bench_spin_loop(c: &mut Criterion) {
     // Prepare code
-    let code = wat2wasm(&include_str!("../tests/wasm/loop.wat").replace("${n}", "1000")).unwrap();
+    let code = wat2wasm(&include_str!("../tests/wasm/loop.wat").replace("${n}", "100000")).unwrap();
 
     // Instrument
     let validator = WasmValidator::default();

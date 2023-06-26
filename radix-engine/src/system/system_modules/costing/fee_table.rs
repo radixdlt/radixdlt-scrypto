@@ -152,8 +152,8 @@ impl FeeTable {
         _export_name: &str,
         gas: u32,
     ) -> u32 {
-        // From `costing::spin_loop`, it takes 60.228 µs ms for 19203691 gas' worth of computation.
-        // Therefore, cost for gas: 60.228 / 19203691 * 100 = 0.0003136272
+        // From `costing::spin_loop`, it takes 5.5391 ms for 1918122691 gas' worth of computation.
+        // Therefore, cost for gas: 5.5391 *  1000 / 1918122691 * 100 = 0.00028877714
 
         gas / 3000
     }
