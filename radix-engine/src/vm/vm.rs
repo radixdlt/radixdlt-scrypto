@@ -1,11 +1,11 @@
-use crate::blueprints::package::VmType;
-use crate::errors::RuntimeError;
+use crate::blueprints::package::{PackageError, VmType};
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
+use crate::vm::wasm::{WasmEngine, WasmValidator};
 use crate::vm::{NativeVm, ScryptoVm};
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
@@ -87,4 +87,99 @@ pub trait VmInvoke {
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>;
+}
+
+pub struct VmPackageValidation;
+
+impl VmPackageValidation {
+    pub fn validate(
+        definition: &PackageDefinition,
+        vm_type: VmType,
+        code: &[u8],
+    ) -> Result<(), RuntimeError> {
+        match vm_type {
+            VmType::Native => {}
+            VmType::ScryptoV1 => {
+                // Validate WASM
+                WasmValidator::default()
+                    .validate(&code, definition.blueprints.values())
+                    .map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::PackageError(
+                            PackageError::InvalidWasm(e),
+                        ))
+                    })?;
+
+                for BlueprintDefinitionInit {
+                    blueprint_type,
+                    feature_set,
+                    schema:
+                        BlueprintSchemaInit {
+                            generics,
+                            state: BlueprintStateSchemaInit { collections, .. },
+                            functions,
+                            ..
+                        },
+                    ..
+                } in definition.blueprints.values()
+                {
+                    match blueprint_type {
+                        BlueprintType::Outer => {}
+                        BlueprintType::Inner { .. } => {
+                            return Err(RuntimeError::ApplicationError(
+                                ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                    "Inner blueprints not supported".to_string(),
+                                )),
+                            ));
+                        }
+                    }
+
+                    if !feature_set.is_empty() {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                "Feature set not supported".to_string(),
+                            )),
+                        ));
+                    }
+
+                    if !collections.is_empty() {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                "Static collections not supported".to_string(),
+                            )),
+                        ));
+                    }
+
+                    if !functions.virtual_lazy_load_functions.is_empty() {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                "Lazy load functions not supported".to_string(),
+                            )),
+                        ));
+                    }
+
+                    for (_name, schema) in &functions.functions {
+                        if let Some(info) = &schema.receiver {
+                            if info.ref_types != RefTypes::NORMAL {
+                                return Err(RuntimeError::ApplicationError(
+                                    ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                        "Irregular ref types not supported".to_string(),
+                                    )),
+                                ));
+                            }
+                        }
+                    }
+
+                    if !generics.is_empty() {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::PackageError(PackageError::WasmUnsupported(
+                                "Generics not supported".to_string(),
+                            )),
+                        ));
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
 }

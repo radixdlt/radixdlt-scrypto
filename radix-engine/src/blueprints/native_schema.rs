@@ -27,7 +27,7 @@ lazy_static! {
     pub static ref TRANSACTION_TRACKER_PACKAGE_DEFINITION: PackageDefinition =
         TransactionTrackerNativePackage::definition();
     pub static ref RESOURCE_PACKAGE_DEFINITION: PackageDefinition =
-        ResourceManagerNativePackage::definition();
+        ResourceNativePackage::definition();
     pub static ref PACKAGE_PACKAGE_DEFINITION: PackageDefinition =
         PackageNativePackage::definition();
     pub static ref TRANSACTION_PROCESSOR_PACKAGE_DEFINITION: PackageDefinition =

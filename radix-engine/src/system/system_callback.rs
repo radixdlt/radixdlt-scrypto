@@ -14,7 +14,6 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
-use crate::vm::{NativeVm, VmInvoke};
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
@@ -295,57 +294,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             ident,
         } = system.actor_get_fn_identifier()?;
 
-        let output = if blueprint_id.package_address.eq(&PACKAGE_PACKAGE) {
-            // FIXME: check invocation against schema
-            // Do we need to check against the abi? Probably not since we should be able to verify this
-            // in the native package itself.
-            let export_name = match ident {
-                FnIdent::Application(ident) => ident,
-                FnIdent::System(..) => {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::SystemFunctionCallNotAllowed,
-                    ))
-                }
-            };
-
-            // FIXME: Load dependent resources/components
-
-            let mut vm_instance = {
-                NativeVm::create_instance(
-                    &blueprint_id.package_address,
-                    &PACKAGE_CODE_ID.to_be_bytes(),
-                )?
-            };
-            let output = { vm_instance.invoke(&export_name, input, &mut system)? };
-
-            output
-        } else if blueprint_id
-            .package_address
-            .eq(&TRANSACTION_PROCESSOR_PACKAGE)
-        {
-            // FIXME: check invocation against schema
-
-            let export_name = match ident {
-                FnIdent::Application(ident) => ident,
-                FnIdent::System(..) => {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::SystemFunctionCallNotAllowed,
-                    ))
-                }
-            };
-
-            // FIXME: Load dependent resources/components
-
-            let mut vm_instance = {
-                NativeVm::create_instance(
-                    &blueprint_id.package_address,
-                    &TRANSACTION_PROCESSOR_CODE_ID.to_be_bytes(),
-                )?
-            };
-            let output = { vm_instance.invoke(&export_name, input, &mut system)? };
-
-            output
-        } else {
+        let output = {
             // Make dependent resources/components visible
             let key = BlueprintVersionKey {
                 blueprint: blueprint_id.blueprint_name.clone(),

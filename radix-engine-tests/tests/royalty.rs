@@ -199,10 +199,13 @@ fn test_royalty_accumulation_when_failure() {
     );
 
     receipt.expect_commit_failure();
-    assert_eq!(test_runner.inspect_package_royalty(package_address), None);
+    assert_eq!(
+        test_runner.inspect_package_royalty(package_address),
+        Some(Decimal::zero())
+    );
     assert_eq!(
         test_runner.inspect_component_royalty(component_address),
-        dec!("0")
+        Decimal::zero()
     );
 }
 
