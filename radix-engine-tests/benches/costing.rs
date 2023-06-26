@@ -82,10 +82,41 @@ fn bench_spin_loop(c: &mut Criterion) {
     println!("Gas consumed: {}", gas_consumed);
 }
 
+fn bench_instantiate_radiswap(c: &mut Criterion) {
+    // Prepare code
+    let code = include_bytes!("../../assets/radiswap.wasm");
+
+    // Instrument
+    let validator = WasmValidator::default();
+    let instrumented_code = InstrumentedCode {
+        metered_code_key: (
+            PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]),
+            validator.instrumenter_config.version(),
+        ),
+        code: Arc::new(
+            validator
+                .validate(code, iter::empty())
+                .map_err(|e| ExtractSchemaError::InvalidWasm(e))
+                .unwrap()
+                .0,
+        ),
+    };
+
+    c.bench_function("costing::instantiate_radiswap", |b| {
+        b.iter(|| {
+            let wasm_engine = DefaultWasmEngine::default();
+            wasm_engine.instantiate(&instrumented_code);
+        })
+    });
+
+    println!("Code length: {}", code.len());
+}
+
 criterion_group!(
     costing,
     bench_decode_sbor,
     bench_validate_secp256k1,
-    bench_spin_loop
+    bench_spin_loop,
+    bench_instantiate_radiswap
 );
 criterion_main!(costing);
