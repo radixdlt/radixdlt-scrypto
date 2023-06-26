@@ -13,7 +13,9 @@ mod precommitted {
             let store = KeyValueStore::new();
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             store.insert(0u32, vault);
@@ -55,7 +57,9 @@ mod precommitted {
             let sub_store = KeyValueStore::new();
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             sub_store.insert(0u32, vault);

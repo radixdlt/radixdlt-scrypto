@@ -15,7 +15,9 @@ mod vault_test {
         fn new_fungible() -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(1)
         }
 

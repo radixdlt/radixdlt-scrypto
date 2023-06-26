@@ -29,7 +29,9 @@ mod non_fungible_test {
 
             // Create non-fungible resource with mutable supply
             let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
-                .metadata("name", "Katz's Sandwiches")
+                .metadata(metadata_init! {
+                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                })
                 .mintable(
                     rule!(require(mint_badge.resource_address())),
                     rule!(deny_all),
@@ -74,7 +76,9 @@ mod non_fungible_test {
 
         pub fn create_burnable_non_fungible() -> Bucket {
             ResourceBuilder::new_ruid_non_fungible()
-                .metadata("name", "Katz's Sandwiches")
+                .metadata(metadata_init! {
+                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                })
                 .burnable(rule!(allow_all), rule!(deny_all))
                 .mint_initial_supply([
                     Sandwich {
@@ -96,7 +100,9 @@ mod non_fungible_test {
 
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_integer_non_fungible()
-                .metadata("name", "Katz's Sandwiches")
+                .metadata(metadata_init! {
+                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                })
                 .mint_initial_supply([
                     (
                         1u64.into(),
@@ -235,7 +241,9 @@ mod non_fungible_test {
 
         pub fn get_total_supply() {
             let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
-                .metadata("name", "Katz's Sandwiches")
+                .metadata(metadata_init! {
+                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                })
                 .create_with_no_initial_supply();
 
             assert_eq!(resource_manager.total_supply().unwrap(), Decimal::zero(),);
@@ -518,7 +526,9 @@ mod non_fungible_test {
             // creating non-fungible id with id type set to default (RUID)
             let resource_manager = ResourceBuilder::new_ruid_non_fungible::<Sandwich>()
                 .mintable(rule!(allow_all), rule!(deny_all))
-                .metadata("name", "Katz's Sandwiches")
+                .metadata(metadata_init! {
+                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                })
                 .create_with_no_initial_supply();
 
             resource_manager.mint_ruid_non_fungible(Sandwich {

@@ -25,7 +25,9 @@ mod nf_data_with_global {
 
             // Create  resource with initial supply
             let bucket1 = ResourceBuilder::new_integer_non_fungible::<NFDataWithGlobal>()
-                .metadata("name", "NFDataWithGlobal")
+                .metadata(metadata_init! {
+                    "name" => "NFDataWithGlobal".to_owned(), locked;
+                })
                 .mintable(
                     rule!(require(mint_badge.resource_address())),
                     rule!(deny_all),

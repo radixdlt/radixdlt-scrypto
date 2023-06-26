@@ -10,7 +10,9 @@ mod move_test {
         fn create_test_token(amount: u32) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(amount)
         }
 

@@ -15,7 +15,9 @@ mod resource_test {
         pub fn set_mintable_with_self_resource_address() {
             let super_admin_manager: ResourceManager =
                 ResourceBuilder::new_ruid_non_fungible::<TestNFData>()
-                    .metadata("name", "Super Admin Badge")
+                    .metadata(metadata_init! {
+                        "name" => "Super Admin Badge".to_owned(), locked;
+                    })
                     .mintable(rule!(allow_all), rule!(allow_all))
                     .create_with_no_initial_supply();
 
@@ -29,7 +31,9 @@ mod resource_test {
                 .mint_initial_supply(1);
             let resource_manager = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .create_with_no_initial_supply();
@@ -45,7 +49,9 @@ mod resource_test {
                 .mint_initial_supply(1);
             let resource_manager = ResourceBuilder::new_fungible()
                 .divisibility(divisibility)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .create_with_no_initial_supply();
@@ -56,7 +62,9 @@ mod resource_test {
         pub fn create_fungible_wrong_resource_flags_should_fail() -> Bucket {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(1u32);
             bucket
         }
@@ -64,7 +72,9 @@ mod resource_test {
         pub fn create_fungible_wrong_mutable_flags_should_fail() -> Bucket {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(1u32);
             bucket
         }
@@ -76,7 +86,9 @@ mod resource_test {
                 .mint_initial_supply(1);
             let resource_manager = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .create_with_no_initial_supply();
@@ -115,7 +127,9 @@ mod resource_test {
 
             let token_resource_manager = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .owner_non_fungible_badge(manager_badge)
                 .create_with_no_initial_supply();
 

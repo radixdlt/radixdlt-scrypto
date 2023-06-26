@@ -9,7 +9,9 @@ mod badge_test {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .restrict_withdraw(rule!(allow_all), rule!(deny_all))
-                .metadata("name", "TestBadge")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(amount)
         }
 

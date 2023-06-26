@@ -12,7 +12,9 @@ mod fee {
     impl Fee {
         pub fn new(xrd: Bucket) -> Global<Fee> {
             let doge_tokens = ResourceBuilder::new_fungible()
-                .metadata("name", "DogeCoin")
+                .metadata(metadata_init! {
+                    "name" => "DogeCoin".to_owned(), locked;
+                })
                 .mint_initial_supply(100);
 
             Self {

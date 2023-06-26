@@ -16,7 +16,9 @@ mod bucket_test {
         fn create_test_token(amount: u32) -> Bucket {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(amount);
             let proof1 = bucket.create_proof();
             let proof2 = proof1.clone();
@@ -28,7 +30,9 @@ mod bucket_test {
         pub fn drop_bucket() {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(1u32);
 
             ScryptoEnv.drop_object(bucket.0.as_node_id()).unwrap();
@@ -37,7 +41,9 @@ mod bucket_test {
         pub fn drop_empty(amount: u32) {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(amount);
 
             bucket.drop_empty();
@@ -135,7 +141,9 @@ mod bucket_test {
         pub fn drop_locked_fungible_bucket() {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata_init! {
+                    "name" => "TestToken".to_owned(), locked;
+                })
                 .mint_initial_supply(1u32);
             bucket.create_proof();
 

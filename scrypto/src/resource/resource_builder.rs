@@ -1,7 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
 use crate::runtime::Runtime;
-use radix_engine_interface::api::node_modules::metadata::{MetadataInit, MetadataValue};
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -12,7 +12,6 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
-use sbor::rust::string::String;
 use scrypto::prelude::ScryptoValue;
 use scrypto::resource::ResourceManager;
 
@@ -174,15 +173,13 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> IsNonFungib
 /// All public methods first - these all need good rust docs
 ////////////////////////////////////////////////////////////
 
-pub trait UpdateMetadataBuilder: private::CanAddMetadata {
+pub trait UpdateMetadataBuilder: private::CanSetMetadata {
     /// Adds a resource metadata.
-    ///
-    /// If a previous attribute with the same name has been set, it will be overwritten.
-    fn metadata<K: Into<String>, V: Into<String>>(self, name: K, value: V) -> Self::OutputBuilder {
-        self.add_metadata(name.into(), MetadataValue::String(value.into()))
+    fn metadata(self, metadata_init: MetadataInit) -> Self::OutputBuilder {
+        self.set_metadata(metadata_init)
     }
 }
-impl<B: private::CanAddMetadata> UpdateMetadataBuilder for B {}
+impl<B: private::CanSetMetadata> UpdateMetadataBuilder for B {}
 
 pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// Sets the resource to be mintable.
@@ -783,13 +780,13 @@ fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungi
         .collect()
 }
 
-impl<T: AnyResourceType, A: ConfiguredAuth> private::CanAddMetadata
+impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetMetadata
     for InProgressResourceBuilder<T, A>
 {
     type OutputBuilder = Self;
 
-    fn add_metadata(mut self, key: String, value: MetadataValue) -> Self::OutputBuilder {
-        self.metadata.set_metadata(key, value);
+    fn set_metadata(mut self, metadata_init: MetadataInit) -> Self::OutputBuilder {
+        self.metadata = metadata_init;
         self
     }
 }
@@ -880,14 +877,13 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
 mod private {
     use super::*;
     use radix_engine_interface::{
-        api::node_modules::metadata::MetadataValue,
         blueprints::resource::{AccessRule, NonFungibleGlobalId, ResourceAction},
     };
 
-    pub trait CanAddMetadata: Sized {
+    pub trait CanSetMetadata: Sized {
         type OutputBuilder;
 
-        fn add_metadata(self, key: String, value: MetadataValue) -> Self::OutputBuilder;
+        fn set_metadata(self, metadata_init: MetadataInit) -> Self::OutputBuilder;
     }
 
     pub trait CanAddAuth: Sized {
