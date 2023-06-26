@@ -281,8 +281,7 @@ fn test_claim_royalty() {
     );
 }
 
-#[test]
-fn cannot_initialize_package_royalty_if_greater_than_allowed() {
+fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: RoyaltyAmount) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (_public_key, _, account) = test_runner.new_allocated_account();
@@ -293,11 +292,10 @@ fn cannot_initialize_package_royalty_if_greater_than_allowed() {
     // Act
     let (code, mut definition) = Compile::compile("./tests/blueprints/royalty");
     let blueprint_def = definition.blueprints.get_mut("RoyaltyTest").unwrap();
-    let max_royalty_allowed = Decimal::try_from(DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
     match &mut blueprint_def.royalty_config {
         PackageRoyaltyConfig::Enabled(royalties) => {
             for royalty in royalties.values_mut() {
-                *royalty = RoyaltyAmount::Xrd(max_royalty_allowed + dec!("1"));
+                *royalty = royalty_amount.clone();
             }
         }
         PackageRoyaltyConfig::Disabled => {}
@@ -317,6 +315,24 @@ fn cannot_initialize_package_royalty_if_greater_than_allowed() {
             ))
         )
     });
+}
+
+#[test]
+fn cannot_initialize_package_royalty_if_greater_xrd_than_allowed() {
+    let max_royalty_allowed_in_xrd =
+        Decimal::try_from(DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    let royalty_amount = RoyaltyAmount::Xrd(max_royalty_allowed_in_xrd + dec!("1"));
+    cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount);
+}
+
+#[test]
+fn cannot_initialize_package_royalty_if_greater_usd_than_allowed() {
+    let max_royalty_allowed_in_xrd =
+        Decimal::try_from(DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
+    let max_royalty_allowed_in_usd =
+        max_royalty_allowed_in_xrd / Decimal::try_from(DEFAULT_USD_PRICE).unwrap();
+    let royalty_amount = RoyaltyAmount::Usd(max_royalty_allowed_in_usd + dec!("1"));
+    cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount);
 }
 
 #[test]
