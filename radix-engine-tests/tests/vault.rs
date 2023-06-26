@@ -2,7 +2,7 @@ use radix_engine::blueprints::resource::VaultError;
 use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
-use radix_engine::kernel::call_frame::{CreateNodeError, TakeNodeError, CloseSubstateError};
+use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, TakeNodeError};
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;

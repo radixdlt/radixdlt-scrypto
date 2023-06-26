@@ -1,6 +1,6 @@
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError},
-    kernel::call_frame::{MoveModuleError, CloseSubstateError},
+    kernel::call_frame::{CloseSubstateError, MoveModuleError},
     types::*,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
