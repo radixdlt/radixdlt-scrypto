@@ -61,10 +61,12 @@ fn bench_spin_loop(c: &mut Criterion) {
         ),
     };
 
+    // Note that wasm engine maintains an internal cache, which means costing
+    // isn't taking WASM parsing into consideration.
+    let wasm_engine = DefaultWasmEngine::default();
     let mut gas_consumed = 0u32;
     c.bench_function("costing::spin_loop", |b| {
         b.iter(|| {
-            let wasm_engine = DefaultWasmEngine::default();
             let fee_reserve = SystemLoanFeeReserve::default()
                 .with_free_credit(Decimal::try_from(DEFAULT_FREE_CREDIT_IN_XRD).unwrap());
             gas_consumed = 0;

@@ -152,15 +152,13 @@ impl FeeTable {
         _export_name: &str,
         gas: u32,
     ) -> u32 {
-        // FIXME: update the costing for wasm instructions
+        // From `costing::spin_loop`, it takes 60.228 µs ms for 19203691 gas' worth of computation.
+        // Therefore, cost for gas: 60.228 / 19203691 * 100 = 0.0003136272
 
-        // FIXME: figure out the right conversion rate from gas to execution time
-
-        // From `costing::spin_loop`, it takes 1.9153 ms for 19203691 gas' worth of computation.
-        // Therefore, cost for gas: 1.9153 * 1000 / 19203691 * 100 = 0.00997360351
-
-        gas / 100
+        gas / 3000
     }
+
+    // FIXME: add wasm parsing cost
 
     //======================
     // Kernel costs

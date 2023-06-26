@@ -1,5 +1,5 @@
-Total Cost Units                                                                ,   7183684
-Total Fee                                                                       ,  3.591842
+Total Cost Units                                                                ,   7184282
+Total Fee                                                                       ,  3.592141
 AfterInvoke                                                                     ,       150
 AllocateNodeId                                                                  ,      6500
 BeforeInvoke                                                                    ,      5731
@@ -15,16 +15,16 @@ OpenSubstate::InternalFungibleVault                                             
 OpenSubstate::InternalGenericComponent                                          ,     36862
 QueryActor                                                                      ,      4000
 ReadSubstate                                                                    ,    108555
-RunNativeCode::Worktop_drain                                                    ,      6900
-RunNativeCode::Worktop_drop                                                     ,      6600
-RunNativeCode::Worktop_put                                                      ,     21200
-RunNativeCode::get_amount_FungibleBucket                                        ,     41100
-RunNativeCode::lock_fee                                                         ,     47900
-RunNativeCode::put_FungibleVault                                                ,     13400
-RunNativeCode::run                                                              ,    177000
-RunNativeCode::take_FungibleVault                                               ,     20300
-RunNativeCode::try_deposit_batch_or_abort                                       ,     41100
-RunNativeCode::withdraw                                                         ,     25600
+RunNativeCode::Worktop_drain                                                    ,      6901
+RunNativeCode::Worktop_drop                                                     ,      6683
+RunNativeCode::Worktop_put                                                      ,     21275
+RunNativeCode::get_amount_FungibleBucket                                        ,     41152
+RunNativeCode::lock_fee                                                         ,     47993
+RunNativeCode::put_FungibleVault                                                ,     13471
+RunNativeCode::run                                                              ,    177022
+RunNativeCode::take_FungibleVault                                               ,     20367
+RunNativeCode::try_deposit_batch_or_abort                                       ,     41152
+RunNativeCode::withdraw                                                         ,     25682
 TxBaseCost                                                                      ,     40000
 TxPayloadCost                                                                   ,     13450
 TxSignatureVerification                                                         ,      7000
