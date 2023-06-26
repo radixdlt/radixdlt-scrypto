@@ -141,6 +141,7 @@ impl SystemModuleMixer {
                 max_call_depth: execution_config.max_call_depth,
                 payload_len,
                 num_of_signatures,
+                max_per_function_royalty_in_xrd: execution_config.max_per_function_royalty_in_xrd,
                 enable_cost_breakdown: execution_config.enable_cost_breakdown,
                 costing_traces: index_map_new(),
             },
@@ -531,6 +532,14 @@ impl SystemModuleMixer {
     pub fn fee_reserve(&mut self) -> Option<&SystemLoanFeeReserve> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             Some(&self.costing.fee_reserve)
+        } else {
+            None
+        }
+    }
+
+    pub fn costing(&mut self) -> Option<&CostingModule> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            Some(&self.costing)
         } else {
             None
         }
