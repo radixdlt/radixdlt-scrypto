@@ -1,5 +1,5 @@
-Total Cost Units              ,  15961853
-Total Fee                     , 7.9809265
+Total Cost Units              ,  15921553
+Total Fee                     , 7.9607765
 AllocateNodeId                ,     15000
 CloseSubstate                 ,    176000
 CreateNode                    ,     21800
@@ -7,11 +7,11 @@ DropNode                      ,     21146
 EmitEvent                     ,      5062
 Invoke                        ,     14156
 LockFee                       ,       500
-OpenSubstate                  ,  12487200
+OpenSubstate                  ,  12486900
 QueryActor                    ,      6500
 ReadSubstate                  ,    198989
 RunNativeCode                 ,    807200
-RunWasmCode                   ,   2120000
+RunWasmCode                   ,   2080000
 TxBaseCost                    ,     40000
 TxPayloadCost                 ,     17650
 TxSignatureVerification       ,      7000

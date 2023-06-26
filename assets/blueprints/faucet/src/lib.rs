@@ -20,6 +20,12 @@ mod faucet {
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
             .with_address(address_reservation)
+            .metadata(metadata! {
+                init {
+                    "name" => "Test Faucet".to_owned(), locked;
+                    "description" => "A simple faucet for distributing tokens for testing purposes.".to_owned(), locked;
+                }
+            })
             .globalize()
         }
 

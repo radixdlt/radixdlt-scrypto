@@ -86,6 +86,12 @@ mod genesis_helper {
             .instantiate()
             .prepare_to_globalize(OwnerRole::Updatable(rule!(require(system_role.clone()))))
             .with_address(address_reservation)
+            .metadata(metadata! {
+                init {
+                    "name" => "Genesis Helper".to_owned(), locked;
+                    "description" => "A component with various utility and helper methods used in the creation of the Babylon Genesis.".to_owned(), locked;
+                }
+            })
             .globalize()
         }
 

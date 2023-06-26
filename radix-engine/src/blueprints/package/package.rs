@@ -2,6 +2,7 @@ use crate::blueprints::util::SecurifiedAccessRules;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
+use crate::system::node_modules::metadata::MetadataEntrySubstate;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipient};
 use crate::track::interface::NodeSubstates;
@@ -29,7 +30,7 @@ use sbor::LocalTypeIndex;
 use crate::roles_template;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::royalty::RoyaltyUtil;
-use crate::system::system::{KeyValueEntrySubstate, SystemService};
+use crate::system::system::{KeyValueEntrySubstate, SubstateMutability, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
@@ -412,6 +413,7 @@ const SECURIFY_OWNER_ROLE: &str = "securify_owner";
 struct SecurifiedPackage;
 
 impl SecurifiedAccessRules for SecurifiedPackage {
+    type OwnerBadgeNonFungibleData = PackageOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }
 
@@ -543,11 +545,16 @@ pub fn create_bootstrap_package_partitions(
     {
         let mut metadata_partition = BTreeMap::new();
         for (key, value) in metadata.data {
-            let value = if value.lock {
-                KeyValueEntrySubstate::locked_entry(value.value)
+            let mutability = if value.lock {
+                SubstateMutability::Immutable
             } else {
-                KeyValueEntrySubstate::entry(value.value)
+                SubstateMutability::Mutable
             };
+            let value = MetadataEntrySubstate {
+                value: value.value,
+                mutability,
+            };
+
             metadata_partition.insert(
                 SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 IndexedScryptoValue::from_typed(&value),
@@ -1119,10 +1126,28 @@ impl PackageNativePackage {
         let package_structure =
             Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code)?;
 
-        let (access_rules, bucket) = SecurifiedPackage::create_securified(api)?;
+        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
+            package_address: PACKAGE_PACKAGE,
+            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+        })?;
+
+        let (access_rules, bucket) = SecurifiedPackage::create_securified(
+            PackageOwnerBadgeData {
+                name: "Package Owner Badge".to_owned(),
+                package: address.try_into().expect("Impossible Case"),
+            },
+            None,
+            api,
+        )?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
 
-        let address = globalize_package(None, package_structure, metadata, access_rules, api)?;
+        let address = globalize_package(
+            Some(address_reservation),
+            package_structure,
+            metadata,
+            access_rules,
+            api,
+        )?;
 
         Ok((address, bucket))
     }
@@ -1353,4 +1378,14 @@ impl PackageAuthNativeBlueprint {
 
         Ok(template)
     }
+}
+
+#[derive(ScryptoSbor)]
+pub struct PackageOwnerBadgeData {
+    pub name: String,
+    pub package: PackageAddress,
+}
+
+impl NonFungibleData for PackageOwnerBadgeData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &[];
 }
