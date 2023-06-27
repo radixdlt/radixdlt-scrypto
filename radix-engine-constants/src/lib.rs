@@ -91,7 +91,7 @@ pub const DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION: usize = 4 * 1024;
 
 /// The default maximum substate read and write size.
 /// FIXME: Apply this limit in create_node too
-pub const DEFAULT_MAX_SUBSTATE_SIZE: usize = 1 * 1024 * 1024;
+pub const DEFAULT_MAX_SUBSTATE_SIZE: usize = 2 * 1024 * 1024;
 
 /// The default maximum invoke input args size.
 pub const DEFAULT_MAX_INVOKE_INPUT_SIZE: usize = 1 * 1024 * 1024;
