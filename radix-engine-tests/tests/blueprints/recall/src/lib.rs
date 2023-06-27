@@ -14,8 +14,10 @@ mod recall {
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .burnable(rule!(allow_all), rule!(deny_all))
                 .recallable(rule!(allow_all), rule!(deny_all))
-                .metadata(metadata_init! {
-                    "name" => "TestToken".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
                 })
                 .mint_initial_supply(500);
 

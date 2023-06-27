@@ -27,6 +27,7 @@ use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
 use sbor::rust::prelude::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct AccessControllerSubstate {
@@ -615,10 +616,12 @@ impl AccessControllerNativePackage {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,
-                        metadata: metadata_init! {
-                            "name" => "Recovery Badge".to_owned(), locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;
-                            "access_controller" => address, locked;
+                        metadata: metadata! {
+                            init {
+                                "name" => "Recovery Badge".to_owned(), locked;
+                                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;
+                                "access_controller" => address, locked;
+                            }
                         },
                         access_rules: access_rules.into(),
                     })

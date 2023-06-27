@@ -8,9 +8,10 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::{metadata_init, rule};
+use radix_engine_interface::{metadata, metadata_init, rule};
 use rand::Rng;
 use utils::ContextualDisplay;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 
 use crate::resim::Error::TransactionFailed;
 use crate::resim::*;
@@ -77,8 +78,10 @@ impl NewAccount {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        metadata: metadata_init!(
-                            "name" => "Owner Badge".to_owned(), locked;
+                        metadata: metadata!(
+                            init {
+                                "name" => "Owner Badge".to_owned(), locked;
+                            }
                         ),
                         access_rules: btreemap!(
                             ResourceAction::Withdraw => (rule!(allow_all), rule!(deny_all))

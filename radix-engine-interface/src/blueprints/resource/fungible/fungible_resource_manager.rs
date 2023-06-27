@@ -5,6 +5,7 @@ use arbitrary::Arbitrary;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use sbor::rust::collections::BTreeMap;
 
 pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";
@@ -16,7 +17,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 pub struct FungibleResourceManagerCreateInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
-    pub metadata: MetadataInit,
+    pub metadata: ModuleConfig<MetadataInit>,
     pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
 }
 
@@ -30,7 +31,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
 pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
-    pub metadata: MetadataInit,
+    pub metadata: ModuleConfig<MetadataInit>,
     pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
 }
@@ -44,7 +45,7 @@ pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
 pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
-    pub metadata: MetadataInit,
+    pub metadata: ModuleConfig<MetadataInit>,
     pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
     pub resource_address: GlobalAddressReservation,
@@ -54,7 +55,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
 pub struct FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
-    pub metadata: MetadataInit,
+    pub metadata: ModuleConfig<MetadataInit>,
     pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub initial_supply: Decimal,
     pub resource_address: ManifestAddressReservation,

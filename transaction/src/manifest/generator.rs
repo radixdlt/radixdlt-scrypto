@@ -1516,6 +1516,7 @@ mod tests {
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintRuidManifestInput, ResourceAction, Roles,
     };
+    use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
@@ -1778,11 +1779,14 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<String, Tuple>(
-                    "name" => Tuple(
-                        Enum<Option::Some>(Enum<Metadata::String>("Token")),
-                        true
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(
+                            Enum<Option::Some>(Enum<Metadata::String>("Token")),
+                            true
+                        ),
                     ),
+                    Map<String, Tuple>()
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1802,8 +1806,10 @@ mod tests {
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: metadata_init! {
-                        "name" => "Token".to_string(), locked;
+                    metadata: metadata! {
+                        init {
+                            "name" => "Token".to_string(), locked;
+                        }
                     },
                     access_rules: BTreeMap::from([
                         (
@@ -1847,7 +1853,7 @@ mod tests {
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
                         ),
-                        metadata: metadata_init!(),
+                        metadata: metadata!(),
                         access_rules: BTreeMap::new(),
                     }),
                 }],
@@ -1872,8 +1878,11 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<String, Tuple>(
-                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), true)
+                    ),
+                    Map<String, Tuple>()
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1884,7 +1893,7 @@ mod tests {
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
-                )
+                ),
                 Map<NonFungibleLocalId, Tuple>(
                     NonFungibleLocalId("#1#") => Tuple(
                         Tuple(
@@ -1904,11 +1913,11 @@ mod tests {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        metadata: BTreeMap::from([(
-                            "name".to_string(),
-                            MetadataValue::String("Token".to_string())
-                        )])
-                        .into(),
+                        metadata: metadata! {
+                            init {
+                                "name" => "Token".to_string(), locked;
+                            }
+                        },
                         access_rules: BTreeMap::from([
                             (
                                 ResourceAction::Withdraw,
@@ -1938,8 +1947,11 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE
                 false
                 18u8
-                Map<String, Tuple>(
-                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
+                    ),
+                    Map<String, Tuple>()
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1959,9 +1971,11 @@ mod tests {
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
                     track_total_supply: false,
                     divisibility: 18,
-                    metadata: metadata_init!(
-                        "name" => "Token".to_owned(), updatable;
-                    ),
+                    metadata: metadata! {
+                        init {
+                            "name" => "Token".to_owned(), updatable;
+                        }
+                    },
                     access_rules: BTreeMap::from([
                         (
                             ResourceAction::Withdraw,
@@ -1983,8 +1997,11 @@ mod tests {
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 false
                 18u8
-                Map<String, Tuple>(
-                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
+                    ),
+                    Map<String, Tuple>()
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -2007,9 +2024,11 @@ mod tests {
                     &FungibleResourceManagerCreateWithInitialSupplyInput {
                         track_total_supply: false,
                         divisibility: 18,
-                        metadata: metadata_init!(
-                            "name" => "Token".to_owned(), updatable;
-                        ),
+                        metadata: metadata! {
+                            init {
+                                "name" => "Token".to_owned(), updatable;
+                            }
+                        },
                         access_rules: BTreeMap::from([
                             (
                                 ResourceAction::Withdraw,

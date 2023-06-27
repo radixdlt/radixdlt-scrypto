@@ -209,16 +209,19 @@ mod genesis_helper {
             access_rules.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
+            // FIXME: Use resource builder
             if let Some(owner) = resource.owner {
                 // TODO: Should we use securify style non fungible resource for the owner badge?
                 let owner_badge = ResourceBuilder::new_fungible()
                     .divisibility(DIVISIBILITY_NONE)
-                    .metadata(metadata_init! {
-                        "name" => format!(
-                            "Resource Owner Badge ({})",
-                            String::from_metadata_value(metadata.get("symbol").unwrap().clone())
-                                .unwrap()
-                        ), locked;
+                    .metadata(metadata! {
+                        init {
+                            "name" => format!(
+                                "Resource Owner Badge ({})",
+                                String::from_metadata_value(metadata.get("symbol").unwrap().clone())
+                                    .unwrap()
+                            ), locked;
+                        }
                     })
                     .mint_initial_supply(1);
 
@@ -262,7 +265,10 @@ mod genesis_helper {
                     &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
                         track_total_supply: true,
                         divisibility: 18,
-                        metadata: metadata.into(),
+                        metadata: ModuleConfig {
+                            init: metadata.into(),
+                            roles: Roles::default(),
+                        },
                         access_rules,
                         initial_supply: Decimal::zero(),
                         resource_address: resource.address_reservation,

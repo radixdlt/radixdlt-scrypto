@@ -76,8 +76,10 @@ mod kv_vault {
         fn new_fungible() -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata_init! {
-                    "name" => "TestToken".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
                 })
                 .mint_initial_supply(1)
         }

@@ -33,15 +33,19 @@ mod basic_flash_loan {
         ) -> (Global<BasicFlashLoan>, ResourceManager) {
             let auth_token = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .metadata(metadata_init! {
-                    "name" => "Admin authority for BasicFlashLoan".to_string(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "Admin authority for BasicFlashLoan".to_string(), locked;
+                    }
                 })
                 .mint_initial_supply(1);
 
             // Define a "transient" resource which can never be deposited once created, only burned
             let transient_resource_manager = ResourceBuilder::new_ruid_non_fungible::<LoanDue>()
-                .metadata(metadata_init! {
-                    "name" => "Promise token for BasicFlashLoan - must be returned to be burned!".to_string(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "Promise token for BasicFlashLoan - must be returned to be burned!".to_string(), locked;
+                    }
                 })
                 .mintable(rule!(require(auth_token.resource_address())), LOCKED)
                 .burnable(rule!(require(auth_token.resource_address())), LOCKED)

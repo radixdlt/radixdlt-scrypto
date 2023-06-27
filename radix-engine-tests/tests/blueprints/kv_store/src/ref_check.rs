@@ -12,8 +12,10 @@ mod ref_check {
             let store = KeyValueStore::new();
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata_init! {
-                    "name" => "TestToken".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
                 })
                 .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);
@@ -36,8 +38,10 @@ mod ref_check {
             let store = KeyValueStore::new();
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata_init! {
-                    "name" => "TestToken".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
                 })
                 .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);
@@ -65,8 +69,10 @@ mod ref_check {
             let store = KeyValueStore::new();
             let bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata_init! {
-                    "name" => "TestToken".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
                 })
                 .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);

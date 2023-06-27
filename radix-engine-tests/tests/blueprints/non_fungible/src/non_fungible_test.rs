@@ -29,8 +29,10 @@ mod non_fungible_test {
 
             // Create non-fungible resource with mutable supply
             let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
-                .metadata(metadata_init! {
-                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "Katz's Sandwiches".to_owned(), locked;
+                    }
                 })
                 .mintable(
                     rule!(require(mint_badge.resource_address())),
@@ -76,8 +78,10 @@ mod non_fungible_test {
 
         pub fn create_burnable_non_fungible() -> Bucket {
             ResourceBuilder::new_ruid_non_fungible()
-                .metadata(metadata_init! {
-                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "Katz's Sandwiches".to_owned(), locked;
+                    }
                 })
                 .burnable(rule!(allow_all), rule!(deny_all))
                 .mint_initial_supply([
@@ -100,8 +104,10 @@ mod non_fungible_test {
 
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_integer_non_fungible()
-                .metadata(metadata_init! {
-                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "Katz's Sandwiches".to_owned(), locked;
+                    }
                 })
                 .mint_initial_supply([
                     (
@@ -241,8 +247,10 @@ mod non_fungible_test {
 
         pub fn get_total_supply() {
             let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
-                .metadata(metadata_init! {
-                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "Katz's Sandwiches".to_owned(), locked;
+                    }
                 })
                 .create_with_no_initial_supply();
 
@@ -441,7 +449,7 @@ mod non_fungible_test {
                     scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
                         id_type: NonFungibleIdType::RUID,
                         track_total_supply: false,
-                        metadata: scrypto::api::node_modules::metadata::MetadataInit::new(),
+                        metadata: metadata!{},
                         access_rules: BTreeMap::new(),
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries,
@@ -526,8 +534,10 @@ mod non_fungible_test {
             // creating non-fungible id with id type set to default (RUID)
             let resource_manager = ResourceBuilder::new_ruid_non_fungible::<Sandwich>()
                 .mintable(rule!(allow_all), rule!(deny_all))
-                .metadata(metadata_init! {
-                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "Katz's Sandwiches".to_owned(), locked;
+                    }
                 })
                 .create_with_no_initial_supply();
 

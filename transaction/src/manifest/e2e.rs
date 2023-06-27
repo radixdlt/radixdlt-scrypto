@@ -757,31 +757,34 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     false
     18u8
-    Map<String, Tuple>(
-        "name" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "MyResource"
-                )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "MyResource"
+                    )
+                ),
+                true
             ),
-            true
+            "symbol" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "RSRC"
+                    )
+                ),
+                true
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "A very innovative and important resource"
+                    )
+                ),
+                true
+            )
         ),
-        "symbol" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "RSRC"
-                )
-            ),
-            true
-        ),
-        "description" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "A very innovative and important resource"
-                )
-            ),
-            true
-        )
+        Map<String, Tuple>()
     )
     Map<Enum, Tuple>(
         Enum<4u8>() => Tuple(
@@ -825,31 +828,34 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     false
     18u8
-    Map<String, Tuple>(
-        "name" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "MyResource"
-                )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "MyResource"
+                    )
+                ),
+                true
             ),
-            true
+            "symbol" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "RSRC"
+                    )
+                ),
+                true
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "A very innovative and important resource"
+                    )
+                ),
+                true
+            )
         ),
-        "symbol" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "RSRC"
-                )
-            ),
-            true
-        ),
-        "description" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "A very innovative and important resource"
-                )
-            ),
-            true
-        )
+        Map<String, Tuple>()
     )
     Map<Enum, Tuple>(
         Enum<4u8>() => Tuple(
@@ -900,23 +906,26 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         ),
         Array<String>()
     )
-    Map<String, Tuple>(
-        "name" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "MyResource"
-                )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "MyResource"
+                    )
+                ),
+                true
             ),
-            true
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "A very innovative and important resource"
+                    )
+                ),
+                false
+            )
         ),
-        "description" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "A very innovative and important resource"
-                )
-            ),
-            false
-        )
+        Map<String, Tuple>()
     )
     Map<Enum, Tuple>(
         Enum<4u8>() => Tuple(
@@ -980,23 +989,26 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
-    Map<String, Tuple>(
-        "name" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "MyResource"
-                )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "MyResource"
+                    )
+                ),
+                true
             ),
-            true
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "A very innovative and important resource"
+                    )
+                ),
+                false
+            )
         ),
-        "description" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "A very innovative and important resource"
-                )
-            ),
-            false
-        )
+        Map<String, Tuple>()
     )
     Map<Enum, Tuple>(
         Enum<4u8>() => Tuple(

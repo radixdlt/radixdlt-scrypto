@@ -10,6 +10,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 
 fn build_access_rules(
     mut access_rules_map: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
@@ -170,7 +171,7 @@ pub fn globalize_resource_manager<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-    metadata: MetadataInit,
+    metadata: ModuleConfig<MetadataInit>,
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
 where
@@ -179,7 +180,7 @@ where
     let roles = build_access_rules(access_rules);
     let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
-    let metadata = Metadata::create_with_data(metadata, api)?;
+    let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let address = api.globalize(
         btreemap!(
@@ -197,7 +198,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-    metadata: MetadataInit,
+    metadata: ModuleConfig<MetadataInit>,
     initial_supply: Decimal,
     api: &mut Y,
 ) -> Result<(ResourceAddress, Bucket), RuntimeError>
@@ -206,7 +207,7 @@ where
 {
     let roles = build_access_rules(access_rules);
     let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
-    let metadata = Metadata::create_with_data(metadata, api)?;
+    let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let modules = btreemap!(
         ObjectModuleId::Main => object_id,
@@ -234,7 +235,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-    metadata: MetadataInit,
+    metadata: ModuleConfig<MetadataInit>,
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
 ) -> Result<(ResourceAddress, Bucket), RuntimeError>
@@ -245,7 +246,7 @@ where
 
     let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
-    let metadata = Metadata::create_with_data(metadata, api)?;
+    let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
         btreemap!(

@@ -551,49 +551,6 @@ macro_rules! role_definition_entry {
     }};
 }
 
-#[macro_export]
-macro_rules! metadata {
-    {
-        roles {
-            $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
-        },
-        init {
-            $($key:expr => $value:expr, $locked:ident;)*
-        }
-    } => ({
-        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable)? ;)*);
-        let metadata = metadata_init!($($key => $value, $locked;)*);
-        ModuleConfig {
-            init: metadata,
-            roles: metadata_roles
-        }
-    });
-
-    {
-        init {
-            $($key:expr => $value:expr, $locked:ident;)*
-        }
-    } => ({
-        let metadata = metadata_init!($($key => $value, $locked;)*);
-        ModuleConfig {
-            init: metadata,
-            roles: Roles::new(),
-        }
-    });
-
-    {
-        roles {
-            $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
-        }
-    } => ({
-        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable:ident)? ;)*);
-        ModuleConfig {
-            init: metadata_init!(),
-            roles: metadata_roles,
-        }
-    });
-
-}
 
 #[macro_export]
 macro_rules! component_royalties {

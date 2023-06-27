@@ -1,5 +1,5 @@
-Total Cost Units                                                                ,  16467713
-Total Fee                                                                       , 8.2338565
+Total Cost Units                                                                ,  16466039
+Total Fee                                                                       , 8.2330195
 AfterInvoke                                                                     ,       650
 AllocateNodeId                                                                  ,     15000
 BeforeInvoke                                                                    ,     14156
@@ -11,12 +11,12 @@ LockFee                                                                         
 OpenSubstate::GlobalAccount                                                     ,   2208124
 OpenSubstate::GlobalFungibleResourceManager                                     ,   1426649
 OpenSubstate::GlobalGenericComponent                                            ,    281647
-OpenSubstate::GlobalPackage                                                     ,   6627065
+OpenSubstate::GlobalPackage                                                     ,   6626128
 OpenSubstate::GlobalTwoResourcePool                                             ,    708129
 OpenSubstate::InternalFungibleVault                                             ,   1413947
 OpenSubstate::InternalGenericComponent                                          ,     85484
 QueryActor                                                                      ,      6500
-ReadSubstate                                                                    ,    440354
+ReadSubstate                                                                    ,    439617
 RunNativeCode::Worktop_drain                                                    ,      6900
 RunNativeCode::Worktop_drop                                                     ,      6600
 RunNativeCode::Worktop_put                                                      ,     42400

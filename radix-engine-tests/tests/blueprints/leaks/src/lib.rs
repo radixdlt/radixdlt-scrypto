@@ -12,8 +12,10 @@ mod leaks {
         pub fn dangling_bucket() {
             let _bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata_init! {
-                    "name" => "TestToken".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
                 })
                 .mint_initial_supply(1);
         }
@@ -21,8 +23,10 @@ mod leaks {
         pub fn dangling_vault() {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata_init! {
-                    "name" => "TestToken".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
                 })
                 .mint_initial_supply(1);
             let _vault = Vault::with_bucket(bucket);
@@ -31,8 +35,10 @@ mod leaks {
         pub fn get_bucket() -> Bucket {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata_init! {
-                    "name" => "TestToken".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
                 })
                 .mint_initial_supply(1);
             bucket
@@ -47,8 +53,10 @@ mod leaks {
         pub fn dangling_bucket_with_proof() -> Proof {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata_init! {
-                    "name" => "TestToken".to_owned(), locked;
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
                 })
                 .mint_initial_supply(1);
 

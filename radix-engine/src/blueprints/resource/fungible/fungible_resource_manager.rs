@@ -13,6 +13,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::FungibleResourceManagerField;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
@@ -72,7 +73,7 @@ impl FungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
         track_total_supply: bool,
         divisibility: u8,
-        metadata: MetadataInit,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
@@ -107,7 +108,7 @@ impl FungibleResourceManagerBlueprint {
     pub(crate) fn create_with_initial_supply<Y>(
         track_total_supply: bool,
         divisibility: u8,
-        metadata: MetadataInit,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
         api: &mut Y,
@@ -134,7 +135,7 @@ impl FungibleResourceManagerBlueprint {
     pub(crate) fn create_with_initial_supply_and_address<Y>(
         track_total_supply: bool,
         divisibility: u8,
-        metadata: MetadataInit,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
         resource_address_reservation: GlobalAddressReservation,

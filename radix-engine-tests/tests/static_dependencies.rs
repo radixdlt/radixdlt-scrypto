@@ -1,6 +1,7 @@
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
-use radix_engine_interface::metadata_init;
+use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::InstructionV1;
@@ -151,7 +152,7 @@ fn static_resource_should_be_callable() {
                         &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
                             track_total_supply: true,
                             divisibility: 0u8,
-                            metadata: metadata_init!(),
+                            metadata: metadata!(),
                             access_rules: btreemap!(),
                             initial_supply: Decimal::from(10),
                             resource_address: ManifestAddressReservation(0),

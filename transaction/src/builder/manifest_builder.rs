@@ -42,6 +42,7 @@ use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
@@ -443,6 +444,10 @@ impl ManifestBuilder {
         access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: Roles::default(),
+        };
         let access_rules = access_rules
             .into_iter()
             .map(|(k, v)| (k, (v.0, v.1.into())))
@@ -457,7 +462,7 @@ impl ManifestBuilder {
                     &FungibleResourceManagerCreateWithInitialSupplyInput {
                         divisibility,
                         track_total_supply,
-                        metadata: metadata.into(),
+                        metadata,
                         access_rules,
                         initial_supply,
                     }
@@ -471,7 +476,7 @@ impl ManifestBuilder {
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
                     divisibility,
                     track_total_supply,
-                    metadata: metadata.into(),
+                    metadata,
                     access_rules,
                 }),
             });
@@ -499,12 +504,16 @@ impl ManifestBuilder {
             .map(|(k, v)| (k, (v.0, v.1.into())))
             .collect();
 
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: Roles::default(),
+        };
+
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
                 .map(|(id, e)| (id, (to_manifest_value_and_unwrap!(&e),)))
                 .collect();
-            let metadata: MetadataInit = metadata.into();
 
             self.add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -531,7 +540,7 @@ impl ManifestBuilder {
                     id_type,
                     track_total_supply,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                    metadata: metadata.into(),
+                    metadata,
                     access_rules,
                 }),
             });

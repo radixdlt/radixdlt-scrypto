@@ -1,6 +1,7 @@
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -27,13 +28,18 @@ impl ResourceManager {
     where
         Y: ClientBlueprintApi<E>,
     {
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: Roles::default(),
+        };
+
         let result = api.call_function(
             RESOURCE_PACKAGE,
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateInput {
                 track_total_supply,
-                metadata: metadata.into(),
+                metadata,
                 access_rules,
                 divisibility,
             })
@@ -55,13 +61,18 @@ impl ResourceManager {
     where
         Y: ClientBlueprintApi<E>,
     {
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: Roles::default(),
+        };
+
         let result = api.call_function(
             RESOURCE_PACKAGE,
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                 track_total_supply,
-                metadata: metadata.into(),
+                metadata,
                 access_rules,
                 divisibility,
                 initial_supply: amount,
@@ -88,6 +99,11 @@ impl ResourceManager {
     where
         Y: ClientBlueprintApi<E>,
     {
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: Roles::default(),
+        };
+
         let non_fungible_schema = NonFungibleDataSchema::new_schema::<N>();
         let result = api.call_function(
             RESOURCE_PACKAGE,
@@ -97,7 +113,7 @@ impl ResourceManager {
                 id_type,
                 track_total_supply,
                 non_fungible_schema,
-                metadata: metadata.into(),
+                metadata,
                 access_rules,
             })
             .unwrap(),
@@ -122,6 +138,11 @@ impl ResourceManager {
     where
         Y: ClientBlueprintApi<E>,
     {
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: Roles::default(),
+        };
+
         let result = api.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -130,7 +151,7 @@ impl ResourceManager {
                 id_type,
                 track_total_supply,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),
-                metadata: metadata.into(),
+                metadata,
                 access_rules,
                 resource_address: address_reservation,
             })

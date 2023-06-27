@@ -11,6 +11,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -98,7 +99,7 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: MetadataInit,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
@@ -125,7 +126,7 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: MetadataInit,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         resource_address_reservation: GlobalAddressReservation,
         api: &mut Y,
@@ -169,7 +170,7 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: MetadataInit,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
         api: &mut Y,
@@ -253,7 +254,7 @@ impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create_ruid_with_initial_supply<Y>(
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: MetadataInit,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         entries: Vec<(ScryptoValue,)>,
         api: &mut Y,

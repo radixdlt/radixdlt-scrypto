@@ -10,6 +10,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use scrypto::prelude::ScryptoValue;
@@ -89,7 +90,7 @@ impl ResourceBuilder {
 #[must_use]
 pub struct InProgressResourceBuilder<T: AnyResourceType, A: ConfiguredAuth> {
     resource_type: T,
-    metadata: MetadataInit,
+    metadata: Option<ModuleConfig<MetadataInit>>,
     auth: A,
 }
 
@@ -97,7 +98,7 @@ impl<T: AnyResourceType> Default for InProgressResourceBuilder<T, NoAuth> {
     fn default() -> Self {
         Self {
             resource_type: T::default(),
-            metadata: MetadataInit::new(),
+            metadata: None,
             auth: NoAuth,
         }
     }
@@ -175,8 +176,8 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> IsNonFungib
 
 pub trait UpdateMetadataBuilder: private::CanSetMetadata {
     /// Adds a resource metadata.
-    fn metadata(self, metadata_init: MetadataInit) -> Self::OutputBuilder {
-        self.set_metadata(metadata_init)
+    fn metadata(self, metadata: ModuleConfig<MetadataInit>) -> Self::OutputBuilder {
+        self.set_metadata(metadata)
     }
 }
 impl<B: private::CanSetMetadata> UpdateMetadataBuilder for B {}
@@ -434,47 +435,58 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
     ///
     /// The resource's address is returned.
     fn create_with_no_initial_supply(self) -> ResourceManager {
+
         match self.into_create_with_no_supply_invocation() {
             private::CreateWithNoSupply::Fungible {
                 divisibility,
                 metadata,
                 access_rules,
-            } => ScryptoEnv
-                .call_function(
-                    RESOURCE_PACKAGE,
-                    FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                    scrypto_encode(&FungibleResourceManagerCreateInput {
-                        divisibility,
-                        track_total_supply: true,
-                        metadata,
-                        access_rules,
-                    })
-                    .unwrap(),
-                )
-                .map(|bytes| scrypto_decode(&bytes).unwrap())
-                .unwrap(),
+            } => {
+                let metadata = metadata
+                    .unwrap_or_else(|| Default::default());
+
+                ScryptoEnv
+                    .call_function(
+                        RESOURCE_PACKAGE,
+                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                        FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                        scrypto_encode(&FungibleResourceManagerCreateInput {
+                            divisibility,
+                            track_total_supply: true,
+                            metadata,
+                            access_rules,
+                        })
+                            .unwrap(),
+                    )
+                    .map(|bytes| scrypto_decode(&bytes).unwrap())
+                    .unwrap()
+            },
             private::CreateWithNoSupply::NonFungible {
                 id_type,
                 non_fungible_schema,
                 metadata,
                 access_rules,
-            } => ScryptoEnv
-                .call_function(
-                    RESOURCE_PACKAGE,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
-                    scrypto_encode(&NonFungibleResourceManagerCreateInput {
-                        id_type,
-                        track_total_supply: true,
-                        non_fungible_schema,
-                        metadata,
-                        access_rules,
-                    })
-                    .unwrap(),
-                )
-                .map(|bytes| scrypto_decode(&bytes).unwrap())
-                .unwrap(),
+            } => {
+                let metadata = metadata
+                    .unwrap_or_else(|| Default::default());
+
+                ScryptoEnv
+                    .call_function(
+                        RESOURCE_PACKAGE,
+                        NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                        NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
+                        scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                            id_type,
+                            track_total_supply: true,
+                            non_fungible_schema,
+                            metadata,
+                            access_rules,
+                        })
+                            .unwrap(),
+                    )
+                    .map(|bytes| scrypto_decode(&bytes).unwrap())
+                    .unwrap()
+            },
         }
     }
 }
@@ -516,7 +528,12 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     /// let bucket = ResourceBuilder::new_fungible()
     ///     .mint_initial_supply(5);
     /// ```
-    pub fn mint_initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
+    pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
+        let metadata = self
+            .metadata
+            .take()
+            .unwrap_or_else(|| Default::default());
+
         ScryptoEnv
             .call_function(
                 RESOURCE_PACKAGE,
@@ -525,7 +542,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
                     track_total_supply: true,
                     divisibility: self.resource_type.divisibility,
-                    metadata: self.metadata,
+                    metadata,
                     access_rules: self.auth.into_access_rules(),
                     initial_supply: amount.into(),
                 })
@@ -562,12 +579,17 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     ///         ("Two".try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
     where
         T: IntoIterator<Item = (StringNonFungibleLocalId, D)>,
     {
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
+
+        let metadata = self
+            .metadata
+            .take()
+            .unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -578,7 +600,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -615,12 +637,17 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     ///         (2u64.into(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
     where
         T: IntoIterator<Item = (IntegerNonFungibleLocalId, D)>,
     {
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
+
+        let metadata = self
+            .metadata
+            .take()
+            .unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -631,7 +658,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -668,12 +695,17 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     ///         (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
     where
         T: IntoIterator<Item = (BytesNonFungibleLocalId, D)>,
     {
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
+
+        let metadata = self
+            .metadata
+            .take()
+            .unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -684,7 +716,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
                     non_fungible_schema,
-                    metadata: self.metadata,
+                    metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                 })
@@ -724,12 +756,19 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     ///         (NFData { name: "NF Two".to_owned(), flag: true }),
     ///     ]);
     /// ```
-    pub fn mint_initial_supply<T>(self, entries: T) -> Bucket
+    pub fn mint_initial_supply<T>(mut self, entries: T) -> Bucket
     where
         T: IntoIterator<Item = D>,
     {
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
+
+        let metadata = self
+            .metadata
+            .take()
+            .unwrap_or_else(|| Default::default());
+
+        let access_rules = self.auth.into_access_rules();
 
         ScryptoEnv
             .call_function(
@@ -740,8 +779,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
                         non_fungible_schema,
                         track_total_supply: true,
-                        metadata: self.metadata,
-                        access_rules: self.auth.into_access_rules(),
+                        metadata,
+                        access_rules,
                         entries: entries
                             .into_iter()
                             .map(|data| {
@@ -785,8 +824,8 @@ impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetMetadata
 {
     type OutputBuilder = Self;
 
-    fn set_metadata(mut self, metadata_init: MetadataInit) -> Self::OutputBuilder {
-        self.metadata = metadata_init;
+    fn set_metadata(mut self, metadata: ModuleConfig<MetadataInit>) -> Self::OutputBuilder {
+        self.metadata = Some(metadata);
         self
     }
 }
@@ -883,7 +922,7 @@ mod private {
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;
 
-        fn set_metadata(self, metadata_init: MetadataInit) -> Self::OutputBuilder;
+        fn set_metadata(self, metadata: ModuleConfig<MetadataInit>) -> Self::OutputBuilder;
     }
 
     pub trait CanAddAuth: Sized {
@@ -910,13 +949,13 @@ mod private {
     pub enum CreateWithNoSupply {
         Fungible {
             divisibility: u8,
-            metadata: MetadataInit,
+            metadata: Option<ModuleConfig<MetadataInit>>,
             access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         },
         NonFungible {
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
-            metadata: MetadataInit,
+            metadata: Option<ModuleConfig<MetadataInit>>,
             access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         },
     }
