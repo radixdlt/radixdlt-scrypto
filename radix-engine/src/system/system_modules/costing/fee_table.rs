@@ -66,7 +66,7 @@ impl FeeTable {
         for info in &store_access.0 {
             let cost = match info {
                 StoreAccess::ReadFromDb(size) => {
-                    // Apply function: f(size) = 0.0009622109 * size + 389.5155
+                    // Execution time: f(size) = 0.0009622109 * size + 389.5155
                     add(cast(*size) / 1_000, 400)
                 }
                 StoreAccess::ReadFromDbNotFound => {
@@ -74,13 +74,13 @@ impl FeeTable {
                     4_000
                 }
                 StoreAccess::ReadFromTrack(size) => {
-                    // Apply function: f(size) = 0.00012232433 * size + 1.4939442
+                    // Execution time: f(size) = 0.00012232433 * size + 1.4939442
                     add(cast(*size) / 10_000, 2)
                 }
                 StoreAccess::WriteToTrack(size) => {
-                    // Apply function: f(size) = 0.0004 * size + 1000
-                    // FIXME: add costing for state expansion
-                    add(cast(*size) / 2_500, 1_000)
+                    // Execution time: f(size) = 0.0004 * size + 1000
+                    // State bloat: f(size) = 4 * size
+                    add(mul(cast(*size), 4), 1_000)
                 }
                 StoreAccess::RewriteToTrack(size_old, size_new) => {
                     if size_new <= size_old {
@@ -88,7 +88,7 @@ impl FeeTable {
                         0
                     } else {
                         // The non-constant part of write cost
-                        cast(size_new - size_old) / 2_500
+                        mul(cast(size_new - size_old), 4)
                     }
                 }
                 StoreAccess::DeleteFromTrack => {
