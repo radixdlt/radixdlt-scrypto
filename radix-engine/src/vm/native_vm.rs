@@ -67,6 +67,7 @@ impl VmInvoke for NativeVmInstance {
         api.consume_cost_units(ClientCostingEntry::RunNativeCode {
             package_address: &self.package_address,
             export_name: export_name,
+            input_size: input.len(),
         })?;
 
         match self.native_package_code_id {

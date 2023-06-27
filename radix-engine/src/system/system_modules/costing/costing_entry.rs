@@ -22,6 +22,7 @@ pub enum CostingEntry<'a> {
     RunNativeCode {
         package_address: &'a PackageAddress,
         export_name: &'a str,
+        input_size: usize,
     },
     RunWasmCode {
         package_address: &'a PackageAddress,
@@ -118,7 +119,8 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::RunNativeCode {
                 package_address,
                 export_name,
-            } => ft.run_native_code_cost(package_address, export_name),
+                input_size,
+            } => ft.run_native_code_cost(package_address, export_name, input_size),
             CostingEntry::RunWasmCode {
                 package_address,
                 export_name,
