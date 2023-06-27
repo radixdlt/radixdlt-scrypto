@@ -933,7 +933,7 @@ impl TestRunner {
             transaction::model::InstructionV1::CallMethod {
                 address: self.faucet_component().into(),
                 method_name: "lock_fee".to_string(),
-                args: manifest_args!(dec!("100")),
+                args: manifest_args!(dec!("500")),
             },
         );
         self.execute_manifest(manifest, initial_proofs)
