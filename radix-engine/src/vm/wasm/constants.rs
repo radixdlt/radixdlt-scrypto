@@ -70,10 +70,14 @@ pub const PANIC_FUNCTION_NAME: &str = "panic";
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";
 
+//=================
+// LIMITS
+//=================
+
 pub const WASM_MEMORY_PAGE_SIZE: u32 = 64 * 1024;
 
 /// The maximum initial memory size calculated basing on Wasm call frame size: 4MiB
-pub const DEFAULT_MAX_INITIAL_MEMORY_SIZE_PAGES: u32 =
+pub const DEFAULT_MAX_MEMORY_SIZE_IN_PAGES: u32 =
     DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME as u32 / WASM_MEMORY_PAGE_SIZE;
 
 /// The maximum initial table size

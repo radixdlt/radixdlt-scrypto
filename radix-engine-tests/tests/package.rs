@@ -50,7 +50,7 @@ fn missing_memory_should_cause_error() {
             e,
             &RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidWasm(PrepareError::InvalidMemory(
-                    InvalidMemory::NoMemorySection
+                    InvalidMemory::MissingMemorySection
                 ))
             ))
         )
