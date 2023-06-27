@@ -213,14 +213,13 @@ mod genesis_helper {
                 // TODO: Should we use securify style non fungible resource for the owner badge?
                 let owner_badge = ResourceBuilder::new_fungible()
                     .divisibility(DIVISIBILITY_NONE)
-                    .metadata(
-                        "name",
-                        format!(
+                    .metadata(metadata_init! {
+                        "name" => format!(
                             "Resource Owner Badge ({})",
                             String::from_metadata_value(metadata.get("symbol").unwrap().clone())
                                 .unwrap()
-                        ),
-                    )
+                        ), locked;
+                    })
                     .mint_initial_supply(1);
 
                 owner_badge

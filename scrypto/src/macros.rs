@@ -563,7 +563,10 @@ macro_rules! metadata {
     } => ({
         let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable)? ;)*);
         let metadata = metadata_init!($($key => $value, $locked;)*);
-        (metadata, metadata_roles)
+        ModuleConfig {
+            init: metadata,
+            roles: metadata_roles
+        }
     });
 
     {
@@ -572,7 +575,10 @@ macro_rules! metadata {
         }
     } => ({
         let metadata = metadata_init!($($key => $value, $locked;)*);
-        (metadata, Roles::new())
+        ModuleConfig {
+            init: metadata,
+            roles: Roles::new(),
+        }
     });
 
     {
@@ -581,8 +587,10 @@ macro_rules! metadata {
         }
     } => ({
         let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable:ident)? ;)*);
-        let metadata = metadata_init!();
-        (metadata, metadata_roles)
+        ModuleConfig {
+            init: metadata_init!(),
+            roles: metadata_roles,
+        }
     });
 
 }

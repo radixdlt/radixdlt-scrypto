@@ -14,6 +14,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -221,8 +222,8 @@ pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
 
     pub owner_role: OwnerRole,
-    pub metadata_config: Option<(MetadataInit, Roles)>,
-    pub royalty_config: Option<(ComponentRoyaltyConfig, Roles)>,
+    pub metadata_config: Option<ModuleConfig<MetadataInit>>,
+    pub royalty_config: Option<ModuleConfig<ComponentRoyaltyConfig>>,
     pub address_reservation: Option<GlobalAddressReservation>,
 
     pub roles: Roles,
@@ -242,7 +243,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
         self
     }
 
-    pub fn metadata(mut self, metadata_config: (MetadataInit, Roles)) -> Self {
+    pub fn metadata(mut self, metadata_config: ModuleConfig<MetadataInit>) -> Self {
         self.metadata_config = Some(metadata_config);
 
         self
@@ -254,10 +255,12 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             royalty_amounts.insert(method, (royalty, !updatable));
         }
 
-        self.royalty_config = Some((
-            ComponentRoyaltyConfig::Enabled(royalty_amounts),
-            royalties.1,
-        ));
+        let royalty_config = ModuleConfig {
+            init: ComponentRoyaltyConfig::Enabled(royalty_amounts),
+            roles: royalties.1,
+        };
+
+        self.royalty_config = Some(royalty_config);
 
         self
     }
@@ -269,20 +272,22 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn globalize(mut self) -> Global<C> {
         let (metadata, metadata_roles) = {
-            let (metadata_init, metadata_roles) = self
+            let metadata_config = self
                 .metadata_config
                 .take()
-                .unwrap_or_else(|| (MetadataInit::new(), Roles::new()));
+                .unwrap_or_else(|| Default::default());
 
-            (Metadata::new_with_data(metadata_init), metadata_roles)
+            (Metadata::new_with_data(metadata_config.init), metadata_config.roles)
         };
 
-        let (royalty_config, royalty_roles) = self
-            .royalty_config
-            .take()
-            .unwrap_or_else(|| (ComponentRoyaltyConfig::default(), Roles::new()));
+        let (royalty, royalty_roles) = {
+            let royalty_config = self
+                .royalty_config
+                .take()
+                .unwrap_or_else(|| Default::default());
 
-        let royalty = Royalty::new(royalty_config);
+            (Royalty::new(royalty_config.init), royalty_config.roles)
+        };
 
         let access_rules = AccessRules::new(
             self.owner_role,
