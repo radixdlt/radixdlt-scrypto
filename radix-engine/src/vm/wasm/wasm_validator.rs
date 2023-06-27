@@ -47,3 +47,105 @@ impl WasmValidator {
             .to_bytes()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use radix_engine_interface::blueprints::package::PackageDefinition;
+    use wabt::{wasm2wat, wat2wasm};
+
+    use super::WasmValidator;
+
+    #[test]
+    fn test_validate() {
+        let code = wat2wasm(
+            r#"
+        (module
+
+            ;; Simple function that always returns `()`
+            (func $Test_f (param $0 i64) (result i64)
+              ;; Grow memory
+              (drop
+                (memory.grow (i32.const 1000000))
+              )
+          
+              ;; Encode () in SBOR at address 0x0
+              (i32.const 0)
+              (i32.const 92)  ;; prefix
+              (i32.store8)
+              (i32.const 1)
+              (i32.const 33)  ;; tuple value kind
+              (i32.store8)
+              (i32.const 2)
+              (i32.const 0)  ;; tuple length
+              (i32.store8)
+          
+              ;; Return slice (ptr = 0, len = 3)
+              (i64.const 3)
+            )
+          
+            (memory $0 1)
+            (export "memory" (memory $0))
+            (export "Test_f" (func $Test_f))
+        )"#,
+        )
+        .unwrap();
+
+        let instrumented_code = wasm2wat(
+            WasmValidator::default()
+                .validate(
+                    &code,
+                    PackageDefinition::single_test_function("Test", "f")
+                        .blueprints
+                        .values(),
+                )
+                .unwrap()
+                .0,
+        )
+        .unwrap();
+        assert_eq!(
+            instrumented_code,
+            r#"(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i32)))
+  (import "env" "gas" (func (;0;) (type 1)))
+  (func (;1;) (type 0) (param i64) (result i64)
+    i32.const 14788284
+    call 0
+    i32.const 1000000
+    memory.grow
+    drop
+    i32.const 0
+    i32.const 92
+    i32.store8
+    i32.const 1
+    i32.const 33
+    i32.store8
+    i32.const 2
+    i32.const 0
+    i32.store8
+    i64.const 3)
+  (func (;2;) (type 0) (param i64) (result i64)
+    local.get 0
+    global.get 0
+    i32.const 4
+    i32.add
+    global.set 0
+    global.get 0
+    i32.const 1024
+    i32.gt_u
+    if  ;; label = @1
+      unreachable
+    end
+    call 1
+    global.get 0
+    i32.const 4
+    i32.sub
+    global.set 0)
+  (memory (;0;) 1 32)
+  (global (;0;) (mut i32) (i32.const 0))
+  (export "memory" (memory 0))
+  (export "Test_f" (func 2)))
+"#
+        )
+    }
+}
