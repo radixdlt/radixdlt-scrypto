@@ -1442,7 +1442,7 @@ impl TestRunner {
             .call_method(
                 self.faucet_component(),
                 "lock_fee",
-                manifest_args!(dec!("10")),
+                manifest_args!(dec!("100")),
             )
             .borrow_mut(|builder| Result::<_, Infallible>::Ok(handler(builder)))
             .unwrap()
