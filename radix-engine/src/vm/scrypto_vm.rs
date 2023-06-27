@@ -25,10 +25,10 @@ impl<W: WasmEngine> ScryptoVm<W> {
         &self,
         package_address: &PackageAddress,
         code_hash: Hash,
-        validated_code: &[u8],
+        instrumented_code: &[u8],
     ) -> ScryptoVmInstance<W::WasmInstance> {
         ScryptoVmInstance {
-            instance: self.wasm_engine.instantiate(code_hash, validated_code),
+            instance: self.wasm_engine.instantiate(code_hash, instrumented_code),
             package_address: *package_address,
         }
     }

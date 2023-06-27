@@ -15,7 +15,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmValidatorConfigV1};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -269,7 +269,6 @@ impl TestRunnerBuilder {
     pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
         let mut substate_db = InMemorySubstateDatabase::standard();

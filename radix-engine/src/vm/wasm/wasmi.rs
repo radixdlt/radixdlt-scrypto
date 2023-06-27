@@ -1230,7 +1230,7 @@ impl WasmiEngine {
 impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
-    fn instantiate(&self, code_hash: Hash, validated_code: &[u8]) -> WasmiInstance {
+    fn instantiate(&self, code_hash: Hash, instrumented_code: &[u8]) -> WasmiInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]
@@ -1245,7 +1245,7 @@ impl WasmEngine for WasmiEngine {
             }
         }
 
-        let module = WasmiModule::new(validated_code).expect("Failed to instantiate module");
+        let module = WasmiModule::new(instrumented_code).expect("Failed to instantiate module");
         let instance = module.instantiate();
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]

@@ -36,7 +36,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
 use crate::vm::VmPackageValidation;
 pub use radix_engine_interface::blueprints::package::{
-    PackageCodeSubstate, PackageRoyaltyAccumulatorSubstate,
+    PackageInstrumentedCodeSubstate, PackageOriginalCodeSubstate, PackageRoyaltyAccumulatorSubstate,
 };
 
 pub const PACKAGE_ROYALTY_FEATURE: &str = "package-royalty";
@@ -497,8 +497,8 @@ pub fn create_bootstrap_package_partitions(
     }
 
     {
-        let code_partition = package_structure
-            .code
+        let vm_type_partition = package_structure
+            .vm_type
             .into_iter()
             .map(|(hash, code_substate)| {
                 let value = KeyValueEntrySubstate::locked_entry(code_substate);
@@ -511,9 +511,51 @@ pub fn create_bootstrap_package_partitions(
 
         partitions.insert(
             MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
+                .at_offset(PACKAGE_VM_TYPE_PARTITION_OFFSET)
                 .unwrap(),
-            code_partition,
+            vm_type_partition,
+        );
+    }
+
+    {
+        let original_code_partition = package_structure
+            .original_code
+            .into_iter()
+            .map(|(hash, code_substate)| {
+                let value = KeyValueEntrySubstate::locked_entry(code_substate);
+                (
+                    SubstateKey::Map(scrypto_encode(&hash).unwrap()),
+                    IndexedScryptoValue::from_typed(&value),
+                )
+            })
+            .collect();
+
+        partitions.insert(
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
+                .unwrap(),
+            original_code_partition,
+        );
+    }
+
+    {
+        let instrumented_code_partition = package_structure
+            .instrumented_code
+            .into_iter()
+            .map(|(hash, code_substate)| {
+                let value = KeyValueEntrySubstate::locked_entry(code_substate);
+                (
+                    SubstateKey::Map(scrypto_encode(&hash).unwrap()),
+                    IndexedScryptoValue::from_typed(&value),
+                )
+            })
+            .collect();
+
+        partitions.insert(
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET)
+                .unwrap(),
+            instrumented_code_partition,
         );
     }
 
@@ -636,18 +678,6 @@ where
     }
 
     {
-        let mut code_partition = BTreeMap::new();
-        for (hash, code_substate) in package_structure.code {
-            let entry = KVEntry {
-                value: Some(scrypto_encode(&code_substate).unwrap()),
-                locked: true,
-            };
-            code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
-        }
-        kv_entries.insert(3u8, code_partition);
-    }
-
-    {
         let mut package_royalties_partition = BTreeMap::new();
         for (blueprint, package_royalty) in package_structure.package_royalties {
             let key = BlueprintVersionKey::new_default(blueprint);
@@ -657,7 +687,7 @@ where
             };
             package_royalties_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
-        kv_entries.insert(4u8, package_royalties_partition);
+        kv_entries.insert(3u8, package_royalties_partition);
     }
 
     {
@@ -670,7 +700,43 @@ where
             };
             auth_partition.insert(scrypto_encode(&key).unwrap(), entry);
         }
-        kv_entries.insert(5u8, auth_partition);
+        kv_entries.insert(4u8, auth_partition);
+    }
+
+    {
+        let mut vm_type_partition = BTreeMap::new();
+        for (hash, code_substate) in package_structure.vm_type {
+            let entry = KVEntry {
+                value: Some(scrypto_encode(&code_substate).unwrap()),
+                locked: true,
+            };
+            vm_type_partition.insert(scrypto_encode(&hash).unwrap(), entry);
+        }
+        kv_entries.insert(5u8, vm_type_partition);
+    }
+
+    {
+        let mut original_code_partition = BTreeMap::new();
+        for (hash, code_substate) in package_structure.original_code {
+            let entry = KVEntry {
+                value: Some(scrypto_encode(&code_substate).unwrap()),
+                locked: true,
+            };
+            original_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
+        }
+        kv_entries.insert(6u8, original_code_partition);
+    }
+
+    {
+        let mut instrumented_code_partition = BTreeMap::new();
+        for (hash, code_substate) in package_structure.instrumented_code {
+            let entry = KVEntry {
+                value: Some(scrypto_encode(&code_substate).unwrap()),
+                locked: true,
+            };
+            instrumented_code_partition.insert(scrypto_encode(&hash).unwrap(), entry);
+        }
+        kv_entries.insert(7u8, instrumented_code_partition);
     }
 
     let package_object = api.new_object(
@@ -700,7 +766,9 @@ pub struct PackageStructure {
     pub definitions: BTreeMap<String, BlueprintDefinition>,
     pub dependencies: BTreeMap<String, BlueprintDependencies>,
     pub schemas: BTreeMap<Hash, ScryptoSchema>,
-    pub code: BTreeMap<Hash, PackageCodeSubstate>,
+    pub vm_type: BTreeMap<Hash, PackageVmTypeSubstate>,
+    pub original_code: BTreeMap<Hash, PackageOriginalCodeSubstate>,
+    pub instrumented_code: BTreeMap<Hash, PackageInstrumentedCodeSubstate>,
     pub auth_configs: BTreeMap<String, AuthConfig>,
     pub package_royalties: BTreeMap<String, PackageRoyaltyConfig>,
 }
@@ -751,15 +819,6 @@ impl PackageNativePackage {
         ));
         collections.push(BlueprintCollectionSchema::KeyValueStore(
             BlueprintKeyValueStoreSchema {
-                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
-                value: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<PackageCodeSubstate>(),
-                ),
-                can_own: false,
-            },
-        ));
-        collections.push(BlueprintCollectionSchema::KeyValueStore(
-            BlueprintKeyValueStoreSchema {
                 key: TypeRef::Static(
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
@@ -775,6 +834,33 @@ impl PackageNativePackage {
                     aggregator.add_child_type_and_descendents::<BlueprintVersionKey>(),
                 ),
                 value: TypeRef::Static(aggregator.add_child_type_and_descendents::<AuthConfig>()),
+                can_own: false,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
+                value: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackageVmTypeSubstate>(),
+                ),
+                can_own: false,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
+                value: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackageOriginalCodeSubstate>(),
+                ),
+                can_own: false,
+            },
+        ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Static(aggregator.add_child_type_and_descendents::<Hash>()),
+                value: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<PackageInstrumentedCodeSubstate>(),
+                ),
                 can_own: false,
             },
         ));
@@ -950,7 +1036,7 @@ impl PackageNativePackage {
     pub fn validate_and_build_package_structure(
         definition: PackageDefinition,
         vm_type: VmType,
-        code: Vec<u8>,
+        original_code: Vec<u8>,
     ) -> Result<PackageStructure, RuntimeError> {
         // Validate schema
         validate_package_schema(definition.blueprints.values().map(|s| &s.schema))
@@ -961,21 +1047,30 @@ impl PackageNativePackage {
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::PackageError(e)))?;
 
         // Validate VM specific properties
-        VmPackageValidation::validate(&definition, vm_type, &code)?;
+        let instrumented_code =
+            VmPackageValidation::validate(&definition, vm_type, &original_code)?;
 
         // Build Package structure
         let mut definitions = BTreeMap::new();
         let mut dependencies = BTreeMap::new();
         let mut schemas = BTreeMap::new();
-        let mut code_substates = BTreeMap::new();
         let mut package_royalties = BTreeMap::new();
         let mut auth_configs = BTreeMap::new();
+        let mut vm_type_substates = BTreeMap::new();
+        let mut original_code_substates = BTreeMap::new();
+        let mut instrumented_code_substates = BTreeMap::new();
 
-        let code_hash = {
-            let code = PackageCodeSubstate { vm_type, code };
-            let code_hash = hash(scrypto_encode(&code).unwrap());
-            code_substates.insert(code_hash, code);
-            code_hash
+        let code_hash = hash(&original_code);
+        vm_type_substates.insert(code_hash, PackageVmTypeSubstate { vm_type });
+        original_code_substates.insert(
+            code_hash,
+            PackageOriginalCodeSubstate {
+                code: original_code,
+            },
+        );
+        if let Some(code) = instrumented_code {
+            instrumented_code_substates
+                .insert(code_hash, PackageInstrumentedCodeSubstate { code: code });
         };
 
         {
@@ -1077,7 +1172,9 @@ impl PackageNativePackage {
             definitions,
             dependencies,
             schemas,
-            code: code_substates,
+            vm_type: vm_type_substates,
+            original_code: original_code_substates,
+            instrumented_code: instrumented_code_substates,
             auth_configs,
             package_royalties,
         };

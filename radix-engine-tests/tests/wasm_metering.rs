@@ -135,7 +135,7 @@ fn test_grow_memory_beyond_limit() {
 
     // Grow memory size by `DEFAULT_MAX_MEMORY_SIZE_IN_PAGES`.
     // Note that initial memory size is 1 page.
-    let grow_value = DEFAULT_MAX_MEMORY_SIZE_IN_PAGES + 1;
+    let grow_value = DEFAULT_MAX_MEMORY_SIZE_IN_PAGES;
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
