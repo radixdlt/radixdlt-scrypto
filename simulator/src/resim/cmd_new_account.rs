@@ -90,6 +90,7 @@ impl NewAccount {
                         entries: btreemap!(
                             NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),
                         ),
+                        address_reservation: None,
                     }),
                 })
                 .0

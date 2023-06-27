@@ -176,12 +176,19 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> IsNonFungib
 ////////////////////////////////////////////////////////////
 
 pub trait UpdateMetadataBuilder: private::CanSetMetadata {
-    /// Adds a resource metadata.
     fn metadata(self, metadata: ModuleConfig<MetadataInit>) -> Self::OutputBuilder {
         self.set_metadata(metadata)
     }
 }
 impl<B: private::CanSetMetadata> UpdateMetadataBuilder for B {}
+
+pub trait SetAddressReservationBuilder: private::CanSetAddressReservation {
+    /// Sets the address reservation
+    fn with_address(self, reservation: GlobalAddressReservation) -> Self::OutputBuilder {
+        self.set_address(reservation)
+    }
+}
+impl<B: private::CanSetAddressReservation> SetAddressReservationBuilder for B {}
 
 pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// Sets the resource to be mintable.
@@ -803,6 +810,17 @@ impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetMetadata
     }
 }
 
+impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetAddressReservation
+for InProgressResourceBuilder<T, A>
+{
+    type OutputBuilder = Self;
+
+    fn set_address(mut self, address_reservation: GlobalAddressReservation) -> Self::OutputBuilder {
+        self.address_reservation = Some(address_reservation);
+        self
+    }
+}
+
 impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, NoAuth> {
     type OutputBuilder = InProgressResourceBuilder<T, AccessRuleAuth>;
 
@@ -890,6 +908,12 @@ mod private {
         type OutputBuilder;
 
         fn set_metadata(self, metadata: ModuleConfig<MetadataInit>) -> Self::OutputBuilder;
+    }
+
+    pub trait CanSetAddressReservation: Sized {
+        type OutputBuilder;
+
+        fn set_address(self, address_reservation: GlobalAddressReservation) -> Self::OutputBuilder;
     }
 
     pub trait CanAddAuth: Sized {
