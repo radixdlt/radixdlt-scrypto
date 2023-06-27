@@ -1780,15 +1780,6 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Tuple(
-                    Map<String, Tuple>(
-                        "name" => Tuple(
-                            Enum<Option::Some>(Enum<Metadata::String>("Token")),
-                            true
-                        ),
-                    ),
-                    Map<String, Tuple>()
-                )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
@@ -1798,7 +1789,17 @@ mod tests {
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
-                );"#,
+                )
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(
+                            Enum<Option::Some>(Enum<Metadata::String>("Token")),
+                            true
+                        ),
+                    ),
+                    Map<String, Tuple>()
+                )
+                Enum<0u8>();"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
@@ -1884,11 +1885,13 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Tuple(
-                    Map<String, Tuple>(
-                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), true)
-                    ),
-                    Map<String, Tuple>()
+                Map<NonFungibleLocalId, Tuple>(
+                    NonFungibleLocalId("#1#") => Tuple(
+                        Tuple(
+                            "Hello World",
+                            Decimal("12")
+                        )
+                    )
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1900,13 +1903,11 @@ mod tests {
                         Enum<AccessRule::DenyAll>()
                     )
                 )
-                Map<NonFungibleLocalId, Tuple>(
-                    NonFungibleLocalId("#1#") => Tuple(
-                        Tuple(
-                            "Hello World",
-                            Decimal("12")
-                        )
-                    )
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), true)
+                    ),
+                    Map<String, Tuple>()
                 )
                 Enum<0u8>()
             ;"##,
@@ -1957,12 +1958,6 @@ mod tests {
                 Enum<0u8>()
                 false
                 18u8
-                Tuple(
-                    Map<String, Tuple>(
-                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
-                    ),
-                    Map<String, Tuple>()
-                )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
@@ -1973,6 +1968,13 @@ mod tests {
                         Enum<AccessRule::DenyAll>()
                     )
                 )
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
+                    ),
+                    Map<String, Tuple>()
+                )
+                Enum<0u8>()
             ;"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -2010,12 +2012,7 @@ mod tests {
                 Enum<0u8>()
                 false
                 18u8
-                Tuple(
-                    Map<String, Tuple>(
-                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
-                    ),
-                    Map<String, Tuple>()
-                )
+                Decimal("500")
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
@@ -2026,7 +2023,12 @@ mod tests {
                         Enum<AccessRule::DenyAll>()
                     )
                 )
-                Decimal("500")
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
+                    ),
+                    Map<String, Tuple>()
+                )
                 Enum<0u8>()
             ;"#,
             InstructionV1::CallFunction {

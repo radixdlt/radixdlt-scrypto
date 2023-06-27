@@ -456,6 +456,7 @@ mod non_fungible_test {
                         access_rules: BTreeMap::new(),
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries,
+                        address_reservation: None,
                     })
                     .unwrap(),
                 )

@@ -761,6 +761,17 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<0u8>()
     false
     18u8
+    Decimal("12")
+    Map<Enum, Tuple>(
+        Enum<3u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
+        Enum<4u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        )
+    )
     Tuple(
         Map<String, Tuple>(
             "name" => Tuple(
@@ -790,17 +801,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         ),
         Map<String, Tuple>()
     )
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
-    )
-    Decimal("12")
+    Enum<0u8>()
 ;
 CALL_METHOD
     Address("${account_address}")
@@ -833,6 +834,16 @@ CREATE_FUNGIBLE_RESOURCE
     Enum<0u8>()
     false
     18u8
+    Map<Enum, Tuple>(
+        Enum<3u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
+        Enum<4u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        )
+    )
     Tuple(
         Map<String, Tuple>(
             "name" => Tuple(
@@ -862,16 +873,7 @@ CREATE_FUNGIBLE_RESOURCE
         ),
         Map<String, Tuple>()
     )
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
-    )
+    Enum<0u8>()
 ;
 "##,
             ),
@@ -912,6 +914,24 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         ),
         Array<String>()
     )
+    Map<NonFungibleLocalId, Tuple>(
+        NonFungibleLocalId("#12#") => Tuple(
+            Tuple(
+                "Hello World",
+                Decimal("12")
+            )
+        )
+    )
+    Map<Enum, Tuple>(
+        Enum<3u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
+        Enum<4u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        )
+    )
     Tuple(
         Map<String, Tuple>(
             "name" => Tuple(
@@ -933,24 +953,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         ),
         Map<String, Tuple>()
     )
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
-    )
-    Map<NonFungibleLocalId, Tuple>(
-        NonFungibleLocalId("#12#") => Tuple(
-            Tuple(
-                "Hello World",
-                Decimal("12")
-            )
-        )
-    )
+    Enum<0u8>()
 ;
 CALL_METHOD
     Address("${account_address}")
@@ -996,6 +999,16 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
+    Map<Enum, Tuple>(
+        Enum<3u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
+        Enum<4u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        )
+    )
     Tuple(
         Map<String, Tuple>(
             "name" => Tuple(
@@ -1017,16 +1030,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Map<String, Tuple>()
     )
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
-    )
+    Enum<0u8>()
 ;
 "##,
             ),
