@@ -244,3 +244,81 @@ fn reproduce_crash() {
         .build();
     test_runner.execute_manifest(manifest, vec![]);
 }
+
+
+
+
+#[test]
+fn verify_log_size_limit() {
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_limits");
+
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "TransactionLimitTest",
+            "emit_log_of_size",
+            manifest_args!(DEFAULT_MAX_LOG_SIZE + 1),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::LogSizeTooLarge { .. }
+            ),)
+        )
+    })
+}
+
+#[test]
+fn verify_event_size_limit() {
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_limits");
+
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "TransactionLimitTest",
+            "emit_event_of_size",
+            manifest_args!(DEFAULT_MAX_EVENT_SIZE + 1),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::EventSizeTooLarge { .. }
+            ),)
+        )
+    })
+}
+
+#[test]
+fn verify_panic_size_limit() {
+    let mut test_runner = TestRunner::builder().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_limits");
+
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "TransactionLimitTest",
+            "panic_of_size",
+            manifest_args!(DEFAULT_MAX_PANIC_MESSAGE_SIZE + 1),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
+                TransactionLimitsError::PanicMessageSizeTooLarge { .. }
+            ),)
+        )
+    })
+}

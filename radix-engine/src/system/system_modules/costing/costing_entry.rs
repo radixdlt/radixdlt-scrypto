@@ -6,8 +6,6 @@ use radix_engine_interface::*;
 
 #[derive(Debug, IntoStaticStr)]
 pub enum CostingEntry<'a> {
-    // FIXME: Add test to verify each entry
-
     /* TX */
     TxBaseCost,
     TxPayloadCost {

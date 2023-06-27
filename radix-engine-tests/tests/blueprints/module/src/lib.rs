@@ -1,5 +1,4 @@
 use scrypto::api::node_modules::auth::*;
-use scrypto::api::node_modules::metadata::*;
 use scrypto::api::node_modules::royalty::*;
 use scrypto::api::*;
 use scrypto::engine::scrypto_env::*;
