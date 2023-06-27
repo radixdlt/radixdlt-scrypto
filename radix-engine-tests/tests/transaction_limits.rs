@@ -245,9 +245,6 @@ fn reproduce_crash() {
     test_runner.execute_manifest(manifest, vec![]);
 }
 
-
-
-
 #[test]
 fn verify_log_size_limit() {
     let mut test_runner = TestRunner::builder().build();
