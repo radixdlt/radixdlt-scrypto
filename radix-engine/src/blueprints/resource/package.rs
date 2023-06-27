@@ -2231,6 +2231,7 @@ impl ResourceNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::create(
+                    input.owner_role,
                     input.track_total_supply,
                     input.divisibility,
                     input.metadata,
@@ -2245,6 +2246,7 @@ impl ResourceNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply(
+                    input.owner_role,
                     input.track_total_supply,
                     input.divisibility,
                     input.metadata,
@@ -2260,6 +2262,7 @@ impl ResourceNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply_and_address(
+                    input.owner_role,
                     input.track_total_supply,
                     input.divisibility,
                     input.metadata,
@@ -2336,6 +2339,7 @@ impl ResourceNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create(
+                    input.owner_role,
                     input.id_type,
                     input.track_total_supply,
                     input.non_fungible_schema,
@@ -2351,6 +2355,7 @@ impl ResourceNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_address(
+                    input.owner_role,
                     input.id_type,
                     input.track_total_supply,
                     input.non_fungible_schema,
@@ -2367,6 +2372,7 @@ impl ResourceNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_initial_supply(
+                    input.owner_role,
                     input.id_type,
                     input.track_total_supply,
                     input.non_fungible_schema,
@@ -2384,6 +2390,7 @@ impl ResourceNativePackage {
                     })?;
 
                 let rtn = NonFungibleResourceManagerBlueprint::create_ruid_with_initial_supply(
+                    input.owner_role,
                     input.track_total_supply,
                     input.non_fungible_schema,
                     input.metadata,

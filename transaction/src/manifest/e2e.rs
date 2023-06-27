@@ -758,6 +758,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
     false
     18u8
     Tuple(
@@ -790,11 +791,11 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         Map<String, Tuple>()
     )
     Map<Enum, Tuple>(
-        Enum<4u8>() => Tuple(
+        Enum<3u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         ),
-        Enum<5u8>() => Tuple(
+        Enum<4u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         )
@@ -829,6 +830,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_FUNGIBLE_RESOURCE
+    Enum<0u8>()
     false
     18u8
     Tuple(
@@ -861,11 +863,11 @@ CREATE_FUNGIBLE_RESOURCE
         Map<String, Tuple>()
     )
     Map<Enum, Tuple>(
-        Enum<4u8>() => Tuple(
+        Enum<3u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         ),
-        Enum<5u8>() => Tuple(
+        Enum<4u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         )
@@ -896,6 +898,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
     Enum<1u8>()
     false
     Tuple(
@@ -931,11 +934,11 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         Map<String, Tuple>()
     )
     Map<Enum, Tuple>(
-        Enum<4u8>() => Tuple(
+        Enum<3u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         ),
-        Enum<5u8>() => Tuple(
+        Enum<4u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         )
@@ -979,6 +982,7 @@ CALL_METHOD
     Decimal("10")
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
+    Enum<0u8>()
     Enum<1u8>()
     false
     Tuple(
@@ -1014,11 +1018,11 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Map<String, Tuple>()
     )
     Map<Enum, Tuple>(
-        Enum<4u8>() => Tuple(
+        Enum<3u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         ),
-        Enum<5u8>() => Tuple(
+        Enum<4u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
         )

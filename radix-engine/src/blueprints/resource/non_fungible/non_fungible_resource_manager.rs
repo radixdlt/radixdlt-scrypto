@@ -96,6 +96,7 @@ pub struct NonFungibleResourceManagerBlueprint;
 
 impl NonFungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
+        owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
@@ -112,6 +113,7 @@ impl NonFungibleResourceManagerBlueprint {
         })?;
 
         Self::create_with_address(
+            owner_role,
             id_type,
             track_total_supply,
             non_fungible_schema,
@@ -123,6 +125,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_address<Y>(
+        owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
@@ -158,6 +161,7 @@ impl NonFungibleResourceManagerBlueprint {
         )?;
 
         globalize_resource_manager(
+            owner_role,
             object_id,
             resource_address_reservation,
             access_rules,
@@ -167,6 +171,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
+        owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
@@ -240,6 +245,7 @@ impl NonFungibleResourceManagerBlueprint {
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
         let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
+            owner_role,
             object_id,
             address_reservation,
             access_rules,
@@ -252,6 +258,7 @@ impl NonFungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_ruid_with_initial_supply<Y>(
+        owner_role: OwnerRole,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         metadata: ModuleConfig<MetadataInit>,
@@ -304,6 +311,7 @@ impl NonFungibleResourceManagerBlueprint {
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
         let (resource_address, bucket) = globalize_non_fungible_with_initial_supply(
+            owner_role,
             object_id,
             address_reservation,
             access_rules,

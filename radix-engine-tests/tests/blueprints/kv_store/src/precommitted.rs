@@ -11,7 +11,7 @@ mod precommitted {
     impl Precommitted {
         pub fn can_reference_precommitted_vault() -> Global<Precommitted> {
             let store = KeyValueStore::new();
-            let bucket: Bucket = ResourceBuilder::new_fungible()
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
@@ -57,7 +57,7 @@ mod precommitted {
         pub fn can_reference_deep_precommitted_vault() -> Global<Precommitted> {
             let deep_vault = KeyValueStore::new();
             let sub_store = KeyValueStore::new();
-            let bucket: Bucket = ResourceBuilder::new_fungible()
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {

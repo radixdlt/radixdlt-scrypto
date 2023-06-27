@@ -173,6 +173,7 @@ pub fn features(
 }
 
 pub fn globalize_resource_manager<Y>(
+    owner_role: OwnerRole,
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
@@ -183,7 +184,7 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let roles = build_access_rules(access_rules);
-    let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
+    let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
@@ -200,6 +201,7 @@ where
 }
 
 pub fn globalize_fungible_with_initial_supply<Y>(
+    owner_role: OwnerRole,
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
@@ -211,7 +213,7 @@ where
     Y: ClientApi<RuntimeError>,
 {
     let roles = build_access_rules(access_rules);
-    let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
+    let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let modules = btreemap!(
@@ -237,6 +239,7 @@ where
 }
 
 pub fn globalize_non_fungible_with_initial_supply<Y>(
+    owner_role: OwnerRole,
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
     access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
@@ -249,7 +252,7 @@ where
 {
     let roles = build_access_rules(access_rules);
 
-    let resman_access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
+    let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 

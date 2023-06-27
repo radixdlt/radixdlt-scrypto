@@ -1768,6 +1768,7 @@ mod tests {
     fn test_create_non_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE
+                Enum<0u8>()
                 Enum<NonFungibleIdType::Integer>()
                 false
                 Tuple(
@@ -1869,6 +1870,7 @@ mod tests {
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+                Enum<0u8>()
                 Enum<NonFungibleIdType::Integer>()
                 false
                 Tuple(
@@ -1895,7 +1897,7 @@ mod tests {
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
-                ),
+                )
                 Map<NonFungibleLocalId, Tuple>(
                     NonFungibleLocalId("#1#") => Tuple(
                         Tuple(
@@ -1948,6 +1950,7 @@ mod tests {
     fn test_create_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE
+                Enum<0u8>()
                 false
                 18u8
                 Tuple(
@@ -1999,6 +2002,7 @@ mod tests {
     fn test_create_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+                Enum<0u8>()
                 false
                 18u8
                 Tuple(

@@ -15,6 +15,7 @@ CALL_METHOD
 
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE
+    Enum<0u8>()
     Enum<NonFungibleIdType::Integer>()
     false # Track Total Supply
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())

@@ -14,7 +14,7 @@ mod add_and_remove {
 
     impl AddAndRemove {
         pub fn new() {
-            let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
+            let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
                 .mintable(rule!(allow_all), rule!(deny_all))
                 .burnable(rule!(allow_all), rule!(deny_all))
                 .create_with_no_initial_supply();

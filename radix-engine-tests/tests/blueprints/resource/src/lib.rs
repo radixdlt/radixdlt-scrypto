@@ -14,7 +14,7 @@ mod resource_test {
     impl ResourceTest {
         pub fn set_mintable_with_self_resource_address() {
             let super_admin_manager: ResourceManager =
-                ResourceBuilder::new_ruid_non_fungible::<TestNFData>()
+                ResourceBuilder::new_ruid_non_fungible::<TestNFData>(OwnerRole::None)
                     .metadata(metadata! {
                         init {
                             "name" => "Super Admin Badge".to_owned(), locked;
@@ -28,10 +28,10 @@ mod resource_test {
         }
 
         pub fn create_fungible() -> (Bucket, ResourceManager) {
-            let badge = ResourceBuilder::new_fungible()
+            let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let resource_manager = ResourceBuilder::new_fungible()
+            let resource_manager = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
@@ -48,10 +48,10 @@ mod resource_test {
             divisibility: u8,
             amount: Decimal,
         ) -> (Bucket, Bucket, ResourceManager) {
-            let badge = ResourceBuilder::new_fungible()
+            let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let resource_manager = ResourceBuilder::new_fungible()
+            let resource_manager = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(divisibility)
                 .metadata(metadata! {
                     init {
@@ -66,7 +66,7 @@ mod resource_test {
         }
 
         pub fn create_fungible_wrong_resource_flags_should_fail() -> Bucket {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
@@ -78,7 +78,7 @@ mod resource_test {
         }
 
         pub fn create_fungible_wrong_mutable_flags_should_fail() -> Bucket {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
@@ -91,10 +91,10 @@ mod resource_test {
 
         pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceManager)
         {
-            let badge = ResourceBuilder::new_fungible()
+            let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let resource_manager = ResourceBuilder::new_fungible()
+            let resource_manager = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
@@ -126,7 +126,7 @@ mod resource_test {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge = ResourceBuilder::new_integer_non_fungible::<TestNFData>()
+            let badge = ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
                 .mint_initial_supply(vec![(
                     0u64.into(),
                     TestNFData {
@@ -137,14 +137,13 @@ mod resource_test {
             let manager_badge =
                 NonFungibleGlobalId::new(badge.resource_address(), NonFungibleLocalId::integer(0));
 
-            let token_resource_manager = ResourceBuilder::new_fungible()
+            let token_resource_manager = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(manager_badge))))
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
                         "name" => "TestToken".to_owned(), locked;
                     }
                 })
-                .owner_non_fungible_badge(manager_badge)
                 .create_with_no_initial_supply();
 
             badge.authorize(|| {

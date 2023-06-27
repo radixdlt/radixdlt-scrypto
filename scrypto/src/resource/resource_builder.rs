@@ -82,7 +82,7 @@ impl ResourceBuilder {
 /// ```no_run
 /// use scrypto::prelude::*;
 ///
-/// let bucket = ResourceBuilder::new_fungible()
+/// let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
 ///     .metadata("name", "TestToken")
 ///     .mint_initial_supply(5);
 /// ```
@@ -190,12 +190,12 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be mintable with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .mintable(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be mintable, but this is can be changed in future by the second rule
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .mintable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn mintable<R: Into<AccessRule>>(
@@ -218,12 +218,12 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be burnable with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .burnable(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be freely burnable, but this is can be changed in future by the second rule.
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .burnable(rule!(allow_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn burnable<R: Into<AccessRule>>(
@@ -246,12 +246,12 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be recallable with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .recallable(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be recallable, but this is can be changed in future by the second rule
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .recallable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn recallable<R: Into<AccessRule>>(
@@ -274,12 +274,12 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be freezeable with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .freezeable(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be freezeable, but this is can be changed in future by the second rule
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .freezeable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn freezeable<R: Into<AccessRule>>(
@@ -302,12 +302,12 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be withdrawable with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .restrict_withdraw(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be withdrawable, but this is can be changed in future by the second rule
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .restrict_withdraw(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn restrict_withdraw<R: Into<AccessRule>>(
@@ -330,12 +330,12 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be depositable with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .restrict_deposit(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be depositable, but this is can be changed in future by the second rule
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .restrict_deposit(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn restrict_deposit<R: Into<AccessRule>>(
@@ -475,11 +475,11 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     /// use scrypto::prelude::*;
     ///
     /// // Only permits whole-number balances.
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .divisibility(0);
     ///
     /// // Only permits balances to 3 decimal places.
-    /// ResourceBuilder::new_fungible()
+    /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .divisibility(3);
     /// ```
     pub fn divisibility(mut self, divisibility: u8) -> Self {
@@ -496,7 +496,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     /// ```no_run
     /// use scrypto::prelude::*;
     ///
-    /// let bucket = ResourceBuilder::new_fungible()
+    /// let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
     ///     .mint_initial_supply(5);
     /// ```
     pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
@@ -545,7 +545,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_string_non_fungible::<NFData>()
+    /// let bucket = ResourceBuilder::new_string_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         ("One".try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         ("Two".try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
@@ -604,7 +604,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_integer_non_fungible()
+    /// let bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (1u64.into(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         (2u64.into(), NFData { name: "NF Two".to_owned(), flag: true }),

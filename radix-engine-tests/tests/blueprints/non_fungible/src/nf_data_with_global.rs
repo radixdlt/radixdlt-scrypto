@@ -19,12 +19,12 @@ mod nf_data_with_global {
                 .globalize();
 
             // Create a mint badge
-            let mint_badge = ResourceBuilder::new_fungible()
+            let mint_badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
 
             // Create  resource with initial supply
-            let bucket1 = ResourceBuilder::new_integer_non_fungible::<NFDataWithGlobal>()
+            let bucket1 = ResourceBuilder::new_integer_non_fungible::<NFDataWithGlobal>(OwnerRole::None)
                 .metadata(metadata! {
                     init {
                         "name" => "NFDataWithGlobal".to_owned(), locked;

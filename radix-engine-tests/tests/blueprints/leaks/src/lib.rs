@@ -10,7 +10,7 @@ mod leaks {
         }
 
         pub fn dangling_bucket() {
-            let _bucket = ResourceBuilder::new_fungible()
+            let _bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
@@ -21,7 +21,7 @@ mod leaks {
         }
 
         pub fn dangling_vault() {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
@@ -33,7 +33,7 @@ mod leaks {
         }
 
         pub fn get_bucket() -> Bucket {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
@@ -51,7 +51,7 @@ mod leaks {
         }
 
         pub fn dangling_bucket_with_proof() -> Proof {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {

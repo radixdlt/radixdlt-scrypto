@@ -1480,7 +1480,7 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
 
     let manifest = ManifestBuilder::new()
         .create_fungible_resource(
-            OwnerRole::None,
+            OwnerRole::Fixed(AccessRule::AllowAll),
             false,
             18,
             metadata!(),

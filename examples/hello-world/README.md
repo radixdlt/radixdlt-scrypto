@@ -58,7 +58,7 @@ In Scrypto, assets like tokens, NFTs, and more are not implemented as blueprints
 To define a new resource, we use the `ResourceBuilder`, specifying the metadata and initial supply. We can use the `ResourceBuilder` to create a simple fungible-supply token called `HelloToken` like this:
 
 ```rust
-let my_bucket: Bucket = ResourceBuilder::new_fungible()
+let my_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
     .metadata("name", "HelloToken")
     .metadata("symbol", "HT")
     .mint_initial_supply(1000);

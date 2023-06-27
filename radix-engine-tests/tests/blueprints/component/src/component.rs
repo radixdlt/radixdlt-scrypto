@@ -9,7 +9,7 @@ mod component_test {
 
     impl ComponentTest {
         fn create_test_token(amount: u32) -> Bucket {
-            ResourceBuilder::new_fungible()
+            ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {

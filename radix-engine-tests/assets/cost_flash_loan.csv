@@ -1,5 +1,5 @@
-Total Cost Units                                                                ,  19914887
-Total Fee                                                                       , 9.9574435
+Total Cost Units                                                                ,  19915839
+Total Fee                                                                       , 9.9579195
 AfterInvoke                                                                     ,       974
 AllocateNodeId                                                                  ,     26500
 BeforeInvoke                                                                    ,     25508
@@ -13,12 +13,12 @@ OpenSubstate::GlobalAccount                                                     
 OpenSubstate::GlobalFungibleResourceManager                                     ,   1008536
 OpenSubstate::GlobalGenericComponent                                            ,    283430
 OpenSubstate::GlobalNonFungibleResourceManager                                  ,   1080953
-OpenSubstate::GlobalPackage                                                     ,   8104602
+OpenSubstate::GlobalPackage                                                     ,   8105078
 OpenSubstate::InternalFungibleVault                                             ,   1142667
 OpenSubstate::InternalGenericComponent                                          ,    164144
 QueryActor                                                                      ,     15000
 QueryAuthZone                                                                   ,      2000
-ReadSubstate                                                                    ,   1156280
+ReadSubstate                                                                    ,   1156756
 RunNativeCode::AuthZone_pop                                                     ,     13600
 RunNativeCode::AuthZone_push                                                    ,     14000
 RunNativeCode::Worktop_drain                                                    ,      6900

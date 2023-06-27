@@ -13,7 +13,7 @@ mod hello {
         // This is a function, and can be called directly on the blueprint once deployed
         pub fn instantiate_hello() -> Global<Hello> {
             // Create a new token called "HelloToken," with a fixed supply of 1000, and put that supply into a bucket
-            let my_bucket: Bucket = ResourceBuilder::new_fungible()
+            let my_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .metadata("name", "HelloToken")
                 .metadata("symbol", "HT")
                 .mint_initial_supply(1000);

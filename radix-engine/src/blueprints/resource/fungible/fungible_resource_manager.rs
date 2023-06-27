@@ -71,6 +71,7 @@ pub struct FungibleResourceManagerBlueprint;
 
 impl FungibleResourceManagerBlueprint {
     pub(crate) fn create<Y>(
+        owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
         metadata: ModuleConfig<MetadataInit>,
@@ -100,12 +101,13 @@ impl FungibleResourceManagerBlueprint {
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
         let resource_address = ResourceAddress::new_or_panic(address.into());
-        globalize_resource_manager(object_id, address_reservation, access_rules, metadata, api)?;
+        globalize_resource_manager(owner_role, object_id, address_reservation, access_rules, metadata, api)?;
 
         Ok(resource_address)
     }
 
     pub(crate) fn create_with_initial_supply<Y>(
+        owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
         metadata: ModuleConfig<MetadataInit>,
@@ -122,6 +124,7 @@ impl FungibleResourceManagerBlueprint {
         })?;
 
         Self::create_with_initial_supply_and_address(
+            owner_role,
             track_total_supply,
             divisibility,
             metadata,
@@ -133,6 +136,7 @@ impl FungibleResourceManagerBlueprint {
     }
 
     pub(crate) fn create_with_initial_supply_and_address<Y>(
+        owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
         metadata: ModuleConfig<MetadataInit>,
@@ -162,6 +166,7 @@ impl FungibleResourceManagerBlueprint {
         check_mint_amount(divisibility, initial_supply)?;
 
         let (resource_address, bucket) = globalize_fungible_with_initial_supply(
+            owner_role,
             object_id,
             resource_address_reservation,
             access_rules,

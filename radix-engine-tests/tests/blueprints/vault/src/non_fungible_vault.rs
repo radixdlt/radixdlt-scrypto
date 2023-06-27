@@ -11,7 +11,7 @@ mod vault_test {
 
     impl NonFungibleVault {
         fn create_singleton_non_fungible_vault() -> Vault {
-            let bucket = ResourceBuilder::new_integer_non_fungible()
+            let bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
                 .metadata(metadata! {
                     init {
                         "name" => "TestToken".to_owned(), locked;
@@ -22,7 +22,7 @@ mod vault_test {
         }
 
         fn create_non_fungible_vault() -> Vault {
-            let bucket = ResourceBuilder::new_integer_non_fungible()
+            let bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
                 .metadata(metadata! {
                     init {
                         "name" => "TestToken".to_owned(), locked;
