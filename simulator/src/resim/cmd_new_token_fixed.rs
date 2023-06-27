@@ -1,6 +1,7 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -69,6 +70,11 @@ impl NewTokenFixed {
         }
         if let Some(icon_url) = self.icon_url.clone() {
             metadata.insert("icon_url".to_string(), MetadataValue::Url(Url(icon_url)));
+        };
+
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: Roles::default(),
         };
 
         let manifest = ManifestBuilder::new()
