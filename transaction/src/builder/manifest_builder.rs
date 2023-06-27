@@ -222,6 +222,17 @@ impl ManifestBuilder {
     }
 
     /// Asserts that worktop contains resource.
+    pub fn assert_worktop_contains_any(
+        &mut self,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
+        self.add_instruction(InstructionV1::AssertWorktopContainsAny {
+            resource_address,
+        })
+        .0
+    }
+
+    /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains(
         &mut self,
         resource_address: ResourceAddress,

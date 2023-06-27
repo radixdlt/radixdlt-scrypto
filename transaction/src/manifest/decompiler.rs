@@ -209,6 +209,12 @@ pub fn decompile_instruction<F: fmt::Write>(
         InstructionV1::ReturnToWorktop { bucket_id } => {
             ("RETURN_TO_WORKTOP", to_manifest_value(&(bucket_id,))?)
         }
+        InstructionV1::AssertWorktopContainsAny {
+            resource_address,
+        } => (
+            "ASSERT_WORKTOP_CONTAINS_ANY",
+            to_manifest_value(&(resource_address))?,
+        ),
         InstructionV1::AssertWorktopContains {
             amount,
             resource_address,
