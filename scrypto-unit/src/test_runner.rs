@@ -1141,7 +1141,13 @@ impl TestRunner {
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
-            .create_fungible_resource(true, 0, BTreeMap::new(), access_rules, Some(5.into()))
+            .create_fungible_resource(
+                true,
+                0,
+                 metadata!(),
+                access_rules,
+                Some(5.into()),
+            )
             .call_method(
                 to,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1246,7 +1252,7 @@ impl TestRunner {
                 .create_non_fungible_resource::<_, Vec<_>, ()>(
                     NonFungibleIdType::Integer,
                     false,
-                    BTreeMap::new(),
+                    metadata!(),
                     access_rules,
                     None,
                 )
@@ -1323,7 +1329,7 @@ impl TestRunner {
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
                 false,
-                BTreeMap::new(),
+                metadata!(),
                 access_rules,
                 Some(entries),
             )
@@ -1351,7 +1357,7 @@ impl TestRunner {
             .create_fungible_resource(
                 true,
                 divisibility,
-                BTreeMap::new(),
+                metadata!(),
                 access_rules,
                 Some(amount),
             )
@@ -1378,7 +1384,13 @@ impl TestRunner {
         access_rules.insert(Burn, (rule!(require(admin_auth)), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
-            .create_fungible_resource(true, 1u8, BTreeMap::new(), access_rules, None)
+            .create_fungible_resource(
+                true,
+                1u8,
+                metadata!(),
+                access_rules,
+                None,
+            )
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1402,7 +1414,13 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
-            .create_fungible_resource(true, divisibility, BTreeMap::new(), access_rules, amount)
+            .create_fungible_resource(
+                true,
+                divisibility,
+                metadata!(),
+                access_rules,
+                amount,
+            )
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1426,7 +1444,13 @@ impl TestRunner {
         access_rules.insert(Burn, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
-            .create_fungible_resource(true, divisibility, BTreeMap::new(), access_rules, amount)
+            .create_fungible_resource(
+                true,
+                divisibility,
+                metadata!(),
+                access_rules,
+                amount,
+            )
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,

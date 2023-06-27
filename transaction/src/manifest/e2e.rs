@@ -8,6 +8,9 @@ pub mod tests {
     use crate::manifest::*;
     use crate::signing::ed25519::Ed25519PrivateKey;
     use radix_engine_interface::blueprints::resource::AccessRule;
+    use radix_engine_interface::{metadata, metadata_init};
+    use radix_engine_interface::api::node_modules::ModuleConfig;
+    use radix_engine_interface::blueprints::resource::Roles;
     use scrypto_derive::NonFungibleData;
 
     #[test]
@@ -1477,7 +1480,7 @@ CALL_METHOD
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
                 false,
-                BTreeMap::new(),
+                metadata!(),
                 BTreeMap::<_, (_, AccessRule)>::new(),
                 Some([(NonFungibleLocalId::integer(1), EmptyStruct {})]),
             )

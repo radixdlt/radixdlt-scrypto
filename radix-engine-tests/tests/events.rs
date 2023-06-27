@@ -2,6 +2,7 @@ use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
 };
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{
@@ -16,6 +17,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
+use radix_engine_interface::{metadata, metadata_init};
 use scrypto::prelude::Mutability::LOCKED;
 use scrypto::prelude::{AccessRule, FromPublicKey, ResourceAction};
 use scrypto::NonFungibleData;
@@ -294,7 +296,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
                 false,
-                BTreeMap::new(),
+                metadata!(),
                 access_rules,
                 Some([(id.clone(), EmptyStruct {})]),
             )
@@ -536,7 +538,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
                 false,
-                BTreeMap::new(),
+                metadata!(),
                 access_rules,
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
             )
@@ -1468,7 +1470,13 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
     .collect();
 
     let manifest = ManifestBuilder::new()
-        .create_fungible_resource(false, 18, BTreeMap::new(), access_rules, None)
+        .create_fungible_resource(
+            false,
+            18,
+            metadata!(),
+            access_rules,
+            None,
+        )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
     *receipt

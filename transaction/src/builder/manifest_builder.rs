@@ -440,14 +440,10 @@ impl ManifestBuilder {
         &mut self,
         track_total_supply: bool,
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
-        let metadata = ModuleConfig {
-            init: metadata.into(),
-            roles: Roles::default(),
-        };
         let access_rules = access_rules
             .into_iter()
             .map(|(k, v)| (k, (v.0, v.1.into())))
@@ -490,7 +486,7 @@ impl ManifestBuilder {
         &mut self,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<T>,
     ) -> &mut Self
@@ -503,11 +499,6 @@ impl ManifestBuilder {
             .into_iter()
             .map(|(k, v)| (k, (v.0, v.1.into())))
             .collect();
-
-        let metadata = ModuleConfig {
-            init: metadata.into(),
-            roles: Roles::default(),
-        };
 
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
@@ -905,7 +896,7 @@ impl ManifestBuilder {
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: ModuleConfig<MetadataInit>,
         minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -923,7 +914,7 @@ impl ManifestBuilder {
     /// Creates a token resource with fixed supply.
     pub fn new_token_fixed(
         &mut self,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -938,7 +929,7 @@ impl ManifestBuilder {
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         &mut self,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: ModuleConfig<MetadataInit>,
         minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -956,7 +947,7 @@ impl ManifestBuilder {
     /// Creates a badge resource with fixed supply.
     pub fn new_badge_fixed(
         &mut self,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
