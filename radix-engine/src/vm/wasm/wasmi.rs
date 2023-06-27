@@ -1183,7 +1183,7 @@ impl WasmInstance for WasmiInstance {
 }
 
 #[derive(Debug, Clone)]
-pub struct EngineOptions {
+pub struct WasmiEngineOptions {
     max_cache_size: usize,
 }
 
@@ -1200,14 +1200,14 @@ pub struct WasmiEngine {
 
 impl Default for WasmiEngine {
     fn default() -> Self {
-        Self::new(EngineOptions {
+        Self::new(WasmiEngineOptions {
             max_cache_size: DEFAULT_CACHE_SIZE,
         })
     }
 }
 
 impl WasmiEngine {
-    pub fn new(options: EngineOptions) -> Self {
+    pub fn new(options: WasmiEngineOptions) -> Self {
         #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
             NonZeroUsize::new(options.max_cache_size).unwrap(),

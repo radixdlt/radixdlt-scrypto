@@ -141,7 +141,7 @@ mod tests {
     i32.const 4
     i32.sub
     global.set 0)
-  (memory (;0;) 1 32)
+  (memory (;0;) 1 64)
   (global (;0;) (mut i32) (i32.const 0))
   (export "memory" (memory 0))
   (export "Test_f" (func 2)))

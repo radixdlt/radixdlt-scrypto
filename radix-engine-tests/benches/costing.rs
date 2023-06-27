@@ -2,17 +2,13 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::{
     system::system_modules::costing::SystemLoanFeeReserve,
     types::*,
-    utils::ExtractSchemaError,
+    utils::{extract_definition, ExtractSchemaError},
     vm::{
-        wasm::{
-            DefaultWasmEngine, InstrumentedCode, WasmEngine, WasmInstance, WasmRuntime,
-            WasmValidator,
-        },
+        wasm::{DefaultWasmEngine, WasmEngine, WasmInstance, WasmRuntime, WasmValidator},
         wasm_runtime::NoOpWasmRuntime,
     },
 };
 use sbor::rust::iter;
-use sbor::rust::sync::Arc;
 use transaction::{
     prelude::Secp256k1PrivateKey,
     validation::{recover_secp256k1, verify_secp256k1},
@@ -47,19 +43,11 @@ fn bench_spin_loop(c: &mut Criterion) {
 
     // Instrument
     let validator = WasmValidator::default();
-    let instrumented_code = InstrumentedCode {
-        metered_code_key: (
-            PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]),
-            validator.instrumenter_config.version(),
-        ),
-        code: Arc::new(
-            validator
-                .validate(&code, iter::empty())
-                .map_err(|e| ExtractSchemaError::InvalidWasm(e))
-                .unwrap()
-                .0,
-        ),
-    };
+    let instrumented_code = validator
+        .validate(&code, iter::empty())
+        .map_err(|e| ExtractSchemaError::InvalidWasm(e))
+        .unwrap()
+        .0;
 
     // Note that wasm engine maintains an internal cache, which means costing
     // isn't taking WASM parsing into consideration.
@@ -72,7 +60,7 @@ fn bench_spin_loop(c: &mut Criterion) {
             gas_consumed = 0;
             let mut runtime: Box<dyn WasmRuntime> =
                 Box::new(NoOpWasmRuntime::new(fee_reserve, &mut gas_consumed));
-            let mut instance = wasm_engine.instantiate(&instrumented_code);
+            let mut instance = wasm_engine.instantiate(Hash([0u8; 32]), &instrumented_code);
             instance
                 .invoke_export("Test_f", vec![Buffer(0)], &mut runtime)
                 .unwrap();
@@ -88,28 +76,33 @@ fn bench_instantiate_radiswap(c: &mut Criterion) {
 
     // Instrument
     let validator = WasmValidator::default();
-    let instrumented_code = InstrumentedCode {
-        metered_code_key: (
-            PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]),
-            validator.instrumenter_config.version(),
-        ),
-        code: Arc::new(
-            validator
-                .validate(code, iter::empty())
-                .map_err(|e| ExtractSchemaError::InvalidWasm(e))
-                .unwrap()
-                .0,
-        ),
-    };
+    let instrumented_code = validator
+        .validate(code, iter::empty())
+        .map_err(|e| ExtractSchemaError::InvalidWasm(e))
+        .unwrap()
+        .0;
 
     c.bench_function("costing::instantiate_radiswap", |b| {
         b.iter(|| {
             let wasm_engine = DefaultWasmEngine::default();
-            wasm_engine.instantiate(&instrumented_code);
+            wasm_engine.instantiate(Hash([0u8; 32]), &instrumented_code);
         })
     });
 
     println!("Code length: {}", code.len());
+}
+
+fn bench_validate_wasm(c: &mut Criterion) {
+    let code = include_bytes!("../../assets/faucet.wasm");
+    let definition = extract_definition(code).unwrap();
+
+    c.bench_function("WASM::validate_wasm", |b| {
+        b.iter(|| {
+            WasmValidator::default()
+                .validate(code, definition.blueprints.values())
+                .unwrap()
+        })
+    });
 }
 
 criterion_group!(
@@ -117,6 +110,7 @@ criterion_group!(
     bench_decode_sbor,
     bench_validate_secp256k1,
     bench_spin_loop,
-    bench_instantiate_radiswap
+    bench_instantiate_radiswap,
+    bench_validate_wasm,
 );
 criterion_main!(costing);
