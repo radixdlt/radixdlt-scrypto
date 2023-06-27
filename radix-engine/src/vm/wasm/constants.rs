@@ -72,8 +72,8 @@ pub const EXPORT_MEMORY: &str = "memory";
 // LIMITS
 //=================
 
-/// The maximum memory size (per call frame): 32 * 64KiB = 2MiB
-pub const DEFAULT_MAX_MEMORY_SIZE_IN_PAGES: u32 = 32;
+/// The maximum memory size (per call frame): 64 * 64KiB = 4MiB
+pub const DEFAULT_MAX_MEMORY_SIZE_IN_PAGES: u32 = 64;
 
 /// The maximum initial table size
 pub const DEFAULT_MAX_INITIAL_TABLE_SIZE: u32 = 1024;
