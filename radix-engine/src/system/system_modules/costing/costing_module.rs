@@ -251,6 +251,21 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
+    #[inline(always)]
+    fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        _src_node_id: &NodeId,
+        _dest_node_id: &NodeId,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(CostingEntry::MoveModules { store_access })?;
+
+        Ok(())
+    }
+
     fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         total_substate_size: usize,

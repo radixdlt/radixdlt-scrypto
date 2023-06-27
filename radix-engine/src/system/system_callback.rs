@@ -277,6 +277,18 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_allocate_node_id(api, entity_type)
     }
 
+    fn after_move_modules<Y>(
+        src_node_id: &NodeId,
+        dest_node_id: &NodeId,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_move_modules(api, src_node_id, dest_node_id, store_access)
+    }
+
     //--------------------------------------------------------------------------
     // Note that the following logic doesn't go through mixer and is not costed
     //--------------------------------------------------------------------------
