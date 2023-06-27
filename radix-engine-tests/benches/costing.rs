@@ -2,12 +2,13 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::{
     system::system_modules::costing::SystemLoanFeeReserve,
     types::*,
-    utils::{extract_definition, ExtractSchemaError},
+    utils::ExtractSchemaError,
     vm::{
         wasm::{DefaultWasmEngine, WasmEngine, WasmInstance, WasmRuntime, WasmValidator},
         wasm_runtime::NoOpWasmRuntime,
     },
 };
+use radix_engine_queries::typed_substate_layout::PackageDefinition;
 use sbor::rust::iter;
 use transaction::{
     prelude::Secp256k1PrivateKey,
@@ -93,8 +94,9 @@ fn bench_instantiate_radiswap(c: &mut Criterion) {
 }
 
 fn bench_validate_wasm(c: &mut Criterion) {
-    let code = include_bytes!("../../assets/faucet.wasm");
-    let definition = extract_definition(code).unwrap();
+    let code = include_bytes!("../../assets/radiswap.wasm");
+    let definition: PackageDefinition =
+        manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap();
 
     c.bench_function("WASM::validate_wasm", |b| {
         b.iter(|| {
@@ -103,6 +105,8 @@ fn bench_validate_wasm(c: &mut Criterion) {
                 .unwrap()
         })
     });
+
+    println!("Code length: {}", code.len());
 }
 
 criterion_group!(

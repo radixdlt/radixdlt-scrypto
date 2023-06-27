@@ -1230,6 +1230,7 @@ impl WasmiEngine {
 impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
+    #[allow(unused_variables)]
     fn instantiate(&self, code_hash: Hash, instrumented_code: &[u8]) -> WasmiInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
