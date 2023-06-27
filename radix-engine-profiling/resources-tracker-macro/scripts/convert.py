@@ -54,10 +54,16 @@ for path in os.listdir(input_folder):
 
         key = child.tag
         cpu_instructions = int(child.attrib["ins"])
+        #print(tree.getpath(child))
 
         if cpu_instructions == 0 and "return" in child.attrib and child.attrib["return"] == "true":
             #print("Skipping function which returned early: ", child.tag, "\n", file=sys.stderr)
             continue
+        elif cpu_instructions == 0:
+            parent_return = child.xpath(".//*[ancestor-or-self::*[@return='true']]")
+            if parent_return:
+                #print("Skipping function which parent returned early: ", child.tag, "\n", file=sys.stderr)
+                continue
 
 #=====================================#
 #    Add arguments to kernel calls    #
@@ -121,10 +127,11 @@ for path in os.listdir(input_folder):
         for i in range(5):
             nested_call_xpath = nested_call_prefix + nested_call_middle + nested_call_suffix
             kernel_nested_calls = child.xpath(nested_call_xpath)
-            #print("direct child nested calls count: ", len(kernel_nested_calls))
+            #if len(kernel_nested_calls) > 0:
+                #print("  direct child nested calls count: ", len(kernel_nested_calls), nested_call_xpath, cpu_instructions)
             for i in kernel_nested_calls:
-                #print(" call: ", tree.getpath(i))
                 cpu_instructions -= int(i.attrib["ins"])
+                #print("   call: ", tree.getpath(i), cpu_instructions)
             nested_call_middle += "/*[not(local-name() = '" + child.tag + "')]"
 
 #        if not child.tag in api_functions:
