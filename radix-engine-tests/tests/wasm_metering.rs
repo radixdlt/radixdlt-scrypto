@@ -29,7 +29,28 @@ fn test_loop() {
     receipt.expect_commit_success();
 }
 
-// FIXME: investigate the case where cost_unit_limit < system_loan and transaction runs out of cost units.
+#[test]
+fn test_finish_before_system_loan_limit() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "1"));
+    let package_address = test_runner.publish_package(
+        code,
+        single_function_package_definition("Test", "f"),
+        BTreeMap::new(),
+        OwnerRole::None,
+    );
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 500.into())
+        .call_function(package_address, "Test", "f", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
 
 #[test]
 fn test_loop_out_of_cost_unit() {
