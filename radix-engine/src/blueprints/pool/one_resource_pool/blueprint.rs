@@ -40,6 +40,9 @@ impl OneResourcePoolBlueprint {
             blueprint_name: ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
         })?;
 
+        // Create owner role of both the pool component and pool unit resource
+        let owner_role = OwnerRole::Updatable(pool_manager_rule);
+
         let pool_unit_resource_manager = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
 
@@ -53,7 +56,7 @@ impl OneResourcePoolBlueprint {
             );
 
             ResourceManager::new_fungible(
-                OwnerRole::Fixed(rule!(require(component_caller_badge.clone()))),
+                owner_role.clone(),
                 true,
                 18,
                 metadata_init! {
@@ -64,8 +67,7 @@ impl OneResourcePoolBlueprint {
             )?
         };
 
-        let access_rules =
-            AccessRules::create(OwnerRole::Updatable(pool_manager_rule), btreemap!(), api)?.0;
+        let access_rules = AccessRules::create(owner_role, btreemap!(), api)?.0;
         let metadata = Metadata::create_with_data(
             metadata_init! {
                 "pool_vault_number" => 1u8, locked;
