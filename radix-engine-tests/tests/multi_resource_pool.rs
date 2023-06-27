@@ -15,7 +15,12 @@ fn multi_resource_pool_can_be_instantiated() {
     TestEnvironment::<3>::new([18, 18, 18]);
 }
 
-pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(key: &str, pool: bool, sign: bool, result: F) {
+pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
+    key: &str,
+    pool: bool,
+    sign: bool,
+    result: F,
+) {
     // Arrange
     let mut test_runner = TestEnvironment::new([18, 18, 18]);
 

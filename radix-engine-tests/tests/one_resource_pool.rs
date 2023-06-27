@@ -12,7 +12,12 @@ fn one_resource_pool_can_be_instantiated() {
     TestEnvironment::new(18);
 }
 
-pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(key: &str, pool: bool, sign: bool, result: F) {
+pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
+    key: &str,
+    pool: bool,
+    sign: bool,
+    result: F,
+) {
     // Arrange
     let mut test_runner = TestEnvironment::new(18);
 
@@ -112,7 +117,6 @@ pub fn cannot_set_pool_resource_pool_metadata_if_not_owner() {
         });
     });
 }
-
 
 #[test]
 fn initial_contribution_to_pool_mints_expected_amount() {

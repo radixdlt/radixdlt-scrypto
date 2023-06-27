@@ -10,9 +10,9 @@ use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
-fn build_access_rules(
+fn build_main_access_rules(
     mut access_rules_map: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-) -> BTreeMap<ObjectModuleId, Roles> {
+) -> Roles {
     let mut main_roles = Roles::new();
 
     // Meta roles
@@ -105,34 +105,7 @@ fn build_access_rules(
         }
     }
 
-    // Metadata
-    /*
-    let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
-        .remove(&ResourceAction::UpdateMetadata)
-        .unwrap_or((DenyAll, DenyAll));
-
-     */
-    let metadata_roles = {
-        /*
-        let mut metadata_roles = Roles::new();
-        let locked = update_metadata_mutability.eq(&DenyAll);
-        metadata_roles.define_role(METADATA_SETTER_ROLE, update_metadata_access_rule, locked);
-        metadata_roles.define_role(
-            METADATA_SETTER_UPDATER_ROLE,
-            update_metadata_mutability,
-            locked,
-        );
-
-        metadata_roles
-         */
-
-        Roles::default()
-    };
-
-    btreemap!(
-        ObjectModuleId::Main => main_roles,
-        ObjectModuleId::Metadata => metadata_roles,
-    )
+    main_roles
 }
 
 pub fn features(
@@ -183,7 +156,13 @@ pub fn globalize_resource_manager<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let roles = build_access_rules(access_rules);
+    let main_roles = build_main_access_rules(access_rules);
+
+    let roles = btreemap!(
+        ObjectModuleId::Main => main_roles,
+        ObjectModuleId::Metadata => metadata.roles,
+    );
+
     let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
@@ -212,7 +191,11 @@ pub fn globalize_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let roles = build_access_rules(access_rules);
+    let main_roles = build_main_access_rules(access_rules);
+    let roles = btreemap!(
+        ObjectModuleId::Main => main_roles,
+        ObjectModuleId::Metadata => metadata.roles,
+    );
     let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
@@ -250,8 +233,11 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let roles = build_access_rules(access_rules);
-
+    let main_roles = build_main_access_rules(access_rules);
+    let roles = btreemap!(
+        ObjectModuleId::Main => main_roles,
+        ObjectModuleId::Metadata => metadata.roles,
+    );
     let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
