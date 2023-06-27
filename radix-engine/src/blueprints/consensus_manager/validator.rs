@@ -1075,11 +1075,17 @@ impl ValidatorCreator {
         let mut stake_unit_resource_auth = BTreeMap::new();
         stake_unit_resource_auth.insert(
             Mint,
-            (rule!(require(global_caller(validator_address))), rule!(deny_all)),
+            (
+                rule!(require(global_caller(validator_address))),
+                rule!(deny_all),
+            ),
         );
         stake_unit_resource_auth.insert(
             Burn,
-            (rule!(require(global_caller(validator_address))), rule!(deny_all)),
+            (
+                rule!(require(global_caller(validator_address))),
+                rule!(deny_all),
+            ),
         );
         stake_unit_resource_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         stake_unit_resource_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -1112,11 +1118,17 @@ impl ValidatorCreator {
         let mut unstake_nft_auth = BTreeMap::new();
         unstake_nft_auth.insert(
             Mint,
-            (rule!(require(global_caller(validator_address))), rule!(deny_all)),
+            (
+                rule!(require(global_caller(validator_address))),
+                rule!(deny_all),
+            ),
         );
         unstake_nft_auth.insert(
             Burn,
-            (rule!(require(global_caller(validator_address))), rule!(deny_all)),
+            (
+                rule!(require(global_caller(validator_address))),
+                rule!(deny_all),
+            ),
         );
         unstake_nft_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
@@ -1151,10 +1163,11 @@ impl ValidatorCreator {
         // check if validator fee is valid
         check_validator_fee_factor(fee_factor)?;
 
-        let (address_reservation, validator_address) = api.allocate_global_address(BlueprintId {
-            package_address: CONSENSUS_MANAGER_PACKAGE,
-            blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
-        })?;
+        let (address_reservation, validator_address) =
+            api.allocate_global_address(BlueprintId {
+                package_address: CONSENSUS_MANAGER_PACKAGE,
+                blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
+            })?;
 
         let stake_xrd_vault = Vault::create(RADIX_TOKEN, api)?;
         let pending_xrd_withdraw_vault = Vault::create(RADIX_TOKEN, api)?;

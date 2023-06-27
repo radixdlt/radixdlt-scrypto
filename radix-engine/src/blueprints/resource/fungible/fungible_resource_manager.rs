@@ -8,12 +8,12 @@ use native_sdk::runtime::Runtime;
 use num_traits::pow::Pow;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::FungibleResourceManagerField;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 
 const DIVISIBILITY_MAXIMUM: u8 = 18;
 
@@ -101,7 +101,14 @@ impl FungibleResourceManagerBlueprint {
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
         })?;
         let resource_address = ResourceAddress::new_or_panic(address.into());
-        globalize_resource_manager(owner_role, object_id, address_reservation, access_rules, metadata, api)?;
+        globalize_resource_manager(
+            owner_role,
+            object_id,
+            address_reservation,
+            access_rules,
+            metadata,
+            api,
+        )?;
 
         Ok(resource_address)
     }

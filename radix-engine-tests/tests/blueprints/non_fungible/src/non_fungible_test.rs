@@ -28,22 +28,23 @@ mod non_fungible_test {
                 .mint_initial_supply(1);
 
             // Create non-fungible resource with mutable supply
-            let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
-                .metadata(metadata! {
-                    init {
-                        "name" => "Katz's Sandwiches".to_owned(), locked;
-                    }
-                })
-                .mintable(
-                    rule!(require(mint_badge.resource_address())),
-                    rule!(deny_all),
-                )
-                .burnable(rule!(allow_all), rule!(deny_all))
-                .updatable_non_fungible_data(
-                    rule!(require(mint_badge.resource_address())),
-                    rule!(deny_all),
-                )
-                .create_with_no_initial_supply();
+            let resource_manager =
+                ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
+                    .metadata(metadata! {
+                        init {
+                            "name" => "Katz's Sandwiches".to_owned(), locked;
+                        }
+                    })
+                    .mintable(
+                        rule!(require(mint_badge.resource_address())),
+                        rule!(deny_all),
+                    )
+                    .burnable(rule!(allow_all), rule!(deny_all))
+                    .updatable_non_fungible_data(
+                        rule!(require(mint_badge.resource_address())),
+                        rule!(deny_all),
+                    )
+                    .create_with_no_initial_supply();
 
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
@@ -246,13 +247,14 @@ mod non_fungible_test {
         }
 
         pub fn get_total_supply() {
-            let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
-                .metadata(metadata! {
-                    init {
-                        "name" => "Katz's Sandwiches".to_owned(), locked;
-                    }
-                })
-                .create_with_no_initial_supply();
+            let resource_manager =
+                ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
+                    .metadata(metadata! {
+                        init {
+                            "name" => "Katz's Sandwiches".to_owned(), locked;
+                        }
+                    })
+                    .create_with_no_initial_supply();
 
             assert_eq!(resource_manager.total_supply().unwrap(), Decimal::zero(),);
         }
@@ -450,7 +452,7 @@ mod non_fungible_test {
                         owner_role: OwnerRole::None,
                         id_type: NonFungibleIdType::RUID,
                         track_total_supply: false,
-                        metadata: metadata!{},
+                        metadata: metadata! {},
                         access_rules: BTreeMap::new(),
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries,
@@ -466,63 +468,67 @@ mod non_fungible_test {
 
         pub fn create_string_non_fungible() -> Bucket {
             // creating non-fungible id with id type set to default (RUID)
-            ResourceBuilder::new_string_non_fungible::<Sandwich>(OwnerRole::None).mint_initial_supply([
-                (
-                    "1".try_into().unwrap(),
-                    Sandwich {
-                        name: "One".to_owned(),
-                        available: true,
-                        tastes_great: true,
-                        reference: None,
-                        own: None,
-                    },
-                ),
-                (
-                    "2".try_into().unwrap(),
-                    Sandwich {
-                        name: "Two".to_owned(),
-                        available: true,
-                        tastes_great: true,
-                        reference: None,
-                        own: None,
-                    },
-                ),
-            ])
+            ResourceBuilder::new_string_non_fungible::<Sandwich>(OwnerRole::None)
+                .mint_initial_supply([
+                    (
+                        "1".try_into().unwrap(),
+                        Sandwich {
+                            name: "One".to_owned(),
+                            available: true,
+                            tastes_great: true,
+                            reference: None,
+                            own: None,
+                        },
+                    ),
+                    (
+                        "2".try_into().unwrap(),
+                        Sandwich {
+                            name: "Two".to_owned(),
+                            available: true,
+                            tastes_great: true,
+                            reference: None,
+                            own: None,
+                        },
+                    ),
+                ])
         }
 
         pub fn create_bytes_non_fungible() -> Bucket {
-            ResourceBuilder::new_bytes_non_fungible::<Sandwich>(OwnerRole::None).mint_initial_supply([
-                (
-                    1u32.to_le_bytes().to_vec().try_into().unwrap(),
-                    Sandwich {
-                        name: "One".to_owned(),
-                        available: true,
-                        tastes_great: true,
-                        reference: None,
-                        own: None,
-                    },
-                ),
-                (
-                    2u32.to_le_bytes().to_vec().try_into().unwrap(),
-                    Sandwich {
-                        name: "Two".to_owned(),
-                        available: true,
-                        tastes_great: true,
-                        reference: None,
-                        own: None,
-                    },
-                ),
-            ])
+            ResourceBuilder::new_bytes_non_fungible::<Sandwich>(OwnerRole::None)
+                .mint_initial_supply([
+                    (
+                        1u32.to_le_bytes().to_vec().try_into().unwrap(),
+                        Sandwich {
+                            name: "One".to_owned(),
+                            available: true,
+                            tastes_great: true,
+                            reference: None,
+                            own: None,
+                        },
+                    ),
+                    (
+                        2u32.to_le_bytes().to_vec().try_into().unwrap(),
+                        Sandwich {
+                            name: "Two".to_owned(),
+                            available: true,
+                            tastes_great: true,
+                            reference: None,
+                            own: None,
+                        },
+                    ),
+                ])
         }
 
         pub fn create_ruid_non_fungible() -> Bucket {
-            ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None).mint_initial_supply([Sandwich {
-                name: "Zero".to_owned(),
-                available: true,
-                tastes_great: true,
-                reference: None,
-                own: None,
-            }])
+            ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None).mint_initial_supply(
+                [Sandwich {
+                    name: "Zero".to_owned(),
+                    available: true,
+                    tastes_great: true,
+                    reference: None,
+                    own: None,
+                }],
+            )
         }
 
         pub fn create_mintable_ruid_non_fungible() -> ResourceManager {
@@ -533,14 +539,15 @@ mod non_fungible_test {
 
         pub fn create_ruid_non_fungible_and_mint() -> Bucket {
             // creating non-fungible id with id type set to default (RUID)
-            let resource_manager = ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
-                .mintable(rule!(allow_all), rule!(deny_all))
-                .metadata(metadata! {
-                    init {
-                        "name" => "Katz's Sandwiches".to_owned(), locked;
-                    }
-                })
-                .create_with_no_initial_supply();
+            let resource_manager =
+                ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
+                    .mintable(rule!(allow_all), rule!(deny_all))
+                    .metadata(metadata! {
+                        init {
+                            "name" => "Katz's Sandwiches".to_owned(), locked;
+                        }
+                    })
+                    .create_with_no_initial_supply();
 
             resource_manager.mint_ruid_non_fungible(Sandwich {
                 name: "Test".to_owned(),

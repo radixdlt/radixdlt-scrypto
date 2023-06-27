@@ -16,7 +16,8 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceAction) {
     // Arrange 1
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let token_address = test_runner.create_everything_allowed_non_fungible_resource(OwnerRole::None);
+    let token_address =
+        test_runner.create_everything_allowed_non_fungible_resource(OwnerRole::None);
     let admin_auth = test_runner.create_non_fungible_resource(account);
 
     // Act 1 - Show that updating both the action_role_key and updater_role_key is initially possible

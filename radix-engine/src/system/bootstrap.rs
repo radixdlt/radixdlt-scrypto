@@ -28,6 +28,7 @@ use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerCreateManifestInput, EpochChangeCondition,
     CONSENSUS_MANAGER_BLUEPRINT, CONSENSUS_MANAGER_CREATE_IDENT,
@@ -46,7 +47,6 @@ use transaction::model::{
 };
 use transaction::prelude::{BlobV1, PreAllocatedAddress};
 use transaction::validation::ManifestIdAllocator;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");

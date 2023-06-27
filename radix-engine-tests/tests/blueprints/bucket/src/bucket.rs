@@ -140,7 +140,8 @@ mod bucket_test {
 
         pub fn create_empty_bucket_non_fungible() -> Bucket {
             let resource_manager =
-                ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None).create_with_no_initial_supply();
+                ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
+                    .create_with_no_initial_supply();
             Bucket::new(resource_manager.resource_address())
         }
 
@@ -164,8 +165,8 @@ mod bucket_test {
         }
 
         pub fn drop_locked_non_fungible_bucket() {
-            let bucket =
-                ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None).mint_initial_supply([MyData {}]);
+            let bucket = ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
+                .mint_initial_supply([MyData {}]);
             bucket.create_proof();
 
             Self {

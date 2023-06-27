@@ -1,6 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::{
     require, FromPublicKey, NonFungibleDataSchema,
     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceAction,
@@ -11,7 +12,6 @@ use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::{metadata, metadata_init, rule};
 use rand::Rng;
 use utils::ContextualDisplay;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 
 use crate::resim::Error::TransactionFailed;
 use crate::resim::*;

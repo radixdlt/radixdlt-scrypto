@@ -2,6 +2,7 @@ use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
 use crate::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
@@ -10,7 +11,6 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use scrypto::prelude::ScryptoValue;
@@ -39,33 +39,39 @@ pub struct ResourceBuilder;
 
 impl ResourceBuilder {
     /// Starts a new builder to create a fungible resource.
-    pub fn new_fungible(owner_role: OwnerRole) -> InProgressResourceBuilder<FungibleResourceType, NoAuth> {
+    pub fn new_fungible(
+        owner_role: OwnerRole,
+    ) -> InProgressResourceBuilder<FungibleResourceType, NoAuth> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::String`
-    pub fn new_string_non_fungible<D: NonFungibleData>(owner_role: OwnerRole
+    pub fn new_string_non_fungible<D: NonFungibleData>(
+        owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>, NoAuth>
     {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Integer`
-    pub fn new_integer_non_fungible<D: NonFungibleData>(owner_role: OwnerRole
+    pub fn new_integer_non_fungible<D: NonFungibleData>(
+        owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>, NoAuth>
     {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Bytes`
-    pub fn new_bytes_non_fungible<D: NonFungibleData>(owner_role: OwnerRole
+    pub fn new_bytes_non_fungible<D: NonFungibleData>(
+        owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>, NoAuth>
     {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::RUID`
-    pub fn new_ruid_non_fungible<D: NonFungibleData>(owner_role: OwnerRole
+    pub fn new_ruid_non_fungible<D: NonFungibleData>(
+        owner_role: OwnerRole,
     ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>, NoAuth> {
         InProgressResourceBuilder::new(owner_role)
     }
@@ -93,7 +99,6 @@ pub struct InProgressResourceBuilder<T: AnyResourceType, A: ConfiguredAuth> {
     metadata: Option<ModuleConfig<MetadataInit>>,
     auth: A,
 }
-
 
 impl<T: AnyResourceType> InProgressResourceBuilder<T, NoAuth> {
     fn new(owner_role: OwnerRole) -> Self {
@@ -402,7 +407,6 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
     ///
     /// The resource's address is returned.
     fn create_with_no_initial_supply(self) -> ResourceManager {
-
         match self.into_create_with_no_supply_invocation() {
             private::CreateWithNoSupply::Fungible {
                 owner_role,
@@ -410,8 +414,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 metadata,
                 access_rules,
             } => {
-                let metadata = metadata
-                    .unwrap_or_else(|| Default::default());
+                let metadata = metadata.unwrap_or_else(|| Default::default());
 
                 ScryptoEnv
                     .call_function(
@@ -425,11 +428,11 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             metadata,
                             access_rules,
                         })
-                            .unwrap(),
+                        .unwrap(),
                     )
                     .map(|bytes| scrypto_decode(&bytes).unwrap())
                     .unwrap()
-            },
+            }
             private::CreateWithNoSupply::NonFungible {
                 owner_role,
                 id_type,
@@ -437,8 +440,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 metadata,
                 access_rules,
             } => {
-                let metadata = metadata
-                    .unwrap_or_else(|| Default::default());
+                let metadata = metadata.unwrap_or_else(|| Default::default());
 
                 ScryptoEnv
                     .call_function(
@@ -453,11 +455,11 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             metadata,
                             access_rules,
                         })
-                            .unwrap(),
+                        .unwrap(),
                     )
                     .map(|bytes| scrypto_decode(&bytes).unwrap())
                     .unwrap()
-            },
+            }
         }
     }
 }
@@ -500,10 +502,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     ///     .mint_initial_supply(5);
     /// ```
     pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
-        let metadata = self
-            .metadata
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata.take().unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -558,10 +557,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self
-            .metadata
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata.take().unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -617,10 +613,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self
-            .metadata
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata.take().unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -676,10 +669,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self
-            .metadata
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata.take().unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -738,10 +728,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self
-            .metadata
-            .take()
-            .unwrap_or_else(|| Default::default());
+        let metadata = self.metadata.take().unwrap_or_else(|| Default::default());
 
         let access_rules = self.auth.into_access_rules();
 
@@ -882,8 +869,8 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_interface::{
-        blueprints::resource::{AccessRule, NonFungibleGlobalId, ResourceAction},
+    use radix_engine_interface::blueprints::resource::{
+        AccessRule, NonFungibleGlobalId, ResourceAction,
     };
 
     pub trait CanSetMetadata: Sized {

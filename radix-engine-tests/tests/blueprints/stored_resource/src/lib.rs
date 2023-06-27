@@ -8,7 +8,8 @@ mod stored_resource {
 
     impl StoredResource {
         pub fn create() -> Global<StoredResource> {
-            let resource_manager = ResourceBuilder::new_fungible(OwnerRole::None).create_with_no_initial_supply();
+            let resource_manager =
+                ResourceBuilder::new_fungible(OwnerRole::None).create_with_no_initial_supply();
             Self { resource_manager }
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)

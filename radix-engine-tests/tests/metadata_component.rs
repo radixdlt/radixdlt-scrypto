@@ -209,9 +209,7 @@ fn cannot_set_address_metadata_after_freezing() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = test_runner
-        .create_non_fungible_resource(
-            ComponentAddress::virtual_account_from_public_key(&key),
-        );
+        .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 50.into())
         .call_function(

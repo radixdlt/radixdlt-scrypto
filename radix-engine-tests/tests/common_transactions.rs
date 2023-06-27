@@ -1,8 +1,8 @@
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::{metadata, metadata_init};
 use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::{metadata, metadata_init};
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;

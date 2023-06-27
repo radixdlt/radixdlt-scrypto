@@ -231,20 +231,8 @@ mod genesis_helper {
                     .metadata()
                     .set("tags", vec!["badge".to_string()]);
 
-                access_rules.insert(
-                    Mint,
-                    (
-                        rule!(require(owner_badge_address)),
-                        rule!(deny_all),
-                    ),
-                );
-                access_rules.insert(
-                    Burn,
-                    (
-                        rule!(require(owner_badge_address)),
-                        rule!(deny_all),
-                    ),
-                );
+                access_rules.insert(Mint, (rule!(require(owner_badge_address)), rule!(deny_all)));
+                access_rules.insert(Burn, (rule!(require(owner_badge_address)), rule!(deny_all)));
 
                 let _: () = Account(owner)
                     .deposit(owner_badge, &mut ScryptoEnv)

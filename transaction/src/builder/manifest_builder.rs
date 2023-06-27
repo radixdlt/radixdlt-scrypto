@@ -9,6 +9,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -42,7 +43,6 @@ use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::string::String;
@@ -915,14 +915,7 @@ impl ManifestBuilder {
         access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let initial_supply = Option::None;
-        self.create_fungible_resource(
-            owner_role,
-            true,
-            18,
-            metadata,
-            access_rules,
-            initial_supply,
-        )
+        self.create_fungible_resource(owner_role, true, 18, metadata, access_rules, initial_supply)
     }
 
     /// Creates a token resource with fixed supply.
@@ -964,14 +957,7 @@ impl ManifestBuilder {
         access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let initial_supply = Option::None;
-        self.create_fungible_resource(
-            owner_role,
-            false,
-            0,
-            metadata,
-            access_rules,
-            initial_supply,
-        )
+        self.create_fungible_resource(owner_role, false, 0, metadata, access_rules, initial_supply)
     }
 
     /// Creates a badge resource with fixed supply.

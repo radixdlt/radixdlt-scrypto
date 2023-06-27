@@ -510,7 +510,6 @@ macro_rules! enable_package_royalties {
     );
 }
 
-
 #[macro_export]
 macro_rules! component_royalties {
     {

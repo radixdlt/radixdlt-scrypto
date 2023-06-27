@@ -7,10 +7,10 @@ pub mod tests {
     use crate::internal_prelude::*;
     use crate::manifest::*;
     use crate::signing::ed25519::Ed25519PrivateKey;
-    use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole};
-    use radix_engine_interface::{metadata, metadata_init};
     use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::blueprints::resource::Roles;
+    use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole};
+    use radix_engine_interface::{metadata, metadata_init};
     use scrypto_derive::NonFungibleData;
 
     #[test]

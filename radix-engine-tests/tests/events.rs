@@ -2,7 +2,6 @@ use radix_engine::blueprints::consensus_manager::{
     ClaimXrdEvent, EpochChangeEvent, RegisterValidatorEvent, RoundChangeEvent, StakeEvent,
     UnregisterValidatorEvent, UnstakeEvent, UpdateAcceptingStakeDelegationStateEvent,
 };
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine::blueprints::package::PackageError;
 use radix_engine::blueprints::resource::*;
 use radix_engine::errors::{
@@ -11,6 +10,7 @@ use radix_engine::errors::{
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{

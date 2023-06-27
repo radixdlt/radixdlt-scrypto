@@ -6,12 +6,12 @@ use crate::types::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, KVEntry, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

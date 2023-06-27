@@ -1146,7 +1146,7 @@ impl TestRunner {
                 owner_role,
                 true,
                 0,
-                 metadata!(),
+                metadata!(),
                 access_rules,
                 Some(5.into()),
             )
@@ -1223,7 +1223,8 @@ impl TestRunner {
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
 
-        let token_address = self.create_fungible_resource_and_deposit(owner_role, access_rules, account);
+        let token_address =
+            self.create_fungible_resource_and_deposit(owner_role, access_rules, account);
 
         (
             token_address,
@@ -1237,7 +1238,10 @@ impl TestRunner {
         )
     }
 
-    pub fn create_everything_allowed_non_fungible_resource(&mut self, owner_role: OwnerRole) -> ResourceAddress {
+    pub fn create_everything_allowed_non_fungible_resource(
+        &mut self,
+        owner_role: OwnerRole,
+    ) -> ResourceAddress {
         let mut access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)> = BTreeMap::new();
         for key in ALL_RESOURCE_AUTH_KEYS {
             access_rules.insert(key, (rule!(allow_all), rule!(allow_all)));
@@ -1259,10 +1263,7 @@ impl TestRunner {
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
-    pub fn create_freezeable_token(
-        &mut self,
-        account: ComponentAddress,
-    ) -> ResourceAddress {
+    pub fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
@@ -1273,10 +1274,7 @@ impl TestRunner {
         self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account)
     }
 
-    pub fn create_recallable_token(
-        &mut self,
-        account: ComponentAddress,
-    ) -> ResourceAddress {
+    pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
@@ -1295,7 +1293,8 @@ impl TestRunner {
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
-        let resource_address = self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account);
+        let resource_address =
+            self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account);
 
         (auth_resource_address, resource_address)
     }
@@ -1312,15 +1311,13 @@ impl TestRunner {
             (rule!(require(auth_resource_address)), LOCKED),
         );
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-        let resource_address = self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account);
+        let resource_address =
+            self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account);
 
         (auth_resource_address, resource_address)
     }
 
-    pub fn create_non_fungible_resource(
-        &mut self,
-        account: ComponentAddress,
-    ) -> ResourceAddress {
+    pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
@@ -1392,14 +1389,7 @@ impl TestRunner {
         access_rules.insert(Burn, (rule!(require(admin_auth)), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
-            .create_fungible_resource(
-                OwnerRole::None,
-                true,
-                1u8,
-                metadata!(),
-                access_rules,
-                None,
-            )
+            .create_fungible_resource(OwnerRole::None, true, 1u8, metadata!(), access_rules, None)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,

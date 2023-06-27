@@ -137,14 +137,15 @@ mod resource_test {
             let manager_badge =
                 NonFungibleGlobalId::new(badge.resource_address(), NonFungibleLocalId::integer(0));
 
-            let token_resource_manager = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(manager_badge))))
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata! {
-                    init {
-                        "name" => "TestToken".to_owned(), locked;
-                    }
-                })
-                .create_with_no_initial_supply();
+            let token_resource_manager =
+                ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(manager_badge))))
+                    .divisibility(DIVISIBILITY_MAXIMUM)
+                    .metadata(metadata! {
+                        init {
+                            "name" => "TestToken".to_owned(), locked;
+                        }
+                    })
+                    .create_with_no_initial_supply();
 
             badge.authorize(|| {
                 let metadata = token_resource_manager.metadata();

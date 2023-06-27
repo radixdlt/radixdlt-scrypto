@@ -1,7 +1,7 @@
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;

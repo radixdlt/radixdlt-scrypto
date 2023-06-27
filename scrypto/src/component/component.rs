@@ -12,9 +12,9 @@ use radix_engine_common::prelude::{
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataInit, METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -277,7 +277,10 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
                 .take()
                 .unwrap_or_else(|| Default::default());
 
-            (Metadata::new_with_data(metadata_config.init), metadata_config.roles)
+            (
+                Metadata::new_with_data(metadata_config.init),
+                metadata_config.roles,
+            )
         };
 
         let (royalty, royalty_roles) = {

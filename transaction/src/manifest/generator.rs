@@ -1511,12 +1511,12 @@ mod tests {
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::AddressBech32Decoder;
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+    use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
         NonFungibleResourceManagerMintRuidManifestInput, ResourceAction, Roles,
     };
-    use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};

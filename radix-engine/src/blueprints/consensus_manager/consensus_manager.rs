@@ -242,9 +242,8 @@ impl ConsensusManagerBlueprint {
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
-            let consensus_manager_address = api.get_reservation_address(
-                consensus_manager_address_reservation.0.as_node_id()
-            )?;
+            let consensus_manager_address =
+                api.get_reservation_address(consensus_manager_address_reservation.0.as_node_id())?;
 
             ResourceManager::new_non_fungible_with_address::<
                 ValidatorOwnerBadgeData,
