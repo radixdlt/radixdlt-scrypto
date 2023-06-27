@@ -77,12 +77,12 @@ impl FeeTable {
                     // Execution time: f(size) = 0.00012232433 * size + 1.4939442
                     add(cast(*size) / 10_000, 2)
                 }
-                StoreAccess::WriteToTrack(size) => {
+                StoreAccess::Write(size) => {
                     // Execution time: f(size) = 0.0004 * size + 1000
                     // State bloat: f(size) = 4 * size
                     add(mul(cast(*size), 4), 1_000)
                 }
-                StoreAccess::RewriteToTrack(size_old, size_new) => {
+                StoreAccess::Rewrite(size_old, size_new) => {
                     if size_new <= size_old {
                         // TODO: refund for reduced write size?
                         0
@@ -91,7 +91,7 @@ impl FeeTable {
                         mul(cast(size_new - size_old), 4)
                     }
                 }
-                StoreAccess::DeleteFromTrack => {
+                StoreAccess::Delete => {
                     // The constant part of write cost (RocksDB tombstones a deleted entry)
                     1_000
                 }

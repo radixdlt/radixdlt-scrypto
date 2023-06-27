@@ -144,64 +144,8 @@ impl StoreAccessInfo {
         Self(Vec::new())
     }
 
-    pub fn with_vector(vector: Vec<StoreAccess>) -> Self {
-        Self(vector)
-    }
-
-    pub fn data(&self) -> &Vec<StoreAccess> {
-        &self.0
-    }
-
-    pub fn total_read_size(&self) -> usize {
-        self.0
-            .iter()
-            .map(|item| match item {
-                StoreAccess::ReadFromDb(size) | StoreAccess::ReadFromTrack(size) => size,
-                _ => &0,
-            })
-            .sum()
-    }
-
-    pub fn total_write_size(&self) -> usize {
-        self.0
-            .iter()
-            .map(|item| match item {
-                StoreAccess::WriteToTrack(size) => size,
-                StoreAccess::RewriteToTrack(_size_old, size_new) => size_new,
-                _ => &0,
-            })
-            .sum()
-    }
-
-    pub fn extend(&mut self, items: &StoreAccessInfo) {
-        self.0.extend(&items.0)
-    }
-
     pub fn push(&mut self, item: StoreAccess) {
         self.0.push(item)
-    }
-
-    pub fn builder_push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
-        self.push_if_not_empty(item);
-        self
-    }
-
-    pub fn push_if_not_empty(&mut self, item: StoreAccess) {
-        match item {
-            StoreAccess::ReadFromDb(size)
-            | StoreAccess::ReadFromTrack(size)
-            | StoreAccess::WriteToTrack(size) => {
-                if size > 0 {
-                    self.0.push(item)
-                }
-            }
-            StoreAccess::RewriteToTrack(size_old, size_new) => {
-                if size_old > 0 || size_new > 0 {
-                    self.0.push(item)
-                }
-            }
-            StoreAccess::ReadFromDbNotFound | StoreAccess::DeleteFromTrack => (),
-        }
     }
 
     pub fn clear(&mut self) {
@@ -213,12 +157,15 @@ impl StoreAccessInfo {
 pub enum StoreAccess {
     ReadFromDb(usize),
     ReadFromDbNotFound,
-    ReadFromTrack(usize),
-    WriteToTrack(usize),
-    // Updates an entry for the second time
-    // Need to report both the previous size and new size as partial refund may be required
-    // (Reason: only one write to database will be applied when the transaction finishes,
-    // despite substate being updated twice or more during transaction execution)
-    RewriteToTrack(usize, usize),
-    DeleteFromTrack,
+    Write {
+        size: usize,
+        is_insert: bool,
+    },
+    Rewrite {
+        size: usize,
+        is_insert: bool,
+        previous_size: usize,
+        previous_is_insert: bool,
+    },
+    Delete,
 }
