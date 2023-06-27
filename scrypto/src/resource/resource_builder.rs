@@ -32,43 +32,42 @@ pub const DIVISIBILITY_MAXIMUM: u8 = 18;
 /// ```no_run
 /// use scrypto::prelude::*;
 ///
-/// let bucket = ResourceBuilder::new_fungible()
-///     .metadata("name", "TestToken")
+/// let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
 ///     .mint_initial_supply(5);
 /// ```
 pub struct ResourceBuilder;
 
 impl ResourceBuilder {
     /// Starts a new builder to create a fungible resource.
-    pub fn new_fungible() -> InProgressResourceBuilder<FungibleResourceType, NoAuth> {
-        InProgressResourceBuilder::default()
+    pub fn new_fungible(owner_role: OwnerRole) -> InProgressResourceBuilder<FungibleResourceType, NoAuth> {
+        InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::String`
-    pub fn new_string_non_fungible<D: NonFungibleData>(
+    pub fn new_string_non_fungible<D: NonFungibleData>(owner_role: OwnerRole
     ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>, NoAuth>
     {
-        InProgressResourceBuilder::default()
+        InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Integer`
-    pub fn new_integer_non_fungible<D: NonFungibleData>(
+    pub fn new_integer_non_fungible<D: NonFungibleData>(owner_role: OwnerRole
     ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>, NoAuth>
     {
-        InProgressResourceBuilder::default()
+        InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Bytes`
-    pub fn new_bytes_non_fungible<D: NonFungibleData>(
+    pub fn new_bytes_non_fungible<D: NonFungibleData>(owner_role: OwnerRole
     ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>, NoAuth>
     {
-        InProgressResourceBuilder::default()
+        InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::RUID`
-    pub fn new_ruid_non_fungible<D: NonFungibleData>(
+    pub fn new_ruid_non_fungible<D: NonFungibleData>(owner_role: OwnerRole
     ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>, NoAuth> {
-        InProgressResourceBuilder::default()
+        InProgressResourceBuilder::new(owner_role)
     }
 }
 
@@ -89,14 +88,17 @@ impl ResourceBuilder {
 /// ```
 #[must_use]
 pub struct InProgressResourceBuilder<T: AnyResourceType, A: ConfiguredAuth> {
+    owner_role: OwnerRole,
     resource_type: T,
     metadata: Option<ModuleConfig<MetadataInit>>,
     auth: A,
 }
 
-impl<T: AnyResourceType> Default for InProgressResourceBuilder<T, NoAuth> {
-    fn default() -> Self {
+
+impl<T: AnyResourceType> InProgressResourceBuilder<T, NoAuth> {
+    fn new(owner_role: OwnerRole) -> Self {
         Self {
+            owner_role,
             resource_type: T::default(),
             metadata: None,
             auth: NoAuth,
@@ -120,13 +122,6 @@ pub struct AccessRuleAuth(BTreeMap<ResourceAction, (AccessRule, AccessRule)>);
 impl ConfiguredAuth for AccessRuleAuth {
     fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
         self.0
-    }
-}
-
-pub struct OwnerBadgeAuth(NonFungibleGlobalId);
-impl ConfiguredAuth for OwnerBadgeAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
-        resource_access_rules_from_owner_badge(&self.0)
     }
 }
 
@@ -410,6 +405,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
 
         match self.into_create_with_no_supply_invocation() {
             private::CreateWithNoSupply::Fungible {
+                owner_role,
                 divisibility,
                 metadata,
                 access_rules,
@@ -423,6 +419,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                         FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                         FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                         scrypto_encode(&FungibleResourceManagerCreateInput {
+                            owner_role,
                             divisibility,
                             track_total_supply: true,
                             metadata,
@@ -434,6 +431,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                     .unwrap()
             },
             private::CreateWithNoSupply::NonFungible {
+                owner_role,
                 id_type,
                 non_fungible_schema,
                 metadata,
@@ -448,6 +446,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                         NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                         NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                         scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                            owner_role,
                             id_type,
                             track_total_supply: true,
                             non_fungible_schema,
@@ -512,6 +511,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                    owner_role: self.owner_role,
                     track_total_supply: true,
                     divisibility: self.resource_type.divisibility,
                     metadata,
@@ -569,6 +569,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                    owner_role: self.owner_role,
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
@@ -627,6 +628,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                    owner_role: self.owner_role,
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
@@ -685,6 +687,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(&NonFungibleResourceManagerCreateWithInitialSupplyInput {
+                    owner_role: self.owner_role,
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
                     non_fungible_schema,
@@ -749,6 +752,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
                     &NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+                        owner_role: self.owner_role,
                         non_fungible_schema,
                         track_total_supply: true,
                         metadata,
@@ -812,6 +816,7 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, No
         mutability: AccessRule,
     ) -> Self::OutputBuilder {
         Self::OutputBuilder {
+            owner_role: self.owner_role,
             resource_type: self.resource_type,
             metadata: self.metadata,
             auth: AccessRuleAuth(btreemap! { method => (method_auth, mutability) }),
@@ -833,23 +838,12 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, Ac
     }
 }
 
-impl<T: AnyResourceType> private::CanAddOwner for InProgressResourceBuilder<T, NoAuth> {
-    type OutputBuilder = InProgressResourceBuilder<T, OwnerBadgeAuth>;
-
-    fn set_owner(self, owner_badge: NonFungibleGlobalId) -> Self::OutputBuilder {
-        Self::OutputBuilder {
-            resource_type: self.resource_type,
-            metadata: self.metadata,
-            auth: OwnerBadgeAuth(owner_badge),
-        }
-    }
-}
-
 impl<A: ConfiguredAuth> private::CanCreateWithNoSupply
     for InProgressResourceBuilder<FungibleResourceType, A>
 {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
         private::CreateWithNoSupply::Fungible {
+            owner_role: self.owner_role,
             divisibility: self.resource_type.divisibility,
             metadata: self.metadata,
             access_rules: self.auth.into_access_rules(),
@@ -865,6 +859,7 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
         private::CreateWithNoSupply::NonFungible {
+            owner_role: self.owner_role,
             id_type: Y::id_type(),
             non_fungible_schema,
             metadata: self.metadata,
@@ -920,11 +915,13 @@ mod private {
 
     pub enum CreateWithNoSupply {
         Fungible {
+            owner_role: OwnerRole,
             divisibility: u8,
             metadata: Option<ModuleConfig<MetadataInit>>,
             access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         },
         NonFungible {
+            owner_role: OwnerRole,
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
             metadata: Option<ModuleConfig<MetadataInit>>,

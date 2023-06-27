@@ -292,6 +292,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
     let manifest = match resource_type {
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()
             .create_fungible_resource(
+                OwnerRole::None,
                 false,
                 divisibility,
                 metadata!(),
@@ -301,6 +302,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
             .build(),
         ResourceType::NonFungible { id_type } => ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 id_type,
                 false,
                 metadata!(),

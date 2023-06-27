@@ -1803,6 +1803,7 @@ mod tests {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
+                    owner_role: OwnerRole::None,
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
@@ -1849,6 +1850,7 @@ mod tests {
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                     args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
+                        owner_role: OwnerRole::None,
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
@@ -1910,6 +1912,7 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        owner_role: OwnerRole::None,
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
@@ -1969,6 +1972,7 @@ mod tests {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
+                    owner_role: OwnerRole::None,
                     track_total_supply: false,
                     divisibility: 18,
                     metadata: metadata! {
@@ -2022,6 +2026,7 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &FungibleResourceManagerCreateWithInitialSupplyInput {
+                        owner_role: OwnerRole::None,
                         track_total_supply: false,
                         divisibility: 18,
                         metadata: metadata! {

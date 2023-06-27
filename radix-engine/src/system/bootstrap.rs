@@ -561,6 +561,7 @@ pub fn create_system_bootstrap_transaction(
                 .to_string(),
             args: to_manifest_value_and_unwrap!(
                 &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
+                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     track_total_supply: false,
                     divisibility: 18,
                     metadata: metadata! {
@@ -595,6 +596,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
@@ -627,6 +629,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
@@ -667,6 +670,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    owner_role: OwnerRole::Fixed(rule!(require(global_caller(PACKAGE_PACKAGE)))),
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<PackageOwnerBadgeData>(),
@@ -707,6 +711,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    owner_role: OwnerRole::Fixed(rule!(require(global_caller(IDENTITY_PACKAGE)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<IdentityOwnerBadgeData>(),
@@ -788,6 +793,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    owner_role: OwnerRole::Fixed(rule!(require(global_caller(ACCOUNT_PACKAGE)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<AccountOwnerBadgeData>(),
@@ -886,6 +892,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
@@ -918,6 +925,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
@@ -950,6 +958,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                    owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),

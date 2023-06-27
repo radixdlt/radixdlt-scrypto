@@ -632,6 +632,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
                 Default::default(),

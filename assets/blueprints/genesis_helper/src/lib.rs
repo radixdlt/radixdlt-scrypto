@@ -209,10 +209,9 @@ mod genesis_helper {
             access_rules.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
-            // FIXME: Use resource builder
-            let metadata_roles = if let Some(owner) = resource.owner {
+            let owner_role = if let Some(owner) = resource.owner {
                 // TODO: Should we use securify style non fungible resource for the owner badge?
-                let owner_badge = ResourceBuilder::new_fungible()
+                let owner_badge = ResourceBuilder::new_fungible(OwnerRole::None)
                     .divisibility(DIVISIBILITY_NONE)
                     .metadata(metadata! {
                         init {
@@ -251,27 +250,24 @@ mod genesis_helper {
                     .deposit(owner_badge, &mut ScryptoEnv)
                     .unwrap();
 
-                metadata_roles! {
-                    metadata_setter => rule!(require(owner_badge_address)), locked;
-                    metadata_setter_updater => rule!(deny_all), locked;
-                    metadata_locker => rule!(require(owner_badge_address)), locked;
-                    metadata_locker_updater => rule!(deny_all), locked;
-                }
+                OwnerRole::Fixed(rule!(require(owner_badge_address)))
             } else {
-                Roles::default()
+                OwnerRole::None
             };
 
+            // FIXME: Use resource builder
             let (_, initial_supply_bucket): (ResourceAddress, Bucket) = Runtime::call_function(
                 RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                 FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
                 scrypto_encode(
                     &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
+                        owner_role,
                         track_total_supply: true,
                         divisibility: 18,
                         metadata: ModuleConfig {
                             init: metadata.into(),
-                            roles: metadata_roles,
+                            roles: Roles::default(),
                         },
                         access_rules,
                         initial_supply: Decimal::zero(),

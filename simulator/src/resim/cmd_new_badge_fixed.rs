@@ -79,7 +79,11 @@ impl NewBadgeFixed {
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 50u32.into())
-            .new_badge_fixed(metadata, self.total_supply)
+            .new_badge_fixed(
+                OwnerRole::None,
+                metadata,
+                self.total_supply,
+            )
             .call_method(
                 default_account,
                 "try_deposit_batch_or_refund",

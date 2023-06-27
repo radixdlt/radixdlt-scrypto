@@ -1136,12 +1136,14 @@ impl TestRunner {
 
     fn create_fungible_resource_and_deposit(
         &mut self,
+        owner_role: OwnerRole,
         access_rules: BTreeMap<ResourceAction, (AccessRule, Mutability)>,
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(
+                owner_role,
                 true,
                 0,
                  metadata!(),
@@ -1160,6 +1162,7 @@ impl TestRunner {
 
     pub fn create_restricted_token(
         &mut self,
+        owner_role: OwnerRole,
         account: ComponentAddress,
     ) -> (
         ResourceAddress,
@@ -1220,7 +1223,7 @@ impl TestRunner {
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
 
-        let token_address = self.create_fungible_resource_and_deposit(access_rules, account);
+        let token_address = self.create_fungible_resource_and_deposit(owner_role, access_rules, account);
 
         (
             token_address,
@@ -1234,7 +1237,7 @@ impl TestRunner {
         )
     }
 
-    pub fn create_everything_allowed_non_fungible_resource(&mut self) -> ResourceAddress {
+    pub fn create_everything_allowed_non_fungible_resource(&mut self, owner_role: OwnerRole) -> ResourceAddress {
         let mut access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)> = BTreeMap::new();
         for key in ALL_RESOURCE_AUTH_KEYS {
             access_rules.insert(key, (rule!(allow_all), rule!(allow_all)));
@@ -1243,6 +1246,7 @@ impl TestRunner {
         let receipt = self.execute_manifest_ignoring_fee(
             ManifestBuilder::new()
                 .create_non_fungible_resource::<_, Vec<_>, ()>(
+                    owner_role,
                     NonFungibleIdType::Integer,
                     false,
                     metadata!(),
@@ -1255,7 +1259,10 @@ impl TestRunner {
         receipt.expect_commit(true).new_resource_addresses()[0]
     }
 
-    pub fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
+    pub fn create_freezeable_token(
+        &mut self,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
@@ -1263,16 +1270,19 @@ impl TestRunner {
         access_rules.insert(Recall, (rule!(allow_all), LOCKED));
         access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
 
-        self.create_fungible_resource_and_deposit(access_rules, account)
+        self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account)
     }
 
-    pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
+    pub fn create_recallable_token(
+        &mut self,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Recall, (rule!(allow_all), LOCKED));
 
-        self.create_fungible_resource_and_deposit(access_rules, account)
+        self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account)
     }
 
     pub fn create_restricted_burn_token(
@@ -1285,7 +1295,7 @@ impl TestRunner {
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
-        let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
+        let resource_address = self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account);
 
         (auth_resource_address, resource_address)
     }
@@ -1302,12 +1312,15 @@ impl TestRunner {
             (rule!(require(auth_resource_address)), LOCKED),
         );
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-        let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
+        let resource_address = self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account);
 
         (auth_resource_address, resource_address)
     }
 
-    pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
+    pub fn create_non_fungible_resource(
+        &mut self,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
@@ -1320,6 +1333,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
                 metadata!(),
@@ -1348,6 +1362,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(
+                OwnerRole::None,
                 true,
                 divisibility,
                 metadata!(),
@@ -1378,6 +1393,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(
+                OwnerRole::None,
                 true,
                 1u8,
                 metadata!(),
@@ -1397,6 +1413,7 @@ impl TestRunner {
 
     pub fn create_freely_mintable_fungible_resource(
         &mut self,
+        owner_role: OwnerRole,
         amount: Option<Decimal>,
         divisibility: u8,
         account: ComponentAddress,
@@ -1408,6 +1425,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(
+                owner_role,
                 true,
                 divisibility,
                 metadata!(),
@@ -1426,6 +1444,7 @@ impl TestRunner {
 
     pub fn create_freely_mintable_and_burnable_fungible_resource(
         &mut self,
+        owner_role: OwnerRole,
         amount: Option<Decimal>,
         divisibility: u8,
         account: ComponentAddress,
@@ -1438,6 +1457,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(
+                owner_role,
                 true,
                 divisibility,
                 metadata!(),

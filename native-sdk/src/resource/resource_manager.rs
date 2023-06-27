@@ -19,6 +19,7 @@ pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
     pub fn new_fungible<Y, E: Debug + ScryptoDecode, M: Into<MetadataInit>>(
+        owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
         metadata: M,
@@ -38,6 +39,7 @@ impl ResourceManager {
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateInput {
+                owner_role,
                 track_total_supply,
                 metadata,
                 access_rules,
@@ -51,6 +53,7 @@ impl ResourceManager {
     }
 
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode, M: Into<MetadataInit>>(
+        owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
         amount: Decimal,
@@ -71,6 +74,7 @@ impl ResourceManager {
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                owner_role,
                 track_total_supply,
                 metadata,
                 access_rules,
@@ -90,6 +94,7 @@ impl ResourceManager {
         E: Debug + ScryptoDecode,
         M: Into<MetadataInit>,
     >(
+        owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: M,
@@ -110,6 +115,7 @@ impl ResourceManager {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                owner_role,
                 id_type,
                 track_total_supply,
                 non_fungible_schema,
@@ -128,6 +134,7 @@ impl ResourceManager {
         E: Debug + ScryptoDecode,
         M: Into<MetadataInit>,
     >(
+        owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: M,
@@ -148,6 +155,7 @@ impl ResourceManager {
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateWithAddressInput {
+                owner_role,
                 id_type,
                 track_total_supply,
                 non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),

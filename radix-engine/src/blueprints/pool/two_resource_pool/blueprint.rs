@@ -59,11 +59,12 @@ impl TwoResourcePoolBlueprint {
                     rule!(require(component_caller_badge.clone())),
                     AccessRule::DenyAll,
                 ),
-                Burn => (rule!(require(component_caller_badge)), AccessRule::DenyAll),
+                Burn => (rule!(require(component_caller_badge.clone())), AccessRule::DenyAll),
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
 
             ResourceManager::new_fungible(
+                OwnerRole::Fixed(rule!(require(component_caller_badge.clone()))),
                 true,
                 18,
                 metadata_init! {

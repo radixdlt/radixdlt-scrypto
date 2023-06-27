@@ -488,6 +488,7 @@ impl TestEnvironment {
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
         let resource_address = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+            OwnerRole::None,
             None,
             divisibility,
             account,

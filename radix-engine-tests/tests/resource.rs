@@ -152,6 +152,7 @@ fn create_fungible_too_high_granularity_should_fail() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 50.into())
         .create_fungible_resource(
+            OwnerRole::None,
             false,
             23u8,
             metadata!(),

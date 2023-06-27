@@ -1,7 +1,6 @@
 extern crate core;
 
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, METADATA_SETTER_ROLE};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
@@ -42,7 +41,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         _update_metadata_auth,
         freeze_auth,
         admin_auth,
-    ) = test_runner.create_restricted_token(account);
+    ) = test_runner.create_restricted_token(OwnerRole::None, account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {

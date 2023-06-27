@@ -438,6 +438,7 @@ impl ManifestBuilder {
     /// Creates a fungible resource
     pub fn create_fungible_resource<R: Into<AccessRule>>(
         &mut self,
+        owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
         metadata: ModuleConfig<MetadataInit>,
@@ -456,6 +457,7 @@ impl ManifestBuilder {
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &FungibleResourceManagerCreateWithInitialSupplyInput {
+                        owner_role,
                         divisibility,
                         track_total_supply,
                         metadata,
@@ -470,6 +472,7 @@ impl ManifestBuilder {
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
+                    owner_role,
                     divisibility,
                     track_total_supply,
                     metadata,
@@ -484,6 +487,7 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,
+        owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: ModuleConfig<MetadataInit>,
@@ -513,6 +517,7 @@ impl ManifestBuilder {
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        owner_role,
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
@@ -528,6 +533,7 @@ impl ManifestBuilder {
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
                 args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
+                    owner_role,
                     id_type,
                     track_total_supply,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
@@ -896,6 +902,7 @@ impl ManifestBuilder {
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
+        owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
         minter_rule: AccessRule,
     ) -> &mut Self {
@@ -908,12 +915,20 @@ impl ManifestBuilder {
         access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let initial_supply = Option::None;
-        self.create_fungible_resource(true, 18, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(
+            owner_role,
+            true,
+            18,
+            metadata,
+            access_rules,
+            initial_supply,
+        )
     }
 
     /// Creates a token resource with fixed supply.
     pub fn new_token_fixed(
         &mut self,
+        owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> &mut Self {
@@ -923,12 +938,20 @@ impl ManifestBuilder {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.create_fungible_resource(true, 18, metadata, access_rules, Some(initial_supply))
+        self.create_fungible_resource(
+            owner_role,
+            true,
+            18,
+            metadata,
+            access_rules,
+            Some(initial_supply),
+        )
     }
 
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         &mut self,
+        owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
         minter_rule: AccessRule,
     ) -> &mut Self {
@@ -941,12 +964,20 @@ impl ManifestBuilder {
         access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let initial_supply = Option::None;
-        self.create_fungible_resource(false, 0, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(
+            owner_role,
+            false,
+            0,
+            metadata,
+            access_rules,
+            initial_supply,
+        )
     }
 
     /// Creates a badge resource with fixed supply.
     pub fn new_badge_fixed(
         &mut self,
+        owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> &mut Self {
@@ -956,7 +987,14 @@ impl ManifestBuilder {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.create_fungible_resource(false, 0, metadata, access_rules, Some(initial_supply))
+        self.create_fungible_resource(
+            owner_role,
+            false,
+            0,
+            metadata,
+            access_rules,
+            Some(initial_supply),
+        )
     }
 
     pub fn burn_from_worktop(

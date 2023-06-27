@@ -613,6 +613,7 @@ impl AccessControllerNativePackage {
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                        owner_role: OwnerRole::Fixed(rule!(require(global_component_caller_badge))),
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,

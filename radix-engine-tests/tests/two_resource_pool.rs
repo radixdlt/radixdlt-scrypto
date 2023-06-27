@@ -339,6 +339,7 @@ fn contributing_tokens_that_do_not_belong_to_the_pool_fails() {
     let resource_address = test_runner
         .test_runner
         .create_freely_mintable_and_burnable_fungible_resource(
+            OwnerRole::None,
             None,
             18,
             test_runner.account_component_address,
@@ -770,11 +771,13 @@ impl TestEnvironment {
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
         let pool_resource1 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+            OwnerRole::None,
             None,
             divisibility1,
             account,
         );
         let pool_resource2 = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+            OwnerRole::None,
             None,
             divisibility2,
             account,

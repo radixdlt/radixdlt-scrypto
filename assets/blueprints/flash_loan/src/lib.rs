@@ -31,7 +31,7 @@ mod basic_flash_loan {
         pub fn instantiate_default(
             initial_liquidity: Bucket,
         ) -> (Global<BasicFlashLoan>, ResourceManager) {
-            let auth_token = ResourceBuilder::new_fungible()
+            let auth_token = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .metadata(metadata! {
                     init {
@@ -41,7 +41,7 @@ mod basic_flash_loan {
                 .mint_initial_supply(1);
 
             // Define a "transient" resource which can never be deposited once created, only burned
-            let transient_resource_manager = ResourceBuilder::new_ruid_non_fungible::<LoanDue>()
+            let transient_resource_manager = ResourceBuilder::new_ruid_non_fungible::<LoanDue>(OwnerRole::None)
                 .metadata(metadata! {
                     init {
                         "name" => "Promise token for BasicFlashLoan - must be returned to be burned!".to_string(), locked;

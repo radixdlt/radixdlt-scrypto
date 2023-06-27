@@ -220,7 +220,7 @@ pub struct ConsensusManagerBlueprint;
 impl ConsensusManagerBlueprint {
     pub(crate) fn create<Y>(
         validator_token_address_reservation: GlobalAddressReservation,
-        component_address_reservation: GlobalAddressReservation,
+        consensus_manager_address_reservation: GlobalAddressReservation,
         initial_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_milli: i64,
@@ -242,12 +242,17 @@ impl ConsensusManagerBlueprint {
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
+            let consensus_manager_address = api.get_reservation_address(
+                consensus_manager_address_reservation.0.as_node_id()
+            )?;
+
             ResourceManager::new_non_fungible_with_address::<
                 ValidatorOwnerBadgeData,
                 Y,
                 RuntimeError,
                 _,
             >(
+                OwnerRole::Fixed(rule!(require(global_caller(consensus_manager_address)))),
                 NonFungibleIdType::Bytes,
                 true,
                 metadata_init! {
@@ -329,7 +334,7 @@ impl ConsensusManagerBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            Some(component_address_reservation),
+            Some(consensus_manager_address_reservation),
         )?;
 
         Ok(())

@@ -23,6 +23,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateInput {
+    pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
@@ -38,6 +39,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+    pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
@@ -49,6 +51,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
+    pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
@@ -65,6 +68,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT: &str =
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateWithAddressInput {
+    pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
@@ -76,6 +80,7 @@ pub struct NonFungibleResourceManagerCreateWithAddressInput {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct NonFungibleResourceManagerCreateWithAddressManifestInput {
+    pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
@@ -92,6 +97,7 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT: &
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+    pub owner_role: OwnerRole,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub metadata: ModuleConfig<MetadataInit>,

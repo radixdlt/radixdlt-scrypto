@@ -60,16 +60,12 @@ impl MultiResourcePoolBlueprint {
                     rule!(require(component_caller_badge.clone())),
                     AccessRule::DenyAll,
                 ),
-                Burn => (rule!(require(component_caller_badge)), AccessRule::DenyAll),
+                Burn => (rule!(require(component_caller_badge.clone())), AccessRule::DenyAll),
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
 
-            // FIXME: Pool unit resource metadata - one things is needed to do this:
-            // 1- A fix for the issue with references so that we can have the component address of
-            //    the pool component in the metadata of the pool unit resource (currently results in
-            //    an error because we're passing a reference to a node that doesn't exist).
-
             ResourceManager::new_fungible(
+                OwnerRole::Fixed(rule!(require(component_caller_badge.clone()))),
                 true,
                 18,
                 metadata_init! {

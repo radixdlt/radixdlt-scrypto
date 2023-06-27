@@ -270,6 +270,7 @@ fn contributing_tokens_that_do_not_belong_to_pool_fails() {
     let resource_address = test_runner
         .test_runner
         .create_freely_mintable_and_burnable_fungible_resource(
+            OwnerRole::None,
             None,
             18,
             test_runner.account_component_address,
@@ -589,6 +590,7 @@ impl<const N: usize> TestEnvironment<N> {
 
         let resource_addresses = divisibility.map(|divisibility| {
             test_runner.create_freely_mintable_and_burnable_fungible_resource(
+                OwnerRole::None,
                 None,
                 divisibility,
                 account,

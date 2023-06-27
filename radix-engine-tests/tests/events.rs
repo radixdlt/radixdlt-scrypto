@@ -294,6 +294,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
                 metadata!(),
@@ -389,6 +390,7 @@ fn resource_manager_new_vault_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 10.into())
         .create_fungible_resource(
+            OwnerRole::None,
             false,
             18,
             Default::default(),
@@ -456,7 +458,14 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
-            .create_fungible_resource(false, 18, Default::default(), access_rules, None)
+            .create_fungible_resource(
+                OwnerRole::None,
+                false,
+                18,
+                Default::default(),
+                access_rules,
+                None,
+            )
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -536,6 +545,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
                 metadata!(),
@@ -1470,6 +1480,7 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
 
     let manifest = ManifestBuilder::new()
         .create_fungible_resource(
+            OwnerRole::None,
             false,
             18,
             metadata!(),
