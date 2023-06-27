@@ -3,7 +3,7 @@ use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
 use radix_engine::types::*;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmInstrumenterConfigV1};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmValidatorConfigV1};
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -31,7 +31,7 @@ impl TransactionFuzzer {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
-            wasm_instrumenter_config: WasmInstrumenterConfigV1::new(),
+            wasm_validator_config: WasmValidatorConfigV1::new(),
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
         Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)

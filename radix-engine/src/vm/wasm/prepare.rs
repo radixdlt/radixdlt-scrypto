@@ -818,7 +818,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_memory_limit(
+    pub fn enforce_memory_limit_and_inject_max(
         mut self,
         max_memory_size_in_pages: u32,
     ) -> Result<Self, PrepareError> {
@@ -1193,7 +1193,7 @@ mod tests {
             )
             "#,
             PrepareError::InvalidMemory(InvalidMemory::MissingMemorySection),
-            |x| WasmModule::enforce_memory_limit(x, 5)
+            |x| WasmModule::enforce_memory_limit_and_inject_max(x, 5)
         );
         // NOTE: Disabled as MVP only allow 1 memory definition
         // assert_invalid_wasm!(
@@ -1213,7 +1213,7 @@ mod tests {
             )
             "#,
             PrepareError::InvalidMemory(InvalidMemory::MemorySizeLimitExceeded),
-            |x| WasmModule::enforce_memory_limit(x, 5)
+            |x| WasmModule::enforce_memory_limit_and_inject_max(x, 5)
         );
         assert_invalid_wasm!(
             r#"
@@ -1222,7 +1222,7 @@ mod tests {
             )
             "#,
             PrepareError::InvalidMemory(InvalidMemory::MemoryNotExported),
-            |x| WasmModule::enforce_memory_limit(x, 5)
+            |x| WasmModule::enforce_memory_limit_and_inject_max(x, 5)
         );
     }
 

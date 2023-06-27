@@ -1,4 +1,3 @@
-use super::InstrumentedCode;
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::errors::*;
@@ -182,6 +181,6 @@ pub trait WasmEngine {
 
     /// Instantiate a Scrypto module.
     ///
-    /// It's assumed that the code have been validated.
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> Self::WasmInstance;
+    /// The code must have been validated and instrumented!!!
+    fn instantiate(&self, code_hash: Hash, validated_code: &[u8]) -> Self::WasmInstance;
 }

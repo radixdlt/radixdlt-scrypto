@@ -7,15 +7,14 @@ use wasmi::core::{HostError, Trap};
 use wasmi::errors::InstantiationError;
 use wasmi::*;
 
-use super::InstrumentedCode;
-#[cfg(not(feature = "radix_engine_fuzzing"))]
-use super::MeteredCodeKey;
+pub const DEFAULT_CACHE_SIZE: usize = 1000;
+
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
-use crate::vm::wasm::{WasmEngine, DEFAULT_CACHE_SIZE};
+use crate::vm::wasm::WasmEngine;
 
 type FakeHostState = FakeWasmiInstanceEnv;
 type HostState = WasmiInstanceEnv;
@@ -1191,9 +1190,9 @@ pub struct EngineOptions {
 pub struct WasmiEngine {
     // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
     #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
-    modules_cache: RefCell<lru::LruCache<MeteredCodeKey, Arc<WasmiModule>>>,
+    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmiModule>>>,
     #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
-    modules_cache: moka::sync::Cache<MeteredCodeKey, Arc<WasmiModule>>,
+    modules_cache: moka::sync::Cache<Hash, Arc<WasmiModule>>,
     #[cfg(feature = "radix_engine_fuzzing")]
     #[allow(dead_code)]
     modules_cache: usize,
@@ -1215,7 +1214,7 @@ impl WasmiEngine {
         ));
         #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
-            .weigher(|_key: &MeteredCodeKey, _value: &Arc<WasmiModule>| -> u32 {
+            .weigher(|_key: &Hash, _value: &Arc<WasmiModule>| -> u32 {
                 // No sophisticated weighing mechanism, just keep a fixed size cache
                 1u32
             })
@@ -1231,26 +1230,22 @@ impl WasmiEngine {
 impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
-        #[cfg(not(feature = "radix_engine_fuzzing"))]
-        let metered_code_key = &instrumented_code.metered_code_key;
-
+    fn instantiate(&self, code_hash: Hash, validated_code: &[u8]) -> WasmiInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]
             {
-                if let Some(cached_module) = self.modules_cache.borrow_mut().get(metered_code_key) {
+                if let Some(cached_module) = self.modules_cache.borrow_mut().get(&code_hash) {
                     return cached_module.instantiate();
                 }
             }
             #[cfg(feature = "moka")]
-            if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
+            if let Some(cached_module) = self.modules_cache.get(&code_hash) {
                 return cached_module.as_ref().instantiate();
             }
         }
 
-        let code = &instrumented_code.code.as_ref()[..];
-        let module = WasmiModule::new(code).expect("Failed to instantiate module");
+        let module = WasmiModule::new(validated_code).expect("Failed to instantiate module");
         let instance = module.instantiate();
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
@@ -1258,10 +1253,9 @@ impl WasmEngine for WasmiEngine {
             #[cfg(not(feature = "moka"))]
             self.modules_cache
                 .borrow_mut()
-                .put(*metered_code_key, Arc::new(module));
+                .put(code_hash, Arc::new(module));
             #[cfg(feature = "moka")]
-            self.modules_cache
-                .insert(*metered_code_key, Arc::new(module));
+            self.modules_cache.insert(code_hash, Arc::new(module));
         }
 
         instance

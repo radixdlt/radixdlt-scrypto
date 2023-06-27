@@ -8,7 +8,7 @@ pub struct WasmValidator {
     pub max_number_of_br_table_targets: u32,
     pub max_number_of_functions: u32,
     pub max_number_of_globals: u32,
-    pub instrumenter_config: WasmInstrumenterConfigV1,
+    pub instrumenter_config: WasmValidatorConfigV1,
 }
 
 impl Default for WasmValidator {
@@ -19,7 +19,7 @@ impl Default for WasmValidator {
             max_number_of_br_table_targets: DEFAULT_MAX_NUMBER_OF_BR_TABLE_TARGETS,
             max_number_of_functions: DEFAULT_MAX_NUMBER_OF_FUNCTIONS,
             max_number_of_globals: DEFAULT_MAX_NUMBER_OF_GLOBALS,
-            instrumenter_config: WasmInstrumenterConfigV1::new(),
+            instrumenter_config: WasmValidatorConfigV1::new(),
         }
     }
 }
@@ -34,7 +34,7 @@ impl WasmValidator {
             .enforce_no_floating_point()?
             .enforce_no_start_function()?
             .enforce_import_limit()?
-            .enforce_memory_limit(self.max_memory_size_in_pages)?
+            .enforce_memory_limit_and_inject_max(self.max_memory_size_in_pages)?
             .enforce_table_limit(self.max_initial_table_size)?
             .enforce_br_table_limit(self.max_number_of_br_table_targets)?
             .enforce_function_limit(self.max_number_of_functions)?
