@@ -1060,6 +1060,19 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn recall_non_fungibles(&mut self, vault_id: InternalAddress, non_fungible_local_ids: BTreeSet<NonFungibleLocalId>) -> &mut Self {
+        let args = to_manifest_value_and_unwrap!(&NonFungibleVaultRecallNonFungiblesInput {
+            non_fungible_local_ids,
+        });
+
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+            args,
+        });
+        self
+    }
+
     pub fn freeze_withdraw(&mut self, vault_id: InternalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
