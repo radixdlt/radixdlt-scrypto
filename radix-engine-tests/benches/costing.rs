@@ -90,7 +90,7 @@ fn bench_instantiate_radiswap(c: &mut Criterion) {
         })
     });
 
-    println!("Code length: {}", code.len());
+    println!("Code length: {}", instrumented_code.len());
 }
 
 fn bench_validate_wasm(c: &mut Criterion) {
