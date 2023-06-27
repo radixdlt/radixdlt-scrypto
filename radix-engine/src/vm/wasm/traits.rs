@@ -137,11 +137,6 @@ pub trait WasmRuntime {
 
     fn fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn update_wasm_memory_usage(
-        &mut self,
-        size: usize,
-    ) -> Result<(), InvokeError<WasmRuntimeError>>;
-
     fn emit_event(
         &mut self,
         event_name: Vec<u8>,

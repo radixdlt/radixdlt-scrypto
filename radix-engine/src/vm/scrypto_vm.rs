@@ -3,7 +3,7 @@ use crate::types::*;
 use crate::vm::vm::VmInvoke;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::ScryptoRuntime;
-use radix_engine_interface::api::{ClientApi, ClientLimitsApi};
+use radix_engine_interface::api::ClientApi;
 use resources_tracker_macro::trace_resources;
 
 pub struct ScryptoVm<W: WasmEngine> {
@@ -55,7 +55,7 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + ClientLimitsApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let rtn = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(
@@ -73,9 +73,6 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
             self.instance
                 .invoke_export(export_name, input, &mut runtime)?
         };
-
-        let consumed = self.instance.consumed_memory()?;
-        api.update_wasm_memory_usage(consumed)?;
 
         let output = IndexedScryptoValue::from_vec(rtn).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))

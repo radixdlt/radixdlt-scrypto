@@ -393,15 +393,6 @@ where
         self.allocate_buffer(buffer)
     }
 
-    fn update_wasm_memory_usage(
-        &mut self,
-        size: usize,
-    ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api
-            .update_wasm_memory_usage(size)
-            .map_err(InvokeError::downstream)
-    }
-
     fn emit_event(
         &mut self,
         event_name: Vec<u8>,

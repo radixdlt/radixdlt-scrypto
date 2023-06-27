@@ -1,5 +1,3 @@
-use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
-
 //=================
 // WASM Shim
 //=================
@@ -74,11 +72,8 @@ pub const EXPORT_MEMORY: &str = "memory";
 // LIMITS
 //=================
 
-pub const WASM_MEMORY_PAGE_SIZE: u32 = 64 * 1024;
-
-/// The maximum initial memory size calculated basing on Wasm call frame size: 4MiB
-pub const DEFAULT_MAX_MEMORY_SIZE_IN_PAGES: u32 =
-    DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME as u32 / WASM_MEMORY_PAGE_SIZE;
+/// The maximum memory size (per call frame): 32 * 64KiB = 2MiB
+pub const DEFAULT_MAX_MEMORY_SIZE_IN_PAGES: u32 = 32;
 
 /// The maximum initial table size
 pub const DEFAULT_MAX_INITIAL_TABLE_SIZE: u32 = 1024;

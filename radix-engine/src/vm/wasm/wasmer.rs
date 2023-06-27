@@ -194,12 +194,6 @@ impl WasmerModule {
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
-            // Get current memory consumption and update it in transaction limit kernel module
-            // for current call frame through runtime call.
-            runtime
-                .update_wasm_memory_usage(get_memory_size(&instance)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
             let buffer = runtime
                 .actor_call_module_method(object_handle, module_id, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
@@ -223,12 +217,6 @@ impl WasmerModule {
             let receiver = read_memory(&instance, receiver_ptr, receiver_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
-
-            // Get current memory consumption and update it in transaction limit kernel module
-            // for current call frame through runtime call.
-            runtime
-                .update_wasm_memory_usage(get_memory_size(&instance)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             let buffer = runtime
                 .call_method(receiver, direct_access, module_id, ident, args)
@@ -254,12 +242,6 @@ impl WasmerModule {
             let blueprint_ident = read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
-
-            // Get current memory consumption and update it in transaction limit kernel module
-            // for current call frame through runtime call.
-            runtime
-                .update_wasm_memory_usage(get_memory_size(&instance)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             let buffer = runtime
                 .call_function(package_address, blueprint_ident, ident, args)

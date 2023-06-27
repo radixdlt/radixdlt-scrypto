@@ -125,14 +125,6 @@ fn actor_call_module_method(
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
-    // Get current memory consumption and update it in transaction limit kernel module
-    // for current call frame through runtime call.
-    let mem = memory
-        .current_pages(caller.as_context())
-        .to_bytes()
-        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
-    runtime.update_wasm_memory_usage(mem)?;
-
     runtime
         .actor_call_module_method(object_handle, module_id, ident, args)
         .map(|buffer| buffer.0)
@@ -154,14 +146,6 @@ fn call_method(
     let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
-
-    // Get current memory consumption and update it in transaction limit kernel module
-    // for current call frame through runtime call.
-    let mem = memory
-        .current_pages(caller.as_context())
-        .to_bytes()
-        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
-    runtime.update_wasm_memory_usage(mem)?;
 
     runtime
         .call_method(receiver, direct_access, module_id, ident, args)
@@ -195,14 +179,6 @@ fn call_function(
     )?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
-
-    // Get current memory consumption and update it in transaction limit kernel module
-    // for current call frame through runtime call.
-    let mem = memory
-        .current_pages(caller.as_context())
-        .to_bytes()
-        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
-    runtime.update_wasm_memory_usage(mem)?;
 
     runtime
         .call_function(package_address, blueprint_ident, ident, args)
