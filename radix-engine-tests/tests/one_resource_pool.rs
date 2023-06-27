@@ -1,5 +1,5 @@
 use radix_engine::blueprints::pool::one_resource_pool::*;
-use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
@@ -12,40 +12,107 @@ fn one_resource_pool_can_be_instantiated() {
     TestEnvironment::new(18);
 }
 
-pub fn cannot_set_locked_metadata(key: &str, expect_success: bool) {
+pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(key: &str, pool: bool, sign: bool, result: F) {
+    // Arrange
     let mut test_runner = TestEnvironment::new(18);
-    let receipt = test_runner.set_metadata(key, MetadataValue::U8(2u8), true);
-    if expect_success {
-        receipt.expect_commit_success();
+
+    // Act
+    let receipt = if pool {
+        test_runner.set_pool_metadata(key, MetadataValue::U8(2u8), sign)
     } else {
+        test_runner.set_pool_unit_resource_metadata(key, MetadataValue::U8(2u8), sign)
+    };
+
+    // Assert
+    result(receipt);
+}
+
+#[test]
+pub fn cannot_set_pool_vault_number_metadata() {
+    test_set_metadata("pool_vault_number", true, true, |receipt| {
         receipt.expect_specific_failure(|e| {
             matches!(
                 e,
                 RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
             )
         });
-    }
-}
-
-#[test]
-pub fn cannot_set_pool_vault_number_metadata() {
-    cannot_set_locked_metadata("pool_vault_number", false);
+    });
 }
 
 #[test]
 pub fn cannot_set_pool_resources_metadata() {
-    cannot_set_locked_metadata("pool_resources", false);
+    test_set_metadata("pool_resources", true, true, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+            )
+        });
+    });
 }
 
 #[test]
 pub fn cannot_set_pool_unit_metadata() {
-    cannot_set_locked_metadata("pool_unit", false);
+    test_set_metadata("pool_unit", true, true, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+            )
+        });
+    });
 }
 
 #[test]
-pub fn can_set_some_arbitrary_data() {
-    cannot_set_locked_metadata("some_other_key", true);
+pub fn can_set_some_arbitrary_metadata_if_owner() {
+    test_set_metadata("some_other_key", true, true, |receipt| {
+        receipt.expect_commit_success();
+    });
 }
+
+#[test]
+pub fn cannot_set_some_arbitrary_metadata_if_not_owner() {
+    test_set_metadata("some_other_key", true, false, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+            )
+        });
+    });
+}
+
+#[test]
+pub fn cannot_set_pool_resource_pool_metadata() {
+    test_set_metadata("pool", false, true, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
+            )
+        });
+    });
+}
+
+#[test]
+pub fn can_set_pool_resource_pool_metadata_if_owner() {
+    test_set_metadata("some_other_key", false, true, |receipt| {
+        receipt.expect_commit_success();
+    });
+}
+
+#[test]
+pub fn cannot_set_pool_resource_pool_metadata_if_not_owner() {
+    test_set_metadata("some_other_key", false, false, |receipt| {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
+            )
+        });
+    });
+}
+
 
 #[test]
 fn initial_contribution_to_pool_mints_expected_amount() {
@@ -533,7 +600,7 @@ impl TestEnvironment {
         }
     }
 
-    fn set_metadata<S: ToString>(
+    fn set_pool_metadata<S: ToString>(
         &mut self,
         key: S,
         value: MetadataValue,
@@ -541,6 +608,18 @@ impl TestEnvironment {
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .set_metadata(self.pool_component_address.into(), key, value)
+            .build();
+        self.execute_manifest(manifest, sign)
+    }
+
+    fn set_pool_unit_resource_metadata<S: ToString>(
+        &mut self,
+        key: S,
+        value: MetadataValue,
+        sign: bool,
+    ) -> TransactionReceipt {
+        let manifest = ManifestBuilder::new()
+            .set_metadata(self.pool_unit_resource_address.into(), key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
