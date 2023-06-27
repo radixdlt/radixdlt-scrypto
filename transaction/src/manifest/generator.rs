@@ -1908,6 +1908,7 @@ mod tests {
                         )
                     )
                 )
+                Enum<0u8>()
             ;"##,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -1942,6 +1943,7 @@ mod tests {
                                 dec!("12")
                             )),),
                         )]),
+                        address_reservation: None,
                     }
                 ),
             },
@@ -2025,6 +2027,7 @@ mod tests {
                     )
                 )
                 Decimal("500")
+                Enum<0u8>()
             ;"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -2032,15 +2035,11 @@ mod tests {
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
-                    &FungibleResourceManagerCreateWithInitialSupplyInput {
+                    &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         owner_role: OwnerRole::None,
                         track_total_supply: false,
                         divisibility: 18,
-                        metadata: metadata! {
-                            init {
-                                "name" => "Token".to_owned(), updatable;
-                            }
-                        },
+                        initial_supply: "500".parse().unwrap(),
                         access_rules: BTreeMap::from([
                             (
                                 ResourceAction::Withdraw,
@@ -2051,7 +2050,12 @@ mod tests {
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                         ]),
-                        initial_supply: "500".parse().unwrap()
+                        metadata: metadata! {
+                            init {
+                                "name" => "Token".to_owned(), updatable;
+                            }
+                        },
+                        address_reservation: None,
                     }
                 )
             },

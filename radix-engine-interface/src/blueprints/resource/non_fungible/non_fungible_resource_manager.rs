@@ -56,9 +56,10 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: ModuleConfig<MetadataInit>,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<GlobalAddressReservation>,
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -68,9 +69,10 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: ModuleConfig<MetadataInit>,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<ManifestAddressReservation>,
 }
 
 pub type NonFungibleResourceManagerCreateWithInitialSupplyOutput = (ResourceAddress, Bucket);
@@ -84,9 +86,10 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: ModuleConfig<MetadataInit>,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub entries: Vec<(ScryptoValue,)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<GlobalAddressReservation>,
 }
 
 pub type NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput = (ResourceAddress, Bucket);

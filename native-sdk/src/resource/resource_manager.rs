@@ -58,9 +58,10 @@ impl ResourceManager {
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        amount: Decimal,
-        metadata: M,
+        initial_supply: Decimal,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        metadata: M,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
@@ -81,7 +82,8 @@ impl ResourceManager {
                 metadata,
                 access_rules,
                 divisibility,
-                initial_supply: amount,
+                initial_supply,
+                address_reservation,
             })
             .unwrap(),
         )?;

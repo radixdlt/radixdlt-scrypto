@@ -247,9 +247,9 @@ mod genesis_helper {
             let (_, initial_supply_bucket): (ResourceAddress, Bucket) = Runtime::call_function(
                 RESOURCE_PACKAGE,
                 FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
+                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
                 scrypto_encode(
-                    &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
+                    &FungibleResourceManagerCreateWithInitialSupplyInput {
                         owner_role,
                         track_total_supply: true,
                         divisibility: 18,
@@ -259,7 +259,7 @@ mod genesis_helper {
                         },
                         access_rules,
                         initial_supply: Decimal::zero(),
-                        resource_address: resource.address_reservation,
+                        address_reservation: Some(resource.address_reservation),
                     },
                 )
                 .unwrap(),

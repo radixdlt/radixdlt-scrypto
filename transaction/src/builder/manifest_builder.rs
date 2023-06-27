@@ -456,13 +456,14 @@ impl ManifestBuilder {
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
-                    &FungibleResourceManagerCreateWithInitialSupplyInput {
+                    &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
                         owner_role,
                         divisibility,
                         track_total_supply,
                         metadata,
                         access_rules,
                         initial_supply,
+                        address_reservation: None,
                     }
                 ),
             });
@@ -525,6 +526,7 @@ impl ManifestBuilder {
                         metadata,
                         access_rules,
                         entries,
+                        address_reservation: None,
                     }
                 ),
             });

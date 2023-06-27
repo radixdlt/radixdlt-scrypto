@@ -521,6 +521,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                     metadata,
                     access_rules: self.auth.into_access_rules(),
                     initial_supply: amount.into(),
+                    address_reservation: self.address_reservation,
                 })
                 .unwrap(),
             )
@@ -577,6 +578,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
+                    address_reservation: self.address_reservation,
                 })
                 .unwrap(),
             )
@@ -633,6 +635,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
+                    address_reservation: self.address_reservation,
                 })
                 .unwrap(),
             )
@@ -689,6 +692,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     metadata,
                     access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
+                    address_reservation: self.address_reservation,
                 })
                 .unwrap(),
             )
@@ -757,6 +761,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                                 (value,)
                             })
                             .collect(),
+                        address_reservation: self.address_reservation,
                     },
                 )
                 .unwrap(),

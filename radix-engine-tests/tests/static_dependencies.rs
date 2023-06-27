@@ -146,17 +146,17 @@ fn static_resource_should_be_callable() {
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: "FungibleResourceManager".to_string(),
-                function_name: "create_with_initial_supply_and_address".to_string(),
+                function_name: "create_with_initial_supply".to_string(),
                 args: manifest_decode(
                     &manifest_encode(
-                        &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
+                        &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
                             owner_role: OwnerRole::None,
                             track_total_supply: true,
                             divisibility: 0u8,
                             metadata: metadata!(),
                             access_rules: btreemap!(),
                             initial_supply: Decimal::from(10),
-                            resource_address: ManifestAddressReservation(0),
+                            address_reservation: Some(ManifestAddressReservation(0)),
                         },
                     )
                     .unwrap(),

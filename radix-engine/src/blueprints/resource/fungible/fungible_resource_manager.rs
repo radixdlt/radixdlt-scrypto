@@ -120,42 +120,24 @@ impl FungibleResourceManagerBlueprint {
         metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
-        api: &mut Y,
-    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
-            package_address: RESOURCE_PACKAGE,
-            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-        })?;
-
-        Self::create_with_initial_supply_and_address(
-            owner_role,
-            track_total_supply,
-            divisibility,
-            metadata,
-            access_rules,
-            initial_supply,
-            address_reservation,
-            api,
-        )
-    }
-
-    pub(crate) fn create_with_initial_supply_and_address<Y>(
-        owner_role: OwnerRole,
-        track_total_supply: bool,
-        divisibility: u8,
-        metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-        initial_supply: Decimal,
-        resource_address_reservation: GlobalAddressReservation,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         verify_divisibility(divisibility)?;
+
+        let address_reservation = match address_reservation {
+            Some(address_reservation) => address_reservation,
+            None => {
+                let (reservation, _) = api.allocate_global_address(BlueprintId {
+                    package_address: RESOURCE_PACKAGE,
+                    blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                })?;
+                reservation
+            }
+        };
 
         let features = features(track_total_supply, &access_rules);
 
@@ -175,7 +157,7 @@ impl FungibleResourceManagerBlueprint {
         let (resource_address, bucket) = globalize_fungible_with_initial_supply(
             owner_role,
             object_id,
-            resource_address_reservation,
+            address_reservation,
             access_rules,
             metadata,
             initial_supply,

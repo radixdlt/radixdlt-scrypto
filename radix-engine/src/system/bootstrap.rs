@@ -557,10 +557,10 @@ pub fn create_system_bootstrap_transaction(
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT
+            function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                 .to_string(),
             args: to_manifest_value_and_unwrap!(
-                &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
+                &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     track_total_supply: false,
                     divisibility: 18,
@@ -576,7 +576,7 @@ pub fn create_system_bootstrap_transaction(
                     },
                     access_rules,
                     initial_supply: Decimal::zero(),
-                    resource_address: id_allocator.new_address_reservation_id(),
+                    address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
         });
