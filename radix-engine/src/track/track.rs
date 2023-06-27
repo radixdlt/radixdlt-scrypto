@@ -422,7 +422,30 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
     fn list_entries_from_db(
         &self,
         partition_key: &DbPartitionKey,
-    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+        store_access: &mut StoreAccessInfo,
+    ) -> Box<dyn Iterator<Item = (DbSortKey, IndexedScryptoValue)>> {
+        struct TracedIterator<'a, 'b> {
+            iterator: Box<dyn Iterator<Item = PartitionEntry> + 'b>,
+            store_access: &'a mut StoreAccessInfo,
+        }
+
+        impl<'a, 'b> Iterator for TracedIterator<'a, 'b> {
+            type Item = (DbSortKey, IndexedScryptoValue);
+
+            fn next(&mut self) -> Option<Self::Item> {
+                let result = self.iterator.next();
+                if let Some(x) = result {
+                    Some((x.0, IndexedScryptoValue::from_vec(x.1).unwrap()))
+                } else {
+                    None
+                }
+            }
+        }
+
+        Box::new(TracedIterator {
+            iterator: self.protected_substate_db.list_entries(partition_key),
+            store_access,
+        })
     }
 
     fn new_lock_handle(
