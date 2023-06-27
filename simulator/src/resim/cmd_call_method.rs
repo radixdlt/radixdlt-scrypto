@@ -63,7 +63,6 @@ impl CallMethod {
         }
 
         let manifest = manifest_builder
-            .lock_fee(FAUCET, 50u32.into())
             .borrow_mut(|builder| {
                 self.add_call_method_instruction_with_schema(
                     builder,

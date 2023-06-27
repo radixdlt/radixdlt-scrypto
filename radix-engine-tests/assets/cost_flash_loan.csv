@@ -1,9 +1,9 @@
-Total Cost Units                                                                ,  17811031
-Total Fee                                                                       , 8.9055155
+Total Cost Units                                                                ,  19843815
+Total Fee                                                                       , 9.9219075
 AfterInvoke                                                                     ,       974
 AllocateNodeId                                                                  ,     26500
 BeforeInvoke                                                                    ,     25508
-CloseSubstate                                                                   ,    289000
+CloseSubstate                                                                   ,    312000
 CreateNode                                                                      ,     38272
 DropNode                                                                        ,     38272
 EmitEvent                                                                       ,      6730
@@ -13,12 +13,12 @@ OpenSubstate::GlobalAccount                                                     
 OpenSubstate::GlobalFungibleResourceManager                                     ,   1008536
 OpenSubstate::GlobalGenericComponent                                            ,    283430
 OpenSubstate::GlobalNonFungibleResourceManager                                  ,   1080953
-OpenSubstate::GlobalPackage                                                     ,   8112692
+OpenSubstate::GlobalPackage                                                     ,   9064966
 OpenSubstate::InternalFungibleVault                                             ,   1142667
 OpenSubstate::InternalGenericComponent                                          ,    164144
 QueryActor                                                                      ,     15000
 QueryAuthZone                                                                   ,      2000
-ReadSubstate                                                                    ,   1163870
+ReadSubstate                                                                    ,   1532044
 RunNativeCode::AuthZone_pop                                                     ,     13722
 RunNativeCode::AuthZone_push                                                    ,     14108
 RunNativeCode::Worktop_drain                                                    ,      6901
@@ -48,7 +48,7 @@ RunNativeCode::unlock_amount_FungibleVault                                      
 RunNativeCode::withdraw                                                         ,     25682
 RunWasmCode::BasicFlashLoan_repay_loan                                          ,     70268
 RunWasmCode::BasicFlashLoan_take_loan                                           ,    118886
-RunWasmCodePrepare                                                              ,   1549008
+RunWasmCodePrepare                                                              ,   2238344
 TxBaseCost                                                                      ,     40000
 TxPayloadCost                                                                   ,     25700
 TxSignatureVerification                                                         ,      7000
