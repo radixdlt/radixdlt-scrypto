@@ -22,8 +22,9 @@ impl ResourceManager {
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        metadata: M,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        metadata: M,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -44,6 +45,7 @@ impl ResourceManager {
                 metadata,
                 access_rules,
                 divisibility,
+                address_reservation,
             })
             .unwrap(),
         )?;
@@ -97,8 +99,9 @@ impl ResourceManager {
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
-        metadata: M,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        metadata: M,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
@@ -121,51 +124,11 @@ impl ResourceManager {
                 non_fungible_schema,
                 metadata,
                 access_rules,
+                address_reservation,
             })
             .unwrap(),
         )?;
         let resource_address = scrypto_decode(result.as_slice()).unwrap();
-        Ok(ResourceManager(resource_address))
-    }
-
-    pub fn new_non_fungible_with_address<
-        N: NonFungibleData,
-        Y,
-        E: Debug + ScryptoDecode,
-        M: Into<MetadataInit>,
-    >(
-        owner_role: OwnerRole,
-        id_type: NonFungibleIdType,
-        track_total_supply: bool,
-        metadata: M,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-        address_reservation: GlobalAddressReservation,
-        api: &mut Y,
-    ) -> Result<Self, E>
-    where
-        Y: ClientBlueprintApi<E>,
-    {
-        let metadata = ModuleConfig {
-            init: metadata.into(),
-            roles: Roles::default(),
-        };
-
-        let result = api.call_function(
-            RESOURCE_PACKAGE,
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerCreateWithAddressInput {
-                owner_role,
-                id_type,
-                track_total_supply,
-                non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),
-                metadata,
-                access_rules,
-                resource_address: address_reservation,
-            })
-            .unwrap(),
-        )?;
-        let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
         Ok(ResourceManager(resource_address))
     }
 

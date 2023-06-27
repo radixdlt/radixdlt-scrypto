@@ -429,17 +429,6 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: None,
-                    input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressInput>()),
-                    output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressOutput>()),
-                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-                },
-            );
-            functions.insert(
                 NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: None,
@@ -2343,25 +2332,9 @@ impl ResourceNativePackage {
                     input.id_type,
                     input.track_total_supply,
                     input.non_fungible_schema,
-                    input.metadata,
                     input.access_rules,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT => {
-                let input: NonFungibleResourceManagerCreateWithAddressInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                    })?;
-                let rtn = NonFungibleResourceManagerBlueprint::create_with_address(
-                    input.owner_role,
-                    input.id_type,
-                    input.track_total_supply,
-                    input.non_fungible_schema,
                     input.metadata,
-                    input.access_rules,
-                    input.resource_address,
+                    input.address_reservation,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))

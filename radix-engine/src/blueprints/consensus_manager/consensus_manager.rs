@@ -245,7 +245,7 @@ impl ConsensusManagerBlueprint {
             let consensus_manager_address =
                 api.get_reservation_address(consensus_manager_address_reservation.0.as_node_id())?;
 
-            ResourceManager::new_non_fungible_with_address::<
+            ResourceManager::new_non_fungible::<
                 ValidatorOwnerBadgeData,
                 Y,
                 RuntimeError,
@@ -254,14 +254,14 @@ impl ConsensusManagerBlueprint {
                 OwnerRole::Fixed(rule!(require(global_caller(consensus_manager_address)))),
                 NonFungibleIdType::Bytes,
                 true,
+                access_rules,
                 metadata_init! {
                     "name" => "Validator Owner Badges".to_owned(), locked;
                     "description" => "Badges created by the Radix system that provide individual control over the validator components created for validator node-runners.".to_owned(), locked;
                     "tags" => vec!["badge".to_owned(), "validator".to_owned()], locked;
                     "icon_url" => Url("https://assets.radixdlt.com/icons/icon-validator_owner_badge.png".to_owned()), locked;
                 },
-                access_rules,
-                validator_token_address_reservation,
+                Some(validator_token_address_reservation),
                 api,
             )?;
         };

@@ -593,9 +593,9 @@ pub fn create_system_bootstrap_transaction(
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
@@ -609,7 +609,7 @@ pub fn create_system_bootstrap_transaction(
                         }
                     },
                     access_rules,
-                    resource_address: id_allocator.new_address_reservation_id(),
+                    address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
         });
@@ -626,9 +626,9 @@ pub fn create_system_bootstrap_transaction(
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
@@ -642,7 +642,7 @@ pub fn create_system_bootstrap_transaction(
                         }
                     },
                     access_rules,
-                    resource_address: id_allocator.new_address_reservation_id(),
+                    address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
         });
@@ -667,9 +667,9 @@ pub fn create_system_bootstrap_transaction(
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(global_caller(PACKAGE_PACKAGE)))),
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
@@ -683,7 +683,7 @@ pub fn create_system_bootstrap_transaction(
                         }
                     },
                     access_rules,
-                    resource_address: id_allocator.new_address_reservation_id(),
+                    address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
         });
@@ -708,9 +708,9 @@ pub fn create_system_bootstrap_transaction(
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(global_caller(IDENTITY_PACKAGE)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
@@ -724,7 +724,7 @@ pub fn create_system_bootstrap_transaction(
                         }
                     },
                     access_rules,
-                    resource_address: id_allocator.new_address_reservation_id(),
+                    address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
         });
@@ -790,9 +790,9 @@ pub fn create_system_bootstrap_transaction(
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(global_caller(ACCOUNT_PACKAGE)))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
@@ -809,7 +809,7 @@ pub fn create_system_bootstrap_transaction(
                         }
                     },
                     access_rules,
-                    resource_address: id_allocator.new_address_reservation_id(),
+                    address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
         });
@@ -889,9 +889,9 @@ pub fn create_system_bootstrap_transaction(
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
@@ -905,7 +905,7 @@ pub fn create_system_bootstrap_transaction(
                         }
                     },
                     access_rules,
-                    resource_address: id_allocator.new_address_reservation_id(),
+                    address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
         });
@@ -922,9 +922,9 @@ pub fn create_system_bootstrap_transaction(
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
@@ -938,7 +938,7 @@ pub fn create_system_bootstrap_transaction(
                         }
                     },
                     access_rules,
-                    resource_address: id_allocator.new_address_reservation_id(),
+                    address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
         });
@@ -955,9 +955,9 @@ pub fn create_system_bootstrap_transaction(
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
             blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
+            function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(
-                &NonFungibleResourceManagerCreateWithAddressManifestInput {
+                &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
@@ -971,7 +971,7 @@ pub fn create_system_bootstrap_transaction(
                         }
                     },
                     access_rules,
-                    resource_address: id_allocator.new_address_reservation_id(),
+                    address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
         });

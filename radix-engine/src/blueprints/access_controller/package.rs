@@ -617,6 +617,7 @@ impl AccessControllerNativePackage {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,
+                        access_rules: access_rules.into(),
                         metadata: metadata! {
                             roles {
                                 metadata_setter => AccessRule::DenyAll, locked;
@@ -630,7 +631,7 @@ impl AccessControllerNativePackage {
                                 "access_controller" => address, locked;
                             }
                         },
-                        access_rules: access_rules.into(),
+                        address_reservation: None,
                     })
                     .unwrap(),
                 )?;

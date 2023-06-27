@@ -1094,6 +1094,7 @@ impl ValidatorCreator {
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             true,
             18,
+            stake_unit_resource_auth,
             metadata_init! {
                 "name" => "Liquid Stake Units".to_owned(), locked;
                 "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
@@ -1101,7 +1102,7 @@ impl ValidatorCreator {
                 "validator" => GlobalAddress::from(validator_address), locked;
                 "tags" => Vec::<String>::new(), locked;
             },
-            stake_unit_resource_auth,
+            None,
             api,
         )?;
 
@@ -1137,6 +1138,7 @@ impl ValidatorCreator {
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             NonFungibleIdType::RUID,
             true,
+            unstake_nft_auth,
             metadata_init! {
                 "name" => "Stake Claims NFTs".to_owned(), locked;
                 "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;
@@ -1144,7 +1146,7 @@ impl ValidatorCreator {
                 "validator" => GlobalAddress::from(validator_address), locked;
                 "tags" => Vec::<String>::new(), locked;
             },
-            unstake_nft_auth,
+            None,
             api,
         )?;
 

@@ -1803,7 +1803,7 @@ mod tests {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
+                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::None,
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
@@ -1823,6 +1823,7 @@ mod tests {
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
+                    address_reservation: None,
                 }),
             },
         );
@@ -1850,14 +1851,15 @@ mod tests {
                     package_address: RESOURCE_PACKAGE.into(),
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                    args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
+                    args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateManifestInput {
                         owner_role: OwnerRole::None,
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
                         ),
-                        metadata: metadata!(),
                         access_rules: BTreeMap::new(),
+                        metadata: metadata!(),
+                        address_reservation: None,
                     }),
                 }],
                 &NetworkDefinition::simulator()
@@ -1974,15 +1976,10 @@ mod tests {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
+                args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::None,
                     track_total_supply: false,
                     divisibility: 18,
-                    metadata: metadata! {
-                        init {
-                            "name" => "Token".to_owned(), updatable;
-                        }
-                    },
                     access_rules: BTreeMap::from([
                         (
                             ResourceAction::Withdraw,
@@ -1993,6 +1990,12 @@ mod tests {
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
+                    metadata: metadata! {
+                        init {
+                            "name" => "Token".to_owned(), updatable;
+                        }
+                    },
+                    address_reservation: None,
                 }),
             },
         );

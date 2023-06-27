@@ -89,14 +89,14 @@ impl ResourceBuilder {
 /// use scrypto::prelude::*;
 ///
 /// let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-///     .metadata("name", "TestToken")
 ///     .mint_initial_supply(5);
 /// ```
 #[must_use]
 pub struct InProgressResourceBuilder<T: AnyResourceType, A: ConfiguredAuth> {
     owner_role: OwnerRole,
     resource_type: T,
-    metadata: Option<ModuleConfig<MetadataInit>>,
+    metadata_config: Option<ModuleConfig<MetadataInit>>,
+    address_reservation: Option<GlobalAddressReservation>,
     auth: A,
 }
 
@@ -105,7 +105,8 @@ impl<T: AnyResourceType> InProgressResourceBuilder<T, NoAuth> {
         Self {
             owner_role,
             resource_type: T::default(),
-            metadata: None,
+            metadata_config: None,
+            address_reservation: None,
             auth: NoAuth,
         }
     }
@@ -373,12 +374,12 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     ///     pub flag: bool,
     /// }
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_ruid_non_fungible::<NFData>()
+    /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
     ///    .updatable_non_fungible_data(rule!(require(resource_address)), LOCKED);
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
-    /// ResourceBuilder::new_ruid_non_fungible::<NFData>()
+    /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
     ///    .updatable_non_fungible_data(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
     /// ```
     fn updatable_non_fungible_data<R: Into<AccessRule>>(
@@ -412,6 +413,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 owner_role,
                 divisibility,
                 metadata,
+                address_reservation,
                 access_rules,
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
@@ -427,6 +429,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             track_total_supply: true,
                             metadata,
                             access_rules,
+                            address_reservation,
                         })
                         .unwrap(),
                     )
@@ -437,8 +440,9 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 owner_role,
                 id_type,
                 non_fungible_schema,
-                metadata,
                 access_rules,
+                metadata,
+                address_reservation,
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
@@ -452,8 +456,9 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             id_type,
                             track_total_supply: true,
                             non_fungible_schema,
-                            metadata,
                             access_rules,
+                            metadata,
+                            address_reservation,
                         })
                         .unwrap(),
                     )
@@ -502,7 +507,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     ///     .mint_initial_supply(5);
     /// ```
     pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
-        let metadata = self.metadata.take().unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -557,7 +562,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self.metadata.take().unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -613,7 +618,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self.metadata.take().unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -656,7 +661,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_bytes_non_fungible::<NFData>()
+    /// let bucket = ResourceBuilder::new_bytes_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (vec![1u8].try_into().unwrap(), NFData { name: "NF One".to_owned(), flag: true }),
     ///         (vec![2u8].try_into().unwrap(), NFData { name: "NF Two".to_owned(), flag: true }),
@@ -669,7 +674,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self.metadata.take().unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -715,7 +720,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     ///     pub flag: bool,
     /// }
     ///
-    /// let bucket = ResourceBuilder::new_ruid_non_fungible::<NFData>()
+    /// let bucket = ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
     ///     .mint_initial_supply([
     ///         (NFData { name: "NF One".to_owned(), flag: true }),
     ///         (NFData { name: "NF Two".to_owned(), flag: true }),
@@ -728,7 +733,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self.metadata.take().unwrap_or_else(|| Default::default());
+        let metadata = self.metadata_config.take().unwrap_or_else(|| Default::default());
 
         let access_rules = self.auth.into_access_rules();
 
@@ -788,7 +793,7 @@ impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetMetadata
     type OutputBuilder = Self;
 
     fn set_metadata(mut self, metadata: ModuleConfig<MetadataInit>) -> Self::OutputBuilder {
-        self.metadata = Some(metadata);
+        self.metadata_config = Some(metadata);
         self
     }
 }
@@ -805,8 +810,9 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, No
         Self::OutputBuilder {
             owner_role: self.owner_role,
             resource_type: self.resource_type,
-            metadata: self.metadata,
             auth: AccessRuleAuth(btreemap! { method => (method_auth, mutability) }),
+            metadata_config: self.metadata_config,
+            address_reservation: self.address_reservation,
         }
     }
 }
@@ -832,8 +838,9 @@ impl<A: ConfiguredAuth> private::CanCreateWithNoSupply
         private::CreateWithNoSupply::Fungible {
             owner_role: self.owner_role,
             divisibility: self.resource_type.divisibility,
-            metadata: self.metadata,
             access_rules: self.auth.into_access_rules(),
+            metadata: self.metadata_config,
+            address_reservation: self.address_reservation,
         }
     }
 }
@@ -849,8 +856,9 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
             owner_role: self.owner_role,
             id_type: Y::id_type(),
             non_fungible_schema,
-            metadata: self.metadata,
             access_rules: self.auth.into_access_rules(),
+            metadata: self.metadata_config,
+            address_reservation: self.address_reservation,
         }
     }
 }
@@ -904,15 +912,17 @@ mod private {
         Fungible {
             owner_role: OwnerRole,
             divisibility: u8,
-            metadata: Option<ModuleConfig<MetadataInit>>,
             access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+            metadata: Option<ModuleConfig<MetadataInit>>,
+            address_reservation: Option<GlobalAddressReservation>,
         },
         NonFungible {
             owner_role: OwnerRole,
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
-            metadata: Option<ModuleConfig<MetadataInit>>,
             access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+            metadata: Option<ModuleConfig<MetadataInit>>,
+            address_reservation: Option<GlobalAddressReservation>,
         },
     }
 }

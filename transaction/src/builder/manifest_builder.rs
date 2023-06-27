@@ -471,12 +471,13 @@ impl ManifestBuilder {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
+                args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateManifestInput {
                     owner_role,
                     divisibility,
                     track_total_supply,
                     metadata,
                     access_rules,
+                    address_reservation: None,
                 }),
             });
         }
@@ -532,13 +533,14 @@ impl ManifestBuilder {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
+                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateManifestInput {
                     owner_role,
                     id_type,
                     track_total_supply,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                    metadata,
                     access_rules,
+                    metadata,
+                    address_reservation: None,
                 }),
             });
         }

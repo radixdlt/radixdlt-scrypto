@@ -13,16 +13,30 @@ pub const FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "FungibleResourceManager";
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleResourceManagerCreateInput {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
     pub divisibility: u8,
-    pub metadata: ModuleConfig<MetadataInit>,
     pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<GlobalAddressReservation>,
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct FungibleResourceManagerCreateManifestInput {
+    pub owner_role: OwnerRole,
+    pub track_total_supply: bool,
+    pub divisibility: u8,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<ManifestAddressReservation>,
 }
 
 pub type FungibleResourceManagerCreateOutput = ResourceAddress;
+
+
 
 pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_with_initial_supply";

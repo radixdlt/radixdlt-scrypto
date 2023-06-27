@@ -59,10 +59,11 @@ impl OneResourcePoolBlueprint {
                 owner_role.clone(),
                 true,
                 18,
+                access_rules,
                 metadata_init! {
                     "pool" => address, locked;
                 },
-                access_rules,
+                None,
                 api,
             )?
         };

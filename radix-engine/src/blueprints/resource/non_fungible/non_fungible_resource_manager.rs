@@ -100,43 +100,25 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-        api: &mut Y,
-    ) -> Result<ResourceAddress, RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
-            package_address: RESOURCE_PACKAGE,
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-        })?;
-
-        Self::create_with_address(
-            owner_role,
-            id_type,
-            track_total_supply,
-            non_fungible_schema,
-            metadata,
-            access_rules,
-            address_reservation,
-            api,
-        )
-    }
-
-    pub(crate) fn create_with_address<Y>(
-        owner_role: OwnerRole,
-        id_type: NonFungibleIdType,
-        track_total_supply: bool,
-        non_fungible_schema: NonFungibleDataSchema,
         metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-        resource_address_reservation: GlobalAddressReservation,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        let address_reservation = match address_reservation {
+            Some(address_reservation) => address_reservation,
+            None => {
+                let (reservation, _) = api.allocate_global_address(BlueprintId {
+                    package_address: RESOURCE_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                })?;
+                reservation
+            }
+        };
+
         let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
@@ -163,7 +145,7 @@ impl NonFungibleResourceManagerBlueprint {
         globalize_resource_manager(
             owner_role,
             object_id,
-            resource_address_reservation,
+            address_reservation,
             access_rules,
             metadata,
             api,
