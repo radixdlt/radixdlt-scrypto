@@ -2210,8 +2210,9 @@ impl ResourceNativePackage {
                     input.owner_role,
                     input.track_total_supply,
                     input.divisibility,
-                    input.metadata,
                     input.access_rules,
+                    input.metadata,
+                    input.address_reservation,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2225,9 +2226,9 @@ impl ResourceNativePackage {
                     input.owner_role,
                     input.track_total_supply,
                     input.divisibility,
-                    input.metadata,
-                    input.access_rules,
                     input.initial_supply,
+                    input.access_rules,
+                    input.metadata,
                     input.address_reservation,
                     api,
                 )?;
@@ -2320,9 +2321,10 @@ impl ResourceNativePackage {
                     input.id_type,
                     input.track_total_supply,
                     input.non_fungible_schema,
-                    input.metadata,
-                    input.access_rules,
                     input.entries,
+                    input.access_rules,
+                    input.metadata,
+                    input.address_reservation,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2337,9 +2339,10 @@ impl ResourceNativePackage {
                     input.owner_role,
                     input.track_total_supply,
                     input.non_fungible_schema,
-                    input.metadata,
-                    input.access_rules,
                     input.entries,
+                    input.access_rules,
+                    input.metadata,
+                    input.address_reservation,
                     api,
                 )?;
 

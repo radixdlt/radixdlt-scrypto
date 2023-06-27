@@ -74,14 +74,26 @@ impl FungibleResourceManagerBlueprint {
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        metadata: ModuleConfig<MetadataInit>,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         verify_divisibility(divisibility)?;
+
+        let address_reservation = match address_reservation {
+            Some(address_reservation) => address_reservation,
+            None => {
+                let (reservation, _) = api.allocate_global_address(BlueprintId {
+                    package_address: RESOURCE_PACKAGE,
+                    blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                })?;
+                reservation
+            }
+        };
 
         let features = features(track_total_supply, &access_rules);
 
@@ -96,12 +108,7 @@ impl FungibleResourceManagerBlueprint {
             btreemap!(),
         )?;
 
-        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
-            package_address: RESOURCE_PACKAGE,
-            blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-        })?;
-        let resource_address = ResourceAddress::new_or_panic(address.into());
-        globalize_resource_manager(
+        let resource_address = globalize_resource_manager(
             owner_role,
             object_id,
             address_reservation,
@@ -117,9 +124,9 @@ impl FungibleResourceManagerBlueprint {
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         initial_supply: Decimal,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>

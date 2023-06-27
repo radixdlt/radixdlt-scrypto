@@ -157,14 +157,26 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        metadata: ModuleConfig<MetadataInit>,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        let address_reservation = match address_reservation {
+            Some(address_reservation) => address_reservation,
+            None => {
+                let (reservation, _) = api.allocate_global_address(BlueprintId {
+                    package_address: RESOURCE_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                })?;
+                reservation
+            }
+        };
+
         // TODO: Do this check in a better way (e.g. via type check)
         if id_type == NonFungibleIdType::RUID {
             return Err(RuntimeError::ApplicationError(
@@ -177,11 +189,6 @@ impl NonFungibleResourceManagerBlueprint {
         let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
-
-        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
-            package_address: RESOURCE_PACKAGE,
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-        })?;
 
         let supply: Decimal = Decimal::from(entries.len());
 
@@ -243,14 +250,26 @@ impl NonFungibleResourceManagerBlueprint {
         owner_role: OwnerRole,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
         entries: Vec<(ScryptoValue,)>,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        metadata: ModuleConfig<MetadataInit>,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<(ResourceAddress, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        let address_reservation = match address_reservation {
+            Some(address_reservation) => address_reservation,
+            None => {
+                let (reservation, _) = api.allocate_global_address(BlueprintId {
+                    package_address: RESOURCE_PACKAGE,
+                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                })?;
+                reservation
+            }
+        };
+
         let mut ids = BTreeSet::new();
         let mut non_fungibles = BTreeMap::new();
         let supply = Decimal::from(entries.len());
@@ -268,11 +287,6 @@ impl NonFungibleResourceManagerBlueprint {
         let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
             mutable_fields: non_fungible_schema.mutable_fields,
         };
-
-        let (address_reservation, _address) = api.allocate_global_address(BlueprintId {
-            package_address: RESOURCE_PACKAGE,
-            blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-        })?;
 
         let instance_schema = InstanceSchema {
             schema: non_fungible_schema.schema,
