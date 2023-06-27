@@ -166,3 +166,36 @@ fn can_withdraw_from_unfrozen_vault() {
     // Assert
     receipt.expect_commit_success();
 }
+
+
+#[test]
+fn can_freezy_unfreezy_non_fungible_vault() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (key, _priv, account) = test_runner.new_account(true);
+    let resource_address = test_runner.create_freezeable_non_fungible(account);
+    let vaults = test_runner.get_component_vaults(account, resource_address);
+    let vault_id = vaults[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .unfreeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
+    
+    // Assert
+    receipt.expect_commit_success();
+}
+
