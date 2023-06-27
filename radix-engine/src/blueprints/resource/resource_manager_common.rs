@@ -2,9 +2,7 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
-use radix_engine_interface::api::node_modules::metadata::{
-    MetadataInit, METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
-};
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
@@ -108,10 +106,14 @@ fn build_access_rules(
     }
 
     // Metadata
+    /*
     let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
         .remove(&ResourceAction::UpdateMetadata)
         .unwrap_or((DenyAll, DenyAll));
+
+     */
     let metadata_roles = {
+        /*
         let mut metadata_roles = Roles::new();
         let locked = update_metadata_mutability.eq(&DenyAll);
         metadata_roles.define_role(METADATA_SETTER_ROLE, update_metadata_access_rule, locked);
@@ -122,6 +124,9 @@ fn build_access_rules(
         );
 
         metadata_roles
+         */
+
+        Roles::default()
     };
 
     btreemap!(

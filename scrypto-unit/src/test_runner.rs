@@ -1209,13 +1209,6 @@ impl TestRunner {
             ),
         );
         access_rules.insert(
-            UpdateMetadata,
-            (
-                rule!(require(update_metadata_auth)),
-                MUTABLE(rule!(require(admin_auth))),
-            ),
-        );
-        access_rules.insert(
             Freeze,
             (
                 rule!(require(freeze_auth)),

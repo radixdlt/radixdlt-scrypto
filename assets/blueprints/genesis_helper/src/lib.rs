@@ -210,7 +210,7 @@ mod genesis_helper {
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
             // FIXME: Use resource builder
-            if let Some(owner) = resource.owner {
+            let metadata_roles = if let Some(owner) = resource.owner {
                 // TODO: Should we use securify style non fungible resource for the owner badge?
                 let owner_badge = ResourceBuilder::new_fungible()
                     .divisibility(DIVISIBILITY_NONE)
@@ -225,6 +225,8 @@ mod genesis_helper {
                     })
                     .mint_initial_supply(1);
 
+                let owner_badge_address = owner_badge.resource_address();
+
                 owner_badge
                     .resource_manager()
                     .metadata()
@@ -233,21 +235,14 @@ mod genesis_helper {
                 access_rules.insert(
                     Mint,
                     (
-                        rule!(require(owner_badge.resource_address())),
+                        rule!(require(owner_badge_address)),
                         rule!(deny_all),
                     ),
                 );
                 access_rules.insert(
                     Burn,
                     (
-                        rule!(require(owner_badge.resource_address())),
-                        rule!(deny_all),
-                    ),
-                );
-                access_rules.insert(
-                    UpdateMetadata,
-                    (
-                        rule!(require(owner_badge.resource_address())),
+                        rule!(require(owner_badge_address)),
                         rule!(deny_all),
                     ),
                 );
@@ -255,7 +250,16 @@ mod genesis_helper {
                 let _: () = Account(owner)
                     .deposit(owner_badge, &mut ScryptoEnv)
                     .unwrap();
-            }
+
+                metadata_roles! {
+                    metadata_setter => rule!(require(owner_badge_address)), locked;
+                    metadata_setter_updater => rule!(deny_all), locked;
+                    metadata_locker => rule!(require(owner_badge_address)), locked;
+                    metadata_locker_updater => rule!(deny_all), locked;
+                }
+            } else {
+                Roles::default()
+            };
 
             let (_, initial_supply_bucket): (ResourceAddress, Bucket) = Runtime::call_function(
                 RESOURCE_PACKAGE,
@@ -267,7 +271,7 @@ mod genesis_helper {
                         divisibility: 18,
                         metadata: ModuleConfig {
                             init: metadata.into(),
-                            roles: Roles::default(),
+                            roles: metadata_roles,
                         },
                         access_rules,
                         initial_supply: Decimal::zero(),

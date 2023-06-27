@@ -16,7 +16,6 @@ fn package_burn_is_only_callable_within_resource_package() {
             Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -60,7 +59,6 @@ fn can_burn_by_amount_from_fungible_vault() {
             Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -118,7 +116,6 @@ fn can_burn_by_amount_from_non_fungible_vault() {
             Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -188,7 +185,6 @@ fn can_burn_by_ids_from_non_fungible_vault() {
             Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -265,7 +261,6 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -327,7 +322,6 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -401,7 +395,6 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -479,7 +472,6 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -540,7 +532,6 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -613,7 +604,6 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -687,7 +677,6 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
             Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::DenyAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -745,7 +734,6 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
             Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::DenyAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -815,7 +803,6 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
             Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::DenyAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -891,7 +878,6 @@ fn can_burn_by_amount_from_fungible_account_vault() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -942,7 +928,6 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
@@ -998,7 +983,6 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()

@@ -350,34 +350,6 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ) -> Self::OutputBuilder {
         self.add_auth(Deposit, method_auth, mutability.into())
     }
-
-    /// Sets how the resource's metadata can be updated.
-    ///
-    /// * The first parameter is the access rule which allows updating the metadata of the resource.
-    /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
-    ///
-    /// ### Examples
-    ///
-    /// ```no_run
-    /// use scrypto::prelude::*;
-    ///
-    /// # let resource_address = RADIX_TOKEN;
-    /// // Sets the resource to allow its metadata to be updated with a proof of a specific resource, and this is locked forever.
-    /// ResourceBuilder::new_fungible()
-    ///    .updatable_metadata(rule!(require(resource_address)), LOCKED);
-    ///
-    /// # let resource_address = RADIX_TOKEN;
-    /// // Sets the resource to not allow its metadata to be updated, but this is can be changed in future by the second rule.
-    /// ResourceBuilder::new_fungible()
-    ///    .updatable_metadata(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
-    /// ```
-    fn updatable_metadata<R: Into<AccessRule>>(
-        self,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self::OutputBuilder {
-        self.add_auth(UpdateMetadata, method_auth, mutability.into())
-    }
 }
 impl<B: private::CanAddAuth> UpdateAuthBuilder for B {}
 

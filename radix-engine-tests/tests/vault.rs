@@ -628,7 +628,6 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
             Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()

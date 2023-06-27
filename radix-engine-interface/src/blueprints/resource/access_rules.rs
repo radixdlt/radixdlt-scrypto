@@ -294,12 +294,5 @@ pub fn resource_access_rules_from_owner_badge(
             rule!(require(owner_badge.clone())),
         ),
     );
-    access_rules.insert(
-        UpdateMetadata,
-        (
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        ),
-    );
     access_rules
 }

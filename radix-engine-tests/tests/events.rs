@@ -1462,7 +1462,6 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
         ResourceAction::Withdraw,
         ResourceAction::Mint,
         ResourceAction::Burn,
-        ResourceAction::UpdateMetadata,
         ResourceAction::UpdateNonFungibleData,
     ]
     .into_iter()

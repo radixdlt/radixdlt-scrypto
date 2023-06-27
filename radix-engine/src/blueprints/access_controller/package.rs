@@ -26,6 +26,7 @@ use radix_engine_interface::schema::{
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};
+use radix_engine_interface::api::node_modules::metadata::MetadataRoles;
 use sbor::rust::prelude::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 
@@ -594,7 +595,6 @@ impl AccessControllerNativePackage {
                 Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
                 Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
                 Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-                UpdateMetadata => (AccessRule::DenyAll, AccessRule::DenyAll),
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
                 UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
             };
@@ -617,6 +617,12 @@ impl AccessControllerNativePackage {
                         track_total_supply: true,
                         non_fungible_schema,
                         metadata: metadata! {
+                            roles {
+                                metadata_setter => AccessRule::DenyAll, locked;
+                                metadata_setter_updater => AccessRule::DenyAll, locked;
+                                metadata_locker => AccessRule::DenyAll, locked;
+                                metadata_locker_updater => AccessRule::DenyAll, locked;
+                            },
                             init {
                                 "name" => "Recovery Badge".to_owned(), locked;
                                 "icon_url" => Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;

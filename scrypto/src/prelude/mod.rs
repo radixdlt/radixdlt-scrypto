@@ -35,7 +35,7 @@ pub use radix_engine_interface::traits::*;
 pub use radix_engine_interface::types::*;
 pub use radix_engine_interface::{
     access_and_or, access_rule_node, dec, i, manifest_args, metadata, metadata_init, metadata_init_set_entry,
-    pdec, role_entry, role_definition_entry, roles, internal_roles, roles2, rule, scrypto_args, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
+    metadata_roles, pdec, role_entry, role_definition_entry, roles, internal_roles, roles2, rule, scrypto_args, ScryptoCategorize, ScryptoDecode, ScryptoEncode,
     ScryptoEvent, ScryptoSbor,
 };
 

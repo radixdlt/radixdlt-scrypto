@@ -521,7 +521,7 @@ macro_rules! component_royalties {
             $($init:tt)*
         }
     } => ({
-        let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule $(, $updatable)?;)*);
+        let royalty_roles = internal_roles!(RoyaltyRoles, $($role => $rule $(, $updatable)?;)*);
         let royalties = component_royalty_config!($($init)*);
         (royalties, royalty_roles)
     });
