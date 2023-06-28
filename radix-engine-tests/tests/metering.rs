@@ -23,6 +23,9 @@ fn update_expected_costs() {
     run_flash_loan(Mode::OutputCosting(
         "./assets/cost_flash_loan.csv".to_string(),
     ));
+    run_publish_large_package(Mode::OutputCosting(
+        "./assets/cost_publish_large_package.csv".to_string(),
+    ));
 }
 
 #[test]
@@ -50,6 +53,13 @@ fn test_radiswap() {
 fn test_flash_loan() {
     run_flash_loan(Mode::AssertCosting(load_cost_breakdown(include_str!(
         "../assets/cost_flash_loan.csv"
+    ))));
+}
+
+#[test]
+fn test_publish_large_package() {
+    run_publish_large_package(Mode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_publish_large_package.csv"
     ))));
 }
 
@@ -396,8 +406,7 @@ fn run_flash_loan(mode: Mode) {
     mode.run(&commit_result.fee_summary.execution_cost_breakdown);
 }
 
-#[test]
-fn test_publish_large_package() {
+fn run_publish_large_package(mode: Mode) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
@@ -424,7 +433,9 @@ fn test_publish_large_package() {
 
     let (receipt, _) = execute_with_time_logging(&mut test_runner, manifest, vec![]);
 
-    receipt.expect_commit_success();
+    // Assert
+    let commit_result = receipt.expect_commit_success();
+    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
 }
 
 #[test]

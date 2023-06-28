@@ -99,7 +99,7 @@ impl FeeTable {
                     // Execution time (µs): f(size) = 0.0004 * size + 1000
                     mul(add(cast(*size) / 2_500, 1_000), 100),
                     // State expansion: f(size) = 20 * size
-                    mul(cast(*size), 20),
+                    mul(cast(*size), 0),
                 )
             }
             StoreCommit::Update {
@@ -111,7 +111,7 @@ impl FeeTable {
                 mul(add(cast(*size) / 2_500, 1_000), 100),
                 // State expansion: f(size) = 20 * size
                 if size > old_size {
-                    mul(cast(size - old_size), 20)
+                    mul(cast(size - old_size), 0)
                 } else {
                     0
                 },
