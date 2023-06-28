@@ -136,36 +136,12 @@ pub trait SubstateStore {
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);
 }
 
-#[derive(Debug, Clone)]
-pub struct StoreAccessInfo(pub Vec<StoreAccess>);
-
-impl StoreAccessInfo {
-    pub fn new() -> Self {
-        Self(Vec::new())
-    }
-
-    pub fn push(&mut self, item: StoreAccess) {
-        self.0.push(item)
-    }
-
-    pub fn clear(&mut self) {
-        self.0.clear();
-    }
-}
+pub type StoreAccessInfo = Vec<StoreAccess>;
 
 #[derive(Debug, Clone, Copy)]
 pub enum StoreAccess {
     ReadFromDb(usize),
     ReadFromDbNotFound,
-    Write {
-        size: usize,
-        is_insert: bool,
-    },
-    Rewrite {
-        size: usize,
-        is_insert: bool,
-        previous_size: usize,
-        previous_is_insert: bool,
-    },
-    Delete,
+    Insert,
+    Write { old_size: usize, new_size: usize },
 }
