@@ -17,7 +17,7 @@ mod vault_lock_unlock_auth {
 
     impl VaultLockUnlockAuth {
         pub fn new_fungible() -> Global<VaultLockUnlockAuth> {
-            let bucket = ResourceBuilder::new_fungible().mint_initial_supply(100);
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
 
             Self {
                 vault: Vault::with_bucket(bucket),
@@ -50,13 +50,14 @@ mod vault_lock_unlock_auth {
         }
 
         pub fn new_non_fungible() -> Global<VaultLockUnlockAuth> {
-            let bucket = ResourceBuilder::new_integer_non_fungible().mint_initial_supply([(
-                1u64.into(),
-                Example {
-                    name: "One".to_owned(),
-                    available: true,
-                },
-            )]);
+            let bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
+                .mint_initial_supply([(
+                    1u64.into(),
+                    Example {
+                        name: "One".to_owned(),
+                        available: true,
+                    },
+                )]);
 
             Self {
                 vault: Vault::with_bucket(bucket),

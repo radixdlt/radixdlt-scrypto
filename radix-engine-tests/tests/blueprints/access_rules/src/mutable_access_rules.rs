@@ -18,7 +18,7 @@ mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
-        pub fn new(roles: Roles) -> Global<MutableAccessRulesComponent> {
+        pub fn new(roles: RolesInit) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
@@ -31,10 +31,10 @@ mod mutable_access_rules_component {
         ) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
-                .prepare_to_globalize(OwnerRole::None)
+                .prepare_to_globalize(OwnerRole::Fixed(owner_update_access_rule))
                 .roles(roles! {
                     borrow_funds_auth => rule!(require(RADIX_TOKEN)), updatable;
-                    deposit_funds_auth => owner_update_access_rule, locked;
+                    deposit_funds_auth => OWNER, locked;
                 })
                 .globalize()
         }

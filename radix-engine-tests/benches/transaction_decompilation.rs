@@ -6,7 +6,9 @@ use radix_engine::types::{
 };
 use radix_engine_common::types::Epoch;
 use radix_engine_common::{manifest_args, ManifestSbor};
-use radix_engine_interface::ScryptoSbor;
+use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::blueprints::resource::OwnerRole;
+use radix_engine_interface::{metadata, metadata_init, ScryptoSbor};
 use scrypto::prelude::{AccessRule, ComponentAddress};
 use scrypto::NonFungibleData;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
@@ -78,9 +80,10 @@ fn compiled_notarized_transaction() -> Vec<u8> {
         let mut builder = ManifestBuilder::new();
         builder.lock_fee(component_address, 50.into());
         builder.create_non_fungible_resource(
+            OwnerRole::None,
             NonFungibleIdType::Integer,
             false,
-            BTreeMap::new(),
+            metadata! {},
             BTreeMap::<_, (_, AccessRule)>::new(),
             Some(
                 (0u64..10_000u64)

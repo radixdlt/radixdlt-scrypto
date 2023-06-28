@@ -1,6 +1,7 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -71,9 +72,14 @@ impl NewTokenFixed {
             metadata.insert("icon_url".to_string(), MetadataValue::Url(Url(icon_url)));
         };
 
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: RolesInit::default(),
+        };
+
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 50u32.into())
-            .new_token_fixed(metadata, self.total_supply)
+            .new_token_fixed(OwnerRole::None, metadata, self.total_supply)
             .call_method(
                 default_account,
                 "try_deposit_batch_or_refund",

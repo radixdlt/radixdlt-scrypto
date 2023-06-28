@@ -1511,10 +1511,11 @@ mod tests {
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::AddressBech32Decoder;
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+    use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintRuidManifestInput, ResourceAction, Roles,
+        NonFungibleResourceManagerMintRuidManifestInput, ResourceAction,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
@@ -1757,7 +1758,7 @@ mod tests {
                     BTreeMap::<String, BlueprintStateSchemaInit>::new(),
                     BTreeMap::<String, PackageRoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
-                    Roles::new()
+                    RolesInit::new()
                 ),
             },
         );
@@ -1767,6 +1768,7 @@ mod tests {
     fn test_create_non_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_NON_FUNGIBLE_RESOURCE
+                Enum<0u8>()
                 Enum<NonFungibleIdType::Integer>()
                 false
                 Tuple(
@@ -1778,12 +1780,6 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<String, Tuple>(
-                    "name" => Tuple(
-                        Enum<Option::Some>(Enum<Metadata::String>("Token")),
-                        true
-                    ),
-                )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
@@ -1793,29 +1789,45 @@ mod tests {
                         Enum<AccessRule::AllowAll>(),
                         Enum<AccessRule::DenyAll>()
                     )
-                );"#,
+                )
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(
+                            Enum<Option::Some>(Enum<Metadata::String>("Token")),
+                            true
+                        ),
+                    ),
+                    Map<String, Tuple>()
+                )
+                Enum<0u8>();"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
-                    id_type: NonFungibleIdType::Integer,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: metadata_init! {
-                        "name" => "Token".to_string(), locked;
-                    },
-                    access_rules: BTreeMap::from([
-                        (
-                            ResourceAction::Withdraw,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                        (
-                            ResourceAction::Deposit,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                    ]),
-                }),
+                args: to_manifest_value_and_unwrap!(
+                    &NonFungibleResourceManagerCreateManifestInput {
+                        owner_role: OwnerRole::None,
+                        id_type: NonFungibleIdType::Integer,
+                        track_total_supply: false,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        metadata: metadata! {
+                            init {
+                                "name" => "Token".to_string(), locked;
+                            }
+                        },
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceAction::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                            (
+                                ResourceAction::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                        ]),
+                        address_reservation: None,
+                    }
+                ),
             },
         );
     }
@@ -1842,14 +1854,19 @@ mod tests {
                     package_address: RESOURCE_PACKAGE.into(),
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                    args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
-                        track_total_supply: false,
-                        id_type: NonFungibleIdType::Integer,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
-                        ),
-                        metadata: metadata_init!(),
-                        access_rules: BTreeMap::new(),
-                    }),
+                    args: to_manifest_value_and_unwrap!(
+                        &NonFungibleResourceManagerCreateManifestInput {
+                            owner_role: OwnerRole::None,
+                            track_total_supply: false,
+                            id_type: NonFungibleIdType::Integer,
+                            non_fungible_schema: NonFungibleDataSchema::new_schema::<
+                                MyNonFungibleData,
+                            >(),
+                            access_rules: BTreeMap::new(),
+                            metadata: metadata!(),
+                            address_reservation: None,
+                        }
+                    ),
                 }],
                 &NetworkDefinition::simulator()
             )
@@ -1861,6 +1878,7 @@ mod tests {
     fn test_create_non_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r##"CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+                Enum<0u8>()
                 Enum<NonFungibleIdType::Integer>()
                 false
                 Tuple(
@@ -1872,8 +1890,13 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<String, Tuple>(
-                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
+                Map<NonFungibleLocalId, Tuple>(
+                    NonFungibleLocalId("#1#") => Tuple(
+                        Tuple(
+                            "Hello World",
+                            Decimal("12")
+                        )
+                    )
                 )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
@@ -1885,14 +1908,13 @@ mod tests {
                         Enum<AccessRule::DenyAll>()
                     )
                 )
-                Map<NonFungibleLocalId, Tuple>(
-                    NonFungibleLocalId("#1#") => Tuple(
-                        Tuple(
-                            "Hello World",
-                            Decimal("12")
-                        )
-                    )
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), true)
+                    ),
+                    Map<String, Tuple>()
                 )
+                Enum<0u8>()
             ;"##,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -1901,14 +1923,15 @@ mod tests {
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        owner_role: OwnerRole::None,
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        metadata: BTreeMap::from([(
-                            "name".to_string(),
-                            MetadataValue::String("Token".to_string())
-                        )])
-                        .into(),
+                        metadata: metadata! {
+                            init {
+                                "name" => "Token".to_string(), locked;
+                            }
+                        },
                         access_rules: BTreeMap::from([
                             (
                                 ResourceAction::Withdraw,
@@ -1926,6 +1949,7 @@ mod tests {
                                 dec!("12")
                             )),),
                         )]),
+                        address_reservation: None,
                     }
                 ),
             },
@@ -1936,11 +1960,9 @@ mod tests {
     fn test_create_fungible_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE
+                Enum<0u8>()
                 false
                 18u8
-                Map<String, Tuple>(
-                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
-                )
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
@@ -1951,17 +1973,22 @@ mod tests {
                         Enum<AccessRule::DenyAll>()
                     )
                 )
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
+                    ),
+                    Map<String, Tuple>()
+                )
+                Enum<0u8>()
             ;"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
+                args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateManifestInput {
+                    owner_role: OwnerRole::None,
                     track_total_supply: false,
                     divisibility: 18,
-                    metadata: metadata_init!(
-                        "name" => "Token".to_owned(), updatable;
-                    ),
                     access_rules: BTreeMap::from([
                         (
                             ResourceAction::Withdraw,
@@ -1972,6 +1999,12 @@ mod tests {
                             (AccessRule::AllowAll, AccessRule::DenyAll)
                         ),
                     ]),
+                    metadata: metadata! {
+                        init {
+                            "name" => "Token".to_owned(), updatable;
+                        }
+                    },
+                    address_reservation: None,
                 }),
             },
         );
@@ -1981,11 +2014,10 @@ mod tests {
     fn test_create_fungible_with_initial_supply_instruction() {
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+                Enum<0u8>()
                 false
                 18u8
-                Map<String, Tuple>(
-                    "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
-                )
+                Decimal("500")
                 Map<Enum, Tuple>(
                     Enum<ResourceAction::Withdraw>() => Tuple(
                         Enum<AccessRule::AllowAll>(),
@@ -1996,7 +2028,13 @@ mod tests {
                         Enum<AccessRule::DenyAll>()
                     )
                 )
-                Decimal("500")
+                Tuple(
+                    Map<String, Tuple>(
+                        "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
+                    ),
+                    Map<String, Tuple>()
+                )
+                Enum<0u8>()
             ;"#,
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -2004,12 +2042,11 @@ mod tests {
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
-                    &FungibleResourceManagerCreateWithInitialSupplyInput {
+                    &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        owner_role: OwnerRole::None,
                         track_total_supply: false,
                         divisibility: 18,
-                        metadata: metadata_init!(
-                            "name" => "Token".to_owned(), updatable;
-                        ),
+                        initial_supply: "500".parse().unwrap(),
                         access_rules: BTreeMap::from([
                             (
                                 ResourceAction::Withdraw,
@@ -2020,7 +2057,12 @@ mod tests {
                                 (AccessRule::AllowAll, AccessRule::DenyAll)
                             ),
                         ]),
-                        initial_supply: "500".parse().unwrap()
+                        metadata: metadata! {
+                            init {
+                                "name" => "Token".to_owned(), updatable;
+                            }
+                        },
+                        address_reservation: None,
                     }
                 )
             },

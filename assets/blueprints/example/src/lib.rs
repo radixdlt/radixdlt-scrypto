@@ -16,7 +16,7 @@ mod example {
 
     enable_method_auth! {
         roles {
-            some_role => updatable_by: [some_role_updater];
+            some_role => updatable_by: [SELF, OWNER, some_role_updater];
             some_role_updater => updatable_by: [];
         },
         methods {
@@ -62,6 +62,10 @@ mod example {
                     some_role_updater => rule!(require(SOME_RESOURCE.resource_address())), locked;
                 })
                 .enable_component_royalties(component_royalties! {
+                    roles {
+                        royalty_admin => rule!(allow_all), updatable;
+                        royalty_admin_updater => OWNER, locked;
+                    },
                     init {
                         public_method => Xrd(1.into()), updatable;
                         protected_method => Free, locked;
@@ -69,8 +73,10 @@ mod example {
                 })
                 .metadata(metadata! {
                     roles {
-                        metadata_admin => rule!(allow_all), locked;
-                        metadata_admin_updater => rule!(deny_all), locked;
+                        metadata_locker => rule!(allow_all), locked;
+                        metadata_locker_updater => rule!(allow_all), locked;
+                        metadata_setter => OWNER, locked;
+                        metadata_setter_updater => rule!(deny_all), locked;
                     },
                     init {
                         "some_key" => "string_value".to_string(), updatable;
@@ -86,8 +92,12 @@ mod example {
         }
 
         pub fn public_method(&self) -> ResourceManager {
-            ResourceBuilder::new_ruid_non_fungible::<TestNFData>()
-                .metadata("name", "Super Admin Badge")
+            ResourceBuilder::new_ruid_non_fungible::<TestNFData>(OwnerRole::None)
+                .metadata(metadata! {
+                    init {
+                        "name" => "Super Admin Badge".to_string(), locked;
+                    }
+                })
                 .mintable(rule!(allow_all), rule!(allow_all))
                 .create_with_no_initial_supply()
         }

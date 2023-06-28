@@ -7,14 +7,15 @@ use radix_engine_common::prelude::well_known_scrypto_custom_types::{
     component_address_type_data, own_type_data, COMPONENT_ADDRESS_ID, OWN_ID,
 };
 use radix_engine_common::prelude::{
-    OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
+    scrypto_decode, OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataInit, METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
+use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
+use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, RolesInit};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -41,17 +42,24 @@ pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
 impl<C: HasTypeInfo> Blueprint<C> {
     pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: &A) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
-        Runtime::call_function(
-            package_address,
-            C::BLUEPRINT_NAME,
-            function_name,
-            scrypto_encode(args).unwrap(),
-        )
+
+        let output = ScryptoEnv
+            .call_function(
+                package_address,
+                C::BLUEPRINT_NAME,
+                function_name,
+                scrypto_encode(args).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&output).unwrap()
     }
 
     pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
-        Runtime::call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
+        let output = ScryptoEnv
+            .call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
+            .unwrap();
+        scrypto_decode(&output).unwrap()
     }
 }
 
@@ -173,7 +181,7 @@ impl<C: HasStub + HasMethods> Owned<C> {
             owner_role,
             metadata_config: None,
             royalty_config: None,
-            roles: Roles::new(),
+            roles: RolesInit::new(),
             address_reservation: None,
         }
     }
@@ -221,11 +229,11 @@ pub struct Globalizing<C: HasStub> {
     pub stub: C::Stub,
 
     pub owner_role: OwnerRole,
-    pub metadata_config: Option<(MetadataInit, Roles)>,
-    pub royalty_config: Option<(ComponentRoyaltyConfig, Roles)>,
+    pub metadata_config: Option<ModuleConfig<MetadataInit>>,
+    pub royalty_config: Option<ModuleConfig<ComponentRoyaltyConfig>>,
     pub address_reservation: Option<GlobalAddressReservation>,
 
-    pub roles: Roles,
+    pub roles: RolesInit,
 }
 
 impl<C: HasStub> Deref for Globalizing<C> {
@@ -237,27 +245,29 @@ impl<C: HasStub> Deref for Globalizing<C> {
 }
 
 impl<C: HasStub + HasMethods> Globalizing<C> {
-    pub fn roles(mut self, roles: Roles) -> Self {
+    pub fn roles(mut self, roles: RolesInit) -> Self {
         self.roles = roles;
         self
     }
 
-    pub fn metadata(mut self, metadata_config: (MetadataInit, Roles)) -> Self {
+    pub fn metadata(mut self, metadata_config: ModuleConfig<MetadataInit>) -> Self {
         self.metadata_config = Some(metadata_config);
 
         self
     }
 
-    pub fn enable_component_royalties(mut self, royalties: (C::Royalties, Roles)) -> Self {
+    pub fn enable_component_royalties(mut self, royalties: (C::Royalties, RolesInit)) -> Self {
         let mut royalty_amounts = BTreeMap::new();
         for (method, (royalty, updatable)) in royalties.0.to_mapping() {
             royalty_amounts.insert(method, (royalty, !updatable));
         }
 
-        self.royalty_config = Some((
-            ComponentRoyaltyConfig::Enabled(royalty_amounts),
-            royalties.1,
-        ));
+        let royalty_config = ModuleConfig {
+            init: ComponentRoyaltyConfig::Enabled(royalty_amounts),
+            roles: royalties.1,
+        };
+
+        self.royalty_config = Some(royalty_config);
 
         self
     }
@@ -269,20 +279,25 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
 
     pub fn globalize(mut self) -> Global<C> {
         let (metadata, metadata_roles) = {
-            let (metadata_init, metadata_roles) = self
+            let metadata_config = self
                 .metadata_config
                 .take()
-                .unwrap_or_else(|| (MetadataInit::new(), Roles::new()));
+                .unwrap_or_else(|| Default::default());
 
-            (Metadata::new_with_data(metadata_init), metadata_roles)
+            (
+                Metadata::new_with_data(metadata_config.init),
+                metadata_config.roles,
+            )
         };
 
-        let (royalty_config, royalty_roles) = self
-            .royalty_config
-            .take()
-            .unwrap_or_else(|| (ComponentRoyaltyConfig::default(), Roles::new()));
+        let (royalty, royalty_roles) = {
+            let royalty_config = self
+                .royalty_config
+                .take()
+                .unwrap_or_else(|| Default::default());
 
-        let royalty = Royalty::new(royalty_config);
+            (Royalty::new(royalty_config.init), royalty_config.roles)
+        };
 
         let access_rules = AccessRules::new(
             self.owner_role,

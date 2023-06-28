@@ -137,17 +137,3 @@ impl Metadata {
         rtn
     }
 }
-
-pub struct MetadataRoles<T> {
-    pub metadata_admin: T,
-    pub metadata_admin_updater: T,
-}
-
-impl<T> MetadataRoles<T> {
-    pub fn list(self) -> Vec<(&'static str, T)> {
-        vec![
-            (METADATA_ADMIN_ROLE, self.metadata_admin),
-            (METADATA_ADMIN_UPDATER_ROLE, self.metadata_admin_updater),
-        ]
-    }
-}

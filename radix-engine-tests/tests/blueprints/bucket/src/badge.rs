@@ -6,10 +6,14 @@ mod badge_test {
 
     impl BadgeTest {
         fn create_test_badge(amount: u32) -> Bucket {
-            ResourceBuilder::new_fungible()
+            ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .restrict_withdraw(rule!(allow_all), rule!(deny_all))
-                .metadata("name", "TestBadge")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(amount)
         }
 

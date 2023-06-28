@@ -41,12 +41,7 @@ mod transaction_limits {
         pub fn recursive_with_memory(n: u32, m: usize) {
             if n > 1 {
                 let _v: Vec<u8> = Vec::with_capacity(m);
-                let _: () = Runtime::call_function(
-                    Runtime::package_address(),
-                    "TransactionLimitTest",
-                    "recursive_with_memory",
-                    scrypto_args!(n - 1, m),
-                );
+                Blueprint::<TransactionLimitTest>::recursive_with_memory(n - 1, m);
             }
         }
     }
@@ -118,12 +113,14 @@ mod invoke_limits {
             let new_len = buf.len() + raw_array_size;
             unsafe { buf.set_len(new_len) };
 
-            Runtime::call_function(
-                Runtime::package_address(),
-                "InvokeLimitsTest",
-                "callee",
-                buf,
-            )
+            ScryptoEnv
+                .call_function(
+                    Runtime::package_address(),
+                    "InvokeLimitsTest",
+                    "callee",
+                    buf,
+                )
+                .unwrap();
         }
 
         pub fn callee(_: Vec<u8>) {}

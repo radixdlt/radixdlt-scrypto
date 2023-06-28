@@ -1066,7 +1066,7 @@ pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
     fn create_stake_unit_resource<Y>(
-        address: GlobalAddress,
+        validator_address: GlobalAddress,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
@@ -1075,26 +1075,34 @@ impl ValidatorCreator {
         let mut stake_unit_resource_auth = BTreeMap::new();
         stake_unit_resource_auth.insert(
             Mint,
-            (rule!(require(global_caller(address))), rule!(deny_all)),
+            (
+                rule!(require(global_caller(validator_address))),
+                rule!(deny_all),
+            ),
         );
         stake_unit_resource_auth.insert(
             Burn,
-            (rule!(require(global_caller(address))), rule!(deny_all)),
+            (
+                rule!(require(global_caller(validator_address))),
+                rule!(deny_all),
+            ),
         );
         stake_unit_resource_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         stake_unit_resource_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let stake_unit_resman = ResourceManager::new_fungible(
+            OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             true,
             18,
+            stake_unit_resource_auth,
             metadata_init! {
                 "name" => "Liquid Stake Units".to_owned(), locked;
                 "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
                 "icon_url" => Url("https://assets.radixdlt.com/icons/icon-liquid_stake_units.png".to_owned()), locked;
-                "validator" => GlobalAddress::from(address), locked;
+                "validator" => GlobalAddress::from(validator_address), locked;
                 "tags" => Vec::<String>::new(), locked;
             },
-            stake_unit_resource_auth,
+            None,
             api,
         )?;
 
@@ -1102,7 +1110,7 @@ impl ValidatorCreator {
     }
 
     fn create_unstake_nft<Y>(
-        address: GlobalAddress,
+        validator_address: GlobalAddress,
         api: &mut Y,
     ) -> Result<ResourceAddress, RuntimeError>
     where
@@ -1111,26 +1119,34 @@ impl ValidatorCreator {
         let mut unstake_nft_auth = BTreeMap::new();
         unstake_nft_auth.insert(
             Mint,
-            (rule!(require(global_caller(address))), rule!(deny_all)),
+            (
+                rule!(require(global_caller(validator_address))),
+                rule!(deny_all),
+            ),
         );
         unstake_nft_auth.insert(
             Burn,
-            (rule!(require(global_caller(address))), rule!(deny_all)),
+            (
+                rule!(require(global_caller(validator_address))),
+                rule!(deny_all),
+            ),
         );
         unstake_nft_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError, _>(
+            OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             NonFungibleIdType::RUID,
             true,
+            unstake_nft_auth,
             metadata_init! {
                 "name" => "Stake Claims NFTs".to_owned(), locked;
                 "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;
                 "icon_url" => Url("https://assets.radixdlt.com/icons/icon-stake_claim_NFTs.png".to_owned()), locked;
-                "validator" => GlobalAddress::from(address), locked;
+                "validator" => GlobalAddress::from(validator_address), locked;
                 "tags" => Vec::<String>::new(), locked;
             },
-            unstake_nft_auth,
+            None,
             api,
         )?;
 
@@ -1149,15 +1165,16 @@ impl ValidatorCreator {
         // check if validator fee is valid
         check_validator_fee_factor(fee_factor)?;
 
-        let (address_reservation, address) = api.allocate_global_address(BlueprintId {
-            package_address: CONSENSUS_MANAGER_PACKAGE,
-            blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
-        })?;
+        let (address_reservation, validator_address) =
+            api.allocate_global_address(BlueprintId {
+                package_address: CONSENSUS_MANAGER_PACKAGE,
+                blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
+            })?;
 
         let stake_xrd_vault = Vault::create(RADIX_TOKEN, api)?;
         let pending_xrd_withdraw_vault = Vault::create(RADIX_TOKEN, api)?;
-        let unstake_nft = Self::create_unstake_nft(address, api)?;
-        let stake_unit_resource = Self::create_stake_unit_resource(address, api)?;
+        let unstake_nft = Self::create_unstake_nft(validator_address, api)?;
+        let stake_unit_resource = Self::create_stake_unit_resource(validator_address, api)?;
         let locked_owner_stake_unit_vault = Vault::create(stake_unit_resource, api)?;
         let pending_owner_stake_unit_unlock_vault = Vault::create(stake_unit_resource, api)?;
         let pending_owner_stake_unit_withdrawals = BTreeMap::new();
@@ -1194,9 +1211,9 @@ impl ValidatorCreator {
         let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(
             ValidatorOwnerBadgeData {
                 name: "Validator Owner Badge".to_owned(),
-                validator: address.try_into().expect("Impossible Case!"),
+                validator: validator_address.try_into().expect("Impossible Case!"),
             },
-            Some(NonFungibleLocalId::bytes(address.as_node_id().0).unwrap()),
+            Some(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
             api,
         )?;
         let owner_badge_local_id = owner_token_bucket
@@ -1224,7 +1241,7 @@ impl ValidatorCreator {
         )?;
 
         Ok((
-            ComponentAddress::new_or_panic(address.into()),
+            ComponentAddress::new_or_panic(validator_address.into()),
             owner_token_bucket,
         ))
     }

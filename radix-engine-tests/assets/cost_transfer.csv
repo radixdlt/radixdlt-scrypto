@@ -1,5 +1,5 @@
-Total Cost Units                                                                ,   7183684
-Total Fee                                                                       ,  3.591842
+Total Cost Units                                                                ,   7183144
+Total Fee                                                                       ,  3.591572
 AfterInvoke                                                                     ,       150
 AllocateNodeId                                                                  ,      6500
 BeforeInvoke                                                                    ,      5731
@@ -10,11 +10,11 @@ EmitEvent                                                                       
 LockFee                                                                         ,       500
 OpenSubstate::GlobalAccount                                                     ,   1488155
 OpenSubstate::GlobalFungibleResourceManager                                     ,    568562
-OpenSubstate::GlobalPackage                                                     ,   3830956
+OpenSubstate::GlobalPackage                                                     ,   3830686
 OpenSubstate::InternalFungibleVault                                             ,    565280
 OpenSubstate::InternalGenericComponent                                          ,     36862
 QueryActor                                                                      ,      4000
-ReadSubstate                                                                    ,    108555
+ReadSubstate                                                                    ,    108285
 RunNativeCode::Worktop_drain                                                    ,      6900
 RunNativeCode::Worktop_drop                                                     ,      6600
 RunNativeCode::Worktop_put                                                      ,     21200

@@ -11,7 +11,7 @@ mod data_validation {
 
     impl DataValidation {
         pub fn new() -> Global<DataValidation> {
-            let resource = ResourceBuilder::new_fungible().mint_initial_supply(100);
+            let resource = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
 
             Self {
                 vault: Vault::with_bucket(resource),

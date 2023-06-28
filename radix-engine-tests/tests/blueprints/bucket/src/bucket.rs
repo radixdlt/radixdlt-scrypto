@@ -14,9 +14,13 @@ mod bucket_test {
 
     impl BucketTest {
         fn create_test_token(amount: u32) -> Bucket {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(amount);
             let proof1 = bucket.create_proof();
             let proof2 = proof1.clone();
@@ -26,18 +30,26 @@ mod bucket_test {
         }
 
         pub fn drop_bucket() {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(1u32);
 
             ScryptoEnv.drop_object(bucket.0.as_node_id()).unwrap();
         }
 
         pub fn drop_empty(amount: u32) {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(amount);
 
             bucket.drop_empty();
@@ -70,10 +82,10 @@ mod bucket_test {
         }
 
         pub fn test_restricted_transfer() -> Vec<Bucket> {
-            let auth_bucket = ResourceBuilder::new_fungible()
+            let auth_bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .restrict_withdraw(
                     rule!(require(auth_bucket.resource_address())),
@@ -92,10 +104,10 @@ mod bucket_test {
         }
 
         pub fn test_burn() -> Vec<Bucket> {
-            let badge = ResourceBuilder::new_fungible()
+            let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .mint_initial_supply(5);
@@ -104,10 +116,10 @@ mod bucket_test {
         }
 
         pub fn test_burn_freely() -> Vec<Bucket> {
-            let badge = ResourceBuilder::new_fungible()
+            let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let mut bucket1 = ResourceBuilder::new_fungible()
+            let mut bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .burnable(rule!(allow_all), rule!(deny_all))
                 .mint_initial_supply(5);
@@ -128,14 +140,19 @@ mod bucket_test {
 
         pub fn create_empty_bucket_non_fungible() -> Bucket {
             let resource_manager =
-                ResourceBuilder::new_ruid_non_fungible::<MyData>().create_with_no_initial_supply();
+                ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
+                    .create_with_no_initial_supply();
             Bucket::new(resource_manager.resource_address())
         }
 
         pub fn drop_locked_fungible_bucket() {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(1u32);
             bucket.create_proof();
 
@@ -148,8 +165,8 @@ mod bucket_test {
         }
 
         pub fn drop_locked_non_fungible_bucket() {
-            let bucket =
-                ResourceBuilder::new_ruid_non_fungible::<MyData>().mint_initial_supply([MyData {}]);
+            let bucket = ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
+                .mint_initial_supply([MyData {}]);
             bucket.create_proof();
 
             Self {

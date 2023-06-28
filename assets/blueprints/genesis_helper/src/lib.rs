@@ -205,73 +205,57 @@ mod genesis_helper {
         fn create_resource(resource: GenesisResource) -> () {
             let metadata: BTreeMap<String, MetadataValue> = resource.metadata.into_iter().collect();
 
-            let mut access_rules = BTreeMap::new();
-            access_rules.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
-            access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-
-            if let Some(owner) = resource.owner {
+            let owner_badge_address = if let Some(owner) = resource.owner {
                 // TODO: Should we use securify style non fungible resource for the owner badge?
-                let owner_badge = ResourceBuilder::new_fungible()
+                let owner_badge = ResourceBuilder::new_fungible(OwnerRole::None)
                     .divisibility(DIVISIBILITY_NONE)
-                    .metadata(
-                        "name",
-                        format!(
-                            "Resource Owner Badge ({})",
-                            String::from_metadata_value(metadata.get("symbol").unwrap().clone())
-                                .unwrap()
-                        ),
-                    )
+                    .metadata(metadata! {
+                        init {
+                            "name" => format!(
+                                "Resource Owner Badge ({})",
+                                String::from_metadata_value(metadata.get("symbol").unwrap().clone())
+                                    .unwrap()
+                            ), locked;
+                        }
+                    })
                     .mint_initial_supply(1);
+
+                let owner_badge_address = owner_badge.resource_address();
 
                 owner_badge
                     .resource_manager()
                     .metadata()
                     .set("tags", vec!["badge".to_string()]);
 
-                access_rules.insert(
-                    Mint,
-                    (
-                        rule!(require(owner_badge.resource_address())),
-                        rule!(deny_all),
-                    ),
-                );
-                access_rules.insert(
-                    Burn,
-                    (
-                        rule!(require(owner_badge.resource_address())),
-                        rule!(deny_all),
-                    ),
-                );
-                access_rules.insert(
-                    UpdateMetadata,
-                    (
-                        rule!(require(owner_badge.resource_address())),
-                        rule!(deny_all),
-                    ),
-                );
-
                 let _: () = Account(owner)
                     .deposit(owner_badge, &mut ScryptoEnv)
                     .unwrap();
-            }
 
-            let (_, initial_supply_bucket): (ResourceAddress, Bucket) = Runtime::call_function(
-                RESOURCE_PACKAGE,
-                FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT,
-                scrypto_encode(
-                    &FungibleResourceManagerCreateWithInitialSupplyAndAddressInput {
-                        track_total_supply: true,
-                        divisibility: 18,
-                        metadata: metadata.into(),
-                        access_rules,
-                        initial_supply: Decimal::zero(),
-                        resource_address: resource.address_reservation,
-                    },
-                )
-                .unwrap(),
-            );
-            initial_supply_bucket.drop_empty();
+                Some(owner_badge_address)
+            } else {
+                None
+            };
+
+            let owner_role = match owner_badge_address {
+                None => OwnerRole::None,
+                Some(owner_badge_address) => OwnerRole::Fixed(rule!(require(owner_badge_address))),
+            };
+
+            let builder = ResourceBuilder::new_fungible(owner_role)
+                .metadata(ModuleConfig {
+                    init: metadata.into(),
+                    roles: RolesInit::default(),
+                })
+                .with_address(resource.address_reservation);
+
+            if let Some(address) = owner_badge_address {
+                builder
+                    .mintable(rule!(require(address)), rule!(deny_all))
+                    .burnable(rule!(require(address)), rule!(deny_all))
+                    .create_with_no_initial_supply();
+            } else {
+                builder.create_with_no_initial_supply();
+            }
         }
 
         fn allocate_resources(

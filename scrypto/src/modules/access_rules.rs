@@ -9,7 +9,7 @@ use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_SET_ROLE_IDENT,
 };
 use radix_engine_interface::api::*;
-use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole, RoleKey, Roles};
+use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole, RoleKey, RolesInit};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
@@ -20,7 +20,7 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub ModuleHandle);
 
 impl AccessRules {
-    pub fn new(owner_role: OwnerRole, roles: BTreeMap<ObjectModuleId, Roles>) -> Self {
+    pub fn new(owner_role: OwnerRole, roles: BTreeMap<ObjectModuleId, RolesInit>) -> Self {
         let rtn = ScryptoEnv
             .call_function(
                 ACCESS_RULES_MODULE_PACKAGE,
