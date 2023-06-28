@@ -91,10 +91,7 @@ impl FeeTable {
     #[inline]
     pub fn store_commit_cost(&self, store_commit: &StoreCommit) -> u32 {
         match store_commit {
-            StoreCommit::Insert {
-                substate_key: _,
-                size,
-            } => {
+            StoreCommit::Insert { node_id: _, size } => {
                 add(
                     // Execution time (µs): f(size) = 0.0004 * size + 1000
                     mul(add(cast(*size) / 2_500, 1_000), 100),
@@ -103,7 +100,7 @@ impl FeeTable {
                 )
             }
             StoreCommit::Update {
-                substate_key: _,
+                node_id: _,
                 size,
                 old_size,
             } => add(
@@ -117,7 +114,7 @@ impl FeeTable {
                 },
             ),
             StoreCommit::Delete {
-                substate_key: _,
+                node_id: _,
                 old_size: _,
             } => {
                 // TODO: refund?
@@ -132,7 +129,7 @@ impl FeeTable {
 
     #[inline]
     pub fn tx_base_cost(&self) -> u32 {
-        // 40_000 * 0.000005 = 0.2 XRD
+        // 40,000 * 0.000005 = 0.2 XRD
         40_000
     }
 
@@ -149,8 +146,8 @@ impl FeeTable {
     #[inline]
     pub fn tx_signature_verification_cost(&self, n: usize) -> u32 {
         // Based on benchmark `bench_validate_secp256k1`
-        // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7_000
-        // The cost for a transfer transaction with two signatures will be 2 * 7_000 * 0.000005 = 0.07 XRD
+        // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7,000
+        // The cost for a transfer transaction with two signatures will be 2 * 7,000 * 0.000005 = 0.07 XRD
         mul(cast(n), 7_000)
     }
 

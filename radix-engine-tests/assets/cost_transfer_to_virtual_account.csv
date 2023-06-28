@@ -4,7 +4,9 @@ AfterInvoke                                                     ,       443
 AllocateNodeId                                                  ,     13000
 BeforeInvoke                                                    ,      9364
 CloseSubstate                                                   ,    113500
-Commit                                                          ,   1700000
+Commit::GlobalAccount                                           ,    100000
+Commit::GlobalVirtualSecp256k1Account                           ,    900000
+Commit::InternalFungibleVault                                   ,    700000
 CreateNode                                                      ,     19531
 DropNode                                                        ,     16794
 EmitEvent                                                       ,      3046

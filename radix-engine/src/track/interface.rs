@@ -157,16 +157,26 @@ pub type StoreCommitInfo = Vec<StoreCommit>;
 #[derive(Debug, Clone)]
 pub enum StoreCommit {
     Insert {
-        substate_key: SubstateKey,
+        node_id: NodeId,
         size: usize,
     },
     Update {
-        substate_key: SubstateKey,
+        node_id: NodeId,
         size: usize,
         old_size: usize,
     },
     Delete {
-        substate_key: SubstateKey,
+        node_id: NodeId,
         old_size: usize,
     },
+}
+
+impl StoreCommit {
+    pub fn node_id(&self) -> &NodeId {
+        match self {
+            StoreCommit::Insert { node_id, .. }
+            | StoreCommit::Update { node_id, .. }
+            | StoreCommit::Delete { node_id, .. } => node_id,
+        }
+    }
 }

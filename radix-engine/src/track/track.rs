@@ -1180,11 +1180,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         for (node_id, node) in &self.tracked_nodes {
             for (partition_number, partition) in &node.tracked_partitions {
                 for (sort_key, substate) in &partition.substates {
-                    let substate_key = substate.substate_key.clone();
                     match &substate.substate_value {
                         TrackedSubstateValue::New(v) => {
                             store_commit.push(StoreCommit::Insert {
-                                substate_key,
+                                node_id: node_id.clone(),
                                 size: v.value.len(),
                             });
                         }
@@ -1194,21 +1193,21 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                         TrackedSubstateValue::ReadExistAndWrite(old_value, write) => match write {
                             Write::Update(x) => {
                                 store_commit.push(StoreCommit::Update {
-                                    substate_key,
+                                    node_id: node_id.clone(),
                                     size: x.value.len(),
                                     old_size: old_value.len(),
                                 });
                             }
                             Write::Delete => {
                                 store_commit.push(StoreCommit::Delete {
-                                    substate_key,
+                                    node_id: node_id.clone(),
                                     old_size: old_value.len(),
                                 });
                             }
                         },
                         TrackedSubstateValue::ReadNonExistAndWrite(value) => {
                             store_commit.push(StoreCommit::Insert {
-                                substate_key,
+                                node_id: node_id.clone(),
                                 size: value.value.len(),
                             });
                         }
@@ -1224,20 +1223,20 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                             match (old_size, write) {
                                 (Some(old_size), Write::Update(x)) => {
                                     store_commit.push(StoreCommit::Update {
-                                        substate_key,
+                                        node_id: node_id.clone(),
                                         size: x.value.len(),
                                         old_size,
                                     });
                                 }
                                 (Some(old_size), Write::Delete) => {
                                     store_commit.push(StoreCommit::Delete {
-                                        substate_key,
+                                        node_id: node_id.clone(),
                                         old_size,
                                     });
                                 }
                                 (None, Write::Update(x)) => {
                                     store_commit.push(StoreCommit::Insert {
-                                        substate_key,
+                                        node_id: node_id.clone(),
                                         size: x.value.len(),
                                     });
                                 }

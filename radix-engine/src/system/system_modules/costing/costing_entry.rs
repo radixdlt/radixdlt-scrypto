@@ -67,9 +67,6 @@ pub enum CostingEntry<'a> {
     CloseSubstate {
         store_access: &'a StoreAccessInfo,
     },
-    Commit {
-        store_commit: &'a StoreCommit,
-    },
 
     /* unstable node apis */
     SetSubstate {
@@ -87,6 +84,11 @@ pub enum CostingEntry<'a> {
     },
     TakeSubstate {
         store_access: &'a StoreAccessInfo,
+    },
+
+    /* commit */
+    Commit {
+        store_commit: &'a StoreCommit,
     },
 
     /* system */
@@ -202,6 +204,16 @@ impl<'a> CostingEntry<'a> {
                 format!(
                     "OpenSubstate::{}",
                     node_id.entity_type().map(|x| x.into()).unwrap_or("?")
+                )
+            }
+            CostingEntry::Commit { store_commit } => {
+                format!(
+                    "Commit::{}",
+                    store_commit
+                        .node_id()
+                        .entity_type()
+                        .map(|x| x.into())
+                        .unwrap_or("?")
                 )
             }
             x => Into::<&'static str>::into(x).to_string(),

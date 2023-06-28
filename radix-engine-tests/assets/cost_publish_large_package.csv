@@ -4,7 +4,9 @@ AfterInvoke                                                     ,       201
 AllocateNodeId                                                  ,      9500
 BeforeInvoke                                                    ,   1052687
 CloseSubstate                                                   ,     65000
-Commit                                                          ,   1583800
+Commit::GlobalGenericComponent                                  ,    100000
+Commit::GlobalPackage                                           ,    783800
+Commit::InternalFungibleVault                                   ,    700000
 CreateNode                                                      ,   2108851
 DropNode                                                        ,     11071
 EmitEvent                                                       ,      1824
