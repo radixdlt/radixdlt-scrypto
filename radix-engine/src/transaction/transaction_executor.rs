@@ -8,7 +8,6 @@ use crate::system::system::{KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
-use crate::system::system_modules::limits::LimitsModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::track::interface::SubstateStore;
@@ -830,7 +829,7 @@ where
             TransactionResult::Commit(commit) => {
                 println!("{:-^80}", "Cost Breakdown");
                 for (k, v) in &commit.fee_summary.execution_cost_breakdown {
-                    println!("{:<80}: {:>10}", k, v);
+                    println!("{:<64}: {:>10}", k, v);
                 }
 
                 println!("{:-^80}", "Cost Totals");

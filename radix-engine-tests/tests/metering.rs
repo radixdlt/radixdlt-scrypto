@@ -105,7 +105,7 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
     let mut buffer = String::new();
     buffer.push_str(
         format!(
-            "{:<80},{:>10}\n",
+            "{:<64},{:>10}\n",
             "Total Cost Units",
             breakdown.values().sum::<u32>()
         )
@@ -113,7 +113,7 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<80},{:>10}\n",
+            "{:<64},{:>10}\n",
             "Total Fee",
             (Decimal::from(breakdown.values().sum::<u32>())
                 * Decimal::try_from(DEFAULT_COST_UNIT_PRICE).unwrap())
@@ -122,7 +122,7 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
         .as_str(),
     );
     for (k, v) in breakdown {
-        buffer.push_str(format!("{:<80},{:>10}\n", k, v).as_str());
+        buffer.push_str(format!("{:<64},{:>10}\n", k, v).as_str());
     }
 
     let mut f = File::create(file).unwrap();

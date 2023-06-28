@@ -1,5 +1,5 @@
 use radix_engine::{
-    errors::{RejectionError, RuntimeError, SystemModuleError},
+    errors::{RuntimeError, SystemModuleError},
     system::system_modules::limits::TransactionLimitsError,
     transaction::{ExecutionConfig, FeeReserveConfig},
     types::*,
@@ -29,7 +29,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::for_test_transaction();
     // lower substate reads limit to avoid Fee limit transaction result
-    execution_config.max_substate_reads_per_transaction = 150;
+    execution_config.max_number_of_substates_in_track = 150;
     let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
@@ -41,7 +41,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
         matches!(
             e,
             RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxSubstateReadCountExceeded
+                TransactionLimitsError::TooManyEntriesInTrack
             ))
         )
     });
@@ -69,7 +69,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
     let fee_config = FeeReserveConfig::default();
     let mut execution_config = ExecutionConfig::for_test_transaction();
     // lower substate writes limit to avoid Fee limit transaction result
-    execution_config.max_substate_writes_per_transaction = 100;
+    execution_config.max_number_of_substates_in_track = 100;
     let receipt = test_runner.execute_transaction(
         prepared.get_executable(btreeset!()),
         fee_config,
@@ -81,49 +81,9 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
         matches!(
             e,
             RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxSubstateWriteCountExceeded
+                TransactionLimitsError::TooManyEntriesInTrack
             ))
         )
-    });
-}
-
-#[test]
-fn transaction_limit_exceeded_substate_read_size_should_fail() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
-        .call_function(
-            package_address,
-            "TransactionLimitTest",
-            "read_kv_stores",
-            manifest_args!(100u32),
-        )
-        .build();
-
-    let transactions = TestTransaction::new_from_nonce(manifest, 10);
-    let prepared = transactions.prepare().unwrap();
-    let fee_config = FeeReserveConfig::default();
-    let mut execution_config = ExecutionConfig::for_test_transaction().with_kernel_trace(true);
-    // Setting maximum substate size to small value to activate transaction limit
-    execution_config.max_substate_size = 10;
-    let receipt = test_runner.execute_transaction(
-        prepared.get_executable(btreeset!()),
-        fee_config,
-        execution_config.clone(),
-    );
-
-    // Assert
-    receipt.expect_specific_rejection(|e| match e {
-        RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::SystemModuleError(
-            SystemModuleError::TransactionLimitsError(
-                TransactionLimitsError::MaxSubstateReadSizeExceeded(size),
-            ),
-        )) => *size > execution_config.max_substate_size,
-        _ => false,
     });
 }
 

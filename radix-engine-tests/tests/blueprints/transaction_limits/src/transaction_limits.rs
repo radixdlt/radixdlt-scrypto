@@ -33,9 +33,8 @@ mod transaction_limits {
 
         pub fn read_kv_stores(n: u32) -> Global<TransactionLimitTest> {
             let kv_store = KeyValueStore::new();
-            kv_store.insert(0, 0);
-            for _i in 0..n {
-                kv_store.get(&0);
+            for i in 0..n {
+                kv_store.get(&i);
             }
 
             TransactionLimitTest { kv_store }
