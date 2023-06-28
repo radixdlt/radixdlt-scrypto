@@ -234,7 +234,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 // Scan loaded substates to find children
                 for tracked_module in tracked_node.tracked_partitions.values() {
                     for tracked_key in tracked_module.substates.values() {
-                        if let Some(value) = tracked_key.tracked.get() {
+                        if let Some(value) = tracked_key.substate_value.get() {
                             for own in value.owned_nodes() {
                                 self.traverse_state_updates(
                                     balance_changes,
@@ -312,7 +312,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 let mut removed = BTreeSet::new();
 
                 for tracked_key in tracked_module.substates.values() {
-                    match &tracked_key.tracked {
+                    match &tracked_key.substate_value {
                         TrackedSubstateValue::New(substate)
                         | TrackedSubstateValue::ReadNonExistAndWrite(substate) => {
                             let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
@@ -380,6 +380,11 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             .get(node_id)
             .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
             .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
-            .and_then(|tracked_key| tracked_key.tracked.get().map(|e| e.as_typed().unwrap()))
+            .and_then(|tracked_key| {
+                tracked_key
+                    .substate_value
+                    .get()
+                    .map(|e| e.as_typed().unwrap())
+            })
     }
 }

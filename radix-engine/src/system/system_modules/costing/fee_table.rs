@@ -73,6 +73,10 @@ impl FeeTable {
                     // The cost for not found varies. Apply the max.
                     4_000
                 }
+                StoreAccess::NewEntryInTrack => {
+                    // The max number of entries is limited by limits module.
+                    0
+                }
             };
             sum = add(sum, cost);
         }

@@ -140,6 +140,11 @@ pub type StoreAccessInfo = Vec<StoreAccess>;
 
 #[derive(Debug, Clone, Copy)]
 pub enum StoreAccess {
+    /// Some substate was read from database.
     ReadFromDb(usize),
+    /// Non-existent substate was read from database.
     ReadFromDbNotFound,
+    /// A new entry has been added to track
+    /// System limits how many items that can be tracked.
+    NewEntryInTrack,
 }
