@@ -5,6 +5,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -325,6 +326,44 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     receipt.expect_commit_success();
 }
 
+#[test]
+fn update_rule() {
+    // Arrange
+    let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
+    let public_key = private_key.public_key();
+    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
+        virtual_badge_non_fungible_global_id.clone()
+    )));
+
+    let receipt = test_runner.get_role(RoleKey::new("borrow_funds_auth"));
+    let ret = receipt.expect_commit(true).outcome.expect_success();
+    assert_eq!(
+        ret[1],
+        InstructionOutput::CallReturn(
+            scrypto_encode(&Some(AccessRule::Protected(AccessRuleNode::ProofRule(
+                ProofRule::Require(ResourceOrNonFungible::Resource(RADIX_TOKEN))
+            ))))
+            .unwrap()
+        )
+    );
+
+    // Act, update rule
+    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
+    let receipt = test_runner.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
+    receipt.expect_commit_success();
+
+    // Act
+    let receipt = test_runner.get_role(RoleKey::new("borrow_funds_auth"));
+
+    // Assert
+    let ret = receipt.expect_commit(true).outcome.expect_success();
+    assert_eq!(
+        ret[1],
+        InstructionOutput::CallReturn(scrypto_encode(&Some(AccessRule::AllowAll)).unwrap())
+    );
+}
+
 struct MutableAccessRulesTestRunner {
     test_runner: TestRunner,
     component_address: ComponentAddress,
@@ -407,6 +446,17 @@ impl MutableAccessRulesTestRunner {
                 ObjectModuleId::Main,
                 role_key,
                 access_rule,
+            )
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn get_role(&mut self, role_key: RoleKey) -> TransactionReceipt {
+        let manifest = Self::manifest_builder()
+            .get_role(
+                self.component_address.into(),
+                ObjectModuleId::Main,
+                role_key,
             )
             .build();
         self.execute_manifest(manifest)

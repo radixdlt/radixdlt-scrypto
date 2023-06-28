@@ -1334,9 +1334,11 @@ impl TestRunner {
         self.create_non_fungible_resource_with_access_rules(access_rules, account)
     }
 
-    pub fn create_non_fungible_resource_with_access_rules(&mut self, access_rules: BTreeMap<ResourceAction, (AccessRule, Mutability)>, 
-        account: ComponentAddress) -> ResourceAddress
-    {
+    pub fn create_non_fungible_resource_with_access_rules(
+        &mut self,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, Mutability)>,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
         let mut entries = BTreeMap::new();
         entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
         entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});

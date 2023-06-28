@@ -1,7 +1,7 @@
 use crate::{
+    blueprints::package::*,
     kernel::actor::Actor,
     track::interface::{StoreAccess, StoreAccessInfo},
-    blueprints::package::*,
     types::*,
 };
 use lazy_static::lazy_static;
@@ -135,19 +135,28 @@ impl FeeTable {
     //======================
 
     #[inline]
-    pub fn run_native_code_cost(&self, package_address: &PackageAddress, export_name: &str, input_size: &usize) -> u32 {
+    pub fn run_native_code_cost(
+        &self,
+        package_address: &PackageAddress,
+        export_name: &str,
+        input_size: &usize,
+    ) -> u32 {
         let cpu_instructions = NATIVE_FUNCTION_BASE_COSTS
             .get(package_address)
             .and_then(|x| x.get(export_name).cloned())
             .unwrap_or_else(|| {
-                if *package_address == PACKAGE_PACKAGE && export_name == PACKAGE_PUBLISH_NATIVE_IDENT {
+                if *package_address == PACKAGE_PACKAGE
+                    && export_name == PACKAGE_PUBLISH_NATIVE_IDENT
+                {
                     add(66321, mul(201, cast(*input_size)))
-                } else if *package_address == PACKAGE_PACKAGE && export_name == PACKAGE_PUBLISH_WASM_ADVANCED_IDENT {
+                } else if *package_address == PACKAGE_PACKAGE
+                    && export_name == PACKAGE_PUBLISH_WASM_ADVANCED_IDENT
+                {
                     add(854284, mul(498, cast(*input_size)))
                 } else {
                     411524 // FIXME: this should be for not found only, when the costing for all native function are added, i.e. should be reduced.
                 }
-            } );
+            });
 
         // FIXME: figure out the right conversion rate from CPU instructions to execution time
 

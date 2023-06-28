@@ -222,14 +222,9 @@ impl ManifestBuilder {
     }
 
     /// Asserts that worktop contains resource.
-    pub fn assert_worktop_contains_any(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> &mut Self {
-        self.add_instruction(InstructionV1::AssertWorktopContainsAny {
-            resource_address,
-        })
-        .0
+    pub fn assert_worktop_contains_any(&mut self, resource_address: ResourceAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::AssertWorktopContainsAny { resource_address })
+            .0
     }
 
     /// Asserts that worktop contains resource.
@@ -792,6 +787,20 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn get_role(
+        &mut self,
+        address: GlobalAddress,
+        module: ObjectModuleId,
+        role_key: RoleKey,
+    ) -> &mut Self {
+        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+            address: address.into(),
+            method_name: ACCESS_RULES_GET_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesGetRoleInput { module, role_key }),
+        })
+        .0
+    }
+
     pub fn set_metadata<S: ToString>(
         &mut self,
         address: GlobalAddress,
@@ -1060,7 +1069,11 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn recall_non_fungibles(&mut self, vault_id: InternalAddress, non_fungible_local_ids: BTreeSet<NonFungibleLocalId>) -> &mut Self {
+    pub fn recall_non_fungibles(
+        &mut self,
+        vault_id: InternalAddress,
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+    ) -> &mut Self {
         let args = to_manifest_value_and_unwrap!(&NonFungibleVaultRecallNonFungiblesInput {
             non_fungible_local_ids,
         });

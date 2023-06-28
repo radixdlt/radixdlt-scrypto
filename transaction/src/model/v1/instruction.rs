@@ -188,9 +188,7 @@ pub enum InstructionV1 {
 
     /// Asserts worktop contains any specified resource.
     #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR))]
-    AssertWorktopContainsAny {
-        resource_address: ResourceAddress,
-    },
+    AssertWorktopContainsAny { resource_address: ResourceAddress },
 
     /// Asserts worktop contains resource by at least the given amount.
     #[sbor(discriminator(INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR))]

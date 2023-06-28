@@ -1,4 +1,4 @@
-use radix_engine::blueprints::resource::{VaultError, NonFungibleResourceManagerError};
+use radix_engine::blueprints::resource::{NonFungibleResourceManagerError, VaultError};
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
@@ -167,7 +167,6 @@ fn can_withdraw_from_unfrozen_vault() {
     receipt.expect_commit_success();
 }
 
-
 #[test]
 fn can_freezy_recall_unfreezy_non_fungible_vault() {
     // Arrange
@@ -204,7 +203,9 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::DropNonEmptyBucket))
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::DropNonEmptyBucket
+            ))
         )
     });
 
@@ -215,8 +216,7 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&key)]);
-    
+
     // Assert
     receipt.expect_commit_success();
 }
-

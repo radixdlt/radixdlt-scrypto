@@ -60,20 +60,20 @@ impl PackageAddress {
 
     #[cfg(feature = "resource_tracker")]
     pub fn is_native_address(&self) -> bool {
-        self.0 == native_addresses::PACKAGE_PACKAGE.0 ||
-        self.0 == native_addresses::RESOURCE_PACKAGE.0 ||
-        self.0 == native_addresses::ACCOUNT_PACKAGE.0 ||
-        self.0 == native_addresses::IDENTITY_PACKAGE.0 ||
-        self.0 == native_addresses::CONSENSUS_MANAGER_PACKAGE.0 ||
-        self.0 == native_addresses::ACCESS_CONTROLLER_PACKAGE.0 ||
-        self.0 == native_addresses::POOL_PACKAGE.0 ||
-        self.0 == native_addresses::TRANSACTION_PROCESSOR_PACKAGE.0 ||
-        self.0 == native_addresses::METADATA_MODULE_PACKAGE.0 ||
-        self.0 == native_addresses::ROYALTY_MODULE_PACKAGE.0 ||
-        self.0 == native_addresses::ACCESS_RULES_MODULE_PACKAGE.0 ||
-        self.0 == native_addresses::GENESIS_HELPER_PACKAGE.0 ||
-        self.0 == native_addresses::FAUCET_PACKAGE.0 ||
-        self.0 == native_addresses::TRANSACTION_TRACKER_PACKAGE.0
+        self.0 == native_addresses::PACKAGE_PACKAGE.0
+            || self.0 == native_addresses::RESOURCE_PACKAGE.0
+            || self.0 == native_addresses::ACCOUNT_PACKAGE.0
+            || self.0 == native_addresses::IDENTITY_PACKAGE.0
+            || self.0 == native_addresses::CONSENSUS_MANAGER_PACKAGE.0
+            || self.0 == native_addresses::ACCESS_CONTROLLER_PACKAGE.0
+            || self.0 == native_addresses::POOL_PACKAGE.0
+            || self.0 == native_addresses::TRANSACTION_PROCESSOR_PACKAGE.0
+            || self.0 == native_addresses::METADATA_MODULE_PACKAGE.0
+            || self.0 == native_addresses::ROYALTY_MODULE_PACKAGE.0
+            || self.0 == native_addresses::ACCESS_RULES_MODULE_PACKAGE.0
+            || self.0 == native_addresses::GENESIS_HELPER_PACKAGE.0
+            || self.0 == native_addresses::FAUCET_PACKAGE.0
+            || self.0 == native_addresses::TRANSACTION_TRACKER_PACKAGE.0
     }
 }
 
