@@ -83,7 +83,7 @@ impl NewSimpleBadge {
         };
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 500u32.into())
+            .lock_fee(FAUCET, 5000u32.into())
             .add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
