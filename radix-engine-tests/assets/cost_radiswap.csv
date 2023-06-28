@@ -1,48 +1,48 @@
-Total Cost (XRD)                                                ,15.73103665
-+ Execution Cost (XRD)                                          , 12.875273
-+ Tipping Cost (XRD)                                            ,0.64376365
-+ State Expansion Cost (XRD)                                    ,     0.212
-+ Royalty Cost (XRD)                                            ,         2
-Cost Units Consumed                                             ,  12875273
-AfterInvoke                                                     ,       650
-AllocateNodeId                                                  ,     15000
-BeforeInvoke                                                    ,     14156
-CloseSubstate                                                   ,    189000
-Commit::GlobalAccount                                           ,    300001
-Commit::GlobalGenericComponent                                  ,    100001
-Commit::InternalFungibleVault                                   ,    700009
-CreateNode                                                      ,     21800
-DropNode                                                        ,     21146
-EmitEvent                                                       ,      5062
-LockFee                                                         ,       500
-OpenSubstate::GlobalAccount                                     ,   2808162
-OpenSubstate::GlobalFungibleResourceManager                     ,    826701
-OpenSubstate::GlobalGenericComponent                            ,    161659
-OpenSubstate::GlobalPackage                                     ,   4456723
-OpenSubstate::GlobalTwoResourcePool                             ,    408199
-OpenSubstate::InternalFungibleVault                             ,    814059
-OpenSubstate::InternalGenericComponent                          ,     85484
-QueryActor                                                      ,      6500
-ReadSubstate                                                    ,    536856
-RunNativeCode::Worktop_drain                                    ,      6901
-RunNativeCode::Worktop_drop                                     ,      6683
-RunNativeCode::Worktop_put                                      ,     42550
-RunNativeCode::Worktop_take_all                                 ,      6836
-RunNativeCode::create_empty_vault_FungibleResourceManager       ,     41152
-RunNativeCode::get_amount_FungibleBucket                        ,    164608
-RunNativeCode::get_amount_FungibleVault                         ,     15744
-RunNativeCode::get_resource_address_FungibleBucket              ,     41152
-RunNativeCode::get_vault_amounts_two_resource_pool              ,     41152
-RunNativeCode::lock_fee                                         ,     47993
-RunNativeCode::protected_deposit_two_resource_pool              ,     41152
-RunNativeCode::protected_withdraw_two_resource_pool             ,     41152
-RunNativeCode::put_FungibleVault                                ,     26942
-RunNativeCode::take_FungibleVault                               ,     40734
-RunNativeCode::try_deposit_batch_or_abort                       ,     41152
-RunNativeCode::withdraw                                         ,     25682
-RunWasmCode::Radiswap_swap                                      ,     96908
-RunWasmCodePrepare                                              ,    576812
-TxBaseCost                                                      ,     50000
-TxPayloadCost                                                   ,     17650
-TxSignatureVerification                                         ,      7000
-WriteSubstate                                                   ,     23650
+Total Cost (XRD)                                                , 15.73103665
++ Execution Cost (XRD)                                          ,   12.875273
++ Tipping Cost (XRD)                                            ,  0.64376365
++ State Expansion Cost (XRD)                                    ,       0.212
++ Royalty Cost (XRD)                                            ,           2
+Cost Units Consumed                                             ,    12875273
+AfterInvoke                                                     ,         650
+AllocateNodeId                                                  ,       15000
+BeforeInvoke                                                    ,       14156
+CloseSubstate                                                   ,      189000
+Commit::GlobalAccount                                           ,      300001
+Commit::GlobalGenericComponent                                  ,      100001
+Commit::InternalFungibleVault                                   ,      700009
+CreateNode                                                      ,       21800
+DropNode                                                        ,       21146
+EmitEvent                                                       ,        5062
+LockFee                                                         ,         500
+OpenSubstate::GlobalAccount                                     ,     2808162
+OpenSubstate::GlobalFungibleResourceManager                     ,      826701
+OpenSubstate::GlobalGenericComponent                            ,      161659
+OpenSubstate::GlobalPackage                                     ,     4456723
+OpenSubstate::GlobalTwoResourcePool                             ,      408199
+OpenSubstate::InternalFungibleVault                             ,      814059
+OpenSubstate::InternalGenericComponent                          ,       85484
+QueryActor                                                      ,        6500
+ReadSubstate                                                    ,      536856
+RunNativeCode::Worktop_drain                                    ,        6901
+RunNativeCode::Worktop_drop                                     ,        6683
+RunNativeCode::Worktop_put                                      ,       42550
+RunNativeCode::Worktop_take_all                                 ,        6836
+RunNativeCode::create_empty_vault_FungibleResourceManager       ,       41152
+RunNativeCode::get_amount_FungibleBucket                        ,      164608
+RunNativeCode::get_amount_FungibleVault                         ,       15744
+RunNativeCode::get_resource_address_FungibleBucket              ,       41152
+RunNativeCode::get_vault_amounts_two_resource_pool              ,       41152
+RunNativeCode::lock_fee                                         ,       47993
+RunNativeCode::protected_deposit_two_resource_pool              ,       41152
+RunNativeCode::protected_withdraw_two_resource_pool             ,       41152
+RunNativeCode::put_FungibleVault                                ,       26942
+RunNativeCode::take_FungibleVault                               ,       40734
+RunNativeCode::try_deposit_batch_or_abort                       ,       41152
+RunNativeCode::withdraw                                         ,       25682
+RunWasmCode::Radiswap_swap                                      ,       96908
+RunWasmCodePrepare                                              ,      576812
+TxBaseCost                                                      ,       50000
+TxPayloadCost                                                   ,       17650
+TxSignatureVerification                                         ,        7000
+WriteSubstate                                                   ,       23650

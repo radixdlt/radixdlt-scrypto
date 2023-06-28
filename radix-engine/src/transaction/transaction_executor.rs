@@ -851,31 +851,31 @@ where
             TransactionResult::Commit(commit) => {
                 println!("{:-^80}", "Cost Breakdown");
                 for (k, v) in &commit.fee_summary.execution_cost_breakdown {
-                    println!("{:<64}: {:>10}", k, v);
+                    println!("{:<64}: {:>12}", k, v);
                 }
 
                 println!("{:-^80}", "Cost Totals");
                 println!(
-                    "{:<30}: {:>10}",
+                    "{:<30}: {:>12}",
                     "Cost Unit Limit", commit.fee_summary.cost_unit_limit
                 );
                 println!(
-                    "{:<30}: {:>10}",
+                    "{:<30}: {:>12}",
                     "Cost Units Consumed", commit.fee_summary.execution_cost_sum
                 );
                 // NB - we use "to_string" to ensure they align correctly
                 println!(
-                    "{:<30}: {:>10}",
+                    "{:<30}: {:>12}",
                     "Execution Costs in XRD",
                     commit.fee_summary.total_execution_cost_xrd.to_string()
                 );
                 println!(
-                    "{:<30}: {:>10}",
+                    "{:<30}: {:>12}",
                     "Tipping Costs in XRD",
                     commit.fee_summary.total_tipping_cost_xrd.to_string()
                 );
                 println!(
-                    "{:<30}: {:>10}",
+                    "{:<30}: {:>12}",
                     "State Expansion Costs in XRD",
                     commit
                         .fee_summary
@@ -883,7 +883,7 @@ where
                         .to_string()
                 );
                 println!(
-                    "{:<30}: {:>10}",
+                    "{:<30}: {:>12}",
                     "Royalty Costs in XRD",
                     commit.fee_summary.total_royalty_cost_xrd.to_string()
                 );

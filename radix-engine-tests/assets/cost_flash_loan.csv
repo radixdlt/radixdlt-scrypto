@@ -1,62 +1,62 @@
-Total Cost (XRD)                                                ,19.0868609
-+ Execution Cost (XRD)                                          , 16.256058
-+ Tipping Cost (XRD)                                            , 0.8128029
-+ State Expansion Cost (XRD)                                    ,     0.018
-+ Royalty Cost (XRD)                                            ,         2
-Cost Units Consumed                                             ,  16256058
-AfterInvoke                                                     ,       974
-AllocateNodeId                                                  ,     26500
-BeforeInvoke                                                    ,     25508
-CloseSubstate                                                   ,    312000
-Commit::GlobalAccount                                           ,    100000
-Commit::GlobalGenericComponent                                  ,    100003
-Commit::GlobalNonFungibleResourceManager                        ,    200001
-Commit::InternalFungibleVault                                   ,    400003
-CreateNode                                                      ,     38272
-DropNode                                                        ,     38272
-EmitEvent                                                       ,      6730
-GenerateRuid                                                    ,       500
-LockFee                                                         ,       500
-OpenSubstate::GlobalAccount                                     ,   1208185
-OpenSubstate::GlobalFungibleResourceManager                     ,    588598
-OpenSubstate::GlobalGenericComponent                            ,    163454
-OpenSubstate::GlobalNonFungibleResourceManager                  ,   1140979
-OpenSubstate::GlobalPackage                                     ,   5803998
-OpenSubstate::InternalFungibleVault                             ,    662751
-OpenSubstate::InternalGenericComponent                          ,    164144
-QueryActor                                                      ,     15000
-QueryAuthZone                                                   ,      2000
-ReadSubstate                                                    ,   1532044
-RunNativeCode::AuthZone_pop                                     ,     13722
-RunNativeCode::AuthZone_push                                    ,     14108
-RunNativeCode::Worktop_drain                                    ,      6901
-RunNativeCode::Worktop_drop                                     ,      6683
-RunNativeCode::Worktop_put                                      ,     63825
-RunNativeCode::Worktop_take                                     ,     27786
-RunNativeCode::Worktop_take_all                                 ,      6836
-RunNativeCode::burn_NonFungibleResourceManager                  ,     24024
-RunNativeCode::create_proof_FungibleVault                       ,     82304
-RunNativeCode::drop_FungibleProof                               ,     82304
-RunNativeCode::get_amount_FungibleBucket                        ,    164608
-RunNativeCode::get_amount_FungibleVault                         ,      7872
-RunNativeCode::get_amount_NonFungibleBucket                     ,     41152
-RunNativeCode::get_non_fungible                                 ,     16152
-RunNativeCode::get_non_fungible_local_ids_NonFungibleBucket     ,     41152
-RunNativeCode::get_resource_address_FungibleProof               ,     82304
-RunNativeCode::get_resource_address_NonFungibleBucket           ,    164608
-RunNativeCode::lock_fee                                         ,     47993
-RunNativeCode::mint_ruid_NonFungibleResourceManager             ,     30412
-RunNativeCode::put_FungibleBucket                               ,     41152
-RunNativeCode::put_FungibleVault                                ,     26942
-RunNativeCode::take_FungibleBucket                              ,     41152
-RunNativeCode::take_FungibleVault                               ,     40734
-RunNativeCode::try_deposit_batch_or_abort                       ,     41152
-RunNativeCode::unlock_amount_FungibleVault                      ,     26420
-RunNativeCode::withdraw                                         ,     25682
-RunWasmCode::BasicFlashLoan_repay_loan                          ,     70268
-RunWasmCode::BasicFlashLoan_take_loan                           ,    118886
-RunWasmCodePrepare                                              ,   2238344
-TxBaseCost                                                      ,     50000
-TxPayloadCost                                                   ,     25700
-TxSignatureVerification                                         ,      7000
-WriteSubstate                                                   ,     47464
+Total Cost (XRD)                                                ,  19.0868609
++ Execution Cost (XRD)                                          ,   16.256058
++ Tipping Cost (XRD)                                            ,   0.8128029
++ State Expansion Cost (XRD)                                    ,       0.018
++ Royalty Cost (XRD)                                            ,           2
+Cost Units Consumed                                             ,    16256058
+AfterInvoke                                                     ,         974
+AllocateNodeId                                                  ,       26500
+BeforeInvoke                                                    ,       25508
+CloseSubstate                                                   ,      312000
+Commit::GlobalAccount                                           ,      100000
+Commit::GlobalGenericComponent                                  ,      100003
+Commit::GlobalNonFungibleResourceManager                        ,      200001
+Commit::InternalFungibleVault                                   ,      400003
+CreateNode                                                      ,       38272
+DropNode                                                        ,       38272
+EmitEvent                                                       ,        6730
+GenerateRuid                                                    ,         500
+LockFee                                                         ,         500
+OpenSubstate::GlobalAccount                                     ,     1208185
+OpenSubstate::GlobalFungibleResourceManager                     ,      588598
+OpenSubstate::GlobalGenericComponent                            ,      163454
+OpenSubstate::GlobalNonFungibleResourceManager                  ,     1140979
+OpenSubstate::GlobalPackage                                     ,     5803998
+OpenSubstate::InternalFungibleVault                             ,      662751
+OpenSubstate::InternalGenericComponent                          ,      164144
+QueryActor                                                      ,       15000
+QueryAuthZone                                                   ,        2000
+ReadSubstate                                                    ,     1532044
+RunNativeCode::AuthZone_pop                                     ,       13722
+RunNativeCode::AuthZone_push                                    ,       14108
+RunNativeCode::Worktop_drain                                    ,        6901
+RunNativeCode::Worktop_drop                                     ,        6683
+RunNativeCode::Worktop_put                                      ,       63825
+RunNativeCode::Worktop_take                                     ,       27786
+RunNativeCode::Worktop_take_all                                 ,        6836
+RunNativeCode::burn_NonFungibleResourceManager                  ,       24024
+RunNativeCode::create_proof_FungibleVault                       ,       82304
+RunNativeCode::drop_FungibleProof                               ,       82304
+RunNativeCode::get_amount_FungibleBucket                        ,      164608
+RunNativeCode::get_amount_FungibleVault                         ,        7872
+RunNativeCode::get_amount_NonFungibleBucket                     ,       41152
+RunNativeCode::get_non_fungible                                 ,       16152
+RunNativeCode::get_non_fungible_local_ids_NonFungibleBucket     ,       41152
+RunNativeCode::get_resource_address_FungibleProof               ,       82304
+RunNativeCode::get_resource_address_NonFungibleBucket           ,      164608
+RunNativeCode::lock_fee                                         ,       47993
+RunNativeCode::mint_ruid_NonFungibleResourceManager             ,       30412
+RunNativeCode::put_FungibleBucket                               ,       41152
+RunNativeCode::put_FungibleVault                                ,       26942
+RunNativeCode::take_FungibleBucket                              ,       41152
+RunNativeCode::take_FungibleVault                               ,       40734
+RunNativeCode::try_deposit_batch_or_abort                       ,       41152
+RunNativeCode::unlock_amount_FungibleVault                      ,       26420
+RunNativeCode::withdraw                                         ,       25682
+RunWasmCode::BasicFlashLoan_repay_loan                          ,       70268
+RunWasmCode::BasicFlashLoan_take_loan                           ,      118886
+RunWasmCodePrepare                                              ,     2238344
+TxBaseCost                                                      ,       50000
+TxPayloadCost                                                   ,       25700
+TxSignatureVerification                                         ,        7000
+WriteSubstate                                                   ,       47464
