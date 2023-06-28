@@ -787,6 +787,15 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn lock_owner_role(&mut self, address: GlobalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+            address: address.into(),
+            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesLockOwnerRoleInput {}),
+        })
+        .0
+    }
+
     pub fn get_role(
         &mut self,
         address: GlobalAddress,

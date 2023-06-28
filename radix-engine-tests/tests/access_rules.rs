@@ -364,6 +364,34 @@ fn update_rule() {
     );
 }
 
+#[test]
+fn change_lock_owner_role_rules() {
+    // Arrange
+    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner_role(
+        rule!(allow_all),
+        OwnerRole::Updatable(rule!(allow_all)),
+    );
+
+    // Act: verify if lock owner role is possible
+    let receipt = test_runner.lock_owner_role();
+    receipt.expect_commit(true).outcome.expect_success();
+
+    // Act: change lock owner role rule to deny all
+    let receipt = test_runner.set_owner_role(rule!(deny_all));
+    receipt.expect_commit_success();
+
+    // Act: verify if lock owner role is not possible  now
+    let receipt = test_runner.lock_owner_role();
+    receipt.expect_specific_failure(|error: &RuntimeError| {
+        matches!(
+            error,
+            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
+                _
+            )))
+        )
+    })
+}
+
 struct MutableAccessRulesTestRunner {
     test_runner: TestRunner,
     component_address: ComponentAddress,
@@ -392,6 +420,7 @@ impl MutableAccessRulesTestRunner {
 
     pub fn create_component_with_owner(
         access_rule: AccessRule,
+        owner_role: OwnerRole,
         test_runner: &mut TestRunner,
     ) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
@@ -401,7 +430,7 @@ impl MutableAccessRulesTestRunner {
                 package_address,
                 Self::BLUEPRINT_NAME,
                 "new_with_owner",
-                manifest_args!(access_rule),
+                manifest_args!(owner_role, access_rule),
             )
             .build();
         test_runner.execute_manifest_ignoring_fee(manifest, vec![])
@@ -409,7 +438,24 @@ impl MutableAccessRulesTestRunner {
 
     pub fn new_with_owner(update_access_rule: AccessRule) -> Self {
         let mut test_runner = TestRunner::builder().build();
-        let receipt = Self::create_component_with_owner(update_access_rule, &mut test_runner);
+        let receipt = Self::create_component_with_owner(
+            update_access_rule,
+            OwnerRole::None,
+            &mut test_runner,
+        );
+        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+
+        Self {
+            test_runner,
+            component_address,
+            initial_proofs: BTreeSet::new(),
+        }
+    }
+
+    pub fn new_with_owner_role(update_access_rule: AccessRule, owner_role: OwnerRole) -> Self {
+        let mut test_runner = TestRunner::builder().build();
+        let receipt =
+            Self::create_component_with_owner(update_access_rule, owner_role, &mut test_runner);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
@@ -469,6 +515,20 @@ impl MutableAccessRulesTestRunner {
                 ObjectModuleId::Main,
                 role_key,
             )
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn lock_owner_role(&mut self) -> TransactionReceipt {
+        let manifest = Self::manifest_builder()
+            .lock_owner_role(self.component_address.into())
+            .build();
+        self.execute_manifest(manifest)
+    }
+
+    pub fn set_owner_role(&mut self, rule: AccessRule) -> TransactionReceipt {
+        let manifest = Self::manifest_builder()
+            .set_owner_role(self.component_address.into(), rule)
             .build();
         self.execute_manifest(manifest)
     }
