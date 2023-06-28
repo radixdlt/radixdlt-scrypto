@@ -12,13 +12,27 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
+    let component_address = test_runner
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee(test_runner.faucet_component(), 50.into())
+                .call_function(
+                    package_address,
+                    "TransactionLimitTest",
+                    "new",
+                    manifest_args!(),
+                )
+                .build(),
+            vec![],
+        )
+        .expect_commit_success()
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 50.into())
-        .call_function(
-            package_address,
-            "TransactionLimitTest",
+        .call_method(
+            component_address,
             "read_kv_stores",
             manifest_args!(200 as u32),
         )
@@ -52,13 +66,27 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
+    let component_address = test_runner
+        .execute_manifest(
+            ManifestBuilder::new()
+                .lock_fee(test_runner.faucet_component(), 50.into())
+                .call_function(
+                    package_address,
+                    "TransactionLimitTest",
+                    "new",
+                    manifest_args!(),
+                )
+                .build(),
+            vec![],
+        )
+        .expect_commit_success()
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 50.into())
-        .call_function(
-            package_address,
-            "TransactionLimitTest",
+        .call_method(
+            component_address,
             "write_kv_stores",
             manifest_args!(100 as u32),
         )

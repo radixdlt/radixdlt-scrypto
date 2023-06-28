@@ -37,16 +37,16 @@ pub struct TransactionLimitsConfig {
 /// Stores boundary values of the limits and returns them in transaction receipt.
 pub struct LimitsModule {
     config: TransactionLimitsConfig,
-    _number_of_substates_in_track: usize,
-    number_of_substates_in_heap: usize,
+    number_of_substates_in_track: usize,
+    _number_of_substates_in_heap: usize,
 }
 
 impl LimitsModule {
     pub fn new(limits_config: TransactionLimitsConfig) -> Self {
         LimitsModule {
             config: limits_config,
-            _number_of_substates_in_track: 0,
-            number_of_substates_in_heap: 0,
+            number_of_substates_in_track: 0,
+            _number_of_substates_in_heap: 0,
         }
     }
 
@@ -62,12 +62,12 @@ impl LimitsModule {
             match access {
                 StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
                 StoreAccess::NewEntryInTrack => {
-                    self.number_of_substates_in_heap += 1;
+                    self.number_of_substates_in_track += 1;
                 }
             }
         }
 
-        if self.number_of_substates_in_heap > self.config.max_number_of_substates_in_track {
+        if self.number_of_substates_in_track > self.config.max_number_of_substates_in_track {
             Err(RuntimeError::SystemModuleError(
                 SystemModuleError::TransactionLimitsError(
                     TransactionLimitsError::TooManyEntriesInTrack,

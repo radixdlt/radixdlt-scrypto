@@ -65,10 +65,11 @@ fn scrypto_cant_emit_unregistered_event() {
 #[test]
 fn scrypto_can_emit_registered_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
 
     let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET, 100.into())
         .call_function(
             package_address,
             "ScryptoEvents",
@@ -78,7 +79,7 @@ fn scrypto_can_emit_registered_events() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let events = receipt.expect_commit(true).application_events.clone();
