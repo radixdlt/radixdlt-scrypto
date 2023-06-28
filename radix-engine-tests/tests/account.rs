@@ -250,7 +250,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
             .unwrap()
             .get(&RADIX_TOKEN)
             .unwrap(),
-        &BalanceChange::Fungible(-result.fee_summary.total_execution_cost_xrd)
+        &BalanceChange::Fungible(-result.fee_summary.total_cost())
     );
 }
 

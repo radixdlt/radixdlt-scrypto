@@ -78,8 +78,7 @@ fn test_trace_resource_transfers() {
     ); // One resource change in the first instruction (lock fee)
 
     let fee_summary = receipt.expect_commit(true).fee_summary.clone();
-    let total_fee_paid = fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd
-        - fee_summary.total_bad_debt_xrd;
+    let total_fee_paid = fee_summary.total_cost();
 
     // Source vault withdrawal
     assert!(receipt
@@ -160,8 +159,7 @@ fn test_trace_fee_payments() {
         .execution_trace
         .resource_changes;
     let fee_summary = receipt.expect_commit(true).fee_summary.clone();
-    let total_fee_paid = fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd
-        - fee_summary.total_bad_debt_xrd;
+    let total_fee_paid = fee_summary.total_cost();
 
     assert_eq!(1, resource_changes.len());
     assert!(resource_changes

@@ -264,6 +264,7 @@ fn test_fee_accounting_success() {
             - 66
             - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
                 * summary.execution_cost_sum
+            - summary.total_state_expansion_cost_xrd
     );
     assert_eq!(account2_new_balance, account2_balance + 66);
 }
@@ -409,7 +410,10 @@ fn test_contingent_fee_accounting_success() {
     let contingent_fee = dec!("0.001");
     assert_eq!(
         account1_new_balance,
-        account1_balance - effective_price * summary.execution_cost_sum + contingent_fee
+        account1_balance
+            - effective_price * summary.execution_cost_sum
+            - summary.total_state_expansion_cost_xrd
+            + contingent_fee
     );
     assert_eq!(account2_new_balance, account2_balance - contingent_fee);
 }

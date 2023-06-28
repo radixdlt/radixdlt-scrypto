@@ -56,7 +56,7 @@ fn test_balance_changes_when_success() {
         result.balance_changes(),
         &indexmap!(
             test_runner.faucet_component().into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
+                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_cost()))
             ),
             account.into() => indexmap!(
                 RADIX_TOKEN => BalanceChange::Fungible(dec!("-1"))
@@ -126,7 +126,7 @@ fn test_balance_changes_when_failure() {
         result.balance_changes(),
         &indexmap!(
             test_runner.faucet_component().into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
+                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_cost()))
             ),
             CONSENSUS_MANAGER.into() => indexmap!(
                 RADIX_TOKEN => BalanceChange::Fungible(result.fee_summary.expected_reward_if_single_validator())
@@ -167,7 +167,7 @@ fn test_balance_changes_when_recall() {
         result.balance_changes(),
         &indexmap!(
             test_runner.faucet_component().into() => indexmap!(
-                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd))
+                RADIX_TOKEN => BalanceChange::Fungible(-(result.fee_summary.total_cost()))
             ),
             other_account.into() => indexmap!(
                 recallable_token => BalanceChange::Fungible(dec!("1"))
@@ -241,8 +241,7 @@ fn test_balance_changes_when_transferring_non_fungibles() {
         .balance_changes()
         .get(&GlobalAddress::from(test_runner.faucet_component()))
         .unwrap();
-    let total_cost_xrd =
-        result.fee_summary.total_execution_cost_xrd + result.fee_summary.total_royalty_cost_xrd;
+    let total_cost_xrd = result.fee_summary.total_cost();
     assert_eq!(
         faucet_changes,
         &indexmap!(

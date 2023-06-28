@@ -122,7 +122,7 @@ fn test_default_substate_size_limit() {
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee(test_runner.faucet_component(), 5000u32.into())
         .call_function(
             package_address,
             "TransactionLimitSubstateTest",
