@@ -157,7 +157,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<64},{:>12}\n",
-            "Cost Units Consumed",
+            "Total Cost Units Consumed",
             fee_summary.execution_cost_breakdown.values().sum::<u32>()
         )
         .as_str(),
