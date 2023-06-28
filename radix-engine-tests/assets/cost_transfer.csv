@@ -1,10 +1,12 @@
-Total Cost Units                                                ,   5346900
-Total Fee                                                       ,   26.7345
+Total Execution Cost (XRD)                                      ,  26.73405
+Total State Expansion Cost (XRD)                                ,     0.027
+Total Royalty Cost (XRD)                                        ,         0
+Total Cost Units Consumed                                       ,   5346810
 AfterInvoke                                                     ,       150
 AllocateNodeId                                                  ,      6500
 BeforeInvoke                                                    ,      5731
 CloseSubstate                                                   ,     81000
-Commit::GlobalAccount                                           ,    100090
+Commit::GlobalAccount                                           ,    100000
 Commit::InternalFungibleVault                                   ,    200002
 CreateNode                                                      ,      9485
 DropNode                                                        ,      9485

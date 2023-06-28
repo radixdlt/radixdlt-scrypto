@@ -1,3 +1,4 @@
+use radix_engine::system::system_modules::costing::FeeSummary;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
@@ -94,7 +95,7 @@ pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
     content
         .split("\n")
         .filter(|x| x.len() > 0)
-        .skip(2)
+        .skip(4)
         .for_each(|x| {
             let mut tokens = x.split(",");
             let entry = tokens.next().unwrap().trim();
@@ -105,10 +106,10 @@ pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
 }
 
 #[cfg(feature = "alloc")]
-pub fn write_cost_breakdown(_breakdown: &BTreeMap<String, u32>, _file: &str) {}
+pub fn write_cost_breakdown(_fee_summary: &FeeSummary, _file: &str) {}
 
 #[cfg(not(feature = "alloc"))]
-pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
+pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     use std::fs::File;
     use std::io::Write;
 
@@ -116,22 +117,37 @@ pub fn write_cost_breakdown(breakdown: &BTreeMap<String, u32>, file: &str) {
     buffer.push_str(
         format!(
             "{:<64},{:>10}\n",
-            "Total Cost Units",
-            breakdown.values().sum::<u32>()
+            "Total Execution Cost (XRD)",
+            fee_summary.total_execution_cost_xrd.to_string()
         )
         .as_str(),
     );
     buffer.push_str(
         format!(
             "{:<64},{:>10}\n",
-            "Total Fee",
-            (Decimal::from(breakdown.values().sum::<u32>())
-                * Decimal::try_from(DEFAULT_COST_UNIT_PRICE).unwrap())
-            .to_string()
+            "Total State Expansion Cost (XRD)",
+            fee_summary.total_state_expansion_cost_xrd.to_string()
         )
         .as_str(),
     );
-    for (k, v) in breakdown {
+    buffer.push_str(
+        format!(
+            "{:<64},{:>10}\n",
+            "Total Royalty Cost (XRD)",
+            fee_summary.total_royalty_cost_xrd.to_string()
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<64},{:>10}\n",
+            "Total Cost Units Consumed",
+            fee_summary.execution_cost_breakdown.values().sum::<u32>()
+        )
+        .as_str(),
+    );
+
+    for (k, v) in &fee_summary.execution_cost_breakdown {
         buffer.push_str(format!("{:<64},{:>10}\n", k, v).as_str());
     }
 
@@ -145,13 +161,13 @@ pub enum Mode {
 }
 
 impl Mode {
-    pub fn run(&self, breakdown: &BTreeMap<String, u32>) {
+    pub fn run(&self, fee_summary: &FeeSummary) {
         match self {
             Mode::OutputCosting(file) => {
-                write_cost_breakdown(breakdown, file.as_str());
+                write_cost_breakdown(fee_summary, file.as_str());
             }
             Mode::AssertCosting(expected) => {
-                assert_eq!(breakdown, expected);
+                assert_eq!(&fee_summary.execution_cost_breakdown, expected);
             }
         }
     }
@@ -181,7 +197,7 @@ fn run_basic_transfer(mode: Mode) {
     );
     let commit_result = receipt.expect_commit(true);
 
-    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
+    mode.run(&commit_result.fee_summary);
 }
 
 fn run_basic_transfer_to_virtual_account(mode: Mode) {
@@ -210,7 +226,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
     );
     let commit_result = receipt.expect_commit(true);
 
-    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
+    mode.run(&commit_result.fee_summary);
 }
 
 fn run_radiswap(mode: Mode) {
@@ -319,7 +335,7 @@ fn run_radiswap(mode: Mode) {
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
     let commit_result = receipt.expect_commit(true);
 
-    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
+    mode.run(&commit_result.fee_summary);
 }
 
 fn run_flash_loan(mode: Mode) {
@@ -403,7 +419,7 @@ fn run_flash_loan(mode: Mode) {
             + commit_result.fee_summary.total_royalty_cost_xrd
             + (repay_amount - loan_amount)
     );
-    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
+    mode.run(&commit_result.fee_summary);
 }
 
 fn run_publish_large_package(mode: Mode) {
@@ -435,7 +451,7 @@ fn run_publish_large_package(mode: Mode) {
 
     // Assert
     let commit_result = receipt.expect_commit_success();
-    mode.run(&commit_result.fee_summary.execution_cost_breakdown);
+    mode.run(&commit_result.fee_summary);
 }
 
 #[test]

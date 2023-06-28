@@ -27,6 +27,7 @@ use transaction::model::*;
 pub struct FeeReserveConfig {
     pub cost_unit_price: Decimal,
     pub usd_price: Decimal,
+    pub state_expansion_price: Decimal,
     pub system_loan: u32,
 }
 
@@ -35,6 +36,7 @@ impl Default for FeeReserveConfig {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE.try_into().unwrap(),
             usd_price: DEFAULT_USD_PRICE.try_into().unwrap(),
+            state_expansion_price: DEFAULT_STATE_EXPANSION_PRICE.try_into().unwrap(),
             system_loan: DEFAULT_SYSTEM_LOAN,
         }
     }
@@ -179,6 +181,7 @@ where
         let fee_reserve = SystemLoanFeeReserve::new(
             fee_reserve_config.cost_unit_price,
             fee_reserve_config.usd_price,
+            fee_reserve_config.state_expansion_price,
             transaction.fee_payment().tip_percentage,
             execution_config.cost_unit_limit,
             fee_reserve_config.system_loan,
@@ -504,13 +507,19 @@ where
             )
             .and_then(|x| {
                 let info = track.get_commit_info();
-                for commit in info {
+                for commit in &info {
                     if let Err(e) = system.modules.apply_execution_cost(CostingEntry::Commit {
-                        store_commit: &commit,
+                        store_commit: commit,
                     }) {
                         return Err(e);
                     }
                 }
+                for commit in &info {
+                    if let Err(e) = system.modules.apply_state_expansion_cost(commit) {
+                        return Err(e);
+                    }
+                }
+
                 Ok(x)
             })
             .map(|rtn| {
@@ -615,8 +624,10 @@ where
         // Take fee payments
         let fee_summary = fee_reserve.finalize();
         let mut fee_payments: IndexMap<NodeId, Decimal> = index_map_new();
-        let mut required =
-            fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd;
+        let mut required = fee_summary.total_execution_cost_xrd
+            + fee_summary.total_tipping_cost_xrd
+            + fee_summary.total_state_expansion_cost_xrd
+            + fee_summary.total_royalty_cost_xrd;
         let mut collected_fees = LiquidFungibleResource::new(Decimal::ZERO);
         for (vault_id, mut locked, contingent) in fee_summary.locked_fees.iter().cloned().rev() {
             let amount = if contingent {
@@ -660,7 +671,7 @@ where
         assert_eq!(fee_summary.total_bad_debt_xrd, Decimal::ZERO);
         assert_eq!(
             tips_to_distribute + fees_to_distribute,
-            collected_fees.amount() - fee_summary.total_royalty_cost_xrd
+            collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */
         );
 
         if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
@@ -855,12 +866,25 @@ where
                 // NB - we use "to_string" to ensure they align correctly
                 println!(
                     "{:<30}: {:>10}",
-                    "Execution XRD",
+                    "Execution Costs in XRD",
                     commit.fee_summary.total_execution_cost_xrd.to_string()
                 );
                 println!(
                     "{:<30}: {:>10}",
-                    "Royalty XRD",
+                    "Tipping Costs in XRD",
+                    commit.fee_summary.total_tipping_cost_xrd.to_string()
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "State Expansion Costs in XRD",
+                    commit
+                        .fee_summary
+                        .total_state_expansion_cost_xrd
+                        .to_string()
+                );
+                println!(
+                    "{:<30}: {:>10}",
+                    "Royalty Costs in XRD",
                     commit.fee_summary.total_royalty_cost_xrd.to_string()
                 );
 

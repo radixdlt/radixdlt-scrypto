@@ -32,8 +32,7 @@ lazy_static! {
 /// - Max cost unit limit: 100,000,000
 /// - Cost unit price: 0.000005 XRD per cost unit
 /// - Max execution costing, excluding tips: 500 XRD
-/// - Basic transfer transaction cost: < 5 XRD
-/// - Publishing a WASM package of max size costs: ~ 500 XRD + State Expansion Cost
+/// - Basic transfer transaction cost: < 10 XRD
 /// - Execution time for 100,000,000 cost units' worth of computation: <= 1 second
 /// - Baseline: 1 microsecond = 100 cost units
 /// - Non-time based costing will make the actual execution time less than anticipated
@@ -66,7 +65,7 @@ impl FeeTable {
         for info in store_access {
             let cost = match info {
                 StoreAccess::ReadFromDb(size) => {
-                    // Execution time (µs): f(size) = 0.0009622109 * size + 389.5155
+                    // Execution time (µs): 0.0009622109 * size + 389.5155
                     // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 + 40,000
                     add(cast(*size) / 10, 40_000)
                 }
@@ -92,39 +91,17 @@ impl FeeTable {
     #[inline]
     pub fn store_commit_cost(&self, store_commit: &StoreCommit) -> u32 {
         match store_commit {
-            StoreCommit::Insert { node_id: _, size } => {
-                add(
-                    // Execution time (µs): f(size) = 0.0004 * size + 1000
-                    // Execution cost: (0.0004 * size + 1000) * 100 = 0.04 * size + 100,000
-                    add(cast(*size) / 25, 100_000),
-                    // State expansion
-                    // TODO: separate this out if using cost units isn't sufficient to limit expansion speed
-                    mul(cast(*size), 10),
-                )
-            }
-            StoreCommit::Update {
-                node_id: _,
-                size,
-                old_size,
-            } => add(
-                // Execution time (µs): f(size) = 0.0004 * size + 1000
+            StoreCommit::Insert { size, .. } => {
+                // Execution time (µs): 0.0004 * size + 1000
                 // Execution cost: (0.0004 * size + 1000) * 100 = 0.04 * size + 100,000
-                add(cast(*size) / 25, 100_000),
-                // State expansion
-                // TODO: separate this out if using cost units isn't sufficient to limit expansion speed
-                if size > old_size {
-                    mul(cast(size - old_size), 10)
-                } else {
-                    0
-                },
-            ),
-            StoreCommit::Delete {
-                node_id: _,
-                old_size: _,
-            } => {
-                // TODO: refund?
-                0
+                add(cast(*size) / 25, 100_000)
             }
+            StoreCommit::Update { size, .. } => {
+                // Execution time (µs): 0.0004 * size + 1000
+                // Execution cost: (0.0004 * size + 1000) * 100 = 0.04 * size + 100,000
+                add(cast(*size) / 25, 100_000)
+            }
+            StoreCommit::Delete { .. } => 100_000,
         }
     }
 

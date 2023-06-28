@@ -17,6 +17,7 @@ use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::node_move::NodeMoveModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
+use crate::track::interface::StoreCommit;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
@@ -591,6 +592,17 @@ impl SystemModuleMixer {
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing.apply_execution_cost(costing_entry)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn apply_state_expansion_cost(
+        &mut self,
+        store_commit: &StoreCommit,
+    ) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            self.costing.apply_state_expansion_cost(store_commit)
         } else {
             Ok(())
         }

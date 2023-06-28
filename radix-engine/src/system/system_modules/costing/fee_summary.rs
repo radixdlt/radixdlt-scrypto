@@ -11,9 +11,13 @@ pub struct FeeSummary {
     pub tip_percentage: u16,
     /// The specified max cost units can be consumed.
     pub cost_unit_limit: u32,
-    /// The total amount of XRD burned.
+    /// The total cost for execution, excluding tips
     pub total_execution_cost_xrd: Decimal,
-    /// The total royalty.
+    /// The total cost for tipping
+    pub total_tipping_cost_xrd: Decimal,
+    /// The total cost for state expansion
+    pub total_state_expansion_cost_xrd: Decimal,
+    /// The total cost for royalty
     pub total_royalty_cost_xrd: Decimal,
     /// The (non-negative) amount of bad debt due to transaction unable to repay loan.
     pub total_bad_debt_xrd: Decimal,
@@ -35,12 +39,11 @@ impl FeeSummary {
     }
 
     pub fn fees_to_distribute(&self) -> Decimal {
-        self.cost_unit_price * Decimal::from(self.execution_cost_sum)
+        self.total_execution_cost_xrd + self.total_state_expansion_cost_xrd
     }
 
     pub fn tips_to_distribute(&self) -> Decimal {
-        (self.cost_unit_price * Decimal::from(self.tip_percentage) / Decimal::from(100u32))
-            * Decimal::from(self.execution_cost_sum)
+        self.total_tipping_cost_xrd
     }
 
     //===================
