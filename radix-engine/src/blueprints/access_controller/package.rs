@@ -25,6 +25,7 @@ use radix_engine_interface::schema::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::*;
 use radix_engine_interface::{api::*, rule};

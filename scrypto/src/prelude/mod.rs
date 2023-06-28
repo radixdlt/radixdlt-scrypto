@@ -24,6 +24,7 @@ pub use num_traits::{
     sign::Signed,
 };
 pub use radix_engine_interface::api::node_modules::metadata::*;
+pub use radix_engine_interface::api::node_modules::auth::*;
 pub use radix_engine_interface::api::node_modules::*;
 pub use radix_engine_interface::blueprints::resource::*;
 pub use radix_engine_interface::crypto::*;

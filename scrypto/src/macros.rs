@@ -525,7 +525,7 @@ macro_rules! component_royalties {
         }
     } => ({
         let royalties = component_royalty_config!($($init)*);
-        (royalties, Roles::new())
+        (royalties, RolesInit::new())
     })
 }
 

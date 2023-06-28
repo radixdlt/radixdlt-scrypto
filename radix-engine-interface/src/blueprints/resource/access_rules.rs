@@ -225,6 +225,15 @@ impl RolesInit {
         access_rule: AccessRule,
         locked: bool,
     ) {
-        self.set_and_maybe_lock(role.into(), access_rule, locked);
+        self.set_raw(role.into(), Some(access_rule), locked);
+    }
+
+    pub fn define_role_raw<K: Into<RoleKey>>(
+        &mut self,
+        role: K,
+        access_rule: Option<AccessRule>,
+        locked: bool,
+    ) {
+        self.set_raw(role.into(), access_rule, locked);
     }
 }
