@@ -61,7 +61,8 @@ impl PreparedTestTransaction {
                     intent_hash: self.hash,
                 },
                 epoch_range: None,
-                payload_size: self.encoded_instructions.len(),
+                payload_size: self.encoded_instructions.len()
+                    + self.blobs.values().map(|x| x.len()).sum::<usize>(),
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtual_resources: BTreeSet::new(),

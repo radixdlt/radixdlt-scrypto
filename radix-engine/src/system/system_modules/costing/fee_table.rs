@@ -33,7 +33,7 @@ lazy_static! {
 /// - Cost unit price: 0.000005 XRD per cost unit
 /// - Max execution costing, excluding tips: 500 XRD
 /// - Basic transfer transaction cost: < 5 XRD
-/// - Publishing a WASM package of max size costs: ~ 500 XRD
+/// - Publishing a WASM package of max size costs: ~ 500 XRD + State Expansion Cost
 /// - Execution time for 100,000,000 cost units' worth of computation: <= 1 second
 /// - Baseline: 1 microsecond = 100 cost units
 /// - Non-time based costing will make the actual execution time less than anticipated
@@ -66,7 +66,7 @@ impl FeeTable {
         for info in store_access {
             let cost = match info {
                 StoreAccess::ReadFromDb(size) => {
-                    // Execution time: f(size) = 0.0009622109 * size + 389.5155
+                    // Execution time (µs): f(size) = 0.0009622109 * size + 389.5155
                     add(cast(*size) / 1_000, 400)
                 }
                 StoreAccess::ReadFromDbNotFound => {
@@ -96,8 +96,8 @@ impl FeeTable {
                 size,
             } => {
                 add(
-                    // Execution time: f(size) = 0.0004 * size + 1000
-                    add(cast(*size) / 2_500, 1_000),
+                    // Execution time (µs): f(size) = 0.0004 * size + 1000
+                    mul(add(cast(*size) / 2_500, 1_000), 100),
                     // State expansion: f(size) = 20 * size
                     mul(cast(*size), 20),
                 )
@@ -107,8 +107,8 @@ impl FeeTable {
                 size,
                 old_size,
             } => add(
-                // Execution time: f(size) = 0.0004 * size + 1000
-                add(cast(*size) / 2_500, 1_000),
+                // Execution time (µs): f(size) = 0.0004 * size + 1000
+                mul(add(cast(*size) / 2_500, 1_000), 100),
                 // State expansion: f(size) = 20 * size
                 if size > old_size {
                     mul(cast(size - old_size), 20)
@@ -141,7 +141,8 @@ impl FeeTable {
         // Rational:
         // Transaction payload is propagated over a P2P network.
         // Larger size may slows down the network performance.
-        // The size of a typical transfer transaction is 400 bytes, so the cost is 400 * 50 * 0.000005 = 0.1 XRD
+        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 50 * 0.000005 = 0.1 XRD
+        // The max size of a transaction is 1 MiB, and the cost will be 1,000,000 * 50 * 0.000005 = 250 XRD
         mul(cast(size), 50)
     }
 
