@@ -11,7 +11,7 @@ pub use crate::{
     blueprint, component_royalties, component_royalty_config, debug, enable_function_auth,
     enable_method_auth, enable_package_royalties, error, extern_blueprint_internal, include_code,
     include_schema, info, internal_add_role, internal_component_royalty_entry, main_accessibility,
-    metadata, method_accessibilities, method_accessibility, permission_role_list, resource_list,
+    metadata, method_accessibilities, method_accessibility, role_list, resource_list,
     role_definition_entry, roles, roles_internal, this_package, to_role_key, trace, warn,
     NonFungibleData,
 };

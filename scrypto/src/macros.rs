@@ -347,13 +347,16 @@ macro_rules! to_role_key {
 }
 
 #[macro_export]
-macro_rules! permission_role_list {
-    ($list:ident, $role:ident) => ({
-        $list.insert(to_role_key!($role));
+macro_rules! role_list {
+    () => ({
+        RoleList::none()
     });
-    ($list:ident, $role:ident, $($roles:ident),*) => ({
-        $list.insert(to_role_key!($role));
-        permission_role_list!($list, $($roles),*);
+    ($($role:ident),*) => ({
+        let mut list = RoleList::none();
+        $(
+            list.insert(to_role_key!($role));
+        )*
+        list
     });
 }
 
@@ -366,8 +369,7 @@ macro_rules! method_accessibility {
         [].into()
     });
     (restrict_to: [$($roles:ident),+]) => ({
-        let mut list = RoleList::none();
-        permission_role_list!(list, $($roles),+);
+        let list = role_list!($($roles),+);
         MethodAccessibility::RoleProtected(list)
     });
 }
@@ -398,16 +400,9 @@ macro_rules! main_accessibility {
 
 #[macro_export]
 macro_rules! internal_add_role {
-    ($roles:ident, $role:ident) => {{
-        $roles.insert(stringify!($role).into(), RoleList::none());
-    }};
     ($roles:ident, $role:ident => updatable_by: [$($updaters:ident),*]) => {{
-        let role_list = [
-            $(
-                ROLE_STRINGS.$updaters
-            ),*
-        ];
-        $roles.insert(stringify!($role).into(), role_list.into());
+        let updaters = role_list!($($updaters),*);
+        $roles.insert(stringify!($role).into(), updaters);
     }};
 }
 
