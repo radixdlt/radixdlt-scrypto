@@ -8,6 +8,7 @@ use radix_engine_common::data::scrypto::{ScryptoCustomTypeKind, ScryptoSchema, S
 use radix_engine_common::prelude::replace_self_package_address;
 use radix_engine_common::prelude::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::types::NonFungibleData;
 use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::string::String;
@@ -20,13 +21,27 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceMa
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateInput {
+    pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: MetadataInit,
     pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<GlobalAddressReservation>,
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct NonFungibleResourceManagerCreateManifestInput {
+    pub owner_role: OwnerRole,
+    pub id_type: NonFungibleIdType,
+    pub track_total_supply: bool,
+    pub non_fungible_schema: NonFungibleDataSchema,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<ManifestAddressReservation>,
 }
 
 pub type NonFungibleResourceManagerCreateOutput = ResourceAddress;
@@ -35,55 +50,32 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_with_initial_supply";
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
-pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
+    pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: MetadataInit,
+    pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
     pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-    pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<GlobalAddressReservation>,
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+    pub owner_role: OwnerRole,
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: MetadataInit,
+    pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
     pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-    pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<ManifestAddressReservation>,
 }
 
 pub type NonFungibleResourceManagerCreateWithInitialSupplyOutput = (ResourceAddress, Bucket);
-
-pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT: &str =
-    "create_non_fungible_with_address";
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct NonFungibleResourceManagerCreateWithAddressInput {
-    pub id_type: NonFungibleIdType,
-    pub track_total_supply: bool,
-    pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: MetadataInit,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-    pub resource_address: GlobalAddressReservation,
-}
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
-pub struct NonFungibleResourceManagerCreateWithAddressManifestInput {
-    pub id_type: NonFungibleIdType,
-    pub track_total_supply: bool,
-    pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: MetadataInit,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-    pub resource_address: ManifestAddressReservation,
-}
-
-pub type NonFungibleResourceManagerCreateWithAddressOutput = ResourceAddress;
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT: &str =
     "create_ruid_non_fungible_with_initial_supply";
@@ -91,11 +83,13 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT: &
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
+    pub owner_role: OwnerRole,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub metadata: MetadataInit,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
     pub entries: Vec<(ScryptoValue,)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<GlobalAddressReservation>,
 }
 
 pub type NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput = (ResourceAddress, Bucket);

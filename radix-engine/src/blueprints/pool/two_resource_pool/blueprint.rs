@@ -50,6 +50,9 @@ impl TwoResourcePoolBlueprint {
             blueprint_name: TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
         })?;
 
+        // Create owner role of both the pool component and pool unit resource
+        let owner_role = OwnerRole::Updatable(pool_manager_rule);
+
         // Creating the pool unit resource
         let pool_unit_resource_manager = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
@@ -59,24 +62,25 @@ impl TwoResourcePoolBlueprint {
                     rule!(require(component_caller_badge.clone())),
                     AccessRule::DenyAll,
                 ),
-                Burn => (rule!(require(component_caller_badge)), AccessRule::DenyAll),
+                Burn => (rule!(require(component_caller_badge.clone())), AccessRule::DenyAll),
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
 
             ResourceManager::new_fungible(
+                owner_role.clone(),
                 true,
                 18,
+                access_rules,
                 metadata_init! {
                     "pool" => address, locked;
                 },
-                access_rules,
+                None,
                 api,
             )?
         };
 
         // Creating the pool nodes
-        let access_rules =
-            AccessRules::create(OwnerRole::Updatable(pool_manager_rule), btreemap!(), api)?.0;
+        let access_rules = AccessRules::create(owner_role, btreemap!(), api)?.0;
 
         let metadata = Metadata::create_with_data(
             metadata_init! {

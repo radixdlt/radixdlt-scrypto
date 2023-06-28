@@ -600,7 +600,12 @@ impl AccountDepositModesTestRunner {
 
     pub fn freely_mintable_resource(&mut self) -> ResourceAddress {
         self.test_runner
-            .create_freely_mintable_and_burnable_fungible_resource(None, 18, self.component_address)
+            .create_freely_mintable_and_burnable_fungible_resource(
+                OwnerRole::None,
+                None,
+                18,
+                self.component_address,
+            )
     }
 
     pub fn burn(&mut self, resource_address: ResourceAddress) {

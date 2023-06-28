@@ -506,83 +506,6 @@ macro_rules! enable_package_royalties {
 }
 
 #[macro_export]
-macro_rules! roles {
-    ( $($role:ident => $rule:expr, $locked:ident;)* ) => ({
-        roles_internal!(MethodRoles, $($role => $rule, $locked;)*)
-    });
-}
-
-#[macro_export]
-macro_rules! roles_internal {
-    ($module_roles:ident, $($role:ident => $rule:expr, $locked:ident;)* ) => ({
-        let method_roles = $module_roles::<(AccessRule, bool)> {
-            $(
-                $role: {
-                    role_definition_entry!($rule, $locked)
-                }
-            ),*
-        };
-
-        let mut roles = $crate::blueprints::resource::Roles::new();
-        for (name, (rule, mutable)) in method_roles.list() {
-            if mutable {
-                roles.define_mutable_role(name, rule);
-            } else {
-                roles.define_immutable_role(name, rule);
-            }
-        }
-
-        roles
-    });
-}
-
-#[macro_export]
-macro_rules! role_definition_entry {
-    ($rule:expr, locked) => {{
-        ($rule, false)
-    }};
-    ($rule:expr, updatable) => {{
-        ($rule, true)
-    }};
-}
-
-#[macro_export]
-macro_rules! metadata {
-    {
-        roles {
-            $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
-        },
-        init {
-            $($key:expr => $value:expr, $locked:ident;)*
-        }
-    } => ({
-        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable)? ;)*);
-        let metadata = metadata_init!($($key => $value, $locked;)*);
-        (metadata, metadata_roles)
-    });
-
-    {
-        init {
-            $($key:expr => $value:expr, $locked:ident;)*
-        }
-    } => ({
-        let metadata = metadata_init!($($key => $value, $locked;)*);
-        (metadata, Roles::new())
-    });
-
-    {
-        roles {
-            $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
-        }
-    } => ({
-        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable:ident)? ;)*);
-        let metadata = metadata_init!();
-        (metadata, metadata_roles)
-    });
-
-}
-
-#[macro_export]
 macro_rules! component_royalties {
     {
         roles {
@@ -592,7 +515,7 @@ macro_rules! component_royalties {
             $($init:tt)*
         }
     } => ({
-        let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule $(, $updatable)?;)*);
+        let royalty_roles = internal_roles!(RoyaltyRoles, $($role => $rule $(, $updatable)?;)*);
         let royalties = component_royalty_config!($($init)*);
         (royalties, royalty_roles)
     });
@@ -604,6 +527,14 @@ macro_rules! component_royalties {
         let royalties = component_royalty_config!($($init)*);
         (royalties, Roles::new())
     })
+}
+
+/// Roles macro for main module
+#[macro_export]
+macro_rules! roles {
+    ( $($role:ident => $rule:expr, $locked:ident;)* ) => ({
+        internal_roles!(MethodRoles, $($role => $rule, $locked;)*)
+    });
 }
 
 #[macro_export]
