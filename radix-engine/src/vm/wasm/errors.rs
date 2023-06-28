@@ -46,6 +46,8 @@ pub enum PrepareError {
     NotInstantiatable { reason: String },
     /// Not compilable
     NotCompilable,
+    /// WasmParser
+    WasmParserError(String),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]
@@ -67,6 +69,8 @@ pub enum InvalidMemory {
     MemorySizeLimitExceeded,
     /// The wasm module does not have the `memory` export.
     MemoryNotExported,
+    /// The wasm module misses max memory definition.
+    MemoryMaxMissing,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]
