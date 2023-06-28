@@ -2060,6 +2060,11 @@ where
         &mut self,
         costing_entry: ClientCostingEntry,
     ) -> Result<(), RuntimeError> {
+        // Skip client-side costing requested by TransactionProcessor
+        if self.api.kernel_get_current_depth() == 1 {
+            return Ok(());
+        }
+
         self.api
             .kernel_get_system()
             .modules

@@ -1,5 +1,5 @@
-Total Cost Units                                                ,  85487174
-Total Fee                                                       , 427.43587
+Total Cost Units                                                ,  85310152
+Total Fee                                                       , 426.55076
 AfterInvoke                                                     ,       201
 AllocateNodeId                                                  ,      9500
 BeforeInvoke                                                    ,   1052687
@@ -26,7 +26,6 @@ RunNativeCode::create_empty_vault_FungibleResourceManager       ,     82304
 RunNativeCode::create_with_data                                 ,      1838
 RunNativeCode::lock_fee                                         ,     20764
 RunNativeCode::publish_wasm_advanced                            ,     41152
-RunNativeCode::run                                              ,    177022
 RunWasmCode::Faucet_lock_fee                                    ,     17987
 RunWasmCodePrepare                                              ,    694900
 TxBaseCost                                                      ,     40000

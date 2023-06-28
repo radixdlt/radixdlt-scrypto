@@ -1,5 +1,5 @@
-Total Cost Units                                                ,  10279682
-Total Fee                                                       ,  51.39841
+Total Cost Units                                                ,  10102660
+Total Fee                                                       ,   50.5133
 AfterInvoke                                                     ,       443
 AllocateNodeId                                                  ,     13000
 BeforeInvoke                                                    ,      9364
@@ -31,7 +31,6 @@ RunNativeCode::create_with_data                                 ,      1838
 RunNativeCode::get_amount_FungibleBucket                        ,     41152
 RunNativeCode::lock_fee                                         ,     47993
 RunNativeCode::put_FungibleVault                                ,     13471
-RunNativeCode::run                                              ,    177022
 RunNativeCode::take_FungibleVault                               ,     20367
 RunNativeCode::try_deposit_batch_or_abort                       ,     41152
 RunNativeCode::withdraw                                         ,     25682
