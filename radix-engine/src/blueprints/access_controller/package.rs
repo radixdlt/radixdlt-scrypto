@@ -588,18 +588,6 @@ impl AccessControllerNativePackage {
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
 
-            let access_rules = btreemap! {
-                Mint => (
-                    rule!(require(global_component_caller_badge.clone())),
-                    AccessRule::DenyAll,
-                ),
-                Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-                Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
-                Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-                Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-                UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
-            };
-
             let resource_address = {
                 let (local_type_index, schema) =
                     generate_full_schema_from_single_type::<(), ScryptoCustomSchema>();
@@ -614,11 +602,18 @@ impl AccessControllerNativePackage {
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateInput {
-                        owner_role: OwnerRole::Fixed(rule!(require(global_component_caller_badge))),
+                        owner_role: OwnerRole::Fixed(rule!(require(global_component_caller_badge.clone()))),
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,
-                        access_rules: access_rules.into(),
+                        access_rules: btreemap! {
+                            Mint => mintable! {
+                                minter => rule!(require(global_component_caller_badge.clone())), locked;
+                                minter_updater => rule!(deny_all), locked;
+                            },
+                            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+                            Withdraw => ResourceActionRoleInit::locked(AccessRule::DenyAll),
+                        },
                         metadata: metadata! {
                             roles {
                                 metadata_setter => AccessRule::DenyAll, locked;

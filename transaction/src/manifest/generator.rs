@@ -1521,6 +1521,7 @@ mod tests {
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
+    use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1818,11 +1819,11 @@ mod tests {
                         access_rules: BTreeMap::from([
                             (
                                 ResourceAction::Withdraw,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
                             ),
                             (
                                 ResourceAction::Deposit,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
                             ),
                         ]),
                         address_reservation: None,
@@ -1935,11 +1936,11 @@ mod tests {
                         access_rules: BTreeMap::from([
                             (
                                 ResourceAction::Withdraw,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
                             ),
                             (
                                 ResourceAction::Deposit,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
                             ),
                         ]),
                         entries: BTreeMap::from([(
@@ -1992,11 +1993,11 @@ mod tests {
                     access_rules: BTreeMap::from([
                         (
                             ResourceAction::Withdraw,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ResourceActionRoleInit::locked(AccessRule::AllowAll),
                         ),
                         (
                             ResourceAction::Deposit,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ResourceActionRoleInit::locked(AccessRule::AllowAll),
                         ),
                     ]),
                     metadata: metadata! {
@@ -2050,11 +2051,11 @@ mod tests {
                         access_rules: BTreeMap::from([
                             (
                                 ResourceAction::Withdraw,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
                             ),
                             (
                                 ResourceAction::Deposit,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
                             ),
                         ]),
                         metadata: metadata! {

@@ -2,7 +2,10 @@ use crate::blueprints::resource::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::ObjectModuleId;
+use crate::blueprints::access_controller::Role;
+use crate::prelude::KeyValueStoreInitEntry;
 
 pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
 pub const VAULT_FREEZE_FEATURE: &str = "vault_freeze";
@@ -52,6 +55,7 @@ pub const ALL_RESOURCE_AUTH_KEYS: [ResourceAction; 7] = [
 ];
 
 impl ResourceAction {
+    // FIXME: Clean out ObjectModuleId
     pub fn action_role_key(&self) -> (ObjectModuleId, RoleKey) {
         match self {
             Self::Mint => (ObjectModuleId::Main, RoleKey::new(MINTER_ROLE)),
@@ -79,6 +83,21 @@ impl ResourceAction {
             Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITOR_UPDATER_ROLE)),
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_UPDATER_ROLE)),
             Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_UPDATER_ROLE)),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct ResourceActionRoleInit {
+    pub actor: RoleDefinition,
+    pub updater: RoleDefinition,
+}
+
+impl ResourceActionRoleInit {
+    pub fn locked(actor: AccessRule) -> Self {
+        Self {
+            actor: RoleDefinition::locked(actor),
+            updater: RoleDefinition::locked(AccessRule::DenyAll),
         }
     }
 }

@@ -144,9 +144,6 @@ fn create_fungible_too_high_granularity_should_fail() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let _package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
-    let mut access_rules = BTreeMap::new();
-    access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-    access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -156,7 +153,7 @@ fn create_fungible_too_high_granularity_should_fail() {
             false,
             23u8,
             metadata!(),
-            access_rules,
+            btreemap!(),
             Some(dec!("100")),
         )
         .build();

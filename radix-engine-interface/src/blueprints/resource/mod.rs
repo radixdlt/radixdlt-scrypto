@@ -28,6 +28,7 @@ pub use vault::*;
 pub use worktop::*;
 
 use radix_engine_common::math::*;
+use crate::api::node_modules::auth::RoleDefinition;
 
 pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
     !amount.is_negative()
@@ -54,8 +55,17 @@ impl<T> MintableRoles<T> {
 }
 
 impl MintableRoles<(Option<AccessRule>, bool)> {
-    pub fn to_roles(self) -> (AccessRule, AccessRule) {
-        (self.minter.0.unwrap(), self.minter_updater.0.unwrap())
+    pub fn to_role_init(self) -> ResourceActionRoleInit {
+        ResourceActionRoleInit {
+            actor: RoleDefinition {
+                value: self.minter.0,
+                lock: self.minter.1,
+            },
+            updater: RoleDefinition {
+                value: self.minter_updater.0,
+                lock: self.minter_updater.1,
+            },
+        }
     }
 }
 
@@ -64,7 +74,7 @@ impl MintableRoles<(Option<AccessRule>, bool)> {
 macro_rules! mintable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
         let mintable_roles = internal_roles_struct!(MintableRoles, $($role => $rule, $locked;)*);
-        mintable_roles.to_roles()
+        mintable_roles.to_role_init()
     });
 }
 

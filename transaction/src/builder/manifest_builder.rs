@@ -436,19 +436,15 @@ impl ManifestBuilder {
     }
 
     /// Creates a fungible resource
-    pub fn create_fungible_resource<R: Into<AccessRule>>(
+    pub fn create_fungible_resource(
         &mut self,
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
         metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
+        access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
-        let access_rules = access_rules
-            .into_iter()
-            .map(|(k, v)| (k, (v.0, v.1.into())))
-            .collect();
         if let Some(initial_supply) = initial_supply {
             self.add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -487,25 +483,19 @@ impl ManifestBuilder {
     }
 
     /// Creates a new non-fungible resource
-    pub fn create_non_fungible_resource<R, T, V>(
+    pub fn create_non_fungible_resource<T, V>(
         &mut self,
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
+        access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
-        R: Into<AccessRule>,
         T: IntoIterator<Item = (NonFungibleLocalId, V)>,
         V: ManifestEncode + NonFungibleData,
     {
-        let access_rules = access_rules
-            .into_iter()
-            .map(|(k, v)| (k, (v.0, v.1.into())))
-            .collect();
-
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
@@ -915,10 +905,13 @@ impl ManifestBuilder {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
             ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
+            ResourceActionRoleInit::locked(rule!(allow_all)),
         );
-        access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
-        access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
+        access_rules.insert(
+            Mint,
+            ResourceActionRoleInit::locked(minter_rule.clone()),
+        );
+        access_rules.insert(Burn, ResourceActionRoleInit::locked(minter_rule.clone()));
 
         let initial_supply = Option::None;
         self.create_fungible_resource(owner_role, true, 18, metadata, access_rules, initial_supply)
@@ -934,7 +927,7 @@ impl ManifestBuilder {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
             ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
+            ResourceActionRoleInit::locked(rule!(allow_all)),
         );
 
         self.create_fungible_resource(
@@ -957,10 +950,16 @@ impl ManifestBuilder {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
             ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
+            ResourceActionRoleInit::locked(rule!(allow_all)),
         );
-        access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
-        access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
+        access_rules.insert(
+            Mint,
+            ResourceActionRoleInit::locked(minter_rule.clone()),
+        );
+        access_rules.insert(
+            Burn,
+            ResourceActionRoleInit::locked(minter_rule.clone()),
+        );
 
         let initial_supply = Option::None;
         self.create_fungible_resource(owner_role, false, 0, metadata, access_rules, initial_supply)
@@ -975,8 +974,8 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-            ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
+        ResourceAction::Withdraw,
+            ResourceActionRoleInit::locked(rule!(allow_all)),
         );
 
         self.create_fungible_resource(

@@ -18,6 +18,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use scrypto::prelude::Mutability::LOCKED;
 use scrypto::prelude::{AccessRule, FromPublicKey, ResourceAction};
 use scrypto::NonFungibleData;
@@ -284,11 +285,6 @@ fn vault_non_fungible_recall_emits_correct_events() {
     let mut test_runner = TestRunner::builder().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let (recallable_resource_address, non_fungible_local_id) = {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Recall, (rule!(allow_all), LOCKED));
-
         let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
 
         let manifest = ManifestBuilder::new()
@@ -298,7 +294,9 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 NonFungibleIdType::Integer,
                 false,
                 metadata!(),
-                access_rules,
+                btreemap!(
+                    Recall => ResourceActionRoleInit::locked(rule!(allow_all)),
+                ),
                 Some([(id.clone(), EmptyStruct {})]),
             )
             .call_method(
@@ -394,7 +392,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             false,
             18,
             Default::default(),
-            BTreeMap::<ResourceAction, (AccessRule, AccessRule)>::new(),
+            btreemap!(),
             Some(1.into()),
         )
         .call_method(
@@ -450,12 +448,6 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     let mut test_runner = TestRunner::builder().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Mint, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Burn, (rule!(allow_all), LOCKED));
-
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_fungible_resource(
@@ -463,7 +455,10 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
                 false,
                 18,
                 Default::default(),
-                access_rules,
+                btreemap!(
+                    Mint => ResourceActionRoleInit::locked(rule!(allow_all)),
+                    Burn => ResourceActionRoleInit::locked(rule!(allow_all)),
+                ),
                 None,
             )
             .call_method(
@@ -536,12 +531,6 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     let mut test_runner = TestRunner::builder().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Mint, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Burn, (rule!(allow_all), LOCKED));
-
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 100u32.into())
             .create_non_fungible_resource(
@@ -549,7 +538,10 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 NonFungibleIdType::Integer,
                 false,
                 metadata!(),
-                access_rules,
+                btreemap! {
+                    Mint => ResourceActionRoleInit::locked(rule!(allow_all)),
+                    Burn => ResourceActionRoleInit::locked(rule!(allow_all)),
+                },
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
             )
             .call_method(
@@ -1475,7 +1467,10 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
         ResourceAction::UpdateNonFungibleData,
     ]
     .into_iter()
-    .map(|method| (method, (AccessRule::AllowAll, AccessRule::AllowAll)))
+    .map(|method| (method, ResourceActionRoleInit {
+        actor: RoleDefinition::updatable(AccessRule::AllowAll),
+        updater: RoleDefinition::updatable(AccessRule::AllowAll),
+    }))
     .collect();
 
     let manifest = ManifestBuilder::new()

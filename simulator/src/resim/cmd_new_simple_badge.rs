@@ -99,9 +99,7 @@ impl NewSimpleBadge {
                         init: metadata,
                         roles: RolesInit::default(),
                     },
-                    access_rules: btreemap!(
-                        ResourceAction::Withdraw => (rule!(allow_all), rule!(deny_all))
-                    ),
+                    access_rules: btreemap! {},
                     entries: btreemap!(
                         NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),
                     ),

@@ -16,8 +16,9 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::metadata_init;
+use radix_engine_interface::{metadata_init, mintable, internal_roles_struct, role_definition_entry};
 use radix_engine_interface::rule;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use sbor::rust::mem;
 
 use super::{
@@ -1075,20 +1076,15 @@ impl ValidatorCreator {
         let mut stake_unit_resource_auth = BTreeMap::new();
         stake_unit_resource_auth.insert(
             Mint,
-            (
-                rule!(require(global_caller(validator_address))),
-                rule!(deny_all),
-            ),
+                mintable! {
+                    minter => rule!(require(global_caller(validator_address))), locked;
+                    minter_updater => rule!(deny_all), locked;
+                }
         );
         stake_unit_resource_auth.insert(
             Burn,
-            (
-                rule!(require(global_caller(validator_address))),
-                rule!(deny_all),
-            ),
+                ResourceActionRoleInit::locked(rule!(require(global_caller(validator_address)))),
         );
-        stake_unit_resource_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        stake_unit_resource_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let stake_unit_resman = ResourceManager::new_fungible(
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
@@ -1119,20 +1115,15 @@ impl ValidatorCreator {
         let mut unstake_nft_auth = BTreeMap::new();
         unstake_nft_auth.insert(
             Mint,
-            (
-                rule!(require(global_caller(validator_address))),
-                rule!(deny_all),
-            ),
+                mintable! {
+                    minter => rule!(require(global_caller(validator_address))), locked;
+                    minter_updater => rule!(deny_all), locked;
+                }
         );
         unstake_nft_auth.insert(
             Burn,
-            (
-                rule!(require(global_caller(validator_address))),
-                rule!(deny_all),
-            ),
+                ResourceActionRoleInit::locked(rule!(require(global_caller(validator_address)))),
         );
-        unstake_nft_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError, _>(
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),

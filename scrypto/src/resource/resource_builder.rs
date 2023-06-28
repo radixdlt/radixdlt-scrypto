@@ -11,6 +11,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use scrypto::prelude::ScryptoValue;
@@ -113,20 +114,20 @@ impl<T: AnyResourceType> InProgressResourceBuilder<T, NoAuth> {
 }
 
 pub trait ConfiguredAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)>;
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, ResourceActionRoleInit>;
 }
 
 pub struct NoAuth;
 impl ConfiguredAuth for NoAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, ResourceActionRoleInit> {
         BTreeMap::new()
     }
 }
 
-pub struct AccessRuleAuth(BTreeMap<ResourceAction, (AccessRule, AccessRule)>);
+pub struct ResourceActionRolesInit(BTreeMap<ResourceAction, ResourceActionRoleInit>);
 
-impl ConfiguredAuth for AccessRuleAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
+impl ConfiguredAuth for ResourceActionRolesInit {
+    fn into_access_rules(self) -> BTreeMap<ResourceAction, ResourceActionRoleInit> {
         self.0
     }
 }
@@ -220,9 +221,9 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ```
     fn mintable(
         self,
-        auth: (AccessRule, AccessRule),
+        auth: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
-        self.add_auth(Mint, auth.0, auth.1)
+        self.add_auth(Mint, auth.actor.value.unwrap(), auth.updater.value.unwrap())
     }
 
     /// Sets the resource to be burnable.
@@ -843,7 +844,7 @@ impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetAddressReservation
 }
 
 impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, NoAuth> {
-    type OutputBuilder = InProgressResourceBuilder<T, AccessRuleAuth>;
+    type OutputBuilder = InProgressResourceBuilder<T, ResourceActionRolesInit>;
 
     fn add_auth(
         self,
@@ -854,14 +855,17 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, No
         Self::OutputBuilder {
             owner_role: self.owner_role,
             resource_type: self.resource_type,
-            auth: AccessRuleAuth(btreemap! { method => (method_auth, mutability) }),
+            auth: ResourceActionRolesInit(btreemap! { method => ResourceActionRoleInit {
+                actor: RoleDefinition::updatable(method_auth),
+                updater: RoleDefinition::updatable(mutability),
+            } }),
             metadata_config: self.metadata_config,
             address_reservation: self.address_reservation,
         }
     }
 }
 
-impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, AccessRuleAuth> {
+impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, ResourceActionRolesInit> {
     type OutputBuilder = Self;
 
     fn add_auth(
@@ -870,7 +874,12 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, Ac
         method_auth: AccessRule,
         mutability: AccessRule,
     ) -> Self::OutputBuilder {
-        self.auth.0.insert(method, (method_auth, mutability));
+        self.auth.0.insert(
+            method,
+            ResourceActionRoleInit {
+               actor: RoleDefinition::updatable(method_auth),
+                updater: RoleDefinition::updatable(mutability),
+            });
         self
     }
 }
@@ -962,7 +971,7 @@ mod private {
         Fungible {
             owner_role: OwnerRole,
             divisibility: u8,
-            access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+            access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,
         },
@@ -970,7 +979,7 @@ mod private {
             owner_role: OwnerRole,
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
-            access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+            access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,
         },

@@ -31,10 +31,10 @@ mod nf_data_with_global {
                             "name" => "NFDataWithGlobal".to_owned(), locked;
                         }
                     })
-                    .mintable(
-                        rule!(require(mint_badge.resource_address())),
-                        rule!(deny_all),
-                    )
+                    .mintable(mintable! {
+                        minter => rule!(require(mint_badge.resource_address())), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    })
                     .burnable(rule!(allow_all), rule!(deny_all))
                     .updatable_non_fungible_data(
                         rule!(require(mint_badge.resource_address())),

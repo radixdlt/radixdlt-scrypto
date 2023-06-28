@@ -1490,7 +1490,7 @@ CALL_METHOD
                 NonFungibleIdType::Integer,
                 false,
                 metadata!(),
-                BTreeMap::<_, (_, AccessRule)>::new(),
+                BTreeMap::new(),
                 Some([(NonFungibleLocalId::integer(1), EmptyStruct {})]),
             )
             .build();

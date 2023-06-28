@@ -27,7 +27,7 @@ pub struct NonFungibleResourceManagerCreateInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
@@ -39,7 +39,7 @@ pub struct NonFungibleResourceManagerCreateManifestInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
@@ -57,7 +57,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
@@ -70,7 +70,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
@@ -87,7 +87,7 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: Vec<(ScryptoValue,)>,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }

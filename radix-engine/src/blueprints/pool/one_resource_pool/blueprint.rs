@@ -13,6 +13,8 @@ use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::blueprints::resource::ResourceOrNonFungible::Resource;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 
 pub const ONE_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "OneResourcePool";
 
@@ -47,12 +49,11 @@ impl OneResourcePoolBlueprint {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
 
             let access_rules = btreemap!(
-                Mint => (
-                    rule!(require(component_caller_badge.clone())),
-                    AccessRule::DenyAll,
-                ),
-                Burn => (rule!(require(component_caller_badge.clone())), AccessRule::DenyAll),
-                Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
+                Mint => mintable! {
+                    minter => rule!(require(component_caller_badge.clone())), locked;
+                    minter_updater => rule!(deny_all), locked;
+                },
+                Burn => ResourceActionRoleInit::locked(rule!(require(component_caller_badge.clone()))),
             );
 
             ResourceManager::new_fungible(

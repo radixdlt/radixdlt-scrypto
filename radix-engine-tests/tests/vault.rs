@@ -4,6 +4,7 @@ use radix_engine::errors::{
 };
 use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, TakeNodeError};
 use radix_engine::types::*;
+use radix_engine_interface::blueprints::resource::AccessRule::AllowAll;
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
@@ -623,12 +624,12 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Withdraw => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Deposit => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Recall => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(AccessRule::AllowAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(

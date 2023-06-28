@@ -18,7 +18,7 @@ pub struct FungibleResourceManagerCreateInput {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
     pub divisibility: u8,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
@@ -29,7 +29,7 @@ pub struct FungibleResourceManagerCreateManifestInput {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
     pub divisibility: u8,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
@@ -46,7 +46,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
     pub initial_supply: Decimal,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
@@ -57,7 +57,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
     pub initial_supply: Decimal,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }

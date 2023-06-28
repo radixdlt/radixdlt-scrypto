@@ -100,7 +100,7 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -158,7 +158,7 @@ impl NonFungibleResourceManagerBlueprint {
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -251,7 +251,7 @@ impl NonFungibleResourceManagerBlueprint {
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         entries: Vec<(ScryptoValue,)>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        resource_action_roles: BTreeMap<ResourceAction, ResourceActionRoleInit>,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -293,7 +293,7 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let features = features(track_total_supply, &access_rules);
+        let features = features(track_total_supply, &resource_action_roles);
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -310,7 +310,7 @@ impl NonFungibleResourceManagerBlueprint {
             owner_role,
             object_id,
             address_reservation,
-            access_rules,
+            resource_action_roles,
             metadata,
             ids,
             api,

@@ -11,12 +11,12 @@ fn package_burn_is_only_callable_within_resource_package() {
     let mut test_runner = TestRunner::builder().build();
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Withdraw => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Deposit => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Recall => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(AccessRule::AllowAll),
         );
         let manifest = ManifestBuilder::new()
             .create_fungible_resource(
@@ -61,12 +61,12 @@ fn can_burn_by_amount_from_fungible_vault() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Withdraw => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Deposit => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Recall => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(AccessRule::AllowAll),
         );
         let manifest = ManifestBuilder::new()
             .create_fungible_resource(
@@ -125,12 +125,12 @@ fn can_burn_by_amount_from_non_fungible_vault() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Withdraw => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Deposit => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Recall => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(AccessRule::AllowAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -195,12 +195,12 @@ fn can_burn_by_ids_from_non_fungible_vault() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Withdraw => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Deposit => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Recall => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(AccessRule::AllowAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -272,12 +272,12 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Burn => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Withdraw => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Deposit => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Recall => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
         );
         let manifest = ManifestBuilder::new()
             .create_fungible_resource(
@@ -340,12 +340,12 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Burn => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Withdraw => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Deposit => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Recall => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -414,12 +414,12 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Burn => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Withdraw => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Deposit => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Recall => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -492,12 +492,12 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Burn => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Withdraw => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Deposit => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Recall => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
         );
         let manifest = ManifestBuilder::new()
             .create_fungible_resource(
@@ -559,12 +559,12 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Burn => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Withdraw => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Deposit => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Recall => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -632,12 +632,12 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Burn => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Withdraw => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Deposit => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Recall => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -706,12 +706,12 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
-            Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-            UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Withdraw => ResourceActionRoleInit::locked(AccessRule::DenyAll),
+            Deposit => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Recall => ResourceActionRoleInit::locked(AccessRule::DenyAll),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_fungible_resource(
@@ -770,12 +770,12 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
-            Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-            UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Withdraw => ResourceActionRoleInit::locked(AccessRule::DenyAll),
+            Deposit => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Recall => ResourceActionRoleInit::locked(AccessRule::DenyAll),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -840,12 +840,12 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
-            Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-            UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Withdraw => ResourceActionRoleInit::locked(AccessRule::DenyAll),
+            Deposit => ResourceActionRoleInit::locked(AccessRule::AllowAll),
+            Recall => ResourceActionRoleInit::locked(AccessRule::DenyAll),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -916,12 +916,12 @@ fn can_burn_by_amount_from_fungible_account_vault() {
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Burn => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Withdraw => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Deposit => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Recall => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
         );
         let manifest = ManifestBuilder::new()
             .create_fungible_resource(
@@ -973,12 +973,12 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Burn => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Withdraw => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Deposit => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Recall => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
@@ -1029,12 +1029,12 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
         let access_rules = btreemap!(
-            Mint => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Burn => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
+            Mint => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Burn => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Withdraw => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Deposit => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            Recall => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
+            UpdateNonFungibleData => ResourceActionRoleInit::locked(virtual_signature_rule.clone()),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(

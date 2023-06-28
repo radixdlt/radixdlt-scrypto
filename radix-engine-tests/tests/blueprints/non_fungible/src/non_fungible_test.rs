@@ -35,10 +35,10 @@ mod non_fungible_test {
                             "name" => "Katz's Sandwiches".to_owned(), locked;
                         }
                     })
-                    .mintable(
-                        rule!(require(mint_badge.resource_address())),
-                        rule!(deny_all),
-                    )
+                    .mintable(mintable! {
+                        minter => rule!(require(mint_badge.resource_address())), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    })
                     .burnable(rule!(allow_all), rule!(deny_all))
                     .updatable_non_fungible_data(
                         rule!(require(mint_badge.resource_address())),
@@ -534,7 +534,10 @@ mod non_fungible_test {
 
         pub fn create_mintable_ruid_non_fungible() -> ResourceManager {
             ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
-                .mintable(rule!(allow_all), rule!(deny_all))
+                .mintable(mintable! {
+                    minter => rule!(allow_all), locked;
+                    minter_updater => rule!(deny_all), locked;
+                })
                 .create_with_no_initial_supply()
         }
 
@@ -542,7 +545,10 @@ mod non_fungible_test {
             // creating non-fungible id with id type set to default (RUID)
             let resource_manager =
                 ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
-                    .mintable(rule!(allow_all), rule!(deny_all))
+                    .mintable(mintable! {
+                        minter => rule!(allow_all), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    })
                     .metadata(metadata! {
                         init {
                             "name" => "Katz's Sandwiches".to_owned(), locked;

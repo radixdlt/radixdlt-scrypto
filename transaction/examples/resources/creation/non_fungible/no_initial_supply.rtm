@@ -40,14 +40,14 @@ CREATE_NON_FUNGIBLE_RESOURCE
         #
         #        ┌ We Are customizing the "Withdraw" behavior of the resource
         #        │
-        #        │                       ┌ The resource may be withdrawn by anybody who has it
-        #        │                       │
-        #        │                       │                 ┌ The withdraw behavior (the resource is withdrawable by
-        #        │                       │                 │ by anybody who has the resource) is permanent and can't
-        #        │                       │                 │ be changed in the future.
-        #        │                       │                 │
-        Enum<ResourceAction::Withdraw>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
-        Enum<ResourceAction::Deposit>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
+        #        │                                                                          ┌ The resource may be withdrawn by anybody who has it
+        #        │                                                                          │
+        #        │                                                                          │                 ┌ The withdraw behavior (the resource is withdrawable by
+        #        │                                                                          │                 │ by anybody who has the resource) is permanent and can't
+        #        │                                                                          │                 │ be changed in the future.
+        #        │                                                                          │                 │
+        Enum<ResourceAction::Withdraw>() => Tuple(Tuple(Enum<Option::Some>(Enum<AccessRule::AllowAll>()), false), Tuple(Enum<Option::Some>(Enum<AccessRule::DenyAll>()), false)),
+        Enum<ResourceAction::Deposit>() => Tuple(Tuple(Enum<Option::Some>(Enum<AccessRule::AllowAll>()), false), Tuple(Enum<Option::Some>(Enum<AccessRule::DenyAll>()), false))
     )
     Tuple(
         Map<String, Tuple>(
