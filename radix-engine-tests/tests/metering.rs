@@ -125,7 +125,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<64},{:>10}\n",
-            "Execution Cost (XRD)",
+            "+ Execution Cost (XRD)",
             fee_summary.total_execution_cost_xrd.to_string()
         )
         .as_str(),
@@ -133,7 +133,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<64},{:>10}\n",
-            "Tipping Cost (XRD)",
+            "+ Tipping Cost (XRD)",
             fee_summary.total_tipping_cost_xrd.to_string()
         )
         .as_str(),
@@ -141,7 +141,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<64},{:>10}\n",
-            "State Expansion Cost (XRD)",
+            "+ State Expansion Cost (XRD)",
             fee_summary.total_state_expansion_cost_xrd.to_string()
         )
         .as_str(),
@@ -149,7 +149,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<64},{:>10}\n",
-            "Royalty Cost (XRD)",
+            "+ Royalty Cost (XRD)",
             fee_summary.total_royalty_cost_xrd.to_string()
         )
         .as_str(),

@@ -68,7 +68,7 @@ impl PreparedTestTransaction {
                     virtual_resources: BTreeSet::new(),
                 },
                 fee_payment: FeePayment {
-                    tip_percentage: 0,
+                    tip_percentage: DEFAULT_TIP_PERCENTAGE,
                     free_credit_in_xrd: Decimal::ZERO,
                 },
                 pre_allocated_addresses: vec![],
