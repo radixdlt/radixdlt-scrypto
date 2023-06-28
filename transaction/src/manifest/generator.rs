@@ -1804,28 +1804,30 @@ mod tests {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateManifestInput {
-                    owner_role: OwnerRole::None,
-                    id_type: NonFungibleIdType::Integer,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata: metadata! {
-                        init {
-                            "name" => "Token".to_string(), locked;
-                        }
-                    },
-                    access_rules: BTreeMap::from([
-                        (
-                            ResourceAction::Withdraw,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                        (
-                            ResourceAction::Deposit,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                    ]),
-                    address_reservation: None,
-                }),
+                args: to_manifest_value_and_unwrap!(
+                    &NonFungibleResourceManagerCreateManifestInput {
+                        owner_role: OwnerRole::None,
+                        id_type: NonFungibleIdType::Integer,
+                        track_total_supply: false,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        metadata: metadata! {
+                            init {
+                                "name" => "Token".to_string(), locked;
+                            }
+                        },
+                        access_rules: BTreeMap::from([
+                            (
+                                ResourceAction::Withdraw,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                            (
+                                ResourceAction::Deposit,
+                                (AccessRule::AllowAll, AccessRule::DenyAll)
+                            ),
+                        ]),
+                        address_reservation: None,
+                    }
+                ),
             },
         );
     }
@@ -1852,16 +1854,19 @@ mod tests {
                     package_address: RESOURCE_PACKAGE.into(),
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                    args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateManifestInput {
-                        owner_role: OwnerRole::None,
-                        track_total_supply: false,
-                        id_type: NonFungibleIdType::Integer,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<MyNonFungibleData>(
-                        ),
-                        access_rules: BTreeMap::new(),
-                        metadata: metadata!(),
-                        address_reservation: None,
-                    }),
+                    args: to_manifest_value_and_unwrap!(
+                        &NonFungibleResourceManagerCreateManifestInput {
+                            owner_role: OwnerRole::None,
+                            track_total_supply: false,
+                            id_type: NonFungibleIdType::Integer,
+                            non_fungible_schema: NonFungibleDataSchema::new_schema::<
+                                MyNonFungibleData,
+                            >(),
+                            access_rules: BTreeMap::new(),
+                            metadata: metadata!(),
+                            address_reservation: None,
+                        }
+                    ),
                 }],
                 &NetworkDefinition::simulator()
             )

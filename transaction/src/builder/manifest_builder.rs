@@ -535,15 +535,17 @@ impl ManifestBuilder {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateManifestInput {
-                    owner_role,
-                    id_type,
-                    track_total_supply,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                    access_rules,
-                    metadata,
-                    address_reservation: None,
-                }),
+                args: to_manifest_value_and_unwrap!(
+                    &NonFungibleResourceManagerCreateManifestInput {
+                        owner_role,
+                        id_type,
+                        track_total_supply,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        access_rules,
+                        metadata,
+                        address_reservation: None,
+                    }
+                ),
             });
         }
 

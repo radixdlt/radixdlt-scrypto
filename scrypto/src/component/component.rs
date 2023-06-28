@@ -7,14 +7,14 @@ use radix_engine_common::prelude::well_known_scrypto_custom_types::{
     component_address_type_data, own_type_data, COMPONENT_ADDRESS_ID, OWN_ID,
 };
 use radix_engine_common::prelude::{
-    OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
+    scrypto_decode, OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
 use radix_engine_interface::api::node_modules::metadata::{
     MetadataInit, METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, Roles};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
@@ -42,17 +42,24 @@ pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
 impl<C: HasTypeInfo> Blueprint<C> {
     pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: &A) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
-        Runtime::call_function(
-            package_address,
-            C::BLUEPRINT_NAME,
-            function_name,
-            scrypto_encode(args).unwrap(),
-        )
+
+        let output = ScryptoEnv
+            .call_function(
+                package_address,
+                C::BLUEPRINT_NAME,
+                function_name,
+                scrypto_encode(args).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&output).unwrap()
     }
 
     pub fn call_function_raw<T: ScryptoDecode>(function_name: &str, args: Vec<u8>) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
-        Runtime::call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
+        let output = ScryptoEnv
+            .call_function(package_address, C::BLUEPRINT_NAME, function_name, args)
+            .unwrap();
+        scrypto_decode(&output).unwrap()
     }
 }
 

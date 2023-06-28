@@ -245,12 +245,7 @@ impl ConsensusManagerBlueprint {
             let consensus_manager_address =
                 api.get_reservation_address(consensus_manager_address_reservation.0.as_node_id())?;
 
-            ResourceManager::new_non_fungible::<
-                ValidatorOwnerBadgeData,
-                Y,
-                RuntimeError,
-                _,
-            >(
+            ResourceManager::new_non_fungible::<ValidatorOwnerBadgeData, Y, RuntimeError, _>(
                 OwnerRole::Fixed(rule!(require(global_caller(consensus_manager_address)))),
                 NonFungibleIdType::Bytes,
                 true,

@@ -51,7 +51,6 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
-
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub owner_role: OwnerRole,

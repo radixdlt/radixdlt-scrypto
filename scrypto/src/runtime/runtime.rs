@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::resource::{AccessRule, NonFungibleGlobal
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
+    scrypto_decode, scrypto_encode, ScryptoDescribe, ScryptoEncode,
 };
 use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::*;
@@ -71,36 +71,6 @@ impl Runtime {
 
     pub fn package_token() -> NonFungibleGlobalId {
         NonFungibleGlobalId::package_of_direct_caller_badge(Runtime::package_address())
-    }
-
-    /// Invokes a function on a blueprint.
-    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: ScryptoDecode>(
-        package_address: PackageAddress,
-        blueprint_name: S1,
-        function_name: S2,
-        args: Vec<u8>,
-    ) -> T {
-        let output = ScryptoEnv
-            .call_function(
-                package_address,
-                blueprint_name.as_ref(),
-                function_name.as_ref(),
-                args,
-            )
-            .unwrap();
-        scrypto_decode(&output).unwrap()
-    }
-
-    /// Invokes a method on a component.
-    pub fn call_method<S: AsRef<str>, T: ScryptoDecode>(
-        component_address: ComponentAddress,
-        method: S,
-        args: Vec<u8>,
-    ) -> T {
-        let output = ScryptoEnv
-            .call_method(component_address.as_node_id(), method.as_ref(), args)
-            .unwrap();
-        scrypto_decode(&output).unwrap()
     }
 
     /// Returns the transaction hash.

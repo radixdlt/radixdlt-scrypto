@@ -514,7 +514,10 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     ///     .mint_initial_supply(5);
     /// ```
     pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
-        let metadata = self.metadata_config.take().unwrap_or_else(|| Default::default());
+        let metadata = self
+            .metadata_config
+            .take()
+            .unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -570,7 +573,10 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self.metadata_config.take().unwrap_or_else(|| Default::default());
+        let metadata = self
+            .metadata_config
+            .take()
+            .unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -627,7 +633,10 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self.metadata_config.take().unwrap_or_else(|| Default::default());
+        let metadata = self
+            .metadata_config
+            .take()
+            .unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -684,7 +693,10 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self.metadata_config.take().unwrap_or_else(|| Default::default());
+        let metadata = self
+            .metadata_config
+            .take()
+            .unwrap_or_else(|| Default::default());
 
         ScryptoEnv
             .call_function(
@@ -744,7 +756,10 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
-        let metadata = self.metadata_config.take().unwrap_or_else(|| Default::default());
+        let metadata = self
+            .metadata_config
+            .take()
+            .unwrap_or_else(|| Default::default());
 
         let access_rules = self.auth.into_access_rules();
 
@@ -811,7 +826,7 @@ impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetMetadata
 }
 
 impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetAddressReservation
-for InProgressResourceBuilder<T, A>
+    for InProgressResourceBuilder<T, A>
 {
     type OutputBuilder = Self;
 
