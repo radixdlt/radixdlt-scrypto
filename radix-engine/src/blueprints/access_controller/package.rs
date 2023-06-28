@@ -1202,7 +1202,7 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn init_roles_from_rule_set(rule_set: RuleSet) -> Roles {
+fn init_roles_from_rule_set(rule_set: RuleSet) -> RolesInit {
     roles2! {
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
         "primary" => rule_set.primary_role, updatable;

@@ -41,6 +41,14 @@ impl<K: Ord, V> KeyValueStoreInit<K, V> {
         self.data.insert(key.into(), entry);
     }
 
+    pub fn set_and_maybe_lock<E: Into<K>>(&mut self, key: E, value: V, lock: bool) {
+        let entry = KeyValueStoreInitEntry {
+            value: Some(value),
+            lock,
+        };
+        self.data.insert(key.into(), entry);
+    }
+
     pub fn lock_empty<E: Into<K>>(&mut self, key: E) {
         let entry = KeyValueStoreInitEntry {
             value: None,

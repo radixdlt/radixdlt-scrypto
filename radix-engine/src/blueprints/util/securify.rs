@@ -14,7 +14,7 @@ pub trait SecurifiedAccessRules {
         owner_role: OwnerRole,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let mut roles = Roles::new();
+        let mut roles = RolesInit::new();
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_immutable_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
@@ -30,7 +30,7 @@ pub trait SecurifiedAccessRules {
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
         let (bucket, owner_rule) =
             Self::mint_securified_badge(owner_badge_data, non_fungible_local_id, api)?;
-        let mut roles = Roles::new();
+        let mut roles = RolesInit::new();
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_immutable_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
@@ -68,7 +68,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
-        let mut roles = Roles::new();
+        let mut roles = RolesInit::new();
         let owner_rule = rule!(require(owner_id));
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_mutable_role(RoleKey::new(securify_role), owner_rule.clone());
