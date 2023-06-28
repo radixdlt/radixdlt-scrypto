@@ -15,7 +15,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
     let component_address = test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(test_runner.faucet_component(), 50.into())
+                .lock_fee(test_runner.faucet_component(), 500u32.into())
                 .call_function(
                     package_address,
                     "TransactionLimitTest",
@@ -30,7 +30,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(
             component_address,
             "read_kv_stores",
@@ -69,7 +69,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
     let component_address = test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(test_runner.faucet_component(), 50.into())
+                .lock_fee(test_runner.faucet_component(), 500u32.into())
                 .call_function(
                     package_address,
                     "TransactionLimitTest",
@@ -84,7 +84,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(
             component_address,
             "write_kv_stores",
@@ -122,7 +122,7 @@ fn test_default_substate_size_limit() {
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "TransactionLimitSubstateTest",
@@ -137,7 +137,7 @@ fn test_default_substate_size_limit() {
 
     // Act #2
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "TransactionLimitSubstateTest",
@@ -178,7 +178,7 @@ fn test_default_invoke_payload_size_limit() {
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "InvokeLimitsTest",
@@ -193,7 +193,7 @@ fn test_default_invoke_payload_size_limit() {
 
     // Act #2
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "InvokeLimitsTest",
@@ -222,7 +222,7 @@ fn reproduce_crash() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "SborOverflow",

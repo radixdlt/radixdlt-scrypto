@@ -48,7 +48,7 @@ impl CallMethod {
         let proofs = self.proofs.clone().unwrap_or_default();
 
         let mut manifest_builder = ManifestBuilder::new();
-        manifest_builder.lock_fee(FAUCET, 50u32.into());
+        manifest_builder.lock_fee(FAUCET, 500u32.into());
         for resource_specifier in proofs {
             manifest_builder.borrow_mut(|builder| {
                 create_proof_from_account(

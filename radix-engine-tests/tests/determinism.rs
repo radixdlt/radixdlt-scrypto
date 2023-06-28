@@ -47,7 +47,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
 
     // Act
     let mut builder = ManifestBuilder::new();
-    builder.lock_fee(test_runner.faucet_component(), 50.into());
+    builder.lock_fee(test_runner.faucet_component(), 500u32.into());
     let proof_ids = (0..20)
         .map(|_| {
             builder

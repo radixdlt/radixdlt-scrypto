@@ -42,7 +42,7 @@ impl NewAccount {
         let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_global_id));
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 50u32.into())
+            .lock_fee(FAUCET, 500u32.into())
             .new_account_advanced(OwnerRole::Fixed(withdraw_auth))
             .build();
 
@@ -66,7 +66,7 @@ impl NewAccount {
 
             let account = commit_result.new_component_addresses()[0];
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET, 50u32.into())
+                .lock_fee(FAUCET, 500u32.into())
                 .call_method(FAUCET, "free", manifest_args!())
                 .add_instruction(InstructionV1::CallFunction {
                     package_address: RESOURCE_PACKAGE.into(),

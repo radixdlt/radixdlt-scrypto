@@ -78,7 +78,7 @@ fn test_emit_log(message_size: usize, iterations: usize, expected_err: Option<Ru
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
 

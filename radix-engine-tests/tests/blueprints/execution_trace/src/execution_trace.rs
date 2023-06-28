@@ -57,7 +57,7 @@ mod execution_trace_test {
         }
 
         pub fn test_lock_contingent_fee(&mut self) {
-            self.vault.as_fungible().lock_contingent_fee(dec!("10"));
+            self.vault.as_fungible().lock_contingent_fee(dec!("500"));
         }
     }
 }

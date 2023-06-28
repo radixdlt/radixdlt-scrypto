@@ -10,7 +10,7 @@
 CALL_METHOD 
     Address("${account_address}") 
     "lock_fee"
-    Decimal("10");
+    Decimal("500");
 
 # Publishing a new package and setting some of its royalty and access rules.
 PUBLISH_PACKAGE_ADVANCED

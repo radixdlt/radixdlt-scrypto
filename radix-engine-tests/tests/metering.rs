@@ -422,7 +422,7 @@ fn run_publish_large_package(mode: Mode) {
         "i".repeat(1024 * 1024 - 1024)
     ));
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .publish_package_advanced(
             code,
             PackageDefinition::default(),
@@ -527,11 +527,7 @@ fn spin_loop_should_end_in_reasonable_amount_of_time() {
 
     let manifest = ManifestBuilder::new()
         // First, lock the fee so that the loan will be repaid
-        .call_method(
-            component_address,
-            "lock_fee",
-            manifest_args!(Decimal::from(10)),
-        )
+        .lock_fee(FAUCET, 500u32.into())
         // Now spin-loop to wait for the fee loan to burn through
         .call_method(component_address, "spin_loop", manifest_args!())
         .build();

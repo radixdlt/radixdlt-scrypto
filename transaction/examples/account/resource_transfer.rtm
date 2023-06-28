@@ -10,7 +10,7 @@
 CALL_METHOD 
     Address("${this_account_address}") 
     "lock_fee"
-    Decimal("10");
+    Decimal("500");
 
 # Withdrawing 100 XRD from the account component
 CALL_METHOD 
