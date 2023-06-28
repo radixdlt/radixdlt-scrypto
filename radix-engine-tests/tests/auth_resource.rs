@@ -27,7 +27,9 @@ impl Action {
             Action::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_ROLE)),
             Action::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_ROLE)),
 
-            Action::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_SETTER_ROLE)),
+            Action::UpdateMetadata => {
+                (ObjectModuleId::Metadata, RoleKey::new(METADATA_SETTER_ROLE))
+            }
         }
     }
 }
