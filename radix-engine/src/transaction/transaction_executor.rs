@@ -48,8 +48,8 @@ pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub cost_unit_limit: u32,
     pub abort_when_loan_repaid: bool,
-    pub max_substate_reads_per_transaction: usize,
-    pub max_substate_writes_per_transaction: usize,
+    pub max_number_of_substates_in_track: usize,
+    pub max_number_of_substates_in_heap: usize,
     pub max_substate_size: usize,
     pub max_invoke_input_size: usize,
     pub enable_cost_breakdown: bool,
@@ -71,8 +71,8 @@ impl ExecutionConfig {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             abort_when_loan_repaid: false,
-            max_substate_reads_per_transaction: DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION,
-            max_substate_writes_per_transaction: DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
+            max_number_of_substates_in_track: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
+            max_number_of_substates_in_heap: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
             max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
             enable_cost_breakdown: false,
@@ -91,7 +91,8 @@ impl ExecutionConfig {
     pub fn for_genesis_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
-            max_substate_reads_per_transaction: 50_000,
+            max_number_of_substates_in_track: 50_000,
+            max_number_of_substates_in_heap: 50_000,
             max_number_of_events: 1_000_000,
             ..Self::default()
         }
@@ -243,7 +244,7 @@ where
             Ok(()) => {
                 let (
                     interpretation_result,
-                    (limits_module, mut costing_module, runtime_module, execution_trace_module),
+                    (mut costing_module, runtime_module, execution_trace_module),
                 ) = self.interpret_manifest(
                     &mut track,
                     executable,
@@ -298,8 +299,6 @@ where
                         // Finalize everything
                         let (application_events, application_logs) =
                             runtime_module.finalize(is_success);
-                        let execution_metrics =
-                            limits_module.finalize(fee_summary.execution_cost_sum);
                         let execution_trace =
                             execution_trace_module.finalize(&fee_payments, is_success);
                         let (tracked_nodes, deleted_partitions) = track.finalize();
@@ -320,7 +319,6 @@ where
                             fee_summary,
                             application_events,
                             application_logs,
-                            execution_metrics,
                             execution_trace,
                         })
                     }
@@ -467,7 +465,6 @@ where
     ) -> (
         Result<Vec<InstructionOutput>, RuntimeError>,
         (
-            LimitsModule,
             CostingModule,
             TransactionRuntimeModule,
             ExecutionTraceModule,
@@ -855,33 +852,6 @@ where
                     "{:<30}: {:>10}",
                     "Royalty XRD",
                     commit.fee_summary.total_royalty_cost_xrd.to_string()
-                );
-
-                println!("{:-^80}", "Execution Metrics");
-                println!(
-                    "{:<30}: {:>10}",
-                    "Total Substate Read Bytes", commit.execution_metrics.substate_read_size
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Total Substate Write Bytes", commit.execution_metrics.substate_write_size
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Substate Read Count", commit.execution_metrics.substate_read_count
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Substate Write Count", commit.execution_metrics.substate_write_count
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Peak WASM Memory Usage Bytes", commit.execution_metrics.max_wasm_memory_used
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Max Invoke Payload Size Bytes",
-                    commit.execution_metrics.max_invoke_payload_size
                 );
 
                 println!("{:-^80}", "Application Logs");

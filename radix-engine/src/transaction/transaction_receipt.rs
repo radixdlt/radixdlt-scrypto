@@ -46,26 +46,6 @@ pub struct FeeLocks {
     pub contingent_lock: Decimal,
 }
 
-/// Metrics gathered during transaction execution.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub struct ExecutionMetrics {
-    /// Consumed cost units (excluding royalties)
-    pub execution_cost_units_consumed: u32,
-    /// Total substate read size in bytes.
-    pub substate_read_size: usize,
-    /// Substate read count.
-    pub substate_read_count: usize,
-    /// Total substate write size in bytes.
-    pub substate_write_size: usize,
-    /// Substate write count.
-    pub substate_write_count: usize,
-    /// Peak WASM memory usage during transaction execution.
-    /// This is the highest sum of all nested WASM instances.
-    pub max_wasm_memory_used: usize,
-    /// The highest invoke payload size during transaction execution.
-    pub max_invoke_payload_size: usize,
-}
-
 /// Captures whether a transaction should be committed, and its other results
 #[derive(Debug, Clone, ScryptoSbor)]
 pub enum TransactionResult {
@@ -91,8 +71,6 @@ pub struct CommitResult {
     pub fee_summary: FeeSummary,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
-    /// Metrics gathered during transaction execution.
-    pub execution_metrics: ExecutionMetrics,
     /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
     /// Mainly for transaction preview.
     pub execution_trace: TransactionExecutionTrace,

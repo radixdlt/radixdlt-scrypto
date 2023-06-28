@@ -151,8 +151,8 @@ impl SystemModuleMixer {
                 auth_zone_stack: Vec::new(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
-                max_substate_read_count: execution_config.max_substate_reads_per_transaction,
-                max_substate_write_count: execution_config.max_substate_writes_per_transaction,
+                max_number_of_substates_in_track: execution_config.max_number_of_substates_in_track,
+                max_number_of_substates_in_heap: execution_config.max_number_of_substates_in_heap,
                 max_substate_size: execution_config.max_substate_size,
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
                 max_number_of_logs: execution_config.max_number_of_logs,
@@ -175,17 +175,11 @@ impl SystemModuleMixer {
     pub fn unpack(
         self,
     ) -> (
-        LimitsModule,
         CostingModule,
         TransactionRuntimeModule,
         ExecutionTraceModule,
     ) {
-        (
-            self.limits,
-            self.costing,
-            self.transaction_runtime,
-            self.execution_trace,
-        )
+        (self.costing, self.transaction_runtime, self.execution_trace)
     }
 }
 

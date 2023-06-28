@@ -162,7 +162,7 @@ fn test_default_substate_size_limit() {
     // Assert #2
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemModuleError(SystemModuleError::TransactionLimitsError(
-            TransactionLimitsError::MaxSubstateWriteSizeExceeded(_),
+            TransactionLimitsError::MaxSubstateSizeExceeded(_),
         )) => true,
         _ => false,
     })
