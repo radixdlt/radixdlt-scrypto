@@ -95,7 +95,7 @@ pub fn load_cost_breakdown(content: &str) -> BTreeMap<String, u32> {
     content
         .split("\n")
         .filter(|x| x.len() > 0)
-        .skip(4)
+        .skip(6)
         .for_each(|x| {
             let mut tokens = x.split(",");
             let entry = tokens.next().unwrap().trim();
@@ -117,7 +117,15 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<64},{:>10}\n",
-            "Total Execution Cost (XRD)",
+            "Total Cost (XRD)",
+            fee_summary.total_cost().to_string()
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<64},{:>10}\n",
+            "Execution Cost (XRD)",
             fee_summary.total_execution_cost_xrd.to_string()
         )
         .as_str(),
@@ -125,7 +133,15 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<64},{:>10}\n",
-            "Total State Expansion Cost (XRD)",
+            "Tipping Cost (XRD)",
+            fee_summary.total_tipping_cost_xrd.to_string()
+        )
+        .as_str(),
+    );
+    buffer.push_str(
+        format!(
+            "{:<64},{:>10}\n",
+            "State Expansion Cost (XRD)",
             fee_summary.total_state_expansion_cost_xrd.to_string()
         )
         .as_str(),
@@ -133,7 +149,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<64},{:>10}\n",
-            "Total Royalty Cost (XRD)",
+            "Royalty Cost (XRD)",
             fee_summary.total_royalty_cost_xrd.to_string()
         )
         .as_str(),
@@ -141,12 +157,11 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     buffer.push_str(
         format!(
             "{:<64},{:>10}\n",
-            "Total Cost Units Consumed",
+            "Cost Units Consumed",
             fee_summary.execution_cost_breakdown.values().sum::<u32>()
         )
         .as_str(),
     );
-
     for (k, v) in &fee_summary.execution_cost_breakdown {
         buffer.push_str(format!("{:<64},{:>10}\n", k, v).as_str());
     }

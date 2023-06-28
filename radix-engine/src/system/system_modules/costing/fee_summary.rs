@@ -46,6 +46,13 @@ impl FeeSummary {
         self.total_tipping_cost_xrd
     }
 
+    pub fn total_cost(&self) -> Decimal {
+        self.total_execution_cost_xrd
+            + self.total_tipping_cost_xrd
+            + self.total_state_expansion_cost_xrd
+            + self.total_royalty_cost_xrd
+    }
+
     //===================
     // For testing only
     //===================

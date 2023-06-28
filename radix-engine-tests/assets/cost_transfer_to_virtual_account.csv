@@ -1,7 +1,9 @@
-Total Execution Cost (XRD)                                      ,  10.10519
-Total State Expansion Cost (XRD)                                ,     0.747
-Total Royalty Cost (XRD)                                        ,         0
-Total Cost Units Consumed                                       ,  10105190
+Total Cost (XRD)                                                ,  10.85219
+Execution Cost (XRD)                                            ,  10.10519
+Tipping Cost (XRD)                                              ,         0
+State Expansion Cost (XRD)                                      ,     0.747
+Royalty Cost (XRD)                                              ,         0
+Cost Units Consumed                                             ,  10105190
 AfterInvoke                                                     ,       443
 AllocateNodeId                                                  ,     13000
 BeforeInvoke                                                    ,      9364
