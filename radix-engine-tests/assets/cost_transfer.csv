@@ -1,19 +1,19 @@
-Total Cost Units                                                ,   5522024
-Total Fee                                                       ,  27.61012
+Total Cost Units                                                ,   5523922
+Total Fee                                                       ,  27.61961
 AfterInvoke                                                     ,       150
 AllocateNodeId                                                  ,      6500
 BeforeInvoke                                                    ,      5731
 CloseSubstate                                                   ,     81000
-Commit::GlobalAccount                                           ,    100000
-Commit::InternalFungibleVault                                   ,    200000
+Commit::GlobalAccount                                           ,    100090
+Commit::InternalFungibleVault                                   ,    200002
 CreateNode                                                      ,      9485
 DropNode                                                        ,      9485
 EmitEvent                                                       ,      1830
 LockFee                                                         ,       500
-OpenSubstate::GlobalAccount                                     ,   1368155
-OpenSubstate::GlobalFungibleResourceManager                     ,    328562
-OpenSubstate::GlobalPackage                                     ,   2457577
-OpenSubstate::InternalFungibleVault                             ,    325280
+OpenSubstate::GlobalAccount                                     ,   1368199
+OpenSubstate::GlobalFungibleResourceManager                     ,    328586
+OpenSubstate::GlobalPackage                                     ,   2459259
+OpenSubstate::InternalFungibleVault                             ,    325336
 OpenSubstate::InternalGenericComponent                          ,     36862
 QueryActor                                                      ,      4000
 ReadSubstate                                                    ,    114176

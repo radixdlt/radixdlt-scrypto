@@ -1,23 +1,23 @@
-Total Cost Units                                                ,  64526957
-Total Fee                                                       ,322.634785
+Total Cost Units                                                ,  85487174
+Total Fee                                                       , 427.43587
 AfterInvoke                                                     ,       201
 AllocateNodeId                                                  ,      9500
 BeforeInvoke                                                    ,   1052687
 CloseSubstate                                                   ,     65000
-Commit::GlobalGenericComponent                                  ,    100000
-Commit::GlobalPackage                                           ,    783800
-Commit::InternalFungibleVault                                   ,    700000
+Commit::GlobalGenericComponent                                  ,    100002
+Commit::GlobalPackage                                           ,  21738054
+Commit::InternalFungibleVault                                   ,    703091
 CreateNode                                                      ,   2108851
 DropNode                                                        ,     11071
 EmitEvent                                                       ,      1824
 LockFee                                                         ,       500
 MoveModules                                                     ,      7000
-OpenSubstate::GlobalFungibleResourceManager                     ,    245229
-OpenSubstate::GlobalGenericComponent                            ,    161676
-OpenSubstate::GlobalPackage                                     ,   5059130
-OpenSubstate::InternalFungibleVault                             ,    164825
+OpenSubstate::GlobalFungibleResourceManager                     ,    245251
+OpenSubstate::GlobalGenericComponent                            ,    161694
+OpenSubstate::GlobalPackage                                     ,   5061912
+OpenSubstate::InternalFungibleVault                             ,    164853
 OpenSubstate::InternalGenericComponent                          ,     24207
-OpenSubstate::InternalKeyValueStore                             ,     80603
+OpenSubstate::InternalKeyValueStore                             ,     80623
 QueryActor                                                      ,      2000
 ReadSubstate                                                    ,    460670
 RunNativeCode::Worktop_drop                                     ,      6683

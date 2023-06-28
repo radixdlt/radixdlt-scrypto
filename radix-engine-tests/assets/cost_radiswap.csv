@@ -1,22 +1,22 @@
-Total Cost Units                                                ,  13039244
-Total Fee                                                       ,  65.19622
+Total Cost Units                                                ,  13044415
+Total Fee                                                       , 65.222075
 AfterInvoke                                                     ,       650
 AllocateNodeId                                                  ,     15000
 BeforeInvoke                                                    ,     14156
 CloseSubstate                                                   ,    189000
-Commit::GlobalAccount                                           ,    300000
-Commit::GlobalGenericComponent                                  ,    100000
-Commit::InternalFungibleVault                                   ,    700000
+Commit::GlobalAccount                                           ,    300581
+Commit::GlobalGenericComponent                                  ,    100001
+Commit::InternalFungibleVault                                   ,    701549
 CreateNode                                                      ,     21800
 DropNode                                                        ,     21146
 EmitEvent                                                       ,      5062
 LockFee                                                         ,       500
-OpenSubstate::GlobalAccount                                     ,   2808124
-OpenSubstate::GlobalFungibleResourceManager                     ,    826649
-OpenSubstate::GlobalGenericComponent                            ,    161647
-OpenSubstate::GlobalPackage                                     ,   4453967
-OpenSubstate::GlobalTwoResourcePool                             ,    408129
-OpenSubstate::InternalFungibleVault                             ,    813947
+OpenSubstate::GlobalAccount                                     ,   2808162
+OpenSubstate::GlobalFungibleResourceManager                     ,    826701
+OpenSubstate::GlobalGenericComponent                            ,    161659
+OpenSubstate::GlobalPackage                                     ,   4456723
+OpenSubstate::GlobalTwoResourcePool                             ,    408199
+OpenSubstate::InternalFungibleVault                             ,    814059
 OpenSubstate::InternalGenericComponent                          ,     85484
 QueryActor                                                      ,      6500
 ReadSubstate                                                    ,    536856

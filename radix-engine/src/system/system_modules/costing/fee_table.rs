@@ -67,11 +67,13 @@ impl FeeTable {
             let cost = match info {
                 StoreAccess::ReadFromDb(size) => {
                     // Execution time (µs): f(size) = 0.0009622109 * size + 389.5155
-                    add(cast(*size) / 1_000, 400)
+                    // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 + 40,000
+                    add(cast(*size) / 10, 40_000)
                 }
                 StoreAccess::ReadFromDbNotFound => {
-                    // The cost for not found varies. Apply the max.
-                    4_000
+                    // Execution time (µs): varies, using max 4,000
+                    // Execution cost: 4,000 * 100
+                    400_000
                 }
                 StoreAccess::NewEntryInTrack => {
                     // The max number of entries is limited by limits module.
@@ -80,8 +82,7 @@ impl FeeTable {
             };
             sum = add(sum, cost);
         }
-
-        mul(sum, 100 /* 1 us = 100 cost units */)
+        sum
     }
 
     //======================
@@ -94,9 +95,11 @@ impl FeeTable {
             StoreCommit::Insert { node_id: _, size } => {
                 add(
                     // Execution time (µs): f(size) = 0.0004 * size + 1000
-                    mul(add(cast(*size) / 2_500, 1_000), 100),
-                    // State expansion: f(size) = 20 * size
-                    mul(cast(*size), 0),
+                    // Execution cost: (0.0004 * size + 1000) * 100 = 0.04 * size + 100,000
+                    add(cast(*size) / 25, 100_000),
+                    // State expansion
+                    // TODO: separate this out if using cost units isn't sufficient to limit expansion speed
+                    mul(cast(*size), 10),
                 )
             }
             StoreCommit::Update {
@@ -105,10 +108,12 @@ impl FeeTable {
                 old_size,
             } => add(
                 // Execution time (µs): f(size) = 0.0004 * size + 1000
-                mul(add(cast(*size) / 2_500, 1_000), 100),
-                // State expansion: f(size) = 20 * size
+                // Execution cost: (0.0004 * size + 1000) * 100 = 0.04 * size + 100,000
+                add(cast(*size) / 25, 100_000),
+                // State expansion
+                // TODO: separate this out if using cost units isn't sufficient to limit expansion speed
                 if size > old_size {
-                    mul(cast(size - old_size), 0)
+                    mul(cast(size - old_size), 10)
                 } else {
                     0
                 },

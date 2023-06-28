@@ -1,23 +1,23 @@
-Total Cost Units                                                ,  10269360
-Total Fee                                                       ,   51.3468
+Total Cost Units                                                ,  10279682
+Total Fee                                                       ,  51.39841
 AfterInvoke                                                     ,       443
 AllocateNodeId                                                  ,     13000
 BeforeInvoke                                                    ,      9364
 CloseSubstate                                                   ,    113500
-Commit::GlobalAccount                                           ,    100000
-Commit::GlobalVirtualSecp256k1Account                           ,    900000
-Commit::InternalFungibleVault                                   ,    700000
+Commit::GlobalAccount                                           ,    100090
+Commit::GlobalVirtualSecp256k1Account                           ,    904313
+Commit::InternalFungibleVault                                   ,    703091
 CreateNode                                                      ,     19531
 DropNode                                                        ,     16794
 EmitEvent                                                       ,      3046
 LockFee                                                         ,       500
 MoveModules                                                     ,      4000
-OpenSubstate::GlobalAccount                                     ,   1045488
-OpenSubstate::GlobalFungibleResourceManager                     ,    330970
-OpenSubstate::GlobalPackage                                     ,   4412399
+OpenSubstate::GlobalAccount                                     ,   1045518
+OpenSubstate::GlobalFungibleResourceManager                     ,    330994
+OpenSubstate::GlobalPackage                                     ,   4415145
 OpenSubstate::GlobalVirtualSecp256k1Account                     ,   1603184
 OpenSubstate::InternalAccount                                   ,       576
-OpenSubstate::InternalFungibleVault                             ,    167119
+OpenSubstate::InternalFungibleVault                             ,    167147
 OpenSubstate::InternalGenericComponent                          ,     50057
 QueryActor                                                      ,      4000
 ReadSubstate                                                    ,    165502
