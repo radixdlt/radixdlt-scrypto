@@ -38,20 +38,6 @@ impl From<&str> for MethodKey {
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct MethodEntry {
-    pub permission: MethodAccessibility,
-}
-
-impl MethodEntry {
-    pub fn new<P: Into<MethodAccessibility>>(permission: P) -> Self {
-        Self {
-            permission: permission.into(),
-        }
-    }
-}
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum MethodAccessibility {
     /// Method is accessible to all
     Public,
@@ -78,13 +64,6 @@ impl From<RoleList> for MethodAccessibility {
     fn from(value: RoleList) -> Self {
         Self::RoleProtected(value)
     }
-}
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum AttachedModule {
-    Metadata,
-    Royalty,
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
