@@ -79,3 +79,43 @@ macro_rules! mintable {
 }
 
 
+pub struct BurnableRoles<T> {
+    pub burner: T,
+    pub burner_updater: T,
+}
+
+impl<T> BurnableRoles<T> {
+    pub fn list(self) -> Vec<(&'static str, T)> {
+        vec![
+            (BURNER_ROLE, self.burner),
+            (BURNER_UPDATER_ROLE, self.burner_updater),
+        ]
+    }
+}
+
+impl BurnableRoles<(Option<AccessRule>, bool)> {
+    pub fn to_role_init(self) -> ResourceActionRoleInit {
+        ResourceActionRoleInit {
+            actor: RoleDefinition {
+                value: self.burner.0,
+                lock: self.burner.1,
+            },
+            updater: RoleDefinition {
+                value: self.burner_updater.0,
+                lock: self.burner_updater.1,
+            },
+        }
+    }
+}
+
+
+#[macro_export]
+macro_rules! burnable {
+    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
+        let burnable_roles = internal_roles_struct!(BurnableRoles, $($role => $rule, $locked;)*);
+        burnable_roles.to_role_init()
+    });
+}
+
+
+

@@ -234,24 +234,30 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use radix_engine_interface::burnable;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be burnable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .burnable(rule!(require(resource_address)), LOCKED);
+    ///    .burnable(burnable! {
+    ///        burner => rule!(require(resource_address)), locked;
+    ///        burner_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be freely burnable, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .burnable(rule!(allow_all), MUTABLE(rule!(require(resource_address))));
+    ///    .burnable(burnable! {
+    ///        burner => rule!(allow_all), updatable;
+    ///        burner_updater => rule!(require(resource_address)), updatable;
+    ///    });
     /// ```
-    fn burnable<R: Into<AccessRule>>(
+    fn burnable(
         self,
-        method_auth: AccessRule,
-        mutability: R,
+        auth: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
-        self.add_auth(Burn, method_auth, mutability.into())
+        self.add_auth(Burn, auth.actor.value.unwrap(), auth.updater.value.unwrap())
     }
 
     /// Sets the resource to be recallable from vaults.

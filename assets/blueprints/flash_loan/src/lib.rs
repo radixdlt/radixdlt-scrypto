@@ -51,7 +51,10 @@ mod basic_flash_loan {
                     minter => rule!(require(auth_token.resource_address())), locked;
                     minter_updater => rule!(deny_all), locked;
                 })
-                .burnable(rule!(require(auth_token.resource_address())), LOCKED)
+                .burnable(burnable! {
+                    burner => rule!(require(auth_token.resource_address())), locked;
+                    burner_updater => rule!(deny_all), locked;
+                })
                 .restrict_deposit(rule!(deny_all), LOCKED)
                 .create_with_no_initial_supply();
 

@@ -254,7 +254,10 @@ mod genesis_helper {
                         minter => rule!(require(address)), locked;
                         minter_updater => rule!(deny_all), locked;
                     })
-                    .burnable(rule!(require(address)), rule!(deny_all))
+                    .burnable(burnable! {
+                        burner => rule!(require(address)), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    })
                     .create_with_no_initial_supply();
             } else {
                 builder.create_with_no_initial_supply();
