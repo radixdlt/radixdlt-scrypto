@@ -1,6 +1,6 @@
 use super::FeeTable;
 use crate::kernel::actor::Actor;
-use crate::track::interface::StoreAccessInfo;
+use crate::track::interface::{StoreAccessInfo, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
 
@@ -66,6 +66,9 @@ pub enum CostingEntry<'a> {
     },
     CloseSubstate {
         store_access: &'a StoreAccessInfo,
+    },
+    Commit {
+        store_commit: &'a StoreCommit,
     },
 
     /* unstable node apis */
@@ -169,6 +172,7 @@ impl<'a> CostingEntry<'a> {
             }
             CostingEntry::ScanSubstates { store_access } => ft.scan_substates_cost(store_access),
             CostingEntry::TakeSubstate { store_access } => ft.take_substates_cost(store_access),
+            CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),
             CostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
             CostingEntry::QueryActor => ft.query_actor_cost(),

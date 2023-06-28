@@ -148,8 +148,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             global_address_reservations.push(global_address_reservation);
         }
 
+        // Call TX processor
         let mut system = SystemService::new(&mut kernel);
-
         let rtn = system.call_function(
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,

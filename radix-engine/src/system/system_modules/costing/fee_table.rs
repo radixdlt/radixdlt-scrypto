@@ -1,6 +1,6 @@
 use crate::{
     kernel::actor::Actor,
-    track::interface::{StoreAccess, StoreAccessInfo},
+    track::interface::{StoreAccess, StoreAccessInfo, StoreCommit},
     types::*,
 };
 use lazy_static::lazy_static;
@@ -82,6 +82,48 @@ impl FeeTable {
         }
 
         mul(sum, 100 /* 1 us = 100 cost units */)
+    }
+
+    //======================
+    // Commit costs
+    //======================
+
+    #[inline]
+    pub fn store_commit_cost(&self, store_commit: &StoreCommit) -> u32 {
+        match store_commit {
+            StoreCommit::Insert {
+                substate_key: _,
+                size,
+            } => {
+                add(
+                    // Execution time: f(size) = 0.0004 * size + 1000
+                    add(cast(*size) / 2_500, 1_000),
+                    // State expansion: f(size) = 20 * size
+                    mul(cast(*size), 20),
+                )
+            }
+            StoreCommit::Update {
+                substate_key: _,
+                size,
+                old_size,
+            } => add(
+                // Execution time: f(size) = 0.0004 * size + 1000
+                add(cast(*size) / 2_500, 1_000),
+                // State expansion: f(size) = 20 * size
+                if size > old_size {
+                    mul(cast(size - old_size), 20)
+                } else {
+                    0
+                },
+            ),
+            StoreCommit::Delete {
+                substate_key: _,
+                old_size: _,
+            } => {
+                // TODO: refund?
+                0
+            }
+        }
     }
 
     //======================

@@ -502,6 +502,17 @@ where
                 executable.references(),
                 executable.blobs(),
             )
+            .and_then(|x| {
+                let info = track.get_commit_info();
+                for commit in info {
+                    if let Err(e) = system.modules.apply_execution_cost(CostingEntry::Commit {
+                        store_commit: &commit,
+                    }) {
+                        return Err(e);
+                    }
+                }
+                Ok(x)
+            })
             .map(|rtn| {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
                 output

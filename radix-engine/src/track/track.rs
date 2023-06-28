@@ -15,6 +15,8 @@ use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
 
+use super::interface::{StoreCommit, StoreCommitInfo};
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct StateUpdates {
     pub database_updates: DatabaseUpdates,
@@ -1170,5 +1172,88 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         // This is used for transaction tracker only, for which we don't account for store access.
 
         self.deleted_partitions.insert((*node_id, partition_num));
+    }
+
+    fn get_commit_info(&mut self) -> StoreCommitInfo {
+        let mut store_commit = Vec::new();
+
+        for (node_id, node) in &self.tracked_nodes {
+            for (partition_number, partition) in &node.tracked_partitions {
+                for (sort_key, substate) in &partition.substates {
+                    let substate_key = substate.substate_key.clone();
+                    match &substate.substate_value {
+                        TrackedSubstateValue::New(v) => {
+                            store_commit.push(StoreCommit::Insert {
+                                substate_key,
+                                size: v.value.len(),
+                            });
+                        }
+                        TrackedSubstateValue::ReadOnly(_) => {
+                            // No op
+                        }
+                        TrackedSubstateValue::ReadExistAndWrite(old_value, write) => match write {
+                            Write::Update(x) => {
+                                store_commit.push(StoreCommit::Update {
+                                    substate_key,
+                                    size: x.value.len(),
+                                    old_size: old_value.len(),
+                                });
+                            }
+                            Write::Delete => {
+                                store_commit.push(StoreCommit::Delete {
+                                    substate_key,
+                                    old_size: old_value.len(),
+                                });
+                            }
+                        },
+                        TrackedSubstateValue::ReadNonExistAndWrite(value) => {
+                            store_commit.push(StoreCommit::Insert {
+                                substate_key,
+                                size: value.value.len(),
+                            });
+                        }
+                        TrackedSubstateValue::WriteOnly(write) => {
+                            let old_size = self
+                                .substate_db
+                                .get_substate(
+                                    &M::to_db_partition_key(node_id, *partition_number),
+                                    &sort_key,
+                                )
+                                .map(|x| x.len());
+
+                            match (old_size, write) {
+                                (Some(old_size), Write::Update(x)) => {
+                                    store_commit.push(StoreCommit::Update {
+                                        substate_key,
+                                        size: x.value.len(),
+                                        old_size,
+                                    });
+                                }
+                                (Some(old_size), Write::Delete) => {
+                                    store_commit.push(StoreCommit::Delete {
+                                        substate_key,
+                                        old_size,
+                                    });
+                                }
+                                (None, Write::Update(x)) => {
+                                    store_commit.push(StoreCommit::Insert {
+                                        substate_key,
+                                        size: x.value.len(),
+                                    });
+                                }
+                                (None, Write::Delete) => {
+                                    // TODO: this should never happen?
+                                }
+                            }
+                        }
+                        TrackedSubstateValue::Garbage => {
+                            // No op
+                        }
+                    }
+                }
+            }
+        }
+
+        store_commit
     }
 }

@@ -134,6 +134,9 @@ pub trait SubstateStore {
 
     /// Note: unstable interface, for intent transaction tracker only
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);
+
+    /// Return the commit info
+    fn get_commit_info(&mut self) -> StoreCommitInfo;
 }
 
 pub type StoreAccessInfo = Vec<StoreAccess>;
@@ -147,4 +150,23 @@ pub enum StoreAccess {
     /// A new entry has been added to track
     /// System limits how many items that can be tracked.
     NewEntryInTrack,
+}
+
+pub type StoreCommitInfo = Vec<StoreCommit>;
+
+#[derive(Debug, Clone)]
+pub enum StoreCommit {
+    Insert {
+        substate_key: SubstateKey,
+        size: usize,
+    },
+    Update {
+        substate_key: SubstateKey,
+        size: usize,
+        old_size: usize,
+    },
+    Delete {
+        substate_key: SubstateKey,
+        old_size: usize,
+    },
 }

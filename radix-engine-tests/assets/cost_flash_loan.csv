@@ -1,9 +1,10 @@
-Total Cost Units                                                ,  15619815
-Total Fee                                                       , 7.8099075
+Total Cost Units                                                ,  15628175
+Total Fee                                                       , 7.8140875
 AfterInvoke                                                     ,       974
 AllocateNodeId                                                  ,     26500
 BeforeInvoke                                                    ,     25508
 CloseSubstate                                                   ,    312000
+Commit                                                          ,      8360
 CreateNode                                                      ,     38272
 DropNode                                                        ,     38272
 EmitEvent                                                       ,      6730
