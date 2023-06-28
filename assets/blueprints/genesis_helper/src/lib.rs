@@ -250,7 +250,10 @@ mod genesis_helper {
 
             if let Some(address) = owner_badge_address {
                 builder
-                    .mintable(rule!(require(address)), rule!(deny_all))
+                    .mintable(mintable! {
+                        minter => rule!(require(address)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    })
                     .burnable(rule!(require(address)), rule!(deny_all))
                     .create_with_no_initial_supply();
             } else {

@@ -20,7 +20,10 @@ mod resource_test {
                             "name" => "Super Admin Badge".to_owned(), locked;
                         }
                     })
-                    .mintable(rule!(allow_all), rule!(allow_all))
+                    .mintable(mintable! {
+                        minter => rule!(allow_all), updatable;
+                        minter_updater => rule!(allow_all), updatable;
+                    })
                     .create_with_no_initial_supply();
 
             super_admin_manager

@@ -47,7 +47,10 @@ mod basic_flash_loan {
                         "name" => "Promise token for BasicFlashLoan - must be returned to be burned!".to_string(), locked;
                     }
                 })
-                .mintable(rule!(require(auth_token.resource_address())), LOCKED)
+                .mintable(mintable! {
+                    minter => rule!(require(auth_token.resource_address())), locked;
+                    minter_updater => rule!(deny_all), locked;
+                })
                 .burnable(rule!(require(auth_token.resource_address())), LOCKED)
                 .restrict_deposit(rule!(deny_all), LOCKED)
                 .create_with_no_initial_supply();

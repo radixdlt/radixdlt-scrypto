@@ -199,24 +199,30 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use radix_engine_interface::mintable;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be mintable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .mintable(rule!(require(resource_address)), LOCKED);
+    ///    .mintable(mintable! {
+    ///         minter => rule!(require(resource_address)), locked;
+    ///         minter_updater => rule!(deny_all), locked;
+    ///     });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be mintable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .mintable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .mintable(mintable! {
+    ///         minter => rule!(deny_all), updatable;
+    ///         minter_updater => rule!(require(resource_address)), locked;
+    ///    });
     /// ```
-    fn mintable<R: Into<AccessRule>>(
+    fn mintable(
         self,
-        method_auth: AccessRule,
-        mutability: R,
+        auth: (AccessRule, AccessRule),
     ) -> Self::OutputBuilder {
-        self.add_auth(Mint, method_auth, mutability.into())
+        self.add_auth(Mint, auth.0, auth.1)
     }
 
     /// Sets the resource to be burnable.

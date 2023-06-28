@@ -37,3 +37,35 @@ pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
 pub fn check_non_fungible_amount(amount: &Decimal) -> bool {
     !amount.is_negative() && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
 }
+
+
+pub struct MintableRoles<T> {
+    pub minter: T,
+    pub minter_updater: T,
+}
+
+impl<T> MintableRoles<T> {
+    pub fn list(self) -> Vec<(&'static str, T)> {
+        vec![
+            (MINTER_ROLE, self.minter),
+            (MINTER_UPDATER_ROLE, self.minter_updater),
+        ]
+    }
+}
+
+impl MintableRoles<(Option<AccessRule>, bool)> {
+    pub fn to_roles(self) -> (AccessRule, AccessRule) {
+        (self.minter.0.unwrap(), self.minter_updater.0.unwrap())
+    }
+}
+
+
+#[macro_export]
+macro_rules! mintable {
+    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
+        let mintable_roles = internal_roles_struct!(MintableRoles, $($role => $rule, $locked;)*);
+        mintable_roles.to_roles()
+    });
+}
+
+
