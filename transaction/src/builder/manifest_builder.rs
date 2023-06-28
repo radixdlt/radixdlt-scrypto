@@ -1164,6 +1164,16 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn new_account(&mut self) -> &mut Self {
+        self.add_instruction(InstructionV1::CallFunction {
+            package_address: ACCOUNT_PACKAGE.into(),
+            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+            function_name: ACCOUNT_CREATE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccountCreateInput {}),
+        })
+        .0
+    }
+
     pub fn lock_fee_and_withdraw(
         &mut self,
         account: ComponentAddress,

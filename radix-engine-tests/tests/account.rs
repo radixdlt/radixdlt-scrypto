@@ -1,7 +1,8 @@
-use radix_engine::errors::{RuntimeError, SystemModuleError};
+use radix_engine::errors::{RuntimeError, SystemModuleError, ApplicationError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
+use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::account::{
     AccountSecurifyInput, ACCOUNT_SECURIFY_IDENT, ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
@@ -262,4 +263,20 @@ fn account_to_bucket_to_allocated_account() {
 #[test]
 fn account_to_bucket_to_virtual_account() {
     account_to_bucket_to_account_internal(true);
+}
+
+#[test]
+fn create_account_and_bucket_fail() {
+    let mut test_runner = TestRunner::builder().build();
+    let manifest = ManifestBuilder::new()
+        .new_account()
+        .build();
+    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(
+            ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::DropNonEmptyBucket))
+        )
+    });
 }
