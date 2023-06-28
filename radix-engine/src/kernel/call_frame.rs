@@ -880,13 +880,12 @@ impl<L: Clone> CallFrame<L> {
                             substate_key,
                             substate_value,
                         )
-                        .map_err(MoveModuleError::TrackSetSubstateError)?
-                        .0,
+                        .map_err(MoveModuleError::TrackSetSubstateError)?,
                 );
             }
         }
 
-        Ok(StoreAccessInfo(store_access))
+        Ok(store_access)
     }
 
     pub fn add_global_reference(&mut self, address: GlobalAddress) {

@@ -63,7 +63,7 @@ impl FeeTable {
 
     fn store_access_cost(store_access: &StoreAccessInfo) -> u32 {
         let mut sum = 0;
-        for info in &store_access.0 {
+        for info in store_access {
             let cost = match info {
                 StoreAccess::ReadFromDb(size) => {
                     // Execution time: f(size) = 0.0009622109 * size + 389.5155
@@ -72,28 +72,6 @@ impl FeeTable {
                 StoreAccess::ReadFromDbNotFound => {
                     // The cost for not found varies. Apply the max.
                     4_000
-                }
-                StoreAccess::ReadFromTrack(size) => {
-                    // Execution time: f(size) = 0.00012232433 * size + 1.4939442
-                    add(cast(*size) / 10_000, 2)
-                }
-                StoreAccess::Write(size) => {
-                    // Execution time: f(size) = 0.0004 * size + 1000
-                    // State bloat: f(size) = 4 * size
-                    add(mul(cast(*size), 4), 1_000)
-                }
-                StoreAccess::Rewrite(size_old, size_new) => {
-                    if size_new <= size_old {
-                        // TODO: refund for reduced write size?
-                        0
-                    } else {
-                        // The non-constant part of write cost
-                        mul(cast(size_new - size_old), 4)
-                    }
-                }
-                StoreAccess::Delete => {
-                    // The constant part of write cost (RocksDB tombstones a deleted entry)
-                    1_000
                 }
             };
             sum = add(sum, cost);

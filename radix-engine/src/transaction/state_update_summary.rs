@@ -12,7 +12,8 @@ use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::{TrackedKey, TrackedNode, Write};
+use crate::track::TrackedSubstateValue;
+use crate::track::{TrackedNode, Write};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
@@ -312,18 +313,19 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
 
                 for tracked_key in tracked_module.substates.values() {
                     match &tracked_key.tracked {
-                        TrackedKey::New(substate) | TrackedKey::ReadNonExistAndWrite(substate) => {
+                        TrackedSubstateValue::New(substate)
+                        | TrackedSubstateValue::ReadNonExistAndWrite(substate) => {
                             let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
                             added.insert(id);
                         }
-                        TrackedKey::ReadExistAndWrite(old, write) => match write {
+                        TrackedSubstateValue::ReadExistAndWrite(old, write) => match write {
                             Write::Update(..) => {}
                             Write::Delete => {
                                 let id: NonFungibleLocalId = old.as_typed().unwrap();
                                 removed.insert(id);
                             }
                         },
-                        TrackedKey::WriteOnly(write) => match write {
+                        TrackedSubstateValue::WriteOnly(write) => match write {
                             Write::Update(substate) => {
                                 let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
                                 added.insert(id);
@@ -332,7 +334,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                                 // This may occur if a non fungible is added then removed from the same vault
                             }
                         },
-                        TrackedKey::ReadOnly(..) | TrackedKey::Garbage => {}
+                        TrackedSubstateValue::ReadOnly(..) | TrackedSubstateValue::Garbage => {}
                     }
                 }
 

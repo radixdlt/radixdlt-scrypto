@@ -142,6 +142,4 @@ pub type StoreAccessInfo = Vec<StoreAccess>;
 pub enum StoreAccess {
     ReadFromDb(usize),
     ReadFromDbNotFound,
-    Insert,
-    Write { old_size: usize, new_size: usize },
 }
