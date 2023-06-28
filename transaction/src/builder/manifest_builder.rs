@@ -112,6 +112,12 @@ impl ManifestBuilder {
         }
     }
 
+    pub fn add_blob(&mut self, blob: Vec<u8>) -> &mut Self {
+        let hash = hash(&blob);
+        self.blobs.insert(hash, blob);
+        self
+    }
+
     /// Adds a raw instruction.
     pub fn add_instruction(
         &mut self,
