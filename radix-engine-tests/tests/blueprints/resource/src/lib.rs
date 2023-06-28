@@ -19,8 +19,7 @@ mod resource_test {
                     .mintable(rule!(allow_all), rule!(allow_all))
                     .create_with_no_initial_supply();
 
-            super_admin_manager
-                .set_mintable(rule!(require(super_admin_manager.address())));
+            super_admin_manager.set_mintable(rule!(require(super_admin_manager.address())));
         }
 
         pub fn create_fungible() -> (Bucket, ResourceManager) {

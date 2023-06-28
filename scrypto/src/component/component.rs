@@ -340,7 +340,9 @@ impl<O: HasStub> DerefMut for Global<O> {
 
 impl<O: HasStub> Global<O> {
     pub fn address(&self) -> <<O as HasStub>::Stub as ObjectStub>::AddressType {
-        let rtn = <<O as HasStub>::Stub as ObjectStub>::AddressType::try_from(self.handle().as_node_id().0);
+        let rtn = <<O as HasStub>::Stub as ObjectStub>::AddressType::try_from(
+            self.handle().as_node_id().0,
+        );
         match rtn {
             Ok(address) => address,
             Err(..) => panic!("Invalid address type"),
@@ -361,9 +363,9 @@ impl<O: HasStub> Global<O> {
 }
 
 impl<O, S> Global<O>
-    where
-        O: HasStub<Stub = S>,
-        S: ObjectStub<AddressType = ComponentAddress>,
+where
+    O: HasStub<Stub = S>,
+    S: ObjectStub<AddressType = ComponentAddress>,
 {
     fn component_royalties(&self) -> Attached<Royalty> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
@@ -442,9 +444,9 @@ impl<O: HasStub> HasAccessRules for Global<O> {
 }
 
 impl<O, S> HasComponentRoyalties for Global<O>
-    where
-        O: HasStub<Stub = S>,
-        S: ObjectStub<AddressType = ComponentAddress>
+where
+    O: HasStub<Stub = S>,
+    S: ObjectStub<AddressType = ComponentAddress>,
 {
     fn set_royalty<M: ToString>(&self, method: M, amount: RoyaltyAmount) {
         self.component_royalties().set_royalty(method, amount);

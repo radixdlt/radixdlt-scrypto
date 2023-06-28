@@ -1,3 +1,4 @@
+use crate::component::ObjectStubHandle;
 use crate::prelude::{AnyComponent, Global};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
@@ -17,7 +18,6 @@ use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use crate::component::ObjectStubHandle;
 
 /// The transaction runtime.
 #[derive(Debug)]
