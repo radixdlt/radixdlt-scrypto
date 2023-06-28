@@ -857,7 +857,7 @@ impl TestRunner {
         owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+            .lock_fee(self.faucet_component(), 5000u32.into())
             .publish_package_advanced(code, definition, metadata, owner_rule)
             .build();
 
@@ -872,7 +872,7 @@ impl TestRunner {
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+            .lock_fee(self.faucet_component(), 5000u32.into())
             .publish_package_with_owner(code, definition, owner_badge)
             .build();
 

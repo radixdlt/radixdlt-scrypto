@@ -30,9 +30,8 @@ lazy_static! {
 ///
 /// ## High Level Guideline
 /// - Max cost unit limit: 100,000,000
-/// - Cost unit price: 0.000005 XRD per cost unit
-/// - Max execution costing, excluding tips: 500 XRD
-/// - Basic transfer transaction cost: < 10 XRD
+/// - Cost unit price: 0.000001 XRD per cost unit
+/// - Max execution costing: 100 XRD + tipping + state expansion + royalty
 /// - Execution time for 100,000,000 cost units' worth of computation: <= 1 second
 /// - Baseline: 1 microsecond = 100 cost units
 /// - Non-time based costing will make the actual execution time less than anticipated
@@ -111,8 +110,7 @@ impl FeeTable {
 
     #[inline]
     pub fn tx_base_cost(&self) -> u32 {
-        // 40,000 * 0.000005 = 0.2 XRD
-        40_000
+        50_000
     }
 
     #[inline]
@@ -120,16 +118,16 @@ impl FeeTable {
         // Rational:
         // Transaction payload is propagated over a P2P network.
         // Larger size may slows down the network performance.
-        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 50 * 0.000005 = 0.1 XRD
-        // The max size of a transaction is 1 MiB, and the cost will be 1,000,000 * 50 * 0.000005 = 250 XRD
+        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 50 = 20,000 cost units
+        // The max size of a transaction is 1 MiB, and the cost will be 1,000,000 * 50 = 50,000,000 cost units
+        // This is roughly 1/20 of storing data in substate store per current setup.
         mul(cast(size), 50)
     }
 
     #[inline]
     pub fn tx_signature_verification_cost(&self, n: usize) -> u32 {
         // Based on benchmark `bench_validate_secp256k1`
-        // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7,000
-        // The cost for a transfer transaction with two signatures will be 2 * 7,000 * 0.000005 = 0.07 XRD
+        // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7,000 cost units
         mul(cast(n), 7_000)
     }
 

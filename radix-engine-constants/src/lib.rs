@@ -73,15 +73,15 @@ pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
 pub const DEFAULT_FREE_CREDIT_IN_XRD: &str = "100";
 
 /// The default cost unit price, in XRD.
-pub const DEFAULT_COST_UNIT_PRICE: &str = "0.000005";
+pub const DEFAULT_COST_UNIT_PRICE: &str = "0.000001";
 
 /// The default USD price, in XRD
-/// This is roughly 0.1 USD/XRD
+/// This is roughly 0.1 USD per XRD
 pub const DEFAULT_USD_PRICE: &str = "10";
 
 /// The default price for adding a single byte to the substate store, in XRD.
-/// This is roughly 0.003 * 0.1 * 1,000,000 = 300 USD/MiB
-pub const DEFAULT_STATE_EXPANSION_PRICE: &str = "0.003";
+/// This is roughly 0.001 * 0.1 * 1,000,000 = 100 USD per MiB
+pub const DEFAULT_STATE_EXPANSION_PRICE: &str = "0.001";
 
 pub const DEFAULT_MAX_EXECUTION_TRACE_DEPTH: usize = 1;
 

@@ -1,7 +1,7 @@
-Total Execution Cost (XRD)                                      ,  50.47595
-Total State Expansion Cost (XRD)                                ,     2.241
+Total Execution Cost (XRD)                                      ,  10.10519
+Total State Expansion Cost (XRD)                                ,     0.747
 Total Royalty Cost (XRD)                                        ,         0
-Total Cost Units Consumed                                       ,  10095190
+Total Cost Units Consumed                                       ,  10105190
 AfterInvoke                                                     ,       443
 AllocateNodeId                                                  ,     13000
 BeforeInvoke                                                    ,      9364
@@ -36,7 +36,7 @@ RunNativeCode::put_FungibleVault                                ,     13471
 RunNativeCode::take_FungibleVault                               ,     20367
 RunNativeCode::try_deposit_batch_or_abort                       ,     41152
 RunNativeCode::withdraw                                         ,     25682
-TxBaseCost                                                      ,     40000
+TxBaseCost                                                      ,     50000
 TxPayloadCost                                                   ,     13450
 TxSignatureVerification                                         ,      7000
 WriteSubstate                                                   ,     15117

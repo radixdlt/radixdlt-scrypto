@@ -1,7 +1,7 @@
-Total Execution Cost (XRD)                                      , 321.76416
+Total Execution Cost (XRD)                                      , 64.362832
+Total State Expansion Cost (XRD)                                ,  2095.732
 Total Royalty Cost (XRD)                                        ,         0
-Total State Expansion Cost (XRD)                                ,         0
-Total Cost Units Consumed                                       ,  64352832
+Total Cost Units Consumed                                       ,  64362832
 AfterInvoke                                                     ,       201
 AllocateNodeId                                                  ,      9500
 BeforeInvoke                                                    ,   1052687
@@ -30,7 +30,7 @@ RunNativeCode::lock_fee                                         ,     20764
 RunNativeCode::publish_wasm_advanced                            ,     41152
 RunWasmCode::Faucet_lock_fee                                    ,     17987
 RunWasmCodePrepare                                              ,    694900
-TxBaseCost                                                      ,     40000
+TxBaseCost                                                      ,     50000
 TxPayloadCost                                                   ,  52389750
 TxSignatureVerification                                         ,         0
 WriteSubstate                                                   ,      8455

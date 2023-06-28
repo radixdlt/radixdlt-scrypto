@@ -416,6 +416,8 @@ fn run_flash_loan(mode: Mode) {
     assert_eq!(
         old_balance - new_balance,
         commit_result.fee_summary.total_execution_cost_xrd
+            + commit_result.fee_summary.total_tipping_cost_xrd
+            + commit_result.fee_summary.total_state_expansion_cost_xrd
             + commit_result.fee_summary.total_royalty_cost_xrd
             + (repay_amount - loan_amount)
     );
@@ -438,7 +440,7 @@ fn run_publish_large_package(mode: Mode) {
         "i".repeat(1024 * 1024 - 1024)
     ));
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee(test_runner.faucet_component(), 5000u32.into())
         .publish_package_advanced(
             code,
             PackageDefinition::default(),
