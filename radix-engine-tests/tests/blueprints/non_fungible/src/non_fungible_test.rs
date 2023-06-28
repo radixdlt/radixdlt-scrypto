@@ -39,7 +39,10 @@ mod non_fungible_test {
                         minter => rule!(require(mint_badge.resource_address())), locked;
                         minter_updater => rule!(deny_all), locked;
                     })
-                    .burnable(rule!(allow_all), rule!(deny_all))
+                    .burnable(burnable! {
+                        burner => rule!(allow_all), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    })
                     .updatable_non_fungible_data(
                         rule!(require(mint_badge.resource_address())),
                         rule!(deny_all),
@@ -84,7 +87,10 @@ mod non_fungible_test {
                         "name" => "Katz's Sandwiches".to_owned(), locked;
                     }
                 })
-                .burnable(rule!(allow_all), rule!(deny_all))
+                .burnable(burnable! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(deny_all), locked;
+                })
                 .mint_initial_supply([
                     Sandwich {
                         name: "Zero".to_owned(),

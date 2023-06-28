@@ -221,9 +221,9 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ```
     fn mintable(
         self,
-        auth: ResourceActionRoleInit,
+        role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
-        self.add_auth(Mint, auth.actor.value.unwrap(), auth.updater.value.unwrap())
+        self.add_auth(Mint, role_init)
     }
 
     /// Sets the resource to be burnable.
@@ -255,9 +255,9 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ```
     fn burnable(
         self,
-        auth: ResourceActionRoleInit,
+        role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
-        self.add_auth(Burn, auth.actor.value.unwrap(), auth.updater.value.unwrap())
+        self.add_auth(Burn, role_init)
     }
 
     /// Sets the resource to be recallable from vaults.
@@ -285,7 +285,10 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self::OutputBuilder {
-        self.add_auth(Recall, method_auth, mutability.into())
+        self.add_auth(Recall, ResourceActionRoleInit {
+            actor: RoleDefinition::updatable(method_auth),
+            updater: RoleDefinition::updatable(mutability.into()),
+        })
     }
 
     /// Sets the resource to have freezeable.
@@ -313,7 +316,10 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self::OutputBuilder {
-        self.add_auth(Freeze, method_auth, mutability.into())
+        self.add_auth(Freeze, ResourceActionRoleInit {
+            actor: RoleDefinition::updatable(method_auth),
+            updater: RoleDefinition::updatable(mutability.into()),
+        })
     }
 
     /// Sets the resource to not be freely withdrawable from a vault.
@@ -341,7 +347,10 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self::OutputBuilder {
-        self.add_auth(Withdraw, method_auth, mutability.into())
+        self.add_auth(Withdraw, ResourceActionRoleInit {
+            actor: RoleDefinition::updatable(method_auth),
+            updater: RoleDefinition::updatable(mutability.into()),
+        })
     }
 
     /// Sets the resource to not be freely depositable into a vault.
@@ -369,7 +378,10 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
         method_auth: AccessRule,
         mutability: R,
     ) -> Self::OutputBuilder {
-        self.add_auth(Deposit, method_auth, mutability.into())
+        self.add_auth(Deposit, ResourceActionRoleInit {
+            actor: RoleDefinition::updatable(method_auth),
+            updater: RoleDefinition::updatable(mutability.into()),
+        })
     }
 }
 impl<B: private::CanAddAuth> UpdateAuthBuilder for B {}
@@ -407,7 +419,10 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
         method_auth: AccessRule,
         mutability: R,
     ) -> Self::OutputBuilder {
-        self.add_auth(UpdateNonFungibleData, method_auth, mutability.into())
+        self.add_auth(UpdateNonFungibleData, ResourceActionRoleInit {
+            actor: RoleDefinition::updatable(method_auth),
+            updater: RoleDefinition::updatable(mutability.into()),
+        })
     }
 }
 impl<B: IsNonFungibleBuilder + private::CanAddAuth> UpdateNonFungibleAuthBuilder for B {}
@@ -855,16 +870,12 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, No
     fn add_auth(
         self,
         method: ResourceAction,
-        method_auth: AccessRule,
-        mutability: AccessRule,
+        role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
         Self::OutputBuilder {
             owner_role: self.owner_role,
             resource_type: self.resource_type,
-            auth: ResourceActionRolesInit(btreemap! { method => ResourceActionRoleInit {
-                actor: RoleDefinition::updatable(method_auth),
-                updater: RoleDefinition::updatable(mutability),
-            } }),
+            auth: ResourceActionRolesInit(btreemap! { method => role_init }),
             metadata_config: self.metadata_config,
             address_reservation: self.address_reservation,
         }
@@ -877,15 +888,12 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, Re
     fn add_auth(
         mut self,
         method: ResourceAction,
-        method_auth: AccessRule,
-        mutability: AccessRule,
+        role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
         self.auth.0.insert(
             method,
-            ResourceActionRoleInit {
-               actor: RoleDefinition::updatable(method_auth),
-                updater: RoleDefinition::updatable(mutability),
-            });
+            role_init,
+            );
         self
     }
 }
@@ -937,7 +945,7 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
 mod private {
     use super::*;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, NonFungibleGlobalId, ResourceAction,
+        NonFungibleGlobalId, ResourceAction,
     };
 
     pub trait CanSetMetadata: Sized {
@@ -958,8 +966,7 @@ mod private {
         fn add_auth(
             self,
             method: ResourceAction,
-            auth: AccessRule,
-            mutability: AccessRule,
+            role_init: ResourceActionRoleInit,
         ) -> Self::OutputBuilder;
     }
 

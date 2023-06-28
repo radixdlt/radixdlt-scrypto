@@ -35,7 +35,10 @@ mod nf_data_with_global {
                         minter => rule!(require(mint_badge.resource_address())), locked;
                         minter_updater => rule!(deny_all), locked;
                     })
-                    .burnable(rule!(allow_all), rule!(deny_all))
+                    .burnable(burnable! {
+                        burner => rule!(allow_all), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    })
                     .updatable_non_fungible_data(
                         rule!(require(mint_badge.resource_address())),
                         rule!(deny_all),

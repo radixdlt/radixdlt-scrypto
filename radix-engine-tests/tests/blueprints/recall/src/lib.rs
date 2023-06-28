@@ -15,7 +15,10 @@ mod recall {
                     minter => rule!(allow_all), locked;
                     minter_updater => rule!(deny_all), locked;
                 })
-                .burnable(rule!(allow_all), rule!(deny_all))
+                .burnable(burnable! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(deny_all), locked;
+                })
                 .recallable(rule!(allow_all), rule!(deny_all))
                 .metadata(metadata! {
                     init {

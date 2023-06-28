@@ -248,15 +248,15 @@ mod genesis_helper {
                 })
                 .with_address(resource.address_reservation);
 
-            if let Some(address) = owner_badge_address {
+            if owner_badge_address.is_some() {
                 builder
                     .mintable(mintable! {
-                        minter => rule!(require(address)), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => OWNER, updatable;
+                        minter_updater => OWNER, updatable;
                     })
                     .burnable(burnable! {
-                        burner => rule!(require(address)), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => OWNER, updatable;
+                        burner_updater => OWNER, updatable;
                     })
                     .create_with_no_initial_supply();
             } else {

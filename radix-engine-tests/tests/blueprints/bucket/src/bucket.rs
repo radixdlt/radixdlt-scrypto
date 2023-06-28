@@ -107,9 +107,12 @@ mod bucket_test {
             let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(badge.resource_address()))))
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
+                .burnable(burnable! {
+                    burner => OWNER, locked;
+                    burner_updater => rule!(deny_all), locked;
+                })
                 .mint_initial_supply(5);
             badge.authorize(|| bucket.burn());
             vec![badge]
@@ -121,7 +124,10 @@ mod bucket_test {
                 .mint_initial_supply(1);
             let mut bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .burnable(rule!(allow_all), rule!(deny_all))
+                .burnable(burnable! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(deny_all), locked;
+                })
                 .mint_initial_supply(5);
             let bucket2 = bucket1.take(2);
             badge.authorize(|| bucket1.burn());

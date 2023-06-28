@@ -20,7 +20,10 @@ mod add_and_remove {
                         minter => rule!(allow_all), locked;
                         minter_updater => rule!(deny_all), locked;
                     })
-                    .burnable(rule!(allow_all), rule!(deny_all))
+                    .burnable(burnable! {
+                        burner => rule!(allow_all), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    })
                     .create_with_no_initial_supply();
 
             let vault = resource_manager.create_empty_vault();
