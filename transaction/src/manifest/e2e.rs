@@ -67,7 +67,7 @@ CALL_FUNCTION
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("500")
+    Decimal("5000")
 ;
 PUBLISH_PACKAGE_ADVANCED
     Enum<0u8>()

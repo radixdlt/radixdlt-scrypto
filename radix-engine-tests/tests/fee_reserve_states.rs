@@ -32,7 +32,7 @@ fn test_fee_states() {
         output.1,
         Decimal::try_from(DEFAULT_COST_UNIT_PRICE).unwrap()
     );
-    assert_eq!(output.2, 0);
+    assert_eq!(output.2, DEFAULT_TIP_PERCENTAGE as u32);
     // At the time checking fee balance, it should be still using system loan. This is because
     // loan is designed to be slightly more than what it takes to `lock_fee` from a component.
     // Therefore, the balance should be between `500` and `500 + loan_in_xrd`.

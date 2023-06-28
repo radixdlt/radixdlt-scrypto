@@ -2625,8 +2625,8 @@ fn test_tips_and_fee_distribution_single_validator() {
 #[test]
 fn test_tips_and_fee_distribution_two_validators() {
     let initial_epoch = Epoch::of(5);
-    let initial_stake_amount1 = dec!("300");
-    let initial_stake_amount2 = dec!("100");
+    let initial_stake_amount1 = dec!("30000");
+    let initial_stake_amount2 = dec!("10000");
     let emission_xrd_per_epoch = dec!("0");
     let validator1_key = Secp256k1PrivateKey::from_u64(5u64).unwrap().public_key();
     let validator2_key = Secp256k1PrivateKey::from_u64(6u64).unwrap().public_key();
@@ -2670,8 +2670,7 @@ fn test_tips_and_fee_distribution_two_validators() {
     assert_eq!(events[1].epoch, initial_epoch);
     assert_close_to!(
         events[1].amount,
-        result1.fee_summary.tips_to_distribute()
-            + result1.fee_summary.fees_to_distribute() * dec!("0.25") * initial_stake_amount2
-                / (initial_stake_amount1 + initial_stake_amount2)
+        result1.fee_summary.fees_to_distribute() * dec!("0.25") * initial_stake_amount2
+            / (initial_stake_amount1 + initial_stake_amount2)
     );
 }
