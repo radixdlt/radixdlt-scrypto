@@ -606,13 +606,11 @@ impl AccessControllerNativePackage {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,
-                        access_rules: btreemap! {
-                            Mint => mintable! {
-                                minter => rule!(require(global_component_caller_badge.clone())), locked;
-                                minter_updater => rule!(deny_all), locked;
-                            },
-                            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
-                            Withdraw => ResourceActionRoleInit::locked(AccessRule::DenyAll),
+                        supported_actions: btreeset!(Mint, Burn),
+                        roles: roles_init! {
+                            MINTER_ROLE => rule!(require(global_component_caller_badge.clone())), locked;
+                            BURNER_ROLE => rule!(allow_all), locked;
+                            WITHDRAWER_ROLE => rule!(deny_all), locked;
                         },
                         metadata: metadata! {
                             roles {

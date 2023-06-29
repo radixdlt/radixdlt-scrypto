@@ -1521,6 +1521,7 @@ mod tests {
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
+    use utils::btreeset;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1815,16 +1816,8 @@ mod tests {
                                 "name" => "Token".to_string(), locked;
                             }
                         },
-                        access_rules: BTreeMap::from([
-                            (
-                                ResourceAction::Withdraw,
-                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
-                            ),
-                            (
-                                ResourceAction::Deposit,
-                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
-                            ),
-                        ]),
+                        supported_actions: btreeset!(),
+                        roles: roles_init!(),
                         address_reservation: None,
                     }
                 ),
@@ -1862,7 +1855,8 @@ mod tests {
                             non_fungible_schema: NonFungibleDataSchema::new_schema::<
                                 MyNonFungibleData,
                             >(),
-                            access_rules: BTreeMap::new(),
+                            supported_actions: btreeset!(),
+                            roles: roles_init!(),
                             metadata: metadata!(),
                             address_reservation: None,
                         }
@@ -1932,16 +1926,8 @@ mod tests {
                                 "name" => "Token".to_string(), locked;
                             }
                         },
-                        access_rules: BTreeMap::from([
-                            (
-                                ResourceAction::Withdraw,
-                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
-                            ),
-                            (
-                                ResourceAction::Deposit,
-                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
-                            ),
-                        ]),
+                        supported_actions: btreeset!(),
+                        roles: roles_init!(),
                         entries: BTreeMap::from([(
                             NonFungibleLocalId::integer(1),
                             (to_manifest_value_and_unwrap!(&(
@@ -1989,16 +1975,8 @@ mod tests {
                     owner_role: OwnerRole::None,
                     track_total_supply: false,
                     divisibility: 18,
-                    access_rules: BTreeMap::from([
-                        (
-                            ResourceAction::Withdraw,
-                            ResourceActionRoleInit::locked(AccessRule::AllowAll),
-                        ),
-                        (
-                            ResourceAction::Deposit,
-                            ResourceActionRoleInit::locked(AccessRule::AllowAll),
-                        ),
-                    ]),
+                    supported_actions: btreeset!(),
+                    roles: roles_init!(),
                     metadata: metadata! {
                         init {
                             "name" => "Token".to_owned(), updatable;
@@ -2047,16 +2025,8 @@ mod tests {
                         track_total_supply: false,
                         divisibility: 18,
                         initial_supply: "500".parse().unwrap(),
-                        access_rules: BTreeMap::from([
-                            (
-                                ResourceAction::Withdraw,
-                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
-                            ),
-                            (
-                                ResourceAction::Deposit,
-                                ResourceActionRoleInit::locked(AccessRule::AllowAll),
-                            ),
-                        ]),
+                        supported_actions: btreeset!(),
+                        roles: roles_init!(),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_owned(), updatable;

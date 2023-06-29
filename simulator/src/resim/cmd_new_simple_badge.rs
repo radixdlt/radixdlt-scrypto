@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::resource::{
     NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
+use radix_engine_interface::roles_init;
 use transaction::builder::ManifestBuilder;
 use transaction::model::InstructionV1;
 
@@ -92,11 +93,12 @@ impl NewSimpleBadge {
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    supported_actions: btreeset!(),
+                    roles: roles_init!(),
                     metadata: ModuleConfig {
                         init: metadata,
                         roles: RolesInit::default(),
                     },
-                    access_rules: btreemap! {},
                     entries: btreemap!(
                         NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),
                     ),

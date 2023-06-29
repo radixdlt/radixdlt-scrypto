@@ -52,6 +52,8 @@ use sbor::rust::vec::Vec;
 use crate::model::*;
 use crate::validation::*;
 
+use radix_engine_interface::blueprints::resource::RolesInit;
+
 /// Utility for building transaction manifest.
 pub struct ManifestBuilder {
     /// ID validator for calculating transaction object id
@@ -441,8 +443,9 @@ impl ManifestBuilder {
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
+        supported_actions: BTreeSet<ResourceAction>,
+        roles: RolesInit,
         metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
         if let Some(initial_supply) = initial_supply {
@@ -457,7 +460,8 @@ impl ManifestBuilder {
                         divisibility,
                         track_total_supply,
                         metadata,
-                        access_rules,
+                        supported_actions,
+                        roles,
                         initial_supply,
                         address_reservation: None,
                     }
@@ -473,7 +477,8 @@ impl ManifestBuilder {
                     divisibility,
                     track_total_supply,
                     metadata,
-                    access_rules,
+                    supported_actions,
+                    roles,
                     address_reservation: None,
                 }),
             });
@@ -488,8 +493,9 @@ impl ManifestBuilder {
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
+        supported_actions: BTreeSet<ResourceAction>,
+        roles: RolesInit,
         metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
@@ -513,8 +519,9 @@ impl ManifestBuilder {
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        supported_actions,
+                        roles,
                         metadata,
-                        access_rules,
                         entries,
                         address_reservation: None,
                     }
@@ -531,7 +538,8 @@ impl ManifestBuilder {
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                        access_rules,
+                        supported_actions,
+                        roles,
                         metadata,
                         address_reservation: None,
                     }
@@ -906,16 +914,20 @@ impl ManifestBuilder {
         metadata: ModuleConfig<MetadataInit>,
         minter_rule: AccessRule,
     ) -> &mut Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            ResourceActionRoleInit::locked(rule!(allow_all)),
-        );
-        access_rules.insert(Mint, ResourceActionRoleInit::locked(minter_rule.clone()));
-        access_rules.insert(Burn, ResourceActionRoleInit::locked(minter_rule.clone()));
-
-        let initial_supply = Option::None;
-        self.create_fungible_resource(owner_role, true, 18, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(
+            owner_role,
+            true,
+            18,
+            btreeset!(Mint, Burn),
+            roles_init! {
+                MINTER_ROLE => minter_rule.clone(), locked;
+                MINTER_UPDATER_ROLE => AccessRule::DenyAll, locked;
+                BURNER_ROLE => minter_rule.clone(), locked;
+                BURNER_UPDATER_ROLE => AccessRule::DenyAll, locked;
+            },
+            metadata,
+            None,
+        )
     }
 
     /// Creates a token resource with fixed supply.
@@ -925,18 +937,13 @@ impl ManifestBuilder {
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> &mut Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            ResourceActionRoleInit::locked(rule!(allow_all)),
-        );
-
         self.create_fungible_resource(
             owner_role,
             true,
             18,
+            btreeset!(),
+            roles_init!(),
             metadata,
-            access_rules,
             Some(initial_supply),
         )
     }
@@ -948,16 +955,20 @@ impl ManifestBuilder {
         metadata: ModuleConfig<MetadataInit>,
         minter_rule: AccessRule,
     ) -> &mut Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            ResourceActionRoleInit::locked(rule!(allow_all)),
-        );
-        access_rules.insert(Mint, ResourceActionRoleInit::locked(minter_rule.clone()));
-        access_rules.insert(Burn, ResourceActionRoleInit::locked(minter_rule.clone()));
-
-        let initial_supply = Option::None;
-        self.create_fungible_resource(owner_role, false, 0, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(
+            owner_role,
+            false,
+            0,
+            btreeset!(Mint, Burn),
+            roles_init! {
+                MINTER_ROLE => minter_rule.clone(), locked;
+                MINTER_UPDATER_ROLE => AccessRule::DenyAll, locked;
+                BURNER_ROLE => minter_rule.clone(), locked;
+                BURNER_UPDATER_ROLE => AccessRule::DenyAll, locked;
+            },
+            metadata,
+            None,
+        )
     }
 
     /// Creates a badge resource with fixed supply.
@@ -967,18 +978,13 @@ impl ManifestBuilder {
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> &mut Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            ResourceActionRoleInit::locked(rule!(allow_all)),
-        );
-
         self.create_fungible_resource(
             owner_role,
             false,
             0,
+            btreeset!(),
+            RolesInit::default(),
             metadata,
-            access_rules,
             Some(initial_supply),
         )
     }

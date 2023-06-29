@@ -1,7 +1,8 @@
-use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -9,99 +10,65 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
+use crate::blueprints::resource::{FungibleResourceManagerError, NonFungibleResourceManagerError};
 
-fn build_main_access_rules(
-    mut access_rules_map: BTreeMap<ResourceAction, ResourceActionRoleInit>,
-) -> RolesInit {
-    let mut main_roles = RolesInit::new();
-
+fn verify_and_modify_main_roles(
+    roles: &mut RolesInit
+) -> Result<(), String> {
     // Meta roles
     {
-        main_roles.define_immutable_role(
+        roles.define_immutable_role(
             RESOURCE_PACKAGE_ROLE,
             rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
         );
     }
 
-    // Main roles
-    {
-        // Mint
-        {
-            let minter_role_init = access_rules_map
-                .remove(&ResourceAction::Mint)
-                .unwrap_or(ResourceActionRoleInit::locked(DenyAll));
-            main_roles.set_raw2(MINTER_UPDATER_ROLE, minter_role_init.updater);
-            main_roles.set_raw2(MINTER_ROLE, minter_role_init.actor);
-        }
+    for role in roles.data.keys() {
+        match role.key.as_str() {
+            WITHDRAWER_ROLE | DEPOSITOR_ROLE
+            | MINTER_ROLE
+            | MINTER_UPDATER_ROLE
+            | BURNER_ROLE
+            | BURNER_UPDATER_ROLE
+            | NON_FUNGIBLE_DATA_UPDATER_ROLE
+            | NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE
+            | WITHDRAWER_UPDATER_ROLE
+            | DEPOSITOR_UPDATER_ROLE
+            | RECALLER_ROLE
+            | RECALLER_UPDATER_ROLE
+            | FREEZER_ROLE
+            | FREEZER_UPDATER_ROLE => {},
+            _ => return Err(format!("Invalid Role: {:?}", role))
+        };
+    }
 
-        // Burn
-        {
-            let burner_role_init = access_rules_map
-                .remove(&ResourceAction::Burn)
-                .unwrap_or(ResourceActionRoleInit::locked(DenyAll));
-            main_roles.set_raw2(BURNER_UPDATER_ROLE, burner_role_init.updater);
-            main_roles.set_raw2(BURNER_ROLE, burner_role_init.actor);
-        }
-
-        // Non Fungible Update data
-        {
-            let non_fungible_data_updater_role_init = access_rules_map
-                .remove(&ResourceAction::UpdateNonFungibleData)
-                .unwrap_or(ResourceActionRoleInit::locked(DenyAll));
-
-            main_roles.set_raw2(
-                NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE,
-                non_fungible_data_updater_role_init.updater,
-            );
-            main_roles.set_raw2(
-                NON_FUNGIBLE_DATA_UPDATER_ROLE,
-                non_fungible_data_updater_role_init.actor,
-            );
-        }
-
-        // Withdraw
-        {
-            let withdrawer_role_init = access_rules_map
-                .remove(&ResourceAction::Withdraw)
-                .unwrap_or(ResourceActionRoleInit::locked(AllowAll));
-            main_roles.set_raw2(WITHDRAWER_ROLE, withdrawer_role_init.actor);
-            main_roles.set_raw2(WITHDRAWER_UPDATER_ROLE, withdrawer_role_init.updater);
-        }
-
-        // Recall
-        {
-            let recaller_role_init = access_rules_map
-                .remove(&ResourceAction::Recall)
-                .unwrap_or(ResourceActionRoleInit::locked(DenyAll));
-            main_roles.set_raw2(RECALLER_ROLE, recaller_role_init.actor);
-            main_roles.set_raw2(RECALLER_UPDATER_ROLE, recaller_role_init.updater);
-        }
-
-        // Freeze/Unfreeze Role
-        {
-            let freezer_role_init = access_rules_map
-                .remove(&ResourceAction::Freeze)
-                .unwrap_or(ResourceActionRoleInit::locked(DenyAll));
-            main_roles.set_raw2(FREEZER_ROLE, freezer_role_init.actor);
-            main_roles.set_raw2(FREEZER_UPDATER_ROLE, freezer_role_init.updater);
-        }
-
-        // Deposit
-        {
-            let depositor_role_init = access_rules_map
-                .remove(&ResourceAction::Deposit)
-                .unwrap_or(ResourceActionRoleInit::locked(AllowAll));
-            main_roles.set_raw2(DEPOSITOR_ROLE, depositor_role_init.actor);
-            main_roles.set_raw2(DEPOSITOR_UPDATER_ROLE, depositor_role_init.updater);
+    for (role, default_rule) in [
+        (WITHDRAWER_ROLE, AccessRule::AllowAll),
+        (DEPOSITOR_ROLE, AccessRule::AllowAll),
+        (MINTER_ROLE, AccessRule::DenyAll),
+        (MINTER_UPDATER_ROLE, AccessRule::DenyAll),
+        (BURNER_ROLE, AccessRule::DenyAll),
+        (BURNER_UPDATER_ROLE, AccessRule::DenyAll),
+        (NON_FUNGIBLE_DATA_UPDATER_ROLE, AccessRule::DenyAll),
+        (NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, AccessRule::DenyAll),
+        (WITHDRAWER_UPDATER_ROLE, AccessRule::DenyAll),
+        (DEPOSITOR_UPDATER_ROLE, AccessRule::DenyAll),
+        (RECALLER_ROLE, AccessRule::DenyAll),
+        (RECALLER_UPDATER_ROLE, AccessRule::DenyAll),
+        (FREEZER_ROLE, AccessRule::DenyAll),
+        (FREEZER_UPDATER_ROLE, AccessRule::DenyAll),
+    ] {
+        if !roles.data.contains_key(&RoleKey::new(role)) {
+            roles.define_immutable_role(role, default_rule);
         }
     }
 
-    main_roles
+    Ok(())
 }
 
 pub fn features(
     track_total_supply: bool,
-    access_rules: &BTreeMap<ResourceAction, ResourceActionRoleInit>,
+    supported_actions: &BTreeSet<ResourceAction>,
 ) -> Vec<&str> {
     let mut features = Vec::new();
 
@@ -109,19 +76,19 @@ pub fn features(
         features.push(TRACK_TOTAL_SUPPLY_FEATURE);
     }
 
-    if access_rules.contains_key(&ResourceAction::Freeze) {
+    if supported_actions.contains(&ResourceAction::Freeze) {
         features.push(VAULT_FREEZE_FEATURE);
     }
 
-    if access_rules.contains_key(&ResourceAction::Recall) {
+    if supported_actions.contains(&ResourceAction::Recall) {
         features.push(VAULT_RECALL_FEATURE);
     }
 
-    if access_rules.contains_key(&ResourceAction::Mint) {
+    if supported_actions.contains(&ResourceAction::Mint) {
         features.push(MINT_FEATURE);
     }
 
-    if access_rules.contains_key(&ResourceAction::Burn) {
+    if supported_actions.contains(&ResourceAction::Burn) {
         features.push(BURN_FEATURE);
     }
 
@@ -132,14 +99,20 @@ pub fn globalize_resource_manager<Y>(
     owner_role: OwnerRole,
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
-    access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
+    mut main_roles: RolesInit,
     metadata: ModuleConfig<MetadataInit>,
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
-    let main_roles = build_main_access_rules(access_rules);
+    verify_and_modify_main_roles(&mut main_roles).map_err(|err| {
+        if object_id.is_global_fungible_resource_manager() {
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::InvalidRole(err)))
+        } else {
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::InvalidRole(err)))
+        }
+    })?;
 
     let roles = btreemap!(
         ObjectModuleId::Main => main_roles,
@@ -166,7 +139,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
     owner_role: OwnerRole,
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
-    access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
+    mut main_roles: RolesInit,
     metadata: ModuleConfig<MetadataInit>,
     initial_supply: Decimal,
     api: &mut Y,
@@ -174,7 +147,14 @@ pub fn globalize_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let main_roles = build_main_access_rules(access_rules);
+    verify_and_modify_main_roles(&mut main_roles).map_err(|err| {
+        if object_id.is_global_fungible_resource_manager() {
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::InvalidRole(err)))
+        } else {
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::InvalidRole(err)))
+        }
+    })?;
+
     let roles = btreemap!(
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,
@@ -208,7 +188,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     owner_role: OwnerRole,
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
-    access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
+    mut main_roles: RolesInit,
     metadata: ModuleConfig<MetadataInit>,
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
@@ -216,7 +196,14 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let main_roles = build_main_access_rules(access_rules);
+    verify_and_modify_main_roles(&mut main_roles).map_err(|err| {
+        if object_id.is_global_fungible_resource_manager() {
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::InvalidRole(err)))
+        } else {
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::InvalidRole(err)))
+        }
+    })?;
+
     let roles = btreemap!(
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,

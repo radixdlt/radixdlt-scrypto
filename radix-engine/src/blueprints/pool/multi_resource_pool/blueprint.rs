@@ -59,19 +59,17 @@ impl MultiResourcePoolBlueprint {
         let pool_unit_resource_manager = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
 
-            let access_rules = btreemap!(
-                Mint => mintable! {
-                    minter => rule!(require(component_caller_badge.clone())), locked;
-                    minter_updater => rule!(deny_all), locked;
-                },
-                Burn => ResourceActionRoleInit::locked(rule!(require(component_caller_badge.clone()))),
-            );
-
             ResourceManager::new_fungible(
                 owner_role.clone(),
                 true,
                 18,
-                access_rules,
+                btreeset!(Mint, Burn),
+                roles_init! {
+                    MINTER_ROLE => rule!(require(component_caller_badge.clone())), locked;
+                    MINTER_UPDATER_ROLE => rule!(deny_all), locked;
+                    BURNER_ROLE => rule!(require(component_caller_badge.clone())), locked;
+                    BURNER_UPDATER_ROLE => rule!(deny_all), locked;
+                },
                 metadata_init! {
                     "pool" => address, locked;
                 },

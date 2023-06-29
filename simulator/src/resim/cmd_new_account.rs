@@ -9,7 +9,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::{metadata, metadata_init, rule};
+use radix_engine_interface::{metadata, metadata_init, roles_init, rule};
 use rand::Rng;
 use utils::ContextualDisplay;
 
@@ -79,12 +79,13 @@ impl NewAccount {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        supported_actions: btreeset!(),
+                        roles: roles_init!(),
                         metadata: metadata!(
                             init {
                                 "name" => "Owner Badge".to_owned(), locked;
                             }
                         ),
-                        access_rules: btreemap! {},
                         entries: btreemap!(
                             NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),
                         ),

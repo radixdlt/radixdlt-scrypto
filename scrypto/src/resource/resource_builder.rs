@@ -92,12 +92,12 @@ impl ResourceBuilder {
 ///     .mint_initial_supply(5);
 /// ```
 #[must_use]
-pub struct InProgressResourceBuilder<T: AnyResourceType, A: ConfiguredAuth> {
+pub struct InProgressResourceBuilder<T: AnyResourceType, A: ResourceConfig> {
     owner_role: OwnerRole,
     resource_type: T,
     metadata_config: Option<ModuleConfig<MetadataInit>>,
     address_reservation: Option<GlobalAddressReservation>,
-    auth: A,
+    config: A,
 }
 
 impl<T: AnyResourceType> InProgressResourceBuilder<T, NoAuth> {
@@ -107,27 +107,30 @@ impl<T: AnyResourceType> InProgressResourceBuilder<T, NoAuth> {
             resource_type: T::default(),
             metadata_config: None,
             address_reservation: None,
-            auth: NoAuth,
+            config: NoAuth,
         }
     }
 }
 
-pub trait ConfiguredAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceAction, ResourceActionRoleInit>;
+pub trait ResourceConfig {
+    fn into_supported_actions_and_roles(self) -> (BTreeSet<ResourceAction>, RolesInit);
 }
 
 pub struct NoAuth;
-impl ConfiguredAuth for NoAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceAction, ResourceActionRoleInit> {
-        BTreeMap::new()
+impl ResourceConfig for NoAuth {
+    fn into_supported_actions_and_roles(self) -> (BTreeSet<ResourceAction>, RolesInit) {
+        (
+            BTreeSet::new(),
+            roles_init! {}
+        )
     }
 }
 
-pub struct ResourceActionRolesInit(BTreeMap<ResourceAction, ResourceActionRoleInit>);
+pub struct ResourceActionRolesInit(BTreeSet<ResourceAction>, RolesInit);
 
-impl ConfiguredAuth for ResourceActionRolesInit {
-    fn into_access_rules(self) -> BTreeMap<ResourceAction, ResourceActionRoleInit> {
-        self.0
+impl ResourceConfig for ResourceActionRolesInit {
+    fn into_supported_actions_and_roles(self) -> (BTreeSet<ResourceAction>, RolesInit) {
+        (self.0, self.1)
     }
 }
 
@@ -162,10 +165,10 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData> Default for NonFungibleResourc
 
 // Builder types
 pub trait IsFungibleBuilder {}
-impl<A: ConfiguredAuth> IsFungibleBuilder for InProgressResourceBuilder<FungibleResourceType, A> {}
+impl<A: ResourceConfig> IsFungibleBuilder for InProgressResourceBuilder<FungibleResourceType, A> {}
 
 pub trait IsNonFungibleBuilder {}
-impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> IsNonFungibleBuilder
+impl<A: ResourceConfig, Y: IsNonFungibleLocalId, D: NonFungibleData> IsNonFungibleBuilder
     for InProgressResourceBuilder<NonFungibleResourceType<Y, D>, A>
 {
 }
@@ -218,7 +221,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///         minter_updater => rule!(require(resource_address)), locked;
     ///    });
     /// ```
-    fn mintable(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
+    fn mintable(self, role_init: RolesInit) -> Self::OutputBuilder {
         self.add_auth(Mint, role_init)
     }
 
@@ -249,7 +252,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        burner_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn burnable(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
+    fn burnable(self, role_init: RolesInit) -> Self::OutputBuilder {
         self.add_auth(Burn, role_init)
     }
 
@@ -279,7 +282,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        recaller_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn recallable(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
+    fn recallable(self, role_init: RolesInit) -> Self::OutputBuilder {
         self.add_auth(Recall, role_init)
     }
 
@@ -310,7 +313,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        freezer_updater: rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn freezeable(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
+    fn freezeable(self, role_init: RolesInit) -> Self::OutputBuilder {
         self.add_auth(Freeze, role_init)
     }
 
@@ -341,7 +344,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        withdrawer_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn restrict_withdraw(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
+    fn restrict_withdraw(self, role_init: RolesInit) -> Self::OutputBuilder {
         self.add_auth(Withdraw, role_init)
     }
 
@@ -371,7 +374,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        depositor_updater => rule!(require(resource_address)), locked;
     ///    });
     /// ```
-    fn restrict_deposit(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
+    fn restrict_deposit(self, role_init: RolesInit) -> Self::OutputBuilder {
         self.add_auth(Deposit, role_init)
     }
 }
@@ -414,7 +417,7 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// ```
     fn updatable_non_fungible_data<R: Into<AccessRule>>(
         self,
-        role_init: ResourceActionRoleInit,
+        role_init: RolesInit,
     ) -> Self::OutputBuilder {
         self.add_auth(
             UpdateNonFungibleData,
@@ -444,9 +447,10 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             private::CreateWithNoSupply::Fungible {
                 owner_role,
                 divisibility,
+                supported_actions,
+                roles,
                 metadata,
                 address_reservation,
-                access_rules,
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
@@ -460,7 +464,8 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             divisibility,
                             track_total_supply: true,
                             metadata,
-                            access_rules,
+                            supported_actions,
+                            roles,
                             address_reservation,
                         })
                         .unwrap(),
@@ -472,7 +477,8 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 owner_role,
                 id_type,
                 non_fungible_schema,
-                access_rules,
+                supported_actions,
+                roles,
                 metadata,
                 address_reservation,
             } => {
@@ -488,7 +494,8 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             id_type,
                             track_total_supply: true,
                             non_fungible_schema,
-                            access_rules,
+                            supported_actions,
+                            roles,
                             metadata,
                             address_reservation,
                         })
@@ -502,7 +509,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
 }
 impl<B: private::CanCreateWithNoSupply> CreateWithNoSupplyBuilder for B {}
 
-impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
+impl<A: ResourceConfig> InProgressResourceBuilder<FungibleResourceType, A> {
     /// Set the resource's divisibility: the number of digits of precision after the decimal point in its balances.
     ///
     /// * `0` means the resource is not divisible (balances are always whole numbers)
@@ -528,7 +535,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     }
 }
 
-impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
+impl<A: ResourceConfig> InProgressResourceBuilder<FungibleResourceType, A> {
     /// Creates resource with the given initial supply.
     ///
     /// # Example
@@ -539,6 +546,9 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     ///     .mint_initial_supply(5);
     /// ```
     pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
+
+        let (supported_actions, roles) = self.config.into_supported_actions_and_roles();
+
         let metadata = self
             .metadata_config
             .take()
@@ -553,8 +563,9 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     divisibility: self.resource_type.divisibility,
+                    supported_actions,
+                    roles,
                     metadata,
-                    access_rules: self.auth.into_access_rules(),
                     initial_supply: amount.into(),
                     address_reservation: self.address_reservation,
                 })
@@ -569,7 +580,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     }
 }
 
-impl<A: ConfiguredAuth, D: NonFungibleData>
+impl<A: ResourceConfig, D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>, A>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
@@ -598,6 +609,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
+        let (supported_actions, roles) = self.config.into_supported_actions_and_roles();
+
         let metadata = self
             .metadata_config
             .take()
@@ -613,8 +626,9 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
+                    supported_actions,
+                    roles,
                     metadata,
-                    access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
                 })
@@ -629,7 +643,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     }
 }
 
-impl<A: ConfiguredAuth, D: NonFungibleData>
+impl<A: ResourceConfig, D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>, A>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
@@ -658,6 +672,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
+        let (supported_actions, roles) = self.config.into_supported_actions_and_roles();
+
         let metadata = self
             .metadata_config
             .take()
@@ -673,8 +689,9 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
+                    supported_actions,
+                    roles,
                     metadata,
-                    access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
                 })
@@ -689,7 +706,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     }
 }
 
-impl<A: ConfiguredAuth, D: NonFungibleData>
+impl<A: ResourceConfig, D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>, A>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
@@ -718,6 +735,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
+        let (supported_actions, roles) = self.config.into_supported_actions_and_roles();
+
         let metadata = self
             .metadata_config
             .take()
@@ -733,8 +752,9 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
                     non_fungible_schema,
+                    supported_actions,
+                    roles,
                     metadata,
-                    access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
                 })
@@ -749,7 +769,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     }
 }
 
-impl<A: ConfiguredAuth, D: NonFungibleData>
+impl<A: ResourceConfig, D: NonFungibleData>
     InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>, A>
 {
     /// Creates the RUID non-fungible resource, and mints an individual non-fungible for each piece of data provided.
@@ -786,7 +806,7 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let access_rules = self.auth.into_access_rules();
+        let (supported_actions, roles) = self.config.into_supported_actions_and_roles();
 
         ScryptoEnv
             .call_function(
@@ -798,8 +818,9 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                         owner_role: self.owner_role,
                         non_fungible_schema,
                         track_total_supply: true,
+                        supported_actions,
+                        roles,
                         metadata,
-                        access_rules,
                         entries: entries
                             .into_iter()
                             .map(|data| {
@@ -839,7 +860,7 @@ fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungi
         .collect()
 }
 
-impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetMetadata
+impl<T: AnyResourceType, A: ResourceConfig> private::CanSetMetadata
     for InProgressResourceBuilder<T, A>
 {
     type OutputBuilder = Self;
@@ -850,7 +871,7 @@ impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetMetadata
     }
 }
 
-impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetAddressReservation
+impl<T: AnyResourceType, A: ResourceConfig> private::CanSetAddressReservation
     for InProgressResourceBuilder<T, A>
 {
     type OutputBuilder = Self;
@@ -866,13 +887,13 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, No
 
     fn add_auth(
         self,
-        method: ResourceAction,
-        role_init: ResourceActionRoleInit,
+        action: ResourceAction,
+        role_init: RolesInit,
     ) -> Self::OutputBuilder {
         Self::OutputBuilder {
             owner_role: self.owner_role,
             resource_type: self.resource_type,
-            auth: ResourceActionRolesInit(btreemap! { method => role_init }),
+            config: ResourceActionRolesInit(btreeset!(action), role_init),
             metadata_config: self.metadata_config,
             address_reservation: self.address_reservation,
         }
@@ -886,40 +907,47 @@ impl<T: AnyResourceType> private::CanAddAuth
 
     fn add_auth(
         mut self,
-        method: ResourceAction,
-        role_init: ResourceActionRoleInit,
+        action: ResourceAction,
+        role_init: RolesInit,
     ) -> Self::OutputBuilder {
-        self.auth.0.insert(method, role_init);
+        self.config.0.insert(action);
+        self.config.1.data.extend(role_init.data);
         self
     }
 }
 
-impl<A: ConfiguredAuth> private::CanCreateWithNoSupply
+impl<A: ResourceConfig> private::CanCreateWithNoSupply
     for InProgressResourceBuilder<FungibleResourceType, A>
 {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
+        let (supported_actions, roles) = self.config.into_supported_actions_and_roles();
+
         private::CreateWithNoSupply::Fungible {
             owner_role: self.owner_role,
             divisibility: self.resource_type.divisibility,
-            access_rules: self.auth.into_access_rules(),
+            supported_actions,
+            roles,
             metadata: self.metadata_config,
             address_reservation: self.address_reservation,
         }
     }
 }
 
-impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
+impl<A: ResourceConfig, Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
     for InProgressResourceBuilder<NonFungibleResourceType<Y, D>, A>
 {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
         non_fungible_schema.replace_self_package_address(Runtime::package_address());
 
+        let (supported_actions, roles) = self.config.into_supported_actions_and_roles();
+
         private::CreateWithNoSupply::NonFungible {
             owner_role: self.owner_role,
             id_type: Y::id_type(),
             non_fungible_schema,
-            access_rules: self.auth.into_access_rules(),
+            supported_actions,
+            roles,
             metadata: self.metadata_config,
             address_reservation: self.address_reservation,
         }
@@ -960,7 +988,7 @@ mod private {
         fn add_auth(
             self,
             method: ResourceAction,
-            role_init: ResourceActionRoleInit,
+            role_init: RolesInit,
         ) -> Self::OutputBuilder;
     }
 
@@ -978,7 +1006,8 @@ mod private {
         Fungible {
             owner_role: OwnerRole,
             divisibility: u8,
-            access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
+            supported_actions: BTreeSet<ResourceAction>,
+            roles: RolesInit,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,
         },
@@ -986,7 +1015,8 @@ mod private {
             owner_role: OwnerRole,
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
-            access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
+            supported_actions: BTreeSet<ResourceAction>,
+            roles: RolesInit,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,
         },

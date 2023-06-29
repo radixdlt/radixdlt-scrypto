@@ -154,7 +154,7 @@ fn static_resource_should_be_callable() {
                             track_total_supply: true,
                             divisibility: 0u8,
                             metadata: metadata!(),
-                            access_rules: btreemap!(),
+                            supported_actions: btreemap!(),
                             initial_supply: Decimal::from(10),
                             address_reservation: Some(ManifestAddressReservation(0)),
                         },

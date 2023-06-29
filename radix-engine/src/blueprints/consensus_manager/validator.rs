@@ -17,7 +17,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::rule;
+use radix_engine_interface::{roles_init, rule};
 use radix_engine_interface::{
     internal_roles_struct, metadata_init, mintable, role_definition_entry,
 };
@@ -1091,24 +1091,17 @@ impl ValidatorCreator {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut stake_unit_resource_auth = BTreeMap::new();
-        stake_unit_resource_auth.insert(
-            Mint,
-            mintable! {
-                minter => rule!(require(global_caller(validator_address))), locked;
-                minter_updater => rule!(deny_all), locked;
-            },
-        );
-        stake_unit_resource_auth.insert(
-            Burn,
-            ResourceActionRoleInit::locked(rule!(require(global_caller(validator_address)))),
-        );
-
         let stake_unit_resman = ResourceManager::new_fungible(
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             true,
             18,
-            stake_unit_resource_auth,
+            btreeset!(Mint, Burn),
+            roles_init! {
+                    MINTER_ROLE => rule!(require(global_caller(validator_address))), locked;
+                    MINTER_UPDATER_ROLE => rule!(deny_all), locked;
+                    BURNER_ROLE => rule!(require(global_caller(validator_address))), locked;
+                    BURNER_UPDATER_ROLE => rule!(deny_all), locked;
+                },
             metadata_init! {
                 "name" => "Liquid Stake Units".to_owned(), locked;
                 "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
@@ -1130,24 +1123,17 @@ impl ValidatorCreator {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut unstake_nft_auth = BTreeMap::new();
-        unstake_nft_auth.insert(
-            Mint,
-            mintable! {
-                minter => rule!(require(global_caller(validator_address))), locked;
-                minter_updater => rule!(deny_all), locked;
-            },
-        );
-        unstake_nft_auth.insert(
-            Burn,
-            ResourceActionRoleInit::locked(rule!(require(global_caller(validator_address)))),
-        );
-
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError, _>(
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             NonFungibleIdType::RUID,
             true,
-            unstake_nft_auth,
+            btreeset!(Mint, Burn),
+            roles_init! {
+                    MINTER_ROLE => rule!(require(global_caller(validator_address))), locked;
+                    MINTER_UPDATER_ROLE => rule!(deny_all), locked;
+                    BURNER_ROLE => rule!(require(global_caller(validator_address))), locked;
+                    BURNER_UPDATER_ROLE => rule!(deny_all), locked;
+                },
             metadata_init! {
                 "name" => "Stake Claims NFTs".to_owned(), locked;
                 "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;

@@ -61,21 +61,6 @@ macro_rules! resource_roles {
                 ]
             }
         }
-
-        impl $roles_struct<(Option<AccessRule>, bool)> {
-            pub fn to_role_init(self) -> ResourceActionRoleInit {
-                ResourceActionRoleInit {
-                    actor: RoleDefinition {
-                        value: self.$actor_field.0,
-                        lock: self.$actor_field.1,
-                    },
-                    updater: RoleDefinition {
-                        value: self.$updater_field.0,
-                        lock: self.$updater_field.1,
-                    },
-                }
-            }
-        }
     };
 }
 
@@ -89,8 +74,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! mintable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        let mintable_roles = internal_roles_struct!(MintableRoles, $($role => $rule, $locked;)*);
-        mintable_roles.to_role_init()
+        internal_roles!(MintableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -104,8 +88,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! burnable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        let burnable_roles = internal_roles_struct!(BurnableRoles, $($role => $rule, $locked;)*);
-        burnable_roles.to_role_init()
+        internal_roles!(BurnableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -119,8 +102,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! recallable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        let recallable_roles = internal_roles_struct!(RecallableRoles, $($role => $rule, $locked;)*);
-        recallable_roles.to_role_init()
+        internal_roles!(RecallableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -134,8 +116,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! freezable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        let freezable_roles = internal_roles_struct!(FreezableRoles, $($role => $rule, $locked;)*);
-        freezable_roles.to_role_init()
+        internal_roles!(FreezableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -149,8 +130,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! restrict_withdraw {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        let withdrawable_roles = internal_roles_struct!(WithdrawableRoles, $($role => $rule, $locked;)*);
-        withdrawable_roles.to_role_init()
+        internal_roles!(WithdrawableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -164,8 +144,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! restrict_deposit {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        let depositable_roles = internal_roles_struct!(DepositableRoles, $($role => $rule, $locked;)*);
-        depositable_roles.to_role_init()
+        internal_roles!(DepositableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -179,7 +158,6 @@ resource_roles!(
 #[macro_export]
 macro_rules! updatable_non_fungible_data {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        let updatable_non_fungible_data_roles = internal_roles_struct!(UpdatableNonFungibleDataRoles, $($role => $rule, $locked;)*);
-        updatable_non_fungible_data_roles.to_role_init()
+        internal_roles!(UpdatableNonFungibleDataRoles, $($role => $rule, $locked;)*)
     });
 }
