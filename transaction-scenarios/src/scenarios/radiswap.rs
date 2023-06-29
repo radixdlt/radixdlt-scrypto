@@ -14,40 +14,43 @@ pub struct RadiswapScenarioConfig {
     /* Accounts */
     pub radiswap_owner: VirtualAccount,
     pub storing_account: VirtualAccount,
-    pub user_account1: VirtualAccount,
-    pub user_account2: VirtualAccount,
-    pub user_account3: VirtualAccount,
+    pub user_account_1: VirtualAccount,
+    pub user_account_2: VirtualAccount,
+    pub user_account_3: VirtualAccount,
 
-    /* Resources & Pools */
-    pub pools: Option<
-        [(
-            // Pool Component Address
-            Option<ComponentAddress>,
-            // Pool Resources
-            (ResourceAddress, ResourceAddress),
-            // Pool Unit
-            Option<ResourceAddress>,
-        ); 2],
-    >,
+    /* Resources & Pools - These get created during the scenario */
+    pub pool_1: PoolData,
+    pub pool_2: PoolData,
 }
 
-impl RadiswapScenarioConfig {
-    fn pools_or_panic(
-        &self,
-    ) -> [(
-        ComponentAddress,
-        (ResourceAddress, ResourceAddress),
-        ResourceAddress,
-    ); 2] {
-        self.pools.as_ref().unwrap().map(
-            |(component_address, (resource1, resource2), pool_unit)| {
-                (
-                    component_address.unwrap(),
-                    (resource1, resource2),
-                    pool_unit.unwrap(),
-                )
-            },
-        )
+#[derive(Default)]
+pub struct PoolData {
+    radiswap: Option<ComponentAddress>,
+    pool: Option<ComponentAddress>,
+    resource_1: Option<ResourceAddress>,
+    resource_2: Option<ResourceAddress>,
+    pool_unit: Option<ResourceAddress>,
+}
+
+impl PoolData {
+    fn radiswap(&self) -> ComponentAddress {
+        self.radiswap.unwrap()
+    }
+
+    fn pool(&self) -> ComponentAddress {
+        self.pool.unwrap()
+    }
+
+    fn resource_1(&self) -> ResourceAddress {
+        self.resource_1.unwrap()
+    }
+
+    fn resource_2(&self) -> ResourceAddress {
+        self.resource_2.unwrap()
+    }
+
+    fn pool_unit(&self) -> ResourceAddress {
+        self.pool_unit.unwrap()
     }
 }
 
@@ -56,10 +59,11 @@ impl Default for RadiswapScenarioConfig {
         Self {
             radiswap_owner: secp256k1_account_1(),
             storing_account: secp256k1_account_2(),
-            user_account1: secp256k1_account_3(),
-            user_account2: ed25519_account_1(),
-            user_account3: ed25519_account_2(),
-            pools: None,
+            user_account_1: secp256k1_account_3(),
+            user_account_2: ed25519_account_1(),
+            user_account_3: ed25519_account_2(),
+            pool_1: Default::default(),
+            pool_2: Default::default(),
         }
     }
 }
@@ -82,9 +86,11 @@ impl ScenarioInstance for RadiswapScenario {
     fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError> {
         let radiswap_owner = &self.config.radiswap_owner;
         let storing_account = &self.config.storing_account;
-        let user_account1 = &self.config.user_account1;
-        let user_account2 = &self.config.user_account2;
-        let user_account3 = &self.config.user_account3;
+        let user_account_1 = &self.config.user_account_1;
+        let user_account_2 = &self.config.user_account_2;
+        let user_account_3 = &self.config.user_account_3;
+        let pool_1 = &mut self.config.pool_1;
+        let pool_2 = &mut self.config.pool_2;
         let core = &mut self.core;
 
         let up_next = match core.next_stage() {
@@ -160,28 +166,12 @@ impl ScenarioInstance for RadiswapScenario {
             }
             2 => {
                 let commit_success = core.check_commit_success(&previous)?;
+                let new_resources = commit_success.new_resource_addresses();
 
-                let resource1 = RADIX_TOKEN;
-                let resource2 = commit_success
-                    .new_resource_addresses()
-                    .get(0)
-                    .unwrap()
-                    .clone();
-                let resource3 = commit_success
-                    .new_resource_addresses()
-                    .get(1)
-                    .unwrap()
-                    .clone();
-                let resource4 = commit_success
-                    .new_resource_addresses()
-                    .get(2)
-                    .unwrap()
-                    .clone();
-
-                self.config.pools = Some([
-                    (None, (resource1, resource2), None),
-                    (None, (resource3, resource4), None),
-                ]);
+                pool_1.resource_1 = Some(RADIX_TOKEN);
+                pool_1.resource_2 = Some(new_resources[0]);
+                pool_2.resource_1 = Some(new_resources[1]);
+                pool_2.resource_2 = Some(new_resources[2]);
 
                 let code = include_bytes!("../../../assets/radiswap.wasm");
                 let schema = manifest_decode::<PackageDefinition>(include_bytes!(
@@ -218,13 +208,13 @@ impl ScenarioInstance for RadiswapScenario {
                                         DynamicPackageAddress::Named(named_address),
                                         "Radiswap", 
                                         "new", 
-                                        manifest_args!(resource1, resource2)
+                                        manifest_args!(pool_1.resource_1(), pool_1.resource_2())
                                     )
                                     .call_function(
                                         DynamicPackageAddress::Named(named_address),
                                         "Radiswap", 
                                         "new", 
-                                        manifest_args!(resource3, resource4)
+                                        manifest_args!(pool_2.resource_1(), pool_2.resource_2())
                                     )
                                     .try_deposit_batch_or_abort(storing_account.address)
                             },
@@ -234,66 +224,62 @@ impl ScenarioInstance for RadiswapScenario {
                 )
             }
             3 => {
-                let commit_success = core.check_commit_success(&previous)?;
-
                 {
-                    let pool1 = commit_success
-                        .new_component_addresses()
-                        .get(0)
-                        .unwrap()
-                        .clone();
-                    let pool2 = commit_success
-                        .new_component_addresses()
-                        .get(2)
-                        .unwrap()
-                        .clone();
+                    let commit_success = core.check_commit_success(&previous)?;
+                    let new_components = commit_success.new_component_addresses();
+                    let new_resources = commit_success.new_resource_addresses();
+                    pool_1.radiswap = Some(new_components[0]);
+                    pool_1.pool = Some(new_components[1]);
+                    pool_2.radiswap = Some(new_components[2]);
+                    pool_2.pool = Some(new_components[3]);
 
-                    let pool_unit1 = commit_success
-                        .new_resource_addresses()
-                        .get(0)
-                        .unwrap()
-                        .clone();
-                    let pool_unit2 = commit_success
-                        .new_resource_addresses()
-                        .get(1)
-                        .unwrap()
-                        .clone();
-
-                    let pools = self.config.pools.as_mut().unwrap();
-                    pools[0].0 = Some(pool1);
-                    pools[1].0 = Some(pool2);
-
-                    pools[0].2 = Some(pool_unit1);
-                    pools[1].2 = Some(pool_unit2);
+                    pool_1.pool_unit = Some(new_resources[0]);
+                    pool_2.pool_unit = Some(new_resources[1]);
                 }
-                let [(pool1, (resource1, resource2), _), (pool2, (resource3, resource4), _)] =
-                    self.config.pools_or_panic();
 
                 core.next_transaction_with_faucet_lock_fee(
                     "radiswap-add-liquidity",
                     |builder| {
                         builder
                             .call_method(FAUCET_COMPONENT, "free", manifest_args!())
-                            .withdraw_from_account(storing_account.address, resource2, 7000.into())
-                            .withdraw_from_account(storing_account.address, resource3, 5000.into())
-                            .withdraw_from_account(storing_account.address, resource4, 8000.into())
-                            .take_all_from_worktop(resource1, |builder, bucket1| {
-                                builder.take_all_from_worktop(resource2, |builder, bucket2| {
-                                    builder.call_method(
-                                        pool1,
-                                        "add_liquidity",
-                                        manifest_args!(bucket1, bucket2),
-                                    )
-                                })
+                            .withdraw_from_account(
+                                storing_account.address,
+                                pool_1.resource_2(),
+                                7000.into(),
+                            )
+                            .withdraw_from_account(
+                                storing_account.address,
+                                pool_2.resource_1(),
+                                5000.into(),
+                            )
+                            .withdraw_from_account(
+                                storing_account.address,
+                                pool_2.resource_2(),
+                                8000.into(),
+                            )
+                            .take_all_from_worktop(pool_1.resource_1(), |builder, bucket1| {
+                                builder.take_all_from_worktop(
+                                    pool_1.resource_2(),
+                                    |builder, bucket2| {
+                                        builder.call_method(
+                                            pool_1.radiswap(),
+                                            "add_liquidity",
+                                            manifest_args!(bucket1, bucket2),
+                                        )
+                                    },
+                                )
                             })
-                            .take_all_from_worktop(resource3, |builder, bucket1| {
-                                builder.take_all_from_worktop(resource4, |builder, bucket2| {
-                                    builder.call_method(
-                                        pool2,
-                                        "add_liquidity",
-                                        manifest_args!(bucket1, bucket2),
-                                    )
-                                })
+                            .take_all_from_worktop(pool_2.resource_1(), |builder, bucket1| {
+                                builder.take_all_from_worktop(
+                                    pool_2.resource_2(),
+                                    |builder, bucket2| {
+                                        builder.call_method(
+                                            pool_2.radiswap(),
+                                            "add_liquidity",
+                                            manifest_args!(bucket1, bucket2),
+                                        )
+                                    },
+                                )
                             })
                             .try_deposit_batch_or_abort(storing_account.address)
                     },
@@ -303,16 +289,19 @@ impl ScenarioInstance for RadiswapScenario {
             4 => {
                 core.check_commit_success(&previous)?;
 
-                let [(_, (resource1, resource2), pool_unit1), (_, (resource3, resource4), pool_unit2)] =
-                    self.config.pools_or_panic();
-
                 core.next_transaction_with_faucet_lock_fee(
                     "radiswap-distribute-tokens",
                     |builder| {
                         builder.call_method(FAUCET, "free", manifest_args!());
-                        for destination_account in [user_account1, user_account2, user_account3] {
+                        for destination_account in [user_account_1, user_account_2, user_account_3]
+                        {
                             for resource_address in [
-                                resource1, resource2, resource3, resource4, pool_unit1, pool_unit2,
+                                pool_1.resource_1(),
+                                pool_1.resource_2(),
+                                pool_2.resource_1(),
+                                pool_2.resource_2(),
+                                pool_1.pool_unit(),
+                                pool_2.pool_unit(),
                             ] {
                                 builder.withdraw_from_account(
                                     storing_account.address,
@@ -329,45 +318,81 @@ impl ScenarioInstance for RadiswapScenario {
             }
             5 => {
                 core.check_commit_success(&previous)?;
-                let [(pool1, (resource1, _), _), _] = self.config.pools_or_panic();
 
                 core.next_transaction_with_faucet_lock_fee(
                     "radiswap-swap-tokens",
                     |builder| {
                         builder
-                            .withdraw_from_account(user_account1.address, resource1, 100.into())
-                            .take_all_from_worktop(resource1, |builder, bucket| {
-                                builder.call_method(pool1, "swap", manifest_args!(bucket))
+                            .withdraw_from_account(
+                                user_account_1.address,
+                                pool_1.resource_1(),
+                                100.into(),
+                            )
+                            .take_all_from_worktop(pool_1.resource_1(), |builder, bucket| {
+                                builder.call_method(
+                                    pool_1.radiswap(),
+                                    "swap",
+                                    manifest_args!(bucket),
+                                )
                             })
-                            .try_deposit_batch_or_abort(user_account1.address)
+                            .try_deposit_batch_or_abort(user_account_1.address)
                     },
-                    vec![&user_account1.key],
+                    vec![&user_account_1.key],
                 )
             }
             6 => {
                 core.check_commit_success(&previous)?;
-                let [(pool1, (_, _), pool_unit1), _] = self.config.pools_or_panic();
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "radiswap-swap-tokens",
+                    "radiswap-remove-tokens",
                     |builder| {
                         builder
-                            .withdraw_from_account(user_account1.address, pool_unit1, 100.into())
-                            .take_all_from_worktop(pool_unit1, |builder, bucket| {
+                            .withdraw_from_account(
+                                user_account_1.address,
+                                pool_1.pool_unit(),
+                                100.into(),
+                            )
+                            .take_all_from_worktop(pool_1.pool_unit(), |builder, bucket| {
                                 builder.call_method(
-                                    pool1,
+                                    pool_1.radiswap(),
                                     "remove_liquidity",
                                     manifest_args!(bucket),
                                 )
                             })
-                            .try_deposit_batch_or_abort(user_account1.address)
+                            .try_deposit_batch_or_abort(user_account_1.address)
                     },
-                    vec![&user_account1.key],
+                    vec![&user_account_1.key],
                 )
             }
             _ => {
                 core.check_commit_success(&previous)?;
-                return Ok(core.finish_scenario());
+                // Re-deconstruct the config in order to ensure at compile time we capture all the addresses
+                let RadiswapScenarioConfig {
+                    radiswap_owner,
+                    storing_account,
+                    user_account_1,
+                    user_account_2,
+                    user_account_3,
+                    pool_1,
+                    pool_2,
+                } = &self.config;
+                let addresses = DescribedAddresses::new()
+                    .add("radiswap_owner", radiswap_owner)
+                    .add("storing_account", storing_account)
+                    .add("user_account_1", user_account_1)
+                    .add("user_account_2", user_account_2)
+                    .add("user_account_3", user_account_3)
+                    .add("pool_1_radiswap", pool_1.radiswap())
+                    .add("pool_1_pool", pool_1.pool())
+                    .add("pool_1_resource_1", pool_1.resource_1())
+                    .add("pool_1_resource_2", pool_1.resource_2())
+                    .add("pool_1_pool_unit", pool_1.pool_unit())
+                    .add("pool_2_radiswap", pool_2.radiswap())
+                    .add("pool_2_pool", pool_2.pool())
+                    .add("pool_2_resource_1", pool_2.resource_1())
+                    .add("pool_2_resource_2", pool_2.resource_2())
+                    .add("pool_2_pool_unit", pool_2.pool_unit());
+                return Ok(core.finish_scenario(addresses));
             }
         };
         Ok(NextAction::Transaction(up_next))
