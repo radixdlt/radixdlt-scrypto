@@ -32,7 +32,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     let instrumented_code = InstrumentedCode {
         metered_code_key: (
             PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]),
-            validator.metering_config,
+            validator.instrumenter_config.version(),
         ),
         code: Arc::new(
             validator

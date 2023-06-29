@@ -112,14 +112,17 @@ pub type VaultBurnOutput = ();
 //========
 
 #[derive(Debug, PartialEq, Eq, Hash)]
+#[must_use]
 pub struct Vault(pub Own);
 
 #[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
+#[must_use]
 pub struct FungibleVault(pub Vault);
 
 #[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
+#[must_use]
 pub struct NonFungibleVault(pub Vault);
 
 impl From<FungibleVault> for Vault {

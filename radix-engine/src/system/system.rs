@@ -2081,6 +2081,9 @@ where
                     export_name,
                     gas,
                 },
+                ClientCostingEntry::RunWasmCodePrepare { size } => {
+                    CostingEntry::RunWasmCodePrepare { size }
+                }
             })
     }
 
