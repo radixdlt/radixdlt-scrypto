@@ -239,10 +239,8 @@ mod genesis_helper {
 
                 let owner_badge_address = owner_badge.resource_address();
 
-                owner_badge
-                    .resource_manager()
-                    .metadata()
-                    .set("tags", vec!["badge".to_string()]);
+                let resource_mgr = owner_badge.resource_manager();
+                resource_mgr.set_metadata("tags", vec!["badge".to_string()]);
 
                 let _: () = Account(owner)
                     .deposit(owner_badge, &mut ScryptoEnv)
