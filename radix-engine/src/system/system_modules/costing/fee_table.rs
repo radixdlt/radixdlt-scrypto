@@ -142,7 +142,7 @@ impl FeeTable {
 
         // FIXME: figure out the right conversion rate from CPU instructions to execution time
 
-        mul(cpu_instructions / 1_000, 100)
+        cpu_instructions / 10
     }
 
     #[inline]
@@ -152,14 +152,18 @@ impl FeeTable {
         _export_name: &str,
         gas: u32,
     ) -> u32 {
-        // FIXME: update the costing for wasm instructions
+        // From `costing::spin_loop`, it takes 5.5391 ms for 1918122691 gas' worth of computation.
+        // Therefore, cost for gas: 5.5391 *  1000 / 1918122691 * 100 = 0.00028877714
 
-        // FIXME: figure out the right conversion rate from gas to execution time
+        gas / 3000
+    }
 
-        // From `costing::spin_loop`, it takes 1.8851 ms for 8011 gas' worth of execution.
-        // Therefore, cost for gas: 1.8851 * 1000 / 8011 * 100
+    #[inline]
+    pub fn instantiate_wasm_code_cost(&self, size: usize) -> u32 {
+        // From `costing::instantiate_radiswap`, it takes 3.4107 ms to instantiate WASM of length 203950.
+        // Therefore, cost for byte: 3.4107 *  1000 / 203950 * 100 = 1.67232164746
 
-        mul(gas / 5, 100)
+        mul(cast(size), 2)
     }
 
     //======================
