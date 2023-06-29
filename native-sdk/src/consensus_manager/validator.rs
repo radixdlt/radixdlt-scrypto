@@ -1,6 +1,7 @@
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::consensus_manager::{
-    ValidatorRegisterInput, ValidatorStakeInput, ValidatorUpdateAcceptDelegatedStakeInput,
+    ValidatorAcceptsDelegatedStakeInput, ValidatorRegisterInput, ValidatorStakeInput,
+    ValidatorUpdateAcceptDelegatedStakeInput, VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
     VALIDATOR_REGISTER_IDENT, VALIDATOR_STAKE_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use radix_engine_interface::blueprints::resource::Bucket;
@@ -43,6 +44,22 @@ impl Validator {
         )?;
 
         Ok(())
+    }
+
+    pub fn accepts_delegated_stake<Y, E: Debug + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<bool, E>
+    where
+        Y: ClientObjectApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
+            scrypto_encode(&ValidatorAcceptsDelegatedStakeInput {}).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
     }
 
     pub fn stake<Y, E: Debug + ScryptoDecode>(

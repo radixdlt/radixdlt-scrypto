@@ -3,7 +3,6 @@ use crate::types::*;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
-use crate::vm::wasm::DEFAULT_CACHE_SIZE;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
@@ -769,7 +768,7 @@ pub struct WasmerEngineOptions {
 impl Default for WasmerEngine {
     fn default() -> Self {
         Self::new(WasmerEngineOptions {
-            max_cache_size: DEFAULT_CACHE_SIZE,
+            max_cache_size: DEFAULT_WASM_ENGINE_CACHE_SIZE,
         })
     }
 }

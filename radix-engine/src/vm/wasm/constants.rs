@@ -86,3 +86,5 @@ pub const DEFAULT_MAX_NUMBER_OF_GLOBALS: u32 = 512;
 
 /// The max number of functions
 pub const DEFAULT_MAX_NUMBER_OF_FUNCTIONS: u32 = 64 * 1024;
+
+pub const DEFAULT_WASM_ENGINE_CACHE_SIZE: usize = 1000;

@@ -10,6 +10,7 @@ use sbor::*;
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[must_use]
 pub struct GlobalAddressReservation(pub Own);
 
 impl Categorize<ScryptoCustomValueKind> for GlobalAddressReservation {
