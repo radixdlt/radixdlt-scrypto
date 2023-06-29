@@ -41,6 +41,11 @@ impl<K: Ord, V> KeyValueStoreInit<K, V> {
         self.data.insert(key.into(), entry);
     }
 
+    pub fn set_raw<E: Into<K>>(&mut self, key: E, value: Option<V>, lock: bool) {
+        let entry = KeyValueStoreInitEntry { value, lock };
+        self.data.insert(key.into(), entry);
+    }
+
     pub fn lock_empty<E: Into<K>>(&mut self, key: E) {
         let entry = KeyValueStoreInitEntry {
             value: None,

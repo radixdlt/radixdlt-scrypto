@@ -12,8 +12,8 @@ use radix_engine_interface::*;
 
 fn build_main_access_rules(
     mut access_rules_map: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-) -> Roles {
-    let mut main_roles = Roles::new();
+) -> RolesInit {
+    let mut main_roles = RolesInit::new();
 
     // Meta roles
     {

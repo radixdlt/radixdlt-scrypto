@@ -1515,7 +1515,7 @@ mod tests {
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
     use radix_engine_interface::blueprints::resource::{
         AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintRuidManifestInput, ResourceAction, Roles,
+        NonFungibleResourceManagerMintRuidManifestInput, ResourceAction,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
@@ -1758,7 +1758,7 @@ mod tests {
                     BTreeMap::<String, BlueprintStateSchemaInit>::new(),
                     BTreeMap::<String, PackageRoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
-                    Roles::new()
+                    RolesInit::new()
                 ),
             },
         );
