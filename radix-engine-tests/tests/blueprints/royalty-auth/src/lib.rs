@@ -47,10 +47,7 @@ mod royalty_test {
         }
 
         pub fn claim_component_royalty(component: Global<AnyComponent>, proof: Proof) -> Bucket {
-            proof.authorize(|| {
-                let royalty = component.royalty();
-                royalty.claim_royalties()
-            })
+            proof.authorize(|| component.claim_component_royalties())
         }
     }
 }

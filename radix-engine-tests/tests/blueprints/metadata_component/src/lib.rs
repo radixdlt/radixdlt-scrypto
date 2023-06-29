@@ -22,9 +22,8 @@ mod metadata_component {
                 })
                 .globalize();
 
-            let metadata = global.metadata();
-
-            assert_eq!(metadata.get_string(key).unwrap(), value);
+            let value0: String = global.get_metadata(key).unwrap();
+            assert_eq!(value0, value);
         }
 
         pub fn new2(key: String, value: String) {
@@ -33,15 +32,14 @@ mod metadata_component {
                 .prepare_to_globalize(OwnerRole::Fixed(rule!(allow_all)))
                 .globalize();
 
-            let metadata = global.metadata();
-            metadata.set(key.clone(), value.clone());
+            global.set_metadata(key.clone(), value.clone());
+            let value0: String = global.get_metadata(key).unwrap();
 
-            assert_eq!(metadata.get_string(key).unwrap(), value);
+            assert_eq!(value0, value);
         }
 
         pub fn remove_metadata(global: Global<MetadataComponent>, key: String) {
-            let metadata = global.metadata();
-            metadata.remove(key);
+            global.remove_metadata(key);
         }
     }
 }

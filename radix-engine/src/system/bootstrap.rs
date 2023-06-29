@@ -17,8 +17,8 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::SystemUpdates;
 use crate::transaction::{
-    execute_transaction, ExecutionConfig, FeeReserveConfig, StateUpdateSummary, TransactionReceipt,
-    TransactionResult,
+    execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, StateUpdateSummary,
+    TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
@@ -171,14 +171,22 @@ pub struct FlashReceipt {
     pub state_update_summary: StateUpdateSummary,
 }
 
+impl From<FlashReceipt> for TransactionReceipt {
+    fn from(value: FlashReceipt) -> Self {
+        // This is used by the node for allowing the flash to execute before the
+        // genesis bootstrap transaction
+        let commit_result = CommitResult::empty_with_outcome(TransactionOutcome::Success(vec![]));
+        let mut transaction_receipt = TransactionReceipt::empty_with_commit(commit_result);
+        value.merge_genesis_flash_into_transaction_receipt(&mut transaction_receipt);
+        transaction_receipt
+    }
+}
+
 impl FlashReceipt {
     // Merge system_flash_receipt into system_bootstrap_receipt
     // This is currently a necessary hack in order to not change GenesisReceipt with
     // the addition of a new system_flash_receipt.
-    pub fn merge_genesis_flash_into_system_bootstrap_receipt(
-        self,
-        receipt: &mut TransactionReceipt,
-    ) {
+    pub fn merge_genesis_flash_into_transaction_receipt(self, receipt: &mut TransactionReceipt) {
         match &mut receipt.transaction_result {
             TransactionResult::Commit(result) => {
                 let mut new_packages = self.state_update_summary.new_packages;
@@ -295,7 +303,7 @@ where
             );
 
             flash_receipt
-                .merge_genesis_flash_into_system_bootstrap_receipt(&mut system_bootstrap_receipt);
+                .merge_genesis_flash_into_transaction_receipt(&mut system_bootstrap_receipt);
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {

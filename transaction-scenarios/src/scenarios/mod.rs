@@ -1,5 +1,6 @@
 use crate::internal_prelude::*;
 
+pub mod radiswap;
 pub mod transfer_xrd;
 
 pub fn get_builder_for_every_scenario() -> AllScenarios {
@@ -18,6 +19,9 @@ impl Iterator for AllScenarios {
         match self.index {
             1 => Some(Box::new(|core| {
                 Box::new(transfer_xrd::TransferXrdScenario::new(core))
+            })),
+            2 => Some(Box::new(|core| {
+                Box::new(radiswap::RadiswapScenario::new(core))
             })),
             _ => None,
         }

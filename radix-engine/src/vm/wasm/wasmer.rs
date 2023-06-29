@@ -1,12 +1,8 @@
-use super::InstrumentedCode;
-#[cfg(not(feature = "radix_engine_fuzzing"))]
-use super::MeteredCodeKey;
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
-use crate::vm::wasm::DEFAULT_CACHE_SIZE;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
@@ -80,9 +76,9 @@ pub struct WasmerEngine {
     store: Store,
     // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
     #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
-    modules_cache: RefCell<lru::LruCache<MeteredCodeKey, Arc<WasmerModule>>>,
+    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmerModule>>>,
     #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
-    modules_cache: moka::sync::Cache<MeteredCodeKey, Arc<WasmerModule>>,
+    modules_cache: moka::sync::Cache<Hash, Arc<WasmerModule>>,
     #[cfg(feature = "radix_engine_fuzzing")]
     modules_cache: usize,
 }
@@ -194,12 +190,6 @@ impl WasmerModule {
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
 
-            // Get current memory consumption and update it in transaction limit kernel module
-            // for current call frame through runtime call.
-            runtime
-                .update_wasm_memory_usage(get_memory_size(&instance)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
-
             let buffer = runtime
                 .actor_call_module_method(object_handle, module_id, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
@@ -223,12 +213,6 @@ impl WasmerModule {
             let receiver = read_memory(&instance, receiver_ptr, receiver_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
-
-            // Get current memory consumption and update it in transaction limit kernel module
-            // for current call frame through runtime call.
-            runtime
-                .update_wasm_memory_usage(get_memory_size(&instance)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             let buffer = runtime
                 .call_method(receiver, direct_access, module_id, ident, args)
@@ -254,12 +238,6 @@ impl WasmerModule {
             let blueprint_ident = read_memory(&instance, blueprint_ident_ptr, blueprint_ident_len)?;
             let ident = read_memory(&instance, ident_ptr, ident_len)?;
             let args = read_memory(&instance, args_ptr, args_len)?;
-
-            // Get current memory consumption and update it in transaction limit kernel module
-            // for current call frame through runtime call.
-            runtime
-                .update_wasm_memory_usage(get_memory_size(&instance)?)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             let buffer = runtime
                 .call_function(package_address, blueprint_ident, ident, args)
@@ -783,20 +761,20 @@ impl WasmInstance for WasmerInstance {
 }
 
 #[derive(Debug, Clone)]
-pub struct EngineOptions {
+pub struct WasmerEngineOptions {
     max_cache_size: usize,
 }
 
 impl Default for WasmerEngine {
     fn default() -> Self {
-        Self::new(EngineOptions {
-            max_cache_size: DEFAULT_CACHE_SIZE,
+        Self::new(WasmerEngineOptions {
+            max_cache_size: DEFAULT_WASM_ENGINE_CACHE_SIZE,
         })
     }
 }
 
 impl WasmerEngine {
-    pub fn new(options: EngineOptions) -> Self {
+    pub fn new(options: WasmerEngineOptions) -> Self {
         let compiler = Singlepass::new();
 
         #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
@@ -806,7 +784,7 @@ impl WasmerEngine {
         #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
             .weigher(
-                |_metered_code_key: &MeteredCodeKey, _value: &Arc<WasmerModule>| -> u32 {
+                |_metered_code_key: &Hash, _value: &Arc<WasmerModule>| -> u32 {
                     // No sophisticated weighing mechanism, just keep a fixed size cache
                     1u32
                 },
@@ -826,29 +804,25 @@ impl WasmerEngine {
 impl WasmEngine for WasmerEngine {
     type WasmInstance = WasmerInstance;
 
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmerInstance {
-        #[cfg(not(feature = "radix_engine_fuzzing"))]
-        let metered_code_key = &instrumented_code.metered_code_key;
-
+    fn instantiate(&self, code_hash: Hash, instrumented_code: &[u8]) -> WasmerInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]
             {
-                if let Some(cached_module) = self.modules_cache.borrow_mut().get(key) {
+                if let Some(cached_module) = self.modules_cache.borrow_mut().get(&code_hash) {
                     return cached_module.instantiate();
                 }
             }
             #[cfg(feature = "moka")]
-            if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
+            if let Some(cached_module) = self.modules_cache.get(&code_hash) {
                 return cached_module.instantiate();
             }
         }
 
-        let code = instrumented_code.code.as_ref();
-
         let new_module = Arc::new(WasmerModule {
-            module: Module::new(&self.store, code).expect("Failed to parse WASM module"),
-            code_size_bytes: code.len(),
+            module: Module::new(&self.store, instrumented_code)
+                .expect("Failed to parse WASM module"),
+            code_size_bytes: instrumented_code.len(),
         });
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
@@ -856,10 +830,9 @@ impl WasmEngine for WasmerEngine {
             #[cfg(not(feature = "moka"))]
             self.modules_cache
                 .borrow_mut()
-                .put(*metered_code_key, new_module.clone());
+                .put(code_hash, new_module.clone());
             #[cfg(feature = "moka")]
-            self.modules_cache
-                .insert(*metered_code_key, new_module.clone());
+            self.modules_cache.insert(code_hash, new_module.clone());
         }
 
         new_module.instantiate()

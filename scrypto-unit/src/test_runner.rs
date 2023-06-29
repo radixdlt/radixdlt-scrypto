@@ -15,7 +15,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -29,19 +29,14 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
-    PackageDefinition, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate,
-    TypePointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-    PACKAGE_SCHEMAS_PARTITION_OFFSET,
+    BlueprintDefinitionInit, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
+    PackageRoyaltyAccumulatorSubstate, TypePointer, PACKAGE_BLUEPRINT,
+    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
-    BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit, TypeRef,
-};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -59,7 +54,6 @@ use radix_engine_store_interface::{
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
@@ -275,8 +269,7 @@ impl TestRunnerBuilder {
     pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
-            wasm_metering_config: WasmMeteringConfig::V0,
+            wasm_validator_config: WasmValidatorConfigV1::new(),
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
 
@@ -865,7 +858,7 @@ impl TestRunner {
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
-            .publish_package_advanced(code, definition, metadata, owner_rule)
+            .publish_package_advanced(None, code, definition, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -1476,7 +1469,7 @@ impl TestRunner {
             .call_method(
                 self.faucet_component(),
                 "lock_fee",
-                manifest_args!(dec!("10")),
+                manifest_args!(dec!("100")),
             )
             .borrow_mut(|builder| Result::<_, Infallible>::Ok(handler(builder)))
             .unwrap()
@@ -1873,49 +1866,7 @@ pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
 ) -> PackageDefinition {
-    let mut blueprints = BTreeMap::new();
-    blueprints.insert(
-        blueprint_name.to_string(),
-        BlueprintDefinitionInit {
-            blueprint_type: BlueprintType::default(),
-            feature_set: btreeset!(),
-            dependencies: btreeset!(),
-
-            schema: BlueprintSchemaInit {
-                generics: vec![],
-                schema: ScryptoSchema {
-                    type_kinds: vec![],
-                    type_metadata: vec![],
-                    type_validations: vec![],
-                },
-                state: BlueprintStateSchemaInit {
-                    fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
-                        UNIT_ID,
-                    ))],
-                    collections: vec![],
-                },
-                events: BlueprintEventSchemaInit::default(),
-                functions: BlueprintFunctionsSchemaInit {
-                    virtual_lazy_load_functions: btreemap!(),
-                    functions: btreemap!(
-                    function_name.to_string() => FunctionSchemaInit {
-                            receiver: Option::None,
-                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                            export: format!("{}_{}", blueprint_name, function_name),
-                        }
-                    ),
-                },
-            },
-
-            royalty_config: PackageRoyaltyConfig::default(),
-            auth_config: AuthConfig {
-                function_auth: FunctionAuth::AllowAll,
-                method_auth: MethodAuthTemplate::AllowAll,
-            },
-        },
-    );
-    PackageDefinition { blueprints }
+    PackageDefinition::single_test_function(blueprint_name, function_name)
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

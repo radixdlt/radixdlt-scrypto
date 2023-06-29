@@ -15,7 +15,7 @@ use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct StateUpdates {
     pub database_updates: DatabaseUpdates,
     pub system_updates: SystemUpdates,

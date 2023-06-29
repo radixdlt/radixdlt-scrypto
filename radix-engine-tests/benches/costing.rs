@@ -4,15 +4,12 @@ use radix_engine::{
     types::*,
     utils::ExtractSchemaError,
     vm::{
-        wasm::{
-            DefaultWasmEngine, InstrumentedCode, WasmEngine, WasmInstance, WasmRuntime,
-            WasmValidator,
-        },
+        wasm::{DefaultWasmEngine, WasmEngine, WasmInstance, WasmRuntime, WasmValidator},
         wasm_runtime::NoOpWasmRuntime,
     },
 };
+use radix_engine_queries::typed_substate_layout::PackageDefinition;
 use sbor::rust::iter;
-use sbor::rust::sync::Arc;
 use transaction::{
     prelude::Secp256k1PrivateKey,
     validation::{recover_secp256k1, verify_secp256k1},
@@ -43,34 +40,28 @@ fn bench_validate_secp256k1(c: &mut Criterion) {
 
 fn bench_spin_loop(c: &mut Criterion) {
     // Prepare code
-    let code = wat2wasm(&include_str!("../tests/wasm/loop.wat").replace("${n}", "1000")).unwrap();
+    let code = wat2wasm(&include_str!("../tests/wasm/loop.wat").replace("${n}", "100000")).unwrap();
 
     // Instrument
     let validator = WasmValidator::default();
-    let instrumented_code = InstrumentedCode {
-        metered_code_key: (
-            PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]),
-            validator.metering_config,
-        ),
-        code: Arc::new(
-            validator
-                .validate(&code, iter::empty())
-                .map_err(|e| ExtractSchemaError::InvalidWasm(e))
-                .unwrap()
-                .0,
-        ),
-    };
+    let instrumented_code = validator
+        .validate(&code, iter::empty())
+        .map_err(|e| ExtractSchemaError::InvalidWasm(e))
+        .unwrap()
+        .0;
 
+    // Note that wasm engine maintains an internal cache, which means costing
+    // isn't taking WASM parsing into consideration.
+    let wasm_engine = DefaultWasmEngine::default();
     let mut gas_consumed = 0u32;
     c.bench_function("costing::spin_loop", |b| {
         b.iter(|| {
-            let wasm_engine = DefaultWasmEngine::default();
             let fee_reserve = SystemLoanFeeReserve::default()
                 .with_free_credit(Decimal::try_from(DEFAULT_FREE_CREDIT_IN_XRD).unwrap());
             gas_consumed = 0;
             let mut runtime: Box<dyn WasmRuntime> =
                 Box::new(NoOpWasmRuntime::new(fee_reserve, &mut gas_consumed));
-            let mut instance = wasm_engine.instantiate(&instrumented_code);
+            let mut instance = wasm_engine.instantiate(Hash([0u8; 32]), &instrumented_code);
             instance
                 .invoke_export("Test_f", vec![Buffer(0)], &mut runtime)
                 .unwrap();
@@ -80,10 +71,50 @@ fn bench_spin_loop(c: &mut Criterion) {
     println!("Gas consumed: {}", gas_consumed);
 }
 
+fn bench_instantiate_radiswap(c: &mut Criterion) {
+    // Prepare code
+    let code = include_bytes!("../../assets/radiswap.wasm");
+
+    // Instrument
+    let validator = WasmValidator::default();
+    let instrumented_code = validator
+        .validate(code, iter::empty())
+        .map_err(|e| ExtractSchemaError::InvalidWasm(e))
+        .unwrap()
+        .0;
+
+    c.bench_function("costing::instantiate_radiswap", |b| {
+        b.iter(|| {
+            let wasm_engine = DefaultWasmEngine::default();
+            wasm_engine.instantiate(Hash([0u8; 32]), &instrumented_code);
+        })
+    });
+
+    println!("Code length: {}", instrumented_code.len());
+}
+
+fn bench_validate_wasm(c: &mut Criterion) {
+    let code = include_bytes!("../../assets/radiswap.wasm");
+    let definition: PackageDefinition =
+        manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap();
+
+    c.bench_function("WASM::validate_wasm", |b| {
+        b.iter(|| {
+            WasmValidator::default()
+                .validate(code, definition.blueprints.values())
+                .unwrap()
+        })
+    });
+
+    println!("Code length: {}", code.len());
+}
+
 criterion_group!(
     costing,
     bench_decode_sbor,
     bench_validate_secp256k1,
-    bench_spin_loop
+    bench_spin_loop,
+    bench_instantiate_radiswap,
+    bench_validate_wasm,
 );
 criterion_main!(costing);

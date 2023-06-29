@@ -99,7 +99,7 @@ mod basic_flash_loan {
 
         pub fn repay_loan(&mut self, loan_repayment: Bucket, loan_terms: Bucket) {
             assert!(
-                loan_terms.resource_address() == self.transient_resource_manager.resource_address(),
+                loan_terms.resource_address() == self.transient_resource_manager.address(),
                 "Incorrect resource passed in for loan terms"
             );
 
