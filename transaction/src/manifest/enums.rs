@@ -116,9 +116,8 @@ lazy_static! {
                 Mint = 0;
                 Burn = 1;
                 UpdateNonFungibleData = 2;
-                Withdraw = 3;
-                Deposit = 4;
-                Recall = 5;
+                Recall = 3;
+                Freeze = 4;
             }
         );
 

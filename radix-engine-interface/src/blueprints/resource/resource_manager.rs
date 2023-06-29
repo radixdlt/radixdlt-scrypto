@@ -36,8 +36,6 @@ pub enum ResourceAction {
     Mint,
     Burn,
     UpdateNonFungibleData,
-    Withdraw,
-    Deposit,
     Recall,
     Freeze,
 }

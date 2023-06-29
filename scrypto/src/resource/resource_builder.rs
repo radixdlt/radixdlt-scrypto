@@ -222,7 +222,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///    });
     /// ```
     fn mintable(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_auth(Mint, role_init)
+        self.add_action_and_roles(Mint, role_init)
     }
 
     /// Sets the resource to be burnable.
@@ -253,7 +253,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///    });
     /// ```
     fn burnable(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_auth(Burn, role_init)
+        self.add_action_and_roles(Burn, role_init)
     }
 
     /// Sets the resource to be recallable from vaults.
@@ -283,7 +283,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///    });
     /// ```
     fn recallable(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_auth(Recall, role_init)
+        self.add_action_and_roles(Recall, role_init)
     }
 
     /// Sets the resource to have freezeable.
@@ -314,7 +314,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///    });
     /// ```
     fn freezeable(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_auth(Freeze, role_init)
+        self.add_action_and_roles(Freeze, role_init)
     }
 
     /// Sets the resource to not be freely withdrawable from a vault.
@@ -345,7 +345,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///    });
     /// ```
     fn restrict_withdraw(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_auth(Withdraw, role_init)
+        self.add_roles(role_init)
     }
 
     /// Sets the resource to not be freely depositable into a vault.
@@ -375,7 +375,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///    });
     /// ```
     fn restrict_deposit(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_auth(Deposit, role_init)
+        self.add_roles(role_init)
     }
 }
 impl<B: private::CanAddAuth> UpdateAuthBuilder for B {}
@@ -419,7 +419,7 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
         self,
         role_init: RolesInit,
     ) -> Self::OutputBuilder {
-        self.add_auth(
+        self.add_action_and_roles(
             UpdateNonFungibleData,
             role_init,
         )
@@ -885,7 +885,17 @@ impl<T: AnyResourceType, A: ResourceConfig> private::CanSetAddressReservation
 impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, NoAuth> {
     type OutputBuilder = InProgressResourceBuilder<T, ResourceActionRolesInit>;
 
-    fn add_auth(
+    fn add_roles(self, role_init: RolesInit) -> Self::OutputBuilder {
+        Self::OutputBuilder {
+            owner_role: self.owner_role,
+            resource_type: self.resource_type,
+            config: ResourceActionRolesInit(btreeset!(), role_init),
+            metadata_config: self.metadata_config,
+            address_reservation: self.address_reservation,
+        }
+    }
+
+    fn add_action_and_roles(
         self,
         action: ResourceAction,
         role_init: RolesInit,
@@ -905,7 +915,12 @@ impl<T: AnyResourceType> private::CanAddAuth
 {
     type OutputBuilder = Self;
 
-    fn add_auth(
+    fn add_roles(mut self, role_init: RolesInit) -> Self::OutputBuilder {
+        self.config.1.data.extend(role_init.data);
+        self
+    }
+
+    fn add_action_and_roles(
         mut self,
         action: ResourceAction,
         role_init: RolesInit,
@@ -985,11 +1000,9 @@ mod private {
     pub trait CanAddAuth: Sized {
         type OutputBuilder;
 
-        fn add_auth(
-            self,
-            method: ResourceAction,
-            role_init: RolesInit,
-        ) -> Self::OutputBuilder;
+        fn add_roles(self, role_init: RolesInit) -> Self::OutputBuilder;
+
+        fn add_action_and_roles(self, method: ResourceAction, role_init: RolesInit) -> Self::OutputBuilder;
     }
 
     pub trait CanAddOwner: Sized {
