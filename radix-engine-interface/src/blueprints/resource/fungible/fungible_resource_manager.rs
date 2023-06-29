@@ -51,6 +51,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct FungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub owner_role: OwnerRole,
