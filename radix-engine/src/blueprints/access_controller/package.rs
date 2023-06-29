@@ -607,7 +607,7 @@ impl AccessControllerNativePackage {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,
-                        supported_actions: btreeset!(Mint, Burn),
+                        resource_features: btreeset!(Mint, Burn),
                         roles: roles_init! {
                             MINTER_ROLE => rule!(require(global_component_caller_badge.clone())), locked;
                             BURNER_ROLE => rule!(allow_all), locked;

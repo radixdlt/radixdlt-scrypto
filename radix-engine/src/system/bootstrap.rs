@@ -564,7 +564,7 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     track_total_supply: false,
                     divisibility: 18,
-                    supported_actions: btreeset!(Mint, Burn),
+                    resource_features: btreeset!(Mint, Burn),
                     roles: roles_init! {
                         MINTER_ROLE => rule!(require(global_caller(CONSENSUS_MANAGER))), locked;
                         BURNER_ROLE => rule!(require(global_caller(CONSENSUS_MANAGER))), locked;
@@ -602,7 +602,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    supported_actions: btreeset!(),
+                    resource_features: btreeset!(),
                     roles: roles_init! {
                         WITHDRAWER_ROLE => rule!(deny_all), locked;
                     },
@@ -636,7 +636,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    supported_actions: btreeset!(),
+                    resource_features: btreeset!(),
                     roles: roles_init! {
                         WITHDRAWER_ROLE => rule!(deny_all), locked;
                     },
@@ -670,7 +670,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<PackageOwnerBadgeData>(),
-                    supported_actions: btreeset!(Mint),
+                    resource_features: btreeset!(Mint),
                     roles: roles_init! {
                         MINTER_ROLE => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE))), locked;
                     },
@@ -704,7 +704,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<IdentityOwnerBadgeData>(),
-                    supported_actions: btreeset!(Mint),
+                    resource_features: btreeset!(Mint),
                     roles: roles_init! {
                         MINTER_ROLE => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))), locked;
                     },
@@ -779,7 +779,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<AccountOwnerBadgeData>(),
-                    supported_actions: btreeset!(Mint),
+                    resource_features: btreeset!(Mint),
                     roles: roles_init! {
                         MINTER_ROLE => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))), locked;
                     },
@@ -879,7 +879,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    supported_actions: btreeset!(),
+                    resource_features: btreeset!(),
                     roles: roles_init!(),
                     metadata: metadata! {
                         init {
@@ -911,7 +911,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    supported_actions: btreeset!(),
+                    resource_features: btreeset!(),
                     roles: roles_init!(),
                     metadata: metadata! {
                         init {
@@ -943,7 +943,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    supported_actions: btreeset!(),
+                    resource_features: btreeset!(),
                     roles: roles_init!(),
                     metadata: metadata! {
                         init {

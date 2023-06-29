@@ -66,7 +66,7 @@ fn verify_and_defaults_to_main_roles(roles: &mut RolesInit) -> Result<(), String
 
 pub fn features(
     track_total_supply: bool,
-    supported_actions: &BTreeSet<ResourceAction>,
+    supported_actions: &BTreeSet<ResourceFeature>,
 ) -> Vec<&str> {
     let mut features = Vec::new();
 
@@ -74,19 +74,19 @@ pub fn features(
         features.push(TRACK_TOTAL_SUPPLY_FEATURE);
     }
 
-    if supported_actions.contains(&ResourceAction::Freeze) {
+    if supported_actions.contains(&ResourceFeature::Freeze) {
         features.push(VAULT_FREEZE_FEATURE);
     }
 
-    if supported_actions.contains(&ResourceAction::Recall) {
+    if supported_actions.contains(&ResourceFeature::Recall) {
         features.push(VAULT_RECALL_FEATURE);
     }
 
-    if supported_actions.contains(&ResourceAction::Mint) {
+    if supported_actions.contains(&ResourceFeature::Mint) {
         features.push(MINT_FEATURE);
     }
 
-    if supported_actions.contains(&ResourceAction::Burn) {
+    if supported_actions.contains(&ResourceFeature::Burn) {
         features.push(BURN_FEATURE);
     }
 

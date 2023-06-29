@@ -114,20 +114,20 @@ impl<T: AnyResourceType> InProgressResourceBuilder<T, NoAuth> {
 }
 
 pub trait ResourceConfig {
-    fn into_supported_actions_and_roles(self) -> (BTreeSet<ResourceAction>, RolesInit);
+    fn into_supported_actions_and_roles(self) -> (BTreeSet<ResourceFeature>, RolesInit);
 }
 
 pub struct NoAuth;
 impl ResourceConfig for NoAuth {
-    fn into_supported_actions_and_roles(self) -> (BTreeSet<ResourceAction>, RolesInit) {
+    fn into_supported_actions_and_roles(self) -> (BTreeSet<ResourceFeature>, RolesInit) {
         (BTreeSet::new(), roles_init! {})
     }
 }
 
-pub struct ResourceActionRolesInit(BTreeSet<ResourceAction>, RolesInit);
+pub struct ResourceActionRolesInit(BTreeSet<ResourceFeature>, RolesInit);
 
 impl ResourceConfig for ResourceActionRolesInit {
-    fn into_supported_actions_and_roles(self) -> (BTreeSet<ResourceAction>, RolesInit) {
+    fn into_supported_actions_and_roles(self) -> (BTreeSet<ResourceFeature>, RolesInit) {
         (self.0, self.1)
     }
 }
@@ -465,7 +465,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             divisibility,
                             track_total_supply: true,
                             metadata,
-                            supported_actions,
+                            resource_features: supported_actions,
                             roles,
                             address_reservation,
                         })
@@ -495,7 +495,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             id_type,
                             track_total_supply: true,
                             non_fungible_schema,
-                            supported_actions,
+                            resource_features: supported_actions,
                             roles,
                             metadata,
                             address_reservation,
@@ -563,7 +563,7 @@ impl<A: ResourceConfig> InProgressResourceBuilder<FungibleResourceType, A> {
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     divisibility: self.resource_type.divisibility,
-                    supported_actions,
+                    resource_features: supported_actions,
                     roles,
                     metadata,
                     initial_supply: amount.into(),
@@ -626,7 +626,7 @@ impl<A: ResourceConfig, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    supported_actions,
+                    resource_features: supported_actions,
                     roles,
                     metadata,
                     entries: map_entries(entries),
@@ -689,7 +689,7 @@ impl<A: ResourceConfig, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    supported_actions,
+                    resource_features: supported_actions,
                     roles,
                     metadata,
                     entries: map_entries(entries),
@@ -752,7 +752,7 @@ impl<A: ResourceConfig, D: NonFungibleData>
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
                     non_fungible_schema,
-                    supported_actions,
+                    resource_features: supported_actions,
                     roles,
                     metadata,
                     entries: map_entries(entries),
@@ -818,7 +818,7 @@ impl<A: ResourceConfig, D: NonFungibleData>
                         owner_role: self.owner_role,
                         non_fungible_schema,
                         track_total_supply: true,
-                        supported_actions,
+                        resource_features: supported_actions,
                         roles,
                         metadata,
                         entries: entries
@@ -897,7 +897,7 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, No
 
     fn add_action_and_roles(
         self,
-        action: ResourceAction,
+        action: ResourceFeature,
         role_init: RolesInit,
     ) -> Self::OutputBuilder {
         Self::OutputBuilder {
@@ -922,7 +922,7 @@ impl<T: AnyResourceType> private::CanAddAuth
 
     fn add_action_and_roles(
         mut self,
-        action: ResourceAction,
+        action: ResourceFeature,
         role_init: RolesInit,
     ) -> Self::OutputBuilder {
         self.config.0.insert(action);
@@ -983,7 +983,7 @@ impl<A: ResourceConfig, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceAction};
+    use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceFeature};
 
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;
@@ -1004,7 +1004,7 @@ mod private {
 
         fn add_action_and_roles(
             self,
-            method: ResourceAction,
+            method: ResourceFeature,
             role_init: RolesInit,
         ) -> Self::OutputBuilder;
     }
@@ -1023,7 +1023,7 @@ mod private {
         Fungible {
             owner_role: OwnerRole,
             divisibility: u8,
-            supported_actions: BTreeSet<ResourceAction>,
+            supported_actions: BTreeSet<ResourceFeature>,
             roles: RolesInit,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,
@@ -1032,7 +1032,7 @@ mod private {
             owner_role: OwnerRole,
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
-            supported_actions: BTreeSet<ResourceAction>,
+            supported_actions: BTreeSet<ResourceFeature>,
             roles: RolesInit,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,

@@ -79,7 +79,7 @@ impl NewAccount {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        supported_actions: btreeset!(),
+                        resource_features: btreeset!(),
                         roles: roles_init!(),
                         metadata: metadata!(
                             init {

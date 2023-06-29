@@ -29,7 +29,7 @@ use radix_engine_interface::blueprints::package::{
     PackagePublishWasmManifestInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
 };
-use radix_engine_interface::blueprints::resource::ResourceAction::{Burn, Mint};
+use radix_engine_interface::blueprints::resource::ResourceFeature::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, CONSENSUS_MANAGER, IDENTITY_PACKAGE,
@@ -443,7 +443,7 @@ impl ManifestBuilder {
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        supported_actions: BTreeSet<ResourceAction>,
+        supported_actions: BTreeSet<ResourceFeature>,
         roles: RolesInit,
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Option<Decimal>,
@@ -460,7 +460,7 @@ impl ManifestBuilder {
                         divisibility,
                         track_total_supply,
                         metadata,
-                        supported_actions,
+                        resource_features,
                         roles,
                         initial_supply,
                         address_reservation: None,
@@ -477,7 +477,7 @@ impl ManifestBuilder {
                     divisibility,
                     track_total_supply,
                     metadata,
-                    supported_actions,
+                    resource_features,
                     roles,
                     address_reservation: None,
                 }),
@@ -493,7 +493,7 @@ impl ManifestBuilder {
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
-        supported_actions: BTreeSet<ResourceAction>,
+        supported_actions: BTreeSet<ResourceFeature>,
         roles: RolesInit,
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Option<T>,
@@ -519,7 +519,7 @@ impl ManifestBuilder {
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                        supported_actions,
+                        resource_features,
                         roles,
                         metadata,
                         entries,
@@ -538,7 +538,7 @@ impl ManifestBuilder {
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                        supported_actions,
+                        resource_features,
                         roles,
                         metadata,
                         address_reservation: None,

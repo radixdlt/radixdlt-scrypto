@@ -1808,7 +1808,7 @@ mod tests {
                                 "name" => "Token".to_string(), locked;
                             }
                         },
-                        supported_actions: btreeset!(),
+                        resource_features: btreeset!(),
                         roles: roles_init!(),
                         address_reservation: None,
                     }
@@ -1847,7 +1847,7 @@ mod tests {
                             non_fungible_schema: NonFungibleDataSchema::new_schema::<
                                 MyNonFungibleData,
                             >(),
-                            supported_actions: btreeset!(),
+                            resource_features: btreeset!(),
                             roles: roles_init!(),
                             metadata: metadata!(),
                             address_reservation: None,
@@ -1905,7 +1905,7 @@ mod tests {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        supported_actions: btreeset!(),
+                        resource_features: btreeset!(),
                         roles: roles_init!(),
                         metadata: metadata! {
                             init {
@@ -1951,7 +1951,7 @@ mod tests {
                     owner_role: OwnerRole::None,
                     track_total_supply: false,
                     divisibility: 18,
-                    supported_actions: btreeset!(),
+                    resource_features: btreeset!(),
                     roles: roles_init!(),
                     metadata: metadata! {
                         init {
@@ -1993,7 +1993,7 @@ mod tests {
                         track_total_supply: false,
                         divisibility: 18,
                         initial_supply: "500".parse().unwrap(),
-                        supported_actions: btreeset!(),
+                        resource_features: btreeset!(),
                         roles: roles_init!(),
                         metadata: metadata! {
                             init {

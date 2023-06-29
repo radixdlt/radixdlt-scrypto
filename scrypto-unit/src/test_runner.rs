@@ -1129,7 +1129,7 @@ impl TestRunner {
     fn create_fungible_resource_and_deposit(
         &mut self,
         owner_role: OwnerRole,
-        supported_actions: BTreeSet<ResourceAction>,
+        supported_actions: BTreeSet<ResourceFeature>,
         roles: RolesInit,
         to: ComponentAddress,
     ) -> ResourceAddress {

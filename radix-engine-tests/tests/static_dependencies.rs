@@ -153,7 +153,7 @@ fn static_resource_should_be_callable() {
                             owner_role: OwnerRole::None,
                             track_total_supply: true,
                             divisibility: 0u8,
-                            supported_actions: btreeset!(),
+                            resource_features: btreeset!(),
                             roles: roles_init!(),
                             metadata: metadata!(),
                             initial_supply: Decimal::from(10),
