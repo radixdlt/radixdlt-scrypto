@@ -1,7 +1,7 @@
 extern crate core;
 
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, METADATA_ADMIN_ROLE};
+use radix_engine_interface::api::node_modules::metadata::{MetadataValue, METADATA_SETTER_ROLE};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
@@ -27,7 +27,9 @@ impl Action {
             Action::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_ROLE)),
             Action::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_ROLE)),
 
-            Action::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_ADMIN_ROLE)),
+            Action::UpdateMetadata => {
+                (ObjectModuleId::Metadata, RoleKey::new(METADATA_SETTER_ROLE))
+            }
         }
     }
 }
