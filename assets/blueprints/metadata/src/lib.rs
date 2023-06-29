@@ -11,8 +11,10 @@ mod metadata {
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
                     roles {
-                        metadata_admin => rule!(allow_all), locked;
-                        metadata_admin_updater => rule!(deny_all), locked;
+                        metadata_setter => rule!(allow_all), locked;
+                        metadata_setter_updater => rule!(deny_all), locked;
+                        metadata_locker => rule!(allow_all), locked;
+                        metadata_locker_updater => rule!(deny_all), locked;
                     },
                     init {
                         "empty_locked" => EMPTY, locked;
@@ -27,8 +29,10 @@ mod metadata {
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
                     roles {
-                        metadata_admin => rule!(allow_all), locked;
-                        metadata_admin_updater => rule!(deny_all), locked;
+                        metadata_setter => rule!(allow_all), locked;
+                        metadata_setter_updater => rule!(deny_all), locked;
+                        metadata_locker => rule!(allow_all), locked;
+                        metadata_locker_updater => rule!(deny_all), locked;
                     },
                     init {
                         key => value, locked;
