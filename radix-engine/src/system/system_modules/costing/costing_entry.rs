@@ -25,7 +25,7 @@ pub enum CostingEntry<'a> {
         export_name: &'a str,
         gas: u32,
     },
-    RunWasmCodePrepare {
+    PrepareWasmCode {
         size: usize,
     },
 
@@ -135,7 +135,7 @@ impl<'a> CostingEntry<'a> {
                 export_name,
                 gas,
             } => ft.run_wasm_code_cost(package_address, export_name, *gas),
-            CostingEntry::RunWasmCodePrepare { size } => ft.instantiate_wasm_code_cost(*size),
+            CostingEntry::PrepareWasmCode { size } => ft.instantiate_wasm_code_cost(*size),
             CostingEntry::BeforeInvoke { actor, input_size } => {
                 ft.before_invoke_cost(actor, *input_size)
             }

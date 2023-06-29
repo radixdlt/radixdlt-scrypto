@@ -22,6 +22,7 @@ OpenSubstate::GlobalPackage                                                ,    
 OpenSubstate::GlobalTwoResourcePool                                        ,         409328,     3.37%
 OpenSubstate::InternalFungibleVault                                        ,         816006,     6.71%
 OpenSubstate::InternalGenericComponent                                     ,          99968,     0.82%
+PrepareWasmCode                                                            ,         579562,     4.77%
 QueryActor                                                                 ,           6500,     0.05%
 ReadSubstate                                                               ,         886962,     7.29%
 RunNativeCode::Worktop_drain                                               ,           6901,     0.06%
@@ -41,7 +42,6 @@ RunNativeCode::take_FungibleVault                                          ,    
 RunNativeCode::try_deposit_batch_or_abort                                  ,          41152,     0.34%
 RunNativeCode::withdraw                                                    ,          25682,     0.21%
 RunWasmCode::Radiswap_swap                                                 ,          98241,     0.81%
-RunWasmCodePrepare                                                         ,         579562,     4.77%
 TxBaseCost                                                                 ,          50000,     0.41%
 TxPayloadCost                                                              ,          17650,     0.15%
 TxSignatureVerification                                                    ,           7000,     0.06%

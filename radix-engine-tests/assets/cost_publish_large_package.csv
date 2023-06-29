@@ -22,6 +22,7 @@ OpenSubstate::GlobalPackage                                                ,    
 OpenSubstate::InternalFungibleVault                                        ,         165678,     0.24%
 OpenSubstate::InternalGenericComponent                                     ,          28414,     0.04%
 OpenSubstate::InternalKeyValueStore                                        ,          80726,     0.12%
+PrepareWasmCode                                                            ,         699064,     1.02%
 QueryActor                                                                 ,           2000,     0.00%
 ReadSubstate                                                               ,         860504,     1.25%
 RunNativeCode::Worktop_drop                                                ,           6683,     0.01%
@@ -31,7 +32,6 @@ RunNativeCode::create_with_data                                            ,    
 RunNativeCode::lock_fee                                                    ,          20764,     0.03%
 RunNativeCode::publish_wasm_advanced                                       ,          41152,     0.06%
 RunWasmCode::Faucet_lock_fee                                               ,          17654,     0.03%
-RunWasmCodePrepare                                                         ,         699064,     1.02%
 TxBaseCost                                                                 ,          50000,     0.07%
 TxPayloadCost                                                              ,       52389750,    76.19%
 TxSignatureVerification                                                    ,              0,     0.00%

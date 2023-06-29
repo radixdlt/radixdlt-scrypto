@@ -24,6 +24,7 @@ OpenSubstate::GlobalNonFungibleResourceManager                             ,    
 OpenSubstate::GlobalPackage                                                ,        6985014,    39.28%
 OpenSubstate::InternalFungibleVault                                        ,         665918,     3.74%
 OpenSubstate::InternalGenericComponent                                     ,         192288,     1.08%
+PrepareWasmCode                                                            ,        2246392,    12.63%
 QueryActor                                                                 ,          15000,     0.08%
 QueryAuthZone                                                              ,           2000,     0.01%
 ReadSubstate                                                               ,        2754136,    15.49%
@@ -55,7 +56,6 @@ RunNativeCode::unlock_amount_FungibleVault                                 ,    
 RunNativeCode::withdraw                                                    ,          25682,     0.14%
 RunWasmCode::BasicFlashLoan_repay_loan                                     ,          68936,     0.39%
 RunWasmCode::BasicFlashLoan_take_loan                                      ,         118220,     0.66%
-RunWasmCodePrepare                                                         ,        2246392,    12.63%
 TxBaseCost                                                                 ,          50000,     0.28%
 TxPayloadCost                                                              ,          25700,     0.14%
 TxSignatureVerification                                                    ,           7000,     0.04%
