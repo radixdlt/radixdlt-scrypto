@@ -28,6 +28,7 @@ pub use vault::*;
 pub use worktop::*;
 
 use crate::api::node_modules::auth::RoleDefinition;
+use sbor::rust::vec::Vec;
 use radix_engine_common::math::*;
 
 pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
@@ -53,21 +54,11 @@ macro_rules! resource_roles {
             pub $updater_field: T,
         }
 
-        impl<T> $roles_struct<T> {
-            pub fn list(self) -> Vec<(&'static str, T)> {
-                vec![
-                    ($actor_field_name, self.$actor_field),
-                    ($updater_field_name, self.$updater_field),
-                ]
-            }
-        }
-
         impl $roles_struct<RoleDefinition> {
             pub fn to_role_init(self) -> $crate::blueprints::resource::RolesInit {
                 let mut roles = $crate::blueprints::resource::RolesInit::new();
-                for (name, entry) in self.list() {
-                    roles.set_entry(name, entry);
-                }
+                roles.set_entry($actor_field_name, self.$actor_field);
+                roles.set_entry($updater_field_name, self.$updater_field);
                 roles
             }
         }

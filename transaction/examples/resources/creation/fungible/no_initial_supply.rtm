@@ -19,8 +19,16 @@ CREATE_FUNGIBLE_RESOURCE
     Enum<0u8>()
     false # Track Total Supply
     18u8
-    Array<Enum>()
-    Map<String, Tuple>()
+    # This array of enums defines the modifiable behaviors of the resource. Each element in
+    # the array defines a different resource behavior. As an example, the first element in this array
+    # defines that the resource is mintable.
+    Array<Enum>(Enum<ResourceAction::Mint>())
+    # This map defines the authorization rules for a given role which maps to a set of methods.
+    # In this example, the "minter", a role which is able to mint new tokens, is given permission
+    # to everyone. This rule is also locked and permanently cant be changed.
+    Map<String, Tuple>(
+        "minter" => Tuple(Enum<1u8>(Enum<AccessRule::AllowAll>()), true)
+    )
     Tuple(
         Map<String, Tuple>(
             "name" => Tuple(
