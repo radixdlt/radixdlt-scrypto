@@ -29,24 +29,24 @@ mod non_fungible_test {
 
             // Create non-fungible resource with mutable supply
             let resource_manager =
-                ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
+                ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::Fixed(rule!(require(mint_badge.resource_address()))))
                     .metadata(metadata! {
                         init {
                             "name" => "Katz's Sandwiches".to_owned(), locked;
                         }
                     })
                     .mintable(mintable! {
-                        minter => rule!(require(mint_badge.resource_address())), locked;
+                        minter => OWNER, locked;
                         minter_updater => rule!(deny_all), locked;
                     })
                     .burnable(burnable! {
                         burner => rule!(allow_all), locked;
                         burner_updater => rule!(deny_all), locked;
                     })
-                    .updatable_non_fungible_data(
-                        rule!(require(mint_badge.resource_address())),
-                        rule!(deny_all),
-                    )
+                    .updatable_non_fungible_data(updatable_non_fungible_data! {
+                        non_fungible_data_updater => OWNER, locked;
+                        non_fungible_data_updater_updater => rule!(deny_all), locked;
+                    })
                     .create_with_no_initial_supply();
 
             // Mint a non-fungible

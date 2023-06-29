@@ -39,10 +39,10 @@ mod nf_data_with_global {
                         burner => rule!(allow_all), locked;
                         burner_updater => rule!(deny_all), locked;
                     })
-                    .updatable_non_fungible_data(
-                        rule!(require(mint_badge.resource_address())),
-                        rule!(deny_all),
-                    )
+                    .updatable_non_fungible_data(updatable_non_fungible_data! {
+                        non_fungible_data_updater => rule!(require(mint_badge.resource_address())), locked;
+                        non_fungible_data_updater_updater => rule!(deny_all), locked;
+                    })
                     .mint_initial_supply([(1u64.into(), NFDataWithGlobal { global })]);
 
             // Mint a non-fungible

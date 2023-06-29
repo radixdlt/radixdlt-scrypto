@@ -1,7 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
 use crate::runtime::Runtime;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::*;
@@ -387,6 +386,7 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// ### Examples
     ///
     /// ```no_run
+    /// use radix_engine_interface::updatable_non_fungible_data;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
@@ -399,24 +399,26 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// }
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
-    ///    .updatable_non_fungible_data(rule!(require(resource_address)), LOCKED);
+    ///    .updatable_non_fungible_data(updatable_non_fungible_data! {
+    ///        non_fungible_data_updater => rule!(require(resource_address)), locked;
+    ///        non_fungible_data_updater_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
-    ///    .updatable_non_fungible_data(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .updatable_non_fungible_data(updatable_non_fungible_data! {
+    ///        non_fungible_data_updater => rule!(deny_all), updatable;
+    ///        non_fungible_data_updater_updater => rule!(require(resource_address)), updatable;
+    ///    });
     /// ```
     fn updatable_non_fungible_data<R: Into<AccessRule>>(
         self,
-        method_auth: AccessRule,
-        mutability: R,
+        role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
         self.add_auth(
             UpdateNonFungibleData,
-            ResourceActionRoleInit {
-                actor: RoleDefinition::updatable(method_auth),
-                updater: RoleDefinition::updatable(mutability.into()),
-            },
+            role_init,
         )
     }
 }

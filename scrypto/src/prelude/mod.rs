@@ -38,7 +38,7 @@ pub use radix_engine_interface::{
     manifest_args, metadata, metadata_init, metadata_init_set_entry, metadata_roles, mintable,
     pdec, recallable, restrict_deposit, restrict_withdraw, role_definition_entry, role_entry,
     roles2, rule, scrypto_args, ScryptoCategorize, ScryptoDecode, ScryptoEncode, ScryptoEvent,
-    ScryptoSbor,
+    ScryptoSbor, updatable_non_fungible_data
 };
 
 //=======

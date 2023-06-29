@@ -168,3 +168,18 @@ macro_rules! restrict_deposit {
         depositable_roles.to_role_init()
     });
 }
+
+resource_roles!(
+    UpdatableNonFungibleDataRoles,
+    non_fungible_data_updater,
+    non_fungible_data_updater_updater,
+    NON_FUNGIBLE_DATA_UPDATER_ROLE,
+    NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE
+);
+#[macro_export]
+macro_rules! updatable_non_fungible_data {
+    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
+        let updatable_non_fungible_data_roles = internal_roles_struct!(UpdatableNonFungibleDataRoles, $($role => $rule, $locked;)*);
+        updatable_non_fungible_data_roles.to_role_init()
+    });
+}
