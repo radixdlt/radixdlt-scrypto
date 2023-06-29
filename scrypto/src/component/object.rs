@@ -23,6 +23,8 @@ impl ObjectStubHandle {
 }
 
 pub trait ObjectStub: Copy {
+    type AddressType: TryFrom<[u8; NodeId::LENGTH]>;
+
     fn new(handle: ObjectStubHandle) -> Self;
 
     fn handle(&self) -> &ObjectStubHandle;

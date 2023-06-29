@@ -19,8 +19,7 @@ mod resource_test {
                     .mintable(rule!(allow_all), rule!(allow_all))
                     .create_with_no_initial_supply();
 
-            super_admin_manager
-                .set_mintable(rule!(require(super_admin_manager.resource_address())));
+            super_admin_manager.set_mintable(rule!(require(super_admin_manager.address())));
         }
 
         pub fn create_fungible() -> (Bucket, ResourceManager) {
@@ -120,9 +119,9 @@ mod resource_test {
                 .create_with_no_initial_supply();
 
             badge.authorize(|| {
-                let metadata = token_resource_manager.metadata();
-                metadata.set("a".to_owned(), "b".to_owned());
-                assert_eq!(metadata.get_string("a".to_owned()).unwrap(), "b".to_owned());
+                token_resource_manager.set_metadata("a".to_owned(), "b".to_owned());
+                let string: String = token_resource_manager.get_metadata("a".to_owned()).unwrap();
+                assert_eq!(string, "b".to_owned());
             });
 
             badge

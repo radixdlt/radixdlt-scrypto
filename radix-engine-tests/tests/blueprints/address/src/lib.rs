@@ -77,7 +77,7 @@ mod my_component {
         }
 
         pub fn call_other_component_with_wrong_address(&self) {
-            let address = self.to_call.component_address();
+            let address = self.to_call.address();
             self.to_call.protected_method(address, false);
         }
 

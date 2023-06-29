@@ -29,6 +29,8 @@ impl HasTypeInfo for PackageStub {
 }
 
 impl ObjectStub for PackageStub {
+    type AddressType = PackageAddress;
+
     fn new(handle: ObjectStubHandle) -> Self {
         Self(handle)
     }
