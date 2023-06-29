@@ -134,7 +134,7 @@ impl Compile {
 
 pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
-    pub initial_epoch: Epoch,
+    pub genesis_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
     pub initial_current_leader: Option<ValidatorIndex>,
@@ -142,13 +142,13 @@ pub struct CustomGenesis {
 }
 
 impl CustomGenesis {
-    pub fn default(initial_epoch: Epoch, initial_config: ConsensusManagerConfig) -> CustomGenesis {
+    pub fn default(genesis_epoch: Epoch, initial_config: ConsensusManagerConfig) -> CustomGenesis {
         let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
         Self::single_validator_and_staker(
             pub_key,
             Decimal::one(),
             ComponentAddress::virtual_account_from_public_key(&pub_key),
-            initial_epoch,
+            genesis_epoch,
             initial_config,
         )
     }
@@ -174,7 +174,7 @@ impl CustomGenesis {
         validator_public_key: Secp256k1PublicKey,
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
-        initial_epoch: Epoch,
+        genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
@@ -193,7 +193,7 @@ impl CustomGenesis {
         ];
         CustomGenesis {
             genesis_data_chunks,
-            initial_epoch,
+            genesis_epoch,
             initial_config,
             initial_time_ms: 0,
             initial_current_leader: Some(0),
@@ -206,7 +206,7 @@ impl CustomGenesis {
         validator2_public_key: Secp256k1PublicKey,
         stake_xrd_amount: (Decimal, Decimal),
         staker_account: ComponentAddress,
-        initial_epoch: Epoch,
+        genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
         let genesis_validator1: GenesisValidator = validator1_public_key.clone().into();
@@ -235,7 +235,7 @@ impl CustomGenesis {
         ];
         CustomGenesis {
             genesis_data_chunks,
-            initial_epoch,
+            genesis_epoch,
             initial_config,
             initial_time_ms: 0,
             initial_current_leader: Some(0),
@@ -280,7 +280,7 @@ impl TestRunnerBuilder {
             Some(custom_genesis) => bootstrapper
                 .bootstrap_with_genesis_data(
                     custom_genesis.genesis_data_chunks,
-                    custom_genesis.initial_epoch,
+                    custom_genesis.genesis_epoch,
                     custom_genesis.initial_config,
                     custom_genesis.initial_time_ms,
                     custom_genesis.initial_current_leader,
