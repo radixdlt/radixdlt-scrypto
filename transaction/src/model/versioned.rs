@@ -63,6 +63,7 @@ pub enum VersionedTransactionPayload {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::manifest::e2e::tests::print_blob;
     use crate::model::*;
     use crate::{ecdsa_secp256k1::EcdsaSecp256k1PrivateKey, eddsa_ed25519::EddsaEd25519PrivateKey};
 
@@ -139,6 +140,11 @@ mod tests {
         ));
 
         let intent_payload_bytes = intent_v1.to_payload_bytes().unwrap();
+
+        println!();
+        print_blob("HC_INTENT", intent_payload_bytes.clone());
+        print_blob("HC_INTENT_HASH", expected_intent_hash.0.to_vec());
+
         IntentV1::from_payload_bytes(&intent_payload_bytes).expect("Intent can be decoded");
         let intent_as_versioned =
             manifest_decode::<VersionedTransactionPayload>(&intent_payload_bytes).unwrap();

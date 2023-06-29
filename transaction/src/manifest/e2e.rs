@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use crate::eddsa_ed25519::EddsaEd25519PrivateKey;
     use crate::internal_prelude::*;
     use crate::manifest::*;
@@ -994,6 +994,174 @@ CREATE_ACCESS_CONTROLLER
         );
     }
 
+    #[test]
+    fn test_simple_transfer() {
+        // Note - this test is intended for demonstration for the ledger
+        // app - but might be better moved to being a transaction scenario
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee"
+    Decimal("10")
+;
+CALL_METHOD
+    Address("${account_address}")
+    "withdraw"
+    Address("${fungible_resource_address}")
+    Decimal("123")
+;
+TAKE_FROM_WORKTOP
+    Address("${fungible_resource_address}")
+    Decimal("123")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${other_account_address}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+;
+        "##,
+        );
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
+    #[test]
+    fn test_simple_transfer_with_multiple_locked_fees() {
+        // Note - this test is intended for demonstration for the ledger
+        // app - but might be better moved to being a transaction scenario
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee"
+    Decimal("1.2")
+;
+CALL_METHOD
+    Address("${account_address}")
+    "withdraw"
+    Address("${xrd_resource_address}")
+    Decimal("123")
+;
+TAKE_FROM_WORKTOP
+    Address("${xrd_resource_address}")
+    Decimal("123")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${other_account_address}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee"
+    Decimal("3.4")
+;
+        "##,
+        );
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_with_multiple_locked_fees",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
+    #[test]
+    fn test_simple_transfer_nft() {
+        // Note - this test is intended for demonstration for the ledger
+        // app - but might be better moved to being a transaction scenario
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee"
+    Decimal("10")
+;
+CALL_METHOD
+    Address("${account_address}")
+    "withdraw_non_fungibles"
+    Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#"),
+        NonFungibleLocalId("#2#")
+    )
+;
+TAKE_FROM_WORKTOP
+    Address("${non_fungible_resource_address}")
+    Decimal("2")
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${other_account_address}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+;
+"##,
+        );
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_nft",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
+    #[test]
+    fn test_simple_transfer_nft_by_id() {
+        // Note - this test is intended for demonstration for the ledger
+        // app - but might be better moved to being a transaction scenario
+        let canonical_manifest = apply_address_replacements(
+            r##"
+CALL_METHOD
+    Address("${account_address}")
+    "lock_fee"
+    Decimal("10")
+;
+CALL_METHOD
+    Address("${account_address}")
+    "withdraw_non_fungibles"
+    Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#"),
+        NonFungibleLocalId("#2#"),
+        NonFungibleLocalId("#3#")
+    )
+;
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("${non_fungible_resource_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#1#"),
+        NonFungibleLocalId("#2#"),
+        NonFungibleLocalId("#3#")
+    )
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("${other_account_address}")
+    "try_deposit_or_abort"
+    Bucket("bucket1")
+;
+"##,
+        );
+        compile_and_decompile_with_inversion_test(
+            "simple_transfer_nft_by_id",
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+            &canonical_manifest,
+        );
+    }
+
     fn compile_and_decompile_with_inversion_test(
         name: &str,
         manifest: impl AsRef<str>,
@@ -1023,11 +1191,22 @@ CREATE_ACCESS_CONTROLLER
 
         // If you use the following output for test cases, make sure you've checked the diff
         println!("{}", recompiled_decompiled);
-        let intent = build_intent(expected_canonical.as_ref(), blobs)
-            .expect("Canonical manifest could not be compiled")
-            .to_payload_bytes()
-            .unwrap();
+
+        let intent = build_intent(
+            expected_canonical.as_ref(),
+            network,
+            blobs
+        )
+        .expect("Canonical manifest could not be compiled")
+        .to_payload_bytes()
+        .unwrap();
+
+        let intent_hash = PreparedIntentV1::prepare_from_payload(&intent)
+            .unwrap()
+            .intent_hash();
+
         print_blob(name, intent);
+        print_blob(&format!("{}_HASH", name), intent_hash.0.to_vec());
 
         // Check round-trip property
         assert_eq!(original_binary, recompiled_binary);
@@ -1043,24 +1222,29 @@ CREATE_ACCESS_CONTROLLER
         );
     }
 
-    fn print_blob(name: &str, blob: Vec<u8>) {
-        print!(
-            "const TX_{}: [u8; {}] = [",
-            name.clone().to_uppercase(),
-            blob.len()
-        );
+    pub fn print_blob(name: &str, blob: Vec<u8>) {
+        std::env::var("PRINT_TEST_VECTORS").ok().map(|_| {
+            print!(
+                "pub const TX_{}: [u8; {}] = [",
+                name.clone().to_uppercase(),
+                blob.len()
+            );
 
-        for &byte in blob.iter() {
-            print!("{:#04x}, ", byte);
-        }
+            for &byte in blob.iter() {
+                print!("{:#04x}, ", byte);
+            }
 
-        println!("];");
+            println!("];");
+        });
     }
 
-    fn build_intent(manifest: &str, blobs: Vec<Vec<u8>>) -> Result<IntentV1, CompileError> {
+    fn build_intent(
+        manifest: &str,
+        network: &NetworkDefinition,
+        blobs: Vec<Vec<u8>>,
+    ) -> Result<IntentV1, CompileError> {
         let sk_notary = EddsaEd25519PrivateKey::from_u64(3).unwrap();
 
-        let network = NetworkDefinition::simulator();
         let (instructions, blobs) = compile(manifest, &network, blobs)?.for_intent();
 
         Ok(IntentV1 {
