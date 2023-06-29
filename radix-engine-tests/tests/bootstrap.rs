@@ -26,6 +26,7 @@ fn test_bootstrap_receipt_should_match_constants() {
     let staker_address = ComponentAddress::virtual_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     );
+    let genesis_epoch = Epoch::of(1);
     let stake = GenesisStakeAllocation {
         account_index: 0,
         xrd_amount: Decimal::one(),
@@ -47,7 +48,7 @@ fn test_bootstrap_receipt_should_match_constants() {
     } = bootstrapper
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
-            Epoch::of(1),
+            genesis_epoch,
             CustomGenesis::default_consensus_manager_config(),
             1,
             Some(0),
@@ -80,10 +81,12 @@ fn test_bootstrap_receipt_should_match_constants() {
         .new_component_addresses()
         .contains(&FAUCET));
 
-    wrap_up_receipt
+    let wrap_up_epoch_change = wrap_up_receipt
         .expect_commit_success()
         .next_epoch()
         .expect("There should be a new epoch.");
+
+    assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next());
 }
 
 #[test]
