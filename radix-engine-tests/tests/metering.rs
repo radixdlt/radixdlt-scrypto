@@ -113,57 +113,79 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     use std::fs::File;
     use std::io::Write;
 
+    fn decimal_to_float(d: Decimal) -> f64 {
+        f64::from_str(d.to_string().as_str()).unwrap()
+    }
+
     let mut buffer = String::new();
     buffer.push_str(
         format!(
-            "{:<75},{:>15}\n",
+            "{:<75},{:>15}, {:8.2}%\n",
             "Total Cost (XRD)",
-            fee_summary.total_cost().to_string()
+            fee_summary.total_cost().to_string(),
+            100.0
         )
         .as_str(),
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}\n",
+            "{:<75},{:>15}, {:8.2}%\n",
             "+ Execution Cost (XRD)",
-            fee_summary.total_execution_cost_xrd.to_string()
+            fee_summary.total_execution_cost_xrd.to_string(),
+            decimal_to_float(fee_summary.total_execution_cost_xrd / fee_summary.total_cost() * 100)
         )
         .as_str(),
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}\n",
+            "{:<75},{:>15}, {:8.2}%\n",
             "+ Tipping Cost (XRD)",
-            fee_summary.total_tipping_cost_xrd.to_string()
+            fee_summary.total_tipping_cost_xrd.to_string(),
+            decimal_to_float(fee_summary.total_tipping_cost_xrd / fee_summary.total_cost() * 100)
         )
         .as_str(),
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}\n",
+            "{:<75},{:>15}, {:8.2}%\n",
             "+ State Expansion Cost (XRD)",
-            fee_summary.total_state_expansion_cost_xrd.to_string()
+            fee_summary.total_state_expansion_cost_xrd.to_string(),
+            decimal_to_float(
+                fee_summary.total_state_expansion_cost_xrd / fee_summary.total_cost() * 100
+            )
         )
         .as_str(),
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}\n",
+            "{:<75},{:>15}, {:8.2}%\n",
             "+ Royalty Cost (XRD)",
-            fee_summary.total_royalty_cost_xrd.to_string()
+            fee_summary.total_royalty_cost_xrd.to_string(),
+            decimal_to_float(fee_summary.total_royalty_cost_xrd / fee_summary.total_cost() * 100)
         )
         .as_str(),
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}\n",
+            "{:<75},{:>15}, {:8.2}%\n",
             "Total Cost Units Consumed",
-            fee_summary.execution_cost_breakdown.values().sum::<u32>()
+            fee_summary.execution_cost_breakdown.values().sum::<u32>(),
+            100.0
         )
         .as_str(),
     );
     for (k, v) in &fee_summary.execution_cost_breakdown {
-        buffer.push_str(format!("{:<75},{:>15}\n", k, v).as_str());
+        buffer.push_str(
+            format!(
+                "{:<75},{:>15}, {:8.2}%\n",
+                k,
+                v,
+                decimal_to_float(
+                    Decimal::from(*v) / Decimal::from(fee_summary.execution_cost_sum) * 100
+                )
+            )
+            .as_str(),
+        );
     }
 
     let mut f = File::create(file).unwrap();
