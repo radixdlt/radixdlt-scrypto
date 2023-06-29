@@ -40,36 +40,47 @@ pub fn check_non_fungible_amount(amount: &Decimal) -> bool {
 }
 
 
-pub struct MintableRoles<T> {
-    pub minter: T,
-    pub minter_updater: T,
-}
-
-impl<T> MintableRoles<T> {
-    pub fn list(self) -> Vec<(&'static str, T)> {
-        vec![
-            (MINTER_ROLE, self.minter),
-            (MINTER_UPDATER_ROLE, self.minter_updater),
-        ]
-    }
-}
-
-impl MintableRoles<(Option<AccessRule>, bool)> {
-    pub fn to_role_init(self) -> ResourceActionRoleInit {
-        ResourceActionRoleInit {
-            actor: RoleDefinition {
-                value: self.minter.0,
-                lock: self.minter.1,
-            },
-            updater: RoleDefinition {
-                value: self.minter_updater.0,
-                lock: self.minter_updater.1,
-            },
+#[macro_export]
+macro_rules! resource_roles {
+    (
+        $roles_struct:ident,
+        $actor_field:ident,
+        $updater_field:ident,
+        $actor_field_name:expr,
+        $updater_field_name:expr
+    ) => (
+        pub struct $roles_struct<T> {
+            pub $actor_field: T,
+            pub $updater_field: T,
         }
-    }
+
+        impl<T> $roles_struct<T> {
+            pub fn list(self) -> Vec<(&'static str, T)> {
+                vec![
+                    ($actor_field_name, self.$actor_field),
+                    ($updater_field_name, self.$updater_field),
+                ]
+            }
+        }
+
+        impl $roles_struct<(Option<AccessRule>, bool)> {
+            pub fn to_role_init(self) -> ResourceActionRoleInit {
+                ResourceActionRoleInit {
+                    actor: RoleDefinition {
+                        value: self.$actor_field.0,
+                        lock: self.$actor_field.1,
+                    },
+                    updater: RoleDefinition {
+                        value: self.$updater_field.0,
+                        lock: self.$updater_field.1,
+                    },
+                }
+            }
+        }
+    );
 }
 
-
+resource_roles!(MintableRoles, minter, minter_updater, MINTER_ROLE, MINTER_UPDATER_ROLE);
 #[macro_export]
 macro_rules! mintable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
@@ -78,37 +89,7 @@ macro_rules! mintable {
     });
 }
 
-
-pub struct BurnableRoles<T> {
-    pub burner: T,
-    pub burner_updater: T,
-}
-
-impl<T> BurnableRoles<T> {
-    pub fn list(self) -> Vec<(&'static str, T)> {
-        vec![
-            (BURNER_ROLE, self.burner),
-            (BURNER_UPDATER_ROLE, self.burner_updater),
-        ]
-    }
-}
-
-impl BurnableRoles<(Option<AccessRule>, bool)> {
-    pub fn to_role_init(self) -> ResourceActionRoleInit {
-        ResourceActionRoleInit {
-            actor: RoleDefinition {
-                value: self.burner.0,
-                lock: self.burner.1,
-            },
-            updater: RoleDefinition {
-                value: self.burner_updater.0,
-                lock: self.burner_updater.1,
-            },
-        }
-    }
-}
-
-
+resource_roles!(BurnableRoles, burner, burner_updater, BURNER_ROLE, BURNER_UPDATER_ROLE);
 #[macro_export]
 macro_rules! burnable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({

@@ -4,8 +4,6 @@ use crate::*;
 use arbitrary::Arbitrary;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::ObjectModuleId;
-use crate::blueprints::access_controller::Role;
-use crate::prelude::KeyValueStoreInitEntry;
 
 pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
 pub const VAULT_FREEZE_FEATURE: &str = "vault_freeze";
