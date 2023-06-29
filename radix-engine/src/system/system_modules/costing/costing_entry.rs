@@ -6,8 +6,6 @@ use radix_engine_interface::*;
 
 #[derive(Debug, IntoStaticStr)]
 pub enum CostingEntry<'a> {
-    // FIXME: Add test to verify each entry
-
     /* TX */
     TxBaseCost,
     TxPayloadCost {
@@ -50,7 +48,9 @@ pub enum CostingEntry<'a> {
     DropNode {
         total_substate_size: usize,
     },
-    MoveModules,
+    MoveModules {
+        store_access: &'a StoreAccessInfo,
+    },
     OpenSubstate {
         node_id: &'a NodeId,
         value_size: usize,
@@ -144,7 +144,7 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::DropNode {
                 total_substate_size,
             } => ft.drop_node_cost(*total_substate_size),
-            CostingEntry::MoveModules => ft.move_modules_cost(),
+            CostingEntry::MoveModules { store_access } => ft.move_modules_cost(store_access),
             CostingEntry::OpenSubstate {
                 node_id: _,
                 value_size,

@@ -112,6 +112,16 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
+    fn after_move_modules<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _src_node_id: &NodeId,
+        _dest_node_id: &NodeId,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
     fn before_drop_node<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
