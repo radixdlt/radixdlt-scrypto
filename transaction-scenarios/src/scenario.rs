@@ -153,9 +153,12 @@ impl ScenarioCore {
         NextTransaction::of(logical_name.to_owned(), self.stage_counter, builder.build())
     }
 
-    pub fn finish_scenario(&self) -> NextAction {
+    /// The `interesting_addresses` should be a list of addresses that the scenario touched/created,
+    /// with a descriptor in lower_snake_case.
+    pub fn finish_scenario(&self, interesting_addresses: DescribedAddresses) -> NextAction {
         NextAction::Completed(EndState {
             next_unused_nonce: self.nonce,
+            interesting_addresses,
         })
     }
 
@@ -239,6 +242,21 @@ pub enum NextAction {
 #[derive(Debug)]
 pub struct EndState {
     pub next_unused_nonce: u32,
+    pub interesting_addresses: DescribedAddresses,
+}
+
+#[derive(Debug)]
+pub struct DescribedAddresses(IndexMap<String, GlobalAddress>);
+
+impl DescribedAddresses {
+    pub fn new() -> Self {
+        Self(indexmap!())
+    }
+
+    pub fn add(mut self, descriptor: impl ToString, address: impl Into<GlobalAddress>) -> Self {
+        self.0.insert(descriptor.to_string(), address.into());
+        self
+    }
 }
 
 pub trait ScenarioInstance {
