@@ -45,10 +45,9 @@ fn build_main_access_rules(
 
         // Non Fungible Update data
         {
-            let non_fungible_data_updater_role_init =
-                access_rules_map
-                    .remove(&ResourceAction::UpdateNonFungibleData)
-                    .unwrap_or(ResourceActionRoleInit::locked(DenyAll));
+            let non_fungible_data_updater_role_init = access_rules_map
+                .remove(&ResourceAction::UpdateNonFungibleData)
+                .unwrap_or(ResourceActionRoleInit::locked(DenyAll));
 
             main_roles.set_raw2(
                 NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE,

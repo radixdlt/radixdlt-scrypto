@@ -12,13 +12,15 @@ use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine_interface::{metadata_init, mintable, internal_roles_struct, role_definition_entry, rule};
+use radix_engine_interface::{
+    internal_roles_struct, metadata_init, mintable, role_definition_entry, rule,
+};
 
 const MILLIS_IN_SECOND: i64 = 1000;
 const SECONDS_IN_MINUTE: i64 = 60;
@@ -240,10 +242,11 @@ impl ConsensusManagerBlueprint {
                     NonFungibleGlobalId::package_of_direct_caller_badge(CONSENSUS_MANAGER_PACKAGE);
                 access_rules.insert(
                     Mint,
-                        mintable! {
-                            minter => rule!(require(global_id)), locked;
-                            minter_updater => rule!(deny_all), locked;
-                        });
+                    mintable! {
+                        minter => rule!(require(global_id)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                );
             }
 
             let consensus_manager_address =

@@ -3,12 +3,10 @@ use colored::Colorize;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataInit, MetadataValue, Url};
 use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::blueprints::resource::NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT;
 use radix_engine_interface::blueprints::resource::{
     NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-};
-use radix_engine_interface::blueprints::resource::{
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use transaction::builder::ManifestBuilder;
 use transaction::model::InstructionV1;

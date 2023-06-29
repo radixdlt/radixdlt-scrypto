@@ -1,6 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
 use crate::runtime::Runtime;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::*;
@@ -11,7 +12,6 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use scrypto::prelude::ScryptoValue;
@@ -219,10 +219,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///         minter_updater => rule!(require(resource_address)), locked;
     ///    });
     /// ```
-    fn mintable(
-        self,
-        role_init: ResourceActionRoleInit,
-    ) -> Self::OutputBuilder {
+    fn mintable(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
         self.add_auth(Mint, role_init)
     }
 
@@ -253,10 +250,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        burner_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn burnable(
-        self,
-        role_init: ResourceActionRoleInit,
-    ) -> Self::OutputBuilder {
+    fn burnable(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
         self.add_auth(Burn, role_init)
     }
 
@@ -286,10 +280,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        recaller_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn recallable(
-        self,
-        role_init: ResourceActionRoleInit,
-    ) -> Self::OutputBuilder {
+    fn recallable(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
         self.add_auth(Recall, role_init)
     }
 
@@ -320,10 +311,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        freezer_updater: rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn freezeable(
-        self,
-        role_init: ResourceActionRoleInit,
-    ) -> Self::OutputBuilder {
+    fn freezeable(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
         self.add_auth(Freeze, role_init)
     }
 
@@ -354,10 +342,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        withdrawer_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn restrict_withdraw(
-        self,
-        role_init: ResourceActionRoleInit,
-    ) -> Self::OutputBuilder {
+    fn restrict_withdraw(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
         self.add_auth(Withdraw, role_init)
     }
 
@@ -387,10 +372,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        depositor_updater => rule!(require(resource_address)), locked;
     ///    });
     /// ```
-    fn restrict_deposit<R: Into<AccessRule>>(
-        self,
-        role_init: ResourceActionRoleInit,
-    ) -> Self::OutputBuilder {
+    fn restrict_deposit(self, role_init: ResourceActionRoleInit) -> Self::OutputBuilder {
         self.add_auth(Deposit, role_init)
     }
 }
@@ -429,10 +411,13 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
         method_auth: AccessRule,
         mutability: R,
     ) -> Self::OutputBuilder {
-        self.add_auth(UpdateNonFungibleData, ResourceActionRoleInit {
-            actor: RoleDefinition::updatable(method_auth),
-            updater: RoleDefinition::updatable(mutability.into()),
-        })
+        self.add_auth(
+            UpdateNonFungibleData,
+            ResourceActionRoleInit {
+                actor: RoleDefinition::updatable(method_auth),
+                updater: RoleDefinition::updatable(mutability.into()),
+            },
+        )
     }
 }
 impl<B: IsNonFungibleBuilder + private::CanAddAuth> UpdateNonFungibleAuthBuilder for B {}
@@ -892,7 +877,9 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, No
     }
 }
 
-impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, ResourceActionRolesInit> {
+impl<T: AnyResourceType> private::CanAddAuth
+    for InProgressResourceBuilder<T, ResourceActionRolesInit>
+{
     type OutputBuilder = Self;
 
     fn add_auth(
@@ -900,10 +887,7 @@ impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, Re
         method: ResourceAction,
         role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
-        self.auth.0.insert(
-            method,
-            role_init,
-            );
+        self.auth.0.insert(method, role_init);
         self
     }
 }
@@ -954,9 +938,7 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_interface::blueprints::resource::{
-        NonFungibleGlobalId, ResourceAction,
-    };
+    use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceAction};
 
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;

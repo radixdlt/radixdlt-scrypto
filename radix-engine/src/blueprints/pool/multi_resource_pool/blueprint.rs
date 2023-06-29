@@ -8,12 +8,12 @@ use native_sdk::resource::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 
 pub const MULTI_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "MultiResourcePool";
 

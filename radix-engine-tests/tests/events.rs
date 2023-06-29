@@ -9,6 +9,7 @@ use radix_engine::errors::{
 };
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
@@ -18,7 +19,6 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use radix_engine_interface::{metadata, metadata_init};
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use scrypto::prelude::{AccessRule, FromPublicKey, ResourceAction};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
@@ -1466,10 +1466,15 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
         ResourceAction::UpdateNonFungibleData,
     ]
     .into_iter()
-    .map(|method| (method, ResourceActionRoleInit {
-        actor: RoleDefinition::updatable(AccessRule::AllowAll),
-        updater: RoleDefinition::updatable(AccessRule::AllowAll),
-    }))
+    .map(|method| {
+        (
+            method,
+            ResourceActionRoleInit {
+                actor: RoleDefinition::updatable(AccessRule::AllowAll),
+                updater: RoleDefinition::updatable(AccessRule::AllowAll),
+            },
+        )
+    })
     .collect();
 
     let manifest = ManifestBuilder::new()

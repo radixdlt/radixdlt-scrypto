@@ -85,13 +85,15 @@ mod bucket_test {
             let auth_bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(auth_bucket.resource_address()))))
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .restrict_withdraw(restrict_withdraw! {
-                    withdrawer => OWNER, locked;
-                    withdrawer_updater => rule!(deny_all), locked;
-                })
-                .mint_initial_supply(5);
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
+                auth_bucket.resource_address()
+            ))))
+            .divisibility(DIVISIBILITY_MAXIMUM)
+            .restrict_withdraw(restrict_withdraw! {
+                withdrawer => OWNER, locked;
+                withdrawer_updater => rule!(deny_all), locked;
+            })
+            .mint_initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);
 
             let token_bucket = auth_bucket.authorize(|| vault.take(1));
@@ -107,13 +109,15 @@ mod bucket_test {
             let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(badge.resource_address()))))
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .burnable(burnable! {
-                    burner => OWNER, locked;
-                    burner_updater => rule!(deny_all), locked;
-                })
-                .mint_initial_supply(5);
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
+                badge.resource_address()
+            ))))
+            .divisibility(DIVISIBILITY_MAXIMUM)
+            .burnable(burnable! {
+                burner => OWNER, locked;
+                burner_updater => rule!(deny_all), locked;
+            })
+            .mint_initial_supply(5);
             badge.authorize(|| bucket.burn());
             vec![badge]
         }

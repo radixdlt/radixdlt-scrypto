@@ -907,10 +907,7 @@ impl ManifestBuilder {
             ResourceAction::Withdraw,
             ResourceActionRoleInit::locked(rule!(allow_all)),
         );
-        access_rules.insert(
-            Mint,
-            ResourceActionRoleInit::locked(minter_rule.clone()),
-        );
+        access_rules.insert(Mint, ResourceActionRoleInit::locked(minter_rule.clone()));
         access_rules.insert(Burn, ResourceActionRoleInit::locked(minter_rule.clone()));
 
         let initial_supply = Option::None;
@@ -952,14 +949,8 @@ impl ManifestBuilder {
             ResourceAction::Withdraw,
             ResourceActionRoleInit::locked(rule!(allow_all)),
         );
-        access_rules.insert(
-            Mint,
-            ResourceActionRoleInit::locked(minter_rule.clone()),
-        );
-        access_rules.insert(
-            Burn,
-            ResourceActionRoleInit::locked(minter_rule.clone()),
-        );
+        access_rules.insert(Mint, ResourceActionRoleInit::locked(minter_rule.clone()));
+        access_rules.insert(Burn, ResourceActionRoleInit::locked(minter_rule.clone()));
 
         let initial_supply = Option::None;
         self.create_fungible_resource(owner_role, false, 0, metadata, access_rules, initial_supply)
@@ -974,7 +965,7 @@ impl ManifestBuilder {
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
-        ResourceAction::Withdraw,
+            ResourceAction::Withdraw,
             ResourceActionRoleInit::locked(rule!(allow_all)),
         );
 

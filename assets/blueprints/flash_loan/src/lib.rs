@@ -41,21 +41,24 @@ mod basic_flash_loan {
                 .mint_initial_supply(1);
 
             // Define a "transient" resource which can never be deposited once created, only burned
-            let transient_resource_manager = ResourceBuilder::new_ruid_non_fungible::<LoanDue>(OwnerRole::None)
+            let transient_resource_manager = ResourceBuilder::new_ruid_non_fungible::<LoanDue>(OwnerRole::Fixed(rule!(require(auth_token.resource_address()))))
                 .metadata(metadata! {
                     init {
                         "name" => "Promise token for BasicFlashLoan - must be returned to be burned!".to_string(), locked;
                     }
                 })
                 .mintable(mintable! {
-                    minter => rule!(require(auth_token.resource_address())), locked;
+                    minter => OWNER, locked;
                     minter_updater => rule!(deny_all), locked;
                 })
                 .burnable(burnable! {
-                    burner => rule!(require(auth_token.resource_address())), locked;
+                    burner => OWNER, locked;
                     burner_updater => rule!(deny_all), locked;
                 })
-                .restrict_deposit(rule!(deny_all), LOCKED)
+                .restrict_deposit(restrict_deposit! {
+                    depositor => rule!(deny_all), locked;
+                    depositor_updater => rule!(deny_all), locked;
+                })
                 .create_with_no_initial_supply();
 
             let global_component = Self {
