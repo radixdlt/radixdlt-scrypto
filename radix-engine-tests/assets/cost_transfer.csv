@@ -1,36 +1,36 @@
-Total Cost (XRD)                                                ,   5.6336505
-+ Execution Cost (XRD)                                          ,     5.35681
-+ Tipping Cost (XRD)                                            ,   0.2678405
-+ State Expansion Cost (XRD)                                    ,       0.009
-+ Royalty Cost (XRD)                                            ,           0
-Total Cost Units Consumed                                       ,     5356810
-AfterInvoke                                                     ,         150
-AllocateNodeId                                                  ,        6500
-BeforeInvoke                                                    ,        5731
-CloseSubstate                                                   ,       81000
-Commit::GlobalAccount                                           ,      100000
-Commit::InternalFungibleVault                                   ,      200002
-CreateNode                                                      ,        9485
-DropNode                                                        ,        9485
-EmitEvent                                                       ,        1830
-LockFee                                                         ,         500
-OpenSubstate::GlobalAccount                                     ,     1368199
-OpenSubstate::GlobalFungibleResourceManager                     ,      328586
-OpenSubstate::GlobalPackage                                     ,     2459259
-OpenSubstate::InternalFungibleVault                             ,      325336
-OpenSubstate::InternalGenericComponent                          ,       36862
-QueryActor                                                      ,        4000
-ReadSubstate                                                    ,      114176
-RunNativeCode::Worktop_drain                                    ,        6901
-RunNativeCode::Worktop_drop                                     ,        6683
-RunNativeCode::Worktop_put                                      ,       21275
-RunNativeCode::get_amount_FungibleBucket                        ,       41152
-RunNativeCode::lock_fee                                         ,       47993
-RunNativeCode::put_FungibleVault                                ,       13471
-RunNativeCode::take_FungibleVault                               ,       20367
-RunNativeCode::try_deposit_batch_or_abort                       ,       41152
-RunNativeCode::withdraw                                         ,       25682
-TxBaseCost                                                      ,       50000
-TxPayloadCost                                                   ,       13450
-TxSignatureVerification                                         ,        7000
-WriteSubstate                                                   ,       10583
+Total Cost (XRD)                                                           ,      5.2077411
++ Execution Cost (XRD)                                                     ,       4.951182
++ Tipping Cost (XRD)                                                       ,      0.2475591
++ State Expansion Cost (XRD)                                               ,          0.009
++ Royalty Cost (XRD)                                                       ,              0
+Total Cost Units Consumed                                                  ,        4951182
+AfterInvoke                                                                ,            300
+AllocateNodeId                                                             ,           6500
+BeforeInvoke                                                               ,           6462
+CloseSubstate                                                              ,          81000
+Commit::GlobalAccount                                                      ,         100002
+Commit::InternalFungibleVault                                              ,         200016
+CreateNode                                                                 ,          12470
+DropNode                                                                   ,          12470
+EmitEvent                                                                  ,           1940
+LockFee                                                                    ,            500
+OpenSubstate::GlobalAccount                                                ,         888854
+OpenSubstate::GlobalFungibleResourceManager                                ,         329648
+OpenSubstate::GlobalPackage                                                ,        2483036
+OpenSubstate::InternalFungibleVault                                        ,         326116
+OpenSubstate::InternalGenericComponent                                     ,          43224
+QueryActor                                                                 ,           4000
+ReadSubstate                                                               ,         146852
+RunNativeCode::Worktop_drain                                               ,           6901
+RunNativeCode::Worktop_drop                                                ,           6683
+RunNativeCode::Worktop_put                                                 ,          21275
+RunNativeCode::get_amount_FungibleBucket                                   ,          41152
+RunNativeCode::lock_fee                                                    ,          47993
+RunNativeCode::put_FungibleVault                                           ,          13471
+RunNativeCode::take_FungibleVault                                          ,          20367
+RunNativeCode::try_deposit_batch_or_abort                                  ,          41152
+RunNativeCode::withdraw                                                    ,          25682
+TxBaseCost                                                                 ,          50000
+TxPayloadCost                                                              ,          13450
+TxSignatureVerification                                                    ,           7000
+WriteSubstate                                                              ,          12666

@@ -56,7 +56,11 @@ impl FeeTable {
 
         // Based on benchmark `bench_decode_sbor`
         // Time for processing a byte: 10.244 µs / 1068 = 0.00959176029
-        cast(size)
+
+        // Based on benchmark `bench_validate_sbor_payload`
+        // Time for processing a byte: 10.075 µs / 1169 = 0.00861847733
+
+        mul(cast(size), 2)
     }
 
     fn store_access_cost(store_access: &StoreAccessInfo) -> u32 {
@@ -65,13 +69,15 @@ impl FeeTable {
             let cost = match info {
                 StoreAccess::ReadFromDb(size) => {
                     // Execution time (µs): 0.0009622109 * size + 389.5155
-                    // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 + 40,000
+                    // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
+                    // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
                     add(cast(*size) / 10, 40_000)
                 }
                 StoreAccess::ReadFromDbNotFound => {
-                    // Execution time (µs): varies, using max 4,000
-                    // Execution cost: 4,000 * 100
-                    400_000
+                    // Execution time (µs): varies, using max 1,600
+                    // Execution cost: 1,600 * 100
+                    // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                    160_000
                 }
                 StoreAccess::NewEntryInTrack => {
                     // The max number of entries is limited by limits module.
@@ -89,17 +95,12 @@ impl FeeTable {
 
     #[inline]
     pub fn store_commit_cost(&self, store_commit: &StoreCommit) -> u32 {
+        // Execution time (µs): 0.0025 * size + 1000
+        // Execution cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
+        // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
         match store_commit {
-            StoreCommit::Insert { size, .. } => {
-                // Execution time (µs): 0.0004 * size + 1000
-                // Execution cost: (0.0004 * size + 1000) * 100 = 0.04 * size + 100,000
-                add(cast(*size) / 25, 100_000)
-            }
-            StoreCommit::Update { size, .. } => {
-                // Execution time (µs): 0.0004 * size + 1000
-                // Execution cost: (0.0004 * size + 1000) * 100 = 0.04 * size + 100,000
-                add(cast(*size) / 25, 100_000)
-            }
+            StoreCommit::Insert { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Update { size, .. } => add(cast(*size) / 4, 100_000),
             StoreCommit::Delete { .. } => 100_000,
         }
     }
@@ -171,6 +172,8 @@ impl FeeTable {
     //======================
     // Kernel costs
     //======================
+
+    // FIXME: adjust base cost for following ops
 
     #[inline]
     pub fn before_invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {

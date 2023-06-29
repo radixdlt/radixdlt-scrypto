@@ -116,7 +116,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     let mut buffer = String::new();
     buffer.push_str(
         format!(
-            "{:<64},{:>12}\n",
+            "{:<75},{:>15}\n",
             "Total Cost (XRD)",
             fee_summary.total_cost().to_string()
         )
@@ -124,7 +124,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<64},{:>12}\n",
+            "{:<75},{:>15}\n",
             "+ Execution Cost (XRD)",
             fee_summary.total_execution_cost_xrd.to_string()
         )
@@ -132,7 +132,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<64},{:>12}\n",
+            "{:<75},{:>15}\n",
             "+ Tipping Cost (XRD)",
             fee_summary.total_tipping_cost_xrd.to_string()
         )
@@ -140,7 +140,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<64},{:>12}\n",
+            "{:<75},{:>15}\n",
             "+ State Expansion Cost (XRD)",
             fee_summary.total_state_expansion_cost_xrd.to_string()
         )
@@ -148,7 +148,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<64},{:>12}\n",
+            "{:<75},{:>15}\n",
             "+ Royalty Cost (XRD)",
             fee_summary.total_royalty_cost_xrd.to_string()
         )
@@ -156,14 +156,14 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<64},{:>12}\n",
+            "{:<75},{:>15}\n",
             "Total Cost Units Consumed",
             fee_summary.execution_cost_breakdown.values().sum::<u32>()
         )
         .as_str(),
     );
     for (k, v) in &fee_summary.execution_cost_breakdown {
-        buffer.push_str(format!("{:<64},{:>12}\n", k, v).as_str());
+        buffer.push_str(format!("{:<75},{:>15}\n", k, v).as_str());
     }
 
     let mut f = File::create(file).unwrap();

@@ -260,7 +260,7 @@ where
                     .enabled_modules
                     .contains(EnabledModules::KERNEL_TRACE)
                 {
-                    println!("{:-^80}", "Interpretation Results");
+                    println!("{:-^100}", "Interpretation Results");
                     println!("{:?}", interpretation_result);
                 }
 
@@ -833,7 +833,7 @@ where
 
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
-        println!("{:-^80}", "Executable");
+        println!("{:-^100}", "Executable");
         println!("Intent hash: {}", executable.intent_hash().as_hash());
         println!("Payload size: {}", executable.payload_size());
         println!("Fee payment: {:?}", executable.fee_payment());
@@ -849,33 +849,36 @@ where
     fn print_execution_summary(receipt: &TransactionReceipt) {
         match &receipt.transaction_result {
             TransactionResult::Commit(commit) => {
-                println!("{:-^80}", "Cost Breakdown");
+                // NB - we use "to_string" to ensure they align correctly
+
+                println!("{:-^100}", "Cost Breakdown");
                 for (k, v) in &commit.fee_summary.execution_cost_breakdown {
-                    println!("{:<64}: {:>12}", k, v);
+                    println!("{:<75}: {:>15}", k, v.to_string());
                 }
 
-                println!("{:-^80}", "Cost Totals");
+                println!("{:-^100}", "Cost Totals");
                 println!(
-                    "{:<30}: {:>12}",
-                    "Cost Unit Limit", commit.fee_summary.cost_unit_limit
+                    "{:<30}: {:>15}",
+                    "Cost Unit Limit",
+                    commit.fee_summary.cost_unit_limit.to_string()
                 );
                 println!(
-                    "{:<30}: {:>12}",
-                    "Cost Units Consumed", commit.fee_summary.execution_cost_sum
+                    "{:<30}: {:>15}",
+                    "Cost Units Consumed",
+                    commit.fee_summary.execution_cost_sum.to_string()
                 );
-                // NB - we use "to_string" to ensure they align correctly
                 println!(
-                    "{:<30}: {:>12}",
+                    "{:<30}: {:>15}",
                     "Execution Costs in XRD",
                     commit.fee_summary.total_execution_cost_xrd.to_string()
                 );
                 println!(
-                    "{:<30}: {:>12}",
+                    "{:<30}: {:>15}",
                     "Tipping Costs in XRD",
                     commit.fee_summary.total_tipping_cost_xrd.to_string()
                 );
                 println!(
-                    "{:<30}: {:>12}",
+                    "{:<30}: {:>15}",
                     "State Expansion Costs in XRD",
                     commit
                         .fee_summary
@@ -883,17 +886,17 @@ where
                         .to_string()
                 );
                 println!(
-                    "{:<30}: {:>12}",
+                    "{:<30}: {:>15}",
                     "Royalty Costs in XRD",
                     commit.fee_summary.total_royalty_cost_xrd.to_string()
                 );
 
-                println!("{:-^80}", "Application Logs");
+                println!("{:-^100}", "Application Logs");
                 for (level, message) in &commit.application_logs {
                     println!("[{}] {}", level, message);
                 }
 
-                println!("{:-^80}", "Outcome");
+                println!("{:-^100}", "Outcome");
                 println!(
                     "{}",
                     match &commit.outcome {
@@ -903,15 +906,15 @@ where
                 );
             }
             TransactionResult::Reject(e) => {
-                println!("{:-^80}", "Transaction Rejected");
+                println!("{:-^100}", "Transaction Rejected");
                 println!("{:?}", e.error);
             }
             TransactionResult::Abort(e) => {
-                println!("{:-^80}", "Transaction Aborted");
+                println!("{:-^100}", "Transaction Aborted");
                 println!("{:?}", e);
             }
         }
-        println!("{:-^80}", "Finish");
+        println!("{:-^100}", "Finish");
     }
 }
 
