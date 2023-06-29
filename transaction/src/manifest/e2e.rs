@@ -1192,14 +1192,10 @@ CALL_METHOD
         // If you use the following output for test cases, make sure you've checked the diff
         println!("{}", recompiled_decompiled);
 
-        let intent = build_intent(
-            expected_canonical.as_ref(),
-            network,
-            blobs
-        )
-        .expect("Canonical manifest could not be compiled")
-        .to_payload_bytes()
-        .unwrap();
+        let intent = build_intent(expected_canonical.as_ref(), network, blobs)
+            .expect("Canonical manifest could not be compiled")
+            .to_payload_bytes()
+            .unwrap();
 
         let intent_hash = PreparedIntentV1::prepare_from_payload(&intent)
             .unwrap()
