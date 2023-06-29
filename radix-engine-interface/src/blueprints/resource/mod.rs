@@ -124,3 +124,12 @@ macro_rules! restrict_withdraw {
         withdrawable_roles.to_role_init()
     });
 }
+
+resource_roles!(DepositableRoles, depositor, depositor_updater, DEPOSITOR_ROLE, DEPOSITOR_UPDATER_ROLE);
+#[macro_export]
+macro_rules! restrict_deposit {
+    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
+        let depositable_roles = internal_roles_struct!(DepositableRoles, $($role => $rule, $locked;)*);
+        depositable_roles.to_role_init()
+    });
+}

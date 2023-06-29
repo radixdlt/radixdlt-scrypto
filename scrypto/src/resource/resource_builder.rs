@@ -374,22 +374,24 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be depositable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_deposit(rule!(require(resource_address)), LOCKED);
+    ///    .restrict_deposit(restrict_deposit! {
+    ///        depositor => rule!(require(resource_address)), locked;
+    ///        depositor_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be depositable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_deposit(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .restrict_deposit(restrict_deposit! {
+    ///        depositor => rule!(deny_all), locked;
+    ///        depositor_updater => rule!(require(resource_address)), locked;
+    ///    });
     /// ```
     fn restrict_deposit<R: Into<AccessRule>>(
         self,
-        method_auth: AccessRule,
-        mutability: R,
+        role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
-        self.add_auth(Deposit, ResourceActionRoleInit {
-            actor: RoleDefinition::updatable(method_auth),
-            updater: RoleDefinition::updatable(mutability.into()),
-        })
+        self.add_auth(Deposit, role_init)
     }
 }
 impl<B: private::CanAddAuth> UpdateAuthBuilder for B {}
