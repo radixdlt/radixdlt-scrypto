@@ -1,5 +1,5 @@
 use radix_engine::types::*;
-use radix_engine::vm::wasm::DEFAULT_CACHE_SIZE;
+use radix_engine::vm::wasm::DEFAULT_WASM_ENGINE_CACHE_SIZE;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -38,7 +38,7 @@ fn publishing_many_packages_should_not_cause_system_failure() {
     ));
 
     // Act
-    for _ in 0..(DEFAULT_CACHE_SIZE + 200) {
+    for _ in 0..(DEFAULT_WASM_ENGINE_CACHE_SIZE + 200) {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 50.into())
             .publish_package_advanced(

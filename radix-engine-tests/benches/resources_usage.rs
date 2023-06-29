@@ -4,8 +4,7 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig, ResourcesUsage};
 use radix_engine::types::*;
-use radix_engine::wasm::WasmInstrumenter;
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenterConfig};
+use radix_engine::wasm::{DefaultWasmEngine, WasmValidatorConfig};
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
@@ -129,8 +128,7 @@ fn transfer_test(c: &mut Criterion) {
 
     let mut scrypto_interpreter = ScryptoInterpreter {
         wasm_engine: DefaultWasmEngine::default(),
-        wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_instrumenter_config: WasmInstrumenterConfig::new(),
+        wasm_validator_config: WasmValidatorConfig::new(),
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
     let _ = Bootstrapper::new(&mut substate_db, &scrypto_interpreter)

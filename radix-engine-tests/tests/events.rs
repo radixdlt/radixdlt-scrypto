@@ -393,7 +393,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             OwnerRole::None,
             false,
             18,
-            metadata_init!(),
+            metadata!(),
             BTreeMap::<ResourceAction, (AccessRule, AccessRule)>::new(),
             Some(1.into()),
         )

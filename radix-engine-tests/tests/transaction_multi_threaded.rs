@@ -4,8 +4,7 @@ mod multi_threaded_test {
     use radix_engine::transaction::{execute_and_commit_transaction, execute_transaction};
     use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
     use radix_engine::types::*;
-    use radix_engine::vm::wasm::WasmInstrumenter;
-    use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenterConfigV1};
+    use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
     use radix_engine_interface::dec;
     use radix_engine_interface::rule;
     use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -24,8 +23,7 @@ mod multi_threaded_test {
         // Set up environment.
         let mut scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
-            wasm_instrumenter_config: WasmInstrumenterConfigV1::new(),
+            wasm_validator_config: WasmValidatorConfigV1::new(),
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
         Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)

@@ -1,5 +1,3 @@
-use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
-
 //=================
 // WASM Shim
 //=================
@@ -70,11 +68,12 @@ pub const PANIC_FUNCTION_NAME: &str = "panic";
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";
 
-pub const WASM_MEMORY_PAGE_SIZE: u32 = 64 * 1024;
+//=================
+// LIMITS
+//=================
 
-/// The maximum initial memory size calculated basing on Wasm call frame size: 4MiB
-pub const DEFAULT_MAX_INITIAL_MEMORY_SIZE_PAGES: u32 =
-    DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME as u32 / WASM_MEMORY_PAGE_SIZE;
+/// The maximum memory size (per call frame): 64 * 64KiB = 4MiB
+pub const DEFAULT_MAX_MEMORY_SIZE_IN_PAGES: u32 = 64;
 
 /// The maximum initial table size
 pub const DEFAULT_MAX_INITIAL_TABLE_SIZE: u32 = 1024;
@@ -87,3 +86,5 @@ pub const DEFAULT_MAX_NUMBER_OF_GLOBALS: u32 = 512;
 
 /// The max number of functions
 pub const DEFAULT_MAX_NUMBER_OF_FUNCTIONS: u32 = 64 * 1024;
+
+pub const DEFAULT_WASM_ENGINE_CACHE_SIZE: usize = 1000;

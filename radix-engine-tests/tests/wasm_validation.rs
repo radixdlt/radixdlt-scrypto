@@ -21,7 +21,7 @@ fn test_large_memory() {
 
     assert_eq!(
         Err(PrepareError::InvalidMemory(
-            InvalidMemory::InitialMemorySizeLimitExceeded
+            InvalidMemory::MemorySizeLimitExceeded
         )),
         result
     );

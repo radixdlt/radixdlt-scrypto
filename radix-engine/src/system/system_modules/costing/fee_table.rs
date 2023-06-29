@@ -160,8 +160,8 @@ impl FeeTable {
 
     #[inline]
     pub fn instantiate_wasm_code_cost(&self, size: usize) -> u32 {
-        // From `costing::instantiate_radiswap`, it takes 3.4107 ms to instantiate WASM of length 203950.
-        // Therefore, cost for byte: 3.4107 *  1000 / 203950 * 100 = 1.67232164746
+        // From `costing::instantiate_radiswap`, it takes 3.3271 ms to instantiate WASM of length 288406.
+        // Therefore, cost for byte: 3.3271 *  1000 / 203950 * 100 = 1.63133120863
 
         mul(cast(size), 2)
     }

@@ -6,12 +6,12 @@ use wasm_instrument::gas_metering::Rules;
 use super::InstructionWeights;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WasmInstrumenterConfigV1 {
+pub struct WasmValidatorConfigV1 {
     weights: InstructionWeights,
     max_stack_size: u32,
 }
 
-impl WasmInstrumenterConfigV1 {
+impl WasmValidatorConfigV1 {
     pub fn new() -> Self {
         Self {
             weights: InstructionWeights::default(),
@@ -28,7 +28,7 @@ impl WasmInstrumenterConfigV1 {
     }
 }
 
-impl Rules for WasmInstrumenterConfigV1 {
+impl Rules for WasmValidatorConfigV1 {
     fn instruction_cost(&self, instruction: &Instruction) -> Option<u32> {
         match instruction {
             Unreachable => Some(0),
@@ -221,6 +221,6 @@ mod tests {
 
     #[test]
     fn print_params() {
-        assert_eq!(format!("{:?}", WasmInstrumenterConfigV1::new()), "WasmInstrumenterConfigV1 { weights: InstructionWeights { version: 4, fallback: 0, i64const: 1372, i64load: 3597, i64store: 3905, select: 3434, if: 8054, br: 3529, br_if: 4706, br_table: 8198, br_table_per_entry: 29, call: 14340, call_indirect: 19936, call_per_local: 1651, local_get: 2816, local_set: 2822, local_tee: 2087, global_get: 7002, global_set: 7806, memory_current: 2555, memory_grow: 14764221, i64clz: 1509, i64ctz: 2035, i64popcnt: 1499, i64eqz: 1889, i64extendsi32: 1478, i64extendui32: 1939, i32wrapi64: 1505, i64eq: 2149, i64ne: 1628, i64lts: 1654, i64ltu: 2088, i64gts: 2205, i64gtu: 1661, i64les: 1648, i64leu: 2135, i64ges: 2226, i64geu: 1661, i64add: 1623, i64sub: 2212, i64mul: 1640, i64divs: 2678, i64divu: 1751, i64rems: 2659, i64remu: 1681, i64and: 2045, i64or: 1641, i64xor: 2196, i64shl: 1662, i64shrs: 2124, i64shru: 1646, i64rotl: 1658, i64rotr: 2062 }, max_stack_size: 1024 }")
+        assert_eq!(format!("{:?}", WasmValidatorConfigV1::new()), "WasmValidatorConfigV1 { weights: InstructionWeights { version: 4, fallback: 0, i64const: 1372, i64load: 3597, i64store: 3905, select: 3434, if: 8054, br: 3529, br_if: 4706, br_table: 8198, br_table_per_entry: 29, call: 14340, call_indirect: 19936, call_per_local: 1651, local_get: 2816, local_set: 2822, local_tee: 2087, global_get: 7002, global_set: 7806, memory_current: 2555, memory_grow: 14764221, i64clz: 1509, i64ctz: 2035, i64popcnt: 1499, i64eqz: 1889, i64extendsi32: 1478, i64extendui32: 1939, i32wrapi64: 1505, i64eq: 2149, i64ne: 1628, i64lts: 1654, i64ltu: 2088, i64gts: 2205, i64gtu: 1661, i64les: 1648, i64leu: 2135, i64ges: 2226, i64geu: 1661, i64add: 1623, i64sub: 2212, i64mul: 1640, i64divs: 2678, i64divu: 1751, i64rems: 2659, i64remu: 1681, i64and: 2045, i64or: 1641, i64xor: 2196, i64shl: 1662, i64shrs: 2124, i64shru: 1646, i64rotl: 1658, i64rotr: 2062 }, max_stack_size: 1024 }")
     }
 }

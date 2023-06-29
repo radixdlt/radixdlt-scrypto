@@ -26,9 +26,12 @@ pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_SCHEMAS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
-pub const PACKAGE_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
-pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
-pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
+pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
+pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
+
+pub const PACKAGE_VM_TYPE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
+pub const PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
+pub const PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(8u8);
 
 #[derive(Copy, Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmType {
@@ -36,22 +39,34 @@ pub enum VmType {
     ScryptoV1,
 }
 
-/// A collection of blueprints, compiled and published as a single unit.
-#[derive(Clone, Sbor, PartialEq, Eq)]
-pub struct PackageCodeSubstate {
+#[derive(Debug, Clone, Sbor, PartialEq, Eq)]
+pub struct PackageVmTypeSubstate {
     pub vm_type: VmType,
+}
+
+#[derive(Clone, Sbor, PartialEq, Eq)]
+pub struct PackageOriginalCodeSubstate {
     pub code: Vec<u8>,
 }
 
-impl PackageCodeSubstate {
-    pub fn code(&self) -> &[u8] {
-        &self.code
+#[derive(Clone, Sbor, PartialEq, Eq)]
+pub struct PackageInstrumentedCodeSubstate {
+    pub code: Vec<u8>,
+}
+
+impl Debug for PackageOriginalCodeSubstate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PackageOriginalCodeSubstate")
+            .field("len", &self.code.len())
+            .finish()
     }
 }
 
-impl Debug for PackageCodeSubstate {
+impl Debug for PackageInstrumentedCodeSubstate {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PackageCodeSubstate").finish()
+        f.debug_struct("PackageInstrumentedCodeSubstate")
+            .field("len", &self.code.len())
+            .finish()
     }
 }
 
