@@ -423,8 +423,6 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let id = {
-            // FIXME: Is this enough bits to prevent hash collisions?
-            // Possibly use an always incrementing timestamp
             let id = NonFungibleLocalId::ruid(Runtime::generate_ruid(api)?);
             let non_fungibles = btreemap!(id.clone() => value);
 
