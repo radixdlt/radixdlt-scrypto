@@ -24,9 +24,6 @@ radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, 
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
 paste = "1.0.12"
 
-# WASM de-/serialization
-parity-wasm = { version = "0.45.0", features = ["sign_ext"] }
-
 # WASM validation
 wasmparser = { version = "0.107.0", default-features = false }
 
