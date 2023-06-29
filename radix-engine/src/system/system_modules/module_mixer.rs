@@ -151,8 +151,6 @@ impl SystemModuleMixer {
                 auth_zone_stack: Vec::new(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
-                max_wasm_memory: execution_config.max_wasm_mem_per_transaction,
-                max_wasm_memory_per_call_frame: execution_config.max_wasm_mem_per_call_frame,
                 max_substate_read_count: execution_config.max_substate_reads_per_transaction,
                 max_substate_write_count: execution_config.max_substate_writes_per_transaction,
                 max_substate_size: execution_config.max_substate_size,
@@ -577,18 +575,6 @@ impl SystemModuleMixer {
             .contains(EnabledModules::EXECUTION_TRACE)
         {
             self.execution_trace.update_instruction_index(new_index)
-        }
-    }
-
-    pub fn update_wasm_memory_usage(
-        &mut self,
-        depth: usize,
-        consumed_memory: usize,
-    ) -> Result<(), RuntimeError> {
-        if self.enabled_modules.contains(EnabledModules::LIMITS) {
-            self.limits.update_wasm_memory_usage(depth, consumed_memory)
-        } else {
-            Ok(())
         }
     }
 

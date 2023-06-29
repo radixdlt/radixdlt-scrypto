@@ -2471,23 +2471,6 @@ where
     }
 }
 
-impl<'a, Y, V> ClientLimitsApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
-    // No costing should be applied
-    #[trace_resources]
-    fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
-        let current_depth = self.api.kernel_get_current_depth();
-        self.api
-            .kernel_get_system()
-            .modules
-            .update_wasm_memory_usage(current_depth, consumed_memory)?;
-        Ok(())
-    }
-}
-
 impl<'a, Y, V> ClientExecutionTraceApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,

@@ -199,13 +199,6 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn update_wasm_memory_usage(
-        &mut self,
-        size: usize,
-    ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
     fn emit_event(
         &mut self,
         event_name: Vec<u8>,
