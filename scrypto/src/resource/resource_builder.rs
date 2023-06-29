@@ -11,6 +11,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use scrypto::prelude::ScryptoValue;
@@ -221,8 +222,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///         minter_updater => rule!(require(resource_address)), locked;
     ///    });
     /// ```
-    fn mintable(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_action_and_roles(Mint, role_init)
+    fn mintable(self, mintable: MintableRoles<RoleDefinition>) -> Self::OutputBuilder {
+        self.add_action_and_roles(Mint, mintable.to_role_init())
     }
 
     /// Sets the resource to be burnable.
@@ -252,8 +253,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        burner_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn burnable(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_action_and_roles(Burn, role_init)
+    fn burnable(self, burnable: BurnableRoles<RoleDefinition>) -> Self::OutputBuilder {
+        self.add_action_and_roles(Burn, burnable.to_role_init())
     }
 
     /// Sets the resource to be recallable from vaults.
@@ -282,8 +283,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        recaller_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn recallable(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_action_and_roles(Recall, role_init)
+    fn recallable(self, recallable: RecallableRoles<RoleDefinition>) -> Self::OutputBuilder {
+        self.add_action_and_roles(Recall, recallable.to_role_init())
     }
 
     /// Sets the resource to have freezeable.
@@ -313,8 +314,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        freezer_updater: rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn freezeable(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_action_and_roles(Freeze, role_init)
+    fn freezeable(self, freezable: FreezableRoles<RoleDefinition>) -> Self::OutputBuilder {
+        self.add_action_and_roles(Freeze, freezable.to_role_init())
     }
 
     /// Sets the resource to not be freely withdrawable from a vault.
@@ -344,8 +345,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        withdrawer_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn restrict_withdraw(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_roles(role_init)
+    fn restrict_withdraw(self, restrict_withdraw: WithdrawableRoles<RoleDefinition>) -> Self::OutputBuilder {
+        self.add_roles(restrict_withdraw.to_role_init())
     }
 
     /// Sets the resource to not be freely depositable into a vault.
@@ -374,8 +375,8 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        depositor_updater => rule!(require(resource_address)), locked;
     ///    });
     /// ```
-    fn restrict_deposit(self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.add_roles(role_init)
+    fn restrict_deposit(self, restrict_deposit: DepositableRoles<RoleDefinition>) -> Self::OutputBuilder {
+        self.add_roles(restrict_deposit.to_role_init())
     }
 }
 impl<B: private::CanAddAuth> UpdateAuthBuilder for B {}
@@ -417,12 +418,9 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// ```
     fn updatable_non_fungible_data<R: Into<AccessRule>>(
         self,
-        role_init: RolesInit,
+        updatable_non_fungible_data: UpdatableNonFungibleDataRoles<RoleDefinition>,
     ) -> Self::OutputBuilder {
-        self.add_action_and_roles(
-            UpdateNonFungibleData,
-            role_init,
-        )
+        self.add_roles(updatable_non_fungible_data.to_role_init())
     }
 }
 impl<B: IsNonFungibleBuilder + private::CanAddAuth> UpdateNonFungibleAuthBuilder for B {}

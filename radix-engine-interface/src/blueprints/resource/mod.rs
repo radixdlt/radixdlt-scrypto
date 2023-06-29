@@ -61,6 +61,16 @@ macro_rules! resource_roles {
                 ]
             }
         }
+
+        impl $roles_struct<RoleDefinition> {
+            pub fn to_role_init(self) -> $crate::blueprints::resource::RolesInit {
+                let mut roles = $crate::blueprints::resource::RolesInit::new();
+                for (name, entry) in self.list() {
+                    roles.set_raw2(name, entry);
+                }
+                roles
+            }
+        }
     };
 }
 
@@ -74,7 +84,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! mintable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        internal_roles!(MintableRoles, $($role => $rule, $locked;)*)
+        internal_roles_struct!(MintableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -88,7 +98,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! burnable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        internal_roles!(BurnableRoles, $($role => $rule, $locked;)*)
+        internal_roles_struct!(BurnableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -102,7 +112,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! recallable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        internal_roles!(RecallableRoles, $($role => $rule, $locked;)*)
+        internal_roles_struct!(RecallableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -116,7 +126,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! freezable {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        internal_roles!(FreezableRoles, $($role => $rule, $locked;)*)
+        internal_roles_struct!(FreezableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -130,7 +140,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! restrict_withdraw {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        internal_roles!(WithdrawableRoles, $($role => $rule, $locked;)*)
+        internal_roles_struct!(WithdrawableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -144,7 +154,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! restrict_deposit {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        internal_roles!(DepositableRoles, $($role => $rule, $locked;)*)
+        internal_roles_struct!(DepositableRoles, $($role => $rule, $locked;)*)
     });
 }
 
@@ -158,6 +168,6 @@ resource_roles!(
 #[macro_export]
 macro_rules! updatable_non_fungible_data {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        internal_roles!(UpdatableNonFungibleDataRoles, $($role => $rule, $locked;)*)
+        internal_roles_struct!(UpdatableNonFungibleDataRoles, $($role => $rule, $locked;)*)
     });
 }

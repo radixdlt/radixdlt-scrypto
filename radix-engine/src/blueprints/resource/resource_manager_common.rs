@@ -7,7 +7,6 @@ use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 use crate::blueprints::resource::{FungibleResourceManagerError, NonFungibleResourceManagerError};

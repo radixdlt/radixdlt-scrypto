@@ -35,7 +35,6 @@ pub const NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE: &str = "non_fungible_data_upda
 pub enum ResourceAction {
     Mint,
     Burn,
-    UpdateNonFungibleData,
     Recall,
     Freeze,
 }

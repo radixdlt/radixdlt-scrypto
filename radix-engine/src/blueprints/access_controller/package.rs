@@ -21,6 +21,7 @@ use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintFunctionsSchemaInit, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,

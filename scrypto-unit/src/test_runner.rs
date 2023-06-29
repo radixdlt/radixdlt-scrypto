@@ -1217,7 +1217,7 @@ impl TestRunner {
                     owner_role,
                     NonFungibleIdType::Integer,
                     false,
-                    btreeset!(Mint, Burn, Recall, Freeze, UpdateNonFungibleData),
+                    btreeset!(Mint, Burn, Recall, Freeze),
                     roles_init! {
                         MINTER_ROLE => rule!(allow_all), updatable;
                         MINTER_UPDATER_ROLE => rule!(allow_all), updatable;
