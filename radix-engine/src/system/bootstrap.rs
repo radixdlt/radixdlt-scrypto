@@ -303,6 +303,7 @@ where
                 initial_config,
                 initial_time_ms,
                 initial_current_leader,
+                faucet_supply,
             );
 
             flash_receipt
@@ -314,7 +315,7 @@ where
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(faucet_supply);
+            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up();
 
             Some(GenesisReceipts {
                 system_bootstrap_receipt,
@@ -332,12 +333,14 @@ where
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
         initial_current_leader: Option<ValidatorIndex>,
+        faucet_supply: Decimal,
     ) -> TransactionReceipt {
         let transaction = create_system_bootstrap_transaction(
             initial_epoch,
             initial_config,
             initial_time_ms,
             initial_current_leader,
+            faucet_supply,
         );
 
         let receipt = execute_transaction(
@@ -384,8 +387,8 @@ where
         receipt
     }
 
-    fn execute_genesis_wrap_up(&mut self, faucet_supply: Decimal) -> TransactionReceipt {
-        let transaction = create_genesis_wrap_up_transaction(faucet_supply);
+    fn execute_genesis_wrap_up(&mut self) -> TransactionReceipt {
+        let transaction = create_genesis_wrap_up_transaction();
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -541,6 +544,7 @@ pub fn create_system_bootstrap_transaction(
     initial_config: ConsensusManagerConfig,
     initial_time_ms: i64,
     initial_current_leader: Option<ValidatorIndex>,
+    faucet_supply: Decimal,
 ) -> SystemTransactionV1 {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
@@ -1093,6 +1097,41 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
+    // Faucet
+    // Note - the faucet is now created as part of bootstrap instead of wrap-up, to enable
+    // transaction scenarios to be injected into the ledger in the node before genesis wrap-up occurs
+    {
+        pre_allocated_addresses.push((
+            BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
+            GlobalAddress::from(FAUCET),
+        ));
+
+        // Mint XRD for the faucet, and then deposit it into the new faucet
+        // Note - on production environments, the faucet will be empty
+        let faucet_xrd_bucket = id_allocator.new_bucket_id();
+        instructions.push(
+            InstructionV1::CallMethod {
+                address: RADIX_TOKEN.clone().into(),
+                method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+                args: manifest_args!(faucet_supply),
+            }
+            .into(),
+        );
+        instructions.push(
+            InstructionV1::TakeFromWorktop {
+                resource_address: RADIX_TOKEN,
+                amount: faucet_supply,
+            }
+            .into(),
+        );
+        instructions.push(InstructionV1::CallFunction {
+            package_address: FAUCET_PACKAGE.into(),
+            blueprint_name: FAUCET_BLUEPRINT.to_string(),
+            function_name: "new".to_string(),
+            args: manifest_args!(id_allocator.new_address_reservation_id(), faucet_xrd_bucket),
+        });
+    }
+
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
         pre_allocated_addresses: pre_allocated_addresses
@@ -1182,8 +1221,7 @@ fn map_address_allocations_for_manifest(
     }
 }
 
-pub fn create_genesis_wrap_up_transaction(faucet_supply: Decimal) -> SystemTransactionV1 {
-    let mut id_allocator = ManifestIdAllocator::new();
+pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
     let mut instructions = Vec::new();
 
     instructions.push(InstructionV1::CallMethod {
@@ -1192,37 +1230,9 @@ pub fn create_genesis_wrap_up_transaction(faucet_supply: Decimal) -> SystemTrans
         args: manifest_args!(),
     });
 
-    instructions.push(
-        InstructionV1::CallMethod {
-            address: RADIX_TOKEN.clone().into(),
-            method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-            args: manifest_args!(faucet_supply),
-        }
-        .into(),
-    );
-
-    instructions.push(
-        InstructionV1::TakeAllFromWorktop {
-            resource_address: RADIX_TOKEN,
-        }
-        .into(),
-    );
-
-    let bucket = id_allocator.new_bucket_id();
-
-    instructions.push(InstructionV1::CallFunction {
-        package_address: FAUCET_PACKAGE.into(),
-        blueprint_name: FAUCET_BLUEPRINT.to_string(),
-        function_name: "new".to_string(),
-        args: manifest_args!(ManifestAddressReservation(0), bucket),
-    });
-
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_addresses: vec![PreAllocatedAddress {
-            blueprint_id: BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
-            address: FAUCET.into(),
-        }],
+        pre_allocated_addresses: vec![],
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Wrap Up")),
     }
