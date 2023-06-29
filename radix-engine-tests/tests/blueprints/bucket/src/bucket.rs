@@ -85,12 +85,12 @@ mod bucket_test {
             let auth_bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(auth_bucket.resource_address()))))
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .restrict_withdraw(
-                    rule!(require(auth_bucket.resource_address())),
-                    rule!(deny_all),
-                )
+                .restrict_withdraw(restrict_withdraw! {
+                    withdrawer => OWNER, locked;
+                    withdrawer_updater => rule!(deny_all), locked;
+                })
                 .mint_initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);
 

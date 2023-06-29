@@ -115,3 +115,12 @@ macro_rules! freezable {
         freezable_roles.to_role_init()
     });
 }
+
+resource_roles!(WithdrawableRoles, withdrawer, withdrawer_updater, WITHDRAWER_ROLE, WITHDRAWER_UPDATER_ROLE);
+#[macro_export]
+macro_rules! restrict_withdraw {
+    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
+        let withdrawable_roles = internal_roles_struct!(WithdrawableRoles, $($role => $rule, $locked;)*);
+        withdrawable_roles.to_role_init()
+    });
+}

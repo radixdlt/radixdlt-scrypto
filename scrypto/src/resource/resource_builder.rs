@@ -335,27 +335,30 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use radix_engine_interface::restrict_withdraw;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be withdrawable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_withdraw(rule!(require(resource_address)), LOCKED);
+    ///    .restrict_withdraw(restrict_withdraw! {
+    ///        withdrawer => rule!(require(resource_address)), locked;
+    ///        withdrawer_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be withdrawable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_withdraw(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .restrict_withdraw(restrict_withdraw! {
+    ///        withdrawer => rule!(deny_all), updatable;
+    ///        withdrawer_updater => rule!(require(resource_address)), updatable;
+    ///    });
     /// ```
-    fn restrict_withdraw<R: Into<AccessRule>>(
+    fn restrict_withdraw(
         self,
-        method_auth: AccessRule,
-        mutability: R,
+        role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
-        self.add_auth(Withdraw, ResourceActionRoleInit {
-            actor: RoleDefinition::updatable(method_auth),
-            updater: RoleDefinition::updatable(mutability.into()),
-        })
+        self.add_auth(Withdraw, role_init)
     }
 
     /// Sets the resource to not be freely depositable into a vault.
