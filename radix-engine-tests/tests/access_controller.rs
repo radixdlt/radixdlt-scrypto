@@ -235,7 +235,15 @@ pub fn stop_timed_recovery_with_no_access_fails() {
 pub fn cancel_recovery() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
-    test_runner.initiate_recovery(Role::Primary, AccessRule::AllowAll, AccessRule::DenyAll, AccessRule::DenyAll, Some(1)).expect_commit_success();
+    test_runner
+        .initiate_recovery(
+            Role::Primary,
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+            AccessRule::DenyAll,
+            Some(1),
+        )
+        .expect_commit_success();
 
     // Act
     let receipt = test_runner.cancel_recovery_attempt(Role::Primary);

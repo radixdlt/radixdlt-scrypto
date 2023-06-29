@@ -397,7 +397,10 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
     let receipt = test_runner.get_redemption_value(dec!("1.11111111111111"), true);
 
     // Assert
-    assert_eq!(receipt[&test_runner.pool_resource1], dec!("1.11111111111111"));
+    assert_eq!(
+        receipt[&test_runner.pool_resource1],
+        dec!("1.11111111111111")
+    );
     assert_eq!(receipt[&test_runner.pool_resource2], dec!("1.11")); // rounded due to divisibility == 2
 
     // Act
