@@ -9,9 +9,10 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
-use radix_engine_interface::rule;
-use radix_engine_store_interface::interface::CommittableSubstateDatabase;
+use radix_engine_interface::rule;use scrypto::api::node_modules::ModuleConfig;
+use radix_engine_store_interface::interface::CommittableSubstateDatabase;use scrypto::prelude::metadata_init;
 use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
+use scrypto::prelude::metadata;
 use scrypto::prelude::LOCKED;
 use std::path::{Path, PathBuf};
 use transaction::builder::ManifestBuilder;
@@ -263,9 +264,10 @@ impl BasicRocksdbTestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 500u32.into())
             .create_fungible_resource(
+                OwnerRole::None,
                 true,
                 divisibility,
-                BTreeMap::new(),
+                metadata!(),
                 access_rules,
                 Some(amount),
             )

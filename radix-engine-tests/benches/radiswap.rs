@@ -18,7 +18,10 @@ use transaction::{
 
 fn bench_radiswap(c: &mut Criterion) {
     #[cfg(feature = "rocksdb")]
-    let mut test_runner = BasicRocksdbTestRunner::new(PathBuf::from("/tmp/radiswap"), false);
+    let mut test_runner = {
+        std::fs::remove_dir_all("/tmp/radiswap").unwrap();
+        BasicRocksdbTestRunner::new(PathBuf::from("/tmp/radiswap"), false)
+    };
     #[cfg(not(feature = "rocksdb"))]
     let mut test_runner = TestRunner::builder().without_trace().build();
 
@@ -37,9 +40,10 @@ fn bench_radiswap(c: &mut Criterion) {
         OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
 
-    for i in 0..20_000 {
+    #[cfg(feature = "rocksdb")]
+    for i in 0..100_000 {
         if i % 100 == 0 {
-            println!("{}/{}", i, 20_000);
+            println!("{}/{}", i, 100_000);
         }
         test_runner.publish_package(
             include_bytes!("../../assets/radiswap.wasm").to_vec(),
