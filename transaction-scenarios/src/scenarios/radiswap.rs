@@ -19,6 +19,7 @@ pub struct RadiswapScenarioConfig {
     pub user_account_3: VirtualAccount,
 
     /* Resources & Pools - These get created during the scenario */
+    pub radiswap_package: Option<PackageAddress>,
     pub pool_1: PoolData,
     pub pool_2: PoolData,
 }
@@ -62,6 +63,7 @@ impl Default for RadiswapScenarioConfig {
             user_account_1: secp256k1_account_3(),
             user_account_2: ed25519_account_1(),
             user_account_3: ed25519_account_2(),
+            radiswap_package: Default::default(),
             pool_1: Default::default(),
             pool_2: Default::default(),
         }
@@ -84,13 +86,16 @@ impl ScenarioInstance for RadiswapScenario {
     }
 
     fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError> {
-        let radiswap_owner = &self.config.radiswap_owner;
-        let storing_account = &self.config.storing_account;
-        let user_account_1 = &self.config.user_account_1;
-        let user_account_2 = &self.config.user_account_2;
-        let user_account_3 = &self.config.user_account_3;
-        let pool_1 = &mut self.config.pool_1;
-        let pool_2 = &mut self.config.pool_2;
+        let RadiswapScenarioConfig {
+            radiswap_owner,
+            storing_account,
+            user_account_1,
+            user_account_2,
+            user_account_3,
+            radiswap_package,
+            pool_1,
+            pool_2,
+        } = &mut self.config;
         let core = &mut self.core;
 
         let up_next = match core.next_stage() {
@@ -226,13 +231,17 @@ impl ScenarioInstance for RadiswapScenario {
             3 => {
                 {
                     let commit_success = core.check_commit_success(&previous)?;
+
+                    let new_packages = commit_success.new_package_addresses();
+                    *radiswap_package = Some(new_packages[0]);
+
                     let new_components = commit_success.new_component_addresses();
-                    let new_resources = commit_success.new_resource_addresses();
                     pool_1.radiswap = Some(new_components[0]);
                     pool_1.pool = Some(new_components[1]);
                     pool_2.radiswap = Some(new_components[2]);
                     pool_2.pool = Some(new_components[3]);
 
+                    let new_resources = commit_success.new_resource_addresses();
                     pool_1.pool_unit = Some(new_resources[0]);
                     pool_2.pool_unit = Some(new_resources[1]);
                 }
@@ -373,6 +382,7 @@ impl ScenarioInstance for RadiswapScenario {
                     user_account_1,
                     user_account_2,
                     user_account_3,
+                    radiswap_package,
                     pool_1,
                     pool_2,
                 } = &self.config;
@@ -382,6 +392,7 @@ impl ScenarioInstance for RadiswapScenario {
                     .add("user_account_1", user_account_1)
                     .add("user_account_2", user_account_2)
                     .add("user_account_3", user_account_3)
+                    .add("radiswap_package", radiswap_package.unwrap())
                     .add("pool_1_radiswap", pool_1.radiswap())
                     .add("pool_1_pool", pool_1.pool())
                     .add("pool_1_resource_1", pool_1.resource_1())
