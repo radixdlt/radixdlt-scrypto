@@ -32,7 +32,7 @@ wasmparser = { version = "0.107.0", default-features = false }
 
 # WASM instrumentation
 ##wasm-instrument = { version = "0.4.0", features = ["sign_ext"] }
-wasm-instrument = { path = "../../wasm-instrument" }
+wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "refactor/drop_parity-wasm_dependency" }
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
