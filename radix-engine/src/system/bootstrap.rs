@@ -276,7 +276,7 @@ where
     pub fn bootstrap_with_genesis_data(
         &mut self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
-        initial_epoch: Epoch,
+        genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
         initial_current_leader: Option<ValidatorIndex>,
@@ -296,7 +296,7 @@ where
             self.substate_db.commit(&flash_receipt.database_updates);
 
             let mut system_bootstrap_receipt = self.execute_system_bootstrap(
-                initial_epoch,
+                genesis_epoch,
                 initial_config,
                 initial_time_ms,
                 initial_current_leader,
@@ -326,14 +326,14 @@ where
 
     fn execute_system_bootstrap(
         &mut self,
-        initial_epoch: Epoch,
+        genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
         initial_current_leader: Option<ValidatorIndex>,
         faucet_supply: Decimal,
     ) -> TransactionReceipt {
         let transaction = create_system_bootstrap_transaction(
-            initial_epoch,
+            genesis_epoch,
             initial_config,
             initial_time_ms,
             initial_current_leader,

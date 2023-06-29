@@ -77,7 +77,7 @@ fn genesis_epoch_has_correct_initial_validators() {
 
     let genesis = CustomGenesis {
         genesis_data_chunks,
-        initial_epoch,
+        genesis_epoch: initial_epoch,
         initial_config: CustomGenesis::default_consensus_manager_config()
             .with_max_validators(max_validators),
         initial_time_ms: 1,
@@ -143,7 +143,7 @@ fn get_epoch_should_succeed() {
 
     // Assert
     let epoch: Epoch = receipt.expect_commit_success().output(1);
-    assert_eq!(epoch.number(), 1);
+    assert_eq!(epoch.number(), 2);
 }
 
 #[test]
@@ -208,11 +208,12 @@ fn next_round_with_validator_auth_succeeds() {
 #[test]
 fn next_round_causes_epoch_change_on_reaching_max_rounds() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let rounds_per_epoch = 100;
     let epoch_duration_millis = 1000;
     let genesis = CustomGenesis::default(
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: 0,
@@ -236,12 +237,12 @@ fn next_round_causes_epoch_change_on_reaching_max_rounds() {
 #[test]
 fn next_round_fails_if_time_moves_backward() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
     let rounds_per_epoch = 100;
     let target_epoch_duration_millis = 1000;
     let genesis_start_time_millis: i64 = 0;
     let genesis = CustomGenesis::default(
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: 0,
@@ -283,12 +284,13 @@ fn next_round_fails_if_time_moves_backward() {
 fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoch_length_normalization(
 ) {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let rounds_per_epoch = 100;
     let target_epoch_duration_millis = 1000;
     let genesis_start_time_millis: i64 = 0;
     let genesis = CustomGenesis::default(
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: 0,
@@ -388,11 +390,11 @@ fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoc
 #[test]
 fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_round_count() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
     let rounds_per_epoch = 100;
     let epoch_duration_millis = 1000;
     let genesis = CustomGenesis::default(
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch / 2,
@@ -486,14 +488,14 @@ fn create_validator_with_wrong_resource_should_fail() {
 #[test]
 fn register_validator_with_auth_succeeds() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         validator_account_address,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -517,14 +519,14 @@ fn register_validator_with_auth_succeeds() {
 #[test]
 fn register_validator_without_auth_fails() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         validator_account_address,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -549,14 +551,14 @@ fn register_validator_without_auth_fails() {
 #[test]
 fn unregister_validator_with_auth_succeeds() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         validator_account_address,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -580,14 +582,14 @@ fn unregister_validator_with_auth_succeeds() {
 #[test]
 fn unregister_validator_without_auth_fails() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         validator_account_address,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -611,14 +613,14 @@ fn unregister_validator_without_auth_fails() {
 
 fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
     let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let validator_account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
         pub_key,
         Decimal::one(),
         validator_account_address,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -694,10 +696,11 @@ fn not_allowing_delegated_stake_should_not_let_non_owner_stake() {
 #[test]
 fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_epoch_change() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let rounds_per_epoch = 2;
     let genesis = CustomGenesis::default(
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
@@ -736,7 +739,8 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
 #[test]
 fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     // Arrange
-    let initial_epoch = Epoch::of(2);
+    let genesis_epoch = Epoch::of(2);
+    let initial_epoch = genesis_epoch.next();
     let epoch_emissions_xrd = dec!("0.1");
     let a_initial_stake = dec!("2.5");
     let b_initial_stake = dec!("7.5");
@@ -774,7 +778,7 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     ];
     let genesis = CustomGenesis {
         genesis_data_chunks,
-        initial_epoch,
+        genesis_epoch,
         initial_config: CustomGenesis::default_consensus_manager_config()
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: 1,
@@ -881,7 +885,8 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
 #[test]
 fn validator_receives_emission_penalty_when_some_proposals_missed() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let epoch_emissions_xrd = dec!("10");
     let rounds_per_epoch = 4; // we will simulate 3 gap rounds + 1 successfully made proposal...
     let min_required_reliability = dec!("0.2"); // ...which barely meets the threshold
@@ -891,7 +896,7 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
         validator_pub_key,
         validator_initial_stake,
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
@@ -962,7 +967,8 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
 #[test]
 fn validator_receives_no_emission_when_too_many_proposals_missed() {
     // Arrange
-    let initial_epoch = Epoch::of(7);
+    let genesis_epoch = Epoch::of(7);
+    let initial_epoch = genesis_epoch.next();
     let epoch_emissions_xrd = dec!("10");
     let rounds_per_epoch = 4; // we will simulate 3 gap rounds + 1 successfully made proposal...
     let min_required_reliability = dec!("0.3"); // ...which does NOT meet the threshold
@@ -972,7 +978,7 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
         validator_pub_key,
         validator_stake,
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key),
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_epoch_change_condition(EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
@@ -1035,7 +1041,8 @@ macro_rules! assert_close_to {
 #[test]
 fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     // Arrange
-    let initial_epoch = Epoch::of(7);
+    let genesis_epoch = Epoch::of(7);
+    let initial_epoch = genesis_epoch.next();
     let initial_stake_amount = dec!("4000.0"); // big and round numbers
     let emission_xrd_per_epoch = dec!("1000.0"); // to avoid rounding errors
     let next_epoch_fee_factor = dec!("0.25"); // for easier asserts
@@ -1045,7 +1052,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
         validator_key,
         initial_stake_amount,
         validator_account,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_epoch_change_condition(EpochChangeCondition {
@@ -1152,7 +1159,8 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
 #[test]
 fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     // Arrange
-    let initial_epoch = Epoch::of(7);
+    let genesis_epoch = Epoch::of(7);
+    let initial_epoch = genesis_epoch.next();
     let fee_increase_delay_epochs = 4;
     let initial_stake_amount = dec!("9.0");
     let emission_xrd_per_epoch = dec!("2.0");
@@ -1163,7 +1171,7 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         validator_key,
         initial_stake_amount,
         validator_account,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_num_fee_increase_delay_epochs(fee_increase_delay_epochs)
@@ -1340,7 +1348,7 @@ fn create_custom_genesis(
 
     let genesis = CustomGenesis {
         genesis_data_chunks,
-        initial_epoch,
+        genesis_epoch: initial_epoch,
         initial_config: CustomGenesis::default_consensus_manager_config()
             .with_max_validators(max_validators as u32)
             .with_epoch_change_condition(EpochChangeCondition {
@@ -1501,10 +1509,11 @@ fn registered_validator_test(
     expected_num_validators_in_next_epoch: usize,
 ) {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let rounds_per_epoch = 2;
     let (genesis, accounts) = create_custom_genesis(
-        initial_epoch,
+        genesis_epoch,
         rounds_per_epoch,
         num_initial_validators,
         max_validators,
@@ -1599,10 +1608,11 @@ fn low_stakes_should_cause_no_problems() {
 #[test]
 fn test_registering_and_staking_many_validators() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let rounds_per_epoch = 2;
     let (genesis, accounts) = create_custom_genesis(
-        initial_epoch,
+        genesis_epoch,
         rounds_per_epoch,
         1,
         10,
@@ -1654,7 +1664,8 @@ fn test_registering_and_staking_many_validators() {
 #[test]
 fn unregistered_validator_gets_removed_on_epoch_change() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let rounds_per_epoch = 2;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account_address =
@@ -1663,7 +1674,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         validator_pub_key,
         Decimal::one(),
         validator_account_address,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
@@ -1701,7 +1712,8 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
 #[test]
 fn updated_validator_keys_gets_updated_on_epoch_change() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let rounds_per_epoch = 2;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let validator_account_address =
@@ -1710,7 +1722,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
         validator_pub_key,
         Decimal::one(),
         validator_account_address,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
@@ -1758,7 +1770,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
 #[test]
 fn cannot_claim_unstake_immediately() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let account_with_su = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
@@ -1766,7 +1778,7 @@ fn cannot_claim_unstake_immediately() {
         validator_pub_key,
         Decimal::from(10),
         account_with_su,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
     let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
@@ -1811,7 +1823,8 @@ fn cannot_claim_unstake_immediately() {
 #[test]
 fn can_claim_unstake_after_epochs() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let num_unstake_epochs = 7;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
@@ -1820,7 +1833,7 @@ fn can_claim_unstake_after_epochs() {
         validator_pub_key,
         Decimal::from(10),
         account_with_su,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
@@ -1927,7 +1940,8 @@ fn owner_can_lock_stake_units() {
 #[test]
 fn owner_can_start_unlocking_stake_units() {
     // Arrange
-    let initial_epoch = Epoch::of(7);
+    let genesis_epoch = Epoch::of(7);
+    let initial_epoch = genesis_epoch.next();
     let unlock_epochs_delay = 2;
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
@@ -1938,7 +1952,7 @@ fn owner_can_start_unlocking_stake_units() {
         validator_key,
         total_stake_amount,
         validator_account,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
@@ -2011,7 +2025,8 @@ fn owner_can_start_unlocking_stake_units() {
 #[test]
 fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     // Arrange
-    let initial_epoch = Epoch::of(7);
+    let genesis_epoch = Epoch::of(7);
+    let initial_epoch = genesis_epoch.next();
     let unlock_epochs_delay = 2;
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
@@ -2022,7 +2037,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         validator_key,
         total_stake_amount,
         validator_account,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
@@ -2099,7 +2114,8 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
 #[test]
 fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate_field() {
     // Arrange
-    let initial_epoch = Epoch::of(7);
+    let genesis_epoch = Epoch::of(7);
+    let initial_epoch = genesis_epoch.next();
     let unlock_epochs_delay = 2;
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("1.0");
@@ -2112,7 +2128,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         validator_key,
         total_stake_amount,
         validator_account,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
@@ -2203,7 +2219,8 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
 #[test]
 fn owner_can_finish_unlocking_stake_units_after_delay() {
     // Arrange
-    let initial_epoch = Epoch::of(7);
+    let genesis_epoch = Epoch::of(7);
+    let initial_epoch = genesis_epoch.next();
     let unlock_epochs_delay = 5;
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
@@ -2214,7 +2231,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         validator_key,
         total_stake_amount,
         validator_account,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
@@ -2306,7 +2323,8 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
 #[test]
 fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     // Arrange
-    let initial_epoch = Epoch::of(7);
+    let genesis_epoch = Epoch::of(7);
+    let initial_epoch = genesis_epoch.next();
     let unlock_epochs_delay = 5;
     let total_stake_amount = dec!("10.5");
     let stake_units_to_lock_amount = dec!("2.2");
@@ -2317,7 +2335,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         validator_key,
         total_stake_amount,
         validator_account,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
@@ -2404,7 +2422,8 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
 #[test]
 fn unstaked_validator_gets_less_stake_on_epoch_change() {
     // Arrange
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let rounds_per_epoch = 2;
     let validator_pub_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
     let account_pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
@@ -2414,7 +2433,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         validator_pub_key,
         Decimal::from(10),
         account_with_su,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
@@ -2571,7 +2590,8 @@ fn extract_emitter_node_id(event_type_id: &EventTypeIdentifier) -> NodeId {
 
 #[test]
 fn test_tips_and_fee_distribution_single_validator() {
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let initial_stake_amount = dec!("100");
     let emission_xrd_per_epoch = dec!("0");
     let validator_key = Secp256k1PrivateKey::from_u64(2u64).unwrap().public_key();
@@ -2580,7 +2600,7 @@ fn test_tips_and_fee_distribution_single_validator() {
         validator_key,
         initial_stake_amount,
         validator_account,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_epoch_change_condition(EpochChangeCondition {
@@ -2624,7 +2644,8 @@ fn test_tips_and_fee_distribution_single_validator() {
 
 #[test]
 fn test_tips_and_fee_distribution_two_validators() {
-    let initial_epoch = Epoch::of(5);
+    let genesis_epoch = Epoch::of(5);
+    let initial_epoch = genesis_epoch.next();
     let initial_stake_amount1 = dec!("300");
     let initial_stake_amount2 = dec!("100");
     let emission_xrd_per_epoch = dec!("0");
@@ -2637,7 +2658,7 @@ fn test_tips_and_fee_distribution_two_validators() {
         validator2_key,
         (initial_stake_amount1, initial_stake_amount2),
         staker_account,
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config()
             .with_total_emission_xrd_per_epoch(emission_xrd_per_epoch)
             .with_epoch_change_condition(EpochChangeCondition {

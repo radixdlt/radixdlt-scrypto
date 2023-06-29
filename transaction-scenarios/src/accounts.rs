@@ -26,6 +26,12 @@ impl VirtualAccount {
     }
 }
 
+impl Into<GlobalAddress> for &VirtualAccount {
+    fn into(self) -> GlobalAddress {
+        self.address.into()
+    }
+}
+
 pub fn secp256k1_account_1() -> VirtualAccount {
     VirtualAccount::for_private_key(
         Secp256k1PrivateKey::from_u64(33311)

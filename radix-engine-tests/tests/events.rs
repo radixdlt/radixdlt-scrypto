@@ -668,10 +668,11 @@ fn consensus_manager_round_update_emits_correct_event() {
 
 #[test]
 fn consensus_manager_epoch_update_emits_epoch_change_event() {
-    let initial_epoch = Epoch::of(3);
+    let genesis_epoch = Epoch::of(3);
+    let initial_epoch = genesis_epoch.next();
     let rounds_per_epoch = 5;
     let genesis = CustomGenesis::default(
-        initial_epoch,
+        genesis_epoch,
         CustomGenesis::default_consensus_manager_config().with_epoch_change_condition(
             EpochChangeCondition {
                 min_round_count: rounds_per_epoch,
