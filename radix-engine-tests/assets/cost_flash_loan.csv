@@ -1,5 +1,5 @@
-Total Cost Units                                                                ,  19858213
-Total Fee                                                                       , 9.9291065
+Total Cost Units                                                                ,  19858413
+Total Fee                                                                       , 9.9292065
 AfterInvoke                                                                     ,       974
 AllocateNodeId                                                                  ,     26500
 BeforeInvoke                                                                    ,     25508
@@ -13,12 +13,12 @@ OpenSubstate::GlobalAccount                                                     
 OpenSubstate::GlobalFungibleResourceManager                                     ,   1008536
 OpenSubstate::GlobalGenericComponent                                            ,    283430
 OpenSubstate::GlobalNonFungibleResourceManager                                  ,   1080953
-OpenSubstate::GlobalPackage                                                     ,   9069290
+OpenSubstate::GlobalPackage                                                     ,   9069340
 OpenSubstate::InternalFungibleVault                                             ,   1142667
 OpenSubstate::InternalGenericComponent                                          ,    164144
 QueryActor                                                                      ,     15000
 QueryAuthZone                                                                   ,      2000
-ReadSubstate                                                                    ,   1536068
+ReadSubstate                                                                    ,   1536118
 RunNativeCode::AuthZone_pop                                                     ,     13722
 RunNativeCode::AuthZone_push                                                    ,     14108
 RunNativeCode::Worktop_drain                                                    ,      6901
@@ -48,7 +48,7 @@ RunNativeCode::unlock_amount_FungibleVault                                      
 RunNativeCode::withdraw                                                         ,     25682
 RunWasmCode::BasicFlashLoan_repay_loan                                          ,     68936
 RunWasmCode::BasicFlashLoan_take_loan                                           ,    118220
-RunWasmCodePrepare                                                              ,   2246392
+RunWasmCodePrepare                                                              ,   2246492
 TxBaseCost                                                                      ,     40000
 TxPayloadCost                                                                   ,     25700
 TxSignatureVerification                                                         ,      7000
