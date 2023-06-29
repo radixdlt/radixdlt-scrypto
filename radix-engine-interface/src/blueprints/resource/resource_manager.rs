@@ -42,49 +42,6 @@ pub enum ResourceAction {
     Freeze,
 }
 
-pub const ALL_RESOURCE_AUTH_KEYS: [ResourceAction; 7] = [
-    ResourceAction::Mint,
-    ResourceAction::Burn,
-    ResourceAction::UpdateNonFungibleData,
-    ResourceAction::Withdraw,
-    ResourceAction::Deposit,
-    ResourceAction::Recall,
-    ResourceAction::Freeze,
-];
-
-impl ResourceAction {
-    // FIXME: Clean out ObjectModuleId
-    pub fn action_role_key(&self) -> (ObjectModuleId, RoleKey) {
-        match self {
-            Self::Mint => (ObjectModuleId::Main, RoleKey::new(MINTER_ROLE)),
-            Self::Burn => (ObjectModuleId::Main, RoleKey::new(BURNER_ROLE)),
-            Self::UpdateNonFungibleData => (
-                ObjectModuleId::Main,
-                RoleKey::new(NON_FUNGIBLE_DATA_UPDATER_ROLE),
-            ),
-            Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAWER_ROLE)),
-            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITOR_ROLE)),
-            Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_ROLE)),
-            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_ROLE)),
-        }
-    }
-
-    pub fn updater_role_key(&self) -> (ObjectModuleId, RoleKey) {
-        match self {
-            Self::Mint => (ObjectModuleId::Main, RoleKey::new(MINTER_UPDATER_ROLE)),
-            Self::Burn => (ObjectModuleId::Main, RoleKey::new(BURNER_UPDATER_ROLE)),
-            Self::UpdateNonFungibleData => (
-                ObjectModuleId::Main,
-                RoleKey::new(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE),
-            ),
-            Self::Withdraw => (ObjectModuleId::Main, RoleKey::new(WITHDRAWER_UPDATER_ROLE)),
-            Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITOR_UPDATER_ROLE)),
-            Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_UPDATER_ROLE)),
-            Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_UPDATER_ROLE)),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct ResourceActionRoleInit {
     pub actor: RoleDefinition,

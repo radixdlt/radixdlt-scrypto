@@ -5,6 +5,53 @@ use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
+pub enum TestResourceAction {
+    Mint,
+    Burn,
+    UpdateNonFungibleData,
+    Withdraw,
+    Deposit,
+    Recall,
+    Freeze,
+}
+
+pub const ALL_RESOURCE_AUTH_KEYS: [TestResourceAction; 7] = [
+    TestResourceAction::Mint,
+    TestResourceAction::Burn,
+    TestResourceAction::UpdateNonFungibleData,
+    TestResourceAction::Withdraw,
+    TestResourceAction::Deposit,
+    TestResourceAction::Recall,
+    TestResourceAction::Freeze,
+];
+
+impl TestResourceAction {
+    // FIXME: Clean out ObjectModuleId
+    pub fn action_role_key(&self) -> RoleKey {
+        match self {
+            Self::Mint => RoleKey::new(MINTER_ROLE),
+            Self::Burn => RoleKey::new(BURNER_ROLE),
+            Self::UpdateNonFungibleData => RoleKey::new(NON_FUNGIBLE_DATA_UPDATER_ROLE),
+            Self::Withdraw => RoleKey::new(WITHDRAWER_ROLE),
+            Self::Deposit => RoleKey::new(DEPOSITOR_ROLE),
+            Self::Recall => RoleKey::new(RECALLER_ROLE),
+            Self::Freeze => RoleKey::new(FREEZER_ROLE),
+        }
+    }
+
+    pub fn updater_role_key(&self) -> RoleKey {
+        match self {
+            Self::Mint => RoleKey::new(MINTER_UPDATER_ROLE),
+            Self::Burn => RoleKey::new(BURNER_UPDATER_ROLE),
+            Self::UpdateNonFungibleData => RoleKey::new(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE),
+            Self::Withdraw => RoleKey::new(WITHDRAWER_UPDATER_ROLE),
+            Self::Deposit => RoleKey::new(DEPOSITOR_UPDATER_ROLE),
+            Self::Recall => RoleKey::new(RECALLER_UPDATER_ROLE),
+            Self::Freeze => RoleKey::new(FREEZER_UPDATER_ROLE),
+        }
+    }
+}
+
 #[test]
 fn test_locked_resource_auth_cannot_be_updated() {
     for key in ALL_RESOURCE_AUTH_KEYS {
@@ -12,7 +59,7 @@ fn test_locked_resource_auth_cannot_be_updated() {
     }
 }
 
-pub fn assert_locked_auth_can_no_longer_be_updated(action: ResourceAction) {
+pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     // Arrange 1
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
