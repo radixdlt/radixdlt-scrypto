@@ -320,6 +320,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
+    fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        src_node_id: &NodeId,
+        dest_node_id: &NodeId,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api,
+            after_move_modules(api, src_node_id, dest_node_id, store_access)
+        )
+    }
+
+    #[trace_resources]
     fn before_drop_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
