@@ -31,7 +31,6 @@ impl WasmValidator {
         blueprints: I,
     ) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         WasmModule::init(code)?
-            .enforce_no_floating_point()?
             .enforce_no_start_function()?
             .enforce_import_limit()?
             .enforce_memory_limit_and_inject_max(self.max_memory_size_in_pages)?

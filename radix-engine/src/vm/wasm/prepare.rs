@@ -8,6 +8,7 @@ use wasm_instrument::{
 };
 use wasmparser::{
     Export, ExternalKind, FuncType, MemoryType, Operator, Type, TypeRef, ValType, Validator,
+    WasmFeatures,
 };
 
 use super::WasmiModule;
@@ -21,145 +22,24 @@ impl WasmModule {
         // deserialize
         let module = ModuleInfo::new(code).map_err(|_| PrepareError::DeserializationError)?;
 
-        // validate
-        Validator::new()
-            .validate_all(code)
-            .map_err(|_| PrepareError::ValidationError)?;
+        let mut features = WasmFeatures::default();
+        features.floats = false;
+
+        module.validate(features).map_err(|err| {
+            if err
+                .to_string()
+                .starts_with("floating-point support is disabled")
+                | err
+                    .to_string()
+                    .starts_with("floating-point instruction disallowed")
+            {
+                PrepareError::FloatingPointNotAllowed
+            } else {
+                PrepareError::ValidationError
+            }
+        })?;
 
         Ok(Self { module })
-    }
-
-    pub fn enforce_no_floating_point(self) -> Result<Self, PrepareError> {
-        /*
-        // Global value types
-        if let Some(globals) = self.module.global_section() {
-            for global in globals.entries() {
-                match global.global_type().content_type() {
-                    ValType::F32 | ValType::F64 => {
-                        return Err(PrepareError::FloatingPointNotAllowed)
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        // Function local value types and floating-point related instructions
-        if let Some(code) = self.module.code_section() {
-            for func_body in code.bodies() {
-                for local in func_body.locals() {
-                    match local.value_type() {
-                        ValType::F32 | ValType::F64 => {
-                            return Err(PrepareError::FloatingPointNotAllowed)
-                        }
-                        _ => {}
-                    }
-                }
-
-                for op in func_body.code().elements() {
-                    match op {
-                        F32Load(_, _)
-                        | F64Load(_, _)
-                        | F32Store(_, _)
-                        | F64Store(_, _)
-                        | F32Const(_)
-                        | F64Const(_)
-                        | F32Eq
-                        | F32Ne
-                        | F32Lt
-                        | F32Gt
-                        | F32Le
-                        | F32Ge
-                        | F64Eq
-                        | F64Ne
-                        | F64Lt
-                        | F64Gt
-                        | F64Le
-                        | F64Ge
-                        | F32Abs
-                        | F32Neg
-                        | F32Ceil
-                        | F32Floor
-                        | F32Trunc
-                        | F32Nearest
-                        | F32Sqrt
-                        | F32Add
-                        | F32Sub
-                        | F32Mul
-                        | F32Div
-                        | F32Min
-                        | F32Max
-                        | F32Copysign
-                        | F64Abs
-                        | F64Neg
-                        | F64Ceil
-                        | F64Floor
-                        | F64Trunc
-                        | F64Nearest
-                        | F64Sqrt
-                        | F64Add
-                        | F64Sub
-                        | F64Mul
-                        | F64Div
-                        | F64Min
-                        | F64Max
-                        | F64Copysign
-                        | F32ConvertSI32
-                        | F32ConvertUI32
-                        | F32ConvertSI64
-                        | F32ConvertUI64
-                        | F32DemoteF64
-                        | F64ConvertSI32
-                        | F64ConvertUI32
-                        | F64ConvertSI64
-                        | F64ConvertUI64
-                        | F64PromoteF32
-                        | F32ReinterpretI32
-                        | F64ReinterpretI64
-                        | I32TruncSF32
-                        | I32TruncUF32
-                        | I32TruncSF64
-                        | I32TruncUF64
-                        | I64TruncSF32
-                        | I64TruncUF32
-                        | I64TruncSF64
-                        | I64TruncUF64
-                        | I32ReinterpretF32
-                        | I64ReinterpretF64 => {
-                            return Err(PrepareError::FloatingPointNotAllowed);
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        }
-
-        // Function argument and result types
-        if let (Some(functions), Some(types)) =
-            (self.module.function_section(), self.module.type_section())
-        {
-            let types = types.types();
-
-            for sig in functions.entries() {
-                if let Some(typ) = types.get(sig.type_ref() as usize) {
-                    match *typ {
-                        Type::Function(ref func) => {
-                            if func
-                                .params()
-                                .iter()
-                                .chain(func.results())
-                                .any(|&typ| typ == ValType::F32 || typ == ValType::F64)
-                            {
-                                return Err(PrepareError::FloatingPointNotAllowed);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        */
-
-        Err(PrepareError::FloatingPointNotAllowed)
-        //        Ok(self)
     }
 
     pub fn enforce_no_start_function(self) -> Result<Self, PrepareError> {
@@ -1103,6 +983,11 @@ mod tests {
     use wabt::wat2wasm;
 
     macro_rules! assert_invalid_wasm {
+        ($wat: expr, $err: expr) => {
+            let code = wat2wasm($wat).unwrap();
+            assert_eq!($err, WasmModule::init(&code).unwrap_err());
+        };
+
         ($wat: expr, $err: expr, $func: expr) => {
             let code = wat2wasm($wat).unwrap();
             assert_eq!($err, WasmModule::init(&code).and_then($func).unwrap_err());
@@ -1120,8 +1005,7 @@ mod tests {
                 )
             )
             "#,
-            PrepareError::FloatingPointNotAllowed,
-            WasmModule::enforce_no_floating_point
+            PrepareError::FloatingPointNotAllowed
         );
         // input
         assert_invalid_wasm!(
@@ -1131,8 +1015,7 @@ mod tests {
                 )
             )
             "#,
-            PrepareError::FloatingPointNotAllowed,
-            WasmModule::enforce_no_floating_point
+            PrepareError::FloatingPointNotAllowed
         );
         // instruction
         assert_invalid_wasm!(
@@ -1146,8 +1029,7 @@ mod tests {
                 )
             )
             "#,
-            PrepareError::FloatingPointNotAllowed,
-            WasmModule::enforce_no_floating_point
+            PrepareError::FloatingPointNotAllowed
         );
         // global
         assert_invalid_wasm!(
@@ -1156,8 +1038,7 @@ mod tests {
                 (global $fp f32 (f32.const 10))
             )
             "#,
-            PrepareError::FloatingPointNotAllowed,
-            WasmModule::enforce_no_floating_point
+            PrepareError::FloatingPointNotAllowed
         );
     }
 
