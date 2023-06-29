@@ -75,7 +75,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         .new_component_addresses()
         .contains(&TRANSACTION_TRACKER));
 
-    assert!(wrap_up_receipt
+    assert!(system_bootstrap_receipt
         .expect_commit_success()
         .new_component_addresses()
         .contains(&FAUCET));

@@ -249,8 +249,9 @@ pub trait ScenarioInstance {
 }
 
 pub struct ScenarioMetadata {
-    /// The logical name of the scenario.
-    /// This should be spaceless as it will be used for a file path.
+    /// The logical name of the scenario:
+    /// - This is used in Node genesis to specify which scenarios should be run
+    /// - This should be spaceless as it will be used for a file path
     pub logical_name: &'static str,
 }
 
