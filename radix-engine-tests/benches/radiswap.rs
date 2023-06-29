@@ -4,15 +4,22 @@ use radix_engine::{
     transaction::{ExecutionConfig, FeeReserveConfig, TransactionReceipt},
     types::*,
 };
+#[cfg(feature = "rocksdb")]
+use scrypto_unit::BasicRocksdbTestRunner;
+#[cfg(not(feature = "rocksdb"))]
 use scrypto_unit::TestRunner;
+#[cfg(feature = "rocksdb")]
+use std::path::PathBuf;
 use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
     model::{TransactionHeaderV1, TransactionPayload},
     validation::{NotarizedTransactionValidator, TransactionValidator, ValidationConfig},
 };
 
-#[allow(unused_variables)]
 fn bench_radiswap(c: &mut Criterion) {
+    #[cfg(feature = "rocksdb")]
+    let mut test_runner = BasicRocksdbTestRunner::new(PathBuf::from("/tmp/radiswap"), false);
+    #[cfg(not(feature = "rocksdb"))]
     let mut test_runner = TestRunner::builder().without_trace().build();
 
     // Scrypto developer
@@ -93,7 +100,6 @@ fn bench_radiswap(c: &mut Criterion) {
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
         .expect_commit_success();
-    assert_eq!(test_runner.account_balance(account3, btc), Some(btc_amount));
 
     // Swap 1 BTC into ETH
     let btc_to_swap = Decimal::from(1);
@@ -111,7 +117,7 @@ fn bench_radiswap(c: &mut Criterion) {
         .build();
 
     // Drain the faucet
-    for i in 0..100 {
+    for _ in 0..100 {
         test_runner
             .execute_manifest(
                 ManifestBuilder::new()
@@ -159,8 +165,13 @@ fn bench_radiswap(c: &mut Criterion) {
     });
 }
 
+#[cfg(feature = "rocksdb")]
+type TestRunnerType = BasicRocksdbTestRunner;
+#[cfg(not(feature = "rocksdb"))]
+type TestRunnerType = TestRunner;
+
 fn do_swap(
-    test_runner: &mut TestRunner,
+    test_runner: &mut TestRunnerType,
     transaction_payload: &[u8],
     nonce: u32,
 ) -> TransactionReceipt {
