@@ -286,7 +286,7 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        recaller_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn recallable<R: Into<AccessRule>>(
+    fn recallable(
         self,
         role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
@@ -301,27 +301,30 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use radix_engine_interface::freezable;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be freezeable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .freezeable(rule!(require(resource_address)), LOCKED);
+    ///    .freezeable(freezable! {
+    ///        freezer: rule!(require(resource_address)), locked;
+    ///        freezer_updater: rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be freezeable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .freezeable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .freezeable(freezable! {
+    ///        freezer: rule!(deny_all), updatable;
+    ///        freezer_updater: rule!(require(resource_address)), updatable;
+    ///    });
     /// ```
-    fn freezeable<R: Into<AccessRule>>(
+    fn freezeable(
         self,
-        method_auth: AccessRule,
-        mutability: R,
+        role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
-        self.add_auth(Freeze, ResourceActionRoleInit {
-            actor: RoleDefinition::updatable(method_auth),
-            updater: RoleDefinition::updatable(mutability.into()),
-        })
+        self.add_auth(Freeze, role_init)
     }
 
     /// Sets the resource to not be freely withdrawable from a vault.

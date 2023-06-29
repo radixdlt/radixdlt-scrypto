@@ -106,3 +106,12 @@ macro_rules! recallable {
         recallable_roles.to_role_init()
     });
 }
+
+resource_roles!(FreezableRoles, freezer, freezer_updater, FREEZER_ROLE, FREEZER_UPDATER_ROLE);
+#[macro_export]
+macro_rules! freezable {
+    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
+        let freezable_roles = internal_roles_struct!(FreezableRoles, $($role => $rule, $locked;)*);
+        freezable_roles.to_role_init()
+    });
+}
