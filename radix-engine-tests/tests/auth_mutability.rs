@@ -123,7 +123,12 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
             .execute_manifest_ignoring_fee(
                 ManifestBuilder::new()
                     .create_proof_from_account(account, admin_auth)
-                    .update_role(token_address.into(), ObjectModuleId::Main, role_key, AccessRule::DenyAll)
+                    .update_role(
+                        token_address.into(),
+                        ObjectModuleId::Main,
+                        role_key,
+                        AccessRule::DenyAll,
+                    )
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&public_key)],
             )

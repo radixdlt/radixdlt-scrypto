@@ -27,7 +27,7 @@ fn package_burn_is_only_callable_within_resource_package() {
                     NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
                 },
                 metadata!(),
-                None
+                None,
             )
             .build();
         test_runner

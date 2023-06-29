@@ -11,16 +11,12 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{roles_init, rule};
-use radix_engine_interface::{
-    internal_roles_struct, metadata_init, mintable, role_definition_entry,
-};
+use radix_engine_interface::{roles_init, rule, metadata_init};
 use sbor::rust::mem;
 
 use super::{
@@ -1097,11 +1093,11 @@ impl ValidatorCreator {
             18,
             btreeset!(Mint, Burn),
             roles_init! {
-                    MINTER_ROLE => rule!(require(global_caller(validator_address))), locked;
-                    MINTER_UPDATER_ROLE => rule!(deny_all), locked;
-                    BURNER_ROLE => rule!(require(global_caller(validator_address))), locked;
-                    BURNER_UPDATER_ROLE => rule!(deny_all), locked;
-                },
+                MINTER_ROLE => rule!(require(global_caller(validator_address))), locked;
+                MINTER_UPDATER_ROLE => rule!(deny_all), locked;
+                BURNER_ROLE => rule!(require(global_caller(validator_address))), locked;
+                BURNER_UPDATER_ROLE => rule!(deny_all), locked;
+            },
             metadata_init! {
                 "name" => "Liquid Stake Units".to_owned(), locked;
                 "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
@@ -1129,11 +1125,11 @@ impl ValidatorCreator {
             true,
             btreeset!(Mint, Burn),
             roles_init! {
-                    MINTER_ROLE => rule!(require(global_caller(validator_address))), locked;
-                    MINTER_UPDATER_ROLE => rule!(deny_all), locked;
-                    BURNER_ROLE => rule!(require(global_caller(validator_address))), locked;
-                    BURNER_UPDATER_ROLE => rule!(deny_all), locked;
-                },
+                MINTER_ROLE => rule!(require(global_caller(validator_address))), locked;
+                MINTER_UPDATER_ROLE => rule!(deny_all), locked;
+                BURNER_ROLE => rule!(require(global_caller(validator_address))), locked;
+                BURNER_UPDATER_ROLE => rule!(deny_all), locked;
+            },
             metadata_init! {
                 "name" => "Stake Claims NFTs".to_owned(), locked;
                 "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;

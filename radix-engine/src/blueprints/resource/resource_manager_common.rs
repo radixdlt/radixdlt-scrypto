@@ -1,23 +1,20 @@
+use crate::blueprints::resource::{FungibleResourceManagerError, NonFungibleResourceManagerError};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
-use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
-use crate::blueprints::resource::{FungibleResourceManagerError, NonFungibleResourceManagerError};
 
-fn verify_and_modify_main_roles(
-    roles: &mut RolesInit
-) -> Result<(), String> {
-
+fn verify_and_modify_main_roles(roles: &mut RolesInit) -> Result<(), String> {
     for role in roles.data.keys() {
         match role.key.as_str() {
-            WITHDRAWER_ROLE | DEPOSITOR_ROLE
+            WITHDRAWER_ROLE
+            | DEPOSITOR_ROLE
             | MINTER_ROLE
             | MINTER_UPDATER_ROLE
             | BURNER_ROLE
@@ -29,8 +26,8 @@ fn verify_and_modify_main_roles(
             | RECALLER_ROLE
             | RECALLER_UPDATER_ROLE
             | FREEZER_ROLE
-            | FREEZER_UPDATER_ROLE => {},
-            _ => return Err(format!("Invalid Role: {:?}", role))
+            | FREEZER_UPDATER_ROLE => {}
+            _ => return Err(format!("Invalid Role: {:?}", role)),
         };
     }
 
@@ -109,9 +106,13 @@ where
 {
     verify_and_modify_main_roles(&mut main_roles).map_err(|err| {
         if object_id.is_global_fungible_resource_manager() {
-            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::InvalidRole(err)))
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
+                FungibleResourceManagerError::InvalidRole(err),
+            ))
         } else {
-            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::InvalidRole(err)))
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::InvalidRole(err),
+            ))
         }
     })?;
 
@@ -150,9 +151,13 @@ where
 {
     verify_and_modify_main_roles(&mut main_roles).map_err(|err| {
         if object_id.is_global_fungible_resource_manager() {
-            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::InvalidRole(err)))
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
+                FungibleResourceManagerError::InvalidRole(err),
+            ))
         } else {
-            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::InvalidRole(err)))
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::InvalidRole(err),
+            ))
         }
     })?;
 
@@ -199,9 +204,13 @@ where
 {
     verify_and_modify_main_roles(&mut main_roles).map_err(|err| {
         if object_id.is_global_fungible_resource_manager() {
-            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(FungibleResourceManagerError::InvalidRole(err)))
+            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
+                FungibleResourceManagerError::InvalidRole(err),
+            ))
         } else {
-            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(NonFungibleResourceManagerError::InvalidRole(err)))
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::InvalidRole(err),
+            ))
         }
     })?;
 

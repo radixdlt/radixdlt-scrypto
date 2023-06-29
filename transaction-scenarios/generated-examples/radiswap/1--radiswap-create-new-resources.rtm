@@ -8,14 +8,15 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     false
     18u8
     Decimal("100000000000")
-    Map<Enum, Tuple>(
-        Enum<0u8>() => Tuple(
-            Enum<1u8>(),
-            Enum<1u8>()
-        ),
-        Enum<1u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
+    Array<Enum>(
+        Enum<1u8>()
+    )
+    Map<String, Tuple>(
+        "burner" => Tuple(
+            Enum<1u8>(
+                Enum<0u8>()
+            ),
+            true
         )
     )
     Tuple(
@@ -81,14 +82,15 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     true
     18u8
     Decimal("100000000000")
-    Map<Enum, Tuple>(
-        Enum<0u8>() => Tuple(
-            Enum<1u8>(),
-            Enum<1u8>()
-        ),
-        Enum<1u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
+    Array<Enum>(
+        Enum<1u8>()
+    )
+    Map<String, Tuple>(
+        "burner" => Tuple(
+            Enum<1u8>(
+                Enum<0u8>()
+            ),
+            true
         )
     )
     Tuple(
@@ -155,14 +157,15 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     true
     18u8
     Decimal("100000000000")
-    Map<Enum, Tuple>(
-        Enum<0u8>() => Tuple(
-            Enum<1u8>(),
-            Enum<1u8>()
-        ),
-        Enum<1u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
+    Array<Enum>(
+        Enum<1u8>()
+    )
+    Map<String, Tuple>(
+        "burner" => Tuple(
+            Enum<1u8>(
+                Enum<0u8>()
+            ),
+            true
         )
     )
     Tuple(

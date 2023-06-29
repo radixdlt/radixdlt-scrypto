@@ -762,16 +762,8 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     false
     18u8
     Decimal("12")
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
-    )
+    Array<Enum>()
+    Map<String, Tuple>()
     Tuple(
         Map<String, Tuple>(
             "name" => Tuple(
@@ -834,16 +826,8 @@ CREATE_FUNGIBLE_RESOURCE
     Enum<0u8>()
     false
     18u8
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
-    )
+    Array<Enum>()
+    Map<String, Tuple>()
     Tuple(
         Map<String, Tuple>(
             "name" => Tuple(
@@ -922,16 +906,8 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             )
         )
     )
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
-    )
+    Array<Enum>()
+    Map<String, Tuple>()
     Tuple(
         Map<String, Tuple>(
             "name" => Tuple(
@@ -999,16 +975,8 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
-    )
+    Array<Enum>()
+    Map<String, Tuple>()
     Tuple(
         Map<String, Tuple>(
             "name" => Tuple(

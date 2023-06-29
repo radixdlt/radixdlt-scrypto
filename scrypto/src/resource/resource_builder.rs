@@ -1,6 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
 use crate::runtime::Runtime;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::*;
@@ -11,7 +12,6 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::NonFungibleData;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::marker::PhantomData;
 use scrypto::prelude::ScryptoValue;
@@ -120,10 +120,7 @@ pub trait ResourceConfig {
 pub struct NoAuth;
 impl ResourceConfig for NoAuth {
     fn into_supported_actions_and_roles(self) -> (BTreeSet<ResourceAction>, RolesInit) {
-        (
-            BTreeSet::new(),
-            roles_init! {}
-        )
+        (BTreeSet::new(), roles_init! {})
     }
 }
 
@@ -345,7 +342,10 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        withdrawer_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn restrict_withdraw(self, restrict_withdraw: WithdrawableRoles<RoleDefinition>) -> Self::OutputBuilder {
+    fn restrict_withdraw(
+        self,
+        restrict_withdraw: WithdrawableRoles<RoleDefinition>,
+    ) -> Self::OutputBuilder {
         self.add_roles(restrict_withdraw.to_role_init())
     }
 
@@ -375,7 +375,10 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     ///        depositor_updater => rule!(require(resource_address)), locked;
     ///    });
     /// ```
-    fn restrict_deposit(self, restrict_deposit: DepositableRoles<RoleDefinition>) -> Self::OutputBuilder {
+    fn restrict_deposit(
+        self,
+        restrict_deposit: DepositableRoles<RoleDefinition>,
+    ) -> Self::OutputBuilder {
         self.add_roles(restrict_deposit.to_role_init())
     }
 }
@@ -416,7 +419,7 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     ///        non_fungible_data_updater_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn updatable_non_fungible_data<R: Into<AccessRule>>(
+    fn updatable_non_fungible_data(
         self,
         updatable_non_fungible_data: UpdatableNonFungibleDataRoles<RoleDefinition>,
     ) -> Self::OutputBuilder {
@@ -544,7 +547,6 @@ impl<A: ResourceConfig> InProgressResourceBuilder<FungibleResourceType, A> {
     ///     .mint_initial_supply(5);
     /// ```
     pub fn mint_initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
-
         let (supported_actions, roles) = self.config.into_supported_actions_and_roles();
 
         let metadata = self
@@ -1000,7 +1002,11 @@ mod private {
 
         fn add_roles(self, role_init: RolesInit) -> Self::OutputBuilder;
 
-        fn add_action_and_roles(self, method: ResourceAction, role_init: RolesInit) -> Self::OutputBuilder;
+        fn add_action_and_roles(
+            self,
+            method: ResourceAction,
+            role_init: RolesInit,
+        ) -> Self::OutputBuilder;
     }
 
     pub trait CanAddOwner: Sized {

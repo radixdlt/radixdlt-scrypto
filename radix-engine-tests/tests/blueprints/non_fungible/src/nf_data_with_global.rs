@@ -24,26 +24,27 @@ mod nf_data_with_global {
                 .mint_initial_supply(1);
 
             // Create  resource with initial supply
-            let bucket1 =
-                ResourceBuilder::new_integer_non_fungible::<NFDataWithGlobal>(OwnerRole::None)
-                    .metadata(metadata! {
-                        init {
-                            "name" => "NFDataWithGlobal".to_owned(), locked;
-                        }
-                    })
-                    .mintable(mintable! {
-                        minter => rule!(require(mint_badge.resource_address())), locked;
-                        minter_updater => rule!(deny_all), locked;
-                    })
-                    .burnable(burnable! {
-                        burner => rule!(allow_all), locked;
-                        burner_updater => rule!(deny_all), locked;
-                    })
-                    .updatable_non_fungible_data(updatable_non_fungible_data! {
-                        non_fungible_data_updater => rule!(require(mint_badge.resource_address())), locked;
-                        non_fungible_data_updater_updater => rule!(deny_all), locked;
-                    })
-                    .mint_initial_supply([(1u64.into(), NFDataWithGlobal { global })]);
+            let bucket1 = ResourceBuilder::new_integer_non_fungible::<NFDataWithGlobal>(
+                OwnerRole::None,
+            )
+            .metadata(metadata! {
+                init {
+                    "name" => "NFDataWithGlobal".to_owned(), locked;
+                }
+            })
+            .mintable(mintable! {
+                minter => rule!(require(mint_badge.resource_address())), locked;
+                minter_updater => rule!(deny_all), locked;
+            })
+            .burnable(burnable! {
+                burner => rule!(allow_all), locked;
+                burner_updater => rule!(deny_all), locked;
+            })
+            .updatable_non_fungible_data(updatable_non_fungible_data! {
+                non_fungible_data_updater => rule!(require(mint_badge.resource_address())), locked;
+                non_fungible_data_updater_updater => rule!(deny_all), locked;
+            })
+            .mint_initial_supply([(1u64.into(), NFDataWithGlobal { global })]);
 
             // Mint a non-fungible
             let bucket2 = mint_badge.authorize(|| {

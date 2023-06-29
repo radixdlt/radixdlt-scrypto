@@ -1514,8 +1514,8 @@ mod tests {
     use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintRuidManifestInput, ResourceAction,
+        NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
+        NonFungibleResourceManagerMintRuidManifestInput,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
@@ -1781,16 +1781,8 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<Enum, Tuple>(
-                    Enum<ResourceAction::Withdraw>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    ),
-                    Enum<ResourceAction::Deposit>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    )
-                )
+                Array<Enum>()
+                Map<String, Tuple>()
                 Tuple(
                     Map<String, Tuple>(
                         "name" => Tuple(
@@ -1892,16 +1884,8 @@ mod tests {
                         )
                     )
                 )
-                Map<Enum, Tuple>(
-                    Enum<ResourceAction::Withdraw>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    ),
-                    Enum<ResourceAction::Deposit>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    )
-                )
+                Array<Enum>()
+                Map<String, Tuple>()
                 Tuple(
                     Map<String, Tuple>(
                         "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), true)
@@ -1921,13 +1905,13 @@ mod tests {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        supported_actions: btreeset!(),
+                        roles: roles_init!(),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_string(), locked;
                             }
                         },
-                        supported_actions: btreeset!(),
-                        roles: roles_init!(),
                         entries: BTreeMap::from([(
                             NonFungibleLocalId::integer(1),
                             (to_manifest_value_and_unwrap!(&(
@@ -1949,16 +1933,8 @@ mod tests {
                 Enum<0u8>()
                 false
                 18u8
-                Map<Enum, Tuple>(
-                    Enum<ResourceAction::Withdraw>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    ),
-                    Enum<ResourceAction::Deposit>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    )
-                )
+                Array<Enum>()
+                Map<String, Tuple>()
                 Tuple(
                     Map<String, Tuple>(
                         "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
@@ -1996,16 +1972,8 @@ mod tests {
                 false
                 18u8
                 Decimal("500")
-                Map<Enum, Tuple>(
-                    Enum<ResourceAction::Withdraw>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    ),
-                    Enum<ResourceAction::Deposit>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    )
-                )
+                Array<Enum>()
+                Map<String, Tuple>()
                 Tuple(
                     Map<String, Tuple>(
                         "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)

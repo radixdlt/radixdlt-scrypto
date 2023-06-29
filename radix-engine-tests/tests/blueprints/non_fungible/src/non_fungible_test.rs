@@ -28,26 +28,27 @@ mod non_fungible_test {
                 .mint_initial_supply(1);
 
             // Create non-fungible resource with mutable supply
-            let resource_manager =
-                ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::Fixed(rule!(require(mint_badge.resource_address()))))
-                    .metadata(metadata! {
-                        init {
-                            "name" => "Katz's Sandwiches".to_owned(), locked;
-                        }
-                    })
-                    .mintable(mintable! {
-                        minter => OWNER, locked;
-                        minter_updater => rule!(deny_all), locked;
-                    })
-                    .burnable(burnable! {
-                        burner => rule!(allow_all), locked;
-                        burner_updater => rule!(deny_all), locked;
-                    })
-                    .updatable_non_fungible_data(updatable_non_fungible_data! {
-                        non_fungible_data_updater => OWNER, locked;
-                        non_fungible_data_updater_updater => rule!(deny_all), locked;
-                    })
-                    .create_with_no_initial_supply();
+            let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>(
+                OwnerRole::Fixed(rule!(require(mint_badge.resource_address()))),
+            )
+            .metadata(metadata! {
+                init {
+                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                }
+            })
+            .mintable(mintable! {
+                minter => OWNER, locked;
+                minter_updater => rule!(deny_all), locked;
+            })
+            .burnable(burnable! {
+                burner => rule!(allow_all), locked;
+                burner_updater => rule!(deny_all), locked;
+            })
+            .updatable_non_fungible_data(updatable_non_fungible_data! {
+                non_fungible_data_updater => OWNER, locked;
+                non_fungible_data_updater_updater => rule!(deny_all), locked;
+            })
+            .create_with_no_initial_supply();
 
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
@@ -456,8 +457,9 @@ mod non_fungible_test {
                         owner_role: OwnerRole::None,
                         id_type: NonFungibleIdType::RUID,
                         track_total_supply: false,
+                        supported_actions: btreeset!(),
+                        roles: RolesInit::default(),
                         metadata: metadata! {},
-                        access_rules: BTreeMap::new(),
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries,
                         address_reservation: None,

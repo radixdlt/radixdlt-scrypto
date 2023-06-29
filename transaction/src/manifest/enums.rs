@@ -115,9 +115,8 @@ lazy_static! {
             enum ResourceAction {
                 Mint = 0;
                 Burn = 1;
-                UpdateNonFungibleData = 2;
-                Recall = 3;
-                Freeze = 4;
+                Recall = 2;
+                Freeze = 3;
             }
         );
 

@@ -281,18 +281,16 @@ fn test_manifest_with_restricted_minting_resource<F>(
     let minter_badge_resource_address =
         test_runner.create_fungible_resource(dec!("1"), 0, component_address);
 
-    let access_rules = btreemap! {
-        Mint => ResourceActionRoleInit::locked(rule!(require(minter_badge_resource_address))),
-    };
-
     let manifest = match resource_type {
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()
             .create_fungible_resource(
                 OwnerRole::None,
                 false,
                 divisibility,
-                btreeset!(),
-                roles_init!(),
+                btreeset!(Mint),
+                roles_init! {
+                    MINTER_ROLE => rule!(require(minter_badge_resource_address)), locked;
+                },
                 metadata!(),
                 None,
             )
@@ -302,8 +300,10 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 OwnerRole::None,
                 id_type,
                 false,
-                btreeset!(),
-                roles_init!(),
+                btreeset!(Mint),
+                roles_init! {
+                    MINTER_ROLE => rule!(require(minter_badge_resource_address)), locked;
+                },
                 metadata!(),
                 None::<BTreeMap<NonFungibleLocalId, SampleNonFungibleData>>,
             )

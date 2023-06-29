@@ -9,7 +9,6 @@ use radix_engine::errors::{
 };
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
@@ -19,7 +18,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
 use radix_engine_interface::{metadata, metadata_init, roles_init};
-use scrypto::prelude::{AccessRule, FromPublicKey, ResourceAction};
+use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -1466,8 +1465,8 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
             OwnerRole::Fixed(AccessRule::AllowAll),
             false,
             18,
-        btreeset!(Mint, Burn, Recall),
-        roles_init! {
+            btreeset!(Mint, Burn, Recall),
+            roles_init! {
                 MINTER_ROLE => rule!(allow_all), locked;
                 BURNER_ROLE => rule!(allow_all), locked;
                 WITHDRAWER_ROLE => rule!(allow_all), locked;
