@@ -35,7 +35,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{ metadata, metadata_init, roles_init, rule, };
+use radix_engine_interface::{metadata, metadata_init, roles_init, rule};
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
 use radix_engine_store_interface::{

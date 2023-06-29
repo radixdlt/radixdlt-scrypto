@@ -16,7 +16,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{roles_init, rule, metadata_init};
+use radix_engine_interface::{metadata_init, roles_init, rule};
 use sbor::rust::mem;
 
 use super::{

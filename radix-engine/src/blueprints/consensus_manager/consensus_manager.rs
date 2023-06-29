@@ -17,9 +17,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{
-    metadata_init, roles_init, rule,
-};
+use radix_engine_interface::{metadata_init, roles_init, rule};
 
 const MILLIS_IN_SECOND: i64 = 1000;
 const SECONDS_IN_MINUTE: i64 = 60;

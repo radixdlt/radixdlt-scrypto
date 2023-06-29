@@ -28,8 +28,8 @@ pub use vault::*;
 pub use worktop::*;
 
 use crate::api::node_modules::auth::RoleDefinition;
-use sbor::rust::vec::Vec;
 use radix_engine_common::math::*;
+use sbor::rust::vec::Vec;
 
 pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
     !amount.is_negative()
