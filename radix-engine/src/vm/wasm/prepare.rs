@@ -25,11 +25,6 @@ impl WasmModule {
         let mut features = WasmFeatures::default();
         features.floats = false;
 
-        println!(
-            "WasmModule init code = {}",
-            wabt::wasm2wat(module.bytes()).unwrap()
-        );
-
         module.validate(features).map_err(|err| {
             if err
                 .to_string()
@@ -883,7 +878,6 @@ impl WasmModule {
         // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
         // we're using the `wasmi` logic as a shortcut.
         let code = self.module.bytes();
-        println!("ensure_instantiatable ");
         WasmiModule::new(&code[..]).map_err(|e| PrepareError::NotInstantiatable {
             reason: format!("{:?}", e),
         })?;

@@ -41,7 +41,7 @@ impl WasmValidator {
             .enforce_export_constraints(blueprints)?
             .inject_instruction_metering(&self.instrumenter_config)?
             .inject_stack_metering(self.instrumenter_config.max_stack_size())?
-            //.ensure_instantiatable()?
+            .ensure_instantiatable()?
             .ensure_compilable()?
             .to_bytes()
     }
