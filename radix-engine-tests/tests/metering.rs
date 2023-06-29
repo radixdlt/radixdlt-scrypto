@@ -457,6 +457,7 @@ fn run_publish_large_package(mode: Mode) {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 5000u32.into())
         .publish_package_advanced(
+            None,
             code,
             PackageDefinition::default(),
             BTreeMap::new(),

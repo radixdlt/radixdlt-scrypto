@@ -68,6 +68,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .publish_package_advanced(
+            None,
             code,
             single_function_package_definition("Test", "f"),
             BTreeMap::new(),

@@ -3,7 +3,7 @@ use crate::types::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::collections::*;
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct FeeSummary {
     /// The cost unit price in XRD.
     pub cost_unit_price: Decimal,

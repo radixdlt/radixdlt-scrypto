@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                , 15.73103665
-+ Execution Cost (XRD)                                          ,   12.875273
-+ Tipping Cost (XRD)                                            ,  0.64376365
+Total Cost (XRD)                                                ,   15.738499
++ Execution Cost (XRD)                                          ,    12.88238
++ Tipping Cost (XRD)                                            ,    0.644119
 + State Expansion Cost (XRD)                                    ,       0.212
 + Royalty Cost (XRD)                                            ,           2
-Total Cost Units Consumed                                       ,    12875273
+Total Cost Units Consumed                                       ,    12882380
 AfterInvoke                                                     ,         650
 AllocateNodeId                                                  ,       15000
 BeforeInvoke                                                    ,       14156
@@ -18,12 +18,12 @@ LockFee                                                         ,         500
 OpenSubstate::GlobalAccount                                     ,     2808162
 OpenSubstate::GlobalFungibleResourceManager                     ,      826701
 OpenSubstate::GlobalGenericComponent                            ,      161659
-OpenSubstate::GlobalPackage                                     ,     4456723
+OpenSubstate::GlobalPackage                                     ,     4458372
 OpenSubstate::GlobalTwoResourcePool                             ,      408199
 OpenSubstate::InternalFungibleVault                             ,      814059
 OpenSubstate::InternalGenericComponent                          ,       85484
 QueryActor                                                      ,        6500
-ReadSubstate                                                    ,      536856
+ReadSubstate                                                    ,      538231
 RunNativeCode::Worktop_drain                                    ,        6901
 RunNativeCode::Worktop_drop                                     ,        6683
 RunNativeCode::Worktop_put                                      ,       42550
@@ -40,8 +40,8 @@ RunNativeCode::put_FungibleVault                                ,       26942
 RunNativeCode::take_FungibleVault                               ,       40734
 RunNativeCode::try_deposit_batch_or_abort                       ,       41152
 RunNativeCode::withdraw                                         ,       25682
-RunWasmCode::Radiswap_swap                                      ,       96908
-RunWasmCodePrepare                                              ,      576812
+RunWasmCode::Radiswap_swap                                      ,       98241
+RunWasmCodePrepare                                              ,      579562
 TxBaseCost                                                      ,       50000
 TxPayloadCost                                                   ,       17650
 TxSignatureVerification                                         ,        7000

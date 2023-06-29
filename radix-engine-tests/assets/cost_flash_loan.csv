@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                ,  19.0868609
-+ Execution Cost (XRD)                                          ,   16.256058
-+ Tipping Cost (XRD)                                            ,   0.8128029
+Total Cost (XRD)                                                ,  19.1020859
++ Execution Cost (XRD)                                          ,   16.270558
++ Tipping Cost (XRD)                                            ,   0.8135279
 + State Expansion Cost (XRD)                                    ,       0.018
 + Royalty Cost (XRD)                                            ,           2
-Total Cost Units Consumed                                       ,    16256058
+Total Cost Units Consumed                                       ,    16270558
 AfterInvoke                                                     ,         974
 AllocateNodeId                                                  ,       26500
 BeforeInvoke                                                    ,       25508
@@ -21,12 +21,12 @@ OpenSubstate::GlobalAccount                                     ,     1208185
 OpenSubstate::GlobalFungibleResourceManager                     ,      588598
 OpenSubstate::GlobalGenericComponent                            ,      163454
 OpenSubstate::GlobalNonFungibleResourceManager                  ,     1140979
-OpenSubstate::GlobalPackage                                     ,     5803998
+OpenSubstate::GlobalPackage                                     ,     5808424
 OpenSubstate::InternalFungibleVault                             ,      662751
 OpenSubstate::InternalGenericComponent                          ,      164144
 QueryActor                                                      ,       15000
 QueryAuthZone                                                   ,        2000
-ReadSubstate                                                    ,     1532044
+ReadSubstate                                                    ,     1536068
 RunNativeCode::AuthZone_pop                                     ,       13722
 RunNativeCode::AuthZone_push                                    ,       14108
 RunNativeCode::Worktop_drain                                    ,        6901
@@ -53,9 +53,9 @@ RunNativeCode::take_FungibleVault                               ,       40734
 RunNativeCode::try_deposit_batch_or_abort                       ,       41152
 RunNativeCode::unlock_amount_FungibleVault                      ,       26420
 RunNativeCode::withdraw                                         ,       25682
-RunWasmCode::BasicFlashLoan_repay_loan                          ,       70268
-RunWasmCode::BasicFlashLoan_take_loan                           ,      118886
-RunWasmCodePrepare                                              ,     2238344
+RunWasmCode::BasicFlashLoan_repay_loan                          ,       68936
+RunWasmCode::BasicFlashLoan_take_loan                           ,      118220
+RunWasmCodePrepare                                              ,     2246392
 TxBaseCost                                                      ,       50000
 TxPayloadCost                                                   ,       25700
 TxSignatureVerification                                         ,        7000

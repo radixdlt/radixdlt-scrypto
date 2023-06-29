@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                ,2163.3129736
-+ Execution Cost (XRD)                                          ,   64.362832
-+ Tipping Cost (XRD)                                            ,   3.2181416
+Total Cost (XRD)                                                ,2163.32180515
++ Execution Cost (XRD)                                          ,   64.371243
++ Tipping Cost (XRD)                                            ,  3.21856215
 + State Expansion Cost (XRD)                                    ,    2095.732
 + Royalty Cost (XRD)                                            ,           0
-Total Cost Units Consumed                                       ,    64362832
+Total Cost Units Consumed                                       ,    64371243
 AfterInvoke                                                     ,         201
 AllocateNodeId                                                  ,        9500
 BeforeInvoke                                                    ,     1052687
@@ -18,20 +18,20 @@ LockFee                                                         ,         500
 MoveModules                                                     ,        7000
 OpenSubstate::GlobalFungibleResourceManager                     ,      245251
 OpenSubstate::GlobalGenericComponent                            ,      161694
-OpenSubstate::GlobalPackage                                     ,     5061912
+OpenSubstate::GlobalPackage                                     ,     5064410
 OpenSubstate::InternalFungibleVault                             ,      164853
 OpenSubstate::InternalGenericComponent                          ,       24207
 OpenSubstate::InternalKeyValueStore                             ,       80623
 QueryActor                                                      ,        2000
-ReadSubstate                                                    ,      460670
+ReadSubstate                                                    ,      462752
 RunNativeCode::Worktop_drop                                     ,        6683
 RunNativeCode::create                                           ,        7328
 RunNativeCode::create_empty_vault_FungibleResourceManager       ,       82304
 RunNativeCode::create_with_data                                 ,        1838
 RunNativeCode::lock_fee                                         ,       20764
 RunNativeCode::publish_wasm_advanced                            ,       41152
-RunWasmCode::Faucet_lock_fee                                    ,       17987
-RunWasmCodePrepare                                              ,      694900
+RunWasmCode::Faucet_lock_fee                                    ,       17654
+RunWasmCodePrepare                                              ,      699064
 TxBaseCost                                                      ,       50000
 TxPayloadCost                                                   ,    52389750
 TxSignatureVerification                                         ,           0

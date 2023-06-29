@@ -31,8 +31,9 @@ fn build_access_rules(
             let (mint_access_rule, mint_mutability) = access_rules_map
                 .remove(&ResourceAction::Mint)
                 .unwrap_or((DenyAll, DenyAll));
-            main_roles.define_mutable_role(MINTER_UPDATER_ROLE, mint_mutability);
-            main_roles.define_mutable_role(MINTER_ROLE, mint_access_rule);
+            let locked = mint_mutability.eq(&DenyAll);
+            main_roles.define_role(MINTER_UPDATER_ROLE, mint_mutability, locked);
+            main_roles.define_role(MINTER_ROLE, mint_access_rule, locked);
         }
 
         // Burn
@@ -40,8 +41,9 @@ fn build_access_rules(
             let (burn_access_rule, burn_mutability) = access_rules_map
                 .remove(&ResourceAction::Burn)
                 .unwrap_or((DenyAll, DenyAll));
-            main_roles.define_mutable_role(BURNER_UPDATER_ROLE, burn_mutability);
-            main_roles.define_mutable_role(BURNER_ROLE, burn_access_rule);
+            let locked = burn_mutability.eq(&DenyAll);
+            main_roles.define_role(BURNER_UPDATER_ROLE, burn_mutability, locked);
+            main_roles.define_role(BURNER_ROLE, burn_access_rule, locked);
         }
 
         // Non Fungible Update data
@@ -50,13 +52,16 @@ fn build_access_rules(
                 access_rules_map
                     .remove(&ResourceAction::UpdateNonFungibleData)
                     .unwrap_or((AllowAll, DenyAll));
-            main_roles.define_mutable_role(
+            let locked = update_non_fungible_data_mutability.eq(&DenyAll);
+            main_roles.define_role(
                 NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE,
                 update_non_fungible_data_mutability,
+                locked,
             );
-            main_roles.define_mutable_role(
+            main_roles.define_role(
                 NON_FUNGIBLE_DATA_UPDATER_ROLE,
                 update_non_fungible_data_access_rule,
+                locked,
             );
         }
 
@@ -65,8 +70,9 @@ fn build_access_rules(
             let (withdraw_access_rule, withdraw_mutability) = access_rules_map
                 .remove(&ResourceAction::Withdraw)
                 .unwrap_or((AllowAll, DenyAll));
-            main_roles.define_mutable_role(WITHDRAWER_ROLE, withdraw_access_rule);
-            main_roles.define_mutable_role(WITHDRAWER_UPDATER_ROLE, withdraw_mutability);
+            let locked = withdraw_mutability.eq(&DenyAll);
+            main_roles.define_role(WITHDRAWER_ROLE, withdraw_access_rule, locked);
+            main_roles.define_role(WITHDRAWER_UPDATER_ROLE, withdraw_mutability, locked);
         }
 
         // Recall
@@ -74,8 +80,9 @@ fn build_access_rules(
             let (recall_access_rule, recall_mutability) = access_rules_map
                 .remove(&ResourceAction::Recall)
                 .unwrap_or((DenyAll, DenyAll));
-            main_roles.define_mutable_role(RECALLER_ROLE, recall_access_rule);
-            main_roles.define_mutable_role(RECALLER_UPDATER_ROLE, recall_mutability);
+            let locked = recall_mutability.eq(&DenyAll);
+            main_roles.define_role(RECALLER_ROLE, recall_access_rule, locked);
+            main_roles.define_role(RECALLER_UPDATER_ROLE, recall_mutability, locked);
         }
 
         // Freeze/Unfreeze Role
@@ -83,8 +90,9 @@ fn build_access_rules(
             let (freeze_access_rule, freeze_mutability) = access_rules_map
                 .remove(&ResourceAction::Freeze)
                 .unwrap_or((DenyAll, DenyAll));
-            main_roles.define_mutable_role(FREEZER_ROLE, freeze_access_rule);
-            main_roles.define_mutable_role(FREEZER_UPDATER_ROLE, freeze_mutability);
+            let locked = freeze_mutability.eq(&DenyAll);
+            main_roles.define_role(FREEZER_ROLE, freeze_access_rule, locked);
+            main_roles.define_role(FREEZER_UPDATER_ROLE, freeze_mutability, locked);
         }
 
         // Deposit
@@ -92,8 +100,9 @@ fn build_access_rules(
             let (deposit_access_rule, deposit_mutability) = access_rules_map
                 .remove(&ResourceAction::Deposit)
                 .unwrap_or((AllowAll, DenyAll));
-            main_roles.define_mutable_role(DEPOSITOR_ROLE, deposit_access_rule);
-            main_roles.define_mutable_role(DEPOSITOR_UPDATER_ROLE, deposit_mutability);
+            let locked = deposit_mutability.eq(&DenyAll);
+            main_roles.define_role(DEPOSITOR_ROLE, deposit_access_rule, locked);
+            main_roles.define_role(DEPOSITOR_UPDATER_ROLE, deposit_mutability, locked);
         }
     }
 
@@ -103,9 +112,13 @@ fn build_access_rules(
         .unwrap_or((DenyAll, DenyAll));
     let metadata_roles = {
         let mut metadata_roles = Roles::new();
-
-        metadata_roles.define_mutable_role(METADATA_ADMIN_ROLE, update_metadata_access_rule);
-        metadata_roles.define_mutable_role(METADATA_ADMIN_UPDATER_ROLE, update_metadata_mutability);
+        let locked = update_metadata_mutability.eq(&DenyAll);
+        metadata_roles.define_role(METADATA_ADMIN_ROLE, update_metadata_access_rule, locked);
+        metadata_roles.define_role(
+            METADATA_ADMIN_UPDATER_ROLE,
+            update_metadata_mutability,
+            locked,
+        );
 
         metadata_roles
     };

@@ -15,7 +15,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
     pub new_packages: Vec<PackageAddress>,
     pub new_components: Vec<ComponentAddress>,

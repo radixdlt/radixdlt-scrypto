@@ -4,6 +4,7 @@ use radix_engine::errors::{
 };
 use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, TakeNodeError};
 use radix_engine::types::*;
+use radix_engine_interface::metadata_init;
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
@@ -635,7 +636,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
             .create_non_fungible_resource(
                 NonFungibleIdType::Integer,
                 true,
-                Default::default(),
+                metadata_init!(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )

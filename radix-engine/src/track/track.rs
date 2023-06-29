@@ -17,7 +17,7 @@ use sbor::rust::mem;
 
 use super::interface::{StoreCommit, StoreCommitInfo};
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct StateUpdates {
     pub database_updates: DatabaseUpdates,
     pub system_updates: SystemUpdates,

@@ -7,8 +7,6 @@ use wasmi::core::{HostError, Trap};
 use wasmi::errors::InstantiationError;
 use wasmi::*;
 
-pub const DEFAULT_CACHE_SIZE: usize = 1000;
-
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::constants::*;
@@ -1201,7 +1199,7 @@ pub struct WasmiEngine {
 impl Default for WasmiEngine {
     fn default() -> Self {
         Self::new(WasmiEngineOptions {
-            max_cache_size: DEFAULT_CACHE_SIZE,
+            max_cache_size: DEFAULT_WASM_ENGINE_CACHE_SIZE,
         })
     }
 }

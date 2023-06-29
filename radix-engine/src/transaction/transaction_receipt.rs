@@ -77,6 +77,18 @@ pub struct CommitResult {
 }
 
 impl CommitResult {
+    pub fn empty_with_outcome(outcome: TransactionOutcome) -> Self {
+        Self {
+            state_updates: Default::default(),
+            state_update_summary: Default::default(),
+            outcome,
+            fee_summary: Default::default(),
+            application_events: Default::default(),
+            application_logs: Default::default(),
+            execution_trace: Default::default(),
+        }
+    }
+
     pub fn next_epoch(&self) -> Option<EpochChangeEvent> {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
@@ -197,6 +209,14 @@ pub struct TransactionReceipt {
 }
 
 impl TransactionReceipt {
+    /// An empty receipt for merging changes into.
+    pub fn empty_with_commit(commit_result: CommitResult) -> Self {
+        Self {
+            transaction_result: TransactionResult::Commit(commit_result),
+            resources_usage: Default::default(),
+        }
+    }
+
     pub fn is_commit_success(&self) -> bool {
         matches!(
             self.transaction_result,

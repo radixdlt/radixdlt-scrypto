@@ -478,7 +478,7 @@ pub enum TypedMainModuleSubstateValue {
     PackageBlueprintDependencies(KeyValueEntrySubstate<BlueprintDependencies>),
     PackageSchema(KeyValueEntrySubstate<ScryptoSchema>),
     PackageAuthTemplate(KeyValueEntrySubstate<AuthConfig>),
-    PackageRoyalty(KeyValueEntrySubstate<ComponentRoyaltyConfig>),
+    PackageRoyalty(KeyValueEntrySubstate<PackageRoyaltyConfig>),
     PackageVmType(KeyValueEntrySubstate<PackageVmTypeSubstate>),
     PackageOriginalCode(KeyValueEntrySubstate<PackageOriginalCodeSubstate>),
     PackageInstrumentedCode(KeyValueEntrySubstate<PackageInstrumentedCodeSubstate>),
