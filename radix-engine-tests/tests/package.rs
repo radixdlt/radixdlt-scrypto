@@ -36,6 +36,7 @@ fn missing_memory_should_cause_error() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 50.into())
         .publish_package_advanced(
+            None,
             code,
             PackageDefinition::default(),
             BTreeMap::new(),
@@ -131,6 +132,7 @@ fn test_basic_package() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 50.into())
         .publish_package_advanced(
+            None,
             code,
             single_function_package_definition("Test", "f"),
             BTreeMap::new(),
@@ -191,6 +193,7 @@ fn test_basic_package_missing_export() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 50.into())
         .publish_package_advanced(
+            None,
             code,
             PackageDefinition { blueprints },
             BTreeMap::new(),
