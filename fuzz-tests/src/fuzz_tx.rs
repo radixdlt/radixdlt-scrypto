@@ -361,7 +361,7 @@ impl TxFuzzer {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
                     let input =
-                        FungibleResourceManagerCreateInput::arbitrary(&mut unstructured).unwrap();
+                        FungibleResourceManagerCreateManifestInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallFunction {
@@ -377,7 +377,7 @@ impl TxFuzzer {
                 18 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
-                    let input = FungibleResourceManagerCreateWithInitialSupplyInput::arbitrary(
+                    let input = FungibleResourceManagerCreateWithInitialSupplyManifestInput::arbitrary(
                         &mut unstructured,
                     )
                     .unwrap();
@@ -430,7 +430,7 @@ impl TxFuzzer {
                 21 => {
                     package_addresses.push(PackageAddress::arbitrary(&mut unstructured).unwrap());
                     let package_address = *unstructured.choose(&package_addresses[..]).unwrap();
-                    let input = NonFungibleResourceManagerCreateInput::arbitrary(&mut unstructured)
+                    let input = NonFungibleResourceManagerCreateManifestInput::arbitrary(&mut unstructured)
                         .unwrap();
 
                     match to_manifest_value(&input) {
