@@ -1,6 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::{
     require, FromPublicKey, NonFungibleDataSchema,
     NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceAction,
@@ -8,7 +9,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::{metadata_init, rule};
+use radix_engine_interface::{metadata, metadata_init, rule};
 use rand::Rng;
 use utils::ContextualDisplay;
 
@@ -74,11 +75,14 @@ impl NewAccount {
                     function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                         .to_string(),
                     args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        owner_role: OwnerRole::None,
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        metadata: metadata_init!(
-                            "name" => "Owner Badge".to_owned(), locked;
+                        metadata: metadata!(
+                            init {
+                                "name" => "Owner Badge".to_owned(), locked;
+                            }
                         ),
                         access_rules: btreemap!(
                             ResourceAction::Withdraw => (rule!(allow_all), rule!(deny_all))
@@ -86,6 +90,7 @@ impl NewAccount {
                         entries: btreemap!(
                             NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),
                         ),
+                        address_reservation: None,
                     }),
                 })
                 .0

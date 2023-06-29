@@ -3,7 +3,9 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::blueprints::resource::ResourceAction;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
+use radix_engine_interface::{metadata, metadata_init};
 use scrypto::prelude::Mutability::LOCKED;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -150,9 +152,10 @@ fn create_fungible_too_high_granularity_should_fail() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_fungible_resource(
+            OwnerRole::None,
             false,
             23u8,
-            BTreeMap::new(),
+            metadata!(),
             access_rules,
             Some(dec!("100")),
         )

@@ -10,13 +10,14 @@ use radix_engine::errors::{
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
-use radix_engine_interface::metadata_init;
+use radix_engine_interface::{metadata, metadata_init};
 use scrypto::prelude::Mutability::LOCKED;
 use scrypto::prelude::{AccessRule, FromPublicKey, ResourceAction};
 use scrypto::NonFungibleData;
@@ -294,9 +295,10 @@ fn vault_non_fungible_recall_emits_correct_events() {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 500u32.into())
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                BTreeMap::new(),
+                metadata!(),
                 access_rules,
                 Some([(id.clone(), EmptyStruct {})]),
             )
@@ -389,9 +391,10 @@ fn resource_manager_new_vault_emits_correct_events() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_fungible_resource(
+            OwnerRole::None,
             false,
             18,
-            metadata_init!(),
+            metadata!(),
             BTreeMap::<ResourceAction, (AccessRule, AccessRule)>::new(),
             Some(1.into()),
         )
@@ -456,7 +459,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 500u32.into())
-            .create_fungible_resource(false, 18, metadata_init!(), access_rules, None)
+            .create_fungible_resource(OwnerRole::None, false, 18, metadata!(), access_rules, None)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -536,9 +539,10 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 500u32.into())
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                BTreeMap::new(),
+                metadata!(),
                 access_rules,
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
             )
@@ -1462,7 +1466,6 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
         ResourceAction::Withdraw,
         ResourceAction::Mint,
         ResourceAction::Burn,
-        ResourceAction::UpdateMetadata,
         ResourceAction::UpdateNonFungibleData,
     ]
     .into_iter()
@@ -1470,7 +1473,14 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
     .collect();
 
     let manifest = ManifestBuilder::new()
-        .create_fungible_resource(false, 18, BTreeMap::new(), access_rules, None)
+        .create_fungible_resource(
+            OwnerRole::Fixed(AccessRule::AllowAll),
+            false,
+            18,
+            metadata!(),
+            access_rules,
+            None,
+        )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
     *receipt

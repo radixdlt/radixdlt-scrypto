@@ -7,7 +7,10 @@ pub mod tests {
     use crate::internal_prelude::*;
     use crate::manifest::*;
     use crate::signing::ed25519::Ed25519PrivateKey;
-    use radix_engine_interface::blueprints::resource::AccessRule;
+    use radix_engine_interface::api::node_modules::ModuleConfig;
+    use radix_engine_interface::blueprints::resource::Roles;
+    use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole};
+    use radix_engine_interface::{metadata, metadata_init};
     use scrypto_derive::NonFungibleData;
 
     #[test]
@@ -755,45 +758,50 @@ CALL_METHOD
     Decimal("500")
 ;
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
     false
     18u8
-    Map<String, Tuple>(
-        "name" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "MyResource"
-                )
-            ),
-            true
-        ),
-        "symbol" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "RSRC"
-                )
-            ),
-            true
-        ),
-        "description" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "A very innovative and important resource"
-                )
-            ),
-            true
-        )
-    )
+    Decimal("12")
     Map<Enum, Tuple>(
+        Enum<3u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
         Enum<4u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
-        ),
-        Enum<5u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
         )
     )
-    Decimal("12")
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "MyResource"
+                    )
+                ),
+                true
+            ),
+            "symbol" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "RSRC"
+                    )
+                ),
+                true
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "A very innovative and important resource"
+                    )
+                ),
+                true
+            )
+        ),
+        Map<String, Tuple>()
+    )
+    Enum<0u8>()
 ;
 CALL_METHOD
     Address("${account_address}")
@@ -823,44 +831,49 @@ CALL_METHOD
     Decimal("500")
 ;
 CREATE_FUNGIBLE_RESOURCE
+    Enum<0u8>()
     false
     18u8
-    Map<String, Tuple>(
-        "name" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "MyResource"
-                )
-            ),
-            true
-        ),
-        "symbol" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "RSRC"
-                )
-            ),
-            true
-        ),
-        "description" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "A very innovative and important resource"
-                )
-            ),
-            true
-        )
-    )
     Map<Enum, Tuple>(
+        Enum<3u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
         Enum<4u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
-        ),
-        Enum<5u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
         )
     )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "MyResource"
+                    )
+                ),
+                true
+            ),
+            "symbol" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "RSRC"
+                    )
+                ),
+                true
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "A very innovative and important resource"
+                    )
+                ),
+                true
+            )
+        ),
+        Map<String, Tuple>()
+    )
+    Enum<0u8>()
 ;
 "##,
             ),
@@ -887,6 +900,7 @@ CALL_METHOD
     Decimal("500")
 ;
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
     Enum<1u8>()
     false
     Tuple(
@@ -900,34 +914,6 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         ),
         Array<String>()
     )
-    Map<String, Tuple>(
-        "name" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "MyResource"
-                )
-            ),
-            true
-        ),
-        "description" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "A very innovative and important resource"
-                )
-            ),
-            false
-        )
-    )
-    Map<Enum, Tuple>(
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        ),
-        Enum<5u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
-    )
     Map<NonFungibleLocalId, Tuple>(
         NonFungibleLocalId("#12#") => Tuple(
             Tuple(
@@ -936,6 +922,38 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             )
         )
     )
+    Map<Enum, Tuple>(
+        Enum<3u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
+        Enum<4u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        )
+    )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "MyResource"
+                    )
+                ),
+                true
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "A very innovative and important resource"
+                    )
+                ),
+                false
+            )
+        ),
+        Map<String, Tuple>()
+    )
+    Enum<0u8>()
 ;
 CALL_METHOD
     Address("${account_address}")
@@ -967,6 +985,7 @@ CALL_METHOD
     Decimal("500")
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
+    Enum<0u8>()
     Enum<1u8>()
     false
     Tuple(
@@ -980,34 +999,38 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
-    Map<String, Tuple>(
-        "name" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "MyResource"
-                )
-            ),
-            true
-        ),
-        "description" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>(
-                    "A very innovative and important resource"
-                )
-            ),
-            false
-        )
-    )
     Map<Enum, Tuple>(
+        Enum<3u8>() => Tuple(
+            Enum<0u8>(),
+            Enum<1u8>()
+        ),
         Enum<4u8>() => Tuple(
             Enum<0u8>(),
             Enum<1u8>()
-        ),
-        Enum<5u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
         )
     )
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "MyResource"
+                    )
+                ),
+                true
+            ),
+            "description" => Tuple(
+                Enum<1u8>(
+                    Enum<0u8>(
+                        "A very innovative and important resource"
+                    )
+                ),
+                false
+            )
+        ),
+        Map<String, Tuple>()
+    )
+    Enum<0u8>()
 ;
 "##,
             ),
@@ -1463,9 +1486,10 @@ CALL_METHOD
         // Arrange
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                BTreeMap::new(),
+                metadata!(),
                 BTreeMap::<_, (_, AccessRule)>::new(),
                 Some([(NonFungibleLocalId::integer(1), EmptyStruct {})]),
             )

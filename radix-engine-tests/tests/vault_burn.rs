@@ -1,7 +1,8 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine_interface::metadata_init;
+use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::{metadata, metadata_init};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -17,11 +18,10 @@ fn package_burn_is_only_callable_within_resource_package() {
             Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(true, 18, metadata_init!(), access_rules, None)
+            .create_fungible_resource(OwnerRole::None, true, 18, metadata!(), access_rules, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
@@ -61,11 +61,10 @@ fn can_burn_by_amount_from_fungible_vault() {
             Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(true, 18, metadata_init!(), access_rules, None)
+            .create_fungible_resource(OwnerRole::None, true, 18, metadata!(), access_rules, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
@@ -119,14 +118,14 @@ fn can_burn_by_amount_from_non_fungible_vault() {
             Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -189,14 +188,14 @@ fn can_burn_by_ids_from_non_fungible_vault() {
             Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -266,11 +265,10 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(true, 18, metadata_init!(), access_rules, None)
+            .create_fungible_resource(OwnerRole::None, true, 18, metadata!(), access_rules, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
@@ -328,14 +326,14 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -402,14 +400,14 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -480,11 +478,10 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(true, 18, metadata_init!(), access_rules, None)
+            .create_fungible_resource(OwnerRole::None, true, 18, metadata!(), access_rules, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()])
@@ -541,14 +538,14 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -614,14 +611,14 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -688,11 +685,10 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
             Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::DenyAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(true, 18, metadata_init!(), access_rules, None)
+            .create_fungible_resource(OwnerRole::None, true, 18, metadata!(), access_rules, None)
             .build();
         test_runner
             .execute_manifest_ignoring_fee(manifest, vec![])
@@ -746,14 +742,14 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
             Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::DenyAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -816,14 +812,14 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
             Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::DenyAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -892,11 +888,17 @@ fn can_burn_by_amount_from_fungible_account_vault() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
-            .create_fungible_resource(true, 18, metadata_init!(), access_rules, Some(100.into()))
+            .create_fungible_resource(
+                OwnerRole::None,
+                true,
+                18,
+                metadata!(),
+                access_rules,
+                Some(100.into()),
+            )
             .try_deposit_batch_or_abort(account)
             .build();
         test_runner
@@ -943,14 +945,14 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Some(btreemap!(
                     NonFungibleLocalId::integer(1) => EmptyStruct {},
@@ -999,14 +1001,14 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
             Withdraw => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Deposit => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             Recall => (virtual_signature_rule.clone(), AccessRule::DenyAll),
-            UpdateMetadata => (virtual_signature_rule.clone(), AccessRule::DenyAll),
             UpdateNonFungibleData => (virtual_signature_rule.clone(), AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Some(btreemap!(
                     NonFungibleLocalId::integer(1) => EmptyStruct {},

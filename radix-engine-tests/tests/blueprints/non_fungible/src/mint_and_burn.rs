@@ -13,10 +13,11 @@ mod mint_and_burn {
 
     impl MintAndBurn {
         pub fn new() {
-            let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>()
-                .mintable(rule!(allow_all), rule!(deny_all))
-                .burnable(rule!(allow_all), rule!(deny_all))
-                .create_with_no_initial_supply();
+            let resource_manager =
+                ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
+                    .mintable(rule!(allow_all), rule!(deny_all))
+                    .burnable(rule!(allow_all), rule!(deny_all))
+                    .create_with_no_initial_supply();
 
             let vault = resource_manager.create_empty_vault();
 

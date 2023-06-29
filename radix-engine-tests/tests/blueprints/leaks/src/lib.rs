@@ -10,24 +10,36 @@ mod leaks {
         }
 
         pub fn dangling_bucket() {
-            let _bucket = ResourceBuilder::new_fungible()
+            let _bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(1);
         }
 
         pub fn dangling_vault() {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(1);
             let _vault = Vault::with_bucket(bucket);
         }
 
         pub fn get_bucket() -> Bucket {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(1);
             bucket
         }
@@ -39,9 +51,13 @@ mod leaks {
         }
 
         pub fn dangling_bucket_with_proof() -> Proof {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(1);
 
             bucket.create_proof()

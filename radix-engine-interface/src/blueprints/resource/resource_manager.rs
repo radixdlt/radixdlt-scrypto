@@ -2,9 +2,6 @@ use crate::blueprints::resource::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_interface::api::node_modules::metadata::{
-    METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE,
-};
 use radix_engine_interface::api::ObjectModuleId;
 
 pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
@@ -38,14 +35,13 @@ pub enum ResourceAction {
     Mint,
     Burn,
     UpdateNonFungibleData,
-    UpdateMetadata,
     Withdraw,
     Deposit,
     Recall,
     Freeze,
 }
 
-pub const ALL_RESOURCE_AUTH_KEYS: [ResourceAction; 8] = [
+pub const ALL_RESOURCE_AUTH_KEYS: [ResourceAction; 7] = [
     ResourceAction::Mint,
     ResourceAction::Burn,
     ResourceAction::UpdateNonFungibleData,
@@ -53,7 +49,6 @@ pub const ALL_RESOURCE_AUTH_KEYS: [ResourceAction; 8] = [
     ResourceAction::Deposit,
     ResourceAction::Recall,
     ResourceAction::Freeze,
-    ResourceAction::UpdateMetadata,
 ];
 
 impl ResourceAction {
@@ -69,8 +64,6 @@ impl ResourceAction {
             Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITOR_ROLE)),
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_ROLE)),
             Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_ROLE)),
-
-            Self::UpdateMetadata => (ObjectModuleId::Metadata, RoleKey::new(METADATA_SETTER_ROLE)),
         }
     }
 
@@ -86,11 +79,6 @@ impl ResourceAction {
             Self::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITOR_UPDATER_ROLE)),
             Self::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_UPDATER_ROLE)),
             Self::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_UPDATER_ROLE)),
-
-            Self::UpdateMetadata => (
-                ObjectModuleId::Metadata,
-                RoleKey::new(METADATA_SETTER_UPDATER_ROLE),
-            ),
         }
     }
 }

@@ -2,6 +2,7 @@ use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataInit, MetadataValue, Url};
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::{
     NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -90,16 +91,21 @@ impl NewSimpleBadge {
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                    owner_role: OwnerRole::None,
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    metadata,
+                    metadata: ModuleConfig {
+                        init: metadata,
+                        roles: Roles::default(),
+                    },
                     access_rules: btreemap!(
                         ResourceAction::Withdraw => (rule!(allow_all), rule!(deny_all))
                     ),
                     entries: btreemap!(
                         NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),
                     ),
+                    address_reservation: None,
                 }),
             })
             .0

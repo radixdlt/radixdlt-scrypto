@@ -257,13 +257,13 @@ mod pc {
         //==================
 
         pub fn create_fungible_bucket() -> Bucket {
-            ResourceBuilder::new_fungible()
+            ResourceBuilder::new_fungible(OwnerRole::None)
                 .burnable(AccessRule::AllowAll, AccessRule::DenyAll)
                 .mint_initial_supply(100)
         }
 
         pub fn create_non_fungible_bucket() -> Bucket {
-            ResourceBuilder::new_integer_non_fungible()
+            ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
                 .burnable(AccessRule::AllowAll, AccessRule::DenyAll)
                 .mint_initial_supply([
                     (

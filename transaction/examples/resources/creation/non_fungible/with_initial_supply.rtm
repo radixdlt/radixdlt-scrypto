@@ -15,22 +15,12 @@ CALL_METHOD
 
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
+    Enum<0u8>()
     Enum<NonFungibleIdType::Integer>()
     false # Track Total Supply
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
-    Map<String, Tuple>(
-        "name" => Tuple(
-            Enum<Option::Some>(
-                Enum<Metadata::String>("MyResource")                               # Resource Name
-            ),
-            true                                                                   # Locked Resource Name
-        ),
-        "description" => Tuple(
-            Enum<Option::Some>(
-                Enum<Metadata::String>("A very innovative and important resource")    # Resource Description
-            ),
-            false
-        )
+    Map<NonFungibleLocalId, Tuple>(
+        NonFungibleLocalId("${non_fungible_local_id}") => Tuple(Tuple("Hello World", Decimal("12")))
     )
     Map<Enum, Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array 
@@ -62,9 +52,24 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         Enum<ResourceAction::Withdraw>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
         Enum<ResourceAction::Deposit>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
     )
-    Map<NonFungibleLocalId, Tuple>(
-        NonFungibleLocalId("${non_fungible_local_id}") => Tuple(Tuple("Hello World", Decimal("12")))
-    );
+    Tuple(
+        Map<String, Tuple>(
+            "name" => Tuple(
+                Enum<Option::Some>(
+                    Enum<Metadata::String>("MyResource")                               # Resource Name
+                ),
+                true                                                                   # Locked Resource Name
+            ),
+            "description" => Tuple(
+                Enum<Option::Some>(
+                    Enum<Metadata::String>("A very innovative and important resource")    # Resource Description
+                ),
+                false
+            )
+        ),
+        Map<String, Tuple>()
+    )
+    Enum<0u8>();
 
 # Depositing the entirety of the initial supply of the newly created resource into our account 
 # component.

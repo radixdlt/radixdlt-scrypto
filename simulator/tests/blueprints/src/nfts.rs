@@ -12,9 +12,13 @@ mod foo {
 
     impl Foo {
         pub fn nfts() -> Bucket {
-            ResourceBuilder::new_ruid_non_fungible()
-                .metadata("name", "Cars!")
-                .metadata("description", "Fast Cars")
+            ResourceBuilder::new_ruid_non_fungible(OwnerRole::None)
+                .metadata(metadata! {
+                    init {
+                        "name" => "Cars!".to_owned(), locked;
+                        "description" => "Fast Cars".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(vec![
                     Car {
                         manufacturer: "Ford".to_string(),

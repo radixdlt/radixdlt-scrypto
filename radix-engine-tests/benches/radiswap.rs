@@ -37,6 +37,18 @@ fn bench_radiswap(c: &mut Criterion) {
         OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
 
+    for i in 0..20_000 {
+        if i % 100 == 0 {
+            println!("{}/{}", i, 20_000);
+        }
+        test_runner.publish_package(
+            include_bytes!("../../assets/radiswap.wasm").to_vec(),
+            manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
+            btreemap!(),
+            OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
+        );
+    }
+
     // Instantiate Radiswap
     let btc = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
     let eth = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);

@@ -14,7 +14,7 @@ mod execution_trace_test {
             Global<ExecutionTraceTest>,
             Global<ExecutionTraceTest>,
         ) {
-            let bucket = ResourceBuilder::new_fungible()
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .mint_initial_supply(1000000);
 

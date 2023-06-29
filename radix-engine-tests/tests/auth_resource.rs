@@ -1,7 +1,6 @@
 extern crate core;
 
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::{MetadataValue, METADATA_SETTER_ROLE};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
@@ -13,7 +12,6 @@ enum Action {
     Withdraw,
     Deposit,
     Recall,
-    UpdateMetadata,
     Freeze,
 }
 
@@ -26,10 +24,6 @@ impl Action {
             Action::Deposit => (ObjectModuleId::Main, RoleKey::new(DEPOSITOR_ROLE)),
             Action::Recall => (ObjectModuleId::Main, RoleKey::new(RECALLER_ROLE)),
             Action::Freeze => (ObjectModuleId::Main, RoleKey::new(FREEZER_ROLE)),
-
-            Action::UpdateMetadata => {
-                (ObjectModuleId::Metadata, RoleKey::new(METADATA_SETTER_ROLE))
-            }
         }
     }
 }
@@ -44,10 +38,10 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         burn_auth,
         withdraw_auth,
         recall_auth,
-        update_metadata_auth,
+        _update_metadata_auth,
         freeze_auth,
         admin_auth,
-    ) = test_runner.create_restricted_token(account);
+    ) = test_runner.create_restricted_token(OwnerRole::None, account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
@@ -79,7 +73,6 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Withdraw => withdraw_auth,
             Action::Deposit => mint_auth, // Any bad auth
             Action::Recall => recall_auth,
-            Action::UpdateMetadata => update_metadata_auth,
             Action::Freeze => freeze_auth,
         }
     };
@@ -124,11 +117,6 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 "try_deposit_batch_or_abort",
                 manifest_args!(ManifestExpression::EntireWorktop),
             ),
-        Action::UpdateMetadata => builder.set_metadata(
-            token_address.into(),
-            "key".to_string(),
-            MetadataValue::String("value".to_string()),
-        ),
         Action::Recall => {
             let vaults = test_runner.get_component_vaults(account, token_address);
             let vault_id = vaults[0];
@@ -220,18 +208,6 @@ fn can_freeze_with_auth() {
 fn cannot_freeze_with_wrong_auth() {
     test_resource_auth(Action::Freeze, false, true, true);
     test_resource_auth(Action::Freeze, true, false, true);
-}
-
-#[test]
-fn can_update_metadata_with_auth() {
-    test_resource_auth(Action::UpdateMetadata, false, false, false);
-    test_resource_auth(Action::UpdateMetadata, true, true, false);
-}
-
-#[test]
-fn cannot_update_metadata_with_wrong_auth() {
-    test_resource_auth(Action::UpdateMetadata, false, true, true);
-    test_resource_auth(Action::UpdateMetadata, true, false, true);
 }
 
 #[test]
