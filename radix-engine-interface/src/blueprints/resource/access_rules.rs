@@ -1,5 +1,3 @@
-use crate::blueprints::resource::*;
-use crate::rule;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
@@ -233,7 +231,7 @@ impl OwnerRole {
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct Roles {
     pub roles: BTreeMap<RoleKey, (AccessRule, bool)>,
@@ -260,46 +258,4 @@ impl Roles {
     ) {
         self.roles.insert(role.into(), (access_rule, locked));
     }
-}
-
-// TODO: Remove?
-pub fn resource_access_rules_from_owner_badge(
-    owner_badge: &NonFungibleGlobalId,
-) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
-    let mut access_rules = BTreeMap::new();
-    access_rules.insert(
-        ResourceAction::Withdraw,
-        (AccessRule::AllowAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        ResourceAction::Deposit,
-        (AccessRule::AllowAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        ResourceAction::Recall,
-        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        Mint,
-        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        Burn,
-        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        UpdateNonFungibleData,
-        (
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        ),
-    );
-    access_rules.insert(
-        UpdateMetadata,
-        (
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        ),
-    );
-    access_rules
 }

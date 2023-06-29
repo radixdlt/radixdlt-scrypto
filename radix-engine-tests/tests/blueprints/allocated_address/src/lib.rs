@@ -28,18 +28,15 @@ mod apa {
 
         pub fn create_and_pass_address() {
             let (own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
-            let _: () = Runtime::call_function(
-                Runtime::package_address(),
-                "AllocatedAddressTest",
-                "receive_address",
-                scrypto_args!(address),
-            );
+            Blueprint::<AllocatedAddressTest>::receive_address(address);
             Self::globalize_with_preallocated_address(own);
         }
 
         pub fn create_and_call() {
             let (_own, address) = Runtime::allocate_component_address(Runtime::blueprint_id());
-            Runtime::call_method(address, "hi", scrypto_args!())
+            ScryptoEnv
+                .call_method(address.as_node_id(), "hi", scrypto_args!())
+                .unwrap();
         }
 
         pub fn create_and_consume_within_frame() {
@@ -58,12 +55,7 @@ mod apa {
 
         pub fn create_and_consume_in_another_frame() {
             let (own, _address) = Runtime::allocate_component_address(Runtime::blueprint_id());
-            Runtime::call_function(
-                Runtime::package_address(),
-                "AllocatedAddressTest",
-                "globalize_with_preallocated_address",
-                scrypto_args!(own),
-            )
+            Blueprint::<AllocatedAddressTest>::globalize_with_preallocated_address(own);
         }
 
         pub fn create_and_store_in_key_value_store() {

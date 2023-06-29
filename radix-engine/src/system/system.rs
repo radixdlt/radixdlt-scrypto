@@ -1461,8 +1461,7 @@ where
             match &module_object_info.blueprint_info {
                 ObjectBlueprintInfo::Inner { outer_object } => {
                     // TODO: do this recursively until global?
-                    // FIXME: is unwrap safe?
-                    let outer_info = self.get_object_info(outer_object.as_node_id()).unwrap();
+                    let outer_info = self.get_object_info(outer_object.as_node_id())?;
                     Some(InstanceContext {
                         outer_object: outer_object.clone(),
                         outer_blueprint: outer_info.blueprint_id.blueprint_name.clone(),

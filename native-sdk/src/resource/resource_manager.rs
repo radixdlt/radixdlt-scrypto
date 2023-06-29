@@ -1,5 +1,6 @@
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::RESOURCE_PACKAGE;
@@ -18,24 +19,33 @@ pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
     pub fn new_fungible<Y, E: Debug + ScryptoDecode, M: Into<MetadataInit>>(
+        owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        metadata: M,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        metadata: M,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
         Y: ClientBlueprintApi<E>,
     {
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: Roles::default(),
+        };
+
         let result = api.call_function(
             RESOURCE_PACKAGE,
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateInput {
+                owner_role,
                 track_total_supply,
-                metadata: metadata.into(),
+                metadata,
                 access_rules,
                 divisibility,
+                address_reservation,
             })
             .unwrap(),
         )?;
@@ -45,26 +55,35 @@ impl ResourceManager {
     }
 
     pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode, M: Into<MetadataInit>>(
+        owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        amount: Decimal,
-        metadata: M,
+        initial_supply: Decimal,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        metadata: M,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<(Self, Bucket), E>
     where
         Y: ClientBlueprintApi<E>,
     {
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: Roles::default(),
+        };
+
         let result = api.call_function(
             RESOURCE_PACKAGE,
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
             scrypto_encode(&FungibleResourceManagerCreateWithInitialSupplyInput {
+                owner_role,
                 track_total_supply,
-                metadata: metadata.into(),
+                metadata,
                 access_rules,
                 divisibility,
-                initial_supply: amount,
+                initial_supply,
+                address_reservation,
             })
             .unwrap(),
         )?;
@@ -79,64 +98,39 @@ impl ResourceManager {
         E: Debug + ScryptoDecode,
         M: Into<MetadataInit>,
     >(
+        owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
-        metadata: M,
         access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        metadata: M,
+        address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
     ) -> Result<Self, E>
     where
         Y: ClientBlueprintApi<E>,
     {
+        let metadata = ModuleConfig {
+            init: metadata.into(),
+            roles: Roles::default(),
+        };
+
         let non_fungible_schema = NonFungibleDataSchema::new_schema::<N>();
         let result = api.call_function(
             RESOURCE_PACKAGE,
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
             scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                owner_role,
                 id_type,
                 track_total_supply,
                 non_fungible_schema,
-                metadata: metadata.into(),
+                metadata,
                 access_rules,
+                address_reservation,
             })
             .unwrap(),
         )?;
         let resource_address = scrypto_decode(result.as_slice()).unwrap();
-        Ok(ResourceManager(resource_address))
-    }
-
-    pub fn new_non_fungible_with_address<
-        N: NonFungibleData,
-        Y,
-        E: Debug + ScryptoDecode,
-        M: Into<MetadataInit>,
-    >(
-        id_type: NonFungibleIdType,
-        track_total_supply: bool,
-        metadata: M,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
-        address_reservation: GlobalAddressReservation,
-        api: &mut Y,
-    ) -> Result<Self, E>
-    where
-        Y: ClientBlueprintApi<E>,
-    {
-        let result = api.call_function(
-            RESOURCE_PACKAGE,
-            NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT,
-            scrypto_encode(&NonFungibleResourceManagerCreateWithAddressInput {
-                id_type,
-                track_total_supply,
-                non_fungible_schema: NonFungibleDataSchema::new_schema::<N>(),
-                metadata: metadata.into(),
-                access_rules,
-                resource_address: address_reservation,
-            })
-            .unwrap(),
-        )?;
-        let resource_address: ResourceAddress = scrypto_decode(result.as_slice()).unwrap();
         Ok(ResourceManager(resource_address))
     }
 

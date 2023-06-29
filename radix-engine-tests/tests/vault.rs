@@ -4,7 +4,8 @@ use radix_engine::errors::{
 };
 use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, TakeNodeError};
 use radix_engine::types::*;
-use radix_engine_interface::metadata_init;
+use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::{metadata, metadata_init};
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
@@ -629,14 +630,14 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
             Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
             Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
             Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateMetadata => (AccessRule::AllowAll, AccessRule::DenyAll),
             UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
         );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                metadata_init!(),
+                metadata!(),
                 access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )

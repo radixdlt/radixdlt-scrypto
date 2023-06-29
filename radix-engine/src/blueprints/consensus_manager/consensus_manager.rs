@@ -220,7 +220,7 @@ pub struct ConsensusManagerBlueprint;
 impl ConsensusManagerBlueprint {
     pub(crate) fn create<Y>(
         validator_token_address_reservation: GlobalAddressReservation,
-        component_address_reservation: GlobalAddressReservation,
+        consensus_manager_address_reservation: GlobalAddressReservation,
         genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_milli: i64,
@@ -242,22 +242,21 @@ impl ConsensusManagerBlueprint {
 
             access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
-            ResourceManager::new_non_fungible_with_address::<
-                ValidatorOwnerBadgeData,
-                Y,
-                RuntimeError,
-                _,
-            >(
+            let consensus_manager_address =
+                api.get_reservation_address(consensus_manager_address_reservation.0.as_node_id())?;
+
+            ResourceManager::new_non_fungible::<ValidatorOwnerBadgeData, Y, RuntimeError, _>(
+                OwnerRole::Fixed(rule!(require(global_caller(consensus_manager_address)))),
                 NonFungibleIdType::Bytes,
                 true,
+                access_rules,
                 metadata_init! {
                     "name" => "Validator Owner Badges".to_owned(), locked;
                     "description" => "Badges created by the Radix system that provide individual control over the validator components created for validator node-runners.".to_owned(), locked;
                     "tags" => vec!["badge".to_owned(), "validator".to_owned()], locked;
                     "icon_url" => Url("https://assets.radixdlt.com/icons/icon-validator_owner_badge.png".to_owned()), locked;
                 },
-                access_rules,
-                validator_token_address_reservation,
+                Some(validator_token_address_reservation),
                 api,
             )?;
         };
@@ -329,7 +328,7 @@ impl ConsensusManagerBlueprint {
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
-            Some(component_address_reservation),
+            Some(consensus_manager_address_reservation),
         )?;
 
         Ok(())

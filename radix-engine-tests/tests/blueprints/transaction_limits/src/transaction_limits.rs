@@ -6,7 +6,13 @@ use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::wasm_api::kv_entry_set;
 use scrypto::prelude::*;
 
+#[derive(Sbor, ScryptoEvent)]
+struct TestEvent {
+    message: String,
+}
+
 #[blueprint]
+#[events(TestEvent)]
 mod transaction_limits {
     struct TransactionLimitTest {
         kv_store: KeyValueStore<u32, u32>,
@@ -41,13 +47,28 @@ mod transaction_limits {
         pub fn recursive_with_memory(n: u32, m: usize) {
             if n > 1 {
                 let _v: Vec<u8> = Vec::with_capacity(m);
-                let _: () = Runtime::call_function(
-                    Runtime::package_address(),
-                    "TransactionLimitTest",
-                    "recursive_with_memory",
-                    scrypto_args!(n - 1, m),
-                );
+                Blueprint::<TransactionLimitTest>::recursive_with_memory(n - 1, m);
             }
+        }
+
+        pub fn emit_event_of_size(n: usize) {
+            let name = "TestEvent";
+            let buf = scrypto_encode(&TestEvent {
+                message: "a".repeat(n),
+            })
+            .unwrap();
+            unsafe { wasm_api::emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len()) }
+        }
+
+        pub fn emit_log_of_size(n: usize) {
+            let level = scrypto_encode(&Level::Debug).unwrap();
+            let buf = "a".repeat(n);
+            unsafe { wasm_api::emit_log(level.as_ptr(), level.len(), buf.as_ptr(), buf.len()) }
+        }
+
+        pub fn panic_of_size(n: usize) {
+            let buf = "a".repeat(n);
+            unsafe { wasm_api::panic(buf.as_ptr(), buf.len()) }
         }
     }
 }
@@ -118,12 +139,14 @@ mod invoke_limits {
             let new_len = buf.len() + raw_array_size;
             unsafe { buf.set_len(new_len) };
 
-            Runtime::call_function(
-                Runtime::package_address(),
-                "InvokeLimitsTest",
-                "callee",
-                buf,
-            )
+            ScryptoEnv
+                .call_function(
+                    Runtime::package_address(),
+                    "InvokeLimitsTest",
+                    "callee",
+                    buf,
+                )
+                .unwrap();
         }
 
         pub fn callee(_: Vec<u8>) {}
