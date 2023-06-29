@@ -1,7 +1,7 @@
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
     "lock_fee"
-    Decimal("100")
+    Decimal("5000")
 ;
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
@@ -16,31 +16,31 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1thauwxhx75thye3rlt4ezm3fvsmkfy3ea6tygx7vdszzuxkr6eh2jy")
+    Address("resource_sim1t53y525m8wwk40ezsl3ptzqzxh87rgzsp0sqfl3t8j3ktz7jkl9lnk")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1t4tsg5at0uw4qmh5a0cpndlffq4rjkfxs3aa9n3wm8hd2s80gs4ex3")
+    Address("resource_sim1tkv9qnv7k70w8pcvtg75vnalzr0mm33kg2z377k3ka8ydf6hgp8v7x")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1tkpqcevcm3smnzxsp65hl636q5n824edv82usnh8ttefhqtyh9f6cs")
+    Address("resource_sim1thnpfxqs896n3y8345hy520dw9lrzwsdh49fquwcgx2c8qtdzlk259")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1thmlmzkjtzp5np7vv2k7geglxw65eez0pv4wlfmtxsd03xr9gswafd")
+    Address("resource_sim1tkglv5dne296xh9ne9gqaqjqjltqw0cs7atu5aqp923ctrz2fggkxg")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1t46f0yqvrj5xs9pnkl6jhldyxtfr3chy5uj0n4jz5xergume3yje5v")
+    Address("resource_sim1t4y58c5efqed9x4278t0ay47ndwvut6u09muq36kwnk5jq8p9zza0c")
     Decimal("333")
 ;
 CALL_METHOD
@@ -57,31 +57,31 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1thauwxhx75thye3rlt4ezm3fvsmkfy3ea6tygx7vdszzuxkr6eh2jy")
+    Address("resource_sim1t53y525m8wwk40ezsl3ptzqzxh87rgzsp0sqfl3t8j3ktz7jkl9lnk")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1t4tsg5at0uw4qmh5a0cpndlffq4rjkfxs3aa9n3wm8hd2s80gs4ex3")
+    Address("resource_sim1tkv9qnv7k70w8pcvtg75vnalzr0mm33kg2z377k3ka8ydf6hgp8v7x")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1tkpqcevcm3smnzxsp65hl636q5n824edv82usnh8ttefhqtyh9f6cs")
+    Address("resource_sim1thnpfxqs896n3y8345hy520dw9lrzwsdh49fquwcgx2c8qtdzlk259")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1thmlmzkjtzp5np7vv2k7geglxw65eez0pv4wlfmtxsd03xr9gswafd")
+    Address("resource_sim1tkglv5dne296xh9ne9gqaqjqjltqw0cs7atu5aqp923ctrz2fggkxg")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1t46f0yqvrj5xs9pnkl6jhldyxtfr3chy5uj0n4jz5xergume3yje5v")
+    Address("resource_sim1t4y58c5efqed9x4278t0ay47ndwvut6u09muq36kwnk5jq8p9zza0c")
     Decimal("333")
 ;
 CALL_METHOD
@@ -98,31 +98,31 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1thauwxhx75thye3rlt4ezm3fvsmkfy3ea6tygx7vdszzuxkr6eh2jy")
+    Address("resource_sim1t53y525m8wwk40ezsl3ptzqzxh87rgzsp0sqfl3t8j3ktz7jkl9lnk")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1t4tsg5at0uw4qmh5a0cpndlffq4rjkfxs3aa9n3wm8hd2s80gs4ex3")
+    Address("resource_sim1tkv9qnv7k70w8pcvtg75vnalzr0mm33kg2z377k3ka8ydf6hgp8v7x")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1tkpqcevcm3smnzxsp65hl636q5n824edv82usnh8ttefhqtyh9f6cs")
+    Address("resource_sim1thnpfxqs896n3y8345hy520dw9lrzwsdh49fquwcgx2c8qtdzlk259")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1thmlmzkjtzp5np7vv2k7geglxw65eez0pv4wlfmtxsd03xr9gswafd")
+    Address("resource_sim1tkglv5dne296xh9ne9gqaqjqjltqw0cs7atu5aqp923ctrz2fggkxg")
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1t46f0yqvrj5xs9pnkl6jhldyxtfr3chy5uj0n4jz5xergume3yje5v")
+    Address("resource_sim1t4y58c5efqed9x4278t0ay47ndwvut6u09muq36kwnk5jq8p9zza0c")
     Decimal("333")
 ;
 CALL_METHOD

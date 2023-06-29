@@ -1,7 +1,7 @@
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
     "lock_fee"
-    Decimal("100")
+    Decimal("5000")
 ;
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     false
