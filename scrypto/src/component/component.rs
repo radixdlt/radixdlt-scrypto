@@ -1,6 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{AccessRules, Attachable, Royalty};
-use crate::prelude::{scrypto_encode, ObjectStub, ObjectStubHandle};
+use crate::modules::{AccessRules, Attachable, HasMetadata, Royalty};
+use crate::prelude::{scrypto_encode, HasAccessRules, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
@@ -10,12 +10,15 @@ use radix_engine_common::prelude::{
     scrypto_decode, OwnValidation, ReferenceValidation, ScryptoCustomTypeValidation,
 };
 use radix_engine_interface::api::node_modules::metadata::{
-    MetadataInit, METADATA_GET_IDENT, METADATA_REMOVE_IDENT, METADATA_SET_IDENT,
+    MetadataError, MetadataInit, MetadataVal, METADATA_GET_IDENT, METADATA_REMOVE_IDENT,
+    METADATA_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
-use radix_engine_interface::blueprints::resource::{MethodAccessibility, OwnerRole, RolesInit};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, Bucket, MethodAccessibility, OwnerRole, RolesInit,
+};
 use radix_engine_interface::data::scrypto::{
     ScryptoCustomTypeKind, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
@@ -28,7 +31,7 @@ use sbor::{
     Categorize, Decode, DecodeError, Decoder, Describe, Encode, EncodeError, Encoder, GlobalTypeId,
     ValueKind,
 };
-use scrypto::modules::{Attached, Metadata};
+use scrypto::modules::{Attached, HasComponentRoyalties, Metadata};
 
 pub trait HasTypeInfo {
     const PACKAGE_ADDRESS: Option<PackageAddress>;
@@ -93,6 +96,8 @@ impl HasStub for AnyComponent {
 }
 
 impl ObjectStub for AnyComponent {
+    type AddressType = ComponentAddress;
+
     fn new(handle: ObjectStubHandle) -> Self {
         Self(handle)
     }
@@ -349,27 +354,125 @@ impl<O: HasStub> DerefMut for Global<O> {
 }
 
 impl<O: HasStub> Global<O> {
-    // FIXME: Change to GlobalAddress?
-    pub fn component_address(&self) -> ComponentAddress {
-        ComponentAddress::new_or_panic(self.handle().as_node_id().0)
+    pub fn address(&self) -> <<O as HasStub>::Stub as ObjectStub>::AddressType {
+        let rtn = <<O as HasStub>::Stub as ObjectStub>::AddressType::try_from(
+            self.handle().as_node_id().0,
+        );
+        match rtn {
+            Ok(address) => address,
+            Err(..) => panic!("Invalid address type"),
+        }
     }
 
-    pub fn metadata(&self) -> Attached<Metadata> {
+    fn metadata(&self) -> Attached<Metadata> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let metadata = Metadata::attached(address);
         Attached(metadata, PhantomData::default())
     }
 
-    pub fn access_rules(&self) -> Attached<AccessRules> {
+    fn access_rules(&self) -> Attached<AccessRules> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let access_rules = AccessRules::attached(address);
         Attached(access_rules, PhantomData::default())
     }
+}
 
-    pub fn royalty(&self) -> Attached<Royalty> {
+impl<O, S> Global<O>
+where
+    O: HasStub<Stub = S>,
+    S: ObjectStub<AddressType = ComponentAddress>,
+{
+    fn component_royalties(&self) -> Attached<Royalty> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
         let royalty = Royalty::attached(address);
         Attached(royalty, PhantomData::default())
+    }
+}
+
+impl<O: HasStub> HasMetadata for Global<O> {
+    fn set_metadata<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V) {
+        self.metadata().set(name, value);
+    }
+
+    fn get_metadata<K: ToString, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError> {
+        self.metadata().get(name)
+    }
+
+    fn remove_metadata<K: ToString>(&self, name: K) -> bool {
+        self.metadata().remove(name)
+    }
+}
+
+impl<O: HasStub> HasAccessRules for Global<O> {
+    fn set_owner_role<A: Into<AccessRule>>(&self, rule: A) {
+        self.access_rules().set_owner_role(rule)
+    }
+
+    fn lock_owner_role<A: Into<AccessRule>>(&self) {
+        self.access_rules().lock_owner_role()
+    }
+
+    fn set_and_lock_owner_role<A: Into<AccessRule>>(&self, rule: A) {
+        self.access_rules().set_and_lock_owner_role(rule);
+    }
+
+    fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.access_rules().set_role(name, rule);
+    }
+
+    fn get_role(&self, name: &str) -> Option<AccessRule> {
+        self.access_rules().get_role(name)
+    }
+
+    fn lock_role(&self, name: &str) {
+        self.access_rules().lock_role(name);
+    }
+
+    fn set_and_lock_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.access_rules().set_and_lock_role(name, rule);
+    }
+
+    fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.access_rules().set_metadata_role(name, rule);
+    }
+
+    fn lock_metadata_role(&self, name: &str) {
+        self.access_rules().lock_role(name);
+    }
+
+    fn set_and_lock_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.access_rules().set_and_lock_metadata_role(name, rule);
+    }
+
+    fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.access_rules().set_component_royalties_role(name, rule);
+    }
+
+    fn lock_component_royalties_role(&self, name: &str) {
+        self.access_rules().lock_component_royalties_role(name);
+    }
+
+    fn set_and_lock_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
+        self.access_rules()
+            .set_and_lock_component_royalties_role(name, rule);
+    }
+}
+
+impl<O, S> HasComponentRoyalties for Global<O>
+where
+    O: HasStub<Stub = S>,
+    S: ObjectStub<AddressType = ComponentAddress>,
+{
+    fn set_royalty<M: ToString>(&self, method: M, amount: RoyaltyAmount) {
+        self.component_royalties().set_royalty(method, amount);
+    }
+
+    fn lock_royalty<M: ToString>(&self, method: M) {
+        self.component_royalties().lock_royalty(method);
+    }
+
+    fn claim_component_royalties(&self) -> Bucket {
+        self.component_royalties().claim_royalties()
     }
 }
 

@@ -606,6 +606,22 @@ impl ValidatorBlueprint {
         Ok(())
     }
 
+    pub fn accepts_delegated_stake<Y>(api: &mut Y) -> Result<bool, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            ValidatorField::Validator.into(),
+            LockFlags::read_only(),
+        )?;
+
+        let substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        api.field_lock_release(handle)?;
+
+        Ok(substate.accepts_delegated_stake)
+    }
+
     pub fn update_accept_delegated_stake<Y>(
         accept_delegated_stake: bool,
         api: &mut Y,

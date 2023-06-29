@@ -43,14 +43,17 @@ pub type ProofCloneOutput = Proof;
 //========
 
 #[derive(Debug, PartialEq, Eq, Hash)]
+#[must_use]
 pub struct Proof(pub Own);
 
 #[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
+#[must_use]
 pub struct FungibleProof(pub Proof);
 
 #[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
+#[must_use]
 pub struct NonFungibleProof(pub Proof);
 
 impl From<FungibleProof> for Proof {

@@ -30,6 +30,18 @@ extern_blueprint_internal! {
         fn get_redemption_value(&self, amount_of_pool_units: Decimal) -> BTreeMap<ResourceAddress, Decimal>;
         fn get_vault_amounts(&self) -> BTreeMap<ResourceAddress, Decimal>;
         fn protected_deposit(&mut self, bucket: Bucket);
+
+        /// # Warning
+        ///
+        /// This method does not check the divisibility of the resource that you are attempting to
+        /// withdraw; thus, this method can panic at runtime if the divisibility of the resource is
+        /// not compatible with the amount you're attempting to withdraw. As an example, attempting
+        /// to withdraw `1.1111` of a resource with a divisibility of 2 would lead this method to
+        /// panic at runtime.
+        ///
+        /// It is the responsibility of the applications using the pool blueprint to ensure that
+        /// this function is called with a [`Decimal`] of an appropriate number of decimal places
+        /// for the given resource.
         fn protected_withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
         fn redeem(&mut self, bucket: Bucket) -> Vec<Bucket>;
     }
@@ -50,6 +62,18 @@ extern_blueprint_internal! {
         fn get_redemption_value(&self, amount_of_pool_units: Decimal) -> Decimal;
         fn get_vault_amount(&self) -> Decimal;
         fn protected_deposit(&mut self, bucket: Bucket);
+
+        /// # Warning
+        ///
+        /// This method does not check the divisibility of the resource that you are attempting to
+        /// withdraw; thus, this method can panic at runtime if the divisibility of the resource is
+        /// not compatible with the amount you're attempting to withdraw. As an example, attempting
+        /// to withdraw `1.1111` of a resource with a divisibility of 2 would lead this method to
+        /// panic at runtime.
+        ///
+        /// It is the responsibility of the applications using the pool blueprint to ensure that
+        /// this function is called with a [`Decimal`] of an appropriate number of decimal places
+        /// for the given resource.
         fn protected_withdraw(&mut self, amount: Decimal) -> Bucket;
         fn redeem(&mut self, bucket: Bucket) -> Bucket;
     }
@@ -70,6 +94,18 @@ extern_blueprint_internal! {
         fn get_redemption_value(&self, amount_of_pool_units: Decimal) -> BTreeMap<ResourceAddress, Decimal>;
         fn get_vault_amounts(&self) -> BTreeMap<ResourceAddress, Decimal>;
         fn protected_deposit(&mut self, bucket: Bucket);
+
+        /// # Warning
+        ///
+        /// This method does not check the divisibility of the resource that you are attempting to
+        /// withdraw; thus, this method can panic at runtime if the divisibility of the resource is
+        /// not compatible with the amount you're attempting to withdraw. As an example, attempting
+        /// to withdraw `1.1111` of a resource with a divisibility of 2 would lead this method to
+        /// panic at runtime.
+        ///
+        /// It is the responsibility of the applications using the pool blueprint to ensure that
+        /// this function is called with a [`Decimal`] of an appropriate number of decimal places
+        /// for the given resource.
         fn protected_withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
         fn redeem(&mut self, bucket: Bucket) -> (Bucket, Bucket);
     }

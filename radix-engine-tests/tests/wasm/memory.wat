@@ -1,10 +1,14 @@
 (module
-
   ;; Simple function that always returns `()`
   (func $Test_f (param $0 i64) (result i64)
     ;; Grow memory
-    (drop
-      (memory.grow (i32.const ${n}))
+    (memory.grow (i32.const ${n}))
+    i32.const 0xffffffff
+    i32.eq
+    (if
+      (then
+      	unreachable
+      )
     )
 
     ;; Encode () in SBOR at address 0x0

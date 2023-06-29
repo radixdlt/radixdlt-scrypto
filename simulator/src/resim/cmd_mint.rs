@@ -42,9 +42,10 @@ impl Mint {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut manifest_builder = &mut ManifestBuilder::new();
+        let mut manifest_builder = ManifestBuilder::new();
+        manifest_builder.lock_fee(FAUCET, 50u32.into());
         for resource_specifier in proofs {
-            manifest_builder = manifest_builder.borrow_mut(|builder| {
+            manifest_builder.borrow_mut(|builder| {
                 create_proof_from_account(
                     builder,
                     &address_bech32_decoder,
@@ -55,9 +56,7 @@ impl Mint {
                 Ok(builder)
             })?;
         }
-
         let manifest = manifest_builder
-            .lock_fee(FAUCET, 50u32.into())
             .mint_fungible(self.resource_address.0, self.amount)
             .call_method(
                 default_account,

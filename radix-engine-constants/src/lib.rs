@@ -83,12 +83,6 @@ pub const DEFAULT_MAX_EXECUTION_TRACE_DEPTH: usize = 1;
 /// The default max call depth, used by transaction executor.
 pub const DEFAULT_MAX_CALL_DEPTH: usize = 8;
 
-/// The default maximum WASM memory per transaction (multiple WASM instances up to call depth).
-pub const DEFAULT_MAX_WASM_MEM_PER_TRANSACTION: usize = 10 * 1024 * 1024;
-
-/// The default maximum WASM memory per WASM call frame.
-pub const DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME: usize = 4 * 1024 * 1024;
-
 /// The default maximum substates reads count per transaction.
 pub const DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION: usize = 16 * 1024;
 
@@ -97,7 +91,7 @@ pub const DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION: usize = 4 * 1024;
 
 /// The default maximum substate read and write size.
 /// FIXME: Apply this limit in create_node too
-pub const DEFAULT_MAX_SUBSTATE_SIZE: usize = 1 * 1024 * 1024;
+pub const DEFAULT_MAX_SUBSTATE_SIZE: usize = 2 * 1024 * 1024;
 
 /// The default maximum invoke input args size.
 pub const DEFAULT_MAX_INVOKE_INPUT_SIZE: usize = 1 * 1024 * 1024;

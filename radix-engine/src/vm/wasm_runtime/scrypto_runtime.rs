@@ -366,7 +366,7 @@ where
         }
 
         // Request from system
-        let amount = ((n - 1) / 1_000 + 1) * 1_000;
+        let amount = ((n - 1) / 1_000_000 + 1) * 1_000_000;
         self.api
             .consume_cost_units(ClientCostingEntry::RunWasmCode {
                 package_address: &self.package_address,
@@ -391,15 +391,6 @@ where
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
         self.allocate_buffer(buffer)
-    }
-
-    fn update_wasm_memory_usage(
-        &mut self,
-        size: usize,
-    ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api
-            .update_wasm_memory_usage(size)
-            .map_err(InvokeError::downstream)
     }
 
     fn emit_event(

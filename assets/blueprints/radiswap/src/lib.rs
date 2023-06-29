@@ -69,6 +69,9 @@ mod radiswap {
 
             let output_amount = (input_amount * output_reserves) / (input_reserves + input_amount);
 
+            // NOTE: It's the responsibility of the user of the pool to do the appropriate rounding
+            // before calling the withdraw method.
+
             self.deposit(input_bucket);
             self.withdraw(output_resource_address, output_amount)
         }

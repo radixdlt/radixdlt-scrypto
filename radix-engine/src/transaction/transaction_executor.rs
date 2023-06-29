@@ -48,8 +48,6 @@ pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub cost_unit_limit: u32,
     pub abort_when_loan_repaid: bool,
-    pub max_wasm_mem_per_transaction: usize,
-    pub max_wasm_mem_per_call_frame: usize,
     pub max_substate_reads_per_transaction: usize,
     pub max_substate_writes_per_transaction: usize,
     pub max_substate_size: usize,
@@ -73,8 +71,6 @@ impl ExecutionConfig {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             abort_when_loan_repaid: false,
-            max_wasm_mem_per_transaction: DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
-            max_wasm_mem_per_call_frame: DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
             max_substate_reads_per_transaction: DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION,
             max_substate_writes_per_transaction: DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
             max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
@@ -837,7 +833,7 @@ where
             TransactionResult::Commit(commit) => {
                 println!("{:-^80}", "Cost Breakdown");
                 for (k, v) in &commit.fee_summary.execution_cost_breakdown {
-                    println!("{:<30}: {:>10}", k, v);
+                    println!("{:<80}: {:>10}", k, v);
                 }
 
                 println!("{:-^80}", "Cost Totals");
