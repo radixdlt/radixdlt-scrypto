@@ -6,10 +6,7 @@ use wasm_instrument::{
     inject_stack_limiter,
     parser::ModuleInfo,
 };
-use wasmparser::{
-    Export, ExternalKind, FuncType, MemoryType, Operator, Type, TypeRef, ValType, Validator,
-    WasmFeatures,
-};
+use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType, WasmFeatures};
 
 use super::WasmiModule;
 #[derive(Debug)]
