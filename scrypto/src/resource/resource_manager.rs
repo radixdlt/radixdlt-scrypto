@@ -1,3 +1,4 @@
+use crate::modules::HasAccessRules;
 use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
 use radix_engine_interface::api::node_modules::metadata::METADATA_SETTER_ROLE;
@@ -60,88 +61,68 @@ impl ResourceManager {
         Self(Global(stub))
     }
 
-    pub fn resource_address(&self) -> ResourceAddress {
-        ResourceAddress::new_or_panic(self.0 .0 .0.as_node_id().0.clone())
-    }
-
     pub fn set_mintable(&self, access_rule: AccessRule) {
-        let access_rules = self.0.access_rules();
-        access_rules.set_role(MINTER_ROLE, access_rule);
+        self.0.set_role(MINTER_ROLE, access_rule);
     }
 
     pub fn set_burnable(&self, access_rule: AccessRule) {
-        let access_rules = self.0.access_rules();
-        access_rules.set_role(RESOURCE_MANAGER_BURN_IDENT, access_rule);
+        self.0.set_role(RESOURCE_MANAGER_BURN_IDENT, access_rule);
     }
 
     pub fn set_withdrawable(&self, access_rule: AccessRule) {
-        let access_rules = self.0.access_rules();
-        access_rules.set_role(WITHDRAWER_ROLE, access_rule);
+        self.0.set_role(WITHDRAWER_ROLE, access_rule);
     }
 
     pub fn set_depositable(&self, access_rule: AccessRule) {
-        let access_rules = self.0.access_rules();
-        access_rules.set_role(DEPOSITOR_ROLE, access_rule);
+        self.0.set_role(DEPOSITOR_ROLE, access_rule);
     }
 
     pub fn set_recallable(&self, access_rule: AccessRule) {
-        let access_rules = self.0.access_rules();
-        access_rules.set_role(RECALLER_ROLE, access_rule);
+        self.0.set_role(RECALLER_ROLE, access_rule);
     }
 
     pub fn set_freezeable(&self, access_rule: AccessRule) {
-        let access_rules = self.0.access_rules();
-        access_rules.set_role(FREEZER_ROLE, access_rule);
+        self.0.set_role(FREEZER_ROLE, access_rule);
     }
 
     pub fn set_updatable_non_fungible_data(&self, access_rule: AccessRule) {
-        let access_rules = self.0.access_rules();
-        access_rules.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
+        self.0.set_role(NON_FUNGIBLE_DATA_UPDATER_ROLE, access_rule);
     }
 
     pub fn lock_mintable(&self) {
-        let access_rules = self.0.access_rules();
-        access_rules.lock_role(MINTER_ROLE);
+        self.0.lock_role(MINTER_ROLE);
     }
 
     pub fn lock_burnable(&self) {
-        let access_rules = self.0.access_rules();
-        access_rules.lock_role(BURNER_ROLE);
+        self.0.lock_role(BURNER_ROLE);
     }
 
     pub fn lock_updatable_non_fungible_data(&self) {
-        let access_rules = self.0.access_rules();
-        access_rules.lock_role(NON_FUNGIBLE_DATA_UPDATER_ROLE);
+        self.0.lock_role(NON_FUNGIBLE_DATA_UPDATER_ROLE);
     }
 
     pub fn lock_withdrawable(&self) {
-        let access_rules = self.0.access_rules();
-        access_rules.lock_role(WITHDRAWER_ROLE);
+        self.0.lock_role(WITHDRAWER_ROLE);
     }
 
     pub fn lock_depositable(&self) {
-        let access_rules = self.0.access_rules();
-        access_rules.lock_role(DEPOSITOR_ROLE);
+        self.0.lock_role(DEPOSITOR_ROLE);
     }
 
     pub fn lock_recallable(&self) {
-        let access_rules = self.0.access_rules();
-        access_rules.lock_role(RECALLER_ROLE);
+        self.0.lock_role(RECALLER_ROLE);
     }
 
     pub fn lock_freezeable(&self) {
-        let access_rules = self.0.access_rules();
-        access_rules.lock_role(FREEZER_ROLE);
+        self.0.lock_role(FREEZER_ROLE);
     }
 
     pub fn set_updatable_metadata(&self, access_rule: AccessRule) {
-        let access_rules = self.0.access_rules();
-        access_rules.set_metadata_role(METADATA_SETTER_ROLE, access_rule);
+        self.0.set_metadata_role(METADATA_SETTER_ROLE, access_rule);
     }
 
     pub fn lock_updatable_metadata(&self) {
-        let access_rules = self.0.access_rules();
-        access_rules.lock_metadata_role(METADATA_SETTER_ROLE);
+        self.0.lock_metadata_role(METADATA_SETTER_ROLE);
     }
 }
 
@@ -153,6 +134,8 @@ impl HasStub for ResourceManagerStub {
 pub struct ResourceManagerStub(pub ObjectStubHandle);
 
 impl ObjectStub for ResourceManagerStub {
+    type AddressType = ResourceAddress;
+
     fn new(handle: ObjectStubHandle) -> Self {
         Self(handle)
     }

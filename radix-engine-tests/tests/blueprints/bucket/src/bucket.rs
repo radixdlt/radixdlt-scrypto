@@ -129,7 +129,7 @@ mod bucket_test {
         pub fn create_empty_bucket_non_fungible() -> Bucket {
             let resource_manager =
                 ResourceBuilder::new_ruid_non_fungible::<MyData>().create_with_no_initial_supply();
-            Bucket::new(resource_manager.resource_address())
+            Bucket::new(resource_manager.address())
         }
 
         pub fn drop_locked_fungible_bucket() {
