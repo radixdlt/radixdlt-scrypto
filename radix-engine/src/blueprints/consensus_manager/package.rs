@@ -335,6 +335,23 @@ impl ConsensusManagerNativePackage {
                 },
             );
             functions.insert(
+                VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeInput>(
+                            ),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ValidatorAcceptsDelegatedStakeOutput>(
+                            ),
+                    ),
+                    export: VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT.to_string(),
+                },
+            );
+            functions.insert(
                 VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -453,6 +470,7 @@ impl ConsensusManagerNativePackage {
                             VALIDATOR_UNSTAKE_IDENT => MethodAccessibility::Public;
                             VALIDATOR_CLAIM_XRD_IDENT => MethodAccessibility::Public;
                             VALIDATOR_STAKE_IDENT => MethodAccessibility::Public;
+                            VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT => MethodAccessibility::Public;
                             VALIDATOR_STAKE_AS_OWNER_IDENT => [OWNER_ROLE];
                             VALIDATOR_REGISTER_IDENT => [OWNER_ROLE];
                             VALIDATOR_UNREGISTER_IDENT => [OWNER_ROLE];
@@ -634,6 +652,13 @@ impl ConsensusManagerNativePackage {
                     input.accept_delegated_stake,
                     api,
                 )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT => {
+                let _: ValidatorAcceptsDelegatedStakeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = ValidatorBlueprint::accepts_delegated_stake(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS => {

@@ -1,5 +1,5 @@
-Total Cost Units                                                                ,  14851148
-Total Fee                                                                       ,  7.425574
+Total Cost Units                                                                ,  14857481
+Total Fee                                                                       , 7.4287405
 AfterInvoke                                                                     ,       650
 AllocateNodeId                                                                  ,     15000
 BeforeInvoke                                                                    ,     14156
@@ -11,12 +11,12 @@ LockFee                                                                         
 OpenSubstate::GlobalAccount                                                     ,   2208124
 OpenSubstate::GlobalFungibleResourceManager                                     ,   1426649
 OpenSubstate::GlobalGenericComponent                                            ,    281647
-OpenSubstate::GlobalPackage                                                     ,   6625525
+OpenSubstate::GlobalPackage                                                     ,   6627000
 OpenSubstate::GlobalTwoResourcePool                                             ,    708129
 OpenSubstate::InternalFungibleVault                                             ,   1413947
 OpenSubstate::InternalGenericComponent                                          ,     85484
 QueryActor                                                                      ,      6500
-ReadSubstate                                                                    ,    439114
+ReadSubstate                                                                    ,    440289
 RunNativeCode::Worktop_drain                                                    ,      6901
 RunNativeCode::Worktop_drop                                                     ,      6683
 RunNativeCode::Worktop_put                                                      ,     42550
@@ -34,8 +34,8 @@ RunNativeCode::run                                                              
 RunNativeCode::take_FungibleVault                                               ,     40734
 RunNativeCode::try_deposit_batch_or_abort                                       ,     41152
 RunNativeCode::withdraw                                                         ,     25682
-RunWasmCode::Radiswap_swap                                                      ,     96908
-RunWasmCodePrepare                                                              ,    407900
+RunWasmCode::Radiswap_swap                                                      ,     98241
+RunWasmCodePrepare                                                              ,    410250
 TxBaseCost                                                                      ,     40000
 TxPayloadCost                                                                   ,     17650
 TxSignatureVerification                                                         ,      7000

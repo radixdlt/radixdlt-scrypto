@@ -408,6 +408,13 @@ pub struct ValidatorUpdateAcceptDelegatedStakeInput {
 
 pub type ValidatorUpdateAcceptDelegatedStakeOutput = ();
 
+pub const VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT: &str = "accepts_delegated_stake";
+
+#[derive(Debug, Clone, Eq, PartialEq, Sbor)]
+pub struct ValidatorAcceptsDelegatedStakeInput {}
+
+pub type ValidatorAcceptsDelegatedStakeOutput = bool;
+
 pub const VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS: &str = "signal_protocol_update_readiness";
 
 #[derive(Debug, Clone, Eq, PartialEq, Sbor)]
