@@ -13,9 +13,13 @@ mod vault_test {
 
     impl VaultTest {
         fn new_fungible() -> Bucket {
-            ResourceBuilder::new_fungible()
+            ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(1)
         }
 

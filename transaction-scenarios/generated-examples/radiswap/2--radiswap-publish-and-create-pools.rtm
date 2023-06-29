@@ -17,7 +17,7 @@ PUBLISH_PACKAGE_ADVANCED
     Enum<1u8>(
         AddressReservation("reservation1")
     )
-    Blob("ea9b4fd785944ae02c2cb8ceb4d7106c93ad9a3850ab7fe9d3b0115dcfeee80e")
+    Blob("018b5195efcaef3f5dd95dfcaab38452428b6025a67fc413250fd139a6ca97a1")
     Tuple(
         Map<String, Tuple>(
             "Radiswap" => Tuple(
@@ -409,14 +409,14 @@ CALL_FUNCTION
     "Radiswap"
     "new"
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Address("resource_sim1thauwxhx75thye3rlt4ezm3fvsmkfy3ea6tygx7vdszzuxkr6eh2jy")
+    Address("resource_sim1tkmynckjclm6tvcu32t0445ueuddps9tsr7mc86c8xs36d7f0qyeru")
 ;
 CALL_FUNCTION
     NamedAddress("address1")
     "Radiswap"
     "new"
-    Address("resource_sim1t4tsg5at0uw4qmh5a0cpndlffq4rjkfxs3aa9n3wm8hd2s80gs4ex3")
-    Address("resource_sim1tkpqcevcm3smnzxsp65hl636q5n824edv82usnh8ttefhqtyh9f6cs")
+    Address("resource_sim1tk9gy5dd98jjrekcjlr3j02tr9h3plql5vgqwe9sxdyjnfzfaetvcf")
+    Address("resource_sim1t49ugfggmpy33rd7lmyddfkc2jyx4gg3hjxlvk8y5spygjx5p6tp0e")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")

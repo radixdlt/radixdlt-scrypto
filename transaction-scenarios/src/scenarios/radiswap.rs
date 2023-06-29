@@ -1,4 +1,5 @@
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
 
@@ -93,15 +94,18 @@ impl ScenarioInstance for RadiswapScenario {
                     "radiswap-create-new-resources",
                     |builder| {
                         builder.create_fungible_resource(
+                            OwnerRole::None,
                             false,
                             18,
-                            metadata_init! {
-                                "name" => "Bitcoin".to_owned(), locked;
-                                "symbol" => "BTC".to_owned(), locked;
-                                "description" => "A peer to peer decentralized proof of work network.".to_owned(), locked;
-                                "tags" => vec!["p2p".to_owned(), "blockchain".to_owned()], locked;
-                                "icon_url" => "https://www.example.com/".to_owned(), locked;
-                                "info_url" => "https://www.example.com/".to_owned(), locked;
+                            metadata! {
+                                init {
+                                    "name" => "Bitcoin".to_owned(), locked;
+                                    "symbol" => "BTC".to_owned(), locked;
+                                    "description" => "A peer to peer decentralized proof of work network.".to_owned(), locked;
+                                    "tags" => vec!["p2p".to_owned(), "blockchain".to_owned()], locked;
+                                    "icon_url" => "https://www.example.com/".to_owned(), locked;
+                                    "info_url" => "https://www.example.com/".to_owned(), locked;
+                                }
                             },
                             btreemap! {
                                 Mint => (rule!(deny_all), rule!(deny_all)),
@@ -110,15 +114,18 @@ impl ScenarioInstance for RadiswapScenario {
                             Some(100_000_000_000u64.into()),
                         )
                         .create_fungible_resource(
+                            OwnerRole::None,
                             true,
                             18,
-                            metadata_init! {
-                                "name" => "Ethereum".to_owned(), locked;
-                                "symbol" => "ETH".to_owned(), locked;
-                                "description" => "The native token of the Ethereum blockchain".to_owned(), locked;
-                                "tags" => vec!["p2p".to_owned(), "blockchain".to_owned(), "gas".to_owned()], locked;
-                                "icon_url" => "https://www.example.com/".to_owned(), locked;
-                                "info_url" => "https://www.example.com/".to_owned(), locked;
+                            metadata! {
+                                init {
+                                    "name" => "Ethereum".to_owned(), locked;
+                                    "symbol" => "ETH".to_owned(), locked;
+                                    "description" => "The native token of the Ethereum blockchain".to_owned(), locked;
+                                    "tags" => vec!["p2p".to_owned(), "blockchain".to_owned(), "gas".to_owned()], locked;
+                                    "icon_url" => "https://www.example.com/".to_owned(), locked;
+                                    "info_url" => "https://www.example.com/".to_owned(), locked;
+                                }
                             },
                             btreemap! {
                                 Mint => (rule!(deny_all), rule!(deny_all)),
@@ -127,15 +134,18 @@ impl ScenarioInstance for RadiswapScenario {
                             Some(100_000_000_000u64.into()),
                         )
                         .create_fungible_resource(
+                            OwnerRole::None,
                             true,
                             18,
-                            metadata_init! {
-                                "name" => "Ethereum".to_owned(), locked;
-                                "symbol" => "ETC".to_owned(), locked;
-                                "description" => "The native token of the Ethereum Classic blockchain".to_owned(), locked;
-                                "tags" => vec!["p2p".to_owned(), "blockchain".to_owned(), "gas".to_owned()], locked;
-                                "icon_url" => "https://www.example.com/".to_owned(), locked;
-                                "info_url" => "https://www.example.com/".to_owned(), locked;
+                            metadata! {
+                                init {
+                                    "name" => "Ethereum".to_owned(), locked;
+                                    "symbol" => "ETC".to_owned(), locked;
+                                    "description" => "The native token of the Ethereum Classic blockchain".to_owned(), locked;
+                                    "tags" => vec!["p2p".to_owned(), "blockchain".to_owned(), "gas".to_owned()], locked;
+                                    "icon_url" => "https://www.example.com/".to_owned(), locked;
+                                    "info_url" => "https://www.example.com/".to_owned(), locked;
+                                }
                             },
                             btreemap! {
                                 Mint => (rule!(deny_all), rule!(deny_all)),
