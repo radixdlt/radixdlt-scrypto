@@ -172,7 +172,11 @@ impl WasmModule {
 
     pub fn enforce_import_limit(self) -> Result<Self, PrepareError> {
         // Only allow `env::radix_engine` import
-        for entry in self.module.import_section() {
+        for entry in self
+            .module
+            .import_section()
+            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+        {
             if entry.module == MODULE_ENV_NAME {
                 match entry.name {
                     CONSUME_BUFFER_FUNCTION_NAME => {
@@ -795,7 +799,10 @@ impl WasmModule {
         max_memory_size_in_pages: u32,
     ) -> Result<Self, PrepareError> {
         // Check if memory section exists
-        let memory_section = self.module.memory_section();
+        let memory_section = self
+            .module
+            .memory_section()
+            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
 
         // Check if there is only one memory definition
         let mut memory = match memory_section.len() {
@@ -824,28 +831,30 @@ impl WasmModule {
             memory.maximum = Some(max_memory_size_in_pages.into());
             self.module
                 .modify_memory_type(0, memory)
-                .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+                .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
         }
 
         // Check if the memory is exported
-        for item in self
+        if !self
             .module
             .export_section()
+            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
             .iter()
-            .filter(|e| e.kind == ExternalKind::Memory)
+            .any(|e| e.kind == ExternalKind::Memory && e.name == EXPORT_MEMORY)
         {
-            if item.name != EXPORT_MEMORY {
-                return Err(PrepareError::InvalidMemory(
-                    InvalidMemory::MemoryNotExported,
-                ));
-            }
+            return Err(PrepareError::InvalidMemory(
+                InvalidMemory::MemoryNotExported,
+            ));
         }
 
         Ok(self)
     }
 
     pub fn enforce_table_limit(self, max_initial_table_size: u32) -> Result<Self, PrepareError> {
-        let section = self.module.table_section();
+        let section = self
+            .module
+            .table_section()
+            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
 
         if section.len() > 1 {
             // Sanity check MVP rule
@@ -867,7 +876,11 @@ impl WasmModule {
         self,
         max_number_of_br_table_targets: u32,
     ) -> Result<Self, PrepareError> {
-        for fb in self.module.code_section() {
+        for fb in self
+            .module
+            .code_section()
+            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+        {
             let reader = fb
                 .get_operators_reader()
                 .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
@@ -916,7 +929,10 @@ impl WasmModule {
         if self.module.exports_count == 0 {
             return Err(PrepareError::NoExportSection);
         }
-        let exports = self.module.export_section();
+        let exports = self
+            .module
+            .export_section()
+            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
 
         for blueprint_def_init in blueprints {
             for export_name in blueprint_def_init.schema.exports() {
@@ -1004,7 +1020,11 @@ impl WasmModule {
     pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         let mut function_exports = vec![];
 
-        for export in self.module.export_section() {
+        for export in self
+            .module
+            .export_section()
+            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+        {
             if let wasmparser::ExternalKind::Func = export.kind {
                 function_exports.push(export.name.to_string());
             }
@@ -1044,19 +1064,24 @@ impl WasmModule {
 
     #[cfg(feature = "radix_engine_tests")]
     pub fn contains_sign_ext_ops(self) -> bool {
-        for func_body in self.module.code_section() {
-            if let Ok(reader) = func_body.get_operators_reader() {
-                for op in reader {
-                    if let Ok(inst) = op {
-                        match inst {
-                            Operator::I32Extend8S
-                            | Operator::I32Extend16S
-                            | Operator::I64Extend8S
-                            | Operator::I64Extend16S
-                            | Operator::I64Extend32S => return true,
-                            _ => (),
-                        }
-                    }
+        for func_body in self
+            .module
+            .code_section()
+            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+        {
+            let reader = func_body
+                .get_operators_reader()
+                .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+            for op in reader {
+                let inst = op.map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+
+                match inst {
+                    Operator::I32Extend8S
+                    | Operator::I32Extend16S
+                    | Operator::I64Extend8S
+                    | Operator::I64Extend16S
+                    | Operator::I64Extend32S => return true,
+                    _ => (),
                 }
             }
         }
