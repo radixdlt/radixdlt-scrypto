@@ -547,13 +547,16 @@ impl WasmiModule {
         let engine = Engine::default();
         let mut store = Store::new(&engine, WasmiInstanceEnv::new());
 
+        println!(" WasmiModule new store");
         let module =
             Module::new(&engine, code).map_err(WasmiInstantiationError::ValidationError)?;
 
+        println!(" WasmiModule new module");
         let instance = Self::host_funcs_set(&module, &mut store)
             .map_err(WasmiInstantiationError::PreInstantiationError)?
             .ensure_no_start(store.as_context_mut())
             .map_err(WasmiInstantiationError::InstantiationError)?;
+        println!(" WasmiModule new instance");
 
         Ok(Self {
             template_store: unsafe { transmute(store) },
