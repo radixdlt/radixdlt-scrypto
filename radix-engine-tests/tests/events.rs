@@ -19,7 +19,6 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::{metadata, metadata_init};
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use scrypto::prelude::Mutability::LOCKED;
 use scrypto::prelude::{AccessRule, FromPublicKey, ResourceAction};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;

@@ -1521,7 +1521,6 @@ mod tests {
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
-    use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 
     #[macro_export]
     macro_rules! generate_value_ok {

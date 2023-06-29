@@ -19,7 +19,10 @@ mod recall {
                     burner => rule!(allow_all), locked;
                     burner_updater => rule!(deny_all), locked;
                 })
-                .recallable(rule!(allow_all), rule!(deny_all))
+                .recallable(recallable! {
+                    recaller => rule!(allow_all), locked;
+                    recaller_updater => rule!(deny_all), locked;
+                })
                 .metadata(metadata! {
                     init {
                         "name" => "TestToken".to_owned(), locked;

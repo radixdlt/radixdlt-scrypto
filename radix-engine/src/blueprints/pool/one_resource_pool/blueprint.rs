@@ -13,7 +13,6 @@ use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
-use radix_engine_interface::blueprints::resource::ResourceOrNonFungible::Resource;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 
 pub const ONE_RESOURCE_POOL_BLUEPRINT_IDENT: &'static str = "OneResourcePool";

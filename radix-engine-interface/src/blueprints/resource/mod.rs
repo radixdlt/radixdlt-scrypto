@@ -98,5 +98,11 @@ macro_rules! burnable {
     });
 }
 
-
-
+resource_roles!(RecallableRoles, recaller, recaller_updater, RECALLER_ROLE, RECALLER_UPDATER_ROLE);
+#[macro_export]
+macro_rules! recallable {
+    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
+        let recallable_roles = internal_roles_struct!(RecallableRoles, $($role => $rule, $locked;)*);
+        recallable_roles.to_role_init()
+    });
+}

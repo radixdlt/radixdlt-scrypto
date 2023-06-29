@@ -4,7 +4,6 @@ use radix_engine::errors::{
 };
 use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, TakeNodeError};
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::resource::AccessRule::AllowAll;
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;

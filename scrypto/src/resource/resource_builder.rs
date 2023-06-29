@@ -273,22 +273,24 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be recallable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .recallable(rule!(require(resource_address)), LOCKED);
+    ///    .recallable(recallable! {
+    ///        recaller => rule!(require(resource_address)), locked;
+    ///        recaller_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be recallable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .recallable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .recallable(recallable! {
+    ///        recaller => rule!(deny_all), updatable;
+    ///        recaller_updater => rule!(require(resource_address)), updatable;
+    ///    });
     /// ```
     fn recallable<R: Into<AccessRule>>(
         self,
-        method_auth: AccessRule,
-        mutability: R,
+        role_init: ResourceActionRoleInit,
     ) -> Self::OutputBuilder {
-        self.add_auth(Recall, ResourceActionRoleInit {
-            actor: RoleDefinition::updatable(method_auth),
-            updater: RoleDefinition::updatable(mutability.into()),
-        })
+        self.add_auth(Recall, role_init)
     }
 
     /// Sets the resource to have freezeable.
