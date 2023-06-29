@@ -263,6 +263,29 @@ fn contributing_provides_expected_amount_of_pool_units4() {
     );
 }
 
+
+#[test]
+fn initial_contribution_to_pool_check_amounts() {
+    // Arrange
+    let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
+
+    let contributions = btreemap!(
+        test_runner.pool_resources[0] => dec!("10"),
+        test_runner.pool_resources[1] => dec!("10"),
+        test_runner.pool_resources[2] => dec!("10")
+    );
+
+    // Act
+    test_runner.contribute(contributions, true).expect_commit_success();
+    let amounts = test_runner.get_vault_amounts(true);
+
+    // Assert
+    assert_eq!(amounts.len(), 3);
+    for item in amounts.iter() {
+        assert_eq!(*item.1, 10.into());
+    }
+}
+
 #[test]
 fn contributing_tokens_that_do_not_belong_to_pool_fails() {
     // Arrange
@@ -745,6 +768,18 @@ impl<const N: usize> TestEnvironment<N> {
         } else {
             vec![]
         }
+    }
+
+    fn get_vault_amounts(&mut self, sign: bool) -> MultiResourcePoolGetVaultAmountsOutput {
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                self.pool_component_address,
+                MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
+                to_manifest_value_and_unwrap!(&MultiResourcePoolGetVaultAmountsManifestInput),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, sign);
+        receipt.expect_commit_success().output(1)
     }
 }
 
