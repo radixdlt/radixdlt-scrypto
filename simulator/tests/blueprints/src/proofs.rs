@@ -47,7 +47,11 @@ mod proofs {
         fn new_badge(name: &str) -> Bucket {
             ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(0)
-                .metadata("name", name)
+                .metadata(metadata! {
+                    init {
+                        "name" => name.to_string(), locked;
+                    }
+                })
                 .mint_initial_supply(1)
         }
 
