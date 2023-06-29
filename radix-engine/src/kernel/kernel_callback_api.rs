@@ -44,6 +44,15 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
+    fn after_move_modules<Y>(
+        src_node_id: &NodeId,
+        dest_node_id: &NodeId,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
     fn before_open_substate<Y>(
         node_id: &NodeId,
         partition_num: &PartitionNumber,
