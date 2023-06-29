@@ -1470,8 +1470,6 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
             roles_init! {
                 MINTER_ROLE => rule!(allow_all), locked;
                 BURNER_ROLE => rule!(allow_all), locked;
-                WITHDRAWER_ROLE => rule!(allow_all), locked;
-                DEPOSITOR_ROLE => rule!(allow_all), locked;
                 RECALLER_ROLE => rule!(allow_all), locked;
                 NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
             },

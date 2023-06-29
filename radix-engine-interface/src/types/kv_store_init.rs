@@ -46,7 +46,7 @@ impl<K: Ord, V> KeyValueStoreInit<K, V> {
         self.data.insert(key.into(), entry);
     }
 
-    pub fn set_raw2<E: Into<K>>(&mut self, key: E, entry: KeyValueStoreInitEntry<V>) {
+    pub fn set_entry<E: Into<K>>(&mut self, key: E, entry: KeyValueStoreInitEntry<V>) {
         self.data.insert(key.into(), entry);
     }
 

@@ -10,7 +10,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
-fn verify_and_modify_main_roles(roles: &mut RolesInit) -> Result<(), String> {
+fn verify_and_defaults_to_main_roles(roles: &mut RolesInit) -> Result<(), String> {
     for role in roles.data.keys() {
         match role.key.as_str() {
             WITHDRAWER_ROLE
@@ -104,7 +104,7 @@ pub fn globalize_resource_manager<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    verify_and_modify_main_roles(&mut main_roles).map_err(|err| {
+    verify_and_defaults_to_main_roles(&mut main_roles).map_err(|err| {
         if object_id.is_global_fungible_resource_manager() {
             RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::InvalidRole(err),
@@ -149,7 +149,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    verify_and_modify_main_roles(&mut main_roles).map_err(|err| {
+    verify_and_defaults_to_main_roles(&mut main_roles).map_err(|err| {
         if object_id.is_global_fungible_resource_manager() {
             RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::InvalidRole(err),
@@ -202,7 +202,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    verify_and_modify_main_roles(&mut main_roles).map_err(|err| {
+    verify_and_defaults_to_main_roles(&mut main_roles).map_err(|err| {
         if object_id.is_global_fungible_resource_manager() {
             RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::InvalidRole(err),

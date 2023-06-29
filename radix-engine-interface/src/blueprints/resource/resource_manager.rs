@@ -2,7 +2,6 @@ use crate::blueprints::resource::*;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 
 pub const TRACK_TOTAL_SUPPLY_FEATURE: &str = "track_total_supply";
 pub const VAULT_FREEZE_FEATURE: &str = "vault_freeze";
@@ -36,21 +35,6 @@ pub enum ResourceAction {
     Burn,
     Recall,
     Freeze,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct ResourceActionRoleInit {
-    pub actor: RoleDefinition,
-    pub updater: RoleDefinition,
-}
-
-impl ResourceActionRoleInit {
-    pub fn locked(actor: AccessRule) -> Self {
-        Self {
-            actor: RoleDefinition::locked(actor),
-            updater: RoleDefinition::locked(AccessRule::DenyAll),
-        }
-    }
 }
 
 pub const RESOURCE_MANAGER_BURN_IDENT: &str = "burn";

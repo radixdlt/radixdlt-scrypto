@@ -66,7 +66,7 @@ macro_rules! resource_roles {
             pub fn to_role_init(self) -> $crate::blueprints::resource::RolesInit {
                 let mut roles = $crate::blueprints::resource::RolesInit::new();
                 for (name, entry) in self.list() {
-                    roles.set_raw2(name, entry);
+                    roles.set_entry(name, entry);
                 }
                 roles
             }

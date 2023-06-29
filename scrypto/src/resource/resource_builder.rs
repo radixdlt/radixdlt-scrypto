@@ -299,16 +299,16 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// // Sets the resource to be freezeable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .freezeable(freezable! {
-    ///        freezer: rule!(require(resource_address)), locked;
-    ///        freezer_updater: rule!(deny_all), locked;
+    ///        freezer => rule!(require(resource_address)), locked;
+    ///        freezer_updater => rule!(deny_all), locked;
     ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be freezeable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .freezeable(freezable! {
-    ///        freezer: rule!(deny_all), updatable;
-    ///        freezer_updater: rule!(require(resource_address)), updatable;
+    ///        freezer => rule!(deny_all), updatable;
+    ///        freezer_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
     fn freezeable(self, freezable: FreezableRoles<RoleDefinition>) -> Self::OutputBuilder {
