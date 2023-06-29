@@ -1,7 +1,7 @@
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
-use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::{metadata, metadata_init, roles_init};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::InstructionV1;
@@ -153,8 +153,9 @@ fn static_resource_should_be_callable() {
                             owner_role: OwnerRole::None,
                             track_total_supply: true,
                             divisibility: 0u8,
+                            supported_actions: btreeset!(),
+                            roles: roles_init!(),
                             metadata: metadata!(),
-                            supported_actions: btreemap!(),
                             initial_supply: Decimal::from(10),
                             address_reservation: Some(ManifestAddressReservation(0)),
                         },

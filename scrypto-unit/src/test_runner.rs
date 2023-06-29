@@ -38,7 +38,7 @@ use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
-use radix_engine_interface::{dec, rule};
+use radix_engine_interface::{dec, roles_init, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_substate_layout::{
     BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
@@ -1129,7 +1129,8 @@ impl TestRunner {
     fn create_fungible_resource_and_deposit(
         &mut self,
         owner_role: OwnerRole,
-        access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit>,
+        supported_actions: BTreeSet<ResourceAction>,
+        roles: RolesInit,
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
@@ -1138,8 +1139,9 @@ impl TestRunner {
                 owner_role,
                 true,
                 0,
+                supported_actions,
+                roles,
                 metadata!(),
-                access_rules,
                 Some(5.into()),
             )
             .call_method(
@@ -1154,7 +1156,6 @@ impl TestRunner {
 
     pub fn create_restricted_token(
         &mut self,
-        owner_role: OwnerRole,
         account: ComponentAddress,
     ) -> (
         ResourceAddress,
@@ -1175,32 +1176,21 @@ impl TestRunner {
         let admin_auth = self.create_non_fungible_resource(account);
 
         let token_address = self.create_fungible_resource_and_deposit(
-            owner_role,
-            btreemap! {
-                Mint => ResourceActionRoleInit {
-                    actor: RoleDefinition::updatable(rule!(require(mint_auth))),
-                    updater: RoleDefinition::updatable(rule!(require(admin_auth))),
-                },
-                Burn => ResourceActionRoleInit {
-                    actor: RoleDefinition::updatable(rule!(require(burn_auth))),
-                    updater: RoleDefinition::updatable(rule!(require(admin_auth))),
-                },
-                Withdraw => ResourceActionRoleInit {
-                    actor: RoleDefinition::updatable(rule!(require(withdraw_auth))),
-                    updater: RoleDefinition::updatable(rule!(require(admin_auth))),
-                },
-                Recall => ResourceActionRoleInit {
-                    actor: RoleDefinition::updatable(rule!(require(recall_auth))),
-                    updater: RoleDefinition::updatable(rule!(require(admin_auth))),
-                },
-                Freeze => ResourceActionRoleInit {
-                    actor: RoleDefinition::updatable(rule!(require(freeze_auth))),
-                    updater: RoleDefinition::updatable(rule!(require(admin_auth))),
-                },
-                Deposit => ResourceActionRoleInit {
-                    actor: RoleDefinition::updatable(rule!(allow_all)),
-                    updater: RoleDefinition::updatable(rule!(require(admin_auth))),
-                },
+            OwnerRole::None,
+            btreeset!(Mint, Burn, Recall, Freeze),
+            roles_init! {
+                MINTER_ROLE => rule!(require(mint_auth)), updatable;
+                MINTER_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
+                BURNER_ROLE => rule!(require(burn_auth)), updatable;
+                BURNER_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
+                WITHDRAWER_ROLE => rule!(require(withdraw_auth)), updatable;
+                WITHDRAWER_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
+                RECALLER_ROLE => rule!(require(recall_auth)), updatable;
+                RECALLER_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
+                FREEZER_ROLE => rule!(require(freeze_auth)), updatable;
+                FREEZER_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
+                DEPOSITOR_ROLE => rule!(allow_all), updatable;
+                DEPOSITOR_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
             },
             account,
         );
@@ -1221,25 +1211,30 @@ impl TestRunner {
         &mut self,
         owner_role: OwnerRole,
     ) -> ResourceAddress {
-        let mut access_rules: BTreeMap<ResourceAction, ResourceActionRoleInit> = BTreeMap::new();
-        for key in ALL_RESOURCE_AUTH_KEYS {
-            access_rules.insert(
-                key,
-                ResourceActionRoleInit {
-                    actor: RoleDefinition::updatable(rule!(allow_all)),
-                    updater: RoleDefinition::updatable(rule!(allow_all)),
-                },
-            );
-        }
-
         let receipt = self.execute_manifest_ignoring_fee(
             ManifestBuilder::new()
                 .create_non_fungible_resource::<Vec<_>, ()>(
                     owner_role,
                     NonFungibleIdType::Integer,
                     false,
+                    btreeset!(Mint, Burn, Recall, Freeze, UpdateNonFungibleData),
+                    roles_init! {
+                        MINTER_ROLE => rule!(allow_all), updatable;
+                        MINTER_UPDATER_ROLE => rule!(allow_all), updatable;
+                        BURNER_ROLE => rule!(allow_all), updatable;
+                        BURNER_UPDATER_ROLE => rule!(allow_all), updatable;
+                        RECALLER_ROLE => rule!(allow_all), updatable;
+                        RECALLER_UPDATER_ROLE => rule!(allow_all), updatable;
+                        FREEZER_ROLE => rule!(allow_all), updatable;
+                        FREEZER_UPDATER_ROLE => rule!(allow_all), updatable;
+                        NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), updatable;
+                        NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE => rule!(allow_all), updatable;
+                        DEPOSITOR_ROLE => rule!(allow_all), updatable;
+                        DEPOSITOR_UPDATER_ROLE => rule!(allow_all), updatable;
+                        WITHDRAWER_ROLE => rule!(allow_all), updatable;
+                        WITHDRAWER_UPDATER_ROLE => rule!(allow_all), updatable;
+                    },
                     metadata!(),
-                    access_rules,
                     None,
                 )
                 .build(),
@@ -1251,10 +1246,11 @@ impl TestRunner {
     pub fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            btreemap! {
-                Burn => ResourceActionRoleInit::locked(rule!(allow_all)),
-                Recall => ResourceActionRoleInit::locked(rule!(allow_all)),
-                Freeze => ResourceActionRoleInit::locked(rule!(allow_all)),
+            btreeset!(Burn, Recall, Freeze),
+            roles_init! {
+                BURNER_ROLE => rule!(allow_all), locked;
+                RECALLER_ROLE => rule!(allow_all), locked;
+                FREEZER_ROLE => rule!(allow_all), locked;
             },
             account,
         )
@@ -1263,8 +1259,9 @@ impl TestRunner {
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            btreemap! {
-                Recall => ResourceActionRoleInit::locked(rule!(allow_all)),
+            btreeset!(Recall),
+            roles_init! {
+                RECALLER_ROLE => rule!(allow_all), locked;
             },
             account,
         )
@@ -1278,8 +1275,9 @@ impl TestRunner {
 
         let resource_address = self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            btreemap! {
-                Burn => ResourceActionRoleInit::locked(rule!(require(auth_resource_address))),
+            btreeset!(Burn),
+            roles_init! {
+                BURNER_ROLE => rule!(require(auth_resource_address)), locked;
             },
             account,
         );
@@ -1295,8 +1293,9 @@ impl TestRunner {
 
         let resource_address = self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            btreemap! {
-                Withdraw => ResourceActionRoleInit::locked(rule!(require(auth_resource_address))),
+            btreeset!(),
+            roles_init! {
+                WITHDRAWER_ROLE => rule!(require(auth_resource_address)), locked;
             },
             account,
         );
@@ -1316,8 +1315,9 @@ impl TestRunner {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
+                btreeset!(),
+                roles_init!(),
                 metadata!(),
-                btreemap!(),
                 Some(entries),
             )
             .call_method(
@@ -1342,8 +1342,9 @@ impl TestRunner {
                 OwnerRole::None,
                 true,
                 divisibility,
+                btreeset!(),
+                roles_init!(),
                 metadata!(),
-                btreemap!(),
                 Some(amount),
             )
             .call_method(
@@ -1368,14 +1369,12 @@ impl TestRunner {
                 OwnerRole::None,
                 true,
                 1u8,
-                metadata!(),
-                btreemap! {
-                    Mint => mintable! {
-                        minter => rule!(require(admin_auth)), locked;
-                        minter_updater => rule!(deny_all), locked;
-                    },
-                    Burn => ResourceActionRoleInit::locked(rule!(require(admin_auth))),
+                btreeset!(Mint, Burn),
+                roles_init! {
+                    MINTER_ROLE => rule!(require(admin_auth)), locked;
+                    BURNER_ROLE => rule!(require(admin_auth)), locked;
                 },
+                metadata!(),
                 None,
             )
             .call_method(
@@ -1402,13 +1401,11 @@ impl TestRunner {
                 owner_role,
                 true,
                 divisibility,
-                metadata!(),
-                btreemap! {
-                    Mint => mintable! {
-                        minter => rule!(allow_all), locked;
-                        minter_updater => rule!(deny_all), locked;
-                    }
+                btreeset!(Mint),
+                roles_init! {
+                    MINTER_ROLE => rule!(allow_all), locked;
                 },
+                metadata!(),
                 amount,
             )
             .call_method(
@@ -1428,17 +1425,18 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Mint, ResourceActionRoleInit::locked(rule!(allow_all)));
-        access_rules.insert(Burn, ResourceActionRoleInit::locked(rule!(allow_all)));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
             .create_fungible_resource(
                 owner_role,
                 true,
                 divisibility,
+                btreeset!(Mint, Burn),
+                roles_init! {
+                    MINTER_ROLE => rule!(allow_all), locked;
+                    BURNER_ROLE => rule!(allow_all), locked;
+                },
                 metadata!(),
-                access_rules,
                 amount,
             )
             .call_method(

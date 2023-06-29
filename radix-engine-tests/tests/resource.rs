@@ -4,7 +4,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
-use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::{metadata, metadata_init, roles_init};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -150,8 +150,9 @@ fn create_fungible_too_high_granularity_should_fail() {
             OwnerRole::None,
             false,
             23u8,
+            btreeset!(),
+            roles_init!(),
             metadata!(),
-            btreemap!(),
             Some(dec!("100")),
         )
         .build();

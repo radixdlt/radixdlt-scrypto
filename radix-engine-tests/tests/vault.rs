@@ -5,7 +5,7 @@ use radix_engine::errors::{
 use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, TakeNodeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::{metadata, metadata_init, roles_init};
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
@@ -624,21 +624,21 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
-        let access_rules = btreemap!(
-            Mint => ResourceActionRoleInit::locked(AccessRule::AllowAll),
-            Burn => ResourceActionRoleInit::locked(AccessRule::AllowAll),
-            Withdraw => ResourceActionRoleInit::locked(AccessRule::AllowAll),
-            Deposit => ResourceActionRoleInit::locked(AccessRule::AllowAll),
-            Recall => ResourceActionRoleInit::locked(AccessRule::AllowAll),
-            UpdateNonFungibleData => ResourceActionRoleInit::locked(AccessRule::AllowAll),
-        );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
+                btreeset!(Mint, Burn, Recall),
+                roles_init! {
+                    MINTER_ROLE => rule!(allow_all), locked;
+                    BURNER_ROLE => rule!(allow_all), locked;
+                    WITHDRAWER_ROLE => rule!(allow_all), locked;
+                    DEPOSITOR_ROLE => rule!(allow_all), locked;
+                    RECALLER_ROLE => rule!(allow_all), locked;
+                    NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
+                },
                 metadata!(),
-                access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();

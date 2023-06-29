@@ -2,7 +2,7 @@ use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::{metadata, metadata_init, roles_init};
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
@@ -291,8 +291,9 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 OwnerRole::None,
                 false,
                 divisibility,
+                btreeset!(),
+                roles_init!(),
                 metadata!(),
-                access_rules,
                 None,
             )
             .build(),
@@ -301,8 +302,9 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 OwnerRole::None,
                 id_type,
                 false,
+                btreeset!(),
+                roles_init!(),
                 metadata!(),
-                access_rules,
                 None::<BTreeMap<NonFungibleLocalId, SampleNonFungibleData>>,
             )
             .build(),

@@ -15,13 +15,6 @@ use crate::blueprints::resource::{FungibleResourceManagerError, NonFungibleResou
 fn verify_and_modify_main_roles(
     roles: &mut RolesInit
 ) -> Result<(), String> {
-    // Meta roles
-    {
-        roles.define_immutable_role(
-            RESOURCE_PACKAGE_ROLE,
-            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
-        );
-    }
 
     for role in roles.data.keys() {
         match role.key.as_str() {
@@ -61,6 +54,15 @@ fn verify_and_modify_main_roles(
         if !roles.data.contains_key(&RoleKey::new(role)) {
             roles.define_immutable_role(role, default_rule);
         }
+    }
+
+    // Meta roles
+    // TODO: Remove
+    {
+        roles.define_immutable_role(
+            RESOURCE_PACKAGE_ROLE,
+            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+        );
     }
 
     Ok(())

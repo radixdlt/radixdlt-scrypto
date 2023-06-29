@@ -18,7 +18,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
-use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::{metadata, metadata_init, roles_init};
 use scrypto::prelude::{AccessRule, FromPublicKey, ResourceAction};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
@@ -292,10 +292,11 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
+                btreeset!(Recall),
+                roles_init! {
+                    RECALLER_ROLE => rule!(allow_all), locked;
+                },
                 metadata!(),
-                btreemap!(
-                    Recall => ResourceActionRoleInit::locked(rule!(allow_all)),
-                ),
                 Some([(id.clone(), EmptyStruct {})]),
             )
             .call_method(
@@ -390,8 +391,9 @@ fn resource_manager_new_vault_emits_correct_events() {
             OwnerRole::None,
             false,
             18,
+            btreeset!(),
+            roles_init!(),
             metadata!(),
-            Default::default(),
             Some(1.into()),
         )
         .call_method(
@@ -453,11 +455,12 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
                 OwnerRole::None,
                 false,
                 18,
+                btreeset!(Mint, Burn),
+                roles_init! {
+                    MINTER_ROLE => rule!(allow_all), locked;
+                    BURNER_ROLE => rule!(allow_all), locked;
+                },
                 metadata!(),
-                btreemap!(
-                    Mint => ResourceActionRoleInit::locked(rule!(allow_all)),
-                    Burn => ResourceActionRoleInit::locked(rule!(allow_all)),
-                ),
                 None,
             )
             .call_method(
@@ -536,11 +539,12 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                metadata!(),
-                btreemap! {
-                    Mint => ResourceActionRoleInit::locked(rule!(allow_all)),
-                    Burn => ResourceActionRoleInit::locked(rule!(allow_all)),
+                btreeset!(Mint, Burn),
+                roles_init! {
+                    MINTER_ROLE => rule!(allow_all), locked;
+                    BURNER_ROLE => rule!(allow_all), locked;
                 },
+                metadata!(),
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
             )
             .call_method(
@@ -1457,33 +1461,21 @@ fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -
 }
 
 fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress {
-    let access_rules = [
-        ResourceAction::Burn,
-        ResourceAction::Deposit,
-        ResourceAction::Withdraw,
-        ResourceAction::Mint,
-        ResourceAction::Burn,
-        ResourceAction::UpdateNonFungibleData,
-    ]
-    .into_iter()
-    .map(|method| {
-        (
-            method,
-            ResourceActionRoleInit {
-                actor: RoleDefinition::updatable(AccessRule::AllowAll),
-                updater: RoleDefinition::updatable(AccessRule::AllowAll),
-            },
-        )
-    })
-    .collect();
-
     let manifest = ManifestBuilder::new()
         .create_fungible_resource(
             OwnerRole::Fixed(AccessRule::AllowAll),
             false,
             18,
+        btreeset!(Mint, Burn, Recall),
+        roles_init! {
+                MINTER_ROLE => rule!(allow_all), locked;
+                BURNER_ROLE => rule!(allow_all), locked;
+                WITHDRAWER_ROLE => rule!(allow_all), locked;
+                DEPOSITOR_ROLE => rule!(allow_all), locked;
+                RECALLER_ROLE => rule!(allow_all), locked;
+                NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
+            },
             metadata!(),
-            access_rules,
             None,
         )
         .build();

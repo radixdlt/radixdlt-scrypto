@@ -98,6 +98,10 @@ impl ScenarioInstance for RadiswapScenario {
                             OwnerRole::None,
                             false,
                             18,
+                            btreeset!(Burn),
+                            roles_init! {
+                                BURNER_ROLE => rule!(allow_all), locked;
+                            },
                             metadata! {
                                 init {
                                     "name" => "Bitcoin".to_owned(), locked;
@@ -108,18 +112,16 @@ impl ScenarioInstance for RadiswapScenario {
                                     "info_url" => "https://www.example.com/".to_owned(), locked;
                                 }
                             },
-                            btreemap! {
-                                Burn => burnable! {
-                                    burner => rule!(allow_all), locked;
-                                    burner_updater => rule!(deny_all), locked;
-                                }
-                            },
                             Some(100_000_000_000u64.into()),
                         )
                         .create_fungible_resource(
                             OwnerRole::None,
                             true,
                             18,
+                            btreeset!(Burn),
+                            roles_init! {
+                                BURNER_ROLE => rule!(allow_all), locked;
+                            },
                             metadata! {
                                 init {
                                     "name" => "Ethereum".to_owned(), locked;
@@ -130,18 +132,16 @@ impl ScenarioInstance for RadiswapScenario {
                                     "info_url" => "https://www.example.com/".to_owned(), locked;
                                 }
                             },
-                            btreemap! {
-                                Burn => burnable! {
-                                    burner => rule!(allow_all), locked;
-                                    burner_updater => rule!(deny_all), locked;
-                                }
-                            },
                             Some(100_000_000_000u64.into()),
                         )
                         .create_fungible_resource(
                             OwnerRole::None,
                             true,
                             18,
+                            btreeset!(Burn),
+                            roles_init! {
+                                BURNER_ROLE => rule!(allow_all), locked;
+                            },
                             metadata! {
                                 init {
                                     "name" => "Ethereum".to_owned(), locked;
@@ -150,12 +150,6 @@ impl ScenarioInstance for RadiswapScenario {
                                     "tags" => vec!["p2p".to_owned(), "blockchain".to_owned(), "gas".to_owned()], locked;
                                     "icon_url" => "https://www.example.com/".to_owned(), locked;
                                     "info_url" => "https://www.example.com/".to_owned(), locked;
-                                }
-                            },
-                            btreemap! {
-                                Burn => burnable! {
-                                    burner => rule!(allow_all), locked;
-                                    burner_updater => rule!(deny_all), locked;
                                 }
                             },
                             Some(100_000_000_000u64.into()),
