@@ -15,7 +15,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmInstrumenterConfigV1};
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -276,7 +276,7 @@ impl TestRunnerBuilder {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
-            wasm_metering_config: WasmMeteringConfig::V0,
+            wasm_instrumenter_config: WasmInstrumenterConfigV1::new(),
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
 
@@ -865,7 +865,7 @@ impl TestRunner {
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 50u32.into())
-            .publish_package_advanced(code, definition, metadata, owner_rule)
+            .publish_package_advanced(None, code, definition, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -1243,7 +1243,7 @@ impl TestRunner {
 
         let receipt = self.execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .create_non_fungible_resource::<_, Vec<_>, ()>(
+                .create_non_fungible_resource::<_, Vec<_>, (), _>(
                     NonFungibleIdType::Integer,
                     false,
                     BTreeMap::new(),

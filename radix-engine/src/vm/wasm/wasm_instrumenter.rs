@@ -1,6 +1,6 @@
-use super::{CodeKey, MeteredCodeKey, PrepareError, WasmMeteringParams};
+use super::{CodeKey, MeteredCodeKey, PrepareError};
 use crate::types::*;
-use crate::vm::wasm::{WasmMeteringConfig, WasmModule};
+use crate::vm::wasm::{WasmInstrumenterConfigV1, WasmModule};
 use sbor::rust::sync::Arc;
 
 pub const DEFAULT_CACHE_SIZE: usize = 1000;
@@ -64,9 +64,9 @@ impl WasmInstrumenter {
         &self,
         code_key: CodeKey,
         code: &[u8],
-        wasm_metering_config: WasmMeteringConfig,
+        wasm_instrumenter_config: &WasmInstrumenterConfigV1,
     ) -> Result<InstrumentedCode, PrepareError> {
-        let metered_code_key = (code_key, wasm_metering_config);
+        let metered_code_key = (code_key, wasm_instrumenter_config.version());
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
@@ -88,8 +88,7 @@ impl WasmInstrumenter {
             }
         }
 
-        let instrumented_ref =
-            Arc::new(self.instrument_no_cache(code, wasm_metering_config.parameters())?);
+        let instrumented_ref = Arc::new(self.instrument_no_cache(code, &wasm_instrumenter_config)?);
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
@@ -111,12 +110,45 @@ impl WasmInstrumenter {
     pub fn instrument_no_cache(
         &self,
         code: &[u8],
-        metering_params: WasmMeteringParams,
+        instrumenter_config: &WasmInstrumenterConfigV1,
     ) -> Result<Vec<u8>, PrepareError> {
         WasmModule::init(code)
-            .and_then(|m| m.inject_instruction_metering(metering_params.instruction_cost_rules()))
-            .and_then(|m| m.inject_stack_metering(metering_params.max_stack_size()))
+            .and_then(|m| m.inject_instruction_metering(instrumenter_config))
+            .and_then(|m| m.inject_stack_metering(instrumenter_config.max_stack_size()))
             .and_then(|m| m.to_bytes())
             .map(|m| m.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::vm::wasm::{WasmInstrumenterConfigV1, WasmModule};
+    use wabt::wat2wasm;
+
+    #[test]
+    fn test_cost_rules() {
+        let code = wat2wasm(
+            r#"
+            (module
+                (func (param $p0 i32) (result i32)
+                    local.get $p0
+                    i32.const 5
+                    i32.mul
+                )
+                (func (param $p0 i32) (result i32)
+                    local.get $p0
+                    call 0
+                )
+            )
+            "#,
+        )
+        .unwrap();
+        let config = WasmInstrumenterConfigV1::new();
+        WasmModule::init(&code)
+            .unwrap()
+            .inject_instruction_metering(&config)
+            .unwrap()
+            .to_bytes()
+            .unwrap();
     }
 }
