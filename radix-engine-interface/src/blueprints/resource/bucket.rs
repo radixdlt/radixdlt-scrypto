@@ -77,14 +77,17 @@ pub type BucketCreateProofOfAllOutput = Proof;
 //========
 
 #[derive(Debug, PartialEq, Eq, Hash)]
+#[must_use]
 pub struct Bucket(pub Own);
 
 #[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
+#[must_use]
 pub struct FungibleBucket(pub Bucket);
 
 #[derive(Debug, PartialEq, Eq, Hash, ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
 #[sbor(transparent)]
+#[must_use]
 pub struct NonFungibleBucket(pub Bucket);
 
 impl From<FungibleBucket> for Bucket {
