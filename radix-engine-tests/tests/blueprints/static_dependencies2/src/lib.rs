@@ -48,7 +48,7 @@ mod some_package {
 
     impl SomePackage {
         pub fn set_package_metadata() {
-            SOME_PACKAGE.metadata().set("key", "value".to_string());
+            SOME_PACKAGE.set_metadata("key", "value".to_string());
         }
     }
 }

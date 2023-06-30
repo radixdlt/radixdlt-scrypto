@@ -10,9 +10,13 @@ mod ref_check {
     impl RefCheck {
         pub fn cannot_directly_reference_inserted_vault() -> Global<RefCheck> {
             let store = KeyValueStore::new();
-            let bucket: Bucket = ResourceBuilder::new_fungible()
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
@@ -32,9 +36,13 @@ mod ref_check {
 
         pub fn cannot_directly_reference_vault_after_container_moved() -> Global<RefCheck> {
             let store = KeyValueStore::new();
-            let bucket: Bucket = ResourceBuilder::new_fungible()
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();
@@ -59,9 +67,13 @@ mod ref_check {
 
         pub fn cannot_directly_reference_vault_after_container_stored() -> bool {
             let store = KeyValueStore::new();
-            let bucket: Bucket = ResourceBuilder::new_fungible()
+            let bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply(1);
             let vault = Vault::with_bucket(bucket);
             let vault_id = vault.0.clone();

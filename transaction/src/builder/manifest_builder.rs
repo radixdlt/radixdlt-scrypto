@@ -9,6 +9,7 @@ use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
     COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::{
     RuleSet, ACCESS_CONTROLLER_BLUEPRINT, ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
@@ -110,6 +111,12 @@ impl ManifestBuilder {
             instructions: Vec::new(),
             blobs: BTreeMap::default(),
         }
+    }
+
+    pub fn add_blob(&mut self, blob: Vec<u8>) -> &mut Self {
+        let hash = hash(&blob);
+        self.blobs.insert(hash, blob);
+        self
     }
 
     /// Adds a raw instruction.
@@ -443,9 +450,10 @@ impl ManifestBuilder {
     /// Creates a fungible resource
     pub fn create_fungible_resource<R: Into<AccessRule>>(
         &mut self,
+        owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
@@ -460,12 +468,14 @@ impl ManifestBuilder {
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
-                    &FungibleResourceManagerCreateWithInitialSupplyInput {
+                    &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        owner_role,
                         divisibility,
                         track_total_supply,
-                        metadata: metadata.into(),
+                        metadata,
                         access_rules,
                         initial_supply,
+                        address_reservation: None,
                     }
                 ),
             });
@@ -474,11 +484,13 @@ impl ManifestBuilder {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateInput {
+                args: to_manifest_value_and_unwrap!(&FungibleResourceManagerCreateManifestInput {
+                    owner_role,
                     divisibility,
                     track_total_supply,
-                    metadata: metadata.into(),
+                    metadata,
                     access_rules,
+                    address_reservation: None,
                 }),
             });
         }
@@ -489,9 +501,10 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,
+        owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: ModuleConfig<MetadataInit>,
         access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<T>,
     ) -> &mut Self
@@ -510,7 +523,6 @@ impl ManifestBuilder {
                 .into_iter()
                 .map(|(id, e)| (id, (to_manifest_value_and_unwrap!(&e),)))
                 .collect();
-            let metadata: MetadataInit = metadata.into();
 
             self.add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -519,12 +531,14 @@ impl ManifestBuilder {
                     .to_string(),
                 args: to_manifest_value_and_unwrap!(
                     &NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                        owner_role,
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                         metadata,
                         access_rules,
                         entries,
+                        address_reservation: None,
                     }
                 ),
             });
@@ -533,13 +547,17 @@ impl ManifestBuilder {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
-                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateInput {
-                    id_type,
-                    track_total_supply,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                    metadata: metadata.into(),
-                    access_rules,
-                }),
+                args: to_manifest_value_and_unwrap!(
+                    &NonFungibleResourceManagerCreateManifestInput {
+                        owner_role,
+                        id_type,
+                        track_total_supply,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        access_rules,
+                        metadata,
+                        address_reservation: None,
+                    }
+                ),
             });
         }
 
@@ -664,13 +682,16 @@ impl ManifestBuilder {
     }
 
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
-    pub fn call_function(
+    pub fn call_function<P>(
         &mut self,
-        package_address: PackageAddress,
+        package_address: P,
         blueprint_name: &str,
         function_name: &str,
         args: ManifestValue,
-    ) -> &mut Self {
+    ) -> &mut Self
+    where
+        P: Into<DynamicPackageAddress>,
+    {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: package_address.into(),
             blueprint_name: blueprint_name.to_string(),
@@ -837,11 +858,12 @@ impl ManifestBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package_advanced(
+    pub fn publish_package_advanced<M: Into<MetadataInit>>(
         &mut self,
+        address: Option<ManifestAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
-        metadata: BTreeMap<String, MetadataValue>,
+        metadata: M,
         owner_role: OwnerRole,
     ) -> &mut Self {
         let code_hash = hash(&code);
@@ -854,8 +876,8 @@ impl ManifestBuilder {
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata,
-                package_address: None,
+                metadata: metadata.into(),
+                package_address: address,
                 owner_role,
             }),
         });
@@ -874,7 +896,7 @@ impl ManifestBuilder {
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata: BTreeMap::new(),
+                metadata: metadata_init!(),
             }),
         });
         self
@@ -898,7 +920,7 @@ impl ManifestBuilder {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
-                metadata: BTreeMap::new(),
+                metadata: metadata_init!(),
                 owner_role: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
         });
@@ -925,7 +947,8 @@ impl ManifestBuilder {
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
-        metadata: BTreeMap<String, MetadataValue>,
+        owner_role: OwnerRole,
+        metadata: ModuleConfig<MetadataInit>,
         minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -937,13 +960,14 @@ impl ManifestBuilder {
         access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let initial_supply = Option::None;
-        self.create_fungible_resource(true, 18, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(owner_role, true, 18, metadata, access_rules, initial_supply)
     }
 
     /// Creates a token resource with fixed supply.
     pub fn new_token_fixed(
         &mut self,
-        metadata: BTreeMap<String, MetadataValue>,
+        owner_role: OwnerRole,
+        metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -952,13 +976,21 @@ impl ManifestBuilder {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.create_fungible_resource(true, 18, metadata, access_rules, Some(initial_supply))
+        self.create_fungible_resource(
+            owner_role,
+            true,
+            18,
+            metadata,
+            access_rules,
+            Some(initial_supply),
+        )
     }
 
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         &mut self,
-        metadata: BTreeMap<String, MetadataValue>,
+        owner_role: OwnerRole,
+        metadata: ModuleConfig<MetadataInit>,
         minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -970,13 +1002,14 @@ impl ManifestBuilder {
         access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let initial_supply = Option::None;
-        self.create_fungible_resource(false, 0, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(owner_role, false, 0, metadata, access_rules, initial_supply)
     }
 
     /// Creates a badge resource with fixed supply.
     pub fn new_badge_fixed(
         &mut self,
-        metadata: BTreeMap<String, MetadataValue>,
+        owner_role: OwnerRole,
+        metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
@@ -985,7 +1018,14 @@ impl ManifestBuilder {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.create_fungible_resource(false, 0, metadata, access_rules, Some(initial_supply))
+        self.create_fungible_resource(
+            owner_role,
+            false,
+            0,
+            metadata,
+            access_rules,
+            Some(initial_supply),
+        )
     }
 
     pub fn burn_from_worktop(

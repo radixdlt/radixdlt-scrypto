@@ -44,7 +44,16 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn before_lock_substate<Y>(
+    fn after_move_modules<Y>(
+        src_node_id: &NodeId,
+        dest_node_id: &NodeId,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn before_open_substate<Y>(
         node_id: &NodeId,
         partition_num: &PartitionNumber,
         substate_key: &SubstateKey,
@@ -54,8 +63,9 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_lock_substate<Y>(
+    fn after_open_substate<Y>(
         handle: LockHandle,
+        node_id: &NodeId,
         size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -63,7 +73,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_drop_lock<Y>(
+    fn on_close_substate<Y>(
         lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
         api: &mut Y,

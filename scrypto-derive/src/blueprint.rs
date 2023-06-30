@@ -1108,6 +1108,8 @@ fn generate_stubs(
         }
 
         impl ::scrypto::component::ObjectStub for #component_ident {
+            type AddressType = ComponentAddress;
+
             fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                 Self {
                     handle
@@ -1510,6 +1512,8 @@ mod tests {
                     }
 
                     impl ::scrypto::component::ObjectStub for TestObjectStub {
+                        type AddressType = ComponentAddress;
+
                         fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                             Self {
                                 handle

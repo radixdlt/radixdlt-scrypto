@@ -8,7 +8,7 @@ use crate::system::module::SystemModule;
 use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::StoreAccessInfo;
+use crate::track::interface::{StoreAccessInfo, StoreCommit};
 use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
@@ -41,7 +41,7 @@ pub struct CostingModule {
     /// The maximum allowed method royalty in XRD allowed to be set by package and component owners
     pub max_per_function_royalty_in_xrd: Decimal,
     pub enable_cost_breakdown: bool,
-    pub costing_traces: IndexMap<&'static str, u32>,
+    pub costing_traces: IndexMap<String, u32>,
 }
 
 impl CostingModule {
@@ -64,7 +64,7 @@ impl CostingModule {
             })?;
 
         if self.enable_cost_breakdown {
-            let key: &'static str = costing_entry.into();
+            let key = costing_entry.to_trace_key();
             self.costing_traces
                 .entry(key)
                 .or_default()
@@ -87,12 +87,27 @@ impl CostingModule {
         })?;
 
         if self.enable_cost_breakdown {
-            let key: &'static str = costing_entry.into();
+            let key = costing_entry.to_trace_key();
             self.costing_traces
                 .entry(key)
                 .or_default()
                 .add_assign(cost_units);
         }
+
+        Ok(())
+    }
+
+    pub fn apply_state_expansion_cost(
+        &mut self,
+        store_commit: &StoreCommit,
+    ) -> Result<(), RuntimeError> {
+        self.fee_reserve
+            .consume_state_expansion(store_commit)
+            .map_err(|e| {
+                RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                    CostingError::FeeReserveError(e),
+                ))
+            })?;
 
         Ok(())
     }
@@ -155,10 +170,25 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             api.kernel_get_system()
                 .modules
                 .costing
-                .apply_execution_cost(CostingEntry::Invoke {
+                .apply_execution_cost(CostingEntry::BeforeInvoke {
                     actor: &invocation.actor,
                     input_size: invocation.len(),
                 })?;
+        }
+
+        Ok(())
+    }
+
+    fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        output_size: usize,
+    ) -> Result<(), RuntimeError> {
+        // Skip invocation costing for transaction processor
+        if api.kernel_get_current_depth() > 0 {
+            api.kernel_get_system()
+                .modules
+                .costing
+                .apply_execution_cost(CostingEntry::AfterInvoke { output_size })?;
         }
 
         Ok(())
@@ -236,6 +266,21 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
+    #[inline(always)]
+    fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        _src_node_id: &NodeId,
+        _dest_node_id: &NodeId,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(CostingEntry::MoveModules { store_access })?;
+
+        Ok(())
+    }
+
     fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         total_substate_size: usize,
@@ -250,9 +295,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _handle: LockHandle,
+        node_id: &NodeId,
         store_access: &StoreAccessInfo,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -260,7 +306,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .modules
             .costing
             .apply_execution_cost(CostingEntry::OpenSubstate {
-                store_access: store_access,
+                node_id,
+                store_access,
                 value_size,
             })?;
 
@@ -301,7 +348,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
+    fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         store_access: &StoreAccessInfo,

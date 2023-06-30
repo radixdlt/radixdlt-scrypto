@@ -5,7 +5,6 @@ use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::NoOpWasmRuntime;
 use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageDefinition};
 use sbor::rust::iter;
-use sbor::rust::sync::Arc;
 
 #[derive(Debug)]
 pub enum ExtractSchemaError {
@@ -29,18 +28,11 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
 
     // Validate WASM
     let validator = WasmValidator::default();
-    let instrumented_code = InstrumentedCode {
-        metered_code_key: (
-            PackageAddress::new_or_panic([EntityType::GlobalPackage as u8; NodeId::LENGTH]),
-            validator.metering_config,
-        ),
-        code: Arc::new(
-            validator
-                .validate(&code, iter::empty())
-                .map_err(|e| ExtractSchemaError::InvalidWasm(e))?
-                .0,
-        ),
-    };
+    let code_hash = Hash([0u8; 32]);
+    let instrumented_code = validator
+        .validate(&code, iter::empty())
+        .map_err(|e| ExtractSchemaError::InvalidWasm(e))?
+        .0;
 
     // Execute with empty state (with default cost unit limit)
     let wasm_engine = DefaultWasmEngine::default();
@@ -49,7 +41,7 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     let mut gas_consumed = 0;
     let mut runtime: Box<dyn WasmRuntime> =
         Box::new(NoOpWasmRuntime::new(fee_reserve, &mut gas_consumed));
-    let mut instance = wasm_engine.instantiate(&instrumented_code);
+    let mut instance = wasm_engine.instantiate(code_hash, &instrumented_code);
     let mut blueprints = BTreeMap::new();
     for function_export in function_exports {
         let rtn = instance

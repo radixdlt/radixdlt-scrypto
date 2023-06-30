@@ -140,6 +140,9 @@ jobs:
     - name: Build and test hello-world
       run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/hello-world
+    - name: Build and test everything
+      run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
+      working-directory: examples/everything
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}

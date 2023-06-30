@@ -26,7 +26,7 @@ mod proofs {
                     && require(admin_badge.resource_address())
                     && require(superadmin_badge.resource_address())
             );
-            let token = ResourceBuilder::new_fungible()
+            let token = ResourceBuilder::new_fungible(OwnerRole::None)
                 .mintable(organizational_access_rule.clone(), LOCKED)
                 .restrict_withdraw(organizational_access_rule.clone(), LOCKED)
                 .mint_initial_supply(100);
@@ -45,9 +45,13 @@ mod proofs {
         }
 
         fn new_badge(name: &str) -> Bucket {
-            ResourceBuilder::new_fungible()
+            ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(0)
-                .metadata("name", name)
+                .metadata(metadata! {
+                    init {
+                        "name" => name.to_string(), locked;
+                    }
+                })
                 .mint_initial_supply(1)
         }
 

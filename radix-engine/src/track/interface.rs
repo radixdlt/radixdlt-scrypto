@@ -113,7 +113,7 @@ pub trait SubstateStore {
     ///
     /// # Panics
     /// - If the lock handle is invalid.
-    fn release_lock(&mut self, handle: u32) -> StoreAccessInfo;
+    fn close_substate(&mut self, handle: u32) -> StoreAccessInfo;
 
     /// Reads a substate of the given node partition.
     ///
@@ -134,91 +134,49 @@ pub trait SubstateStore {
 
     /// Note: unstable interface, for intent transaction tracker only
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);
+
+    /// Return the commit info
+    fn get_commit_info(&mut self) -> StoreCommitInfo;
 }
 
-#[derive(Debug, Clone)]
-pub struct StoreAccessInfo(pub Vec<StoreAccess>);
-
-impl StoreAccessInfo {
-    pub fn new() -> Self {
-        Self(Vec::new())
-    }
-
-    pub fn with_vector(vector: Vec<StoreAccess>) -> Self {
-        Self(vector)
-    }
-
-    pub fn data(&self) -> &Vec<StoreAccess> {
-        &self.0
-    }
-
-    pub fn total_read_size(&self) -> usize {
-        self.0
-            .iter()
-            .map(|item| match item {
-                StoreAccess::ReadFromDb(size) | StoreAccess::ReadFromTrack(size) => size,
-                _ => &0,
-            })
-            .sum()
-    }
-
-    pub fn total_write_size(&self) -> usize {
-        self.0
-            .iter()
-            .map(|item| match item {
-                StoreAccess::WriteToTrack(size) => size,
-                StoreAccess::RewriteToTrack(_size_old, size_new) => size_new,
-                _ => &0,
-            })
-            .sum()
-    }
-
-    pub fn extend(&mut self, items: &StoreAccessInfo) {
-        self.0.extend(&items.0)
-    }
-
-    pub fn push(&mut self, item: StoreAccess) {
-        self.0.push(item)
-    }
-
-    pub fn builder_push_if_not_empty(mut self, item: StoreAccess) -> StoreAccessInfo {
-        self.push_if_not_empty(item);
-        self
-    }
-
-    pub fn push_if_not_empty(&mut self, item: StoreAccess) {
-        match item {
-            StoreAccess::ReadFromDb(size)
-            | StoreAccess::ReadFromTrack(size)
-            | StoreAccess::WriteToTrack(size) => {
-                if size > 0 {
-                    self.0.push(item)
-                }
-            }
-            StoreAccess::RewriteToTrack(size_old, size_new) => {
-                if size_old > 0 || size_new > 0 {
-                    self.0.push(item)
-                }
-            }
-            StoreAccess::ReadFromDbNotFound | StoreAccess::DeleteFromTrack => (),
-        }
-    }
-
-    pub fn clear(&mut self) {
-        self.0.clear();
-    }
-}
+pub type StoreAccessInfo = Vec<StoreAccess>;
 
 #[derive(Debug, Clone, Copy)]
 pub enum StoreAccess {
+    /// Some substate was read from database.
     ReadFromDb(usize),
+    /// Non-existent substate was read from database.
     ReadFromDbNotFound,
-    ReadFromTrack(usize),
-    WriteToTrack(usize),
-    // Updates an entry for the second time
-    // Need to report both the previous size and new size as partial refund may be required
-    // (Reason: only one write to database will be applied when the transaction finishes,
-    // despite substate being updated twice or more during transaction execution)
-    RewriteToTrack(usize, usize),
-    DeleteFromTrack,
+    /// A new entry has been added to track
+    /// System limits how many items that can be tracked.
+    NewEntryInTrack,
+}
+
+pub type StoreCommitInfo = Vec<StoreCommit>;
+
+#[derive(Debug, Clone)]
+pub enum StoreCommit {
+    Insert {
+        node_id: NodeId,
+        size: usize,
+    },
+    Update {
+        node_id: NodeId,
+        size: usize,
+        old_size: usize,
+    },
+    Delete {
+        node_id: NodeId,
+        old_size: usize,
+    },
+}
+
+impl StoreCommit {
+    pub fn node_id(&self) -> &NodeId {
+        match self {
+            StoreCommit::Insert { node_id, .. }
+            | StoreCommit::Update { node_id, .. }
+            | StoreCommit::Delete { node_id, .. } => node_id,
+        }
+    }
 }

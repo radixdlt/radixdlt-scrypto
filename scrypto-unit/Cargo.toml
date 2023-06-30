@@ -27,5 +27,7 @@ resource_tracker = []
 moka = ["radix-engine/moka", "radix-engine-queries/moka"]
 lru = ["radix-engine/lru", "radix-engine-queries/lru"]
 
+rocksdb = ["radix-engine-stores/rocksdb"]
+
 [lib]
 bench = false

@@ -78,9 +78,11 @@ pub enum PackagePartitionOffset {
     Blueprints,
     BlueprintDependencies,
     Schemas,
-    Code,
     RoyaltyConfig,
     AuthConfig,
+    VmType,
+    OriginalCode,
+    InstrumentedCode,
 }
 
 impl TryFrom<u8> for PackagePartitionOffset {
@@ -176,7 +178,6 @@ pub enum ConsensusManagerField {
 #[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
 pub enum ValidatorField {
     Validator,
-    AcceptsDelegatedStakeFlag,
     ProtocolUpdateReadinessSignal,
 }
 

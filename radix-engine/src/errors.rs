@@ -13,9 +13,9 @@ use crate::blueprints::resource::{
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
     CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
-    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CreateFrameError,
-    CreateNodeError, DropNodeError, ListNodeModuleError, LockSubstateError, MoveModuleError,
-    PassMessageError, ReadSubstateError, UnlockSubstateError, WriteSubstateError,
+    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CloseSubstateError,
+    CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError,
+    OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
@@ -87,9 +87,9 @@ pub enum RuntimeError {
 }
 
 impl RuntimeError {
-    pub const fn update_substate(e: UnlockSubstateError) -> Self {
+    pub const fn update_substate(e: CloseSubstateError) -> Self {
         Self::KernelError(KernelError::CallFrameError(
-            CallFrameError::UnlockSubstateError(e),
+            CallFrameError::CloseSubstateError(e),
         ))
     }
 }
@@ -184,8 +184,8 @@ pub enum CallFrameError {
     ListNodeModuleError(ListNodeModuleError),
     MoveModuleError(MoveModuleError),
 
-    LockSubstateError(LockSubstateError),
-    UnlockSubstateError(UnlockSubstateError),
+    OpenSubstateError(OpenSubstateError),
+    CloseSubstateError(CloseSubstateError),
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
 
@@ -531,15 +531,15 @@ impl fmt::Display for RuntimeError {
     }
 }
 
-impl From<LockSubstateError> for CallFrameError {
-    fn from(value: LockSubstateError) -> Self {
-        Self::LockSubstateError(value)
+impl From<OpenSubstateError> for CallFrameError {
+    fn from(value: OpenSubstateError) -> Self {
+        Self::OpenSubstateError(value)
     }
 }
 
-impl From<UnlockSubstateError> for CallFrameError {
-    fn from(value: UnlockSubstateError) -> Self {
-        Self::UnlockSubstateError(value)
+impl From<CloseSubstateError> for CallFrameError {
+    fn from(value: CloseSubstateError) -> Self {
+        Self::CloseSubstateError(value)
     }
 }
 

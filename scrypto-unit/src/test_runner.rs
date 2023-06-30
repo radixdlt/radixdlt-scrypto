@@ -15,7 +15,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::utils::*;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -29,19 +29,14 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
-    PackageDefinition, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate,
-    TypePointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-    PACKAGE_SCHEMAS_PARTITION_OFFSET,
+    BlueprintDefinitionInit, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
+    PackageRoyaltyAccumulatorSubstate, TypePointer, PACKAGE_BLUEPRINT,
+    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
-use radix_engine_interface::schema::{
-    BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, BlueprintSchemaInit,
-    BlueprintStateSchemaInit, FieldSchema, FunctionSchemaInit, TypeRef,
-};
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
@@ -59,7 +54,6 @@ use radix_engine_store_interface::{
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
@@ -140,7 +134,7 @@ impl Compile {
 
 pub struct CustomGenesis {
     pub genesis_data_chunks: Vec<GenesisDataChunk>,
-    pub initial_epoch: Epoch,
+    pub genesis_epoch: Epoch,
     pub initial_config: ConsensusManagerConfig,
     pub initial_time_ms: i64,
     pub initial_current_leader: Option<ValidatorIndex>,
@@ -148,13 +142,13 @@ pub struct CustomGenesis {
 }
 
 impl CustomGenesis {
-    pub fn default(initial_epoch: Epoch, initial_config: ConsensusManagerConfig) -> CustomGenesis {
+    pub fn default(genesis_epoch: Epoch, initial_config: ConsensusManagerConfig) -> CustomGenesis {
         let pub_key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
         Self::single_validator_and_staker(
             pub_key,
             Decimal::one(),
             ComponentAddress::virtual_account_from_public_key(&pub_key),
-            initial_epoch,
+            genesis_epoch,
             initial_config,
         )
     }
@@ -180,7 +174,7 @@ impl CustomGenesis {
         validator_public_key: Secp256k1PublicKey,
         stake_xrd_amount: Decimal,
         staker_account: ComponentAddress,
-        initial_epoch: Epoch,
+        genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
         let genesis_validator: GenesisValidator = validator_public_key.clone().into();
@@ -199,7 +193,7 @@ impl CustomGenesis {
         ];
         CustomGenesis {
             genesis_data_chunks,
-            initial_epoch,
+            genesis_epoch,
             initial_config,
             initial_time_ms: 0,
             initial_current_leader: Some(0),
@@ -212,7 +206,7 @@ impl CustomGenesis {
         validator2_public_key: Secp256k1PublicKey,
         stake_xrd_amount: (Decimal, Decimal),
         staker_account: ComponentAddress,
-        initial_epoch: Epoch,
+        genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
     ) -> CustomGenesis {
         let genesis_validator1: GenesisValidator = validator1_public_key.clone().into();
@@ -241,7 +235,7 @@ impl CustomGenesis {
         ];
         CustomGenesis {
             genesis_data_chunks,
-            initial_epoch,
+            genesis_epoch,
             initial_config,
             initial_time_ms: 0,
             initial_current_leader: Some(0),
@@ -275,8 +269,7 @@ impl TestRunnerBuilder {
     pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
         let scrypto_interpreter = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
-            wasm_metering_config: WasmMeteringConfig::V0,
+            wasm_validator_config: WasmValidatorConfigV1::new(),
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
 
@@ -287,7 +280,7 @@ impl TestRunnerBuilder {
             Some(custom_genesis) => bootstrapper
                 .bootstrap_with_genesis_data(
                     custom_genesis.genesis_data_chunks,
-                    custom_genesis.initial_epoch,
+                    custom_genesis.genesis_epoch,
                     custom_genesis.initial_config,
                     custom_genesis.initial_time_ms,
                     custom_genesis.initial_current_leader,
@@ -419,7 +412,7 @@ impl TestRunner {
         proof: NonFungibleGlobalId,
     ) {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .set_metadata(
                 address,
                 key.to_string(),
@@ -467,28 +460,21 @@ impl TestRunner {
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
-        if let Some(output) = self
+        let output = self
             .substate_db
             .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltyAccumulatorSubstate>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),
+            )?;
+
+        self.substate_db
+            .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                output.royalty_vault.0.as_node_id(),
+                MAIN_BASE_PARTITION,
+                &FungibleVaultField::LiquidFungible.into(),
             )
-        {
-            output
-                .royalty_vault
-                .and_then(|vault| {
-                    self.substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
-                            vault.as_node_id(),
-                            MAIN_BASE_PARTITION,
-                            &FungibleVaultField::LiquidFungible.into(),
-                        )
-                })
-                .map(|r| r.amount())
-        } else {
-            None
-        }
+            .map(|r| r.amount())
     }
 
     pub fn account_balance(
@@ -662,7 +648,7 @@ impl TestRunner {
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(
@@ -770,7 +756,7 @@ impl TestRunner {
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let manifest = ManifestBuilder::new()
-                .lock_fee(self.faucet_component(), 50.into())
+                .lock_fee(self.faucet_component(), 500u32.into())
                 .create_identity_advanced(OwnerRole::Fixed(rule!(require(owner_id))))
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
@@ -783,7 +769,7 @@ impl TestRunner {
 
     pub fn new_securified_identity(&mut self, account: ComponentAddress) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .create_identity()
             .call_method(
                 account,
@@ -804,7 +790,7 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, |builder, bucket| {
                 builder.create_validator(pub_key, Decimal::ONE, bucket);
@@ -839,7 +825,7 @@ impl TestRunner {
                     args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
                         setup: definition,
-                        metadata: btreemap!(),
+                        metadata: metadata_init!(),
                         package_address: Some(ManifestAddressReservation(0)),
                         owner_role: OwnerRole::Fixed(AccessRule::AllowAll),
                     }),
@@ -871,8 +857,8 @@ impl TestRunner {
         owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
-            .publish_package_advanced(code, definition, metadata, owner_rule)
+            .lock_fee(self.faucet_component(), 5000u32.into())
+            .publish_package_advanced(None, code, definition, metadata, owner_rule)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -886,7 +872,7 @@ impl TestRunner {
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 5000u32.into())
             .publish_package_with_owner(code, definition, owner_badge)
             .build();
 
@@ -947,7 +933,7 @@ impl TestRunner {
             transaction::model::InstructionV1::CallMethod {
                 address: self.faucet_component().into(),
                 method_name: "lock_fee".to_string(),
-                args: manifest_args!(dec!("100")),
+                args: manifest_args!(dec!("500")),
             },
         );
         self.execute_manifest(manifest, initial_proofs)
@@ -1143,12 +1129,20 @@ impl TestRunner {
 
     fn create_fungible_resource_and_deposit(
         &mut self,
+        owner_role: OwnerRole,
         access_rules: BTreeMap<ResourceAction, (AccessRule, Mutability)>,
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
-            .create_fungible_resource(true, 0, BTreeMap::new(), access_rules, Some(5.into()))
+            .lock_fee(self.faucet_component(), 500u32.into())
+            .create_fungible_resource(
+                owner_role,
+                true,
+                0,
+                metadata!(),
+                access_rules,
+                Some(5.into()),
+            )
             .call_method(
                 to,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1161,6 +1155,7 @@ impl TestRunner {
 
     pub fn create_restricted_token(
         &mut self,
+        owner_role: OwnerRole,
         account: ComponentAddress,
     ) -> (
         ResourceAddress,
@@ -1210,13 +1205,6 @@ impl TestRunner {
             ),
         );
         access_rules.insert(
-            UpdateMetadata,
-            (
-                rule!(require(update_metadata_auth)),
-                MUTABLE(rule!(require(admin_auth))),
-            ),
-        );
-        access_rules.insert(
             Freeze,
             (
                 rule!(require(freeze_auth)),
@@ -1228,7 +1216,8 @@ impl TestRunner {
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
 
-        let token_address = self.create_fungible_resource_and_deposit(access_rules, account);
+        let token_address =
+            self.create_fungible_resource_and_deposit(owner_role, access_rules, account);
 
         (
             token_address,
@@ -1242,7 +1231,10 @@ impl TestRunner {
         )
     }
 
-    pub fn create_everything_allowed_non_fungible_resource(&mut self) -> ResourceAddress {
+    pub fn create_everything_allowed_non_fungible_resource(
+        &mut self,
+        owner_role: OwnerRole,
+    ) -> ResourceAddress {
         let mut access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)> = BTreeMap::new();
         for key in ALL_RESOURCE_AUTH_KEYS {
             access_rules.insert(key, (rule!(allow_all), rule!(allow_all)));
@@ -1251,9 +1243,10 @@ impl TestRunner {
         let receipt = self.execute_manifest_ignoring_fee(
             ManifestBuilder::new()
                 .create_non_fungible_resource::<_, Vec<_>, ()>(
+                    owner_role,
                     NonFungibleIdType::Integer,
                     false,
-                    BTreeMap::new(),
+                    metadata!(),
                     access_rules,
                     None,
                 )
@@ -1271,7 +1264,7 @@ impl TestRunner {
         access_rules.insert(Recall, (rule!(allow_all), LOCKED));
         access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
 
-        self.create_fungible_resource_and_deposit(access_rules, account)
+        self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account)
     }
 
     pub fn create_freezeable_non_fungible(&mut self, account: ComponentAddress) -> ResourceAddress {
@@ -1291,7 +1284,7 @@ impl TestRunner {
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Recall, (rule!(allow_all), LOCKED));
 
-        self.create_fungible_resource_and_deposit(access_rules, account)
+        self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account)
     }
 
     pub fn create_restricted_burn_token(
@@ -1304,7 +1297,8 @@ impl TestRunner {
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
-        let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
+        let resource_address =
+            self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account);
 
         (auth_resource_address, resource_address)
     }
@@ -1321,7 +1315,8 @@ impl TestRunner {
             (rule!(require(auth_resource_address)), LOCKED),
         );
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-        let resource_address = self.create_fungible_resource_and_deposit(access_rules, account);
+        let resource_address =
+            self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account);
 
         (auth_resource_address, resource_address)
     }
@@ -1345,11 +1340,12 @@ impl TestRunner {
         entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .create_non_fungible_resource(
+                OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                BTreeMap::new(),
+                metadata!(),
                 access_rules,
                 Some(entries),
             )
@@ -1373,11 +1369,12 @@ impl TestRunner {
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .create_fungible_resource(
+                OwnerRole::None,
                 true,
                 divisibility,
-                BTreeMap::new(),
+                metadata!(),
                 access_rules,
                 Some(amount),
             )
@@ -1403,8 +1400,8 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(require(admin_auth)), LOCKED));
         access_rules.insert(Burn, (rule!(require(admin_auth)), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
-            .create_fungible_resource(true, 1u8, BTreeMap::new(), access_rules, None)
+            .lock_fee(self.faucet_component(), 500u32.into())
+            .create_fungible_resource(OwnerRole::None, true, 1u8, metadata!(), access_rules, None)
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1418,6 +1415,7 @@ impl TestRunner {
 
     pub fn create_freely_mintable_fungible_resource(
         &mut self,
+        owner_role: OwnerRole,
         amount: Option<Decimal>,
         divisibility: u8,
         account: ComponentAddress,
@@ -1427,8 +1425,15 @@ impl TestRunner {
         access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
-            .create_fungible_resource(true, divisibility, BTreeMap::new(), access_rules, amount)
+            .lock_fee(self.faucet_component(), 500u32.into())
+            .create_fungible_resource(
+                owner_role,
+                true,
+                divisibility,
+                metadata!(),
+                access_rules,
+                amount,
+            )
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1441,6 +1446,7 @@ impl TestRunner {
 
     pub fn create_freely_mintable_and_burnable_fungible_resource(
         &mut self,
+        owner_role: OwnerRole,
         amount: Option<Decimal>,
         divisibility: u8,
         account: ComponentAddress,
@@ -1451,8 +1457,15 @@ impl TestRunner {
         access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
-            .create_fungible_resource(true, divisibility, BTreeMap::new(), access_rules, amount)
+            .lock_fee(self.faucet_component(), 500u32.into())
+            .create_fungible_resource(
+                owner_role,
+                true,
+                divisibility,
+                metadata!(),
+                access_rules,
+                amount,
+            )
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1475,7 +1488,7 @@ impl TestRunner {
             .call_method(
                 self.faucet_component(),
                 "lock_fee",
-                manifest_args!(dec!("10")),
+                manifest_args!(dec!("100")),
             )
             .borrow_mut(|builder| Result::<_, Infallible>::Ok(handler(builder)))
             .unwrap()
@@ -1872,49 +1885,7 @@ pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
 ) -> PackageDefinition {
-    let mut blueprints = BTreeMap::new();
-    blueprints.insert(
-        blueprint_name.to_string(),
-        BlueprintDefinitionInit {
-            blueprint_type: BlueprintType::default(),
-            feature_set: btreeset!(),
-            dependencies: btreeset!(),
-
-            schema: BlueprintSchemaInit {
-                generics: vec![],
-                schema: ScryptoSchema {
-                    type_kinds: vec![],
-                    type_metadata: vec![],
-                    type_validations: vec![],
-                },
-                state: BlueprintStateSchemaInit {
-                    fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
-                        UNIT_ID,
-                    ))],
-                    collections: vec![],
-                },
-                events: BlueprintEventSchemaInit::default(),
-                functions: BlueprintFunctionsSchemaInit {
-                    virtual_lazy_load_functions: btreemap!(),
-                    functions: btreemap!(
-                    function_name.to_string() => FunctionSchemaInit {
-                            receiver: Option::None,
-                            input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                            output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                            export: format!("{}_{}", blueprint_name, function_name),
-                        }
-                    ),
-                },
-            },
-
-            royalty_config: PackageRoyaltyConfig::default(),
-            auth_config: AuthConfig {
-                function_auth: FunctionAuth::AllowAll,
-                method_auth: MethodAuthTemplate::AllowAll,
-            },
-        },
-    );
-    PackageDefinition { blueprints }
+    PackageDefinition::single_test_function(blueprint_name, function_name)
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

@@ -29,7 +29,7 @@ pub struct ExecutionTraceModule {
 
     /// Current kernel calls depth. Note that this doesn't necessarily correspond to the
     /// call frame depth, as there can be nested kernel calls within a single call frame
-    /// (e.g. lock_substate call inside drop_node).
+    /// (e.g. open_substate call inside drop_node).
     current_kernel_call_depth: usize,
 
     /// A stack of traced kernel call inputs, their origin, and the instruction index.

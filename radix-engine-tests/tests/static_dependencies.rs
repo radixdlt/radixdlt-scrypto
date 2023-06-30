@@ -1,6 +1,7 @@
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
-use radix_engine_interface::metadata_init;
+use radix_engine_interface::{metadata, metadata_init};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::InstructionV1;
@@ -40,7 +41,7 @@ fn test_static_package_address() {
         test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address2,
             "Sample",
@@ -63,7 +64,7 @@ fn test_static_component_address() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .call_function(
             package_address,
             "FaucetCall",
@@ -115,7 +116,7 @@ fn static_component_should_be_callable() {
         |blueprint, _| blueprint.eq("PreallocatedCall"),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address2,
             "PreallocatedCall",
@@ -145,16 +146,17 @@ fn static_resource_should_be_callable() {
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
                 blueprint_name: "FungibleResourceManager".to_string(),
-                function_name: "create_with_initial_supply_and_address".to_string(),
+                function_name: "create_with_initial_supply".to_string(),
                 args: manifest_decode(
                     &manifest_encode(
-                        &FungibleResourceManagerCreateWithInitialSupplyAndAddressManifestInput {
+                        &FungibleResourceManagerCreateWithInitialSupplyManifestInput {
+                            owner_role: OwnerRole::None,
                             track_total_supply: true,
                             divisibility: 0u8,
-                            metadata: metadata_init!(),
+                            metadata: metadata!(),
                             access_rules: btreemap!(),
                             initial_supply: Decimal::from(10),
-                            resource_address: ManifestAddressReservation(0),
+                            address_reservation: Some(ManifestAddressReservation(0)),
                         },
                     )
                     .unwrap(),
@@ -182,7 +184,7 @@ fn static_resource_should_be_callable() {
         |blueprint, _| blueprint.eq("SomeResource"),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address2,
             "SomeResource",
@@ -213,7 +215,7 @@ fn static_package_should_be_callable() {
         |blueprint, _| blueprint.eq("SomePackage"),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address2,
             "SomePackage",

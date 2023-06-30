@@ -10,7 +10,7 @@
 CALL_METHOD 
     Address("${account_address}") 
     "lock_fee"
-    Decimal("10");
+    Decimal("5000");
 
 # Publishing a new package and setting some of its royalty and access rules.
 PUBLISH_PACKAGE_ADVANCED
@@ -19,5 +19,5 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(
         Map<String, Tuple>()
     )
-    Map<String, Enum>()        # Metadata
+    Map<String, Tuple>()        # Metadata
     Enum<0u8>();               # Owner AccessRule

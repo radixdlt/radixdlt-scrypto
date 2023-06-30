@@ -17,7 +17,7 @@ fn test_trace_resource_transfers() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .call_function(
             package_address,
             "ExecutionTraceTest",
@@ -78,8 +78,7 @@ fn test_trace_resource_transfers() {
     ); // One resource change in the first instruction (lock fee)
 
     let fee_summary = receipt.expect_commit(true).fee_summary.clone();
-    let total_fee_paid = fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd
-        - fee_summary.total_bad_debt_xrd;
+    let total_fee_paid = fee_summary.total_cost();
 
     // Source vault withdrawal
     assert!(receipt
@@ -121,7 +120,7 @@ fn test_trace_fee_payments() {
 
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .call_function(
             package_address,
@@ -143,7 +142,7 @@ fn test_trace_fee_payments() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(
             funded_component.clone(),
             "test_lock_contingent_fee",
@@ -160,8 +159,7 @@ fn test_trace_fee_payments() {
         .execution_trace
         .resource_changes;
     let fee_summary = receipt.expect_commit(true).fee_summary.clone();
-    let total_fee_paid = fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd
-        - fee_summary.total_bad_debt_xrd;
+    let total_fee_paid = fee_summary.total_cost();
 
     assert_eq!(1, resource_changes.len());
     assert!(resource_changes
@@ -177,7 +175,7 @@ fn test_instruction_traces() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
@@ -407,7 +405,7 @@ fn test_worktop_changes() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .withdraw_from_account(account, fungible_resource, 100.into())
         .withdraw_non_fungibles_from_account(
             account,

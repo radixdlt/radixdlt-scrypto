@@ -1,5 +1,5 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::LockSubstateError;
+use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::id_allocator::IdAllocator;
 use radix_engine::kernel::kernel::KernelBoot;
 use radix_engine::kernel::kernel_api::KernelSubstateApi;
@@ -22,11 +22,11 @@ use transaction::builder::ManifestBuilder;
 use transaction::prelude::TestTransaction;
 
 #[test]
-pub fn test_lock_substate_of_invisible_package_address() {
+pub fn test_open_substate_of_invisible_package_address() {
     // Create dummy transaction
     let transaction = TestTransaction::new_from_nonce(
         ManifestBuilder::new()
-            .lock_fee(FAUCET, 50u32.into())
+            .lock_fee(FAUCET, 500u32.into())
             .build(),
         1,
     )
@@ -69,7 +69,7 @@ pub fn test_lock_substate_of_invisible_package_address() {
     let mut kernel = kernel_boot.create_kernel_for_test_only();
 
     // Lock package substate
-    let result = kernel.kernel_lock_substate(
+    let result = kernel.kernel_open_substate(
         PACKAGE_PACKAGE.as_node_id(),
         MAIN_BASE_PARTITION
             .at_offset(PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET)
@@ -83,7 +83,7 @@ pub fn test_lock_substate_of_invisible_package_address() {
     assert!(matches!(
         result,
         Err(RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::LockSubstateError(LockSubstateError::TrackError(_))
+            CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(_))
         )))
     ));
 }

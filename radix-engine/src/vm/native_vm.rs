@@ -4,7 +4,7 @@ use crate::blueprints::consensus_manager::ConsensusManagerNativePackage;
 use crate::blueprints::identity::IdentityNativePackage;
 use crate::blueprints::package::PackageNativePackage;
 use crate::blueprints::pool::PoolNativePackage;
-use crate::blueprints::resource::ResourceManagerNativePackage;
+use crate::blueprints::resource::ResourceNativePackage;
 use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
@@ -72,9 +72,7 @@ impl VmInvoke for NativeVmInstance {
 
         match self.native_package_code_id {
             PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api),
-            RESOURCE_MANAGER_CODE_ID => {
-                ResourceManagerNativePackage::invoke_export(export_name, input, api)
-            }
+            RESOURCE_CODE_ID => ResourceNativePackage::invoke_export(export_name, input, api),
             CONSENSUS_MANAGER_CODE_ID => {
                 ConsensusManagerNativePackage::invoke_export(export_name, input, api)
             }

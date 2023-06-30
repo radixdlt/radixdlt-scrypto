@@ -15,7 +15,9 @@ use sbor::rust::collections::btree_map::Entry;
 use sbor::rust::iter::empty;
 use sbor::rust::mem;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+use super::interface::{StoreCommit, StoreCommitInfo};
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
 pub struct StateUpdates {
     pub database_updates: DatabaseUpdates,
     pub system_updates: SystemUpdates,
@@ -111,14 +113,14 @@ impl Write {
 }
 
 #[derive(Clone, Debug)]
-pub struct TrackedSubstateKey {
+pub struct TrackedSubstate {
     pub substate_key: SubstateKey,
-    pub tracked: TrackedKey,
+    pub substate_value: TrackedSubstateValue,
 }
 
 // TODO: Add new virtualized
 #[derive(Clone, Debug)]
-pub enum TrackedKey {
+pub enum TrackedSubstateValue {
     New(RuntimeSubstate),
     ReadOnly(ReadOnly),
     ReadExistAndWrite(IndexedScryptoValue, Write),
@@ -127,55 +129,56 @@ pub enum TrackedKey {
     Garbage,
 }
 
-impl TrackedKey {
-    pub fn get_runtime_substate_mut(&mut self) -> Option<&mut RuntimeSubstate> {
+impl TrackedSubstateValue {
+    fn get_runtime_substate_mut(&mut self) -> Option<&mut RuntimeSubstate> {
         match self {
-            TrackedKey::New(substate)
-            | TrackedKey::WriteOnly(Write::Update(substate))
-            | TrackedKey::ReadOnly(ReadOnly::Existent(substate))
-            | TrackedKey::ReadExistAndWrite(_, Write::Update(substate))
-            | TrackedKey::ReadNonExistAndWrite(substate) => Some(substate),
+            TrackedSubstateValue::New(substate)
+            | TrackedSubstateValue::WriteOnly(Write::Update(substate))
+            | TrackedSubstateValue::ReadOnly(ReadOnly::Existent(substate))
+            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Update(substate))
+            | TrackedSubstateValue::ReadNonExistAndWrite(substate) => Some(substate),
 
-            TrackedKey::WriteOnly(Write::Delete)
-            | TrackedKey::ReadExistAndWrite(_, Write::Delete)
-            | TrackedKey::ReadOnly(ReadOnly::NonExistent)
-            | TrackedKey::Garbage => None,
+            TrackedSubstateValue::WriteOnly(Write::Delete)
+            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Delete)
+            | TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent)
+            | TrackedSubstateValue::Garbage => None,
         }
     }
 
     pub fn get(&self) -> Option<&IndexedScryptoValue> {
         match self {
-            TrackedKey::New(substate)
-            | TrackedKey::WriteOnly(Write::Update(substate))
-            | TrackedKey::ReadOnly(ReadOnly::Existent(substate))
-            | TrackedKey::ReadExistAndWrite(_, Write::Update(substate))
-            | TrackedKey::ReadNonExistAndWrite(substate) => Some(&substate.value),
-            TrackedKey::WriteOnly(Write::Delete)
-            | TrackedKey::ReadExistAndWrite(_, Write::Delete)
-            | TrackedKey::ReadOnly(ReadOnly::NonExistent)
-            | TrackedKey::Garbage => None,
+            TrackedSubstateValue::New(substate)
+            | TrackedSubstateValue::WriteOnly(Write::Update(substate))
+            | TrackedSubstateValue::ReadOnly(ReadOnly::Existent(substate))
+            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Update(substate))
+            | TrackedSubstateValue::ReadNonExistAndWrite(substate) => Some(&substate.value),
+            TrackedSubstateValue::WriteOnly(Write::Delete)
+            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Delete)
+            | TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent)
+            | TrackedSubstateValue::Garbage => None,
         }
     }
 
     pub fn set(&mut self, value: IndexedScryptoValue) {
         match self {
-            TrackedKey::Garbage => {
-                *self = TrackedKey::WriteOnly(Write::Update(RuntimeSubstate::new(value)));
+            TrackedSubstateValue::Garbage => {
+                *self = TrackedSubstateValue::WriteOnly(Write::Update(RuntimeSubstate::new(value)));
             }
-            TrackedKey::New(substate)
-            | TrackedKey::WriteOnly(Write::Update(substate))
-            | TrackedKey::ReadExistAndWrite(_, Write::Update(substate))
-            | TrackedKey::ReadNonExistAndWrite(substate) => {
+            TrackedSubstateValue::New(substate)
+            | TrackedSubstateValue::WriteOnly(Write::Update(substate))
+            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Update(substate))
+            | TrackedSubstateValue::ReadNonExistAndWrite(substate) => {
                 substate.value = value;
             }
-            TrackedKey::ReadOnly(ReadOnly::NonExistent) => {
-                let new_tracked = TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(value));
+            TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent) => {
+                let new_tracked =
+                    TrackedSubstateValue::ReadNonExistAndWrite(RuntimeSubstate::new(value));
                 let mut old = mem::replace(self, new_tracked);
                 self.get_runtime_substate_mut().unwrap().lock_state =
                     old.get_runtime_substate_mut().unwrap().lock_state;
             }
-            TrackedKey::ReadOnly(ReadOnly::Existent(old)) => {
-                let new_tracked = TrackedKey::ReadExistAndWrite(
+            TrackedSubstateValue::ReadOnly(ReadOnly::Existent(old)) => {
+                let new_tracked = TrackedSubstateValue::ReadExistAndWrite(
                     old.value.clone(),
                     Write::Update(RuntimeSubstate::new(value)),
                 );
@@ -183,8 +186,8 @@ impl TrackedKey {
                 self.get_runtime_substate_mut().unwrap().lock_state =
                     old.get_runtime_substate_mut().unwrap().lock_state;
             }
-            TrackedKey::ReadExistAndWrite(_, write @ Write::Delete)
-            | TrackedKey::WriteOnly(write @ Write::Delete) => {
+            TrackedSubstateValue::ReadExistAndWrite(_, write @ Write::Delete)
+            | TrackedSubstateValue::WriteOnly(write @ Write::Delete) => {
                 *write = Write::Update(RuntimeSubstate::new(value));
             }
         };
@@ -192,66 +195,70 @@ impl TrackedKey {
 
     pub fn take(&mut self) -> Option<IndexedScryptoValue> {
         match self {
-            TrackedKey::Garbage => None,
-            TrackedKey::New(..) => {
-                let old = mem::replace(self, TrackedKey::Garbage);
+            TrackedSubstateValue::Garbage => None,
+            TrackedSubstateValue::New(..) => {
+                let old = mem::replace(self, TrackedSubstateValue::Garbage);
                 old.into_value()
             }
-            TrackedKey::WriteOnly(_) => {
-                let old = mem::replace(self, TrackedKey::WriteOnly(Write::Delete));
+            TrackedSubstateValue::WriteOnly(_) => {
+                let old = mem::replace(self, TrackedSubstateValue::WriteOnly(Write::Delete));
                 old.into_value()
             }
-            TrackedKey::ReadExistAndWrite(_, write) => {
+            TrackedSubstateValue::ReadExistAndWrite(_, write) => {
                 let write = mem::replace(write, Write::Delete);
                 write.into_value()
             }
-            TrackedKey::ReadNonExistAndWrite(..) => {
-                let old = mem::replace(self, TrackedKey::ReadOnly(ReadOnly::NonExistent));
+            TrackedSubstateValue::ReadNonExistAndWrite(..) => {
+                let old = mem::replace(self, TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent));
                 old.into_value()
             }
-            TrackedKey::ReadOnly(ReadOnly::Existent(v)) => {
-                let new_tracked = TrackedKey::ReadExistAndWrite(v.value.clone(), Write::Delete);
+            TrackedSubstateValue::ReadOnly(ReadOnly::Existent(v)) => {
+                let new_tracked =
+                    TrackedSubstateValue::ReadExistAndWrite(v.value.clone(), Write::Delete);
                 let old = mem::replace(self, new_tracked);
                 old.into_value()
             }
-            TrackedKey::ReadOnly(ReadOnly::NonExistent) => None,
+            TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent) => None,
         }
     }
 
     fn revert_writes(&mut self) {
         match self {
-            TrackedKey::ReadOnly(..) | TrackedKey::Garbage => {}
-            TrackedKey::New(..) | TrackedKey::WriteOnly(_) => {
-                *self = TrackedKey::Garbage;
+            TrackedSubstateValue::ReadOnly(..) | TrackedSubstateValue::Garbage => {}
+            TrackedSubstateValue::New(..) | TrackedSubstateValue::WriteOnly(_) => {
+                *self = TrackedSubstateValue::Garbage;
             }
-            TrackedKey::ReadExistAndWrite(read, _) => {
-                *self =
-                    TrackedKey::ReadOnly(ReadOnly::Existent(RuntimeSubstate::new(read.clone())));
+            TrackedSubstateValue::ReadExistAndWrite(read, _) => {
+                *self = TrackedSubstateValue::ReadOnly(ReadOnly::Existent(RuntimeSubstate::new(
+                    read.clone(),
+                )));
             }
-            TrackedKey::ReadNonExistAndWrite(..) => {
-                *self = TrackedKey::ReadOnly(ReadOnly::NonExistent);
+            TrackedSubstateValue::ReadNonExistAndWrite(..) => {
+                *self = TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent);
             }
         }
     }
 
     pub fn into_value(self) -> Option<IndexedScryptoValue> {
         match self {
-            TrackedKey::New(substate)
-            | TrackedKey::WriteOnly(Write::Update(substate))
-            | TrackedKey::ReadOnly(ReadOnly::Existent(substate))
-            | TrackedKey::ReadNonExistAndWrite(substate)
-            | TrackedKey::ReadExistAndWrite(_, Write::Update(substate)) => Some(substate.value),
-            TrackedKey::WriteOnly(Write::Delete)
-            | TrackedKey::ReadExistAndWrite(_, Write::Delete)
-            | TrackedKey::ReadOnly(ReadOnly::NonExistent)
-            | TrackedKey::Garbage => None,
+            TrackedSubstateValue::New(substate)
+            | TrackedSubstateValue::WriteOnly(Write::Update(substate))
+            | TrackedSubstateValue::ReadOnly(ReadOnly::Existent(substate))
+            | TrackedSubstateValue::ReadNonExistAndWrite(substate)
+            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Update(substate)) => {
+                Some(substate.value)
+            }
+            TrackedSubstateValue::WriteOnly(Write::Delete)
+            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Delete)
+            | TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent)
+            | TrackedSubstateValue::Garbage => None,
         }
     }
 }
 
 #[derive(Debug)]
 pub struct TrackedPartition {
-    pub substates: BTreeMap<DbSortKey, TrackedSubstateKey>,
+    pub substates: BTreeMap<DbSortKey, TrackedSubstate>,
     pub range_read: u32,
 }
 
@@ -263,7 +270,7 @@ impl TrackedPartition {
         }
     }
 
-    pub fn new_with_substates(substates: BTreeMap<DbSortKey, TrackedSubstateKey>) -> Self {
+    pub fn new_with_substates(substates: BTreeMap<DbSortKey, TrackedSubstate>) -> Self {
         Self {
             substates,
             range_read: 0,
@@ -271,8 +278,8 @@ impl TrackedPartition {
     }
 
     pub fn revert_writes(&mut self) {
-        for tracked_key in &mut self.substates.values_mut() {
-            tracked_key.tracked.revert_writes();
+        for substate in &mut self.substates.values_mut() {
+            substate.substate_value.revert_writes();
         }
     }
 }
@@ -313,19 +320,17 @@ pub fn to_state_updates<M: DatabaseKeyMapper>(
             let mut partition_updates = index_map_new();
 
             for (db_sort_key, tracked) in tracked_partition.substates {
-                let update = match tracked.tracked {
-                    TrackedKey::ReadOnly(..) | TrackedKey::Garbage => None,
-                    TrackedKey::ReadNonExistAndWrite(substate) | TrackedKey::New(substate) => {
+                let update = match tracked.substate_value {
+                    TrackedSubstateValue::ReadOnly(..) | TrackedSubstateValue::Garbage => None,
+                    TrackedSubstateValue::ReadNonExistAndWrite(substate)
+                    | TrackedSubstateValue::New(substate) => {
                         Some(DatabaseUpdate::Set(substate.value.into()))
                     }
-                    TrackedKey::ReadExistAndWrite(_, write) | TrackedKey::WriteOnly(write) => {
-                        match write {
-                            Write::Delete => Some(DatabaseUpdate::Delete),
-                            Write::Update(substate) => {
-                                Some(DatabaseUpdate::Set(substate.value.into()))
-                            }
-                        }
-                    }
+                    TrackedSubstateValue::ReadExistAndWrite(_, write)
+                    | TrackedSubstateValue::WriteOnly(write) => match write {
+                        Write::Delete => Some(DatabaseUpdate::Delete),
+                        Write::Update(substate) => Some(DatabaseUpdate::Set(substate.value.into())),
+                    },
                 };
                 if let Some(update) = update {
                     db_partition_updates.insert(db_sort_key, update.clone());
@@ -352,12 +357,12 @@ pub fn to_state_updates<M: DatabaseKeyMapper>(
 }
 
 struct TrackedIter<'a> {
-    iter: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
+    iter: Box<dyn Iterator<Item = (DbSortKey, IndexedScryptoValue)> + 'a>,
     num_iterations: u32,
 }
 
 impl<'a> TrackedIter<'a> {
-    fn new(iter: Box<dyn Iterator<Item = PartitionEntry> + 'a>) -> Self {
+    fn new(iter: Box<dyn Iterator<Item = (DbSortKey, IndexedScryptoValue)> + 'a>) -> Self {
         Self {
             iter,
             num_iterations: 0u32,
@@ -366,16 +371,19 @@ impl<'a> TrackedIter<'a> {
 }
 
 impl<'a> Iterator for TrackedIter<'a> {
-    type Item = PartitionEntry;
+    type Item = (DbSortKey, IndexedScryptoValue);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.num_iterations = self.num_iterations + 1;
         self.iter.next()
     }
 }
+
 /// Transaction-wide states and side effects
 pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
+    /// Substate database, use `get_substate_from_db` and `list_entries_from_db` for access
     substate_db: &'s S,
+
     tracked_nodes: IndexMap<NodeId, TrackedNode>,
     force_write_tracked_nodes: IndexMap<NodeId, TrackedNode>,
     /// TODO: if time allows, consider merging into tracked nodes.
@@ -397,6 +405,57 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             next_lock_id: 0,
             phantom_data: PhantomData::default(),
         }
+    }
+
+    fn get_substate_from_db(
+        substate_db: &'s S,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+        store_access: &mut StoreAccessInfo,
+    ) -> Option<IndexedScryptoValue> {
+        let result = substate_db
+            .get_substate(partition_key, sort_key)
+            .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
+        if let Some(x) = &result {
+            store_access.push(StoreAccess::ReadFromDb(x.len()));
+        } else {
+            store_access.push(StoreAccess::ReadFromDbNotFound);
+        }
+        result
+    }
+
+    fn list_entries_from_db<'x>(
+        substate_db: &'x S,
+        partition_key: &DbPartitionKey,
+        store_access: &'x mut StoreAccessInfo,
+    ) -> Box<dyn Iterator<Item = (DbSortKey, IndexedScryptoValue)> + 'x> {
+        struct TracedIterator<'a, 'b> {
+            iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
+            store_access: &'b mut StoreAccessInfo,
+        }
+
+        impl<'a, 'b> Iterator for TracedIterator<'a, 'b> {
+            type Item = (DbSortKey, IndexedScryptoValue);
+
+            fn next(&mut self) -> Option<Self::Item> {
+                let result = self.iterator.next();
+                if let Some(x) = result {
+                    self.store_access.push(StoreAccess::ReadFromDb(x.1.len()));
+                    Some((
+                        x.0,
+                        IndexedScryptoValue::from_vec(x.1).expect("Failed to decode substate"),
+                    ))
+                } else {
+                    self.store_access.push(StoreAccess::ReadFromDbNotFound);
+                    None
+                }
+            }
+        }
+
+        Box::new(TracedIterator {
+            iterator: substate_db.list_entries(partition_key),
+            store_access,
+        })
     }
 
     fn new_lock_handle(
@@ -439,8 +498,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                         .substates
                         .get_mut(&db_sort_key)
                         .unwrap()
-                        .tracked;
-                    *tracked = force_track_key.tracked;
+                        .substate_value;
+                    *tracked = force_track_key.substate_value;
                 }
             }
         }
@@ -471,7 +530,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             .or_insert(TrackedPartition::new())
     }
 
-    /// Returns tuple of TrackedKey and boolean value which is true if substate
+    /// Returns tuple of TrackedSubstateValue and boolean value which is true if substate
     /// with specified db_key was found in tracked substates list (no db access needed).
     fn get_tracked_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
@@ -479,7 +538,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
         virtualize: F,
-    ) -> (&mut TrackedKey, StoreAccessInfo) {
+        store_access: &mut StoreAccessInfo,
+    ) -> &mut TrackedSubstateValue {
         let db_sort_key = M::to_db_sort_key(&substate_key);
 
         let partition = &mut self
@@ -492,41 +552,43 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             .substates;
         let entry = partition.entry(db_sort_key.clone());
 
-        let mut store_access = Vec::new();
-
         match entry {
             Entry::Vacant(e) => {
                 let db_partition_key = M::to_db_partition_key(node_id, partition_num);
-                let value = self
-                    .substate_db
-                    .get_substate(&db_partition_key, &db_sort_key)
-                    .map(|e| IndexedScryptoValue::from_vec(e).expect("Failed to decode substate"));
+                let value = Self::get_substate_from_db(
+                    self.substate_db,
+                    &db_partition_key,
+                    &db_sort_key,
+                    store_access,
+                );
                 if let Some(value) = value {
                     store_access.push(StoreAccess::ReadFromDb(value.len()));
-                    store_access.push(StoreAccess::WriteToTrack(value.len()));
+                    store_access.push(StoreAccess::NewEntryInTrack);
 
-                    let tracked = TrackedSubstateKey {
+                    let tracked = TrackedSubstate {
                         substate_key,
-                        tracked: TrackedKey::ReadOnly(ReadOnly::Existent(RuntimeSubstate::new(
-                            value,
-                        ))),
+                        substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::Existent(
+                            RuntimeSubstate::new(value),
+                        )),
                     };
                     e.insert(tracked);
                 } else {
                     store_access.push(StoreAccess::ReadFromDbNotFound);
+                    store_access.push(StoreAccess::NewEntryInTrack);
 
                     let value = virtualize();
                     if let Some(value) = value {
-                        store_access.push(StoreAccess::WriteToTrack(value.len()));
-                        let tracked = TrackedSubstateKey {
+                        let tracked = TrackedSubstate {
                             substate_key,
-                            tracked: TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(value)),
+                            substate_value: TrackedSubstateValue::ReadNonExistAndWrite(
+                                RuntimeSubstate::new(value),
+                            ),
                         };
                         e.insert(tracked);
                     } else {
-                        let tracked = TrackedSubstateKey {
+                        let tracked = TrackedSubstate {
                             substate_key,
-                            tracked: TrackedKey::ReadOnly(ReadOnly::NonExistent),
+                            substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent),
                         };
                         e.insert(tracked);
                     }
@@ -534,22 +596,23 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             }
             Entry::Occupied(mut entry) => {
                 let read_only_non_existent = matches!(
-                    entry.get().tracked,
-                    TrackedKey::ReadOnly(ReadOnly::NonExistent)
+                    entry.get().substate_value,
+                    TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent)
                 );
                 if read_only_non_existent {
                     let value = virtualize();
                     if let Some(value) = value {
-                        store_access.push(StoreAccess::WriteToTrack(value.len()));
-                        let tracked = TrackedSubstateKey {
+                        let tracked = TrackedSubstate {
                             substate_key,
-                            tracked: TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(value)),
+                            substate_value: TrackedSubstateValue::ReadNonExistAndWrite(
+                                RuntimeSubstate::new(value),
+                            ),
                         };
                         entry.insert(tracked);
                     } else {
-                        let tracked = TrackedSubstateKey {
+                        let tracked = TrackedSubstate {
                             substate_key,
-                            tracked: TrackedKey::ReadOnly(ReadOnly::NonExistent),
+                            substate_value: TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent),
                         };
                         entry.insert(tracked);
                     }
@@ -557,10 +620,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             }
         }
 
-        (
-            &mut partition.get_mut(&db_sort_key).unwrap().tracked,
-            StoreAccessInfo::with_vector(store_access),
-        )
+        &mut partition.get_mut(&db_sort_key).unwrap().substate_value
     }
 
     fn get_tracked_substate(
@@ -568,8 +628,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: SubstateKey,
-    ) -> (&mut TrackedKey, StoreAccessInfo) {
-        self.get_tracked_substate_virtualize(node_id, partition_num, substate_key, || None)
+        store_access: &mut StoreAccessInfo,
+    ) -> &mut TrackedSubstateValue {
+        self.get_tracked_substate_virtualize(
+            node_id,
+            partition_num,
+            substate_key,
+            || None,
+            store_access,
+        )
     }
 }
 
@@ -583,11 +650,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 let partition_substates = partition
                     .into_iter()
                     .map(|(substate_key, value)| {
-                        store_access.push(StoreAccess::WriteToTrack(value.len()));
+                        store_access.push(StoreAccess::NewEntryInTrack);
                         let db_sort_key = M::to_db_sort_key(&substate_key);
-                        let tracked = TrackedSubstateKey {
+                        let tracked = TrackedSubstate {
                             substate_key,
-                            tracked: TrackedKey::New(RuntimeSubstate::new(value)),
+                            substate_value: TrackedSubstateValue::New(RuntimeSubstate::new(value)),
                         };
                         (db_sort_key, tracked)
                     })
@@ -605,7 +672,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             },
         );
 
-        StoreAccessInfo::with_vector(store_access)
+        store_access
     }
 
     fn set_substate(
@@ -615,8 +682,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
     ) -> Result<StoreAccessInfo, SetSubstateError> {
-        let db_sort_key = M::to_db_sort_key(&substate_key);
+        let mut store_access = Vec::new();
 
+        let db_sort_key = M::to_db_sort_key(&substate_key);
         let tracked_partition = self
             .tracked_nodes
             .entry(node_id)
@@ -629,22 +697,18 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         match entry {
             Entry::Vacant(e) => {
-                let value_len = substate_value.len();
-
-                let tracked = TrackedSubstateKey {
+                store_access.push(StoreAccess::NewEntryInTrack);
+                let tracked = TrackedSubstate {
                     substate_key,
-                    tracked: TrackedKey::WriteOnly(Write::Update(RuntimeSubstate::new(
-                        substate_value,
-                    ))),
+                    substate_value: TrackedSubstateValue::WriteOnly(Write::Update(
+                        RuntimeSubstate::new(substate_value),
+                    )),
                 };
                 e.insert(tracked);
-
-                Ok(StoreAccessInfo::new()
-                    .builder_push_if_not_empty(StoreAccess::WriteToTrack(value_len)))
             }
             Entry::Occupied(mut e) => {
                 let tracked = e.get_mut();
-                if let Some(runtime) = tracked.tracked.get_runtime_substate_mut() {
+                if let Some(runtime) = tracked.substate_value.get_runtime_substate_mut() {
                     if runtime.lock_state.is_locked() {
                         return Err(SetSubstateError::SubstateLocked(
                             node_id,
@@ -653,23 +717,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                         ));
                     }
                 }
-                let new_value_len = substate_value.len();
-                let old_value_len = if let Some(old_value) = tracked.tracked.get() {
-                    old_value.len()
-                } else {
-                    0
-                };
 
-                tracked.tracked.set(substate_value);
-
-                Ok(
-                    StoreAccessInfo::new().builder_push_if_not_empty(StoreAccess::RewriteToTrack(
-                        old_value_len,
-                        new_value_len,
-                    )),
-                )
+                tracked.substate_value.set(substate_value);
             }
         }
+
+        Ok(store_access)
     }
 
     // Should not use on virtualized substates
@@ -679,8 +732,14 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), TakeSubstateError> {
-        let (tracked, mut store_access) =
-            self.get_tracked_substate(node_id, partition_num, substate_key.clone());
+        let mut store_access = Vec::new();
+
+        let tracked = self.get_tracked_substate(
+            node_id,
+            partition_num,
+            substate_key.clone(),
+            &mut store_access,
+        );
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
             if runtime.lock_state.is_locked() {
                 return Err(TakeSubstateError::SubstateLocked(
@@ -691,9 +750,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         }
 
-        store_access.push(StoreAccess::DeleteFromTrack);
+        let value = tracked.take();
 
-        Ok((tracked.take(), store_access))
+        Ok((value, store_access))
     }
 
     fn scan_substates(
@@ -702,6 +761,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         count: u32,
     ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo) {
+        let mut store_access = Vec::new();
+
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -711,17 +772,14 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .unwrap_or(false);
         let tracked_partition = node_updates.and_then(|n| n.tracked_partitions.get(&partition_num));
 
-        let mut store_access = Vec::new();
-
         if let Some(tracked_partition) = tracked_partition {
             for tracked in tracked_partition.substates.values() {
                 if items.len() == count {
-                    return (items, StoreAccessInfo::with_vector(store_access));
+                    return (items, store_access);
                 }
 
                 // TODO: Check that substate is not write locked, before use outside of native blueprints
-                if let Some(substate) = tracked.tracked.get() {
-                    store_access.push(StoreAccess::ReadFromTrack(substate.len()));
+                if let Some(substate) = tracked.substate_value.get() {
                     items.push(substate.clone());
                 }
             }
@@ -729,12 +787,16 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // Optimization, no need to go into database if the node is just created
         if is_new {
-            return (items, StoreAccessInfo::with_vector(store_access));
+            return (items, store_access);
         }
 
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
-        let mut tracked_iter = TrackedIter::new(self.substate_db.list_entries(&db_partition_key));
-        for (db_sort_key, substate) in &mut tracked_iter {
+        let mut tracked_iter = TrackedIter::new(Self::list_entries_from_db(
+            self.substate_db,
+            &db_partition_key,
+            &mut store_access,
+        ));
+        for (db_sort_key, value) in &mut tracked_iter {
             if items.len() == count {
                 break;
             }
@@ -746,8 +808,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 continue;
             }
 
-            store_access.push(StoreAccess::ReadFromDb(substate.len()));
-            items.push(IndexedScryptoValue::from_vec(substate).unwrap());
+            items.push(value);
         }
 
         // Update track
@@ -755,7 +816,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         let tracked_partition = self.get_tracked_partition(node_id, partition_num);
         tracked_partition.range_read = u32::max(tracked_partition.range_read, num_iterations);
 
-        (items, StoreAccessInfo::with_vector(store_access))
+        drop(tracked_iter);
+        (items, store_access)
     }
 
     fn take_substates(
@@ -764,6 +826,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         count: u32,
     ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo) {
+        let mut store_access = Vec::new();
+
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -773,19 +837,17 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .map(|tracked_node| tracked_node.is_new)
             .unwrap_or(false);
 
-        let mut store_access = Vec::new();
         // Check what we've currently got so far without going into database
         let mut tracked_partition =
             node_updates.and_then(|n| n.tracked_partitions.get_mut(&partition_num));
         if let Some(tracked_partition) = tracked_partition.as_mut() {
             for tracked in tracked_partition.substates.values_mut() {
                 if items.len() == count {
-                    return (items, StoreAccessInfo::with_vector(store_access));
+                    return (items, store_access);
                 }
 
                 // TODO: Check that substate is not locked, before use outside of native blueprints
-                if let Some(value) = tracked.tracked.take() {
-                    store_access.push(StoreAccess::ReadFromTrack(value.len()));
+                if let Some(value) = tracked.substate_value.take() {
                     items.push(value);
                 }
             }
@@ -793,15 +855,19 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // Optimization, no need to go into database if the node is just created
         if is_new {
-            return (items, StoreAccessInfo::with_vector(store_access));
+            return (items, store_access);
         }
 
         // Read from database
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
-        let mut tracked_iter = TrackedIter::new(self.substate_db.list_entries(&db_partition_key));
+        let mut tracked_iter = TrackedIter::new(Self::list_entries_from_db(
+            self.substate_db,
+            &db_partition_key,
+            &mut store_access,
+        ));
         let new_updates = {
             let mut new_updates = Vec::new();
-            for (db_sort_key, substate) in &mut tracked_iter {
+            for (db_sort_key, value) in &mut tracked_iter {
                 if items.len() == count {
                     break;
                 }
@@ -814,8 +880,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     continue;
                 }
 
-                let value = IndexedScryptoValue::from_vec(substate).unwrap();
-
                 // FIXME: review non-fungible implementation and see if this is an issue.
                 // This only works because only NonFungible Vaults use this.
                 // Will need to fix this by maintaining the invariant that the value
@@ -823,12 +887,14 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 // from being a Map to a Set
                 let substate_key = SubstateKey::Map(value.as_slice().to_vec());
 
-                let tracked = TrackedSubstateKey {
+                let tracked = TrackedSubstate {
                     substate_key,
-                    tracked: TrackedKey::ReadExistAndWrite(value.clone(), Write::Delete),
+                    substate_value: TrackedSubstateValue::ReadExistAndWrite(
+                        value.clone(),
+                        Write::Delete,
+                    ),
                 };
                 new_updates.push((db_sort_key, tracked));
-                store_access.push(StoreAccess::ReadFromDb(value.len()));
 
                 items.push(value);
             }
@@ -842,22 +908,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             tracked_partition.range_read = u32::max(tracked_partition.range_read, num_iterations);
 
             for (db_sort_key, tracked) in new_updates {
-                let new_value_len = tracked.tracked.get().map(|value| value.len());
-
-                if let Some(old_value) = tracked_partition.substates.insert(db_sort_key, tracked) {
-                    if let Some(old_value) = old_value.tracked.get() {
-                        if new_value_len.is_some() {
-                            store_access.push(StoreAccess::RewriteToTrack(
-                                old_value.len(),
-                                new_value_len.unwrap(),
-                            ));
-                        }
-                    }
-                }
+                tracked_partition.substates.insert(db_sort_key, tracked);
             }
         }
 
-        (items, StoreAccessInfo::with_vector(store_access))
+        drop(tracked_iter);
+        (items, store_access)
     }
 
     fn scan_sorted_substates(
@@ -866,6 +922,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         count: u32,
     ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo) {
+        let mut store_access = Vec::new();
+
         // TODO: ensure we abort if any substates are write locked.
         let count: usize = count.try_into().unwrap();
 
@@ -879,36 +937,32 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .entry(partition_num)
             .or_insert(TrackedPartition::new());
 
-        let mut store_access_db = Vec::new();
         // initialize the "from db" iterator: use `dyn`, since we want to skip it altogether if the node is marked as `is_new` in our track
         let mut db_values_count = 0u32;
-        let raw_db_entries: Box<dyn Iterator<Item = PartitionEntry>> = if tracked_node.is_new {
-            Box::new(empty()) // optimization: avoid touching the database altogether
-        } else {
-            let partition_key = M::to_db_partition_key(node_id, partition_num);
-            Box::new(self.substate_db.list_entries(&partition_key))
-        };
-        let db_read_entries = raw_db_entries
-            .map(|(key, db_value)| (key, IndexedScryptoValue::from_vec(db_value).unwrap()))
-            .inspect(|(_key, value)| {
-                db_values_count += 1;
-                store_access_db.push(StoreAccess::ReadFromDb(value.len()));
-            });
+        let raw_db_entries: Box<dyn Iterator<Item = (DbSortKey, IndexedScryptoValue)>> =
+            if tracked_node.is_new {
+                Box::new(empty()) // optimization: avoid touching the database altogether
+            } else {
+                let partition_key = M::to_db_partition_key(node_id, partition_num);
+                Box::new(Self::list_entries_from_db(
+                    self.substate_db,
+                    &partition_key,
+                    &mut store_access,
+                ))
+            };
+        let db_read_entries = raw_db_entries.inspect(|(_key, _value)| {
+            db_values_count += 1;
+        });
 
-        let mut store_access_track = Vec::new();
         // initialize the "from track" iterator
-        let tracked_entry_changes = tracked_partition
-            .substates
-            .iter()
-            .map(|(key, tracked_substate_key)| {
-                // TODO: ensure we abort if any substates are write locked.
-                (key.clone(), tracked_substate_key.tracked.get().cloned())
-            })
-            .inspect(|(_key, value)| {
-                if let Some(len) = value.as_ref().map(|value| value.len()) {
-                    store_access_track.push(StoreAccess::ReadFromTrack(len));
-                }
-            });
+        let tracked_entry_changes =
+            tracked_partition
+                .substates
+                .iter()
+                .map(|(key, tracked_substate)| {
+                    // TODO: ensure we abort if any substates are write locked.
+                    (key.clone(), tracked_substate.substate_value.get().cloned())
+                });
 
         // construct the composite iterator, which applies changes read from our track on top of db values
         let items = OverlayingIterator::new(db_read_entries, tracked_entry_changes)
@@ -916,11 +970,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             .take(count)
             .collect();
 
-        store_access_db.extend(store_access_track);
-
         // Use the statistics (gathered by the `.inspect()`s above) to update the track's metadata and to return costing info
         tracked_partition.range_read = u32::max(tracked_partition.range_read, db_values_count);
-        return (items, StoreAccessInfo::with_vector(store_access_db));
+
+        return (items, store_access);
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
@@ -931,34 +984,37 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         flags: LockFlags,
         virtualize: F,
     ) -> Result<(u32, StoreAccessInfo), AcquireLockError> {
+        let mut store_access = Vec::new();
+
         // Load the substate from state track
-        let (tracked, store_access) = self.get_tracked_substate_virtualize(
+        let tracked = self.get_tracked_substate_virtualize(
             node_id,
             partition_num,
             substate_key.clone(),
             virtualize,
+            &mut store_access,
         );
 
         // Check substate state
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
             match tracked {
-                TrackedKey::New(..) | TrackedKey::Garbage => {
+                TrackedSubstateValue::New(..) | TrackedSubstateValue::Garbage => {
                     return Err(AcquireLockError::LockUnmodifiedBaseOnNewSubstate(
                         *node_id,
                         partition_num,
                         substate_key.clone(),
                     ));
                 }
-                TrackedKey::WriteOnly(..)
-                | TrackedKey::ReadExistAndWrite(..)
-                | TrackedKey::ReadNonExistAndWrite(..) => {
+                TrackedSubstateValue::WriteOnly(..)
+                | TrackedSubstateValue::ReadExistAndWrite(..)
+                | TrackedSubstateValue::ReadNonExistAndWrite(..) => {
                     return Err(AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(
                         *node_id,
                         partition_num,
                         substate_key.clone(),
                     ));
                 }
-                TrackedKey::ReadOnly(..) => {
+                TrackedSubstateValue::ReadOnly(..) => {
                     // Okay
                 }
             }
@@ -980,22 +1036,27 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             AcquireLockError::SubstateLocked(*node_id, partition_num, substate_key.clone())
         })?;
 
-        Ok((
-            self.new_lock_handle(node_id, partition_num, substate_key, flags),
-            store_access,
-        ))
+        let handle = self.new_lock_handle(node_id, partition_num, substate_key, flags);
+
+        Ok((handle, store_access))
     }
 
-    fn release_lock(&mut self, handle: u32) -> StoreAccessInfo {
+    fn close_substate(&mut self, handle: u32) -> StoreAccessInfo {
+        let mut store_access = Vec::new();
+
         let (node_id, partition_num, substate_key, flags) =
             self.locks.remove(&handle).expect("Invalid lock handle");
 
-        let (tracked, store_access) =
-            self.get_tracked_substate(&node_id, partition_num, substate_key.clone());
+        let tracked = self.get_tracked_substate(
+            &node_id,
+            partition_num,
+            substate_key.clone(),
+            &mut store_access,
+        );
 
         let substate = tracked
             .get_runtime_substate_mut()
-            .expect("Could not have created lock on non-existent subsate");
+            .expect("Could not have created lock on non-existent substate");
 
         substate.lock_state.unlock();
 
@@ -1015,9 +1076,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 .substates
                 .insert(
                     db_sort_key,
-                    TrackedSubstateKey {
+                    TrackedSubstate {
                         substate_key,
-                        tracked: cloned_track,
+                        substate_value: cloned_track,
                     },
                 );
         }
@@ -1026,20 +1087,27 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
     }
 
     fn read_substate(&mut self, handle: u32) -> (&IndexedScryptoValue, StoreAccessInfo) {
-        let (node_id, partition_num, substate_key, _flags) =
-            self.locks.get(&handle).expect("Invalid lock handle");
+        let mut store_access = Vec::new();
 
-        let node_id = *node_id;
-        let partition_num = *partition_num;
+        // Sanity check flag
+        let (node_id, partition_num, substate_key, _flags) = self
+            .locks
+            .get(&handle)
+            .cloned()
+            .expect("Invalid lock handle");
 
-        let (tracked, store_access) =
-            self.get_tracked_substate(&node_id, partition_num, substate_key.clone());
-        (
-            tracked
-                .get()
-                .expect("Could not have created lock on non existent substate"),
-            store_access,
-        )
+        // Read substate
+        let tracked = self.get_tracked_substate(
+            &node_id,
+            partition_num,
+            substate_key.clone(),
+            &mut store_access,
+        );
+        let value = tracked
+            .get()
+            .expect("Could not have created lock on non existent substate");
+
+        (value, store_access)
     }
 
     fn update_substate(
@@ -1047,46 +1115,42 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         handle: u32,
         substate_value: IndexedScryptoValue,
     ) -> StoreAccessInfo {
-        let (node_id, partition_num, substate_key, flags) =
-            self.locks.get(&handle).expect("Invalid lock handle");
+        let mut store_access = Vec::new();
 
+        // Sanity check flag
+        let (node_id, partition_num, substate_key, flags) = self
+            .locks
+            .get(&handle)
+            .cloned()
+            .expect("Invalid lock handle");
         if !flags.contains(LockFlags::MUTABLE) {
             panic!("No write permission for {}", handle);
         }
 
-        let node_id = *node_id;
-        let partition_num = *partition_num;
-
-        let (tracked, mut store_access) =
-            self.get_tracked_substate(&node_id, partition_num, substate_key.clone());
-
+        // Update substate
+        let tracked = self.get_tracked_substate(
+            &node_id,
+            partition_num,
+            substate_key.clone(),
+            &mut store_access,
+        );
         match tracked {
-            TrackedKey::New(substate)
-            | TrackedKey::WriteOnly(Write::Update(substate))
-            | TrackedKey::ReadExistAndWrite(_, Write::Update(substate))
-            | TrackedKey::ReadNonExistAndWrite(substate) => {
-                let size_old = substate.value.len();
-                let size_new = substate_value.len();
-                store_access.push_if_not_empty(StoreAccess::RewriteToTrack(size_old, size_new));
-
+            TrackedSubstateValue::New(substate)
+            | TrackedSubstateValue::WriteOnly(Write::Update(substate))
+            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Update(substate))
+            | TrackedSubstateValue::ReadNonExistAndWrite(substate) => {
                 substate.value = substate_value;
             }
-            TrackedKey::ReadOnly(ReadOnly::NonExistent) => {
-                let size = substate_value.len();
-                store_access.push_if_not_empty(StoreAccess::WriteToTrack(size));
-
-                let new_tracked =
-                    TrackedKey::ReadNonExistAndWrite(RuntimeSubstate::new(substate_value));
+            TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent) => {
+                let new_tracked = TrackedSubstateValue::ReadNonExistAndWrite(RuntimeSubstate::new(
+                    substate_value,
+                ));
                 let mut old = mem::replace(tracked, new_tracked);
                 tracked.get_runtime_substate_mut().unwrap().lock_state =
                     old.get_runtime_substate_mut().unwrap().lock_state;
             }
-            TrackedKey::ReadOnly(ReadOnly::Existent(substate)) => {
-                let size_old = substate.value.len();
-                let size_new = substate_value.len();
-                store_access.push_if_not_empty(StoreAccess::RewriteToTrack(size_old, size_new));
-
-                let new_tracked = TrackedKey::ReadExistAndWrite(
+            TrackedSubstateValue::ReadOnly(ReadOnly::Existent(substate)) => {
+                let new_tracked = TrackedSubstateValue::ReadExistAndWrite(
                     substate.value.clone(),
                     Write::Update(RuntimeSubstate::new(substate_value)),
                 );
@@ -1094,9 +1158,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 tracked.get_runtime_substate_mut().unwrap().lock_state =
                     old.get_runtime_substate_mut().unwrap().lock_state;
             }
-            TrackedKey::WriteOnly(Write::Delete)
-            | TrackedKey::ReadExistAndWrite(_, Write::Delete)
-            | TrackedKey::Garbage => {
+            TrackedSubstateValue::WriteOnly(Write::Delete)
+            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Delete)
+            | TrackedSubstateValue::Garbage => {
                 panic!("Could not have created lock on non existent substate")
             }
         };
@@ -1105,6 +1169,90 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
     }
 
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber) {
+        // This is used for transaction tracker only, for which we don't account for store access.
+
         self.deleted_partitions.insert((*node_id, partition_num));
+    }
+
+    fn get_commit_info(&mut self) -> StoreCommitInfo {
+        let mut store_commit = Vec::new();
+
+        for (node_id, node) in &self.tracked_nodes {
+            for (partition_number, partition) in &node.tracked_partitions {
+                for (sort_key, substate) in &partition.substates {
+                    match &substate.substate_value {
+                        TrackedSubstateValue::New(v) => {
+                            store_commit.push(StoreCommit::Insert {
+                                node_id: node_id.clone(),
+                                size: v.value.len(),
+                            });
+                        }
+                        TrackedSubstateValue::ReadOnly(_) => {
+                            // No op
+                        }
+                        TrackedSubstateValue::ReadExistAndWrite(old_value, write) => match write {
+                            Write::Update(x) => {
+                                store_commit.push(StoreCommit::Update {
+                                    node_id: node_id.clone(),
+                                    size: x.value.len(),
+                                    old_size: old_value.len(),
+                                });
+                            }
+                            Write::Delete => {
+                                store_commit.push(StoreCommit::Delete {
+                                    node_id: node_id.clone(),
+                                    old_size: old_value.len(),
+                                });
+                            }
+                        },
+                        TrackedSubstateValue::ReadNonExistAndWrite(value) => {
+                            store_commit.push(StoreCommit::Insert {
+                                node_id: node_id.clone(),
+                                size: value.value.len(),
+                            });
+                        }
+                        TrackedSubstateValue::WriteOnly(write) => {
+                            let old_size = self
+                                .substate_db
+                                .get_substate(
+                                    &M::to_db_partition_key(node_id, *partition_number),
+                                    &sort_key,
+                                )
+                                .map(|x| x.len());
+
+                            match (old_size, write) {
+                                (Some(old_size), Write::Update(x)) => {
+                                    store_commit.push(StoreCommit::Update {
+                                        node_id: node_id.clone(),
+                                        size: x.value.len(),
+                                        old_size,
+                                    });
+                                }
+                                (Some(old_size), Write::Delete) => {
+                                    store_commit.push(StoreCommit::Delete {
+                                        node_id: node_id.clone(),
+                                        old_size,
+                                    });
+                                }
+                                (None, Write::Update(x)) => {
+                                    store_commit.push(StoreCommit::Insert {
+                                        node_id: node_id.clone(),
+                                        size: x.value.len(),
+                                    });
+                                }
+                                (None, Write::Delete) => {
+                                    // TODO: this should never happen?
+                                }
+                            }
+                        }
+                        TrackedSubstateValue::Garbage => {
+                            // No op
+                        }
+                    }
+                }
+            }
+        }
+
+        store_commit
     }
 }

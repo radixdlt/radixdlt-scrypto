@@ -1,5 +1,8 @@
-use radix_engine::{types::*, vm::wasm::WASM_MEMORY_PAGE_SIZE};
-use radix_engine_constants::DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME;
+use radix_engine::{
+    errors::{RuntimeError, VmError},
+    types::*,
+    vm::wasm::{WasmRuntimeError, DEFAULT_MAX_MEMORY_SIZE_IN_PAGES},
+};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -17,7 +20,7 @@ fn test_loop() {
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 15_000_000);
@@ -26,7 +29,28 @@ fn test_loop() {
     receipt.expect_commit_success();
 }
 
-// FIXME: investigate the case where cost_unit_limit < system_loan and transaction runs out of cost units.
+#[test]
+fn test_finish_before_system_loan_limit() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Act
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "1"));
+    let package_address = test_runner.publish_package(
+        code,
+        single_function_package_definition("Test", "f"),
+        BTreeMap::new(),
+        OwnerRole::None,
+    );
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .call_function(package_address, "Test", "f", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
 
 #[test]
 fn test_loop_out_of_cost_unit() {
@@ -42,7 +66,7 @@ fn test_loop_out_of_cost_unit() {
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 450.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 15_000_000);
@@ -66,7 +90,7 @@ fn test_recursion() {
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -89,7 +113,7 @@ fn test_recursion_stack_overflow() {
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -99,13 +123,13 @@ fn test_recursion_stack_overflow() {
 }
 
 #[test]
-fn test_grow_memory() {
+fn test_grow_memory_within_limit() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
-    // Calculate how much we can grow the memory (by wasm pages), subtract 1 to be below limit.
-    let grow_value: usize =
-        DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME / WASM_MEMORY_PAGE_SIZE as usize - 1;
+    // Grow memory size by `DEFAULT_MAX_MEMORY_SIZE_IN_PAGES - 1`.
+    // Note that initial memory size is 1 page.
+    let grow_value = DEFAULT_MAX_MEMORY_SIZE_IN_PAGES - 1;
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
@@ -116,7 +140,7 @@ fn test_grow_memory() {
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -126,12 +150,16 @@ fn test_grow_memory() {
 }
 
 #[test]
-fn test_grow_memory_out_of_cost_unit() {
+fn test_grow_memory_beyond_limit() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
+    // Grow memory size by `DEFAULT_MAX_MEMORY_SIZE_IN_PAGES`.
+    // Note that initial memory size is 1 page.
+    let grow_value = DEFAULT_MAX_MEMORY_SIZE_IN_PAGES;
+
     // Act
-    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "500000"));
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
     let package_address = test_runner.publish_package(
         code,
         single_function_package_definition("Test", "f"),
@@ -139,11 +167,51 @@ fn test_grow_memory_out_of_cost_unit() {
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_specific_failure(is_costing_error)
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(e)))
+            if e.contains("Unreachable") =>
+        {
+            true
+        }
+        _ => false,
+    })
+}
+
+#[test]
+fn test_grow_memory_by_more_than_65536() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+
+    // Max allowed value is 0xffff
+    let grow_value = 0x10000;
+
+    // Act
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
+    let package_address = test_runner.publish_package(
+        code,
+        single_function_package_definition("Test", "f"),
+        BTreeMap::new(),
+        OwnerRole::None,
+    );
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .call_function(package_address, "Test", "f", manifest_args!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::VmError(VmError::Wasm(WasmRuntimeError::ExecutionError(e)))
+            if e.contains("Unreachable") =>
+        {
+            true
+        }
+        _ => false,
+    })
 }

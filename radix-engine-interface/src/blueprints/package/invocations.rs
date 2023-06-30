@@ -3,12 +3,21 @@ use crate::types::*;
 use crate::*;
 use radix_engine_common::data::manifest::model::ManifestAddressReservation;
 use radix_engine_common::data::manifest::model::ManifestBlobRef;
-use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use radix_engine_common::prelude::ScryptoSchema;
+use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use sbor::basic_well_known_types::ANY_ID;
+use sbor::basic_well_known_types::UNIT_ID;
+use sbor::rust::prelude::*;
+use sbor::LocalTypeIndex;
+use scrypto_schema::BlueprintEventSchemaInit;
+use scrypto_schema::BlueprintFunctionsSchemaInit;
 use scrypto_schema::BlueprintSchemaInit;
+use scrypto_schema::BlueprintStateSchemaInit;
+use scrypto_schema::FieldSchema;
+use scrypto_schema::FunctionSchemaInit;
+use scrypto_schema::TypeRef;
+use utils::btreemap;
+use utils::btreeset;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -18,14 +27,14 @@ pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 pub struct PackagePublishWasmInput {
     pub code: Vec<u8>,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmManifestInput {
     pub code: ManifestBlobRef,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
 }
 
 pub type PackagePublishWasmOutput = (PackageAddress, Bucket);
@@ -37,7 +46,7 @@ pub struct PackagePublishWasmAdvancedInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub code: Vec<u8>,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
     pub owner_role: OwnerRole,
 }
 
@@ -46,7 +55,7 @@ pub struct PackagePublishWasmAdvancedManifestInput {
     pub package_address: Option<ManifestAddressReservation>,
     pub code: ManifestBlobRef,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
     pub owner_role: OwnerRole,
 }
 
@@ -59,7 +68,7 @@ pub struct PackagePublishNativeInput {
     pub package_address: Option<GlobalAddressReservation>,
     pub native_package_code_id: u64,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
@@ -67,7 +76,7 @@ pub struct PackagePublishNativeManifestInput {
     pub package_address: Option<ManifestAddressReservation>,
     pub native_package_code_id: u64,
     pub setup: PackageDefinition,
-    pub metadata: BTreeMap<String, MetadataValue>,
+    pub metadata: MetadataInit,
 }
 
 pub type PackagePublishNativeOutput = PackageAddress;
@@ -180,5 +189,54 @@ impl Default for StaticRoles {
             methods: BTreeMap::new(),
             roles: RoleSpecification::Normal(BTreeMap::new()),
         }
+    }
+}
+
+impl PackageDefinition {
+    // For testing only
+    pub fn single_test_function(blueprint_name: &str, function_name: &str) -> PackageDefinition {
+        let mut blueprints = BTreeMap::new();
+        blueprints.insert(
+            blueprint_name.to_string(),
+            BlueprintDefinitionInit {
+                blueprint_type: BlueprintType::default(),
+                feature_set: btreeset!(),
+                dependencies: btreeset!(),
+
+                schema: BlueprintSchemaInit {
+                    generics: vec![],
+                    schema: ScryptoSchema {
+                        type_kinds: vec![],
+                        type_metadata: vec![],
+                        type_validations: vec![],
+                    },
+                    state: BlueprintStateSchemaInit {
+                        fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
+                            UNIT_ID,
+                        ))],
+                        collections: vec![],
+                    },
+                    events: BlueprintEventSchemaInit::default(),
+                    functions: BlueprintFunctionsSchemaInit {
+                        virtual_lazy_load_functions: btreemap!(),
+                        functions: btreemap!(
+                        function_name.to_string() => FunctionSchemaInit {
+                                receiver: Option::None,
+                                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                                output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                                export: format!("{}_{}", blueprint_name, function_name),
+                            }
+                        ),
+                    },
+                },
+
+                royalty_config: PackageRoyaltyConfig::default(),
+                auth_config: AuthConfig {
+                    function_auth: FunctionAuth::AllowAll,
+                    method_auth: MethodAuthTemplate::AllowAll,
+                },
+            },
+        );
+        PackageDefinition { blueprints }
     }
 }

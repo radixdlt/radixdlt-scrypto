@@ -110,7 +110,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn before_lock_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn before_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         module_id: &PartitionNumber,
@@ -128,13 +128,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn after_lock_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         handle: LockHandle,
+        node_id: &NodeId,
         _store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Substate locked: handle = {:?}", handle);
+        log!(
+            api,
+            "Substate locked: node id = {:?}, handle = {:?}",
+            node_id,
+            handle
+        );
         Ok(())
     }
 
@@ -146,10 +152,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Reading substate: handle = {}, size = {}, storage_access_total_read = {}",
+            "Reading substate: handle = {}, size = {}",
             lock_handle,
-            value_size,
-            store_access.total_read_size()
+            value_size
         );
         Ok(())
     }
@@ -162,15 +167,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Writing substate: handle = {}, size = {}, storage_acces_total_write = {}",
+            "Writing substate: handle = {}, size = {}",
             lock_handle,
-            value_size,
-            store_access.total_write_size()
+            value_size
         );
         Ok(())
     }
 
-    fn on_drop_lock<Y: KernelApi<SystemConfig<V>>>(
+    fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         _store_access: &StoreAccessInfo,

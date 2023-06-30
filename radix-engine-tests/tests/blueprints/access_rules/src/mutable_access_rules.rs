@@ -18,7 +18,7 @@ mod mutable_access_rules_component {
     struct MutableAccessRulesComponent {}
 
     impl MutableAccessRulesComponent {
-        pub fn new(roles: Roles) -> Global<MutableAccessRulesComponent> {
+        pub fn new(roles: RolesInit) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
@@ -32,27 +32,20 @@ mod mutable_access_rules_component {
         ) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
-                .prepare_to_globalize(owner_role)
+                .prepare_to_globalize(OwnerRole::Fixed(owner_update_access_rule))
                 .roles(roles! {
                     borrow_funds_auth => rule!(require(RADIX_TOKEN)), updatable;
-                    deposit_funds_auth => owner_update_access_rule, locked;
+                    deposit_funds_auth => OWNER, locked;
                 })
                 .globalize()
         }
 
-        pub fn access_rules_function(component_address: ComponentAddress) {
-            let component: Global<AnyComponent> = component_address.into();
-            let _access_rules = component.access_rules();
-        }
-
         pub fn set_authority_rules(&self, role: String, rule: AccessRule) {
-            let access_rules = Runtime::access_rules();
-            access_rules.set_role(role.as_str(), rule);
+            Runtime::global_component().set_role(role.as_str(), rule);
         }
 
         pub fn lock_authority(&self, role: String) {
-            let access_rules = Runtime::access_rules();
-            access_rules.lock_role(role.as_str());
+            Runtime::global_component().lock_role(role.as_str());
         }
 
         // The methods that the access rules will be added to

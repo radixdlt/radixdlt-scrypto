@@ -162,7 +162,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
         {
             let proof_resource = ResourceAddress::new_or_panic(info.get_outer_object().into());
             if proof_resource == resource_address {
-                let handle = api.kernel_lock_substate(
+                let handle = api.kernel_open_substate(
                     proof.0.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &FungibleProofField::ProofRefs.into(),
@@ -178,7 +178,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
                         max.insert(container.clone(), locked_amount.clone());
                     }
                 }
-                api.kernel_drop_lock(handle)?;
+                api.kernel_close_substate(handle)?;
             }
         }
     }
@@ -214,7 +214,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
         {
             let proof_resource = ResourceAddress::new_or_panic(info.get_outer_object().into());
             if proof_resource == resource_address {
-                let handle = api.kernel_lock_substate(
+                let handle = api.kernel_open_substate(
                     proof.0.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &NonFungibleProofField::ProofRefs.into(),
@@ -260,7 +260,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
     let mut remaining = amount.clone();
     let mut lock_handles = Vec::new();
     'outer: for proof in proofs {
-        let handle = api.kernel_lock_substate(
+        let handle = api.kernel_open_substate(
             proof.0.as_node_id(),
             MAIN_BASE_PARTITION,
             &FungibleProofField::ProofRefs.into(),
@@ -349,7 +349,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     let mut remaining = ids.clone();
     let mut lock_handles = Vec::new();
     'outer: for proof in proofs {
-        let handle = api.kernel_lock_substate(
+        let handle = api.kernel_open_substate(
             proof.0.as_node_id(),
             MAIN_BASE_PARTITION,
             &NonFungibleProofField::ProofRefs.into(),

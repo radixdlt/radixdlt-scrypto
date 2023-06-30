@@ -39,6 +39,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         system_bootstrap_receipt,
         data_ingestion_receipts,
         wrap_up_receipt,
+        ..
     } = bootstrapper
         .bootstrap_with_genesis_data(
             genesis_data_chunks,

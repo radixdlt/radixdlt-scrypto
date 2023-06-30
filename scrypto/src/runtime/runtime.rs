@@ -1,5 +1,5 @@
-use crate::modules::{AccessRules, Attachable, Metadata};
-use crate::prelude::Attached;
+use crate::component::ObjectStubHandle;
+use crate::prelude::{AnyComponent, Global};
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
@@ -11,14 +11,13 @@ use radix_engine_interface::blueprints::resource::{AccessRule, NonFungibleGlobal
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{
-    scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoDescribe, ScryptoEncode,
+    scrypto_decode, scrypto_encode, ScryptoDescribe, ScryptoEncode,
 };
 use radix_engine_interface::traits::ScryptoEvent;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
-use scrypto::prelude::Royalty;
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -38,16 +37,14 @@ impl Runtime {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn access_rules() -> Attached<'static, AccessRules> {
-        Attached::new(AccessRules::self_attached())
+    pub fn global_component() -> Global<AnyComponent> {
+        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
+        Global(AnyComponent(ObjectStubHandle::Global(address)))
     }
 
-    pub fn metadata() -> Attached<'static, Metadata> {
-        Attached::new(Metadata::self_attached())
-    }
-
-    pub fn royalty() -> Attached<'static, Royalty> {
-        Attached::new(Royalty::self_attached())
+    pub fn global_address() -> ComponentAddress {
+        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
+        ComponentAddress::new_or_panic(address.into())
     }
 
     /// Returns the running entity.
@@ -59,11 +56,6 @@ impl Runtime {
         ScryptoEnv.actor_get_node_id().unwrap()
     }
 
-    pub fn global_address() -> ComponentAddress {
-        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
-        ComponentAddress::new_or_panic(address.into())
-    }
-
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
         Self::blueprint_id().package_address
@@ -71,36 +63,6 @@ impl Runtime {
 
     pub fn package_token() -> NonFungibleGlobalId {
         NonFungibleGlobalId::package_of_direct_caller_badge(Runtime::package_address())
-    }
-
-    /// Invokes a function on a blueprint.
-    pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: ScryptoDecode>(
-        package_address: PackageAddress,
-        blueprint_name: S1,
-        function_name: S2,
-        args: Vec<u8>,
-    ) -> T {
-        let output = ScryptoEnv
-            .call_function(
-                package_address,
-                blueprint_name.as_ref(),
-                function_name.as_ref(),
-                args,
-            )
-            .unwrap();
-        scrypto_decode(&output).unwrap()
-    }
-
-    /// Invokes a method on a component.
-    pub fn call_method<S: AsRef<str>, T: ScryptoDecode>(
-        component_address: ComponentAddress,
-        method: S,
-        args: Vec<u8>,
-    ) -> T {
-        let output = ScryptoEnv
-            .call_method(component_address.as_node_id(), method.as_ref(), args)
-            .unwrap();
-        scrypto_decode(&output).unwrap()
     }
 
     /// Returns the transaction hash.

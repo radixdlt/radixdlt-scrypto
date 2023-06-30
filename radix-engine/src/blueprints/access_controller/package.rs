@@ -11,8 +11,10 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
+use radix_engine_interface::api::node_modules::metadata::MetadataRoles;
 use radix_engine_interface::api::node_modules::metadata::Url;
+use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::blueprints::access_controller::*;
 use radix_engine_interface::blueprints::package::{
@@ -586,39 +588,17 @@ impl AccessControllerNativePackage {
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
 
-            let access_rules = [
-                (
-                    ResourceAction::Mint,
-                    (
-                        rule!(require(global_component_caller_badge.clone())),
-                        AccessRule::DenyAll,
-                    ),
+            let access_rules = btreemap! {
+                Mint => (
+                    rule!(require(global_component_caller_badge.clone())),
+                    AccessRule::DenyAll,
                 ),
-                (
-                    ResourceAction::Burn,
-                    (AccessRule::AllowAll, AccessRule::DenyAll),
-                ),
-                (
-                    ResourceAction::Withdraw,
-                    (AccessRule::DenyAll, AccessRule::DenyAll),
-                ),
-                (
-                    ResourceAction::Deposit,
-                    (AccessRule::AllowAll, AccessRule::DenyAll),
-                ),
-                (
-                    ResourceAction::UpdateMetadata,
-                    (AccessRule::DenyAll, AccessRule::DenyAll),
-                ),
-                (
-                    ResourceAction::Recall,
-                    (AccessRule::DenyAll, AccessRule::DenyAll),
-                ),
-                (
-                    ResourceAction::UpdateNonFungibleData,
-                    (AccessRule::DenyAll, AccessRule::DenyAll),
-                ),
-            ];
+                Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
+                Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
+                Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
+                Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
+                UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
+            };
 
             let resource_address = {
                 let (local_type_index, schema) =
@@ -634,15 +614,25 @@ impl AccessControllerNativePackage {
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateInput {
+                        owner_role: OwnerRole::Fixed(rule!(require(global_component_caller_badge))),
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,
-                        metadata: metadata_init! {
-                            "name" => "Recovery Badge".to_owned(), locked;
-                            "icon_url" => Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;
-                            "access_controller" => address, locked;
-                        },
                         access_rules: access_rules.into(),
+                        metadata: metadata! {
+                            roles {
+                                metadata_setter => AccessRule::DenyAll, locked;
+                                metadata_setter_updater => AccessRule::DenyAll, locked;
+                                metadata_locker => AccessRule::DenyAll, locked;
+                                metadata_locker_updater => AccessRule::DenyAll, locked;
+                            },
+                            init {
+                                "name" => "Recovery Badge".to_owned(), locked;
+                                "icon_url" => Url("https://assets.radixdlt.com/icons/icon-recovery_badge.png".to_owned()), locked;
+                                "access_controller" => address, locked;
+                            }
+                        },
+                        address_reservation: None,
                     })
                     .unwrap(),
                 )?;
@@ -666,7 +656,12 @@ impl AccessControllerNativePackage {
         let roles = btreemap!(ObjectModuleId::Main => roles);
         let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
 
-        let metadata = Metadata::create(api)?;
+        let metadata = Metadata::create_with_data(
+            metadata_init! {
+                "recovery_badge" => GlobalAddress::from(recovery_badge_resource), locked;
+            },
+            api,
+        )?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         // Creating a global component address for the access controller RENode
@@ -1163,7 +1158,7 @@ impl AccessControllerNativePackage {
         let resource_address = {
             let substate_key = AccessControllerField::AccessController.into();
             let handle =
-                api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+                api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
 
             let access_controller = {
                 let access_controller: AccessControllerSubstate =
@@ -1208,7 +1203,7 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn init_roles_from_rule_set(rule_set: RuleSet) -> Roles {
+fn init_roles_from_rule_set(rule_set: RuleSet) -> RolesInit {
     roles2! {
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
         "primary" => rule_set.primary_role, updatable;
@@ -1226,7 +1221,7 @@ where
     AccessControllerSubstate: Transition<I>,
 {
     let substate_key = AccessControllerField::AccessController.into();
-    let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+    let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
 
     let access_controller = {
         let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;
@@ -1249,7 +1244,7 @@ where
     AccessControllerSubstate: TransitionMut<I>,
 {
     let substate_key = AccessControllerField::AccessController.into();
-    let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
+    let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
 
     let mut access_controller = {
         let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;

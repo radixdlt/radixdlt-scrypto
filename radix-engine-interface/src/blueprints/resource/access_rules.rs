@@ -1,16 +1,13 @@
-use crate::blueprints::resource::*;
-use crate::rule;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_interface::api::ObjectModuleId;
-use sbor::rust::collections::BTreeMap;
+use radix_engine_interface::types::KeyValueStoreInit;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use utils::btreemap;
 
 use super::AccessRule;
 
@@ -35,20 +32,6 @@ impl MethodKey {
 impl From<&str> for MethodKey {
     fn from(value: &str) -> Self {
         MethodKey::new(value)
-    }
-}
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub struct MethodEntry {
-    pub permission: MethodAccessibility,
-}
-
-impl MethodEntry {
-    pub fn new<P: Into<MethodAccessibility>>(permission: P) -> Self {
-        Self {
-            permission: permission.into(),
-        }
     }
 }
 
@@ -80,13 +63,6 @@ impl From<RoleList> for MethodAccessibility {
     fn from(value: RoleList) -> Self {
         Self::RoleProtected(value)
     }
-}
-
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum AttachedModule {
-    Metadata,
-    Royalty,
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
@@ -232,65 +208,32 @@ impl OwnerRole {
     }
 }
 
-#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
-#[sbor(transparent)]
-pub struct Roles {
-    pub roles: BTreeMap<RoleKey, (AccessRule, bool)>,
-}
+pub type RolesInit = KeyValueStoreInit<RoleKey, AccessRule>;
 
-impl Roles {
-    pub fn new() -> Self {
-        Self { roles: btreemap!() }
-    }
-
+impl RolesInit {
     pub fn define_immutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
-        self.roles.insert(role.into(), (access_rule, true));
+        self.set_and_lock(role.into(), access_rule);
     }
 
     pub fn define_mutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
-        self.roles.insert(role.into(), (access_rule, false));
+        self.set(role.into(), access_rule);
     }
-}
 
-// TODO: Remove?
-pub fn resource_access_rules_from_owner_badge(
-    owner_badge: &NonFungibleGlobalId,
-) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
-    let mut access_rules = BTreeMap::new();
-    access_rules.insert(
-        ResourceAction::Withdraw,
-        (AccessRule::AllowAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        ResourceAction::Deposit,
-        (AccessRule::AllowAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        ResourceAction::Recall,
-        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        Mint,
-        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        Burn,
-        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        UpdateNonFungibleData,
-        (
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        ),
-    );
-    access_rules.insert(
-        UpdateMetadata,
-        (
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        ),
-    );
-    access_rules
+    pub fn define_role<K: Into<RoleKey>>(
+        &mut self,
+        role: K,
+        access_rule: AccessRule,
+        locked: bool,
+    ) {
+        self.set_raw(role.into(), Some(access_rule), locked);
+    }
+
+    pub fn define_role_raw<K: Into<RoleKey>>(
+        &mut self,
+        role: K,
+        access_rule: Option<AccessRule>,
+        locked: bool,
+    ) {
+        self.set_raw(role.into(), access_rule, locked);
+    }
 }

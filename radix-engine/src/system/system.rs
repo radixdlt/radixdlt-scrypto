@@ -72,9 +72,16 @@ impl<V> KeyValueEntrySubstate<V> {
         }
     }
 
-    pub fn immutable_entry(value: V) -> Self {
+    pub fn locked_entry(value: V) -> Self {
         Self {
             value: Some(value),
+            mutability: SubstateMutability::Immutable,
+        }
+    }
+
+    pub fn locked_empty_entry() -> Self {
+        Self {
+            value: None,
             mutability: SubstateMutability::Immutable,
         }
     }
@@ -243,7 +250,7 @@ where
         outer_blueprint_features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError>
     {
         // Validate instance schema
@@ -349,43 +356,51 @@ where
             for (collection_index, entries) in kv_entries {
                 let mut partition = BTreeMap::new();
 
-                for (key, (value, freeze)) in entries {
-                    let key_type_pointer = blueprint_interface
-                        .get_kv_key_type_pointer(collection_index)
-                        .ok_or_else(|| {
-                            RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::KeyValueStoreKeyDoesNotExist
-                            ),
-                        )
-                        })?;
+                for (key, kv_entry) in entries {
+                    let (kv_entry, value_can_own) = if let Some(value) = kv_entry.value {
+                        let key_type_pointer = blueprint_interface
+                            .get_kv_key_type_pointer(collection_index)
+                            .ok_or_else(|| {
+                                RuntimeError::SystemError(
+                                    SystemError::PayloadValidationAgainstSchemaError(
+                                        PayloadValidationAgainstSchemaError::KeyValueStoreKeyDoesNotExist
+                                    ),
+                                )
+                            })?;
 
-                    let (value_type_pointer, value_can_own) = blueprint_interface
-                        .get_kv_value_type_pointer(collection_index)
-                        .ok_or_else(|| {
-                            RuntimeError::SystemError(
-                            SystemError::PayloadValidationAgainstSchemaError(
-                                PayloadValidationAgainstSchemaError::KeyValueStoreValueDoesNotExist
-                            ),
-                        )
-                        })?;
+                        let (value_type_pointer, value_can_own) = blueprint_interface
+                            .get_kv_value_type_pointer(collection_index)
+                            .ok_or_else(|| {
+                                RuntimeError::SystemError(
+                                    SystemError::PayloadValidationAgainstSchemaError(
+                                        PayloadValidationAgainstSchemaError::KeyValueStoreValueDoesNotExist
+                                    ),
+                                )
+                            })?;
 
-                    self.validate_payload_against_blueprint_schema(
-                        &blueprint_id,
-                        instance_schema,
-                        &[(&key, key_type_pointer), (&value, value_type_pointer)],
-                    )?;
+                        self.validate_payload_against_blueprint_schema(
+                            &blueprint_id,
+                            instance_schema,
+                            &[(&key, key_type_pointer), (&value, value_type_pointer)],
+                        )?;
 
-                    let value: ScryptoValue = scrypto_decode(&value).unwrap();
-                    let kv_entry = if freeze {
-                        KeyValueEntrySubstate::immutable_entry(value)
+                        let value: ScryptoValue = scrypto_decode(&value).unwrap();
+                        let kv_entry = if kv_entry.locked {
+                            KeyValueEntrySubstate::locked_entry(value)
+                        } else {
+                            KeyValueEntrySubstate::entry(value)
+                        };
+                        (kv_entry, value_can_own)
                     } else {
-                        KeyValueEntrySubstate::entry(value)
+                        if kv_entry.locked {
+                            (KeyValueEntrySubstate::locked_empty_entry(), true)
+                        } else {
+                            continue;
+                        }
                     };
 
                     let value = IndexedScryptoValue::from_typed(&kv_entry);
-
-                    if value_can_own {
+                    if !value_can_own {
                         if !value.owned_nodes().is_empty() {
                             return Err(RuntimeError::SystemError(
                                 SystemError::InvalidKeyValueStoreOwnership,
@@ -437,7 +452,7 @@ where
             return Ok(schema.clone());
         }
 
-        let handle = self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_open_substate_with_default(
             package_address.as_node_id(),
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_SCHEMAS_PARTITION_OFFSET)
@@ -453,7 +468,7 @@ where
 
         let substate: KeyValueEntrySubstate<ScryptoSchema> =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        self.api.kernel_drop_lock(handle)?;
+        self.api.kernel_close_substate(handle)?;
 
         let schema = substate.value.unwrap();
 
@@ -498,7 +513,7 @@ where
             return Ok(definition.clone());
         }
 
-        let handle = self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_open_substate_with_default(
             package_address.as_node_id(),
             MAIN_BASE_PARTITION
                 .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
@@ -514,7 +529,7 @@ where
 
         let substate: KeyValueEntrySubstate<BlueprintDefinition> =
             self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        self.api.kernel_drop_lock(handle)?;
+        self.api.kernel_close_substate(handle)?;
 
         let definition = match substate.value {
             Some(definition) => definition,
@@ -611,7 +626,7 @@ where
         }
 
         self.api
-            .kernel_lock_substate(
+            .kernel_open_substate(
                 node_id,
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
@@ -624,7 +639,7 @@ where
                     .and_then(|x| Ok(x.as_typed::<TypeInfoSubstate>().unwrap()))
                     .and_then(|substate| {
                         self.api
-                            .kernel_drop_lock(lock_handle)
+                            .kernel_close_substate(lock_handle)
                             .and_then(|_| Ok(substate))
                     })
             })
@@ -638,7 +653,7 @@ where
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let blueprint_interface = self.get_blueprint_default_interface(
             blueprint_id.package_address,
@@ -728,7 +743,7 @@ where
         Ok(node_id.into())
     }
 
-    fn key_value_entry_remove_and_release_lock(
+    fn key_value_entry_remove_and_close_substate(
         &mut self,
         handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -743,7 +758,7 @@ where
         let value = kv_entry.remove();
         self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&kv_entry))?;
 
-        self.kernel_drop_lock(handle)?;
+        self.kernel_close_substate(handle)?;
 
         let current_value = scrypto_encode(&value).unwrap();
 
@@ -965,7 +980,7 @@ where
 
         // Check blueprint id
         let reserved_blueprint_id = {
-            let lock_handle = self.kernel_lock_substate(
+            let lock_handle = self.kernel_open_substate(
                 global_address.as_node_id(),
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
@@ -974,7 +989,7 @@ where
             )?;
             let type_info: TypeInfoSubstate =
                 self.kernel_read_substate(lock_handle)?.as_typed().unwrap();
-            self.kernel_drop_lock(lock_handle)?;
+            self.kernel_close_substate(lock_handle)?;
             match type_info {
                 TypeInfoSubstate::GlobalAddressPhantom(GlobalAddressPhantom { blueprint_id }) => {
                     blueprint_id
@@ -1030,7 +1045,7 @@ where
                 (node_id, ObjectModuleId::Main),
                 (*global_address.as_node_id(), ObjectModuleId::Main),
             );
-        let lock_handle = self.api.kernel_lock_substate(
+        let lock_handle = self.api.kernel_open_substate(
             &node_id,
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
@@ -1042,7 +1057,7 @@ where
             .kernel_read_substate(lock_handle)?
             .as_typed()
             .unwrap();
-        self.api.kernel_drop_lock(lock_handle)?;
+        self.api.kernel_close_substate(lock_handle)?;
 
         let blueprint_id = match &mut type_info {
             TypeInfoSubstate::Object(ObjectInfo {
@@ -1246,7 +1261,7 @@ where
             }
         }
 
-        self.api.kernel_drop_lock(handle)
+        self.api.kernel_close_substate(handle)
     }
 }
 
@@ -1263,7 +1278,7 @@ where
         features: Vec<&str>,
         schema: Option<InstanceSchema>,
         fields: Vec<Vec<u8>>,
-        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, (Vec<u8>, bool)>>,
+        kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.package_address().clone();
@@ -1446,8 +1461,7 @@ where
             match &module_object_info.blueprint_info {
                 ObjectBlueprintInfo::Inner { outer_object } => {
                     // TODO: do this recursively until global?
-                    // FIXME: is unwrap safe?
-                    let outer_info = self.get_object_info(outer_object.as_node_id()).unwrap();
+                    let outer_info = self.get_object_info(outer_object.as_node_id())?;
                     Some(InstanceContext {
                         outer_object: outer_object.clone(),
                         outer_blueprint: outer_info.blueprint_id.blueprint_name.clone(),
@@ -1698,7 +1712,7 @@ where
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
 
-        self.api.kernel_drop_lock(handle)
+        self.api.kernel_close_substate(handle)
     }
 }
 
@@ -1751,7 +1765,7 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn key_value_store_lock_entry(
+    fn key_value_store_open_entry(
         &mut self,
         node_id: &NodeId,
         key: &Vec<u8>,
@@ -1789,7 +1803,7 @@ where
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::Read)
         };
 
-        let handle = self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_open_substate_with_default(
             &node_id,
             MAIN_BASE_PARTITION,
             &SubstateKey::Map(key.clone()),
@@ -1823,8 +1837,8 @@ where
         node_id: &NodeId,
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let handle = self.key_value_store_lock_entry(node_id, key, LockFlags::MUTABLE)?;
-        self.key_value_entry_remove_and_release_lock(handle)
+        let handle = self.key_value_store_open_entry(node_id, key, LockFlags::MUTABLE)?;
+        self.key_value_entry_remove_and_close_substate(handle)
     }
 }
 
@@ -2046,6 +2060,11 @@ where
         &mut self,
         costing_entry: ClientCostingEntry,
     ) -> Result<(), RuntimeError> {
+        // Skip client-side costing requested by TransactionProcessor
+        if self.api.kernel_get_current_depth() == 1 {
+            return Ok(());
+        }
+
         self.api
             .kernel_get_system()
             .modules
@@ -2068,6 +2087,9 @@ where
                     export_name,
                     gas,
                 },
+                ClientCostingEntry::PrepareWasmCode { size } => {
+                    CostingEntry::PrepareWasmCode { size }
+                }
             })
     }
 
@@ -2177,7 +2199,7 @@ where
 {
     // Costing through kernel
     #[trace_resources]
-    fn actor_lock_field(
+    fn actor_open_field(
         &mut self,
         object_handle: ObjectHandle,
         field_index: u8,
@@ -2212,7 +2234,7 @@ where
             FieldLockData::Read
         };
 
-        self.api.kernel_lock_substate(
+        self.api.kernel_open_substate(
             &node_id,
             partition_num,
             &SubstateKey::Field(field_index),
@@ -2338,7 +2360,7 @@ where
 {
     // Costing through kernel
     #[trace_resources]
-    fn actor_lock_key_value_entry(
+    fn actor_open_key_value_entry(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
@@ -2367,7 +2389,7 @@ where
             KeyValueEntryLockData::Read
         };
 
-        let handle = self.api.kernel_lock_substate_with_default(
+        let handle = self.api.kernel_open_substate_with_default(
             &node_id,
             partition_num,
             &SubstateKey::Map(key.to_vec()),
@@ -2400,13 +2422,13 @@ where
         collection_index: CollectionIndex,
         key: &Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let handle = self.actor_lock_key_value_entry(
+        let handle = self.actor_open_key_value_entry(
             object_handle,
             collection_index,
             key,
             LockFlags::MUTABLE,
         )?;
-        self.key_value_entry_remove_and_release_lock(handle)
+        self.key_value_entry_remove_and_close_substate(handle)
     }
 }
 
@@ -2452,23 +2474,6 @@ where
                 SystemError::AssertAccessRuleFailed,
             )),
         }
-    }
-}
-
-impl<'a, Y, V> ClientLimitsApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
-    // No costing should be applied
-    #[trace_resources]
-    fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
-        let current_depth = self.api.kernel_get_current_depth();
-        self.api
-            .kernel_get_system()
-            .modules
-            .update_wasm_memory_usage(current_depth, consumed_memory)?;
-        Ok(())
     }
 }
 
@@ -2698,7 +2703,7 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
-    fn kernel_lock_substate_with_default(
+    fn kernel_open_substate_with_default(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -2707,7 +2712,7 @@ where
         default: Option<fn() -> IndexedScryptoValue>,
         data: SystemLockData,
     ) -> Result<LockHandle, RuntimeError> {
-        self.api.kernel_lock_substate_with_default(
+        self.api.kernel_open_substate_with_default(
             node_id,
             partition_num,
             substate_key,
@@ -2724,8 +2729,8 @@ where
         self.api.kernel_get_lock_info(lock_handle)
     }
 
-    fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        self.api.kernel_drop_lock(lock_handle)
+    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+        self.api.kernel_close_substate(lock_handle)
     }
 
     fn kernel_read_substate(

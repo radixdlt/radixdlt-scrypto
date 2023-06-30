@@ -11,15 +11,23 @@ mod vault_test {
 
     impl NonFungibleVault {
         fn create_singleton_non_fungible_vault() -> Vault {
-            let bucket = ResourceBuilder::new_integer_non_fungible()
-                .metadata("name", "TestToken")
+            let bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply([(1u64.into(), Data {})]);
             Vault::with_bucket(bucket)
         }
 
         fn create_non_fungible_vault() -> Vault {
-            let bucket = ResourceBuilder::new_integer_non_fungible()
-                .metadata("name", "TestToken")
+            let bucket = ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
+                .metadata(metadata! {
+                    init {
+                        "name" => "TestToken".to_owned(), locked;
+                    }
+                })
                 .mint_initial_supply([(1u64.into(), Data {}), (2u64.into(), Data {})]);
             Vault::with_bucket(bucket)
         }

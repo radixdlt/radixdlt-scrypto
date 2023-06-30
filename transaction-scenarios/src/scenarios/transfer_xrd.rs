@@ -103,7 +103,17 @@ impl ScenarioInstance for TransferXrdScenario {
             }
             _ => {
                 core.check_commit_success(&previous)?;
-                return Ok(core.finish_scenario());
+                // Re-deconstruct the config in order to ensure at compile time we capture all the addresses
+                let TransferXrdConfig {
+                    from_account,
+                    to_account_1,
+                    to_account_2,
+                } = &self.config;
+                let addresses = DescribedAddresses::new()
+                    .add("from_account", from_account)
+                    .add("to_account_1", to_account_1)
+                    .add("to_account_2", to_account_2);
+                return Ok(core.finish_scenario(addresses));
             }
         };
         Ok(NextAction::Transaction(up_next))

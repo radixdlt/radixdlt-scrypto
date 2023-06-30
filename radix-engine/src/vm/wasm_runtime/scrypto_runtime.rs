@@ -226,7 +226,7 @@ where
         self.allocate_buffer(key_value_store_id_encoded)
     }
 
-    fn key_value_store_lock_entry(
+    fn key_value_store_open_entry(
         &mut self,
         node_id: Vec<u8>,
         key: Vec<u8>,
@@ -238,7 +238,7 @@ where
         );
 
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.key_value_store_lock_entry(&node_id, &key, flags)?;
+        let handle = self.api.key_value_store_open_entry(&node_id, &key, flags)?;
 
         Ok(handle)
     }
@@ -281,14 +281,14 @@ where
         self.allocate_buffer(rtn)
     }
 
-    fn actor_lock_field(
+    fn actor_open_field(
         &mut self,
         object_handle: u32,
         field: u8,
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.actor_lock_field(object_handle, field, flags)?;
+        let handle = self.api.actor_open_field(object_handle, field, flags)?;
 
         Ok(handle)
     }
@@ -366,7 +366,7 @@ where
         }
 
         // Request from system
-        let amount = ((n - 1) / 1_000 + 1) * 1_000;
+        let amount = ((n - 1) / 1_000_000 + 1) * 1_000_000;
         self.api
             .consume_cost_units(ClientCostingEntry::RunWasmCode {
                 package_address: &self.package_address,
@@ -391,15 +391,6 @@ where
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
         self.allocate_buffer(buffer)
-    }
-
-    fn update_wasm_memory_usage(
-        &mut self,
-        size: usize,
-    ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api
-            .update_wasm_memory_usage(size)
-            .map_err(InvokeError::downstream)
     }
 
     fn emit_event(

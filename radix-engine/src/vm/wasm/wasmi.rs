@@ -7,15 +7,12 @@ use wasmi::core::{HostError, Trap};
 use wasmi::errors::InstantiationError;
 use wasmi::*;
 
-use super::InstrumentedCode;
-#[cfg(not(feature = "radix_engine_fuzzing"))]
-use super::MeteredCodeKey;
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::constants::*;
 use crate::vm::wasm::errors::*;
 use crate::vm::wasm::traits::*;
-use crate::vm::wasm::{WasmEngine, DEFAULT_CACHE_SIZE};
+use crate::vm::wasm::WasmEngine;
 
 type FakeHostState = FakeWasmiInstanceEnv;
 type HostState = WasmiInstanceEnv;
@@ -125,14 +122,6 @@ fn actor_call_module_method(
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
-    // Get current memory consumption and update it in transaction limit kernel module
-    // for current call frame through runtime call.
-    let mem = memory
-        .current_pages(caller.as_context())
-        .to_bytes()
-        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
-    runtime.update_wasm_memory_usage(mem)?;
-
     runtime
         .actor_call_module_method(object_handle, module_id, ident, args)
         .map(|buffer| buffer.0)
@@ -154,14 +143,6 @@ fn call_method(
     let receiver = read_memory(caller.as_context_mut(), memory, receiver_ptr, receiver_len)?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
-
-    // Get current memory consumption and update it in transaction limit kernel module
-    // for current call frame through runtime call.
-    let mem = memory
-        .current_pages(caller.as_context())
-        .to_bytes()
-        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
-    runtime.update_wasm_memory_usage(mem)?;
 
     runtime
         .call_method(receiver, direct_access, module_id, ident, args)
@@ -195,14 +176,6 @@ fn call_function(
     )?;
     let ident = read_memory(caller.as_context_mut(), memory, ident_ptr, ident_len)?;
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
-
-    // Get current memory consumption and update it in transaction limit kernel module
-    // for current call frame through runtime call.
-    let mem = memory
-        .current_pages(caller.as_context())
-        .to_bytes()
-        .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))?;
-    runtime.update_wasm_memory_usage(mem)?;
 
     runtime
         .call_function(package_address, blueprint_ident, ident, args)
@@ -353,7 +326,7 @@ fn lock_key_value_store_entry(
     let node_id = read_memory(caller.as_context_mut(), memory, node_id_ptr, node_id_len)?;
     let substate_key = read_memory(caller.as_context_mut(), memory, offset_ptr, offset_len)?;
 
-    runtime.key_value_store_lock_entry(node_id, substate_key, flags)
+    runtime.key_value_store_open_entry(node_id, substate_key, flags)
 }
 
 fn key_value_entry_get(
@@ -406,10 +379,10 @@ fn lock_field(
     flags: u32,
 ) -> Result<u32, InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.actor_lock_field(object_handle, field as u8, flags)
+    runtime.actor_open_field(object_handle, field as u8, flags)
 }
 
-fn read_substate(
+fn field_lock_read(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<u64, InvokeError<WasmRuntimeError>> {
@@ -418,7 +391,7 @@ fn read_substate(
     runtime.field_lock_read(handle).map(|buffer| buffer.0)
 }
 
-fn write_substate(
+fn field_lock_write(
     mut caller: Caller<'_, HostState>,
     handle: u32,
     data_ptr: u32,
@@ -431,7 +404,7 @@ fn write_substate(
     runtime.field_lock_write(handle, data)
 }
 
-fn drop_lock(
+fn field_lock_release(
     caller: Caller<'_, HostState>,
     handle: u32,
 ) -> Result<(), InvokeError<WasmRuntimeError>> {
@@ -845,28 +818,28 @@ impl WasmiModule {
             },
         );
 
-        let host_read_substate = Func::wrap(
+        let host_field_lock_read = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<u64, Trap> {
-                read_substate(caller, handle).map_err(|e| e.into())
+                field_lock_read(caller, handle).map_err(|e| e.into())
             },
         );
 
-        let host_write_substate = Func::wrap(
+        let host_field_lock_write = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
              handle: u32,
              data_ptr: u32,
              data_len: u32|
              -> Result<(), Trap> {
-                write_substate(caller, handle, data_ptr, data_len).map_err(|e| e.into())
+                field_lock_write(caller, handle, data_ptr, data_len).map_err(|e| e.into())
             },
         );
 
-        let host_drop_lock = Func::wrap(
+        let host_field_lock_release = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, handle: u32| -> Result<(), Trap> {
-                drop_lock(caller, handle).map_err(|e| e.into())
+                field_lock_release(caller, handle).map_err(|e| e.into())
             },
         );
 
@@ -984,14 +957,10 @@ impl WasmiModule {
         linker_define!(linker, COST_UNIT_PRICE_FUNCTION_NAME, host_cost_unit_price);
         linker_define!(linker, TIP_PERCENTAGE_FUNCTION_NAME, host_tip_percentage);
         linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
-        linker_define!(
-            linker,
-            GLOBALIZE_OBJECT_FUNCTION_NAME,
-            host_globalize_object
-        );
+        linker_define!(linker, GLOBALIZE_FUNCTION_NAME, host_globalize_object);
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
-        linker_define!(linker, ACTOR_LOCK_FIELD_FUNCTION_NAME, host_lock_field);
+        linker_define!(linker, ACTOR_OPEN_FIELD_FUNCTION_NAME, host_lock_field);
         linker_define!(
             linker,
             ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME,
@@ -1005,7 +974,7 @@ impl WasmiModule {
         );
         linker_define!(
             linker,
-            KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME,
+            KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME,
             host_lock_key_value_store_entry
         );
         linker_define!(
@@ -1029,9 +998,17 @@ impl WasmiModule {
             host_key_value_entry_remove
         );
 
-        linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_read_substate);
-        linker_define!(linker, FIELD_LOCK_WRITE_FUNCTION_NAME, host_write_substate);
-        linker_define!(linker, FIELD_LOCK_RELEASE_FUNCTION_NAME, host_drop_lock);
+        linker_define!(linker, FIELD_LOCK_READ_FUNCTION_NAME, host_field_lock_read);
+        linker_define!(
+            linker,
+            FIELD_LOCK_WRITE_FUNCTION_NAME,
+            host_field_lock_write
+        );
+        linker_define!(
+            linker,
+            FIELD_LOCK_RELEASE_FUNCTION_NAME,
+            host_field_lock_release
+        );
         linker_define!(linker, GET_NODE_ID_FUNCTION_NAME, host_get_node_id);
         linker_define!(
             linker,
@@ -1204,16 +1181,16 @@ impl WasmInstance for WasmiInstance {
 }
 
 #[derive(Debug, Clone)]
-pub struct EngineOptions {
+pub struct WasmiEngineOptions {
     max_cache_size: usize,
 }
 
 pub struct WasmiEngine {
     // This flag disables cache in wasm_instrumenter/wasmi/wasmer to prevent non-determinism when fuzzing
     #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
-    modules_cache: RefCell<lru::LruCache<MeteredCodeKey, Arc<WasmiModule>>>,
+    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmiModule>>>,
     #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
-    modules_cache: moka::sync::Cache<MeteredCodeKey, Arc<WasmiModule>>,
+    modules_cache: moka::sync::Cache<Hash, Arc<WasmiModule>>,
     #[cfg(feature = "radix_engine_fuzzing")]
     #[allow(dead_code)]
     modules_cache: usize,
@@ -1221,21 +1198,21 @@ pub struct WasmiEngine {
 
 impl Default for WasmiEngine {
     fn default() -> Self {
-        Self::new(EngineOptions {
-            max_cache_size: DEFAULT_CACHE_SIZE,
+        Self::new(WasmiEngineOptions {
+            max_cache_size: DEFAULT_WASM_ENGINE_CACHE_SIZE,
         })
     }
 }
 
 impl WasmiEngine {
-    pub fn new(options: EngineOptions) -> Self {
+    pub fn new(options: WasmiEngineOptions) -> Self {
         #[cfg(all(not(feature = "radix_engine_fuzzing"), not(feature = "moka")))]
         let modules_cache = RefCell::new(lru::LruCache::new(
             NonZeroUsize::new(options.max_cache_size).unwrap(),
         ));
         #[cfg(all(not(feature = "radix_engine_fuzzing"), feature = "moka"))]
         let modules_cache = moka::sync::Cache::builder()
-            .weigher(|_key: &MeteredCodeKey, _value: &Arc<WasmiModule>| -> u32 {
+            .weigher(|_key: &Hash, _value: &Arc<WasmiModule>| -> u32 {
                 // No sophisticated weighing mechanism, just keep a fixed size cache
                 1u32
             })
@@ -1251,26 +1228,23 @@ impl WasmiEngine {
 impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
-        #[cfg(not(feature = "radix_engine_fuzzing"))]
-        let metered_code_key = &instrumented_code.metered_code_key;
-
+    #[allow(unused_variables)]
+    fn instantiate(&self, code_hash: Hash, instrumented_code: &[u8]) -> WasmiInstance {
         #[cfg(not(feature = "radix_engine_fuzzing"))]
         {
             #[cfg(not(feature = "moka"))]
             {
-                if let Some(cached_module) = self.modules_cache.borrow_mut().get(metered_code_key) {
+                if let Some(cached_module) = self.modules_cache.borrow_mut().get(&code_hash) {
                     return cached_module.instantiate();
                 }
             }
             #[cfg(feature = "moka")]
-            if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
+            if let Some(cached_module) = self.modules_cache.get(&code_hash) {
                 return cached_module.as_ref().instantiate();
             }
         }
 
-        let code = &instrumented_code.code.as_ref()[..];
-        let module = WasmiModule::new(code).expect("Failed to instantiate module");
+        let module = WasmiModule::new(instrumented_code).expect("Failed to instantiate module");
         let instance = module.instantiate();
 
         #[cfg(not(feature = "radix_engine_fuzzing"))]
@@ -1278,10 +1252,9 @@ impl WasmEngine for WasmiEngine {
             #[cfg(not(feature = "moka"))]
             self.modules_cache
                 .borrow_mut()
-                .put(*metered_code_key, Arc::new(module));
+                .put(code_hash, Arc::new(module));
             #[cfg(feature = "moka")]
-            self.modules_cache
-                .insert(*metered_code_key, Arc::new(module));
+            self.modules_cache.insert(code_hash, Arc::new(module));
         }
 
         instance

@@ -1,4 +1,3 @@
-use super::InstrumentedCode;
 use crate::errors::InvokeError;
 use crate::types::*;
 use crate::vm::wasm::errors::*;
@@ -62,7 +61,7 @@ pub trait WasmRuntime {
         schema: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn key_value_store_lock_entry(
+    fn key_value_store_open_entry(
         &mut self,
         node_id: Vec<u8>,
         key: Vec<u8>,
@@ -94,7 +93,7 @@ pub trait WasmRuntime {
 
     fn drop_object(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn actor_lock_field(
+    fn actor_open_field(
         &mut self,
         object_handle: u32,
         field: u8,
@@ -136,11 +135,6 @@ pub trait WasmRuntime {
     fn tip_percentage(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>>;
 
     fn fee_balance(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
-
-    fn update_wasm_memory_usage(
-        &mut self,
-        size: usize,
-    ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn emit_event(
         &mut self,
@@ -187,6 +181,6 @@ pub trait WasmEngine {
 
     /// Instantiate a Scrypto module.
     ///
-    /// It's assumed that the code have been validated.
-    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> Self::WasmInstance;
+    /// The code must have been validated and instrumented!!!
+    fn instantiate(&self, code_hash: Hash, instrumented_code: &[u8]) -> Self::WasmInstance;
 }

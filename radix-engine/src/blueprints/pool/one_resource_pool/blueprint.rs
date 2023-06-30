@@ -8,7 +8,6 @@ use native_sdk::resource::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
-use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -41,6 +40,9 @@ impl OneResourcePoolBlueprint {
             blueprint_name: ONE_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
         })?;
 
+        // Create owner role of both the pool component and pool unit resource
+        let owner_role = OwnerRole::Updatable(pool_manager_rule);
+
         let pool_unit_resource_manager = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
 
@@ -49,31 +51,29 @@ impl OneResourcePoolBlueprint {
                     rule!(require(component_caller_badge.clone())),
                     AccessRule::DenyAll,
                 ),
-                Burn => (rule!(require(component_caller_badge)), AccessRule::DenyAll),
+                Burn => (rule!(require(component_caller_badge.clone())), AccessRule::DenyAll),
                 Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
             );
 
-            // FIXME: Pool unit resource metadata - one things is needed to do this:
-            // 1- A fix for the issue with references so that we can have the component address of
-            //    the pool component in the metadata of the pool unit resource (currently results in
-            //    an error because we're passing a reference to a node that doesn't exist).
-
-            ResourceManager::new_fungible(true, 18, Default::default(), access_rules, api)?
+            ResourceManager::new_fungible(
+                owner_role.clone(),
+                true,
+                18,
+                access_rules,
+                metadata_init! {
+                    "pool" => address, locked;
+                },
+                None,
+                api,
+            )?
         };
 
-        let access_rules =
-            AccessRules::create(OwnerRole::Updatable(pool_manager_rule), btreemap!(), api)?.0;
+        let access_rules = AccessRules::create(owner_role, btreemap!(), api)?.0;
         let metadata = Metadata::create_with_data(
             metadata_init! {
                 "pool_vault_number" => 1u8, locked;
-                "pool_resources" => {
-                    let resource_address: GlobalAddress = resource_address.into();
-                    resource_address
-                }, locked;
-                "pool_unit" => {
-                    let address: GlobalAddress = pool_unit_resource_manager.0.into();
-                    address
-                }, locked;
+                "pool_resources" => vec![GlobalAddress::from(resource_address)], locked;
+                "pool_unit" => GlobalAddress::from(pool_unit_resource_manager.0), locked;
             },
             api,
         )?;
@@ -365,7 +365,7 @@ impl OneResourcePoolBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = OneResourcePoolField::OneResourcePool.into();
-        let handle = api.actor_lock_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
+        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
         let substate = api.field_lock_read_typed::<OneResourcePoolSubstate>(handle)?;
 
         Ok((substate, handle))

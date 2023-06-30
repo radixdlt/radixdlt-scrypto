@@ -4,15 +4,25 @@ use radix_engine::{
     transaction::{ExecutionConfig, FeeReserveConfig, TransactionReceipt},
     types::*,
 };
+#[cfg(feature = "rocksdb")]
+use scrypto_unit::BasicRocksdbTestRunner;
+#[cfg(not(feature = "rocksdb"))]
 use scrypto_unit::TestRunner;
+#[cfg(feature = "rocksdb")]
+use std::path::PathBuf;
 use transaction::{
     builder::{ManifestBuilder, TransactionBuilder},
     model::{TransactionHeaderV1, TransactionPayload},
     validation::{NotarizedTransactionValidator, TransactionValidator, ValidationConfig},
 };
 
-#[allow(unused_variables)]
 fn bench_radiswap(c: &mut Criterion) {
+    #[cfg(feature = "rocksdb")]
+    let mut test_runner = {
+        std::fs::remove_dir_all("/tmp/radiswap").unwrap();
+        BasicRocksdbTestRunner::new(PathBuf::from("/tmp/radiswap"), false)
+    };
+    #[cfg(not(feature = "rocksdb"))]
     let mut test_runner = TestRunner::builder().without_trace().build();
 
     // Scrypto developer
@@ -30,13 +40,26 @@ fn bench_radiswap(c: &mut Criterion) {
         OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
 
+    #[cfg(feature = "rocksdb")]
+    for i in 0..100_000 {
+        if i % 100 == 0 {
+            println!("{}/{}", i, 100_000);
+        }
+        test_runner.publish_package(
+            include_bytes!("../../assets/radiswap.wasm").to_vec(),
+            manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
+            btreemap!(),
+            OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
+        );
+    }
+
     // Instantiate Radiswap
     let btc = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
     let eth = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
     let component_address: ComponentAddress = test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(account2, 50u32.into())
+                .lock_fee(account2, 500u32.into())
                 .call_function(package_address, "Radiswap", "new", manifest_args!(btc, eth))
                 .call_method(
                     account2,
@@ -55,7 +78,7 @@ fn bench_radiswap(c: &mut Criterion) {
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(account2, 50u32.into())
+                .lock_fee(account2, 500u32.into())
                 .withdraw_from_account(account2, btc, btc_init_amount)
                 .withdraw_from_account(account2, eth, eth_init_amount)
                 .take_all_from_worktop(btc, |builder, bucket1| {
@@ -82,7 +105,7 @@ fn bench_radiswap(c: &mut Criterion) {
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_fee(account2, 50u32.into())
+                .lock_fee(account2, 500u32.into())
                 .withdraw_from_account(account2, btc, btc_amount)
                 .call_method(
                     account3,
@@ -93,12 +116,11 @@ fn bench_radiswap(c: &mut Criterion) {
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
         .expect_commit_success();
-    assert_eq!(test_runner.account_balance(account3, btc), Some(btc_amount));
 
     // Swap 1 BTC into ETH
     let btc_to_swap = Decimal::from(1);
     let manifest = ManifestBuilder::new()
-        .lock_fee(account3, 50u32.into())
+        .lock_fee(account3, 500u32.into())
         .withdraw_from_account(account3, btc, btc_to_swap)
         .take_all_from_worktop(btc, |builder, bucket| {
             builder.call_method(component_address, "swap", manifest_args!(bucket))
@@ -111,11 +133,11 @@ fn bench_radiswap(c: &mut Criterion) {
         .build();
 
     // Drain the faucet
-    for i in 0..100 {
+    for _ in 0..100 {
         test_runner
             .execute_manifest(
                 ManifestBuilder::new()
-                    .lock_fee(FAUCET_COMPONENT, 50u32.into())
+                    .lock_fee(FAUCET_COMPONENT, 500u32.into())
                     .call_method(FAUCET_COMPONENT, "free", manifest_args!())
                     .try_deposit_batch_or_abort(account3)
                     .build(),
@@ -159,8 +181,13 @@ fn bench_radiswap(c: &mut Criterion) {
     });
 }
 
+#[cfg(feature = "rocksdb")]
+type TestRunnerType = BasicRocksdbTestRunner;
+#[cfg(not(feature = "rocksdb"))]
+type TestRunnerType = TestRunner;
+
 fn do_swap(
-    test_runner: &mut TestRunner,
+    test_runner: &mut TestRunnerType,
     transaction_payload: &[u8],
     nonce: u32,
 ) -> TransactionReceipt {

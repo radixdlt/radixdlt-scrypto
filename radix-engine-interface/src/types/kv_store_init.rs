@@ -26,12 +26,31 @@ impl<K: Ord, V> KeyValueStoreInit<K, V> {
     }
 
     pub fn set<E: Into<K>>(&mut self, key: E, value: V) {
-        let entry = KeyValueStoreInitEntry { value, lock: false };
+        let entry = KeyValueStoreInitEntry {
+            value: Some(value),
+            lock: false,
+        };
         self.data.insert(key.into(), entry);
     }
 
     pub fn set_and_lock<E: Into<K>>(&mut self, key: E, value: V) {
-        let entry = KeyValueStoreInitEntry { value, lock: true };
+        let entry = KeyValueStoreInitEntry {
+            value: Some(value),
+            lock: true,
+        };
+        self.data.insert(key.into(), entry);
+    }
+
+    pub fn set_raw<E: Into<K>>(&mut self, key: E, value: Option<V>, lock: bool) {
+        let entry = KeyValueStoreInitEntry { value, lock };
+        self.data.insert(key.into(), entry);
+    }
+
+    pub fn lock_empty<E: Into<K>>(&mut self, key: E) {
+        let entry = KeyValueStoreInitEntry {
+            value: None,
+            lock: true,
+        };
         self.data.insert(key.into(), entry);
     }
 }
@@ -39,7 +58,7 @@ impl<K: Ord, V> KeyValueStoreInit<K, V> {
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct KeyValueStoreInitEntry<V> {
-    pub value: V,
+    pub value: Option<V>,
     pub lock: bool,
 }
 

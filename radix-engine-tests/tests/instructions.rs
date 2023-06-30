@@ -18,7 +18,7 @@ fn clear_auth_zone_should_not_drop_named_proofs() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, dec!(10))
+        .lock_fee(account, 500u32.into())
         .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(5))
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.clear_auth_zone().drop_proof(proof_id) // Proof should continue to work after CLEAR_AUTH_ZONE
@@ -45,7 +45,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, dec!(10))
+        .lock_fee(account, 500u32.into())
         .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(5))
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
             builder.drop_all_proofs().drop_proof(proof_id) // Proof should continue to work after CLEAR_AUTH_ZONE
@@ -77,7 +77,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, dec!(10))
+        .lock_fee(account, 500u32.into())
         .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(5))
         .clear_signature_proofs()
         .create_proof_from_account_of_amount(other_account, RADIX_TOKEN, dec!(1))
@@ -108,7 +108,7 @@ fn clear_signature_proofs_should_not_invalid_physical_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, dec!(10))
+        .lock_fee(account, 500u32.into())
         .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(5))
         .clear_signature_proofs()
         .create_proof_from_account_of_amount(other_account, RADIX_TOKEN, dec!(1))

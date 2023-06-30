@@ -46,26 +46,6 @@ pub struct FeeLocks {
     pub contingent_lock: Decimal,
 }
 
-/// Metrics gathered during transaction execution.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, Default)]
-pub struct ExecutionMetrics {
-    /// Consumed cost units (excluding royalties)
-    pub execution_cost_units_consumed: u32,
-    /// Total substate read size in bytes.
-    pub substate_read_size: usize,
-    /// Substate read count.
-    pub substate_read_count: usize,
-    /// Total substate write size in bytes.
-    pub substate_write_size: usize,
-    /// Substate write count.
-    pub substate_write_count: usize,
-    /// Peak WASM memory usage during transaction execution.
-    /// This is the highest sum of all nested WASM instances.
-    pub max_wasm_memory_used: usize,
-    /// The highest invoke payload size during transaction execution.
-    pub max_invoke_payload_size: usize,
-}
-
 /// Captures whether a transaction should be committed, and its other results
 #[derive(Debug, Clone, ScryptoSbor)]
 pub enum TransactionResult {
@@ -91,14 +71,24 @@ pub struct CommitResult {
     pub fee_summary: FeeSummary,
     pub application_events: Vec<(EventTypeIdentifier, Vec<u8>)>,
     pub application_logs: Vec<(Level, String)>,
-    /// Metrics gathered during transaction execution.
-    pub execution_metrics: ExecutionMetrics,
     /// Optional, only when `EnabledModule::ExecutionTrace` is ON.
     /// Mainly for transaction preview.
     pub execution_trace: TransactionExecutionTrace,
 }
 
 impl CommitResult {
+    pub fn empty_with_outcome(outcome: TransactionOutcome) -> Self {
+        Self {
+            state_updates: Default::default(),
+            state_update_summary: Default::default(),
+            outcome,
+            fee_summary: Default::default(),
+            application_events: Default::default(),
+            application_logs: Default::default(),
+            execution_trace: Default::default(),
+        }
+    }
+
     pub fn next_epoch(&self) -> Option<EpochChangeEvent> {
         // Note: Node should use a well-known index id
         for (ref event_type_id, ref event_data) in self.application_events.iter() {
@@ -219,6 +209,14 @@ pub struct TransactionReceipt {
 }
 
 impl TransactionReceipt {
+    /// An empty receipt for merging changes into.
+    pub fn empty_with_commit(commit_result: CommitResult) -> Self {
+        Self {
+            transaction_result: TransactionResult::Commit(commit_result),
+            resources_usage: Default::default(),
+        }
+    }
+
     pub fn is_commit_success(&self) -> bool {
         matches!(
             self.transaction_result,

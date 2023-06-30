@@ -101,8 +101,8 @@ for path in os.listdir(input_folder):
         if param:
             key += "::" + param[0]
 
-        # handle kernel_lock_substate
-        param = child.xpath("./self::kernel_lock_substate[@module_id | @arg0 | @arg2]")
+        # handle kernel_open_substate
+        param = child.xpath("./self::kernel_open_substate[@module_id | @arg0 | @arg2]")
         if param:
             module_id = param[0].attrib["module_id"]
             node_id = param[0].attrib["arg0"]

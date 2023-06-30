@@ -1,6 +1,8 @@
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::{metadata, metadata_init};
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
@@ -289,13 +291,21 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     let manifest = match resource_type {
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()
-            .create_fungible_resource(false, divisibility, BTreeMap::new(), access_rules, None)
+            .create_fungible_resource(
+                OwnerRole::None,
+                false,
+                divisibility,
+                metadata!(),
+                access_rules,
+                None,
+            )
             .build(),
         ResourceType::NonFungible { id_type } => ManifestBuilder::new()
             .create_non_fungible_resource(
+                OwnerRole::None,
                 id_type,
                 false,
-                BTreeMap::new(),
+                metadata!(),
                 access_rules,
                 None::<BTreeMap<NonFungibleLocalId, SampleNonFungibleData>>,
             )

@@ -9,7 +9,7 @@
 CALL_METHOD 
     Address("${account_address}") 
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 ALLOCATE_GLOBAL_ADDRESS
     Address("${package_package_address}")
@@ -23,7 +23,7 @@ PUBLISH_PACKAGE_ADVANCED
     Tuple(
         Map<String, Tuple>()
     )
-    Map<String, Enum>()
+    Map<String, Tuple>()
     Enum<0u8>()
 ;
 CALL_FUNCTION

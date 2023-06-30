@@ -1,6 +1,6 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
-    CreateNodeError, LockSubstateError, TakeNodeError, UnlockSubstateError,
+    CloseSubstateError, CreateNodeError, OpenSubstateError, TakeNodeError,
 };
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -14,7 +14,7 @@ fn can_insert_in_child_nodes() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "SuperKeyValueStore",
@@ -36,7 +36,7 @@ fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -58,7 +58,7 @@ fn cyclic_map_fails_execution() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "CyclicMap", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -68,7 +68,7 @@ fn cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -82,7 +82,7 @@ fn self_cyclic_map_fails_execution() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "CyclicMap",
@@ -111,7 +111,7 @@ fn cannot_remove_kv_stores() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -124,7 +124,7 @@ fn cannot_remove_kv_stores() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(component_address, "clear_vector", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -134,7 +134,7 @@ fn cannot_remove_kv_stores() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(_))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
             ))
         )
     });
@@ -146,7 +146,7 @@ fn cannot_overwrite_kv_stores() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -159,7 +159,7 @@ fn cannot_overwrite_kv_stores() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(component_address, "overwrite_kv_store", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -169,7 +169,7 @@ fn cannot_overwrite_kv_stores() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(_))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(_))
             ))
         )
     });
@@ -183,7 +183,7 @@ fn create_kv_store_and_get() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -205,7 +205,7 @@ fn create_kv_store_and_put() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "KeyValueStoreTest",
@@ -227,7 +227,7 @@ fn can_reference_in_memory_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "Precommitted",
@@ -249,7 +249,7 @@ fn can_reference_deep_in_memory_value() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "Precommitted",
@@ -271,7 +271,7 @@ fn can_reference_deep_in_memory_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "Precommitted",
@@ -293,7 +293,7 @@ fn cannot_directly_reference_inserted_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "RefCheck",
@@ -308,7 +308,7 @@ fn cannot_directly_reference_inserted_vault() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -322,7 +322,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "RefCheck",
@@ -337,7 +337,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -351,7 +351,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "RefCheck",
@@ -366,7 +366,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::LockSubstateError(LockSubstateError::NodeNotVisible(_))
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
             ))
         )
     });
@@ -380,7 +380,7 @@ fn multiple_reads_should_work() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "Basic", "multiple_reads", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -397,7 +397,7 @@ fn remove_from_local_map_should_work() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "Basic",
@@ -417,7 +417,7 @@ fn remove_from_stored_map_when_empty_should_work() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "Basic", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -425,7 +425,7 @@ fn remove_from_stored_map_when_empty_should_work() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(
             component,
             "remove",
@@ -447,7 +447,7 @@ fn remove_from_stored_map_when_not_empty_should_work() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "Basic",
@@ -460,7 +460,7 @@ fn remove_from_stored_map_when_not_empty_should_work() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(component, "remove", manifest_args!("key".to_string()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -478,7 +478,7 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "KVVault", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -486,7 +486,7 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(component, "remove", manifest_args!("key".to_string()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -496,7 +496,7 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::UnlockSubstateError(UnlockSubstateError::CantDropNodeInStore(..))
+                CallFrameError::CloseSubstateError(CloseSubstateError::CantDropNodeInStore(..))
             ))
         )
     });
@@ -510,7 +510,7 @@ fn nested_kv_stores_works() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "NestedKvStores",

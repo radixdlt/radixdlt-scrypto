@@ -192,9 +192,11 @@ macro_rules! external_functions {
         compile_error!("The external_blueprint! macro cannot be used to define component methods which take &self or &mut self. Also, just self is not supported. For these component methods, use a separate external_component! macro.");
     };
     (
+        $(#[$meta: meta])*
         fn $func_name:ident($($func_args:ident: $func_types:ty),*) -> $func_output:ty;
         $($rest:tt)*
     ) => {
+        $(#[$meta])*
         fn $func_name($($func_args: $func_types),*) -> $func_output {
             Self::call_function_raw(stringify!($func_name), scrypto_args!($($func_args),*))
         }
@@ -202,9 +204,11 @@ macro_rules! external_functions {
         $crate::external_functions!($($rest)*);
     };
     (
+        $(#[$meta: meta])*
         fn $func_name:ident($($func_args:ident: $func_types:ty),*);
         $($rest:tt)*
     ) => {
+        $(#[$meta])*
         fn $func_name($($func_args: $func_types),*) {
             Self::call_function_raw(stringify!($func_name), scrypto_args!($($func_args),*))
         }
@@ -219,60 +223,72 @@ macro_rules! external_functions {
 #[macro_export]
 macro_rules! external_methods {
     (
+        $(#[$meta: meta])*
         fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
         $($rest:tt)*
     ) => {
+        $(#[$meta])*
         pub fn $method_name(&self $(, $method_args: $method_types)*) -> $method_output {
             self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
         $crate::external_methods!($($rest)*);
     };
     (
+        $(#[$meta: meta])*
         fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*);
         $($rest:tt)*
     ) => {
+        $(#[$meta])*
         pub fn $method_name(&self $(, $method_args: $method_types)*) {
             self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
         $crate::external_methods!($($rest)*);
     };
     (
+        $(#[$meta: meta])*
         fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
         $($rest:tt)*
     ) => {
+        $(#[$meta])*
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) -> $method_output {
             self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
         $crate::external_methods!($($rest)*);
     };
     (
+        $(#[$meta: meta])*
         fn $method_name:ident(&mut self$(, $method_args:ident: $method_types:ty)*);
         $($rest:tt)*
     ) => {
+        $(#[$meta])*
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) {
             self.call_raw(stringify!($method_name), scrypto_args!($($method_args),*))
         }
         $crate::external_methods!($($rest)*);
     };
     (
+        $(#[$meta: meta])*
         fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         compile_error!("Components cannot define methods taking self. Did you mean &self or &mut self instead?");
     };
     (
+        $(#[$meta: meta])*
         fn $method_name:ident(self$(, $method_args:ident: $method_types:ty)*);
         $($rest:tt)*
     ) => {
         compile_error!("Components cannot define methods taking self. Did you mean &self or &mut self instead?");
     };
     (
+        $(#[$meta: meta])*
         fn $method_name:ident($($method_args:ident: $method_types:ty),*) -> $method_output:ty;
         $($rest:tt)*
     ) => {
         compile_error!("The external_component! macro cannot be used to define static blueprint methods which don't take &self or &mut self. For these package methods, use a separate external_blueprint! macro.");
     };
     (
+        $(#[$meta: meta])*
         fn $method_name:ident($($method_args:ident: $method_types:ty),*);
         $($rest:tt)*
     ) => {
@@ -311,6 +327,8 @@ macro_rules! extern_blueprint_internal {
         }
 
         impl ::scrypto::component::ObjectStub for $blueprint {
+            type AddressType = ComponentAddress;
+
             fn new(handle: ::scrypto::component::ObjectStubHandle) -> Self {
                 Self {
                     handle
@@ -347,13 +365,16 @@ macro_rules! to_role_key {
 }
 
 #[macro_export]
-macro_rules! permission_role_list {
-    ($list:ident, $role:ident) => ({
-        $list.insert(to_role_key!($role));
+macro_rules! role_list {
+    () => ({
+        RoleList::none()
     });
-    ($list:ident, $role:ident, $($roles:ident),*) => ({
-        $list.insert(to_role_key!($role));
-        permission_role_list!($list, $($roles),*);
+    ($($role:ident),*) => ({
+        let mut list = RoleList::none();
+        $(
+            list.insert(to_role_key!($role));
+        )*
+        list
     });
 }
 
@@ -366,8 +387,7 @@ macro_rules! method_accessibility {
         [].into()
     });
     (restrict_to: [$($roles:ident),+]) => ({
-        let mut list = RoleList::none();
-        permission_role_list!(list, $($roles),+);
+        let list = role_list!($($roles),+);
         MethodAccessibility::RoleProtected(list)
     });
 }
@@ -398,16 +418,9 @@ macro_rules! main_accessibility {
 
 #[macro_export]
 macro_rules! internal_add_role {
-    ($roles:ident, $role:ident) => {{
-        $roles.insert(stringify!($role).into(), RoleList::none());
-    }};
     ($roles:ident, $role:ident => updatable_by: [$($updaters:ident),*]) => {{
-        let role_list = [
-            $(
-                ROLE_STRINGS.$updaters
-            ),*
-        ];
-        $roles.insert(stringify!($role).into(), role_list.into());
+        let updaters = role_list!($($updaters),*);
+        $roles.insert(stringify!($role).into(), updaters);
     }};
 }
 
@@ -511,83 +524,6 @@ macro_rules! enable_package_royalties {
 }
 
 #[macro_export]
-macro_rules! roles {
-    ( $($role:ident => $rule:expr, $locked:ident;)* ) => ({
-        roles_internal!(MethodRoles, $($role => $rule, $locked;)*)
-    });
-}
-
-#[macro_export]
-macro_rules! roles_internal {
-    ($module_roles:ident, $($role:ident => $rule:expr, $locked:ident;)* ) => ({
-        let method_roles = $module_roles::<(AccessRule, bool)> {
-            $(
-                $role: {
-                    role_definition_entry!($rule, $locked)
-                }
-            ),*
-        };
-
-        let mut roles = $crate::blueprints::resource::Roles::new();
-        for (name, (rule, mutable)) in method_roles.list() {
-            if mutable {
-                roles.define_mutable_role(name, rule);
-            } else {
-                roles.define_immutable_role(name, rule);
-            }
-        }
-
-        roles
-    });
-}
-
-#[macro_export]
-macro_rules! role_definition_entry {
-    ($rule:expr, locked) => {{
-        ($rule, false)
-    }};
-    ($rule:expr, updatable) => {{
-        ($rule, true)
-    }};
-}
-
-#[macro_export]
-macro_rules! metadata {
-    {
-        roles {
-            $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
-        },
-        init {
-            $($key:expr => $value:expr, $locked:ident;)*
-        }
-    } => ({
-        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable)? ;)*);
-        let metadata = metadata_init!($($key => $value, $locked;)*);
-        (metadata, metadata_roles)
-    });
-
-    {
-        init {
-            $($key:expr => $value:expr, $locked:ident;)*
-        }
-    } => ({
-        let metadata = metadata_init!($($key => $value, $locked;)*);
-        (metadata, Roles::new())
-    });
-
-    {
-        roles {
-            $($role:ident => $rule:expr $(, $updatable:ident)? ;)*
-        }
-    } => ({
-        let metadata_roles = roles_internal!(MetadataRoles, $($role => $rule $(, $updatable:ident)? ;)*);
-        let metadata = metadata_init!();
-        (metadata, metadata_roles)
-    });
-
-}
-
-#[macro_export]
 macro_rules! component_royalties {
     {
         roles {
@@ -597,7 +533,7 @@ macro_rules! component_royalties {
             $($init:tt)*
         }
     } => ({
-        let royalty_roles = roles_internal!(RoyaltyRoles, $($role => $rule $(, $updatable)?;)*);
+        let royalty_roles = internal_roles!(RoyaltyRoles, $($role => $rule $(, $updatable)?;)*);
         let royalties = component_royalty_config!($($init)*);
         (royalties, royalty_roles)
     });
@@ -607,8 +543,16 @@ macro_rules! component_royalties {
         }
     } => ({
         let royalties = component_royalty_config!($($init)*);
-        (royalties, Roles::new())
+        (royalties, RolesInit::new())
     })
+}
+
+/// Roles macro for main module
+#[macro_export]
+macro_rules! roles {
+    ( $($role:ident => $rule:expr, $locked:ident;)* ) => ({
+        internal_roles!(MethodRoles, $($role => $rule, $locked;)*)
+    });
 }
 
 #[macro_export]

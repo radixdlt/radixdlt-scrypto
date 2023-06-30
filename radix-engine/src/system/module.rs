@@ -112,6 +112,16 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
+    fn after_move_modules<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _src_node_id: &NodeId,
+        _dest_node_id: &NodeId,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
     fn before_drop_node<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
@@ -132,7 +142,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     //======================
 
     #[inline(always)]
-    fn before_lock_substate<Y: KernelApi<M>>(
+    fn before_open_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
         _partition_num: &PartitionNumber,
@@ -143,9 +153,10 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn after_lock_substate<Y: KernelApi<M>>(
+    fn after_open_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
+        _node_id: &NodeId,
         _store_access: &StoreAccessInfo,
         _size: usize,
     ) -> Result<(), RuntimeError> {
@@ -173,7 +184,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_drop_lock<Y: KernelApi<M>>(
+    fn on_close_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
         _store_access: &StoreAccessInfo,

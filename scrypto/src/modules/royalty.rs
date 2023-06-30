@@ -21,6 +21,12 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto::modules::Attachable;
 
+pub trait HasComponentRoyalties {
+    fn set_royalty<M: ToString>(&self, method: M, amount: RoyaltyAmount);
+    fn lock_royalty<M: ToString>(&self, method: M);
+    fn claim_component_royalties(&self) -> Bucket;
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Royalty(pub ModuleHandle);
 

@@ -4,11 +4,11 @@ use radix_engine::types::*;
 use radix_engine_common::types::NodeId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintDependencies, FunctionSchema, IndexedStateSchema, PackageExport,
-    TypePointer, VmType, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
-    PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET, PACKAGE_SCHEMAS_PARTITION_OFFSET,
+    TypePointer, VmType, *,
 };
-use radix_engine_interface::blueprints::package::{PackageCodeSubstate, PackageDefinition};
+use radix_engine_interface::blueprints::package::{PackageDefinition, PackageOriginalCodeSubstate};
 use radix_engine_interface::schema::TypeRef;
+use radix_engine_queries::typed_substate_layout::PackageVmTypeSubstate;
 use radix_engine_store_interface::{
     db_key_mapper::{DatabaseKeyMapper, SpreadPrefixKeyMapper},
     interface::{CommittableSubstateDatabase, DatabaseUpdate},
@@ -74,10 +74,6 @@ impl Publish {
                 .bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
-            let package_code = PackageCodeSubstate {
-                vm_type: VmType::ScryptoV1,
-                code,
-            };
 
             let blueprints_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
                 &node_id,
@@ -97,11 +93,59 @@ impl Publish {
                     .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
                     .unwrap(),
             );
+            let vm_type_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_VM_TYPE_PARTITION_OFFSET)
+                    .unwrap(),
+            );
+            let original_code_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
+                    .unwrap(),
+            );
+            let instrumented_code_partition_key = SpreadPrefixKeyMapper::to_db_partition_key(
+                &node_id,
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET)
+                    .unwrap(),
+            );
             let mut blueprint_updates = index_map_new();
             let mut dependency_updates = index_map_new();
             let mut schema_updates = index_map_new();
+            let mut vm_type_updates = index_map_new();
+            let mut original_code_updates = index_map_new();
+            let mut instrumented_code_updates = index_map_new();
 
-            let code_hash = hash(scrypto_encode(&package_code).unwrap());
+            let code_hash = hash(&code);
+            let instrumented_code = WasmValidator::default()
+                .validate(&code, package_definition.blueprints.values())
+                .map_err(Error::InvalidPackage)?
+                .0;
+            let vm_type = PackageVmTypeSubstate {
+                vm_type: VmType::ScryptoV1,
+            };
+            let original_code = PackageOriginalCodeSubstate { code };
+            let instrumented_code = PackageOriginalCodeSubstate {
+                code: instrumented_code,
+            };
+            {
+                let key =
+                    SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
+                let update = DatabaseUpdate::Set(scrypto_encode(&vm_type).unwrap());
+                vm_type_updates.insert(key, update);
+
+                let key =
+                    SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
+                let update = DatabaseUpdate::Set(scrypto_encode(&original_code).unwrap());
+                original_code_updates.insert(key, update);
+
+                let key =
+                    SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&code_hash).unwrap());
+                let update = DatabaseUpdate::Set(scrypto_encode(&instrumented_code).unwrap());
+                instrumented_code_updates.insert(key, update);
+            }
 
             for (b, s) in package_definition.blueprints {
                 let mut functions = BTreeMap::new();
@@ -201,6 +245,9 @@ impl Publish {
                 blueprints_partition_key => blueprint_updates,
                 dependencies_partition_key => dependency_updates,
                 schemas_partition_key => schema_updates,
+                vm_type_partition_key => vm_type_updates,
+                original_code_partition_key => original_code_updates,
+                instrumented_code_partition_key => instrumented_code_updates,
             );
 
             substate_db.commit(&database_updates);
@@ -214,7 +261,7 @@ impl Publish {
                 .unwrap_or(get_default_owner_badge()?);
 
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET, 50u32.into())
+                .lock_fee(FAUCET, 5000u32.into())
                 .publish_package_with_owner(
                     code,
                     package_definition,

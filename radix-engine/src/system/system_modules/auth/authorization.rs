@@ -73,7 +73,7 @@ impl Authorization {
         let mut pass = false;
         loop {
             // Load auth zone
-            let handle = api.kernel_lock_substate(
+            let handle = api.kernel_open_substate(
                 &current_auth_zone_id,
                 MAIN_BASE_PARTITION,
                 &AuthZoneField::AuthZone.into(),
@@ -119,7 +119,7 @@ impl Authorization {
         }
 
         for handle in handles {
-            api.kernel_drop_lock(handle)?;
+            api.kernel_close_substate(handle)?;
         }
 
         Ok(pass)
@@ -337,7 +337,7 @@ impl Authorization {
                 access_rules_of.0
             ))))
         } else {
-            let handle = api.kernel_lock_substate_with_default(
+            let handle = api.kernel_open_substate_with_default(
                 access_rules_of,
                 ACCESS_RULES_BASE_PARTITION
                     .at_offset(ACCESS_RULES_ROLE_DEF_PARTITION_OFFSET)
@@ -352,12 +352,12 @@ impl Authorization {
             )?;
             let substate: KeyValueEntrySubstate<AccessRule> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
-            api.kernel_drop_lock(handle)?;
+            api.kernel_close_substate(handle)?;
 
             match substate.value {
                 Some(access_rule) => access_rule,
                 None => {
-                    let handle = api.kernel_lock_substate(
+                    let handle = api.kernel_open_substate(
                         access_rules_of,
                         ACCESS_RULES_BASE_PARTITION
                             .at_offset(ACCESS_RULES_FIELDS_PARTITION_OFFSET)
@@ -369,7 +369,7 @@ impl Authorization {
 
                     let owner_role_substate: OwnerRoleSubstate =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
-                    api.kernel_drop_lock(handle)?;
+                    api.kernel_close_substate(handle)?;
                     owner_role_substate.owner_role_entry.rule
                 }
             }

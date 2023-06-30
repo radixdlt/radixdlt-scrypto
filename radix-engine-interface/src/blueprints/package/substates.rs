@@ -1,16 +1,16 @@
 use crate::blueprints::package::BlueprintType;
-use crate::data::scrypto::model::Own;
 use crate::schema::*;
 use crate::types::*;
 use crate::*;
 use radix_engine_common::crypto::Hash;
+use radix_engine_interface::blueprints::resource::Vault;
 use sbor::rust::fmt;
 use sbor::rust::fmt::{Debug, Formatter};
 use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
 
 pub const PACKAGE_CODE_ID: u64 = 0u64;
-pub const RESOURCE_MANAGER_CODE_ID: u64 = 1u64;
+pub const RESOURCE_CODE_ID: u64 = 1u64;
 pub const IDENTITY_CODE_ID: u64 = 2u64;
 pub const CONSENSUS_MANAGER_CODE_ID: u64 = 3u64;
 pub const ACCOUNT_CODE_ID: u64 = 5u64;
@@ -26,43 +26,62 @@ pub const PACKAGE_FIELDS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(0u8
 pub const PACKAGE_BLUEPRINTS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(1u8);
 pub const PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET: PartitionOffset = PartitionOffset(2u8);
 pub const PACKAGE_SCHEMAS_PARTITION_OFFSET: PartitionOffset = PartitionOffset(3u8);
-pub const PACKAGE_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
-pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
-pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
+pub const PACKAGE_ROYALTY_PARTITION_OFFSET: PartitionOffset = PartitionOffset(4u8);
+pub const PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(5u8);
 
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+pub const PACKAGE_VM_TYPE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(6u8);
+pub const PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(7u8);
+pub const PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET: PartitionOffset = PartitionOffset(8u8);
+
+#[derive(Copy, Debug, Clone, PartialEq, Eq, Sbor)]
 pub enum VmType {
     Native,
     ScryptoV1,
 }
 
-/// A collection of blueprints, compiled and published as a single unit.
-#[derive(Clone, Sbor, PartialEq, Eq)]
-pub struct PackageCodeSubstate {
+#[derive(Debug, Clone, Sbor, PartialEq, Eq)]
+pub struct PackageVmTypeSubstate {
     pub vm_type: VmType,
+}
+
+#[derive(Clone, Sbor, PartialEq, Eq)]
+pub struct PackageOriginalCodeSubstate {
     pub code: Vec<u8>,
 }
 
-impl PackageCodeSubstate {
-    pub fn code(&self) -> &[u8] {
-        &self.code
-    }
+#[derive(Clone, Sbor, PartialEq, Eq)]
+pub struct PackageInstrumentedCodeSubstate {
+    pub code: Vec<u8>,
 }
 
-impl Debug for PackageCodeSubstate {
+impl Debug for PackageOriginalCodeSubstate {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PackageCodeSubstate").finish()
+        f.debug_struct("PackageOriginalCodeSubstate")
+            .field("len", &self.code.len())
+            .finish()
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+impl Debug for PackageInstrumentedCodeSubstate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PackageInstrumentedCodeSubstate")
+            .field("len", &self.code.len())
+            .finish()
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub struct PackageRoyaltyAccumulatorSubstate {
     /// The vault for collecting package royalties.
-    ///
-    /// It's optional to break circular dependency - creating package royalty vaults
-    /// requires the `resource` package existing in the first place.
-    /// TODO: Cleanup
-    pub royalty_vault: Option<Own>,
+    pub royalty_vault: Vault,
+}
+
+impl Clone for PackageRoyaltyAccumulatorSubstate {
+    fn clone(&self) -> Self {
+        Self {
+            royalty_vault: Vault(self.royalty_vault.0.clone()),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]

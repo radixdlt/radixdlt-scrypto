@@ -1,5 +1,5 @@
 use super::actor::{Actor, MethodActor};
-use super::call_frame::{CallFrame, LockSubstateError, NodeVisibility};
+use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
@@ -105,7 +105,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 .map_err(|_| KernelError::InvalidReference(*node_id))?;
             let (substate_ref, _store_access) = kernel.store.read_substate(handle);
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            kernel.store.release_lock(handle);
+            kernel.store.close_substate(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint_id: blueprint,
@@ -148,8 +148,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             global_address_reservations.push(global_address_reservation);
         }
 
+        // Call TX processor
         let mut system = SystemService::new(&mut kernel);
-
         let rtn = system.call_function(
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,
@@ -260,7 +260,7 @@ where
             // Auto drop locks
             self.current_frame
                 .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::UnlockSubstateError)
+                .map_err(CallFrameError::CloseSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
             // Run
@@ -270,7 +270,7 @@ where
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
                 .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::UnlockSubstateError)
+                .map_err(CallFrameError::CloseSubstateError)
                 .map_err(KernelError::CallFrameError)?;
 
             // Handle execution finish
@@ -383,7 +383,8 @@ where
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        self.current_frame
+        let store_access = self
+            .current_frame
             .move_module(
                 src_node_id,
                 src_partition_number,
@@ -394,7 +395,11 @@ where
             )
             .map_err(CallFrameError::MoveModuleError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::after_move_modules(src_node_id, dest_node_id, &store_access, self)?;
+
+        Ok(())
     }
 }
 
@@ -579,7 +584,7 @@ where
     S: SubstateStore,
 {
     #[trace_resources(log=node_id.entity_type(), log=partition_num)]
-    fn kernel_lock_substate_with_default(
+    fn kernel_open_substate_with_default(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -588,7 +593,7 @@ where
         default: Option<fn() -> IndexedScryptoValue>,
         data: M::LockData,
     ) -> Result<LockHandle, RuntimeError> {
-        M::before_lock_substate(&node_id, &partition_num, substate_key, &flags, self)?;
+        M::before_open_substate(&node_id, &partition_num, substate_key, &flags, self)?;
 
         let maybe_lock_handle = self.current_frame.acquire_lock(
             &mut self.heap,
@@ -601,51 +606,57 @@ where
             data,
         );
 
-        let (lock_handle, store_access): (u32, StoreAccessInfo) = match &maybe_lock_handle {
-            Ok((lock_handle, store_access)) => (*lock_handle, store_access.clone()),
-            Err(LockSubstateError::TrackError(track_err)) => {
-                if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
-                    let retry =
-                        M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
+        let (lock_handle, value_size, store_access): (u32, usize, StoreAccessInfo) =
+            match &maybe_lock_handle {
+                Ok((lock_handle, value_size, store_access)) => {
+                    (*lock_handle, *value_size, store_access.clone())
+                }
+                Err(OpenSubstateError::TrackError(track_err)) => {
+                    if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
+                        let retry = M::on_substate_lock_fault(
+                            *node_id,
+                            partition_num,
+                            &substate_key,
+                            self,
+                        )?;
 
-                    if retry {
-                        self.current_frame
-                            .acquire_lock(
-                                &mut self.heap,
-                                self.store,
-                                &node_id,
-                                partition_num,
-                                &substate_key,
-                                flags,
-                                None,
-                                M::LockData::default(),
-                            )
-                            .map_err(CallFrameError::LockSubstateError)
-                            .map_err(KernelError::CallFrameError)?
+                        if retry {
+                            self.current_frame
+                                .acquire_lock(
+                                    &mut self.heap,
+                                    self.store,
+                                    &node_id,
+                                    partition_num,
+                                    &substate_key,
+                                    flags,
+                                    None,
+                                    M::LockData::default(),
+                                )
+                                .map_err(CallFrameError::OpenSubstateError)
+                                .map_err(KernelError::CallFrameError)?
+                        } else {
+                            return maybe_lock_handle
+                                .map(|(lock_handle, _, _)| lock_handle)
+                                .map_err(CallFrameError::OpenSubstateError)
+                                .map_err(KernelError::CallFrameError)
+                                .map_err(RuntimeError::KernelError);
+                        }
                     } else {
-                        return maybe_lock_handle
-                            .map(|(lock_handle, _)| lock_handle)
-                            .map_err(CallFrameError::LockSubstateError)
-                            .map_err(KernelError::CallFrameError)
-                            .map_err(RuntimeError::KernelError);
+                        return Err(RuntimeError::KernelError(KernelError::CallFrameError(
+                            CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(
+                                track_err.clone(),
+                            )),
+                        )));
                     }
-                } else {
+                }
+                Err(err) => {
                     return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                        CallFrameError::LockSubstateError(LockSubstateError::TrackError(
-                            track_err.clone(),
-                        )),
+                        CallFrameError::OpenSubstateError(err.clone()),
                     )));
                 }
-            }
-            Err(err) => {
-                return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::LockSubstateError(err.clone()),
-                )));
-            }
-        };
+            };
 
-        // FIXME: pass the right size
-        M::after_lock_substate(lock_handle, 0, &store_access, self)?;
+        M::after_open_substate(lock_handle, node_id, value_size, &store_access, self)?;
 
         Ok(lock_handle)
     }
@@ -663,14 +674,14 @@ where
     }
 
     #[trace_resources]
-    fn kernel_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         let store_access = self
             .current_frame
-            .drop_lock(&mut self.heap, self.store, lock_handle)
-            .map_err(CallFrameError::UnlockSubstateError)
+            .close_substate(&mut self.heap, self.store, lock_handle)
+            .map_err(CallFrameError::CloseSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
-        M::on_drop_lock(lock_handle, &store_access, self)?;
+        M::on_close_substate(lock_handle, &store_access, self)?;
 
         Ok(())
     }
@@ -680,19 +691,12 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let (value, mut store_access) = self
+        let (value, store_access) = self
             .current_frame
             .read_substate(&mut self.heap, self.store, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
-        let mut value_size = value.len();
-
-        // FIXME: revisit package special costing rules
-        let lock_info = self.current_frame.get_lock_info(lock_handle).unwrap();
-        if lock_info.node_id.is_global_package() {
-            store_access.clear();
-            value_size = 0;
-        }
+        let value_size = value.len();
 
         M::on_read_substate(lock_handle, value_size, &store_access, self)?;
 
@@ -847,10 +851,7 @@ where
 
         let rtn = self.invoke(invocation)?;
 
-        M::after_invoke(
-            0, // FIXME: Pass the right size
-            self,
-        )?;
+        M::after_invoke(rtn.len(), self)?;
 
         Ok(rtn)
     }

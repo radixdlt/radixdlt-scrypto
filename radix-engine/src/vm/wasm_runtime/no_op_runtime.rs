@@ -8,6 +8,7 @@ use sbor::rust::vec::Vec;
 pub struct NoOpWasmRuntime<'a> {
     pub fee_reserve: SystemLoanFeeReserve,
     pub gas_consumed: &'a mut u32,
+    pub fee_table: FeeTable,
 }
 
 impl<'a> NoOpWasmRuntime<'a> {
@@ -15,6 +16,7 @@ impl<'a> NoOpWasmRuntime<'a> {
         Self {
             fee_reserve,
             gas_consumed,
+            fee_table: FeeTable::new(),
         }
     }
 }
@@ -100,7 +102,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn key_value_store_lock_entry(
+    fn key_value_store_open_entry(
         &mut self,
         node_id: Vec<u8>,
         offset: Vec<u8>,
@@ -139,7 +141,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn actor_lock_field(
+    fn actor_open_field(
         &mut self,
         object_handle: u32,
         field: u8,
@@ -183,7 +185,10 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
     fn consume_gas(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
         self.gas_consumed.add_assign(n);
         self.fee_reserve
-            .consume_execution(n)
+            .consume_execution(
+                self.fee_table
+                    .run_wasm_code_cost(&PACKAGE_PACKAGE, "none", n),
+            )
             .map_err(|e| InvokeError::SelfError(WasmRuntimeError::FeeReserveError(e)))
     }
 
@@ -191,13 +196,6 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
-    }
-
-    fn update_wasm_memory_usage(
-        &mut self,
-        size: usize,
-    ) -> Result<(), InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

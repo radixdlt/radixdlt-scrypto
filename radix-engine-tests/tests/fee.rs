@@ -1,8 +1,8 @@
 use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
 use radix_engine::errors::{RejectionError, RuntimeError};
-use radix_engine::kernel::call_frame::LockSubstateError;
-use radix_engine::kernel::heap::HeapLockSubstateError;
+use radix_engine::kernel::call_frame::OpenSubstateError;
+use radix_engine::kernel::heap::HeapOpenSubstateError;
 use radix_engine::track::interface::AcquireLockError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
@@ -33,8 +33,8 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
     let receipt1 = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 50u32.into())
-            .withdraw_from_account(account, RADIX_TOKEN, 10u32.into())
+            .lock_fee(account, 500u32.into())
+            .withdraw_from_account(account, RADIX_TOKEN, 1000u32.into())
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
                 builder
@@ -54,11 +54,7 @@ fn should_be_aborted_when_loan_repaid() {
 
     let manifest = ManifestBuilder::new()
         // First, lock the fee so that the loan will be repaid
-        .call_method(
-            component_address,
-            "lock_fee",
-            manifest_args!(Decimal::from(10)),
-        )
+        .lock_fee(FAUCET, 500u32.into())
         // Now spin-loop to wait for the fee loan to burn through
         .call_method(component_address, "spin_loop", manifest_args!())
         .build();
@@ -78,11 +74,7 @@ fn should_be_aborted_when_loan_repaid() {
 fn should_succeed_when_fee_is_paid() {
     let receipt = run_manifest(|component_address| {
         ManifestBuilder::new()
-            .call_method(
-                component_address,
-                "lock_fee",
-                manifest_args!(Decimal::from(10)),
-            )
+            .lock_fee(component_address, 500u32.into())
             .build()
     });
 
@@ -155,8 +147,8 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
 
     receipt.expect_specific_rejection(|e| match e {
         RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-            KernelError::CallFrameError(CallFrameError::LockSubstateError(
-                LockSubstateError::HeapError(HeapLockSubstateError::LockUnmodifiedBaseOnHeapNode),
+            KernelError::CallFrameError(CallFrameError::OpenSubstateError(
+                OpenSubstateError::HeapError(HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode),
             )),
         )) => true,
         _ => false,
@@ -170,7 +162,7 @@ fn should_be_success_when_query_vault_and_lock_fee() {
             .call_method(
                 component_address,
                 "query_vault_and_lock_fee",
-                manifest_args!(Decimal::from(10)),
+                manifest_args!(Decimal::from(500)),
             )
             .build()
     });
@@ -192,8 +184,8 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
 
     receipt.expect_specific_rejection(|e| match e {
         RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
-            KernelError::CallFrameError(CallFrameError::LockSubstateError(
-                LockSubstateError::TrackError(err),
+            KernelError::CallFrameError(CallFrameError::OpenSubstateError(
+                OpenSubstateError::TrackError(err),
             )),
         )) => {
             if let AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
@@ -213,7 +205,7 @@ fn should_succeed_when_lock_fee_and_query_vault() {
             .call_method(
                 component_address,
                 "lock_fee_and_query_vault",
-                manifest_args!(Decimal::from(10)),
+                manifest_args!(Decimal::from(500)),
             )
             .build()
     });
@@ -240,7 +232,7 @@ fn test_fee_accounting_success() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 50.into())
+        .lock_fee(account1, 500u32.into())
         .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
         .call_method(
             account2,
@@ -272,6 +264,7 @@ fn test_fee_accounting_success() {
             - 66
             - (summary.cost_unit_price + summary.cost_unit_price * summary.tip_percentage / 100)
                 * summary.execution_cost_sum
+            - summary.total_state_expansion_cost_xrd
     );
     assert_eq!(account2_new_balance, account2_balance + 66);
 }
@@ -295,7 +288,7 @@ fn test_fee_accounting_failure() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 50.into())
+        .lock_fee(account1, 500u32.into())
         .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
         .call_method(
             account2,
@@ -388,7 +381,7 @@ fn test_contingent_fee_accounting_success() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, dec!("10"))
+        .lock_fee(account1, 500u32.into())
         .lock_contingent_fee(account2, dec!("0.001"))
         .build();
     let receipt = test_runner.execute_manifest(
@@ -417,7 +410,10 @@ fn test_contingent_fee_accounting_success() {
     let contingent_fee = dec!("0.001");
     assert_eq!(
         account1_new_balance,
-        account1_balance - effective_price * summary.execution_cost_sum + contingent_fee
+        account1_balance
+            - effective_price * summary.execution_cost_sum
+            - summary.total_state_expansion_cost_xrd
+            + contingent_fee
     );
     assert_eq!(account2_new_balance, account2_balance - contingent_fee);
 }
@@ -441,7 +437,7 @@ fn test_contingent_fee_accounting_failure() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, dec!("10"))
+        .lock_fee(account1, 500u32.into())
         .lock_contingent_fee(account2, dec!("0.001"))
         .assert_worktop_contains(RADIX_TOKEN, 1.into())
         .build();
@@ -491,7 +487,7 @@ fn locked_fees_are_correct_in_execution_trace() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, dec!("4.676"))
+        .lock_fee(account, dec!("104.676"))
         .build();
     let receipt = test_runner.preview_manifest(
         manifest,
@@ -505,7 +501,7 @@ fn locked_fees_are_correct_in_execution_trace() {
     assert_eq!(
         commit.execution_trace.fee_locks,
         FeeLocks {
-            lock: dec!("4.676"),
+            lock: dec!("104.676"),
             contingent_lock: Decimal::ZERO
         }
     )
@@ -520,8 +516,8 @@ fn multiple_locked_fees_are_correct_in_execution_trace() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, dec!("4.676"))
-        .lock_fee(account2, dec!("2.180"))
+        .lock_fee(account1, dec!("104.676"))
+        .lock_fee(account2, dec!("102.180"))
         .build();
     let receipt = test_runner.preview_manifest(
         manifest,
@@ -535,7 +531,7 @@ fn multiple_locked_fees_are_correct_in_execution_trace() {
     assert_eq!(
         commit.execution_trace.fee_locks,
         FeeLocks {
-            lock: dec!("6.856"),
+            lock: dec!("206.856"),
             contingent_lock: Decimal::ZERO
         }
     )
@@ -550,8 +546,8 @@ fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, dec!("4.676"))
-        .lock_contingent_fee(account2, dec!("2.180"))
+        .lock_fee(account1, dec!("104.676"))
+        .lock_contingent_fee(account2, dec!("102.180"))
         .build();
     let receipt = test_runner.preview_manifest(
         manifest,
@@ -565,8 +561,8 @@ fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
     assert_eq!(
         commit.execution_trace.fee_locks,
         FeeLocks {
-            lock: dec!("4.676"),
-            contingent_lock: dec!("2.180")
+            lock: dec!("104.676"),
+            contingent_lock: dec!("102.180")
         }
     )
 }

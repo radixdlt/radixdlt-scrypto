@@ -1,5 +1,6 @@
 use crate::types::*;
 use crate::vm::wasm::{constants::*, errors::*, PrepareError};
+use parity_wasm::elements::MemoryType;
 use parity_wasm::elements::{
     External, FunctionType,
     Instruction::{self, *},
@@ -266,7 +267,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME => {
+                        KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -285,7 +286,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        KEY_VALUE_STORE_LOCK_ENTRY_FUNCTION_NAME.to_string(),
+                                        KEY_VALUE_STORE_OPEN_ENTRY_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -367,7 +368,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        ACTOR_LOCK_FIELD_FUNCTION_NAME => {
+                        ACTOR_OPEN_FIELD_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -380,7 +381,7 @@ impl WasmModule {
 
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        ACTOR_LOCK_FIELD_FUNCTION_NAME.to_string(),
+                                        ACTOR_OPEN_FIELD_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -663,7 +664,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GLOBALIZE_OBJECT_FUNCTION_NAME => {
+                        GLOBALIZE_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -680,7 +681,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GLOBALIZE_OBJECT_FUNCTION_NAME.to_string(),
+                                        GLOBALIZE_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }
@@ -817,30 +818,47 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_memory_limit(
-        self,
-        max_initial_memory_size_pages: u32,
+    pub fn enforce_memory_limit_and_inject_max(
+        mut self,
+        max_memory_size_in_pages: u32,
     ) -> Result<Self, PrepareError> {
-        // Must have exactly 1 internal, exported memory definition
-        // TODO: consider if we can benefit from shared external memory.
-        let memory_section = self
-            .module
-            .memory_section()
-            .ok_or(PrepareError::InvalidMemory(InvalidMemory::NoMemorySection))?;
+        // Check if memory section exists
+        let memory_section =
+            self.module
+                .memory_section_mut()
+                .ok_or(PrepareError::InvalidMemory(
+                    InvalidMemory::MissingMemorySection,
+                ))?;
 
+        // Check if there is only one memory definition
         let memory = match memory_section.entries().len() {
             0 => Err(PrepareError::InvalidMemory(
-                InvalidMemory::EmptyMemorySection,
+                InvalidMemory::NoMemoryDefinition,
             )),
-            1 => Ok(memory_section.entries()[0]),
-            _ => Err(PrepareError::InvalidMemory(InvalidMemory::TooManyMemories)),
+            1 => Ok(&mut memory_section.entries_mut()[0]),
+            _ => Err(PrepareError::InvalidMemory(
+                InvalidMemory::TooManyMemoryDefinition,
+            )),
         }?;
-        if memory.limits().initial() > max_initial_memory_size_pages {
+
+        // Check the memory limits
+        if memory.limits().initial() > max_memory_size_in_pages {
             return Err(PrepareError::InvalidMemory(
-                InvalidMemory::InitialMemorySizeLimitExceeded,
+                InvalidMemory::MemorySizeLimitExceeded,
             ));
         }
+        if let Some(max) = memory.limits().maximum() {
+            if max > max_memory_size_in_pages {
+                return Err(PrepareError::InvalidMemory(
+                    InvalidMemory::MemorySizeLimitExceeded,
+                ));
+            }
+        } else {
+            // Inject max memory if undefined
+            *memory = MemoryType::new(memory.limits().initial(), Some(max_memory_size_in_pages));
+        }
 
+        // Check if the memory is exported
         self.module
             .export_section()
             .and_then(|section| {
@@ -1174,8 +1192,8 @@ mod tests {
             (module
             )
             "#,
-            PrepareError::InvalidMemory(InvalidMemory::NoMemorySection),
-            |x| WasmModule::enforce_memory_limit(x, 5)
+            PrepareError::InvalidMemory(InvalidMemory::MissingMemorySection),
+            |x| WasmModule::enforce_memory_limit_and_inject_max(x, 5)
         );
         // NOTE: Disabled as MVP only allow 1 memory definition
         // assert_invalid_wasm!(
@@ -1194,8 +1212,8 @@ mod tests {
                 (memory 6)
             )
             "#,
-            PrepareError::InvalidMemory(InvalidMemory::InitialMemorySizeLimitExceeded),
-            |x| WasmModule::enforce_memory_limit(x, 5)
+            PrepareError::InvalidMemory(InvalidMemory::MemorySizeLimitExceeded),
+            |x| WasmModule::enforce_memory_limit_and_inject_max(x, 5)
         );
         assert_invalid_wasm!(
             r#"
@@ -1204,7 +1222,7 @@ mod tests {
             )
             "#,
             PrepareError::InvalidMemory(InvalidMemory::MemoryNotExported),
-            |x| WasmModule::enforce_memory_limit(x, 5)
+            |x| WasmModule::enforce_memory_limit_and_inject_max(x, 5)
         );
     }
 

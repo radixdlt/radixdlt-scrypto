@@ -14,6 +14,12 @@ use sbor::rust::string::ToString;
 use sbor::*;
 use scrypto::modules::Attachable;
 
+pub trait HasMetadata {
+    fn set_metadata<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V);
+    fn get_metadata<K: ToString, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError>;
+    fn remove_metadata<K: ToString>(&self, name: K) -> bool;
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Metadata(pub ModuleHandle);
 
@@ -135,19 +141,5 @@ impl Metadata {
         );
 
         rtn
-    }
-}
-
-pub struct MetadataRoles<T> {
-    pub metadata_admin: T,
-    pub metadata_admin_updater: T,
-}
-
-impl<T> MetadataRoles<T> {
-    pub fn list(self) -> Vec<(&'static str, T)> {
-        vec![
-            (METADATA_ADMIN_ROLE, self.metadata_admin),
-            (METADATA_ADMIN_UPDATER_ROLE, self.metadata_admin_updater),
-        ]
     }
 }

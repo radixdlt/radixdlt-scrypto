@@ -28,8 +28,6 @@ use radix_engine_interface::schema::{Receiver, ReceiverInfo, RefTypes};
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME: &str = "create_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME: &str =
     "create_with_initial_supply_and_address_FungibleResourceManager";
-const FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME: &str =
-    "create_with_initial_supply_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_BURN_EXPORT_NAME: &str = "burn_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_PACKAGE_BURN_EXPORT_NAME: &str =
     "package_burn_FungibleResourceManager";
@@ -136,9 +134,9 @@ const NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_NonFungibleProof";
 
-pub struct ResourceManagerNativePackage;
+pub struct ResourceNativePackage;
 
-impl ResourceManagerNativePackage {
+impl ResourceNativePackage {
     pub fn definition() -> PackageDefinition {
         //====================================================================================
 
@@ -183,17 +181,6 @@ impl ResourceManagerNativePackage {
                     output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyOutput>()),
                     export: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
-                FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: None,
-                    input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressInput>()),
-                    output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<FungibleResourceManagerCreateWithInitialSupplyAndAddressOutput>()),
-                    export: FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME.to_string(),
                 },
             );
 
@@ -426,17 +413,6 @@ impl ResourceManagerNativePackage {
                     output: TypeRef::Static(aggregator
                         .add_child_type_and_descendents::<NonFungibleResourceManagerCreateOutput>()),
                     export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
-                NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: None,
-                    input: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressInput>()),
-                    output: TypeRef::Static(aggregator
-                        .add_child_type_and_descendents::<NonFungibleResourceManagerCreateWithAddressOutput>()),
-                    export: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT.to_string(),
                 },
             );
             functions.insert(
@@ -2231,10 +2207,12 @@ impl ResourceManagerNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleResourceManagerBlueprint::create(
+                    input.owner_role,
                     input.track_total_supply,
                     input.divisibility,
-                    input.metadata,
                     input.access_rules,
+                    input.metadata,
+                    input.address_reservation,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2245,27 +2223,13 @@ impl ResourceManagerNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply(
+                    input.owner_role,
                     input.track_total_supply,
                     input.divisibility,
-                    input.metadata,
-                    input.access_rules,
                     input.initial_supply,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_AND_ADDRESS_EXPORT_NAME => {
-                let input: FungibleResourceManagerCreateWithInitialSupplyAndAddressInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                    })?;
-                let rtn = FungibleResourceManagerBlueprint::create_with_initial_supply_and_address(
-                    input.track_total_supply,
-                    input.divisibility,
-                    input.metadata,
                     input.access_rules,
-                    input.initial_supply,
-                    input.resource_address,
+                    input.metadata,
+                    input.address_reservation,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2336,27 +2300,13 @@ impl ResourceManagerNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create(
+                    input.owner_role,
                     input.id_type,
                     input.track_total_supply,
                     input.non_fungible_schema,
-                    input.metadata,
                     input.access_rules,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_ADDRESS_IDENT => {
-                let input: NonFungibleResourceManagerCreateWithAddressInput =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                    })?;
-                let rtn = NonFungibleResourceManagerBlueprint::create_with_address(
-                    input.id_type,
-                    input.track_total_supply,
-                    input.non_fungible_schema,
                     input.metadata,
-                    input.access_rules,
-                    input.resource_address,
+                    input.address_reservation,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2367,12 +2317,14 @@ impl ResourceManagerNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleResourceManagerBlueprint::create_with_initial_supply(
+                    input.owner_role,
                     input.id_type,
                     input.track_total_supply,
                     input.non_fungible_schema,
-                    input.metadata,
-                    input.access_rules,
                     input.entries,
+                    input.access_rules,
+                    input.metadata,
+                    input.address_reservation,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2384,11 +2336,13 @@ impl ResourceManagerNativePackage {
                     })?;
 
                 let rtn = NonFungibleResourceManagerBlueprint::create_ruid_with_initial_supply(
+                    input.owner_role,
                     input.track_total_supply,
                     input.non_fungible_schema,
-                    input.metadata,
-                    input.access_rules,
                     input.entries,
+                    input.access_rules,
+                    input.metadata,
+                    input.address_reservation,
                     api,
                 )?;
 

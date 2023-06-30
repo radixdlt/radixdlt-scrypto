@@ -95,7 +95,7 @@ impl ScenarioCore {
         signers: Vec<&PrivateKey>,
     ) -> NextTransaction {
         let mut manifest_builder = ManifestBuilder::new();
-        manifest_builder.lock_fee(FAUCET, dec!(100));
+        manifest_builder.lock_fee(FAUCET, dec!(5000));
         create_manifest(&mut manifest_builder);
         self.next_transaction(logical_name, manifest_builder, signers)
     }
@@ -153,9 +153,12 @@ impl ScenarioCore {
         NextTransaction::of(logical_name.to_owned(), self.stage_counter, builder.build())
     }
 
-    pub fn finish_scenario(&self) -> NextAction {
+    /// The `interesting_addresses` should be a list of addresses that the scenario touched/created,
+    /// with a descriptor in lower_snake_case.
+    pub fn finish_scenario(&self, interesting_addresses: DescribedAddresses) -> NextAction {
         NextAction::Completed(EndState {
             next_unused_nonce: self.nonce,
+            interesting_addresses,
         })
     }
 
@@ -239,6 +242,21 @@ pub enum NextAction {
 #[derive(Debug)]
 pub struct EndState {
     pub next_unused_nonce: u32,
+    pub interesting_addresses: DescribedAddresses,
+}
+
+#[derive(Debug)]
+pub struct DescribedAddresses(IndexMap<String, GlobalAddress>);
+
+impl DescribedAddresses {
+    pub fn new() -> Self {
+        Self(indexmap!())
+    }
+
+    pub fn add(mut self, descriptor: impl ToString, address: impl Into<GlobalAddress>) -> Self {
+        self.0.insert(descriptor.to_string(), address.into());
+        self
+    }
 }
 
 pub trait ScenarioInstance {
@@ -249,8 +267,9 @@ pub trait ScenarioInstance {
 }
 
 pub struct ScenarioMetadata {
-    /// The logical name of the scenario.
-    /// This should be spaceless as it will be used for a file path.
+    /// The logical name of the scenario:
+    /// - This is used in Node genesis to specify which scenarios should be run
+    /// - This should be spaceless as it will be used for a file path
     pub logical_name: &'static str,
 }
 

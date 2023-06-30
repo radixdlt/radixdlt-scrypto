@@ -81,7 +81,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let moveable = {
-            let handle = api.actor_lock_field(
+            let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
@@ -91,7 +91,7 @@ impl NonFungibleProofBlueprint {
             api.field_lock_release(handle)?;
             moveable
         };
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -118,7 +118,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -135,7 +135,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_lock_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -162,7 +162,7 @@ impl NonFungibleProofBlueprint {
         // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
 
         // Notify underlying buckets/vaults
-        let handle = api.kernel_lock_substate(
+        let handle = api.kernel_open_substate(
             proof.0.as_node_id(),
             MAIN_BASE_PARTITION,
             &NonFungibleProofField::ProofRefs.into(),
@@ -172,7 +172,7 @@ impl NonFungibleProofBlueprint {
         let proof_substate: NonFungibleProofSubstate =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         proof_substate.drop_proof(api)?;
-        api.kernel_drop_lock(handle)?;
+        api.kernel_close_substate(handle)?;
 
         // Drop self
         api.drop_object(proof.0.as_node_id())?;

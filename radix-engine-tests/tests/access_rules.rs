@@ -82,7 +82,7 @@ fn can_call_protected_function_with_auth() {
 #[test]
 fn access_rules_method_auth_cannot_be_mutated_when_locked() {
     // Arrange
-    let mut roles = Roles::new();
+    let mut roles = RolesInit::new();
     roles.define_immutable_role("deposit_funds_auth_update", rule!(allow_all));
     roles.define_mutable_role("borrow_funds_auth", rule!(allow_all));
     roles.define_immutable_role("deposit_funds_auth", rule!(require(RADIX_TOKEN)));
@@ -401,10 +401,7 @@ struct MutableAccessRulesTestRunner {
 impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
-    pub fn create_component(
-        authority_rules: Roles,
-        test_runner: &mut TestRunner,
-    ) -> TransactionReceipt {
+    pub fn create_component(roles: RolesInit, test_runner: &mut TestRunner) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
         let manifest = ManifestBuilder::new()
@@ -412,7 +409,7 @@ impl MutableAccessRulesTestRunner {
                 package_address,
                 Self::BLUEPRINT_NAME,
                 "new",
-                manifest_args!(authority_rules),
+                manifest_args!(roles),
             )
             .build();
         test_runner.execute_manifest_ignoring_fee(manifest, vec![])
@@ -465,9 +462,9 @@ impl MutableAccessRulesTestRunner {
         }
     }
 
-    pub fn new(authority_rules: Roles) -> Self {
+    pub fn new(roles: RolesInit) -> Self {
         let mut test_runner = TestRunner::builder().build();
-        let receipt = Self::create_component(authority_rules, &mut test_runner);
+        let receipt = Self::create_component(roles, &mut test_runner);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {

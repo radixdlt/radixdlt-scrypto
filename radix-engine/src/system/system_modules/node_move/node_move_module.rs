@@ -51,7 +51,7 @@ impl NodeMoveModule {
 
                 // Change to restricted unless it's moved to auth zone.
                 if callee.is_barrier() {
-                    let handle = api.kernel_lock_substate(
+                    let handle = api.kernel_open_substate(
                         &node_id,
                         MAIN_BASE_PARTITION,
                         &FungibleProofField::Moveable.into(),
@@ -71,9 +71,9 @@ impl NodeMoveModule {
 
                     proof.change_to_restricted();
                     api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
-                    api.kernel_drop_lock(handle)?;
+                    api.kernel_close_substate(handle)?;
                 } else if callee.is_auth_zone() {
-                    let handle = api.kernel_lock_substate(
+                    let handle = api.kernel_open_substate(
                         &node_id,
                         MAIN_BASE_PARTITION,
                         &FungibleProofField::Moveable.into(),
@@ -90,7 +90,7 @@ impl NodeMoveModule {
                             )),
                         ));
                     }
-                    api.kernel_drop_lock(handle)?;
+                    api.kernel_close_substate(handle)?;
                 }
             }
             TypeInfoSubstate::Object(info)
@@ -113,7 +113,7 @@ impl NodeMoveModule {
 
                 // Change to restricted unless it's moved to auth zone.
                 if callee.is_barrier() {
-                    let handle = api.kernel_lock_substate(
+                    let handle = api.kernel_open_substate(
                         &node_id,
                         MAIN_BASE_PARTITION,
                         &NonFungibleProofField::Moveable.into(),
@@ -133,9 +133,9 @@ impl NodeMoveModule {
 
                     proof.change_to_restricted();
                     api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
-                    api.kernel_drop_lock(handle)?;
+                    api.kernel_close_substate(handle)?;
                 } else if callee.is_auth_zone() {
-                    let handle = api.kernel_lock_substate(
+                    let handle = api.kernel_open_substate(
                         &node_id,
                         MAIN_BASE_PARTITION,
                         &NonFungibleProofField::Moveable.into(),
@@ -152,7 +152,7 @@ impl NodeMoveModule {
                             )),
                         ));
                     }
-                    api.kernel_drop_lock(handle)?;
+                    api.kernel_close_substate(handle)?;
                 }
             }
             _ => {}
