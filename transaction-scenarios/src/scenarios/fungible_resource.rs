@@ -1,6 +1,7 @@
 use crate::internal_prelude::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT;
 use radix_engine_interface::*;
 
 pub struct FungibleResourceScenario {
@@ -119,13 +120,50 @@ impl ScenarioInstance for FungibleResourceScenario {
                                 max_divisibility_fungible_resource.unwrap(),
                                 |builder, bucket| builder.burn_resource(bucket),
                             )
-                            .try_deposit_batch_or_abort(user_account_1.address)
                     },
-                    vec![],
+                    vec![&user_account_1.key],
+                )
+            }
+            4 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-max-div-transfer-32-times",
+                    |builder| {
+                        let mut builder = builder.withdraw_from_account(
+                            user_account_1.address,
+                            max_divisibility_fungible_resource.unwrap(),
+                            dec!("10"),
+                        );
+                        for _ in 0..32 {
+                            builder = builder.take_from_worktop(
+                                max_divisibility_fungible_resource.unwrap(),
+                                dec!("0.001"),
+                                |builder, bucket| {
+                                    builder.call_method(
+                                        user_account_2.address,
+                                        ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+                                        manifest_args!(bucket),
+                                    )
+                                },
+                            );
+                        }
+                        builder.try_deposit_batch_or_abort(user_account_1.address)
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            4 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-max-div-freeze-withdraw",
+                    |builder| builder.freeze_withdraw(vault1.unwrap()),
+                    vec![&user_account_1.key],
                 )
             }
             _ => {
-                core.check_commit_failure(&previous)?;
+                core.check_commit_success(&previous)?;
 
                 let addresses = DescribedAddresses::new()
                     .add("user_account_1", user_account_1.address.clone())
