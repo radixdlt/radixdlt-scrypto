@@ -819,7 +819,7 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn freeze_metadata(&mut self, address: GlobalAddress, key: String) -> &mut Self {
+    pub fn lock_metadata(&mut self, address: GlobalAddress, key: String) -> &mut Self {
         self.add_instruction(InstructionV1::CallMetadataMethod {
             address: address.into(),
             method_name: METADATA_LOCK_IDENT.to_string(),
