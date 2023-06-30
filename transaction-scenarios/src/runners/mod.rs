@@ -41,7 +41,9 @@ pub fn run_all_in_memory_and_dump_examples(
         let context = {
             let sub_folder = root_path.join(scenario.metadata().logical_name);
             // Clear directory before generating anew
-            std::fs::remove_dir_all(&sub_folder).unwrap();
+            if sub_folder.exists() {
+                std::fs::remove_dir_all(&sub_folder).unwrap();
+            }
 
             RunnerContext {
                 dump_manifest_root: Some(sub_folder),

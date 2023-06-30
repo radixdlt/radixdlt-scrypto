@@ -6,6 +6,15 @@ mod metadata {
 
     impl MetadataTest {
         pub fn new() -> Global<MetadataTest> {
+            let (address_reservation, _) =
+                Runtime::allocate_component_address(Runtime::blueprint_id());
+
+            Self::new_with_address(address_reservation)
+        }
+
+        pub fn new_with_address(
+            address_reservation: GlobalAddressReservation,
+        ) -> Global<MetadataTest> {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
@@ -20,6 +29,7 @@ mod metadata {
                         "empty_locked" => EMPTY, locked;
                     }
                 })
+                .with_address(address_reservation)
                 .globalize()
         }
 

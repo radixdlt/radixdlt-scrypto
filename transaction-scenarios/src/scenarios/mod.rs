@@ -1,5 +1,6 @@
 use crate::internal_prelude::*;
 
+pub mod metadata;
 pub mod radiswap;
 pub mod transfer_xrd;
 
@@ -22,6 +23,9 @@ impl Iterator for AllScenarios {
             })),
             2 => Some(Box::new(|core| {
                 Box::new(radiswap::RadiswapScenario::new(core))
+            })),
+            3 => Some(Box::new(|core| {
+                Box::new(metadata::MetadataScenario::new(core))
             })),
             _ => None,
         }

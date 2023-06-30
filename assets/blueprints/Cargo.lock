@@ -277,18 +277,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "example"
-version = "0.1.0"
-dependencies = [
- "native-sdk",
- "radix-engine",
- "sbor",
- "scrypto",
- "scrypto-unit",
- "transaction",
-]
-
-[[package]]
 name = "fastrand"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
