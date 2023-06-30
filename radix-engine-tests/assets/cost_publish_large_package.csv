@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,  2173.31698195,   100.00%
-+ Execution Cost (XRD)                                                     ,      73.890459,     3.40%
-+ Tipping Cost (XRD)                                                       ,     3.69452295,     0.17%
+Total Cost (XRD)                                                           ,   2173.3205866,   100.00%
++ Execution Cost (XRD)                                                     ,      73.893892,     3.40%
++ Tipping Cost (XRD)                                                       ,      3.6946946,     0.17%
 + State Expansion Cost (XRD)                                               ,       2095.732,    96.43%
 + Royalty Cost (XRD)                                                       ,              0,     0.00%
-Total Cost Units Consumed                                                  ,       73890459,   100.00%
+Total Cost Units Consumed                                                  ,       73893892,   100.00%
 AfterInvoke                                                                ,            402,     0.00%
 AllocateNodeId                                                             ,           9500,     0.01%
 BeforeInvoke                                                               ,        2100874,     2.84%
@@ -25,11 +25,11 @@ OpenSubstate::InternalKeyValueStore                                        ,    
 PrepareWasmCode                                                            ,         697496,     0.94%
 QueryActor                                                                 ,           2000,     0.00%
 ReadSubstate                                                               ,         859946,     1.16%
-RunNativeCode::Worktop_drop                                                ,           3883,     0.01%
-RunNativeCode::create                                                      ,          33218,     0.04%
-RunNativeCode::create_empty_vault_FungibleResourceManager                  ,          14324,     0.02%
-RunNativeCode::create_with_data                                            ,           2930,     0.00%
-RunNativeCode::lock_fee                                                    ,          14013,     0.02%
+RunNativeCode::Worktop_drop                                                ,           7436,     0.01%
+RunNativeCode::create                                                      ,          18358,     0.02%
+RunNativeCode::create_empty_vault_FungibleResourceManager                  ,          15930,     0.02%
+RunNativeCode::create_with_data                                            ,           9069,     0.01%
+RunNativeCode::lock_fee                                                    ,          21008,     0.03%
 RunNativeCode::publish_wasm_advanced                                       ,        5225655,     7.07%
 RunWasmCode::Faucet_lock_fee                                               ,          17654,     0.02%
 TxBaseCost                                                                 ,          50000,     0.07%
