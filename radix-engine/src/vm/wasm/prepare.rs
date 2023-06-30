@@ -941,13 +941,17 @@ impl WasmModule {
         for func_body in self
             .module
             .code_section()
-            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .map_err(|err| PrepareError::WasmParserError(err.to_string()))
+            .unwrap()
         {
             let reader = func_body
                 .get_operators_reader()
-                .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+                .map_err(|err| PrepareError::WasmParserError(err.to_string()))
+                .unwrap();
             for op in reader {
-                let inst = op.map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+                let inst = op
+                    .map_err(|err| PrepareError::WasmParserError(err.to_string()))
+                    .unwrap();
 
                 match inst {
                     Operator::I32Extend8S
