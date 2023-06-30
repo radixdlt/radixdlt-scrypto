@@ -5,20 +5,28 @@ use radix_engine_interface::*;
 
 use crate::internal_prelude::*;
 
-pub struct RadiswapScenario {
-    core: ScenarioCore,
-    config: RadiswapScenarioConfig,
-}
-
 pub struct RadiswapScenarioConfig {
-    /* Accounts */
     pub radiswap_owner: VirtualAccount,
     pub storing_account: VirtualAccount,
     pub user_account_1: VirtualAccount,
     pub user_account_2: VirtualAccount,
     pub user_account_3: VirtualAccount,
+}
 
-    /* Resources & Pools - These get created during the scenario */
+impl Default for RadiswapScenarioConfig {
+    fn default() -> Self {
+        Self {
+            radiswap_owner: secp256k1_account_1(),
+            storing_account: secp256k1_account_2(),
+            user_account_1: secp256k1_account_3(),
+            user_account_2: ed25519_account_1(),
+            user_account_3: ed25519_account_2(),
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct RadiswapScenarioState {
     pub radiswap_package: Option<PackageAddress>,
     pub pool_1: PoolData,
     pub pool_2: PoolData,
@@ -55,34 +63,37 @@ impl PoolData {
     }
 }
 
-impl Default for RadiswapScenarioConfig {
-    fn default() -> Self {
-        Self {
-            radiswap_owner: secp256k1_account_1(),
-            storing_account: secp256k1_account_2(),
-            user_account_1: secp256k1_account_3(),
-            user_account_2: ed25519_account_1(),
-            user_account_3: ed25519_account_2(),
-            radiswap_package: Default::default(),
-            pool_1: Default::default(),
-            pool_2: Default::default(),
-        }
-    }
+pub struct RadiswapScenario {
+    core: ScenarioCore,
+    metadata: ScenarioMetadata,
+    config: RadiswapScenarioConfig,
+    state: RadiswapScenarioState,
 }
 
-impl ScenarioDefinition for RadiswapScenario {
+impl ScenarioCreator for RadiswapScenario {
     type Config = RadiswapScenarioConfig;
+    type State = RadiswapScenarioState;
 
-    fn new_with_config(core: ScenarioCore, config: Self::Config) -> Self {
-        Self { core, config }
+    fn create_with_config_and_state(
+        core: ScenarioCore,
+        config: Self::Config,
+        start_state: Self::State,
+    ) -> Box<dyn ScenarioInstance> {
+        let metadata = ScenarioMetadata {
+            logical_name: "radiswap",
+        };
+        Box::new(Self {
+            core,
+            metadata,
+            config,
+            state: start_state,
+        })
     }
 }
 
 impl ScenarioInstance for RadiswapScenario {
-    fn metadata(&self) -> ScenarioMetadata {
-        ScenarioMetadata {
-            logical_name: "radiswap",
-        }
+    fn metadata(&self) -> &ScenarioMetadata {
+        &self.metadata
     }
 
     fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError> {
@@ -92,10 +103,12 @@ impl ScenarioInstance for RadiswapScenario {
             user_account_1,
             user_account_2,
             user_account_3,
+        } = &self.config;
+        let RadiswapScenarioState {
             radiswap_package,
             pool_1,
             pool_2,
-        } = &mut self.config;
+        } = &mut self.state;
         let core = &mut self.core;
 
         let up_next = match core.next_stage() {
@@ -170,7 +183,7 @@ impl ScenarioInstance for RadiswapScenario {
                 )
             }
             2 => {
-                let commit_success = core.check_commit_success(&previous)?;
+                let commit_success = core.check_commit_success(core.check_previous(&previous)?)?;
                 let new_resources = commit_success.new_resource_addresses();
 
                 pool_1.resource_1 = Some(RADIX_TOKEN);
@@ -230,7 +243,8 @@ impl ScenarioInstance for RadiswapScenario {
             }
             3 => {
                 {
-                    let commit_success = core.check_commit_success(&previous)?;
+                    let commit_success =
+                        core.check_commit_success(core.check_previous(&previous)?)?;
 
                     let new_packages = commit_success.new_package_addresses();
                     *radiswap_package = Some(new_packages[0]);
@@ -296,7 +310,7 @@ impl ScenarioInstance for RadiswapScenario {
                 )
             }
             4 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "radiswap-distribute-tokens",
@@ -326,7 +340,7 @@ impl ScenarioInstance for RadiswapScenario {
                 )
             }
             5 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "radiswap-swap-tokens",
@@ -350,7 +364,7 @@ impl ScenarioInstance for RadiswapScenario {
                 )
             }
             6 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "radiswap-remove-tokens",
@@ -374,36 +388,28 @@ impl ScenarioInstance for RadiswapScenario {
                 )
             }
             _ => {
-                core.check_commit_success(&previous)?;
-                // Re-deconstruct the config in order to ensure at compile time we capture all the addresses
-                let RadiswapScenarioConfig {
-                    radiswap_owner,
-                    storing_account,
-                    user_account_1,
-                    user_account_2,
-                    user_account_3,
-                    radiswap_package,
-                    pool_1,
-                    pool_2,
-                } = &self.config;
-                let addresses = DescribedAddresses::new()
-                    .add("radiswap_owner", radiswap_owner)
-                    .add("storing_account", storing_account)
-                    .add("user_account_1", user_account_1)
-                    .add("user_account_2", user_account_2)
-                    .add("user_account_3", user_account_3)
-                    .add("radiswap_package", radiswap_package.unwrap())
-                    .add("pool_1_radiswap", pool_1.radiswap())
-                    .add("pool_1_pool", pool_1.pool())
-                    .add("pool_1_resource_1", pool_1.resource_1())
-                    .add("pool_1_resource_2", pool_1.resource_2())
-                    .add("pool_1_pool_unit", pool_1.pool_unit())
-                    .add("pool_2_radiswap", pool_2.radiswap())
-                    .add("pool_2_pool", pool_2.pool())
-                    .add("pool_2_resource_1", pool_2.resource_1())
-                    .add("pool_2_resource_2", pool_2.resource_2())
-                    .add("pool_2_pool_unit", pool_2.pool_unit());
-                return Ok(core.finish_scenario(addresses));
+                core.check_commit_success(core.check_previous(&previous)?)?;
+
+                let output = ScenarioOutput {
+                    interesting_addresses: DescribedAddresses::new()
+                        .add("radiswap_owner", radiswap_owner)
+                        .add("storing_account", storing_account)
+                        .add("user_account_1", user_account_1)
+                        .add("user_account_2", user_account_2)
+                        .add("user_account_3", user_account_3)
+                        .add("radiswap_package", radiswap_package.unwrap())
+                        .add("pool_1_radiswap", pool_1.radiswap())
+                        .add("pool_1_pool", pool_1.pool())
+                        .add("pool_1_resource_1", pool_1.resource_1())
+                        .add("pool_1_resource_2", pool_1.resource_2())
+                        .add("pool_1_pool_unit", pool_1.pool_unit())
+                        .add("pool_2_radiswap", pool_2.radiswap())
+                        .add("pool_2_pool", pool_2.pool())
+                        .add("pool_2_resource_1", pool_2.resource_1())
+                        .add("pool_2_resource_2", pool_2.resource_2())
+                        .add("pool_2_pool_unit", pool_2.pool_unit()),
+                };
+                return Ok(NextAction::Completed(core.finish_scenario(output)));
             }
         };
         Ok(NextAction::Transaction(up_next))

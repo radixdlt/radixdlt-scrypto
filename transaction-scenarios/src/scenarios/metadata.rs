@@ -10,55 +10,65 @@ use crate::internal_prelude::*;
 
 pub struct MetadataScenario {
     core: ScenarioCore,
+    metadata: ScenarioMetadata,
     config: MetadataScenarioConfig,
+    state: MetadataScenarioState,
 }
 
 pub struct MetadataScenarioConfig {
-    /* Accounts */
     pub user_account_1: VirtualAccount,
-
-    /* Entities - These get created during the scenario */
-    pub package_with_metadata: Option<PackageAddress>,
-    pub component_with_metadata: Option<ComponentAddress>,
-    pub resource_with_metadata1: Option<ResourceAddress>,
-    pub resource_with_metadata2: Option<ResourceAddress>,
 }
 
 impl Default for MetadataScenarioConfig {
     fn default() -> Self {
         Self {
             user_account_1: secp256k1_account_1(),
-            package_with_metadata: Default::default(),
-            component_with_metadata: Default::default(),
-            resource_with_metadata1: Default::default(),
-            resource_with_metadata2: Default::default(),
         }
     }
 }
 
-impl ScenarioDefinition for MetadataScenario {
-    type Config = MetadataScenarioConfig;
+#[derive(Default)]
+pub struct MetadataScenarioState {
+    pub package_with_metadata: Option<PackageAddress>,
+    pub component_with_metadata: Option<ComponentAddress>,
+    pub resource_with_metadata1: Option<ResourceAddress>,
+    pub resource_with_metadata2: Option<ResourceAddress>,
+}
 
-    fn new_with_config(core: ScenarioCore, config: Self::Config) -> Self {
-        Self { core, config }
+impl ScenarioCreator for MetadataScenario {
+    type Config = MetadataScenarioConfig;
+    type State = MetadataScenarioState;
+
+    fn create_with_config_and_state(
+        core: ScenarioCore,
+        config: Self::Config,
+        start_state: Self::State,
+    ) -> Box<dyn ScenarioInstance> {
+        let metadata = ScenarioMetadata {
+            logical_name: "metadata",
+        };
+        Box::new(Self {
+            core,
+            metadata,
+            config,
+            state: start_state,
+        })
     }
 }
 
 impl ScenarioInstance for MetadataScenario {
-    fn metadata(&self) -> ScenarioMetadata {
-        ScenarioMetadata {
-            logical_name: "metadata",
-        }
+    fn metadata(&self) -> &ScenarioMetadata {
+        &self.metadata
     }
 
     fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError> {
-        let MetadataScenarioConfig {
-            user_account_1,
+        let MetadataScenarioConfig { user_account_1 } = &self.config;
+        let MetadataScenarioState {
             package_with_metadata,
             component_with_metadata,
             resource_with_metadata1,
             resource_with_metadata2,
-        } = &mut self.config;
+        } = &mut self.state;
         let core = &mut self.core;
 
         let up_next = match core.next_stage() {
@@ -101,7 +111,7 @@ impl ScenarioInstance for MetadataScenario {
                 )
             }
             2 => {
-                let commit_success = core.check_commit_success(&previous)?;
+                let commit_success = core.check_commit_success(core.check_previous(&previous)?)?;
                 *package_with_metadata = Some(commit_success.new_package_addresses()[0]);
 
                 core.next_transaction_with_faucet_lock_fee(
@@ -132,7 +142,7 @@ impl ScenarioInstance for MetadataScenario {
                 )
             }
             3 => {
-                let commit_success = core.check_commit_success(&previous)?;
+                let commit_success = core.check_commit_success(core.check_previous(&previous)?)?;
                 *component_with_metadata = Some(commit_success.new_component_addresses()[0]);
 
                 core.next_transaction_with_faucet_lock_fee(
@@ -160,7 +170,7 @@ impl ScenarioInstance for MetadataScenario {
                 )
             }
             4 => {
-                let commit_success = core.check_commit_success(&previous)?;
+                let commit_success = core.check_commit_success(core.check_previous(&previous)?)?;
                 *resource_with_metadata1 = Some(commit_success.new_resource_addresses()[0]);
 
                 core.next_transaction_with_faucet_lock_fee(
@@ -194,7 +204,7 @@ impl ScenarioInstance for MetadataScenario {
                 )
             }
             5 => {
-                let commit_success = core.check_commit_success(&previous)?;
+                let commit_success = core.check_commit_success(core.check_previous(&previous)?)?;
                 *resource_with_metadata2 = Some(commit_success.new_resource_addresses()[0]);
 
                 core.next_transaction_with_faucet_lock_fee(
@@ -210,7 +220,7 @@ impl ScenarioInstance for MetadataScenario {
                 )
             }
             6 => {
-                core.check_commit_failure(&previous)?;
+                core.check_commit_failure(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "metadata-update-updatable-metadata-succeeds",
@@ -225,7 +235,7 @@ impl ScenarioInstance for MetadataScenario {
                 )
             }
             7 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "metadata-lock-metadata",
@@ -239,7 +249,7 @@ impl ScenarioInstance for MetadataScenario {
                 )
             }
             8 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "metadata-update-recently-locked-metadata-fails",
@@ -254,15 +264,17 @@ impl ScenarioInstance for MetadataScenario {
                 )
             }
             _ => {
-                core.check_commit_failure(&previous)?;
+                core.check_commit_failure(core.check_previous(&previous)?)?;
 
-                let addresses = DescribedAddresses::new()
-                    .add("user_account_1", user_account_1.address.clone())
-                    .add("package_with_metadata", package_with_metadata.unwrap())
-                    .add("component_with_metadata", component_with_metadata.unwrap())
-                    .add("resource_with_metadata1", resource_with_metadata1.unwrap())
-                    .add("resource_with_metadata2", resource_with_metadata2.unwrap());
-                return Ok(core.finish_scenario(addresses));
+                let output = ScenarioOutput {
+                    interesting_addresses: DescribedAddresses::new()
+                        .add("user_account_1", user_account_1.address.clone())
+                        .add("package_with_metadata", package_with_metadata.unwrap())
+                        .add("component_with_metadata", component_with_metadata.unwrap())
+                        .add("resource_with_metadata1", resource_with_metadata1.unwrap())
+                        .add("resource_with_metadata2", resource_with_metadata2.unwrap()),
+                };
+                return Ok(NextAction::Completed(core.finish_scenario(output)));
             }
         };
         Ok(NextAction::Transaction(up_next))
