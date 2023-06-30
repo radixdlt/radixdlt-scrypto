@@ -112,7 +112,7 @@ fn can_set_metadata_through_manifest(entry: MetadataValue) {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .set_metadata(component_address.into(), "key".to_string(), entry.clone())
+        .set_metadata(component_address, "key".to_string(), entry.clone())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -188,7 +188,7 @@ fn can_set_address_metadata_through_manifest() {
     let entry = MetadataValue::GlobalAddress(address.into());
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .set_metadata(component_address.into(), "key".to_string(), entry.clone())
+        .set_metadata(component_address, "key".to_string(), entry.clone())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -232,11 +232,7 @@ fn cannot_set_address_metadata_after_freezing() {
     let entry = MetadataValue::GlobalAddress(address.into());
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .set_metadata(
-            component_address.into(),
-            "other_key".to_string(),
-            entry.clone(),
-        )
+        .set_metadata(component_address, "other_key".to_string(), entry.clone())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

@@ -112,7 +112,7 @@ fn cannot_set_metadata_if_key_too_long() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .set_metadata(
-            component_address.into(),
+            component_address,
             "a".repeat(DEFAULT_MAX_METADATA_KEY_STRING_LEN + 1),
             MetadataValue::Bool(true),
         )
@@ -176,7 +176,7 @@ fn cannot_set_metadata_if_value_too_long() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .set_metadata(
-            component_address.into(),
+            component_address,
             "a",
             MetadataValue::String("a".repeat(DEFAULT_MAX_METADATA_VALUE_SBOR_LEN + 1)),
         )
@@ -209,11 +209,7 @@ fn cannot_set_metadata_if_initialized_empty_locked() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .set_metadata(
-            component_address.into(),
-            "empty_locked",
-            MetadataValue::Bool(true),
-        )
+        .set_metadata(component_address, "empty_locked", MetadataValue::Bool(true))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

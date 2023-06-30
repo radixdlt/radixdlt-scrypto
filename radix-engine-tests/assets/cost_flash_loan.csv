@@ -1,15 +1,15 @@
-Total Cost (XRD)                                                           ,    20.62275365,   100.00%
-+ Execution Cost (XRD)                                                     ,      17.718813,    85.92%
-+ Tipping Cost (XRD)                                                       ,     0.88594065,     4.30%
+Total Cost (XRD)                                                           ,    20.59780985,   100.00%
++ Execution Cost (XRD)                                                     ,      17.695057,    85.91%
++ Tipping Cost (XRD)                                                       ,     0.88475285,     4.30%
 + State Expansion Cost (XRD)                                               ,          0.018,     0.09%
-+ Royalty Cost (XRD)                                                       ,              2,     9.70%
-Total Cost Units Consumed                                                  ,       17718813,   100.00%
++ Royalty Cost (XRD)                                                       ,              2,     9.71%
+Total Cost Units Consumed                                                  ,       17695057,   100.00%
 AfterInvoke                                                                ,           1948,     0.01%
 AllocateNodeId                                                             ,          26500,     0.15%
 BeforeInvoke                                                               ,          28516,     0.16%
 CloseSubstate                                                              ,         312000,     1.76%
-Commit::GlobalAccount                                                      ,         100002,     0.56%
-Commit::GlobalGenericComponent                                             ,         100024,     0.56%
+Commit::GlobalAccount                                                      ,         100002,     0.57%
+Commit::GlobalGenericComponent                                             ,         100024,     0.57%
 Commit::GlobalNonFungibleResourceManager                                   ,         200010,     1.13%
 Commit::InternalFungibleVault                                              ,         400025,     2.26%
 CreateNode                                                                 ,          50044,     0.28%
@@ -17,17 +17,17 @@ DropNode                                                                   ,    
 EmitEvent                                                                  ,           7140,     0.04%
 GenerateRuid                                                               ,            500,     0.00%
 LockFee                                                                    ,            500,     0.00%
-OpenSubstate::GlobalAccount                                                ,         728840,     4.11%
-OpenSubstate::GlobalFungibleResourceManager                                ,         592634,     3.34%
-OpenSubstate::GlobalGenericComponent                                       ,         163884,     0.92%
+OpenSubstate::GlobalAccount                                                ,         728840,     4.12%
+OpenSubstate::GlobalFungibleResourceManager                                ,         592634,     3.35%
+OpenSubstate::GlobalGenericComponent                                       ,         163884,     0.93%
 OpenSubstate::GlobalNonFungibleResourceManager                             ,         665932,     3.76%
-OpenSubstate::GlobalPackage                                                ,        6962672,    39.30%
+OpenSubstate::GlobalPackage                                                ,        6953806,    39.30%
 OpenSubstate::InternalFungibleVault                                        ,         665918,     3.76%
 OpenSubstate::InternalGenericComponent                                     ,         192288,     1.09%
-PrepareWasmCode                                                            ,        2225264,    12.56%
+PrepareWasmCode                                                            ,        2216820,    12.53%
 QueryActor                                                                 ,          15000,     0.08%
 QueryAuthZone                                                              ,           2000,     0.01%
-ReadSubstate                                                               ,        2732864,    15.42%
+ReadSubstate                                                               ,        2724420,    15.40%
 RunNativeCode::AuthZone_pop                                                ,          13722,     0.08%
 RunNativeCode::AuthZone_push                                               ,          14108,     0.08%
 RunNativeCode::Worktop_drain                                               ,           6901,     0.04%
@@ -36,14 +36,14 @@ RunNativeCode::Worktop_put                                                 ,    
 RunNativeCode::Worktop_take                                                ,          27786,     0.16%
 RunNativeCode::Worktop_take_all                                            ,           6836,     0.04%
 RunNativeCode::burn_NonFungibleResourceManager                             ,          24024,     0.14%
-RunNativeCode::create_proof_FungibleVault                                  ,          82304,     0.46%
-RunNativeCode::drop_FungibleProof                                          ,          82304,     0.46%
+RunNativeCode::create_proof_FungibleVault                                  ,          82304,     0.47%
+RunNativeCode::drop_FungibleProof                                          ,          82304,     0.47%
 RunNativeCode::get_amount_FungibleBucket                                   ,         164608,     0.93%
 RunNativeCode::get_amount_FungibleVault                                    ,           7872,     0.04%
 RunNativeCode::get_amount_NonFungibleBucket                                ,          41152,     0.23%
 RunNativeCode::get_non_fungible                                            ,          16152,     0.09%
 RunNativeCode::get_non_fungible_local_ids_NonFungibleBucket                ,          41152,     0.23%
-RunNativeCode::get_resource_address_FungibleProof                          ,          82304,     0.46%
+RunNativeCode::get_resource_address_FungibleProof                          ,          82304,     0.47%
 RunNativeCode::get_resource_address_NonFungibleBucket                      ,         164608,     0.93%
 RunNativeCode::lock_fee                                                    ,          47993,     0.27%
 RunNativeCode::mint_ruid_NonFungibleResourceManager                        ,          30412,     0.17%
@@ -53,9 +53,9 @@ RunNativeCode::take_FungibleBucket                                         ,    
 RunNativeCode::take_FungibleVault                                          ,          40734,     0.23%
 RunNativeCode::try_deposit_batch_or_abort                                  ,          41152,     0.23%
 RunNativeCode::unlock_amount_FungibleVault                                 ,          26420,     0.15%
-RunNativeCode::withdraw                                                    ,          25682,     0.14%
-RunWasmCode::BasicFlashLoan_repay_loan                                     ,          68936,     0.39%
-RunWasmCode::BasicFlashLoan_take_loan                                      ,         118220,     0.67%
+RunNativeCode::withdraw                                                    ,          25682,     0.15%
+RunWasmCode::BasicFlashLoan_repay_loan                                     ,          70268,     0.40%
+RunWasmCode::BasicFlashLoan_take_loan                                      ,         118886,     0.67%
 TxBaseCost                                                                 ,          50000,     0.28%
 TxPayloadCost                                                              ,          25700,     0.15%
 TxSignatureVerification                                                    ,           7000,     0.04%
