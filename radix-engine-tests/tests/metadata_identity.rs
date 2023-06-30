@@ -17,7 +17,7 @@ fn can_set_identity_metadata_with_owner(is_virtual: bool) {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .set_metadata(
-            component_address.into(),
+            component_address,
             "name".to_string(),
             MetadataValue::String("best package ever!".to_string()),
         )
@@ -55,7 +55,7 @@ fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .set_metadata(
-            component_address.into(),
+            component_address,
             "name".to_string(),
             MetadataValue::String("best package ever!".to_string()),
         )
