@@ -929,7 +929,7 @@ impl WasmModule {
         params: Vec<ValType>,
         results: Vec<ValType>,
     ) -> bool {
-        let ty = module.get_functype_idx(type_index);
+        let ty = module.get_type_by_idx(type_index);
         match ty {
             Ok(ty) => match ty {
                 Type::Func(ty) => ty == &FuncType::new(params, results),
