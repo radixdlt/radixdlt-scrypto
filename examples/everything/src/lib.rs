@@ -8,7 +8,7 @@ pub struct TestNFData {
 }
 
 #[blueprint]
-mod example {
+mod everything {
     enable_function_auth! {
         new => rule!(deny_all);
         another_function => rule!(allow_all);
@@ -48,18 +48,19 @@ mod example {
         FiFi,
         "component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh"
     );
-    const SOME_RESOURCE: ResourceManager = resource_manager!("resource_sim1t5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpvd0xc6");
+    const SOME_RESOURCE: ResourceManager =
+        resource_manager!("resource_sim1t5qqqqqqqyqszqgqqqqqqqgpqyqsqqqqqyqszqgqqqqqqqgpvd0xc6");
 
-    struct Example {}
+    struct Everything {}
 
-    impl Example {
-        pub fn new() -> Global<Example> {
+    impl Everything {
+        pub fn new() -> Global<Everything> {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles! {
                     some_role => rule!(require(XRD)), updatable;
-                    some_role_updater => rule!(require(SOME_RESOURCE.resource_address())), locked;
+                    some_role_updater => rule!(require(SOME_RESOURCE.address())), locked;
                 })
                 .enable_component_royalties(component_royalties! {
                     roles {
