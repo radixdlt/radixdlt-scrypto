@@ -31,11 +31,11 @@ lazy_static! {
         costs
             .entry(PACKAGE_PACKAGE)
             .or_default()
-            .insert(PACKAGE_PUBLISH_NATIVE_IDENT, (201, 66321));
+            .insert(PACKAGE_PUBLISH_NATIVE_IDENT, (1001, 7424624));
         costs
             .entry(PACKAGE_PACKAGE)
             .or_default()
-            .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (498, 854284));
+            .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (1055, 14305886));
         costs
     };
 }
@@ -165,12 +165,16 @@ impl FeeTable {
                     .get(package_address)
                     .and_then(|x| x.get(export_name))
                     .and_then(|value| Some(add(value.1, mul(value.0, cast(*input_size)))))
-                    .unwrap_or(411524) // FIXME: this should be for not found only, when the costing for all native function are added, i.e. should be reduced.
+                    .expect(&format!(
+                        "Native function not found: {:?}::{}. ",
+                        package_address, export_name
+                    ))
             });
 
-        // FIXME: figure out the right conversion rate from CPU instructions to execution time
-
-        cpu_instructions / 100
+        // Reference EC2 instance c5.4xlarge has CPU clock 3.4 GHz which means in 1 µs it executes 3400 instructions
+        // (1 core, single-threaded operation, skipping CPU cache influence).
+        // Basing on above assumptions return native function execution time in µs:
+        cpu_instructions / 3400
     }
 
     #[inline]

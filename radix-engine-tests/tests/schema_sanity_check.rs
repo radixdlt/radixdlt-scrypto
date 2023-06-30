@@ -81,6 +81,8 @@ fn check_native_function_base_costs() {
     }
 
     println!();
+
+    // In case of failing see: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3042115875/Running+CPU+costing+evaluation
     assert!(!missing_functions);
 }
 
