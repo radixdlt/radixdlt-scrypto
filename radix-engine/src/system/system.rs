@@ -2079,11 +2079,11 @@ where
                 ClientCostingEntry::RunWasmCode {
                     package_address,
                     export_name,
-                    wasm_execution_units: gas,
+                    wasm_execution_units,
                 } => CostingEntry::RunWasmCode {
                     package_address,
                     export_name,
-                    wasm_execution_units: gas,
+                    wasm_execution_units,
                 },
                 ClientCostingEntry::PrepareWasmCode { size } => {
                     CostingEntry::PrepareWasmCode { size }

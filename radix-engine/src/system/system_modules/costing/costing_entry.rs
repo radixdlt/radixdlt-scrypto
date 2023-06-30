@@ -133,8 +133,8 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::RunWasmCode {
                 package_address,
                 export_name,
-                wasm_execution_units: gas,
-            } => ft.run_wasm_code_cost(package_address, export_name, *gas),
+                wasm_execution_units,
+            } => ft.run_wasm_code_cost(package_address, export_name, *wasm_execution_units),
             CostingEntry::PrepareWasmCode { size } => ft.instantiate_wasm_code_cost(*size),
             CostingEntry::BeforeInvoke { actor, input_size } => {
                 ft.before_invoke_cost(actor, *input_size)

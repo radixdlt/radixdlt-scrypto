@@ -74,14 +74,16 @@ fn bench_spin_loop(c: &mut Criterion) {
     // Note that wasm engine maintains an internal cache, which means costing
     // isn't taking WASM parsing into consideration.
     let wasm_engine = DefaultWasmEngine::default();
-    let mut gas_consumed = 0u32;
+    let mut wasm_execution_units_consumed = 0u32;
     c.bench_function("costing::spin_loop", |b| {
         b.iter(|| {
             let fee_reserve = SystemLoanFeeReserve::default()
                 .with_free_credit(Decimal::try_from(DEFAULT_FREE_CREDIT_IN_XRD).unwrap());
-            gas_consumed = 0;
-            let mut runtime: Box<dyn WasmRuntime> =
-                Box::new(NoOpWasmRuntime::new(fee_reserve, &mut gas_consumed));
+            wasm_execution_units_consumed = 0;
+            let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
+                fee_reserve,
+                &mut wasm_execution_units_consumed,
+            ));
             let mut instance = wasm_engine.instantiate(Hash([0u8; 32]), &instrumented_code);
             instance
                 .invoke_export("Test_f", vec![Buffer(0)], &mut runtime)
@@ -89,7 +91,7 @@ fn bench_spin_loop(c: &mut Criterion) {
         })
     });
 
-    println!("Gas consumed: {}", gas_consumed);
+    println!("Gas consumed: {}", wasm_execution_units_consumed);
 }
 
 fn bench_instantiate_radiswap(c: &mut Criterion) {

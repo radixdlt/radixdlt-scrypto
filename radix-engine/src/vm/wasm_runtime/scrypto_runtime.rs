@@ -21,7 +21,7 @@ where
     next_buffer_id: BufferId,
     package_address: PackageAddress,
     export_name: String,
-    gas_buffer: u32,
+    wasm_execution_units_buffer: u32,
 }
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
@@ -35,7 +35,7 @@ where
             next_buffer_id: 0,
             package_address,
             export_name,
-            gas_buffer: 0,
+            wasm_execution_units_buffer: 0,
         }
     }
 }
@@ -362,9 +362,9 @@ where
         &mut self,
         n: u32,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        // Use buffered gas
-        if self.gas_buffer >= n {
-            self.gas_buffer -= n;
+        // Use buffer
+        if self.wasm_execution_units_buffer >= n {
+            self.wasm_execution_units_buffer -= n;
             return Ok(());
         }
 
@@ -377,7 +377,7 @@ where
                 wasm_execution_units: amount,
             })
             .map_err(InvokeError::downstream)?;
-        self.gas_buffer += amount - n;
+        self.wasm_execution_units_buffer += amount - n;
 
         Ok(())
     }
