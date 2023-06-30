@@ -148,8 +148,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             global_address_reservations.push(global_address_reservation);
         }
 
+        // Call TX processor
         let mut system = SystemService::new(&mut kernel);
-
         let rtn = system.call_function(
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,
@@ -374,7 +374,6 @@ where
 
         Ok(())
     }
-    // FIXME: Add costing rules for moving module and listing modules.
 
     fn kernel_move_module(
         &mut self,
@@ -383,7 +382,8 @@ where
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        self.current_frame
+        let store_access = self
+            .current_frame
             .move_module(
                 src_node_id,
                 src_partition_number,
@@ -394,7 +394,11 @@ where
             )
             .map_err(CallFrameError::MoveModuleError)
             .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)
+            .map_err(RuntimeError::KernelError)?;
+
+        M::after_move_modules(src_node_id, dest_node_id, &store_access, self)?;
+
+        Ok(())
     }
 }
 

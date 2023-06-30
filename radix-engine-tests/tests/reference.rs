@@ -19,7 +19,7 @@ fn test_create_global_node_with_local_ref() {
     // Call function
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 50u32.into())
+            .lock_fee(account, 500u32.into())
             .call_function(
                 package_address,
                 "ReferenceTest",
@@ -73,7 +73,7 @@ fn test_add_local_ref_to_stored_substate() {
     // Call method
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 50u32.into())
+            .lock_fee(account, 500u32.into())
             .call_method(
                 component_address,
                 "add_local_ref_to_stored_substate",

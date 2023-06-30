@@ -10,7 +10,7 @@
 CALL_METHOD 
     Address("${account_address}") 
     "lock_fee"
-    Decimal("10");
+    Decimal("500");
 
 # Example 1: Allow All deposits mode
 CALL_METHOD 

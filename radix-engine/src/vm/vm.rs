@@ -29,11 +29,11 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
             + KernelSubstateApi<SystemLockData>,
         W: WasmEngine,
     {
-        let package_code = {
+        let vm_type = {
             let handle = api.kernel_open_substate_with_default(
                 address.as_node_id(),
                 MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_CODE_PARTITION_OFFSET)
+                    .at_offset(PACKAGE_VM_TYPE_PARTITION_OFFSET)
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
                 LockFlags::read_only(),
@@ -43,28 +43,78 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                 }),
                 SystemLockData::default(),
             )?;
-            let code = api.kernel_read_substate(handle)?;
-            let package_code: KeyValueEntrySubstate<PackageCodeSubstate> = code.as_typed().unwrap();
+            let vm_type = api.kernel_read_substate(handle)?;
+            let vm_type: KeyValueEntrySubstate<PackageVmTypeSubstate> = vm_type.as_typed().unwrap();
             api.kernel_close_substate(handle)?;
-            package_code
+            vm_type
                 .value
-                .expect(&format!("Code not found: {:?}", export))
+                .expect(&format!("Vm type not found: {:?}", export))
         };
 
-        let output = match package_code.vm_type {
+        let output = match vm_type.vm_type {
             VmType::Native => {
-                let mut vm_instance = { NativeVm::create_instance(address, &package_code.code)? };
+                let original_code = {
+                    let handle = api.kernel_open_substate_with_default(
+                        address.as_node_id(),
+                        MAIN_BASE_PARTITION
+                            .at_offset(PACKAGE_ORIGINAL_CODE_PARTITION_OFFSET)
+                            .unwrap(),
+                        &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
+                        LockFlags::read_only(),
+                        Some(|| {
+                            let kv_entry = KeyValueEntrySubstate::<()>::default();
+                            IndexedScryptoValue::from_typed(&kv_entry)
+                        }),
+                        SystemLockData::default(),
+                    )?;
+                    let original_code = api.kernel_read_substate(handle)?;
+                    let original_code: KeyValueEntrySubstate<PackageOriginalCodeSubstate> =
+                        original_code.as_typed().unwrap();
+                    api.kernel_close_substate(handle)?;
+                    original_code
+                        .value
+                        .expect(&format!("Original code not found: {:?}", export))
+                };
+
+                let mut vm_instance = { NativeVm::create_instance(address, &original_code.code)? };
                 let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
 
                 output
             }
             VmType::ScryptoV1 => {
+                let instrumented_code = {
+                    let handle = api.kernel_open_substate_with_default(
+                        address.as_node_id(),
+                        MAIN_BASE_PARTITION
+                            .at_offset(PACKAGE_INSTRUMENTED_CODE_PARTITION_OFFSET)
+                            .unwrap(),
+                        &SubstateKey::Map(scrypto_encode(&export.code_hash).unwrap()),
+                        LockFlags::read_only(),
+                        Some(|| {
+                            let kv_entry = KeyValueEntrySubstate::<()>::default();
+                            IndexedScryptoValue::from_typed(&kv_entry)
+                        }),
+                        SystemLockData::default(),
+                    )?;
+                    let instrumented_code = api.kernel_read_substate(handle)?;
+                    let instrumented_code: KeyValueEntrySubstate<PackageInstrumentedCodeSubstate> =
+                        instrumented_code.as_typed().unwrap();
+                    api.kernel_close_substate(handle)?;
+                    instrumented_code
+                        .value
+                        .expect(&format!("Instrumented code not found: {:?}", export))
+                };
+
                 let mut scrypto_vm_instance = {
                     api.kernel_get_system()
                         .callback_obj
                         .scrypto_vm
-                        .create_instance(address, &package_code.code)
+                        .create_instance(address, export.code_hash, &instrumented_code.code)
                 };
+
+                api.consume_cost_units(ClientCostingEntry::PrepareWasmCode {
+                    size: instrumented_code.code.len(),
+                })?;
 
                 let output =
                     { scrypto_vm_instance.invoke(export.export_name.as_str(), input, api)? };
@@ -96,18 +146,19 @@ impl VmPackageValidation {
         definition: &PackageDefinition,
         vm_type: VmType,
         code: &[u8],
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<Option<Vec<u8>>, RuntimeError> {
         match vm_type {
-            VmType::Native => {}
+            VmType::Native => Ok(None),
             VmType::ScryptoV1 => {
                 // Validate WASM
-                WasmValidator::default()
+                let instrumented_code = WasmValidator::default()
                     .validate(&code, definition.blueprints.values())
                     .map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::PackageError(
                             PackageError::InvalidWasm(e),
                         ))
-                    })?;
+                    })?
+                    .0;
 
                 for BlueprintDefinitionInit {
                     blueprint_type,
@@ -177,9 +228,8 @@ impl VmPackageValidation {
                         ));
                     }
                 }
+                Ok(Some(instrumented_code))
             }
         }
-
-        Ok(())
     }
 }

@@ -12,9 +12,10 @@ use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::{TrackedKey, TrackedNode, Write};
+use crate::track::TrackedSubstateValue;
+use crate::track::{TrackedNode, Write};
 
-#[derive(Debug, Clone, ScryptoSbor)]
+#[derive(Default, Debug, Clone, ScryptoSbor)]
 pub struct StateUpdateSummary {
     pub new_packages: Vec<PackageAddress>,
     pub new_components: Vec<ComponentAddress>,
@@ -233,7 +234,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 // Scan loaded substates to find children
                 for tracked_module in tracked_node.tracked_partitions.values() {
                     for tracked_key in tracked_module.substates.values() {
-                        if let Some(value) = tracked_key.tracked.get() {
+                        if let Some(value) = tracked_key.substate_value.get() {
                             for own in value.owned_nodes() {
                                 self.traverse_state_updates(
                                     balance_changes,
@@ -311,19 +312,20 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 let mut removed = BTreeSet::new();
 
                 for tracked_key in tracked_module.substates.values() {
-                    match &tracked_key.tracked {
-                        TrackedKey::New(substate) | TrackedKey::ReadNonExistAndWrite(substate) => {
+                    match &tracked_key.substate_value {
+                        TrackedSubstateValue::New(substate)
+                        | TrackedSubstateValue::ReadNonExistAndWrite(substate) => {
                             let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
                             added.insert(id);
                         }
-                        TrackedKey::ReadExistAndWrite(old, write) => match write {
+                        TrackedSubstateValue::ReadExistAndWrite(old, write) => match write {
                             Write::Update(..) => {}
                             Write::Delete => {
                                 let id: NonFungibleLocalId = old.as_typed().unwrap();
                                 removed.insert(id);
                             }
                         },
-                        TrackedKey::WriteOnly(write) => match write {
+                        TrackedSubstateValue::WriteOnly(write) => match write {
                             Write::Update(substate) => {
                                 let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
                                 added.insert(id);
@@ -332,7 +334,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                                 // This may occur if a non fungible is added then removed from the same vault
                             }
                         },
-                        TrackedKey::ReadOnly(..) | TrackedKey::Garbage => {}
+                        TrackedSubstateValue::ReadOnly(..) | TrackedSubstateValue::Garbage => {}
                     }
                 }
 
@@ -378,6 +380,11 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
             .get(node_id)
             .and_then(|tracked_node| tracked_node.tracked_partitions.get(&partition_num))
             .and_then(|tracked_module| tracked_module.substates.get(&M::to_db_sort_key(key)))
-            .and_then(|tracked_key| tracked_key.tracked.get().map(|e| e.as_typed().unwrap()))
+            .and_then(|tracked_key| {
+                tracked_key
+                    .substate_value
+                    .get()
+                    .map(|e| e.as_typed().unwrap())
+            })
     }
 }

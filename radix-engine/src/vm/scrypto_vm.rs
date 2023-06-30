@@ -3,23 +3,19 @@ use crate::types::*;
 use crate::vm::vm::VmInvoke;
 use crate::vm::wasm::*;
 use crate::vm::wasm_runtime::ScryptoRuntime;
-use radix_engine_interface::api::{ClientApi, ClientLimitsApi};
+use radix_engine_interface::api::ClientApi;
 use resources_tracker_macro::trace_resources;
 
 pub struct ScryptoVm<W: WasmEngine> {
     pub wasm_engine: W,
-    /// WASM Instrumenter
-    pub wasm_instrumenter: WasmInstrumenter,
-    /// WASM metering config
-    pub wasm_metering_config: WasmMeteringConfig,
+    pub wasm_validator_config: WasmValidatorConfigV1,
 }
 
 impl<W: WasmEngine + Default> Default for ScryptoVm<W> {
     fn default() -> Self {
         Self {
             wasm_engine: W::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
-            wasm_metering_config: WasmMeteringConfig::default(),
+            wasm_validator_config: WasmValidatorConfigV1::new(),
         }
     }
 }
@@ -28,14 +24,11 @@ impl<W: WasmEngine> ScryptoVm<W> {
     pub fn create_instance(
         &self,
         package_address: &PackageAddress,
-        code: &[u8],
+        code_hash: Hash,
+        instrumented_code: &[u8],
     ) -> ScryptoVmInstance<W::WasmInstance> {
-        let instrumented_code = self
-            .wasm_instrumenter
-            .instrument(*package_address, code, self.wasm_metering_config)
-            .expect("Failed to re-instrument");
         ScryptoVmInstance {
-            instance: self.wasm_engine.instantiate(&instrumented_code),
+            instance: self.wasm_engine.instantiate(code_hash, instrumented_code),
             package_address: *package_address,
         }
     }
@@ -55,7 +48,7 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
         api: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
-        Y: ClientApi<RuntimeError> + ClientLimitsApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         let rtn = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(ScryptoRuntime::new(
@@ -73,9 +66,6 @@ impl<I: WasmInstance> VmInvoke for ScryptoVmInstance<I> {
             self.instance
                 .invoke_export(export_name, input, &mut runtime)?
         };
-
-        let consumed = self.instance.consumed_memory()?;
-        api.update_wasm_memory_usage(consumed)?;
 
         let output = IndexedScryptoValue::from_vec(rtn).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))

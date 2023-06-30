@@ -17,7 +17,7 @@ fn test_worktop_resource_leak() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .withdraw_from_account(account, RADIX_TOKEN, 1.into())
         .build();
     let receipt = test_runner.execute_manifest(
@@ -48,7 +48,7 @@ fn test_many_current_auth_zone_call() {
         expressions.push(ManifestExpression::EntireAuthZone);
     }
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 10u32.into())
+        .lock_fee(account, 500u32.into())
         .call_method(account, "no_such_method", manifest_args!(expressions))
         .build();
     let receipt = test_runner.execute_manifest(
@@ -61,7 +61,7 @@ fn test_many_current_auth_zone_call() {
         matches!(
             e,
             RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::FeeReserveError(FeeReserveError::InsufficientBalance)
+                CostingError::FeeReserveError(FeeReserveError::LimitExceeded { .. })
             ))
         )
     });
@@ -79,7 +79,7 @@ fn test_many_worktop_call() {
         expressions.push(ManifestExpression::EntireWorktop);
     }
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 10u32.into())
+        .lock_fee(account, 500u32.into())
         .call_method(account, "no_such_method", manifest_args!(expressions))
         .build();
     let receipt = test_runner.execute_manifest(
@@ -92,7 +92,7 @@ fn test_many_worktop_call() {
         matches!(
             e,
             RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::FeeReserveError(FeeReserveError::InsufficientBalance)
+                CostingError::FeeReserveError(FeeReserveError::LimitExceeded { .. })
             ))
         )
     });

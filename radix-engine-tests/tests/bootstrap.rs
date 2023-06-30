@@ -26,6 +26,7 @@ fn test_bootstrap_receipt_should_match_constants() {
     let staker_address = ComponentAddress::virtual_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     );
+    let genesis_epoch = Epoch::of(1);
     let stake = GenesisStakeAllocation {
         account_index: 0,
         xrd_amount: Decimal::one(),
@@ -47,7 +48,7 @@ fn test_bootstrap_receipt_should_match_constants() {
     } = bootstrapper
         .bootstrap_with_genesis_data(
             genesis_data_chunks,
-            Epoch::of(1),
+            genesis_epoch,
             CustomGenesis::default_consensus_manager_config(),
             1,
             Some(0),
@@ -75,15 +76,17 @@ fn test_bootstrap_receipt_should_match_constants() {
         .new_component_addresses()
         .contains(&TRANSACTION_TRACKER));
 
-    assert!(wrap_up_receipt
+    assert!(system_bootstrap_receipt
         .expect_commit_success()
         .new_component_addresses()
         .contains(&FAUCET));
 
-    wrap_up_receipt
+    let wrap_up_epoch_change = wrap_up_receipt
         .expect_commit_success()
         .next_epoch()
         .expect("There should be a new epoch.");
+
+    assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next());
 }
 
 #[test]
@@ -365,7 +368,7 @@ fn should_not_be_able_to_create_genesis_helper() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             GENESIS_HELPER_PACKAGE,
             GENESIS_HELPER_BLUEPRINT,
@@ -393,7 +396,7 @@ fn should_not_be_able_to_call_genesis_helper() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(GENESIS_HELPER, "wrap_up", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

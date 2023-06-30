@@ -152,10 +152,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Reading substate: handle = {}, size = {}, storage_access_total_read = {}",
+            "Reading substate: handle = {}, size = {}",
             lock_handle,
-            value_size,
-            store_access.total_read_size()
+            value_size
         );
         Ok(())
     }
@@ -168,10 +167,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Writing substate: handle = {}, size = {}, storage_acces_total_write = {}",
+            "Writing substate: handle = {}, size = {}",
             lock_handle,
-            value_size,
-            store_access.total_write_size()
+            value_size
         );
         Ok(())
     }

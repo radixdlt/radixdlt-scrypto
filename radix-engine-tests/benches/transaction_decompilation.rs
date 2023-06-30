@@ -8,6 +8,7 @@ use radix_engine_common::types::Epoch;
 use radix_engine_common::{manifest_args, ManifestSbor};
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::OwnerRole;
+use radix_engine_interface::blueprints::resource::RolesInit;
 use radix_engine_interface::{metadata, metadata_init, ScryptoSbor};
 use scrypto::prelude::{AccessRule, ComponentAddress};
 use scrypto::NonFungibleData;
@@ -78,7 +79,7 @@ fn compiled_notarized_transaction() -> Vec<u8> {
 
     let manifest = {
         let mut builder = ManifestBuilder::new();
-        builder.lock_fee(component_address, 50.into());
+        builder.lock_fee(component_address, 500u32.into());
         builder.create_non_fungible_resource(
             OwnerRole::None,
             NonFungibleIdType::Integer,

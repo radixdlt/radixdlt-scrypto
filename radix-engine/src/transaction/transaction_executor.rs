@@ -8,7 +8,6 @@ use crate::system::system::{KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
-use crate::system::system_modules::limits::LimitsModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::system::system_modules::{EnabledModules, SystemModuleMixer};
 use crate::track::interface::SubstateStore;
@@ -28,6 +27,7 @@ use transaction::model::*;
 pub struct FeeReserveConfig {
     pub cost_unit_price: Decimal,
     pub usd_price: Decimal,
+    pub state_expansion_price: Decimal,
     pub system_loan: u32,
 }
 
@@ -36,6 +36,7 @@ impl Default for FeeReserveConfig {
         Self {
             cost_unit_price: DEFAULT_COST_UNIT_PRICE.try_into().unwrap(),
             usd_price: DEFAULT_USD_PRICE.try_into().unwrap(),
+            state_expansion_price: DEFAULT_STATE_EXPANSION_PRICE.try_into().unwrap(),
             system_loan: DEFAULT_SYSTEM_LOAN,
         }
     }
@@ -48,10 +49,8 @@ pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub cost_unit_limit: u32,
     pub abort_when_loan_repaid: bool,
-    pub max_wasm_mem_per_transaction: usize,
-    pub max_wasm_mem_per_call_frame: usize,
-    pub max_substate_reads_per_transaction: usize,
-    pub max_substate_writes_per_transaction: usize,
+    pub max_number_of_substates_in_track: usize,
+    pub max_number_of_substates_in_heap: usize,
     pub max_substate_size: usize,
     pub max_invoke_input_size: usize,
     pub enable_cost_breakdown: bool,
@@ -73,10 +72,8 @@ impl ExecutionConfig {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
             abort_when_loan_repaid: false,
-            max_wasm_mem_per_transaction: DEFAULT_MAX_WASM_MEM_PER_TRANSACTION,
-            max_wasm_mem_per_call_frame: DEFAULT_MAX_WASM_MEM_PER_CALL_FRAME,
-            max_substate_reads_per_transaction: DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION,
-            max_substate_writes_per_transaction: DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION,
+            max_number_of_substates_in_track: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
+            max_number_of_substates_in_heap: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
             max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
             max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
             enable_cost_breakdown: false,
@@ -95,7 +92,8 @@ impl ExecutionConfig {
     pub fn for_genesis_transaction() -> Self {
         Self {
             enabled_modules: EnabledModules::for_genesis_transaction(),
-            max_substate_reads_per_transaction: 50_000,
+            max_number_of_substates_in_track: 50_000,
+            max_number_of_substates_in_heap: 50_000,
             max_number_of_events: 1_000_000,
             ..Self::default()
         }
@@ -183,6 +181,7 @@ where
         let fee_reserve = SystemLoanFeeReserve::new(
             fee_reserve_config.cost_unit_price,
             fee_reserve_config.usd_price,
+            fee_reserve_config.state_expansion_price,
             transaction.fee_payment().tip_percentage,
             execution_config.cost_unit_limit,
             fee_reserve_config.system_loan,
@@ -247,7 +246,7 @@ where
             Ok(()) => {
                 let (
                     interpretation_result,
-                    (limits_module, mut costing_module, runtime_module, execution_trace_module),
+                    (mut costing_module, runtime_module, execution_trace_module),
                 ) = self.interpret_manifest(
                     &mut track,
                     executable,
@@ -261,7 +260,7 @@ where
                     .enabled_modules
                     .contains(EnabledModules::KERNEL_TRACE)
                 {
-                    println!("{:-^80}", "Interpretation Results");
+                    println!("{:-^100}", "Interpretation Results");
                     println!("{:?}", interpretation_result);
                 }
 
@@ -302,8 +301,6 @@ where
                         // Finalize everything
                         let (application_events, application_logs) =
                             runtime_module.finalize(is_success);
-                        let execution_metrics =
-                            limits_module.finalize(fee_summary.execution_cost_sum);
                         let execution_trace =
                             execution_trace_module.finalize(&fee_payments, is_success);
                         let (tracked_nodes, deleted_partitions) = track.finalize();
@@ -324,7 +321,6 @@ where
                             fee_summary,
                             application_events,
                             application_logs,
-                            execution_metrics,
                             execution_trace,
                         })
                     }
@@ -471,7 +467,6 @@ where
     ) -> (
         Result<Vec<InstructionOutput>, RuntimeError>,
         (
-            LimitsModule,
             CostingModule,
             TransactionRuntimeModule,
             ExecutionTraceModule,
@@ -510,6 +505,23 @@ where
                 executable.references(),
                 executable.blobs(),
             )
+            .and_then(|x| {
+                let info = track.get_commit_info();
+                for commit in &info {
+                    if let Err(e) = system.modules.apply_execution_cost(CostingEntry::Commit {
+                        store_commit: commit,
+                    }) {
+                        return Err(e);
+                    }
+                }
+                for commit in &info {
+                    if let Err(e) = system.modules.apply_state_expansion_cost(commit) {
+                        return Err(e);
+                    }
+                }
+
+                Ok(x)
+            })
             .map(|rtn| {
                 let output: Vec<InstructionOutput> = scrypto_decode(&rtn).unwrap();
                 output
@@ -612,8 +624,10 @@ where
         // Take fee payments
         let fee_summary = fee_reserve.finalize();
         let mut fee_payments: IndexMap<NodeId, Decimal> = index_map_new();
-        let mut required =
-            fee_summary.total_execution_cost_xrd + fee_summary.total_royalty_cost_xrd;
+        let mut required = fee_summary.total_execution_cost_xrd
+            + fee_summary.total_tipping_cost_xrd
+            + fee_summary.total_state_expansion_cost_xrd
+            + fee_summary.total_royalty_cost_xrd;
         let mut collected_fees = LiquidFungibleResource::new(Decimal::ZERO);
         for (vault_id, mut locked, contingent) in fee_summary.locked_fees.iter().cloned().rev() {
             let amount = if contingent {
@@ -657,7 +671,7 @@ where
         assert_eq!(fee_summary.total_bad_debt_xrd, Decimal::ZERO);
         assert_eq!(
             tips_to_distribute + fees_to_distribute,
-            collected_fees.amount() - fee_summary.total_royalty_cost_xrd
+            collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */
         );
 
         if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
@@ -819,7 +833,7 @@ where
 
     #[cfg(not(feature = "alloc"))]
     fn print_executable(executable: &Executable) {
-        println!("{:-^80}", "Executable");
+        println!("{:-^100}", "Executable");
         println!("Intent hash: {}", executable.intent_hash().as_hash());
         println!("Payload size: {}", executable.payload_size());
         println!("Fee payment: {:?}", executable.fee_payment());
@@ -835,65 +849,54 @@ where
     fn print_execution_summary(receipt: &TransactionReceipt) {
         match &receipt.transaction_result {
             TransactionResult::Commit(commit) => {
-                println!("{:-^80}", "Cost Breakdown");
+                // NB - we use "to_string" to ensure they align correctly
+
+                println!("{:-^100}", "Cost Breakdown");
                 for (k, v) in &commit.fee_summary.execution_cost_breakdown {
-                    println!("{:<30}: {:>10}", k, v);
+                    println!("{:<75}: {:>15}", k, v.to_string());
                 }
 
-                println!("{:-^80}", "Cost Totals");
+                println!("{:-^100}", "Cost Totals");
                 println!(
-                    "{:<30}: {:>10}",
-                    "Cost Unit Limit", commit.fee_summary.cost_unit_limit
+                    "{:<30}: {:>15}",
+                    "Cost Unit Limit",
+                    commit.fee_summary.cost_unit_limit.to_string()
                 );
                 println!(
-                    "{:<30}: {:>10}",
-                    "Cost Units Consumed", commit.fee_summary.execution_cost_sum
+                    "{:<30}: {:>15}",
+                    "Cost Units Consumed",
+                    commit.fee_summary.execution_cost_sum.to_string()
                 );
-                // NB - we use "to_string" to ensure they align correctly
                 println!(
-                    "{:<30}: {:>10}",
-                    "Execution XRD",
+                    "{:<30}: {:>15}",
+                    "Execution Costs in XRD",
                     commit.fee_summary.total_execution_cost_xrd.to_string()
                 );
                 println!(
-                    "{:<30}: {:>10}",
-                    "Royalty XRD",
+                    "{:<30}: {:>15}",
+                    "Tipping Costs in XRD",
+                    commit.fee_summary.total_tipping_cost_xrd.to_string()
+                );
+                println!(
+                    "{:<30}: {:>15}",
+                    "State Expansion Costs in XRD",
+                    commit
+                        .fee_summary
+                        .total_state_expansion_cost_xrd
+                        .to_string()
+                );
+                println!(
+                    "{:<30}: {:>15}",
+                    "Royalty Costs in XRD",
                     commit.fee_summary.total_royalty_cost_xrd.to_string()
                 );
 
-                println!("{:-^80}", "Execution Metrics");
-                println!(
-                    "{:<30}: {:>10}",
-                    "Total Substate Read Bytes", commit.execution_metrics.substate_read_size
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Total Substate Write Bytes", commit.execution_metrics.substate_write_size
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Substate Read Count", commit.execution_metrics.substate_read_count
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Substate Write Count", commit.execution_metrics.substate_write_count
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Peak WASM Memory Usage Bytes", commit.execution_metrics.max_wasm_memory_used
-                );
-                println!(
-                    "{:<30}: {:>10}",
-                    "Max Invoke Payload Size Bytes",
-                    commit.execution_metrics.max_invoke_payload_size
-                );
-
-                println!("{:-^80}", "Application Logs");
+                println!("{:-^100}", "Application Logs");
                 for (level, message) in &commit.application_logs {
                     println!("[{}] {}", level, message);
                 }
 
-                println!("{:-^80}", "Outcome");
+                println!("{:-^100}", "Outcome");
                 println!(
                     "{}",
                     match &commit.outcome {
@@ -903,15 +906,15 @@ where
                 );
             }
             TransactionResult::Reject(e) => {
-                println!("{:-^80}", "Transaction Rejected");
+                println!("{:-^100}", "Transaction Rejected");
                 println!("{:?}", e.error);
             }
             TransactionResult::Abort(e) => {
-                println!("{:-^80}", "Transaction Aborted");
+                println!("{:-^100}", "Transaction Aborted");
                 println!("{:?}", e);
             }
         }
-        println!("{:-^80}", "Finish");
+        println!("{:-^100}", "Finish");
     }
 }
 

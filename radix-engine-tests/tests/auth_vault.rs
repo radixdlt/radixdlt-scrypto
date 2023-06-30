@@ -13,7 +13,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account, 10.into(), token_resource_address, Decimal::one())
+        .lock_fee_and_withdraw(account, 500.into(), token_resource_address, Decimal::one())
         .call_method(
             other_account,
             "try_deposit_batch_or_abort",
@@ -42,7 +42,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw_non_fungibles(
             account,
-            10u32.into(),
+            500u32.into(),
             auth_resource_address,
             BTreeSet::from([NonFungibleLocalId::integer(1)]),
         )

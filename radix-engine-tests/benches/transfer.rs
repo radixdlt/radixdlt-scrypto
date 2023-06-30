@@ -3,8 +3,7 @@ use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
-use radix_engine::vm::wasm::WasmInstrumenter;
-use radix_engine::vm::wasm::{DefaultWasmEngine, WasmMeteringConfig};
+use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
@@ -17,8 +16,7 @@ fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
     let mut scrypto_interpreter = ScryptoVm {
         wasm_engine: DefaultWasmEngine::default(),
-        wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_metering_config: WasmMeteringConfig::V0,
+        wasm_validator_config: WasmValidatorConfigV1::new(),
     };
     let mut substate_db = InMemorySubstateDatabase::standard();
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
@@ -36,7 +34,7 @@ fn bench_transfer(c: &mut Criterion) {
                 NonFungibleGlobalId::from_public_key(&public_key)
             )));
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET, 50u32.into())
+                .lock_fee(FAUCET, 500u32.into())
                 .new_account_advanced(owner_rule)
                 .build();
             let account = execute_and_commit_transaction(
@@ -61,7 +59,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Fill first account
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET, 50u32.into())
+        .lock_fee(FAUCET, 500u32.into())
         .call_method(FAUCET, "free", manifest_args!())
         .call_method(
             account1,
@@ -85,7 +83,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 50u32.into())
+        .lock_fee(account1, 500u32.into())
         .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
         .call_method(
             account2,

@@ -14,6 +14,12 @@ use sbor::rust::string::ToString;
 use sbor::*;
 use scrypto::modules::Attachable;
 
+pub trait HasMetadata {
+    fn set_metadata<K: AsRef<str>, V: MetadataVal>(&self, name: K, value: V);
+    fn get_metadata<K: ToString, V: MetadataVal>(&self, name: K) -> Result<V, MetadataError>;
+    fn remove_metadata<K: ToString>(&self, name: K) -> bool;
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Metadata(pub ModuleHandle);
 

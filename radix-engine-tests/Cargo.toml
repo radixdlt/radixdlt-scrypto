@@ -44,10 +44,6 @@ name = "validation"
 harness = false
 
 [[bench]]
-name = "wasm"
-harness = false
-
-[[bench]]
 name = "radiswap"
 harness = false
 
@@ -74,3 +70,4 @@ cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
 resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker", "radix-engine/resource_tracker"]
 dump_manifest_to_file = ["transaction/dump_manifest_to_file"]
+rocksdb = ["scrypto-unit/rocksdb"]

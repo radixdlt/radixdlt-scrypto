@@ -17,6 +17,7 @@ use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::node_move::NodeMoveModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
+use crate::track::interface::StoreCommit;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
@@ -151,10 +152,8 @@ impl SystemModuleMixer {
                 auth_zone_stack: Vec::new(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
-                max_wasm_memory: execution_config.max_wasm_mem_per_transaction,
-                max_wasm_memory_per_call_frame: execution_config.max_wasm_mem_per_call_frame,
-                max_substate_read_count: execution_config.max_substate_reads_per_transaction,
-                max_substate_write_count: execution_config.max_substate_writes_per_transaction,
+                max_number_of_substates_in_track: execution_config.max_number_of_substates_in_track,
+                max_number_of_substates_in_heap: execution_config.max_number_of_substates_in_heap,
                 max_substate_size: execution_config.max_substate_size,
                 max_invoke_payload_size: execution_config.max_invoke_input_size,
                 max_number_of_logs: execution_config.max_number_of_logs,
@@ -177,17 +176,11 @@ impl SystemModuleMixer {
     pub fn unpack(
         self,
     ) -> (
-        LimitsModule,
         CostingModule,
         TransactionRuntimeModule,
         ExecutionTraceModule,
     ) {
-        (
-            self.limits,
-            self.costing,
-            self.transaction_runtime,
-            self.execution_trace,
-        )
+        (self.costing, self.transaction_runtime, self.execution_trace)
     }
 }
 
@@ -318,6 +311,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         internal_call_dispatch!(
             api,
             after_create_node(api, node_id, total_substate_size, store_access)
+        )
+    }
+
+    #[trace_resources]
+    fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        src_node_id: &NodeId,
+        dest_node_id: &NodeId,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(
+            api,
+            after_move_modules(api, src_node_id, dest_node_id, store_access)
         )
     }
 
@@ -580,24 +586,23 @@ impl SystemModuleMixer {
         }
     }
 
-    pub fn update_wasm_memory_usage(
-        &mut self,
-        depth: usize,
-        consumed_memory: usize,
-    ) -> Result<(), RuntimeError> {
-        if self.enabled_modules.contains(EnabledModules::LIMITS) {
-            self.limits.update_wasm_memory_usage(depth, consumed_memory)
-        } else {
-            Ok(())
-        }
-    }
-
     pub fn apply_execution_cost(
         &mut self,
         costing_entry: CostingEntry,
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {
             self.costing.apply_execution_cost(costing_entry)
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn apply_state_expansion_cost(
+        &mut self,
+        store_commit: &StoreCommit,
+    ) -> Result<(), RuntimeError> {
+        if self.enabled_modules.contains(EnabledModules::COSTING) {
+            self.costing.apply_state_expansion_cost(store_commit)
         } else {
             Ok(())
         }

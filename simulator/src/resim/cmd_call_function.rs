@@ -49,9 +49,10 @@ impl CallFunction {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut manifest_builder = &mut ManifestBuilder::new();
+        let mut manifest_builder = ManifestBuilder::new();
+        manifest_builder.lock_fee(FAUCET, 5000u32.into());
         for resource_specifier in proofs {
-            manifest_builder = manifest_builder.borrow_mut(|builder| {
+            manifest_builder.borrow_mut(|builder| {
                 create_proof_from_account(
                     builder,
                     &address_bech32_decoder,
@@ -62,9 +63,7 @@ impl CallFunction {
                 Ok(builder)
             })?;
         }
-
         let manifest = manifest_builder
-            .lock_fee(FAUCET, 50u32.into())
             .borrow_mut(|builder| {
                 self.add_call_function_instruction_with_schema(
                     builder,

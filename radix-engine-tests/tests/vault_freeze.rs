@@ -14,7 +14,7 @@ fn cannot_burn_frozen_burn_vault() {
     let vaults = test_runner.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .freeze_burn(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -22,7 +22,7 @@ fn cannot_burn_frozen_burn_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .burn_in_account(account, token_address, 1.into())
         .build();
     let receipt =
@@ -46,7 +46,7 @@ fn cannot_deposit_into_frozen_deposit_vault() {
     let vaults = test_runner.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .freeze_deposit(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -54,7 +54,7 @@ fn cannot_deposit_into_frozen_deposit_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .withdraw_from_account(account, token_address, 1.into())
         .deposit_batch(account)
         .build();
@@ -79,7 +79,7 @@ fn cannot_withdraw_from_frozen_vault() {
     let vaults = test_runner.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -87,7 +87,7 @@ fn cannot_withdraw_from_frozen_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .withdraw_from_account(account, token_address, 1.into())
         .deposit_batch(account)
         .build();
@@ -113,7 +113,7 @@ fn cannot_recall_from_frozen_vault() {
     let vault_id = vaults[0];
     let vault_address = InternalAddress::new_or_panic(vault_id.into());
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .freeze_withdraw(vault_address)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -121,7 +121,7 @@ fn cannot_recall_from_frozen_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .recall(vault_address, 1.into())
         .deposit_batch(account)
         .build();
@@ -141,13 +141,13 @@ fn can_withdraw_from_unfrozen_vault() {
     let vaults = test_runner.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .unfreeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt =
@@ -156,7 +156,7 @@ fn can_withdraw_from_unfrozen_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .withdraw_from_account(account, token_address, 1.into())
         .deposit_batch(account)
         .build();

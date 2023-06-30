@@ -17,8 +17,8 @@ use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::SystemUpdates;
 use crate::transaction::{
-    execute_transaction, ExecutionConfig, FeeReserveConfig, StateUpdateSummary, TransactionReceipt,
-    TransactionResult,
+    execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, StateUpdateSummary,
+    TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use crate::types::*;
 use crate::vm::wasm::WasmEngine;
@@ -171,14 +171,22 @@ pub struct FlashReceipt {
     pub state_update_summary: StateUpdateSummary,
 }
 
+impl From<FlashReceipt> for TransactionReceipt {
+    fn from(value: FlashReceipt) -> Self {
+        // This is used by the node for allowing the flash to execute before the
+        // genesis bootstrap transaction
+        let commit_result = CommitResult::empty_with_outcome(TransactionOutcome::Success(vec![]));
+        let mut transaction_receipt = TransactionReceipt::empty_with_commit(commit_result);
+        value.merge_genesis_flash_into_transaction_receipt(&mut transaction_receipt);
+        transaction_receipt
+    }
+}
+
 impl FlashReceipt {
     // Merge system_flash_receipt into system_bootstrap_receipt
     // This is currently a necessary hack in order to not change GenesisReceipt with
     // the addition of a new system_flash_receipt.
-    pub fn merge_genesis_flash_into_system_bootstrap_receipt(
-        self,
-        receipt: &mut TransactionReceipt,
-    ) {
+    pub fn merge_genesis_flash_into_transaction_receipt(self, receipt: &mut TransactionReceipt) {
         match &mut receipt.transaction_result {
             TransactionResult::Commit(result) => {
                 let mut new_packages = self.state_update_summary.new_packages;
@@ -268,7 +276,7 @@ where
     pub fn bootstrap_with_genesis_data(
         &mut self,
         genesis_data_chunks: Vec<GenesisDataChunk>,
-        initial_epoch: Epoch,
+        genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
         initial_current_leader: Option<ValidatorIndex>,
@@ -288,14 +296,15 @@ where
             self.substate_db.commit(&flash_receipt.database_updates);
 
             let mut system_bootstrap_receipt = self.execute_system_bootstrap(
-                initial_epoch,
+                genesis_epoch,
                 initial_config,
                 initial_time_ms,
                 initial_current_leader,
+                faucet_supply,
             );
 
             flash_receipt
-                .merge_genesis_flash_into_system_bootstrap_receipt(&mut system_bootstrap_receipt);
+                .merge_genesis_flash_into_transaction_receipt(&mut system_bootstrap_receipt);
 
             let mut data_ingestion_receipts = vec![];
             for (chunk_index, chunk) in genesis_data_chunks.into_iter().enumerate() {
@@ -303,7 +312,7 @@ where
                 data_ingestion_receipts.push(receipt);
             }
 
-            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up(faucet_supply);
+            let genesis_wrap_up_receipt = self.execute_genesis_wrap_up();
 
             Some(GenesisReceipts {
                 system_bootstrap_receipt,
@@ -317,16 +326,18 @@ where
 
     fn execute_system_bootstrap(
         &mut self,
-        initial_epoch: Epoch,
+        genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_ms: i64,
         initial_current_leader: Option<ValidatorIndex>,
+        faucet_supply: Decimal,
     ) -> TransactionReceipt {
         let transaction = create_system_bootstrap_transaction(
-            initial_epoch,
+            genesis_epoch,
             initial_config,
             initial_time_ms,
             initial_current_leader,
+            faucet_supply,
         );
 
         let receipt = execute_transaction(
@@ -373,8 +384,8 @@ where
         receipt
     }
 
-    fn execute_genesis_wrap_up(&mut self, faucet_supply: Decimal) -> TransactionReceipt {
-        let transaction = create_genesis_wrap_up_transaction(faucet_supply);
+    fn execute_genesis_wrap_up(&mut self) -> TransactionReceipt {
+        let transaction = create_genesis_wrap_up_transaction();
 
         let receipt = execute_transaction(
             self.substate_db,
@@ -530,6 +541,7 @@ pub fn create_system_bootstrap_transaction(
     initial_config: ConsensusManagerConfig,
     initial_time_ms: i64,
     initial_current_leader: Option<ValidatorIndex>,
+    faucet_supply: Decimal,
 ) -> SystemTransactionV1 {
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
@@ -1113,6 +1125,41 @@ pub fn create_system_bootstrap_transaction(
         });
     }
 
+    // Faucet
+    // Note - the faucet is now created as part of bootstrap instead of wrap-up, to enable
+    // transaction scenarios to be injected into the ledger in the node before genesis wrap-up occurs
+    {
+        pre_allocated_addresses.push((
+            BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
+            GlobalAddress::from(FAUCET),
+        ));
+
+        // Mint XRD for the faucet, and then deposit it into the new faucet
+        // Note - on production environments, the faucet will be empty
+        let faucet_xrd_bucket = id_allocator.new_bucket_id();
+        instructions.push(
+            InstructionV1::CallMethod {
+                address: RADIX_TOKEN.clone().into(),
+                method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
+                args: manifest_args!(faucet_supply),
+            }
+            .into(),
+        );
+        instructions.push(
+            InstructionV1::TakeFromWorktop {
+                resource_address: RADIX_TOKEN,
+                amount: faucet_supply,
+            }
+            .into(),
+        );
+        instructions.push(InstructionV1::CallFunction {
+            package_address: FAUCET_PACKAGE.into(),
+            blueprint_name: FAUCET_BLUEPRINT.to_string(),
+            function_name: "new".to_string(),
+            args: manifest_args!(id_allocator.new_address_reservation_id(), faucet_xrd_bucket),
+        });
+    }
+
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
         pre_allocated_addresses: pre_allocated_addresses
@@ -1202,8 +1249,7 @@ fn map_address_allocations_for_manifest(
     }
 }
 
-pub fn create_genesis_wrap_up_transaction(faucet_supply: Decimal) -> SystemTransactionV1 {
-    let mut id_allocator = ManifestIdAllocator::new();
+pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
     let mut instructions = Vec::new();
 
     instructions.push(InstructionV1::CallMethod {
@@ -1212,37 +1258,9 @@ pub fn create_genesis_wrap_up_transaction(faucet_supply: Decimal) -> SystemTrans
         args: manifest_args!(),
     });
 
-    instructions.push(
-        InstructionV1::CallMethod {
-            address: RADIX_TOKEN.clone().into(),
-            method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-            args: manifest_args!(faucet_supply),
-        }
-        .into(),
-    );
-
-    instructions.push(
-        InstructionV1::TakeAllFromWorktop {
-            resource_address: RADIX_TOKEN,
-        }
-        .into(),
-    );
-
-    let bucket = id_allocator.new_bucket_id();
-
-    instructions.push(InstructionV1::CallFunction {
-        package_address: FAUCET_PACKAGE.into(),
-        blueprint_name: FAUCET_BLUEPRINT.to_string(),
-        function_name: "new".to_string(),
-        args: manifest_args!(ManifestAddressReservation(0), bucket),
-    });
-
     SystemTransactionV1 {
         instructions: InstructionsV1(instructions),
-        pre_allocated_addresses: vec![PreAllocatedAddress {
-            blueprint_id: BlueprintId::new(&FAUCET_PACKAGE, FAUCET_BLUEPRINT),
-            address: FAUCET.into(),
-        }],
+        pre_allocated_addresses: vec![],
         blobs: BlobsV1 { blobs: vec![] },
         hash_for_execution: hash(format!("Genesis Wrap Up")),
     }

@@ -1,6 +1,6 @@
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, StoreAccessInfo, SubstateStore,
+    AcquireLockError, NodeSubstates, SetSubstateError, StoreAccess, StoreAccessInfo, SubstateStore,
     TakeSubstateError,
 };
 use crate::types::*;
@@ -830,7 +830,7 @@ impl<L: Clone> CallFrame<L> {
         dest_partition_number: PartitionNumber,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(), MoveModuleError> {
+    ) -> Result<StoreAccessInfo, MoveModuleError> {
         // Check ownership (and visibility)
         if self.owned_root_nodes.get(src_node_id) != Some(&0) {
             return Err(MoveModuleError::NodeNotAvailable(src_node_id.clone()));
@@ -843,6 +843,8 @@ impl<L: Clone> CallFrame<L> {
         {
             return Err(MoveModuleError::NodeNotAvailable(dest_node_id.clone()));
         }
+
+        let mut store_access = Vec::<StoreAccess>::new();
 
         // Move
         let module = heap
@@ -870,18 +872,20 @@ impl<L: Clone> CallFrame<L> {
                     }
                 }
 
-                store
-                    .set_substate(
-                        *dest_node_id,
-                        dest_partition_number,
-                        substate_key,
-                        substate_value,
-                    )
-                    .map_err(MoveModuleError::TrackSetSubstateError)?;
+                store_access.extend(
+                    store
+                        .set_substate(
+                            *dest_node_id,
+                            dest_partition_number,
+                            substate_key,
+                            substate_value,
+                        )
+                        .map_err(MoveModuleError::TrackSetSubstateError)?,
+                );
             }
         }
 
-        Ok(())
+        Ok(store_access)
     }
 
     pub fn add_global_reference(&mut self, address: GlobalAddress) {

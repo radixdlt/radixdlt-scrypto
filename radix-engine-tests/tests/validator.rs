@@ -27,11 +27,11 @@ where
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let mut builder = ManifestBuilder::new();
+    builder.lock_fee(test_runner.faucet_component(), 500u32.into());
     if as_owner {
         builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE);
     }
     let manifest = builder
-        .lock_fee(test_runner.faucet_component(), 10.into())
         .signal_protocol_update_readiness(validator_address, "a".repeat(name_len).as_str())
         .register_validator(validator_address)
         .build();

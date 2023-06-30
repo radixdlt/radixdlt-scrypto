@@ -41,7 +41,7 @@ fn test_static_package_address() {
         test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address2,
             "Sample",
@@ -64,7 +64,7 @@ fn test_static_component_address() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .call_function(
             package_address,
             "FaucetCall",
@@ -116,7 +116,7 @@ fn static_component_should_be_callable() {
         |blueprint, _| blueprint.eq("PreallocatedCall"),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address2,
             "PreallocatedCall",
@@ -184,7 +184,7 @@ fn static_resource_should_be_callable() {
         |blueprint, _| blueprint.eq("SomeResource"),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address2,
             "SomeResource",
@@ -215,7 +215,7 @@ fn static_package_should_be_callable() {
         |blueprint, _| blueprint.eq("SomePackage"),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address2,
             "SomePackage",

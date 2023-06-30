@@ -221,7 +221,7 @@ impl ConsensusManagerBlueprint {
     pub(crate) fn create<Y>(
         validator_token_address_reservation: GlobalAddressReservation,
         consensus_manager_address_reservation: GlobalAddressReservation,
-        initial_epoch: Epoch,
+        genesis_epoch: Epoch,
         initial_config: ConsensusManagerConfig,
         initial_time_milli: i64,
         initial_current_leader: Option<ValidatorIndex>,
@@ -267,7 +267,7 @@ impl ConsensusManagerBlueprint {
             };
             let consensus_manager = ConsensusManagerSubstate {
                 started: false,
-                epoch: initial_epoch,
+                epoch: genesis_epoch,
                 actual_epoch_start_milli: initial_time_milli,
                 effective_epoch_start_milli: initial_time_milli,
                 round: Round::zero(),
@@ -365,26 +365,28 @@ impl ConsensusManagerBlueprint {
             config_substate
         };
 
-        let manager_substate = {
-            let manager_handle = api.actor_open_field(
-                OBJECT_HANDLE_SELF,
-                ConsensusManagerField::ConsensusManager.into(),
-                LockFlags::MUTABLE,
-            )?;
-            let mut manager_substate: ConsensusManagerSubstate =
-                api.field_lock_read_typed(manager_handle)?;
-            if manager_substate.started {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ConsensusManagerError(ConsensusManagerError::AlreadyStarted),
-                ));
-            }
-            manager_substate.started = true;
-            api.field_lock_write_typed(manager_handle, manager_substate.clone())?;
-            api.field_lock_release(manager_handle)?;
-            manager_substate
-        };
+        let manager_handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            ConsensusManagerField::ConsensusManager.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut manager_substate: ConsensusManagerSubstate =
+            api.field_lock_read_typed(manager_handle)?;
 
-        Self::epoch_change(manager_substate.epoch, &config_substate.config, api)?;
+        if manager_substate.started {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ConsensusManagerError(ConsensusManagerError::AlreadyStarted),
+            ));
+        }
+        let post_genesis_epoch = manager_substate.epoch.next();
+
+        Self::epoch_change(post_genesis_epoch, &config_substate.config, api)?;
+        manager_substate.started = true;
+        manager_substate.epoch = post_genesis_epoch;
+        manager_substate.round = Round::zero();
+
+        api.field_lock_write_typed(manager_handle, manager_substate)?;
+        api.field_lock_release(manager_handle)?;
 
         Ok(())
     }

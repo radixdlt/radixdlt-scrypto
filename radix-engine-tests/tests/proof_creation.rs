@@ -13,7 +13,7 @@ fn create_proof_internal(function_name: &str, error: Option<&str>) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "ProofCreation",
@@ -109,7 +109,7 @@ fn test_create_non_fungible_proof_with_large_amount() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .create_proof_from_auth_zone_of_amount(
             resource_address,
             dec!("100000000000000000000000000000000000000000000"),

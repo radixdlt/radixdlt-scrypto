@@ -6,36 +6,38 @@ use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::wasm_api::kv_entry_set;
 use scrypto::prelude::*;
 
+#[derive(Sbor, ScryptoEvent)]
+struct TestEvent {
+    message: String,
+}
+
 #[blueprint]
+#[events(TestEvent)]
 mod transaction_limits {
     struct TransactionLimitTest {
         kv_store: KeyValueStore<u32, u32>,
     }
 
     impl TransactionLimitTest {
-        pub fn write_kv_stores(n: u32) -> Global<TransactionLimitTest> {
-            let kv_store = KeyValueStore::new();
-            for i in 0..n {
-                kv_store.insert(i, i);
+        pub fn new() -> Global<TransactionLimitTest> {
+            TransactionLimitTest {
+                kv_store: KeyValueStore::new(),
             }
-
-            TransactionLimitTest { kv_store }
-                .instantiate()
-                .prepare_to_globalize(OwnerRole::None)
-                .globalize()
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize()
         }
 
-        pub fn read_kv_stores(n: u32) -> Global<TransactionLimitTest> {
-            let kv_store = KeyValueStore::new();
-            kv_store.insert(0, 0);
-            for _i in 0..n {
-                kv_store.get(&0);
+        pub fn write_kv_stores(&self, n: u32) {
+            for i in 0..n {
+                self.kv_store.insert(i, i);
             }
+        }
 
-            TransactionLimitTest { kv_store }
-                .instantiate()
-                .prepare_to_globalize(OwnerRole::None)
-                .globalize()
+        pub fn read_kv_stores(&self, n: u32) {
+            for i in 0..n {
+                self.kv_store.get(&i);
+            }
         }
 
         pub fn recursive_with_memory(n: u32, m: usize) {
@@ -43,6 +45,26 @@ mod transaction_limits {
                 let _v: Vec<u8> = Vec::with_capacity(m);
                 Blueprint::<TransactionLimitTest>::recursive_with_memory(n - 1, m);
             }
+        }
+
+        pub fn emit_event_of_size(n: usize) {
+            let name = "TestEvent";
+            let buf = scrypto_encode(&TestEvent {
+                message: "a".repeat(n),
+            })
+            .unwrap();
+            unsafe { wasm_api::emit_event(name.as_ptr(), name.len(), buf.as_ptr(), buf.len()) }
+        }
+
+        pub fn emit_log_of_size(n: usize) {
+            let level = scrypto_encode(&Level::Debug).unwrap();
+            let buf = "a".repeat(n);
+            unsafe { wasm_api::emit_log(level.as_ptr(), level.len(), buf.as_ptr(), buf.len()) }
+        }
+
+        pub fn panic_of_size(n: usize) {
+            let buf = "a".repeat(n);
+            unsafe { wasm_api::panic(buf.as_ptr(), buf.len()) }
         }
     }
 }

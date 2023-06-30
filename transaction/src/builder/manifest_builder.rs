@@ -113,6 +113,12 @@ impl ManifestBuilder {
         }
     }
 
+    pub fn add_blob(&mut self, blob: Vec<u8>) -> &mut Self {
+        let hash = hash(&blob);
+        self.blobs.insert(hash, blob);
+        self
+    }
+
     /// Adds a raw instruction.
     pub fn add_instruction(
         &mut self,
@@ -670,13 +676,16 @@ impl ManifestBuilder {
     }
 
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
-    pub fn call_function(
+    pub fn call_function<P>(
         &mut self,
-        package_address: PackageAddress,
+        package_address: P,
         blueprint_name: &str,
         function_name: &str,
         args: ManifestValue,
-    ) -> &mut Self {
+    ) -> &mut Self
+    where
+        P: Into<DynamicPackageAddress>,
+    {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: package_address.into(),
             blueprint_name: blueprint_name.to_string(),
@@ -822,6 +831,7 @@ impl ManifestBuilder {
     /// Publishes a package.
     pub fn publish_package_advanced<M: Into<MetadataInit>>(
         &mut self,
+        address: Option<ManifestAddressReservation>,
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: M,
@@ -838,7 +848,7 @@ impl ManifestBuilder {
                 code: ManifestBlobRef(code_hash.0),
                 setup: definition,
                 metadata: metadata.into(),
-                package_address: None,
+                package_address: address,
                 owner_role,
             }),
         });

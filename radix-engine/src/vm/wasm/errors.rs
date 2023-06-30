@@ -58,13 +58,13 @@ pub enum InvalidImport {
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]
 pub enum InvalidMemory {
     /// The wasm module has no memory section.
-    NoMemorySection,
+    MissingMemorySection,
     /// The memory section is empty.
-    EmptyMemorySection,
+    NoMemoryDefinition,
     /// The memory section contains too many memory definitions.
-    TooManyMemories,
-    /// The initial memory size is too large.
-    InitialMemorySizeLimitExceeded,
+    TooManyMemoryDefinition,
+    /// The memory size exceeds the limit.
+    MemorySizeLimitExceeded,
     /// The wasm module does not have the `memory` export.
     MemoryNotExported,
 }

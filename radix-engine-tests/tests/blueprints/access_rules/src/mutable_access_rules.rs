@@ -39,19 +39,12 @@ mod mutable_access_rules_component {
                 .globalize()
         }
 
-        pub fn access_rules_function(component_address: ComponentAddress) {
-            let component: Global<AnyComponent> = component_address.into();
-            let _access_rules = component.access_rules();
-        }
-
         pub fn set_authority_rules(&self, role: String, rule: AccessRule) {
-            let access_rules = Runtime::access_rules();
-            access_rules.set_role(role.as_str(), rule);
+            Runtime::global_component().set_role(role.as_str(), rule);
         }
 
         pub fn lock_authority(&self, role: String) {
-            let access_rules = Runtime::access_rules();
-            access_rules.lock_role(role.as_str());
+            Runtime::global_component().lock_role(role.as_str());
         }
 
         // The methods that the access rules will be added to

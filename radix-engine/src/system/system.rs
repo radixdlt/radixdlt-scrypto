@@ -1461,8 +1461,7 @@ where
             match &module_object_info.blueprint_info {
                 ObjectBlueprintInfo::Inner { outer_object } => {
                     // TODO: do this recursively until global?
-                    // FIXME: is unwrap safe?
-                    let outer_info = self.get_object_info(outer_object.as_node_id()).unwrap();
+                    let outer_info = self.get_object_info(outer_object.as_node_id())?;
                     Some(InstanceContext {
                         outer_object: outer_object.clone(),
                         outer_blueprint: outer_info.blueprint_id.blueprint_name.clone(),
@@ -2061,6 +2060,11 @@ where
         &mut self,
         costing_entry: ClientCostingEntry,
     ) -> Result<(), RuntimeError> {
+        // Skip client-side costing requested by TransactionProcessor
+        if self.api.kernel_get_current_depth() == 1 {
+            return Ok(());
+        }
+
         self.api
             .kernel_get_system()
             .modules
@@ -2081,6 +2085,9 @@ where
                     export_name,
                     gas,
                 },
+                ClientCostingEntry::PrepareWasmCode { size } => {
+                    CostingEntry::PrepareWasmCode { size }
+                }
             })
     }
 
@@ -2465,23 +2472,6 @@ where
                 SystemError::AssertAccessRuleFailed,
             )),
         }
-    }
-}
-
-impl<'a, Y, V> ClientLimitsApi<RuntimeError> for SystemService<'a, Y, V>
-where
-    Y: KernelApi<SystemConfig<V>>,
-    V: SystemCallbackObject,
-{
-    // No costing should be applied
-    #[trace_resources]
-    fn update_wasm_memory_usage(&mut self, consumed_memory: usize) -> Result<(), RuntimeError> {
-        let current_depth = self.api.kernel_get_current_depth();
-        self.api
-            .kernel_get_system()
-            .modules
-            .update_wasm_memory_usage(current_depth, consumed_memory)?;
-        Ok(())
     }
 }
 
