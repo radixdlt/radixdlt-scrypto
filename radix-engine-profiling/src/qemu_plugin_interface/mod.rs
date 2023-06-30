@@ -1,5 +1,5 @@
 use shared_memory::*;
-use std::{fs::File, io::prelude::*};
+use std::{fs::File, io::prelude::*, time::{Duration, Instant}};
 
 pub mod data_analyzer;
 pub use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent, OutputParam, OutputParamValue};
@@ -21,7 +21,7 @@ std::thread_local! {
 }
 
 pub struct QemuPluginInterface<'a> {
-    counters_stack: Vec<(&'a str, u64)>,
+    counters_stack: Vec<(&'a str, u64, Instant)>,
     stack_top: usize,
     output_data: Vec<OutputData<'a>>,
     counter_offset: u64,
@@ -38,7 +38,7 @@ impl<'a> QemuPluginInterface<'a> {
         };
 
         let mut ret = Self {
-            counters_stack: vec![("", 0); CALL_STACK_DEPTH],
+            counters_stack: vec![("", 0, Instant::now()); CALL_STACK_DEPTH],
             stack_top: 0,
             output_data: Vec::with_capacity(OUTPUT_DATA_COUNT),
             counter_offset: 0,
@@ -70,9 +70,11 @@ impl<'a> QemuPluginInterface<'a> {
             cpu_instructions_calibrated: 0,
             function_name: key,
             param: arg.to_vec(),
+            duration: Duration::ZERO,
         });
 
         self.stack_top += 1;
+        self.counters_stack[self.stack_top - 1].2 = std::time::Instant::now();
         self.counters_stack[self.stack_top - 1].1 = self.communicate_with_server();
     }
 
@@ -82,6 +84,7 @@ impl<'a> QemuPluginInterface<'a> {
         arg: &[data_analyzer::OutputParam],
     ) -> (usize, u64) {
         let n = self.communicate_with_server();
+        let time_end = std::time::Instant::now();
 
         if self.stack_top == 0 {
             panic!("Not counting!");
@@ -103,6 +106,7 @@ impl<'a> QemuPluginInterface<'a> {
                             name: "return".into(),
                             value: data_analyzer::OutputParamValue::Literal("true".into()),
                         }],
+                        duration: Duration::ZERO,
                     });
                 }
             }
@@ -119,6 +123,7 @@ impl<'a> QemuPluginInterface<'a> {
             cpu_instructions_calibrated: 0,
             function_name: key,
             param: arg.to_vec(),
+            duration: time_end.checked_duration_since(self.counters_stack[self.stack_top].2).unwrap_or_default(),
         });
 
         let ret = self.counters_stack[self.stack_top].1;
@@ -256,6 +261,7 @@ impl<'a> QemuPluginInterface<'a> {
                                 name: "return".into(),
                                 value: data_analyzer::OutputParamValue::Literal("true".into()),
                             }],
+                            duration: v.duration,
                         },
                     ));
                 }

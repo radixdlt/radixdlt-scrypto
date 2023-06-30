@@ -3,6 +3,7 @@ use std::{
     fmt::{Display, Formatter},
     fs::File,
     io::Write,
+    time::Duration,
 };
 
 #[derive(Clone)]
@@ -71,6 +72,8 @@ pub struct OutputData<'a> {
     pub function_name: &'a str,
     /// Function parameters to log
     pub param: Vec<OutputParam>,
+    /// Function call duration
+    pub duration: Duration,
 }
 
 impl<'a> OutputData<'a> {
@@ -88,12 +91,13 @@ impl<'a> OutputData<'a> {
                 .expect("Unable to write output data"),
             OutputDataEvent::FunctionExit => file
                 .write_fmt(format_args!(
-                    "{}--exit: {} {} {} {}",
+                    "{}--exit: {} {} {} {} {}",
                     spaces,
                     self.function_name,
                     self.stack_depth,
                     self.cpu_instructions,
-                    self.cpu_instructions_calibrated
+                    self.cpu_instructions_calibrated,
+                    self.duration.as_micros(),
                 ))
                 .expect("Unable to write output data"),
         };
@@ -155,16 +159,17 @@ impl DataAnalyzer {
     /// Function stores passed data as csv file.
     pub fn save_csv<'a>(data: &Vec<OutputData<'a>>, file_name: &str) {
         if let Ok(mut file) = File::create(file_name) {
-            file.write_fmt(format_args!("event;function_name;stack_depth;instructions_count;instructions_count_calibrated\n")).expect(&format!("Unable write to {} file.", file_name));
+            file.write_fmt(format_args!("event;function_name;stack_depth;instructions_count;instructions_count_calibrated;duration_micorseconds\n")).expect(&format!("Unable write to {} file.", file_name));
 
             for v in data {
                 file.write_fmt(format_args!(
-                    "{};{};{};{};{}\n",
+                    "{};{};{};{};{};{}\n",
                     v.event,
                     v.function_name,
                     v.stack_depth,
                     v.cpu_instructions,
-                    v.cpu_instructions_calibrated
+                    v.cpu_instructions_calibrated,
+                    v.duration.as_micros()
                 ))
                 .expect(&format!("Unable write to {} file.", file_name));
             }
@@ -234,8 +239,8 @@ impl DataAnalyzer {
                     stack_fcn.push(v.function_name);
 
                     file.write_fmt(format_args!(
-                        "{}<{} ins=\"{}\"",
-                        spaces, v.function_name, cpu_ins_cal
+                        "{}<{} ins=\"{}\" duration_us=\"{}\"",
+                        spaces, v.function_name, cpu_ins_cal, v.duration.as_micros()
                     ))
                     .expect(&format!("Unable write to {} file.", file_name));
 
