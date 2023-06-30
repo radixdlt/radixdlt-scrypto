@@ -498,6 +498,7 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
     let mut new_packages = Vec::new();
     let mut new_components = Vec::new();
     let mut new_resources = Vec::new();
+    let mut new_vaults = Vec::new();
 
     for ((node_id, partition_num), substates) in substate_flash {
         let partition_key = SpreadPrefixKeyMapper::to_db_partition_key(&node_id, partition_num);
@@ -521,6 +522,9 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
         if node_id.is_global_resource_manager() {
             new_resources.push(ResourceAddress::new_or_panic(node_id.0));
         }
+        if node_id.is_internal_vault() {
+            new_vaults.push(InternalAddress::new_or_panic(node_id.0));
+        }
     }
 
     FlashReceipt {
@@ -530,6 +534,7 @@ pub fn create_substate_flash_for_genesis() -> FlashReceipt {
             new_packages,
             new_components,
             new_resources,
+            new_vaults,
             balance_changes: index_map_new(),
             direct_vault_updates: index_map_new(),
         },

@@ -123,6 +123,10 @@ impl CommitResult {
         &self.state_update_summary.new_resources
     }
 
+    pub fn new_vault_addresses(&self) -> &Vec<InternalAddress> {
+        &self.state_update_summary.new_vaults
+    }
+
     pub fn balance_changes(
         &self,
     ) -> &IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>> {

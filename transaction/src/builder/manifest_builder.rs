@@ -1011,6 +1011,11 @@ impl ManifestBuilder {
         })
     }
 
+    pub fn burn_resource(&mut self, bucket_id: ManifestBucket) -> &mut Self {
+        self.add_instruction(InstructionV1::BurnResource { bucket_id })
+            .0
+    }
+
     pub fn burn_all_from_worktop(&mut self, resource_address: ResourceAddress) -> &mut Self {
         self.take_all_from_worktop(resource_address, |builder, bucket_id| {
             builder

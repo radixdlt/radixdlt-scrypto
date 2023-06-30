@@ -1,5 +1,6 @@
 use crate::internal_prelude::*;
 
+pub mod fungible_resource;
 pub mod metadata;
 pub mod radiswap;
 pub mod transfer_xrd;
@@ -26,6 +27,9 @@ impl Iterator for AllScenarios {
             })),
             3 => Some(Box::new(|core| {
                 Box::new(metadata::MetadataScenario::new(core))
+            })),
+            4 => Some(Box::new(|core| {
+                Box::new(fungible_resource::FungibleResourceScenario::new(core))
             })),
             _ => None,
         }
