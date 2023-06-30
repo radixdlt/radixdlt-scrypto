@@ -153,12 +153,84 @@ impl ScenarioInstance for FungibleResourceScenario {
                     vec![&user_account_1.key],
                 )
             }
-            4 => {
+            5 => {
                 core.check_commit_success(&previous)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-freeze-withdraw",
                     |builder| builder.freeze_withdraw(vault1.unwrap()),
+                    vec![&user_account_1.key],
+                )
+            }
+            6 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-max-div-freeze-deposit",
+                    |builder| builder.freeze_deposit(vault1.unwrap()),
+                    vec![&user_account_1.key],
+                )
+            }
+            7 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-max-div-freeze-deposit",
+                    |builder| builder.freeze_burn(vault1.unwrap()),
+                    vec![&user_account_1.key],
+                )
+            }
+            8 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-max-div-recall-freezed-vault",
+                    |builder| {
+                        builder
+                            .recall(vault1.unwrap(), dec!("2"))
+                            .try_deposit_batch_or_abort(user_account_1.address)
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            9 => {
+                // FIXME: re-enable this after recalling from frozen vaults is allowed.
+                // core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-max-div-unfreeze-withdraw",
+                    |builder| builder.unfreeze_withdraw(vault1.unwrap()),
+                    vec![&user_account_1.key],
+                )
+            }
+            10 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-max-div-unfreeze-deposit",
+                    |builder| builder.unfreeze_deposit(vault1.unwrap()),
+                    vec![&user_account_1.key],
+                )
+            }
+            11 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-max-div-unfreeze-deposit",
+                    |builder| builder.unfreeze_burn(vault1.unwrap()),
+                    vec![&user_account_1.key],
+                )
+            }
+            12 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-max-div-recall-unfreezed-vault",
+                    |builder| {
+                        builder
+                            .recall(vault1.unwrap(), dec!("2"))
+                            .try_deposit_batch_or_abort(user_account_1.address)
+                    },
                     vec![&user_account_1.key],
                 )
             }
