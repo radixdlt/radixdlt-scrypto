@@ -246,7 +246,7 @@ pub struct EndState {
 }
 
 #[derive(Debug)]
-pub struct DescribedAddresses(IndexMap<String, GlobalAddress>);
+pub struct DescribedAddresses(pub IndexMap<String, GlobalAddress>);
 
 impl DescribedAddresses {
     pub fn new() -> Self {
