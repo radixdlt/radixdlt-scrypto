@@ -203,6 +203,29 @@ impl ScenarioCore {
         }
     }
 
+    pub fn check_commit_failure<'a>(
+        &self,
+        previous: &'a Option<&TransactionReceipt>,
+    ) -> Result<&'a RuntimeError, ScenarioError> {
+        match previous {
+            Some(receipt) => match &receipt.transaction_result {
+                TransactionResult::Commit(c) => match &c.outcome {
+                    TransactionOutcome::Success(_) => Err(ScenarioError::TransactionWasSuccess),
+                    TransactionOutcome::Failure(err) => Ok(err),
+                },
+                TransactionResult::Reject(result) => Err(ScenarioError::TransactionRejected(
+                    self.last_transaction_description(),
+                    result.clone(),
+                )),
+                TransactionResult::Abort(result) => Err(ScenarioError::TransactionAborted(
+                    self.last_transaction_description(),
+                    result.clone(),
+                )),
+            },
+            None => Err(ScenarioError::MissingPreviousResult),
+        }
+    }
+
     pub fn last_transaction_description(&self) -> String {
         self.last_transaction_name.clone().unwrap_or("".to_string())
     }
@@ -218,6 +241,7 @@ pub struct FullScenarioError {
 pub enum ScenarioError {
     PreviousResultProvidedAtStart,
     MissingPreviousResult,
+    TransactionWasSuccess,
     TransactionFailed(String, RuntimeError),
     TransactionRejected(String, RejectResult),
     TransactionAborted(String, AbortResult),

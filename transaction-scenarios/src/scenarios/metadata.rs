@@ -20,7 +20,8 @@ pub struct MetadataScenarioConfig {
     /* Entities - These get created during the scenario */
     pub package_with_metadata: Option<PackageAddress>,
     pub component_with_metadata: Option<ComponentAddress>,
-    pub resource_with_metadata: Option<ResourceAddress>,
+    pub resource_with_metadata1: Option<ResourceAddress>,
+    pub resource_with_metadata2: Option<ResourceAddress>,
 }
 
 impl Default for MetadataScenarioConfig {
@@ -29,7 +30,8 @@ impl Default for MetadataScenarioConfig {
             user_account_1: secp256k1_account_1(),
             package_with_metadata: Default::default(),
             component_with_metadata: Default::default(),
-            resource_with_metadata: Default::default(),
+            resource_with_metadata1: Default::default(),
+            resource_with_metadata2: Default::default(),
         }
     }
 }
@@ -54,7 +56,8 @@ impl ScenarioInstance for MetadataScenario {
             user_account_1,
             package_with_metadata,
             component_with_metadata,
-            resource_with_metadata,
+            resource_with_metadata1,
+            resource_with_metadata2,
         } = &mut self.config;
         let core = &mut self.core;
 
@@ -156,16 +159,109 @@ impl ScenarioInstance for MetadataScenario {
                     vec![],
                 )
             }
-
-            _ => {
+            4 => {
                 let commit_success = core.check_commit_success(&previous)?;
-                *resource_with_metadata = Some(commit_success.new_resource_addresses()[0]);
+                *resource_with_metadata1 = Some(commit_success.new_resource_addresses()[0]);
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "metadata-create-resource-with-metadata-partially-locked",
+                    |builder| {
+                        builder
+                            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+                            .create_fungible_resource(
+                                radix_engine::types::OwnerRole::Fixed(rule!(require(
+                                    NonFungibleGlobalId::from_public_key(
+                                        &user_account_1.public_key
+                                    )
+                                ))),
+                                false,
+                                18,
+                                metadata! {
+                                    init {
+                                        "locked_on_create" => "Hello".to_owned(), locked;
+                                        "locked_later" => "Hi".to_owned(), updatable;
+                                    }
+                                },
+                                btreemap! {
+                                    Mint => (rule!(deny_all), rule!(deny_all)),
+                                    Burn => (rule!(allow_all), rule!(deny_all)),
+                                },
+                                Some(100_000_000_000u64.into()),
+                            )
+                            .try_deposit_batch_or_abort(user_account_1.address)
+                    },
+                    vec![],
+                )
+            }
+            5 => {
+                let commit_success = core.check_commit_success(&previous)?;
+                *resource_with_metadata2 = Some(commit_success.new_resource_addresses()[0]);
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "metadata-update-initially-locked-metadata-fails",
+                    |builder| {
+                        builder.set_metadata(
+                            resource_with_metadata2.unwrap(),
+                            "locked_on_create",
+                            MetadataValue::Bool(true),
+                        )
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            6 => {
+                core.check_commit_failure(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "metadata-update-updatable-metadata-succeeds",
+                    |builder| {
+                        builder.set_metadata(
+                            resource_with_metadata2.unwrap(),
+                            "locked_later",
+                            MetadataValue::Bool(true),
+                        )
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            7 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "metadata-lock-metadata",
+                    |builder| {
+                        builder.freeze_metadata(
+                            resource_with_metadata2.unwrap().into(),
+                            "locked_later".to_string(),
+                        )
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            8 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "metadata-update-recently-locked-metadata-fails",
+                    |builder| {
+                        builder.set_metadata(
+                            resource_with_metadata2.unwrap(),
+                            "locked_on_create",
+                            MetadataValue::Bool(true),
+                        )
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            _ => {
+                core.check_commit_failure(&previous)?;
 
                 let addresses = DescribedAddresses::new()
                     .add("user_account_1", user_account_1.address.clone())
                     .add("package_with_metadata", package_with_metadata.unwrap())
                     .add("component_with_metadata", component_with_metadata.unwrap())
-                    .add("resource_with_metadata", resource_with_metadata.unwrap());
+                    .add("resource_with_metadata1", resource_with_metadata1.unwrap())
+                    .add("resource_with_metadata2", resource_with_metadata2.unwrap());
                 return Ok(core.finish_scenario(addresses));
             }
         };
