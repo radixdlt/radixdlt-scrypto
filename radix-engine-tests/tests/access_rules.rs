@@ -8,6 +8,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
+use scrypto::api::node_modules::auth::OWNER;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
@@ -368,7 +369,6 @@ fn update_rule() {
 fn change_lock_owner_role_rules() {
     // Arrange
     let mut test_runner = MutableAccessRulesTestRunner::new_with_owner_role(
-        rule!(allow_all),
         OwnerRole::Updatable(rule!(allow_all)),
     );
 
@@ -416,7 +416,6 @@ impl MutableAccessRulesTestRunner {
     }
 
     pub fn create_component_with_owner(
-        access_rule: AccessRule,
         owner_role: OwnerRole,
         test_runner: &mut TestRunner,
     ) -> TransactionReceipt {
@@ -427,7 +426,7 @@ impl MutableAccessRulesTestRunner {
                 package_address,
                 Self::BLUEPRINT_NAME,
                 "new_with_owner",
-                manifest_args!(owner_role, access_rule),
+                manifest_args!(owner_role),
             )
             .build();
         test_runner.execute_manifest_ignoring_fee(manifest, vec![])
@@ -436,10 +435,9 @@ impl MutableAccessRulesTestRunner {
     pub fn new_with_owner(update_access_rule: AccessRule) -> Self {
         let mut test_runner = TestRunner::builder().build();
         let receipt = Self::create_component_with_owner(
-            update_access_rule,
-            OwnerRole::None,
-            &mut test_runner,
-        );
+            OwnerRole::Fixed(update_access_rule), 
+            &mut test_runner
+	);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
@@ -449,10 +447,10 @@ impl MutableAccessRulesTestRunner {
         }
     }
 
-    pub fn new_with_owner_role(update_access_rule: AccessRule, owner_role: OwnerRole) -> Self {
+    pub fn new_with_owner_role(owner_role: OwnerRole) -> Self {
         let mut test_runner = TestRunner::builder().build();
         let receipt =
-            Self::create_component_with_owner(update_access_rule, owner_role, &mut test_runner);
+            Self::create_component_with_owner(owner_role, &mut test_runner);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
@@ -461,7 +459,7 @@ impl MutableAccessRulesTestRunner {
             initial_proofs: BTreeSet::new(),
         }
     }
-
+    
     pub fn new(roles: RolesInit) -> Self {
         let mut test_runner = TestRunner::builder().build();
         let receipt = Self::create_component(roles, &mut test_runner);

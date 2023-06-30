@@ -278,6 +278,7 @@ fn create_account_and_bucket_fail() {
             ))
         )
     });
+}
 
 #[test]
 fn virtual_account_has_expected_owner_key() {
