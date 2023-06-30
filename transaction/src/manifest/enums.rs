@@ -121,6 +121,8 @@ lazy_static! {
                 Withdraw = 4;
                 Deposit = 5;
                 Recall = 6;
+                Freeze = 7;
+                Unfreeze = 8;
             }
         );
 
