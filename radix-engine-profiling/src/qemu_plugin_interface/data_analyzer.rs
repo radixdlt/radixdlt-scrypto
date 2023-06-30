@@ -196,8 +196,9 @@ impl DataAnalyzer {
             for (i, v) in data.iter().enumerate() {
                 let mut cpu_ins_cal = v.cpu_instructions_calibrated;
                 let mut param: &Vec<OutputParam> = &Vec::new();
+                let mut duration = v.duration;
 
-                // get cpu instructions and param from exit event
+                // get cpu instructions, param and duration from exit event
                 if matches!(v.event, OutputDataEvent::FunctionEnter) {
                     let mut found = false;
                     for w in data[i + 1..].into_iter() {
@@ -207,6 +208,7 @@ impl DataAnalyzer {
                         {
                             cpu_ins_cal = w.cpu_instructions_calibrated;
                             param = &w.param;
+                            duration = w.duration;
                             found = true;
                             break;
                         }
@@ -240,7 +242,7 @@ impl DataAnalyzer {
 
                     file.write_fmt(format_args!(
                         "{}<{} ins=\"{}\" duration_us=\"{}\"",
-                        spaces, v.function_name, cpu_ins_cal, v.duration.as_micros()
+                        spaces, v.function_name, cpu_ins_cal, duration.as_micros()
                     ))
                     .expect(&format!("Unable write to {} file.", file_name));
 
