@@ -234,8 +234,157 @@ impl ScenarioInstance for FungibleResourceScenario {
                     vec![&user_account_1.key],
                 )
             }
-            _ => {
+
+            /* MIN DIVISIBILITY */
+            13 => {
                 core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-min-div-create",
+                    |builder| {
+                        builder
+                            .create_fungible_resource(
+                                OwnerRole::None,
+                                false,
+                                0,
+                                metadata! {},
+                                btreemap! {
+                                    Mint => (rule!(allow_all), rule!(deny_all)),
+                                    Burn =>  (rule!(allow_all), rule!(deny_all)),
+                                    UpdateNonFungibleData => (rule!(allow_all), rule!(deny_all)),
+                                    Withdraw => (rule!(allow_all), rule!(deny_all)),
+                                    Deposit => (rule!(allow_all), rule!(deny_all)),
+                                    Recall => (rule!(allow_all), rule!(deny_all)),
+                                    Freeze => (rule!(allow_all), rule!(deny_all)),
+                                },
+                                Some(dec!("100000")),
+                            )
+                            .try_deposit_batch_or_abort(user_account_1.address)
+                    },
+                    vec![],
+                )
+            }
+            14 => {
+                let commit_success = core.check_commit_success(&previous)?;
+                *min_divisibility_fungible_resource =
+                    Some(commit_success.new_resource_addresses()[0]);
+                *vault2 = Some(commit_success.new_vault_addresses()[0]);
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-min-div-mint-correct-granularity",
+                    |builder| {
+                        builder
+                            .mint_fungible(min_divisibility_fungible_resource.unwrap(), dec!("166"))
+                            .try_deposit_batch_or_abort(user_account_1.address)
+                    },
+                    vec![],
+                )
+            }
+            15 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-min-div-mint-wrong-granularity",
+                    |builder| {
+                        builder
+                            .mint_fungible(min_divisibility_fungible_resource.unwrap(), dec!("1.1"))
+                            .try_deposit_batch_or_abort(user_account_1.address)
+                    },
+                    vec![],
+                )
+            }
+            16 => {
+                core.check_commit_failure(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-min-div-transfer-correct-granularity",
+                    |builder| {
+                        builder
+                            .withdraw_from_account(
+                                user_account_1.address,
+                                min_divisibility_fungible_resource.unwrap(),
+                                dec!("234"),
+                            )
+                            .try_deposit_batch_or_abort(user_account_2.address)
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            17 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-min-div-transfer-wrong-granularity",
+                    |builder| {
+                        builder
+                            .withdraw_from_account(
+                                user_account_1.address,
+                                min_divisibility_fungible_resource.unwrap(),
+                                dec!("0.0001"),
+                            )
+                            .try_deposit_batch_or_abort(user_account_2.address)
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            18 => {
+                core.check_commit_failure(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-min-div-create-proof-correct-granularity",
+                    |builder| {
+                        builder.create_proof_from_account_of_amount(
+                            user_account_1.address,
+                            min_divisibility_fungible_resource.unwrap(),
+                            dec!("99"),
+                        )
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            19 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-min-div-create-proof-wrong-granularity",
+                    |builder| {
+                        builder.create_proof_from_account_of_amount(
+                            user_account_1.address,
+                            min_divisibility_fungible_resource.unwrap(),
+                            dec!("0.0001"),
+                        )
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            20 => {
+                core.check_commit_failure(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-recall-correct-granularity",
+                    |builder| {
+                        builder
+                            .recall(vault2.unwrap(), dec!("2"))
+                            .try_deposit_batch_or_abort(user_account_1.address)
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            21 => {
+                core.check_commit_success(&previous)?;
+
+                core.next_transaction_with_faucet_lock_fee(
+                    "nfr-recall-wrong-granularity",
+                    |builder| {
+                        builder
+                            .recall(vault2.unwrap(), dec!("123.12321"))
+                            .try_deposit_batch_or_abort(user_account_1.address)
+                    },
+                    vec![&user_account_1.key],
+                )
+            }
+            _ => {
+                core.check_commit_failure(&previous)?;
 
                 let addresses = DescribedAddresses::new()
                     .add("user_account_1", user_account_1.address.clone())
@@ -243,6 +392,10 @@ impl ScenarioInstance for FungibleResourceScenario {
                     .add(
                         "max_divisibility_fungible_resource",
                         max_divisibility_fungible_resource.unwrap(),
+                    )
+                    .add(
+                        "min_divisibility_fungible_resource",
+                        min_divisibility_fungible_resource.unwrap(),
                     );
                 return Ok(core.finish_scenario(addresses));
             }
