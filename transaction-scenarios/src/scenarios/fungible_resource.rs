@@ -361,7 +361,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_failure(&previous)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-recall-correct-granularity",
+                    "nfr-min-div-recall-correct-granularity",
                     |builder| {
                         builder
                             .recall(vault2.unwrap(), dec!("2"))
@@ -374,7 +374,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(&previous)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-recall-wrong-granularity",
+                    "nfr-min-div-recall-wrong-granularity",
                     |builder| {
                         builder
                             .recall(vault2.unwrap(), dec!("123.12321"))
