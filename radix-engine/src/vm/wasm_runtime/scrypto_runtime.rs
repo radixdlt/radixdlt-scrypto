@@ -358,7 +358,10 @@ where
             .map_err(InvokeError::downstream)
     }
 
-    fn consume_gas(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+    fn consume_wasm_execution_units(
+        &mut self,
+        n: u32,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
         // Use buffered gas
         if self.gas_buffer >= n {
             self.gas_buffer -= n;
@@ -371,7 +374,7 @@ where
             .consume_cost_units(ClientCostingEntry::RunWasmCode {
                 package_address: &self.package_address,
                 export_name: &self.export_name,
-                gas: amount,
+                wasm_execution_units: amount,
             })
             .map_err(InvokeError::downstream)?;
         self.gas_buffer += amount - n;

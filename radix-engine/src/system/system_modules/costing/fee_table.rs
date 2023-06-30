@@ -138,14 +138,14 @@ impl FeeTable {
 
     #[inline]
     pub fn run_native_code_cost(&self, package_address: &PackageAddress, export_name: &str) -> u32 {
-        let cpu_instructions = NATIVE_FUNCTION_BASE_COSTS
+        let native_execution_units = NATIVE_FUNCTION_BASE_COSTS
             .get(package_address)
             .and_then(|x| x.get(export_name).cloned())
             .unwrap_or(411524); // FIXME: this should be for not found only, when the costing for all native function are added, i.e. should be reduced.
 
         // FIXME: figure out the right conversion rate from CPU instructions to execution time
 
-        cpu_instructions / 10
+        native_execution_units / 10
     }
 
     #[inline]
