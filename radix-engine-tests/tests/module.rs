@@ -11,7 +11,7 @@ fn mixed_up_modules_causes_type_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             package_address,
             "ComponentModule",

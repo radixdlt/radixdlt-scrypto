@@ -1,6 +1,6 @@
 use crate::{
     kernel::actor::Actor,
-    track::interface::{StoreAccess, StoreAccessInfo},
+    track::interface::{StoreAccess, StoreAccessInfo, StoreCommit},
     types::*,
 };
 use lazy_static::lazy_static;
@@ -30,10 +30,8 @@ lazy_static! {
 ///
 /// ## High Level Guideline
 /// - Max cost unit limit: 100,000,000
-/// - Cost unit price: 0.000005 XRD per cost unit
-/// - Max execution costing, excluding tips: 500 XRD
-/// - Basic transfer transaction cost: < 5 XRD
-/// - Publishing a WASM package of max size costs: ~ 500 XRD
+/// - Cost unit price: 0.000001 XRD per cost unit
+/// - Max execution costing: 100 XRD + tipping + state expansion + royalty
 /// - Execution time for 100,000,000 cost units' worth of computation: <= 1 second
 /// - Baseline: 1 microsecond = 100 cost units
 /// - Non-time based costing will make the actual execution time less than anticipated
@@ -58,48 +56,53 @@ impl FeeTable {
 
         // Based on benchmark `bench_decode_sbor`
         // Time for processing a byte: 10.244 µs / 1068 = 0.00959176029
-        cast(size)
+
+        // Based on benchmark `bench_validate_sbor_payload`
+        // Time for processing a byte: 10.075 µs / 1169 = 0.00861847733
+
+        mul(cast(size), 2)
     }
 
     fn store_access_cost(store_access: &StoreAccessInfo) -> u32 {
         let mut sum = 0;
-        for info in &store_access.0 {
+        for info in store_access {
             let cost = match info {
                 StoreAccess::ReadFromDb(size) => {
-                    // Apply function: f(size) = 0.0009622109 * size + 389.5155
-                    add(cast(*size) / 1_000, 400)
+                    // Execution time (µs): 0.0009622109 * size + 389.5155
+                    // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
+                    // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                    add(cast(*size) / 10, 40_000)
                 }
                 StoreAccess::ReadFromDbNotFound => {
-                    // The cost for not found varies. Apply the max.
-                    4_000
+                    // Execution time (µs): varies, using max 1,600
+                    // Execution cost: 1,600 * 100
+                    // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                    160_000
                 }
-                StoreAccess::ReadFromTrack(size) => {
-                    // Apply function: f(size) = 0.00012232433 * size + 1.4939442
-                    add(cast(*size) / 10_000, 2)
-                }
-                StoreAccess::WriteToTrack(size) => {
-                    // Apply function: f(size) = 0.0004 * size + 1000
-                    // FIXME: add costing for state expansion
-                    add(cast(*size) / 2_500, 1_000)
-                }
-                StoreAccess::RewriteToTrack(size_old, size_new) => {
-                    if size_new <= size_old {
-                        // TODO: refund for reduced write size?
-                        0
-                    } else {
-                        // The non-constant part of write cost
-                        cast(size_new - size_old) / 2_500
-                    }
-                }
-                StoreAccess::DeleteFromTrack => {
-                    // The constant part of write cost (RocksDB tombstones a deleted entry)
-                    1_000
+                StoreAccess::NewEntryInTrack => {
+                    // The max number of entries is limited by limits module.
+                    0
                 }
             };
             sum = add(sum, cost);
         }
+        sum
+    }
 
-        mul(sum, 100 /* 1 us = 100 cost units */)
+    //======================
+    // Commit costs
+    //======================
+
+    #[inline]
+    pub fn store_commit_cost(&self, store_commit: &StoreCommit) -> u32 {
+        // Execution time (µs): 0.0025 * size + 1000
+        // Execution cost: (0.0025 * size + 1000) * 100 = 0.25 * size + 100,000
+        // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+        match store_commit {
+            StoreCommit::Insert { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Update { size, .. } => add(cast(*size) / 4, 100_000),
+            StoreCommit::Delete { .. } => 100_000,
+        }
     }
 
     //======================
@@ -108,8 +111,7 @@ impl FeeTable {
 
     #[inline]
     pub fn tx_base_cost(&self) -> u32 {
-        // 40_000 * 0.000005 = 0.2 XRD
-        40_000
+        50_000
     }
 
     #[inline]
@@ -117,15 +119,16 @@ impl FeeTable {
         // Rational:
         // Transaction payload is propagated over a P2P network.
         // Larger size may slows down the network performance.
-        // The size of a typical transfer transaction is 400 bytes, so the cost is 400 * 50 * 0.000005 = 0.1 XRD
+        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 50 = 20,000 cost units
+        // The max size of a transaction is 1 MiB, and the cost will be 1,000,000 * 50 = 50,000,000 cost units
+        // This is roughly 1/20 of storing data in substate store per current setup.
         mul(cast(size), 50)
     }
 
     #[inline]
     pub fn tx_signature_verification_cost(&self, n: usize) -> u32 {
         // Based on benchmark `bench_validate_secp256k1`
-        // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7_000
-        // The cost for a transfer transaction with two signatures will be 2 * 7_000 * 0.000005 = 0.07 XRD
+        // The cost for validating a single signature is: 67.522 µs * 100 units/µs = 7,000 cost units
         mul(cast(n), 7_000)
     }
 
@@ -169,6 +172,8 @@ impl FeeTable {
     //======================
     // Kernel costs
     //======================
+
+    // FIXME: adjust base cost for following ops
 
     #[inline]
     pub fn before_invoke_cost(&self, _actor: &Actor, input_size: usize) -> u32 {

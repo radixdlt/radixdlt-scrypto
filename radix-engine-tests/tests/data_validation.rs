@@ -10,7 +10,7 @@ fn setup_component(test_runner: &mut TestRunner) -> ComponentAddress {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
 
     let setup_manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(package_address, "DataValidation", "new", manifest_args!())
         .build();
     let setup_receipt = test_runner.execute_manifest(setup_manifest, vec![]);
@@ -27,7 +27,7 @@ fn create_manifest_with_middle(
     constructor: ManifestConstructor,
 ) -> TransactionManifestV1 {
     ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_from_worktop(RADIX_TOKEN, dec!("1"), |builder, bucket| {
             builder.take_from_worktop(RADIX_TOKEN, dec!("0"), |builder, empty_bucket| {

@@ -24,6 +24,27 @@ fn bench_decode_sbor(c: &mut Criterion) {
     });
 }
 
+fn bench_validate_sbor_payload(c: &mut Criterion) {
+    let package_definition =
+        manifest_decode::<PackageDefinition>(include_bytes!("../../assets/radiswap.schema"))
+            .unwrap();
+    let payload = scrypto_encode(&package_definition).unwrap();
+    println!("Payload size: {}", payload.len());
+    let (index, schema) =
+        generate_full_schema_from_single_type::<PackageDefinition, ScryptoCustomSchema>();
+
+    c.bench_function("costing::validate_sbor_payload", |b| {
+        b.iter(|| {
+            validate_payload_against_schema::<ScryptoCustomExtension, _>(
+                &payload,
+                &schema,
+                index,
+                &(),
+            )
+        })
+    });
+}
+
 fn bench_validate_secp256k1(c: &mut Criterion) {
     let message = "m".repeat(1_000_000);
     let message_hash = hash(message.as_bytes());
@@ -112,6 +133,7 @@ fn bench_validate_wasm(c: &mut Criterion) {
 criterion_group!(
     costing,
     bench_decode_sbor,
+    bench_validate_sbor_payload,
     bench_validate_secp256k1,
     bench_spin_loop,
     bench_instantiate_radiswap,

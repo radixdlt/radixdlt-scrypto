@@ -15,7 +15,7 @@ fn test_fee_states() {
     // Run test case
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 100.into())
+            .lock_fee(account, 500u32.into())
             .call_function(
                 package_address,
                 "FeeReserveChecker",
@@ -32,14 +32,14 @@ fn test_fee_states() {
         output.1,
         Decimal::try_from(DEFAULT_COST_UNIT_PRICE).unwrap()
     );
-    assert_eq!(output.2, 0);
+    assert_eq!(output.2, DEFAULT_TIP_PERCENTAGE as u32);
     // At the time checking fee balance, it should be still using system loan. This is because
     // loan is designed to be slightly more than what it takes to `lock_fee` from a component.
-    // Therefore, the balance should be between `100` and `100 + loan_in_xrd`.
+    // Therefore, the balance should be between `500` and `500 + loan_in_xrd`.
     assert!(
-        output.3 > dec!(100)
+        output.3 > dec!(500)
             && output.3
-                < dec!(100)
+                < dec!(500)
                     + Decimal::from(DEFAULT_SYSTEM_LOAN)
                         * (Decimal::try_from(DEFAULT_COST_UNIT_PRICE).unwrap()
                             * (dec!(1) + Decimal::from(DEFAULT_TIP_PERCENTAGE) / dec!(100)))

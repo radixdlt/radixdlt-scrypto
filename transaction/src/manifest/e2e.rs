@@ -27,7 +27,7 @@ pub mod tests {
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 ALLOCATE_GLOBAL_ADDRESS
     Address("${package_package_address}")
@@ -70,7 +70,7 @@ CALL_FUNCTION
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("5000")
 ;
 PUBLISH_PACKAGE_ADVANCED
     Enum<0u8>()
@@ -755,7 +755,7 @@ SET_AND_LOCK_ROLE
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<0u8>()
@@ -828,7 +828,7 @@ CALL_METHOD
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 CREATE_FUNGIBLE_RESOURCE
     Enum<0u8>()
@@ -897,7 +897,7 @@ CREATE_FUNGIBLE_RESOURCE
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<0u8>()
@@ -982,7 +982,7 @@ CALL_METHOD
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 CREATE_NON_FUNGIBLE_RESOURCE
     Enum<0u8>()
@@ -1051,7 +1051,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 CALL_METHOD
     Address("${account_address}")
@@ -1087,7 +1087,7 @@ CALL_METHOD
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 CALL_METHOD
     Address("${account_address}")
@@ -1217,7 +1217,7 @@ CREATE_ACCESS_CONTROLLER
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 CALL_METHOD
     Address("${account_address}")
@@ -1298,7 +1298,7 @@ CALL_METHOD
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 CALL_METHOD
     Address("${account_address}")
@@ -1339,7 +1339,7 @@ CALL_METHOD
 CALL_METHOD
     Address("${account_address}")
     "lock_fee"
-    Decimal("10")
+    Decimal("500")
 ;
 CALL_METHOD
     Address("${account_address}")

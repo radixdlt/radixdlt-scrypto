@@ -16,7 +16,7 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .call_function(package_address, "BucketTest", method_name, args)
         .call_method(
             account,
@@ -104,7 +104,7 @@ fn test_bucket_of_badges() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .call_function(package_address, "BadgeTest", "combine", manifest_args!())
         .call_function(package_address, "BadgeTest", "split", manifest_args!())
         .call_function(package_address, "BadgeTest", "borrow", manifest_args!())
@@ -132,7 +132,7 @@ fn test_take_with_invalid_granularity() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .withdraw_from_account(account, resource_address, 100.into())
         .take_all_from_worktop(resource_address, |builder, bucket_id| {
             let bucket = bucket_id;
@@ -170,7 +170,7 @@ fn test_take_with_negative_amount() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .withdraw_from_account(account, resource_address, 100.into())
         .take_all_from_worktop(resource_address, |builder, bucket_id| {
             let bucket = bucket_id;
@@ -207,7 +207,7 @@ fn create_empty_bucket() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })
@@ -242,7 +242,7 @@ fn test_drop_locked_fungible_bucket() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .call_function(
             package_address,
             "BucketTest",
@@ -281,7 +281,7 @@ fn test_drop_locked_non_fungible_bucket() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 50.into())
+        .lock_fee(account, 500u32.into())
         .call_function(
             package_address,
             "BucketTest",

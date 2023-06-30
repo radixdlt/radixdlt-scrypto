@@ -112,7 +112,7 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         .create_instance(address, export.code_hash, &instrumented_code.code)
                 };
 
-                api.consume_cost_units(ClientCostingEntry::RunWasmCodePrepare {
+                api.consume_cost_units(ClientCostingEntry::PrepareWasmCode {
                     size: instrumented_code.code.len(),
                 })?;
 

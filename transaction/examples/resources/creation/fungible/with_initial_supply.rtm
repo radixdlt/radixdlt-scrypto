@@ -11,7 +11,7 @@
 CALL_METHOD 
     Address("${account_address}") 
     "lock_fee"
-    Decimal("10");
+    Decimal("500");
 
 # Creating a new resource with a divisibility of 18 and a name of `MyResource`. The resource has 
 # default resource behavior where it can be withdrawn and deposited by anybody.

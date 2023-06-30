@@ -34,7 +34,7 @@ fn bench_transfer(c: &mut Criterion) {
                 NonFungibleGlobalId::from_public_key(&public_key)
             )));
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET, 50u32.into())
+                .lock_fee(FAUCET, 500u32.into())
                 .new_account_advanced(owner_rule)
                 .build();
             let account = execute_and_commit_transaction(
@@ -59,7 +59,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Fill first account
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET, 50u32.into())
+        .lock_fee(FAUCET, 500u32.into())
         .call_method(FAUCET, "free", manifest_args!())
         .call_method(
             account1,
@@ -83,7 +83,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 50u32.into())
+        .lock_fee(account1, 500u32.into())
         .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
         .call_method(
             account2,

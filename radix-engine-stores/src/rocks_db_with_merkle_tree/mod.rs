@@ -26,7 +26,10 @@ pub struct RocksDBWithMerkleTreeSubstateStore {
 
 impl RocksDBWithMerkleTreeSubstateStore {
     pub fn standard(root: PathBuf) -> Self {
-        Self::with_options(&Options::default(), root)
+        let mut options = Options::default();
+        options.create_if_missing(true);
+        options.create_missing_column_families(true);
+        Self::with_options(&options, root)
     }
 
     pub fn with_options(options: &Options, root: PathBuf) -> Self {

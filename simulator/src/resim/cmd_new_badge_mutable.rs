@@ -77,7 +77,7 @@ impl NewBadgeMutable {
         };
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 50u32.into())
+            .lock_fee(FAUCET, 500u32.into())
             .new_badge_mutable(OwnerRole::None, metadata, self.minter_badge.clone().into())
             .build();
         handle_manifest(

@@ -95,7 +95,7 @@ impl ScenarioCore {
         signers: Vec<&PrivateKey>,
     ) -> NextTransaction {
         let mut manifest_builder = ManifestBuilder::new();
-        manifest_builder.lock_fee(FAUCET, dec!(100));
+        manifest_builder.lock_fee(FAUCET, dec!(5000));
         create_manifest(&mut manifest_builder);
         self.next_transaction(logical_name, manifest_builder, signers)
     }

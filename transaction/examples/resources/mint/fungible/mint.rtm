@@ -15,7 +15,7 @@
 CALL_METHOD 
     Address("${account_address}") 
     "lock_fee"
-    Decimal("10");
+    Decimal("500");
 
 # We have a badge in our account component which allows us to mint this resource. So, we create a 
 # proof from this badge which will allow us to mint the resource

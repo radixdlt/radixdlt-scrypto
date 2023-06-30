@@ -11,7 +11,7 @@ pub enum ClientCostingEntry<'a> {
         export_name: &'a str,
         gas: u32,
     },
-    RunWasmCodePrepare {
+    PrepareWasmCode {
         size: usize,
     },
 }
