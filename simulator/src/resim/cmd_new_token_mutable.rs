@@ -72,7 +72,7 @@ impl NewTokenMutable {
 
         let metadata = ModuleConfig {
             init: metadata.into(),
-            roles: Roles::default(),
+            roles: RolesInit::default(),
         };
 
         let manifest = ManifestBuilder::new()
