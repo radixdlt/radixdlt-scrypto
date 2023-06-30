@@ -146,7 +146,7 @@ pub enum Instruction {
     },
 
     /* Call direct vault method aliases */
-    RecallVault {
+    RecallFromVault {
         vault_id: Value,
         args: Vec<Value>,
     },
