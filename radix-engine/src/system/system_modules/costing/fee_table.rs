@@ -163,7 +163,7 @@ impl FeeTable {
 
         // FIXME: figure out the right conversion rate from CPU instructions to execution time
 
-        cpu_instructions / 10
+        cpu_instructions / 100
     }
 
     #[inline]

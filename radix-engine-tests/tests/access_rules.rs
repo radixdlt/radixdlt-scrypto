@@ -8,7 +8,6 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
-use scrypto::api::node_modules::auth::OWNER;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
