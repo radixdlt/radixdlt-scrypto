@@ -162,7 +162,7 @@ fn can_set_metadata_after_securify() {
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_proof_from_account(account, IDENTITY_OWNER_BADGE)
         .set_metadata(
-            identity_address.into(),
+            identity_address,
             "name".to_string(),
             MetadataValue::String("best package ever!".to_string()),
         )
@@ -193,7 +193,7 @@ fn can_set_metadata_on_securified_identity() {
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_proof_from_account(account, IDENTITY_OWNER_BADGE)
         .set_metadata(
-            identity_address.into(),
+            identity_address,
             "name".to_string(),
             MetadataValue::String("best package ever!".to_string()),
         )

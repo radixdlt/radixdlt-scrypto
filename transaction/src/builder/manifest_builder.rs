@@ -831,9 +831,9 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn set_metadata<S: ToString>(
+    pub fn set_metadata<A: Into<DynamicGlobalAddress>, S: ToString>(
         &mut self,
-        address: GlobalAddress,
+        address: A,
         key: S,
         value: MetadataValue,
     ) -> &mut Self {

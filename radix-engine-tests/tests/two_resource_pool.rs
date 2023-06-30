@@ -959,7 +959,7 @@ impl TestEnvironment {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_component_address.into(), key, value)
+            .set_metadata(self.pool_component_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -971,7 +971,7 @@ impl TestEnvironment {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_unit_resource_address.into(), key, value)
+            .set_metadata(self.pool_unit_resource_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
