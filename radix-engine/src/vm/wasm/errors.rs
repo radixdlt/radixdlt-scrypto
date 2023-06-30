@@ -11,7 +11,7 @@ pub enum PrepareError {
     DeserializationError,
     /// Failed to validate
     /// See <https://webassembly.github.io/spec/core/valid/index.html>
-    ValidationError,
+    ValidationError(String),
     /// Failed to serialize.
     SerializationError,
     /// The wasm module contains a start function.

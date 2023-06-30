@@ -23,16 +23,13 @@ impl WasmModule {
         features.floats = false;
 
         module.validate(features).map_err(|err| {
-            if err
-                .to_string()
-                .starts_with("floating-point support is disabled")
-                | err
-                    .to_string()
-                    .starts_with("floating-point instruction disallowed")
+            let err = err.to_string();
+            if err.starts_with("floating-point support is disabled")
+                | err.starts_with("floating-point instruction disallowed")
             {
                 PrepareError::FloatingPointNotAllowed
             } else {
-                PrepareError::ValidationError
+                PrepareError::ValidationError(err)
             }
         })?;
 
