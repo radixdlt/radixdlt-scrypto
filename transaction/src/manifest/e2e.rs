@@ -249,7 +249,7 @@ CALL_METHOD
             vec![],
             apply_address_replacements(
                 r##"
-RECALL_VAULT
+RECALL_FROM_VAULT
     Address("${vault_address}")
     Decimal("1.2")
 ;

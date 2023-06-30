@@ -160,7 +160,7 @@ impl InstructionIdent {
             // ==============
             // Call direct vault method aliases
             // ==============
-            "RECALL_VAULT" => InstructionIdent::RecallVault,
+            "RECALL_FROM_VAULT" => InstructionIdent::RecallVault,
             "FREEZE_VAULT" => InstructionIdent::FreezeVault,
             "UNFREEZE_VAULT" => InstructionIdent::UnfreezeVault,
 
