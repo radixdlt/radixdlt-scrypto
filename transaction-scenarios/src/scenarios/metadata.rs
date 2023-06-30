@@ -277,7 +277,7 @@ impl ScenarioInstance for MetadataScenario {
                 return Ok(NextAction::Completed(core.finish_scenario(output)));
             }
         };
-        Ok(NextAction::Transaction(up_next))
+        Ok(NextAction::Transaction(up_next?))
     }
 }
 

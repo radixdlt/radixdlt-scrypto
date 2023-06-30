@@ -93,7 +93,7 @@ impl ScenarioCore {
         logical_name: &str,
         create_manifest: impl FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
         signers: Vec<&PrivateKey>,
-    ) -> NextTransaction {
+    ) -> Result<NextTransaction, ScenarioError> {
         let mut manifest_builder = ManifestBuilder::new();
         manifest_builder.lock_fee(FAUCET, dec!(5000));
         create_manifest(&mut manifest_builder);
@@ -103,7 +103,7 @@ impl ScenarioCore {
     pub fn next_transaction_free_xrd_from_faucet(
         &mut self,
         to_account: ComponentAddress,
-    ) -> NextTransaction {
+    ) -> Result<NextTransaction, ScenarioError> {
         self.next_transaction_with_faucet_lock_fee(
             "faucet-top-up",
             |builder| {
@@ -130,7 +130,7 @@ impl ScenarioCore {
         logical_name: &str,
         manifest_builder: ManifestBuilder,
         signers: Vec<&PrivateKey>,
-    ) -> NextTransaction {
+    ) -> Result<NextTransaction, ScenarioError> {
         let nonce = self.nonce;
         self.nonce += 1;
         let manifest = manifest_builder.build();
@@ -150,7 +150,7 @@ impl ScenarioCore {
         }
         builder = builder.notarize(&self.default_notary);
         self.last_transaction_name = Some(logical_name.to_owned());
-        NextTransaction::of(logical_name.to_owned(), self.stage_counter, builder.build())
+        Ok(NextTransaction::of(logical_name.to_owned(), self.stage_counter, builder.build()))
     }
 
     pub fn finish_scenario(&self, output: ScenarioOutput) -> EndState {
@@ -248,6 +248,7 @@ pub enum ScenarioError {
     TransactionRejected(String, RejectResult),
     TransactionAborted(String, AbortResult),
     TransactionValidationFailed(String, TransactionValidationError),
+    StateReadBeforeSet,
     Custom(String),
 }
 
@@ -465,5 +466,37 @@ impl<Config, State> ScenarioInstance for Scenario<Config, State> {
             NextAction::Completed(core.finish_scenario(output))
         };
         Ok(next_action)
+    }
+}
+
+/// A helper class for transaction scenario state entries
+pub(crate) struct State<T>(Option<T>);
+
+impl<T> State<T> {
+    #[allow(unused)]
+    pub fn as_ref(&self) -> Result<&T, ScenarioError> {
+        self.0.as_ref().ok_or(ScenarioError::StateReadBeforeSet)
+    }
+
+    pub fn set(&mut self, value: T) {
+        self.0 = Some(value);
+    }
+}
+
+impl<T: Clone> State<T> {
+    pub fn get(&self) -> Result<T, ScenarioError> {
+        self.0.as_ref().map(Clone::clone).ok_or(ScenarioError::StateReadBeforeSet)
+    }
+
+    // TODO - remove this when we create a better manifest builder which doesn't use callbacks,
+    // and so have easier error propogation
+    pub fn unwrap(&self) -> T {
+        self.0.as_ref().map(Clone::clone).unwrap()
+    }
+}
+
+impl<T> Default for State<T> {
+    fn default() -> Self {
+        Self(Default::default())
     }
 }

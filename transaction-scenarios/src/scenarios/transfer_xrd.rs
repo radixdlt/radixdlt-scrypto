@@ -33,11 +33,11 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
 
         #[allow(unused_variables)]
         ScenarioBuilder::new(core, metadata, config, start_state)
-            .successful_transaction(|core, config, state| {
-                Ok(core.next_transaction_free_xrd_from_faucet(config.from_account.address))
+            .successful_transaction(|core, config, state| -> Result<_, ScenarioError> {
+                core.next_transaction_free_xrd_from_faucet(config.from_account.address)
             })
-            .successful_transaction(|core, config, state| {
-                Ok(core.next_transaction_with_faucet_lock_fee(
+            .successful_transaction(|core, config, state| -> Result<_, ScenarioError> {
+                core.next_transaction_with_faucet_lock_fee(
                     "transfer--try_deposit_batch_or_abort",
                     |builder| {
                         builder
@@ -45,10 +45,10 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                             .try_deposit_batch_or_abort(config.to_account_1.address)
                     },
                     vec![&config.from_account.key],
-                ))
+                )
             })
-            .successful_transaction(|core, config, state| {
-                Ok(core.next_transaction_with_faucet_lock_fee(
+            .successful_transaction(|core, config, state| -> Result<_, ScenarioError> {
+                core.next_transaction_with_faucet_lock_fee(
                     "transfer--try_deposit_batch_or_refund",
                     |builder| {
                         builder
@@ -56,10 +56,10 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                             .try_deposit_batch_or_refund(config.to_account_1.address)
                     },
                     vec![&config.from_account.key],
-                ))
+                )
             })
-            .successful_transaction(|core, config, state| {
-                Ok(core.next_transaction_with_faucet_lock_fee(
+            .successful_transaction(|core, config, state| -> Result<_, ScenarioError> {
+                core.next_transaction_with_faucet_lock_fee(
                     "self-transfer--deposit_batch",
                     |builder| {
                         builder
@@ -67,10 +67,10 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                             .deposit_batch(config.from_account.address)
                     },
                     vec![&config.from_account.key],
-                ))
+                )
             })
-            .successful_transaction(|core, config, state| {
-                Ok(core.next_transaction_with_faucet_lock_fee(
+            .successful_transaction(|core, config, state| -> Result<_, ScenarioError> {
+                core.next_transaction_with_faucet_lock_fee(
                     "multi-transfer--deposit_batch",
                     |builder| {
                         builder
@@ -80,19 +80,14 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                             .try_deposit_batch_or_abort(config.to_account_2.address)
                     },
                     vec![&config.from_account.key],
-                ))
+                )
             })
-            .finalize(|core, config, state| {
-                let TransferXrdConfig {
-                    from_account,
-                    to_account_1,
-                    to_account_2,
-                } = config;
+            .finalize(|core, config, state| -> Result<_, ScenarioError> {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                        .add("from_account", from_account)
-                        .add("to_account_1", to_account_1)
-                        .add("to_account_2", to_account_2),
+                        .add("from_account", config.from_account.address)
+                        .add("to_account_1", config.to_account_1.address)
+                        .add("to_account_2", config.to_account_2.address),
                 })
             })
     }

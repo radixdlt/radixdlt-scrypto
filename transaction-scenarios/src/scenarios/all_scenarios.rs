@@ -1,5 +1,4 @@
 use super::*;
-use crate::internal_prelude::*;
 
 pub fn get_builder_for_every_scenario() -> AllScenariosIterator {
     AllScenariosIterator::default()
@@ -19,7 +18,7 @@ impl Iterator for AllScenariosIterator {
             1 => Some(Box::new(|core| {
                 transfer_xrd::TransferXrdScenarioCreator::create(core)
             })),
-            2 => Some(Box::new(|core| radiswap::RadiswapScenario::create(core))),
+            2 => Some(Box::new(|core| radiswap::RadiswapScenarioCreator::create(core))),
             3 => Some(Box::new(|core| metadata::MetadataScenario::create(core))),
             _ => None,
         }
