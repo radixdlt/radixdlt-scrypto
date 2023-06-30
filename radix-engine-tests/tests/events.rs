@@ -13,11 +13,12 @@ use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::*;
+use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
-use radix_engine_interface::{metadata, metadata_init, roles_init};
+use radix_engine_interface::{burnable, internal_roles_struct, metadata, metadata_init, mintable, recallable, role_definition_entry, roles_init};
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
@@ -291,9 +292,12 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                btreeset!(Recall),
-                roles_init! {
-                    RECALLER_ROLE => rule!(allow_all), locked;
+                NonFungibleResourceFeatures {
+                    recallable: recallable! {
+                        recaller => rule!(allow_all), locked;
+                        recaller_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
                 },
                 metadata!(),
                 Some([(id.clone(), EmptyStruct {})]),
@@ -390,8 +394,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             OwnerRole::None,
             false,
             18,
-            btreeset!(),
-            roles_init!(),
+            FungibleResourceFeatures::default(),
             metadata!(),
             Some(1.into()),
         )
@@ -454,10 +457,16 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
                 OwnerRole::None,
                 false,
                 18,
-                btreeset!(Mint, Burn),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
-                    BURNER_ROLE => rule!(allow_all), locked;
+                FungibleResourceFeatures {
+                    mintable: mintable! {
+                        minter => rule!(allow_all), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    burnable: burnable! {
+                        burner => rule!(allow_all), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
                 },
                 metadata!(),
                 None,
@@ -538,10 +547,16 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                btreeset!(Mint, Burn),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
-                    BURNER_ROLE => rule!(allow_all), locked;
+                NonFungibleResourceFeatures {
+                    mintable: mintable! {
+                        minter => rule!(allow_all), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    burnable: burnable! {
+                        burner => rule!(allow_all), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
                 },
                 metadata!(),
                 None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
@@ -1466,12 +1481,20 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
             OwnerRole::Fixed(AccessRule::AllowAll),
             false,
             18,
-            btreeset!(Mint, Burn, Recall),
-            roles_init! {
-                MINTER_ROLE => rule!(allow_all), locked;
-                BURNER_ROLE => rule!(allow_all), locked;
-                RECALLER_ROLE => rule!(allow_all), locked;
-                NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
+            FungibleResourceFeatures {
+                mintable: mintable! {
+                    minter => rule!(allow_all), locked;
+                    minter_updater => rule!(deny_all), locked;
+                },
+                burnable: burnable! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
+                recallable: recallable! {
+                    recaller => rule!(allow_all), locked;
+                    recaller_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
             },
             metadata!(),
             None,

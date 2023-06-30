@@ -17,7 +17,9 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{metadata_init, roles_init, rule};
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
+use radix_engine_interface::{metadata_init, mintable, internal_roles_struct, roles_init, role_definition_entry, rule};
 
 const MILLIS_IN_SECOND: i64 = 1000;
 const SECONDS_IN_MINUTE: i64 = 60;
@@ -241,10 +243,12 @@ impl ConsensusManagerBlueprint {
                 OwnerRole::Fixed(rule!(require(global_caller(consensus_manager_address)))),
                 NonFungibleIdType::Bytes,
                 true,
-                btreeset!(Mint),
-                roles_init! {
-                    MINTER_ROLE => rule!(require(global_id)), locked;
-                    MINTER_UPDATER_ROLE => rule!(deny_all), locked;
+                NonFungibleResourceFeatures {
+                    mintable: mintable! {
+                        minter => rule!(require(global_id)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
                 },
                 metadata_init! {
                     "name" => "Validator Owner Badges".to_owned(), locked;

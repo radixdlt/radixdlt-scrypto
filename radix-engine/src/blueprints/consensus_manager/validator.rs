@@ -16,7 +16,9 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{metadata_init, roles_init, rule};
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
+use radix_engine_interface::{burnable, internal_roles_struct, metadata_init, mintable, roles_init, role_definition_entry, rule};
 use sbor::rust::mem;
 
 use super::{
@@ -1091,12 +1093,16 @@ impl ValidatorCreator {
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             true,
             18,
-            btreeset!(Mint, Burn),
-            roles_init! {
-                MINTER_ROLE => rule!(require(global_caller(validator_address))), locked;
-                MINTER_UPDATER_ROLE => rule!(deny_all), locked;
-                BURNER_ROLE => rule!(require(global_caller(validator_address))), locked;
-                BURNER_UPDATER_ROLE => rule!(deny_all), locked;
+            FungibleResourceFeatures {
+                mintable: mintable! {
+                        minter => rule!(require(global_caller(validator_address))), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                burnable: burnable! {
+                        burner => rule!(require(global_caller(validator_address))), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    },
+                ..Default::default()
             },
             metadata_init! {
                 "name" => "Liquid Stake Units".to_owned(), locked;
@@ -1123,12 +1129,16 @@ impl ValidatorCreator {
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             NonFungibleIdType::RUID,
             true,
-            btreeset!(Mint, Burn),
-            roles_init! {
-                MINTER_ROLE => rule!(require(global_caller(validator_address))), locked;
-                MINTER_UPDATER_ROLE => rule!(deny_all), locked;
-                BURNER_ROLE => rule!(require(global_caller(validator_address))), locked;
-                BURNER_UPDATER_ROLE => rule!(deny_all), locked;
+            NonFungibleResourceFeatures {
+                mintable: mintable! {
+                        minter => rule!(require(global_caller(validator_address))), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                burnable: burnable! {
+                        burner => rule!(require(global_caller(validator_address))), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    },
+                ..Default::default()
             },
             metadata_init! {
                 "name" => "Stake Claims NFTs".to_owned(), locked;

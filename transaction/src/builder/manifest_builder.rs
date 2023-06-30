@@ -443,8 +443,7 @@ impl ManifestBuilder {
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        supported_actions: BTreeSet<ResourceFeature>,
-        roles: RolesInit,
+        resource_features: FungibleResourceFeatures,
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
@@ -461,7 +460,6 @@ impl ManifestBuilder {
                         track_total_supply,
                         metadata,
                         resource_features,
-                        roles,
                         initial_supply,
                         address_reservation: None,
                     }
@@ -478,7 +476,6 @@ impl ManifestBuilder {
                     track_total_supply,
                     metadata,
                     resource_features,
-                    roles,
                     address_reservation: None,
                 }),
             });
@@ -493,8 +490,7 @@ impl ManifestBuilder {
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
-        supported_actions: BTreeSet<ResourceFeature>,
-        roles: RolesInit,
+        resource_features: NonFungibleResourceFeatures,
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Option<T>,
     ) -> &mut Self
@@ -520,7 +516,6 @@ impl ManifestBuilder {
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                         resource_features,
-                        roles,
                         metadata,
                         entries,
                         address_reservation: None,
@@ -539,7 +534,6 @@ impl ManifestBuilder {
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
                         resource_features,
-                        roles,
                         metadata,
                         address_reservation: None,
                     }
@@ -910,20 +904,23 @@ impl ManifestBuilder {
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
-        owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
-        minter_rule: AccessRule,
+        owner_rule: AccessRule,
     ) -> &mut Self {
         self.create_fungible_resource(
-            owner_role,
+            OwnerRole::Fixed(owner_rule),
             true,
             18,
-            btreeset!(Mint, Burn),
-            roles_init! {
-                MINTER_ROLE => minter_rule.clone(), locked;
-                MINTER_UPDATER_ROLE => AccessRule::DenyAll, locked;
-                BURNER_ROLE => minter_rule.clone(), locked;
-                BURNER_UPDATER_ROLE => AccessRule::DenyAll, locked;
+            FungibleResourceFeatures {
+                mintable: mintable! {
+                    minter => OWNER, locked;
+                    minter_updater => OWNER, locked;
+                },
+                burnable: burnable! {
+                    burner => OWNER, locked;
+                    burner_updater => OWNER, locked;
+                },
+                ..Default::default()
             },
             metadata,
             None,
@@ -941,8 +938,7 @@ impl ManifestBuilder {
             owner_role,
             true,
             18,
-            btreeset!(),
-            roles_init!(),
+            FungibleResourceFeatures::default(),
             metadata,
             Some(initial_supply),
         )
@@ -951,20 +947,23 @@ impl ManifestBuilder {
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         &mut self,
-        owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
-        minter_rule: AccessRule,
+        owner_rule: AccessRule,
     ) -> &mut Self {
         self.create_fungible_resource(
-            owner_role,
+            OwnerRole::Fixed(owner_rule),
             false,
             0,
-            btreeset!(Mint, Burn),
-            roles_init! {
-                MINTER_ROLE => minter_rule.clone(), locked;
-                MINTER_UPDATER_ROLE => AccessRule::DenyAll, locked;
-                BURNER_ROLE => minter_rule.clone(), locked;
-                BURNER_UPDATER_ROLE => AccessRule::DenyAll, locked;
+            FungibleResourceFeatures {
+                mintable: mintable! {
+                    minter => OWNER, locked;
+                    minter_updater => OWNER, locked;
+                },
+                burnable: burnable! {
+                    burner => OWNER, locked;
+                    burner_updater => OWNER, locked;
+                },
+                ..Default::default()
             },
             metadata,
             None,
@@ -982,8 +981,7 @@ impl ManifestBuilder {
             owner_role,
             false,
             0,
-            btreeset!(),
-            RolesInit::default(),
+            FungibleResourceFeatures::default(),
             metadata,
             Some(initial_supply),
         )

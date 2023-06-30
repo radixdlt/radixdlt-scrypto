@@ -77,7 +77,7 @@ impl NewTokenMutable {
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET, 50u32.into())
-            .new_token_mutable(OwnerRole::None, metadata, self.minter_badge.clone().into())
+            .new_token_mutable(metadata, self.minter_badge.clone().into())
             .build();
         handle_manifest(
             manifest,

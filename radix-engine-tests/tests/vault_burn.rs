@@ -2,7 +2,7 @@ use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::{metadata, metadata_init, roles_init};
+use radix_engine_interface::{metadata, metadata_init};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -17,15 +17,7 @@ fn package_burn_is_only_callable_within_resource_package() {
                 OwnerRole::None,
                 true,
                 18,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
-                    BURNER_ROLE => rule!(allow_all), locked;
-                    WITHDRAWER_ROLE => rule!(allow_all), locked;
-                    DEPOSITOR_ROLE => rule!(allow_all), locked;
-                    RECALLER_ROLE => rule!(allow_all), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
-                },
+                FungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 None,
             )
@@ -67,15 +59,7 @@ fn can_burn_by_amount_from_fungible_vault() {
                 OwnerRole::None,
                 true,
                 18,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
-                    BURNER_ROLE => rule!(allow_all), locked;
-                    WITHDRAWER_ROLE => rule!(allow_all), locked;
-                    DEPOSITOR_ROLE => rule!(allow_all), locked;
-                    RECALLER_ROLE => rule!(allow_all), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
-                },
+                FungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 None,
             )
@@ -131,15 +115,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
-                    BURNER_ROLE => rule!(allow_all), locked;
-                    WITHDRAWER_ROLE => rule!(allow_all), locked;
-                    DEPOSITOR_ROLE => rule!(allow_all), locked;
-                    RECALLER_ROLE => rule!(allow_all), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
-                },
+                NonFungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -201,15 +177,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
-                    BURNER_ROLE => rule!(allow_all), locked;
-                    WITHDRAWER_ROLE => rule!(allow_all), locked;
-                    DEPOSITOR_ROLE => rule!(allow_all), locked;
-                    RECALLER_ROLE => rule!(allow_all), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
-                },
+                NonFungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -278,15 +246,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
                 OwnerRole::None,
                 true,
                 18,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => virtual_signature_rule.clone(), locked;
-                    BURNER_ROLE => virtual_signature_rule.clone(), locked;
-                    WITHDRAWER_ROLE => virtual_signature_rule.clone(), locked;
-                    DEPOSITOR_ROLE => virtual_signature_rule.clone(), locked;
-                    RECALLER_ROLE => virtual_signature_rule.clone(), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => virtual_signature_rule.clone(), locked;
-                },
+                FungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 None,
             )
@@ -346,15 +306,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => virtual_signature_rule.clone(), locked;
-                    BURNER_ROLE => virtual_signature_rule.clone(), locked;
-                    WITHDRAWER_ROLE => virtual_signature_rule.clone(), locked;
-                    DEPOSITOR_ROLE => virtual_signature_rule.clone(), locked;
-                    RECALLER_ROLE => virtual_signature_rule.clone(), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => virtual_signature_rule.clone(), locked;
-                },
+                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -420,15 +372,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => virtual_signature_rule.clone(), locked;
-                    BURNER_ROLE => virtual_signature_rule.clone(), locked;
-                    WITHDRAWER_ROLE => virtual_signature_rule.clone(), locked;
-                    DEPOSITOR_ROLE => virtual_signature_rule.clone(), locked;
-                    RECALLER_ROLE => virtual_signature_rule.clone(), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => virtual_signature_rule.clone(), locked;
-                },
+                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -498,15 +442,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
                 OwnerRole::None,
                 true,
                 18,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => virtual_signature_rule.clone(), locked;
-                    BURNER_ROLE => virtual_signature_rule.clone(), locked;
-                    WITHDRAWER_ROLE => virtual_signature_rule.clone(), locked;
-                    DEPOSITOR_ROLE => virtual_signature_rule.clone(), locked;
-                    RECALLER_ROLE => virtual_signature_rule.clone(), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => virtual_signature_rule.clone(), locked;
-                },
+                FungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 None,
             )
@@ -565,15 +501,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => virtual_signature_rule.clone(), locked;
-                    BURNER_ROLE => virtual_signature_rule.clone(), locked;
-                    WITHDRAWER_ROLE => virtual_signature_rule.clone(), locked;
-                    DEPOSITOR_ROLE => virtual_signature_rule.clone(), locked;
-                    RECALLER_ROLE => virtual_signature_rule.clone(), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => virtual_signature_rule.clone(), locked;
-                },
+                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -638,15 +566,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => virtual_signature_rule.clone(), locked;
-                    BURNER_ROLE => virtual_signature_rule.clone(), locked;
-                    WITHDRAWER_ROLE => virtual_signature_rule.clone(), locked;
-                    DEPOSITOR_ROLE => virtual_signature_rule.clone(), locked;
-                    RECALLER_ROLE => virtual_signature_rule.clone(), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => virtual_signature_rule.clone(), locked;
-                },
+                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -712,15 +632,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
                 OwnerRole::None,
                 true,
                 18,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
-                    BURNER_ROLE => rule!(allow_all), locked;
-                    WITHDRAWER_ROLE => rule!(allow_all), locked;
-                    DEPOSITOR_ROLE => rule!(allow_all), locked;
-                    RECALLER_ROLE => rule!(allow_all), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
-                },
+                FungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 None,
             )
@@ -776,15 +688,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
-                    BURNER_ROLE => rule!(allow_all), locked;
-                    WITHDRAWER_ROLE => rule!(allow_all), locked;
-                    DEPOSITOR_ROLE => rule!(allow_all), locked;
-                    RECALLER_ROLE => rule!(allow_all), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
-                },
+                NonFungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -846,15 +750,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
-                    BURNER_ROLE => rule!(allow_all), locked;
-                    WITHDRAWER_ROLE => rule!(allow_all), locked;
-                    DEPOSITOR_ROLE => rule!(allow_all), locked;
-                    RECALLER_ROLE => rule!(allow_all), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), locked;
-                },
+                NonFungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -922,15 +818,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
                 OwnerRole::None,
                 true,
                 18,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => virtual_signature_rule.clone(), locked;
-                    BURNER_ROLE => virtual_signature_rule.clone(), locked;
-                    WITHDRAWER_ROLE => virtual_signature_rule.clone(), locked;
-                    DEPOSITOR_ROLE => virtual_signature_rule.clone(), locked;
-                    RECALLER_ROLE => virtual_signature_rule.clone(), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => virtual_signature_rule.clone(), locked;
-                },
+                FungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Some(100.into()),
             )
@@ -979,15 +867,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => virtual_signature_rule.clone(), locked;
-                    BURNER_ROLE => virtual_signature_rule.clone(), locked;
-                    WITHDRAWER_ROLE => virtual_signature_rule.clone(), locked;
-                    DEPOSITOR_ROLE => virtual_signature_rule.clone(), locked;
-                    RECALLER_ROLE => virtual_signature_rule.clone(), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => virtual_signature_rule.clone(), locked;
-                },
+                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Some(btreemap!(
                     NonFungibleLocalId::integer(1) => EmptyStruct {},
@@ -1035,15 +915,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                btreeset!(Mint, Burn, Recall),
-                roles_init! {
-                    MINTER_ROLE => virtual_signature_rule.clone(), locked;
-                    BURNER_ROLE => virtual_signature_rule.clone(), locked;
-                    WITHDRAWER_ROLE => virtual_signature_rule.clone(), locked;
-                    DEPOSITOR_ROLE => virtual_signature_rule.clone(), locked;
-                    RECALLER_ROLE => virtual_signature_rule.clone(), locked;
-                    NON_FUNGIBLE_DATA_UPDATER_ROLE => virtual_signature_rule.clone(), locked;
-                },
+                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Some(btreemap!(
                     NonFungibleLocalId::integer(1) => EmptyStruct {},

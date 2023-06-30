@@ -36,9 +36,10 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
-use radix_engine_interface::{dec, roles_init, rule};
+use radix_engine_interface::{dec, freezable, roles_init, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_substate_layout::{
     BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
@@ -1129,8 +1130,7 @@ impl TestRunner {
     fn create_fungible_resource_and_deposit(
         &mut self,
         owner_role: OwnerRole,
-        supported_actions: BTreeSet<ResourceFeature>,
-        roles: RolesInit,
+        resource_features: FungibleResourceFeatures,
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
@@ -1139,8 +1139,7 @@ impl TestRunner {
                 owner_role,
                 true,
                 0,
-                supported_actions,
-                roles,
+                resource_features,
                 metadata!(),
                 Some(5.into()),
             )
@@ -1177,20 +1176,31 @@ impl TestRunner {
 
         let token_address = self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            btreeset!(Mint, Burn, Recall, Freeze),
-            roles_init! {
-                MINTER_ROLE => rule!(require(mint_auth)), updatable;
-                MINTER_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
-                BURNER_ROLE => rule!(require(burn_auth)), updatable;
-                BURNER_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
-                WITHDRAWER_ROLE => rule!(require(withdraw_auth)), updatable;
-                WITHDRAWER_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
-                RECALLER_ROLE => rule!(require(recall_auth)), updatable;
-                RECALLER_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
-                FREEZER_ROLE => rule!(require(freeze_auth)), updatable;
-                FREEZER_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
-                DEPOSITOR_ROLE => rule!(allow_all), updatable;
-                DEPOSITOR_UPDATER_ROLE => rule!(require(admin_auth)), updatable;
+            FungibleResourceFeatures {
+                mintable: mintable! {
+                            minter => rule!(allow_all), updatable;
+                            minter_updater => rule!(allow_all), updatable;
+                        },
+                burnable: burnable! {
+                            burner => rule!(allow_all), updatable;
+                            burner_updater => rule!(allow_all), updatable;
+                        },
+                freezable: freezable! {
+                            freezer => rule!(allow_all), updatable;
+                            freezer_updater => rule!(allow_all), updatable;
+                        },
+                recallable: recallable! {
+                            recaller => rule!(allow_all), updatable;
+                            recaller_updater => rule!(allow_all), updatable;
+                        },
+                restrict_withdraw: restrict_withdraw! {
+                    withdrawer => rule!(allow_all), updatable;
+                    withdrawer_updater => rule!(allow_all), updatable;
+                },
+                restrict_deposit: restrict_deposit! {
+                    depositor => rule!(allow_all), updatable;
+                    depositor_updater => rule!(allow_all), updatable;
+                },
             },
             account,
         );
@@ -1217,22 +1227,35 @@ impl TestRunner {
                     owner_role,
                     NonFungibleIdType::Integer,
                     false,
-                    btreeset!(Mint, Burn, Recall, Freeze),
-                    roles_init! {
-                        MINTER_ROLE => rule!(allow_all), updatable;
-                        MINTER_UPDATER_ROLE => rule!(allow_all), updatable;
-                        BURNER_ROLE => rule!(allow_all), updatable;
-                        BURNER_UPDATER_ROLE => rule!(allow_all), updatable;
-                        RECALLER_ROLE => rule!(allow_all), updatable;
-                        RECALLER_UPDATER_ROLE => rule!(allow_all), updatable;
-                        FREEZER_ROLE => rule!(allow_all), updatable;
-                        FREEZER_UPDATER_ROLE => rule!(allow_all), updatable;
-                        NON_FUNGIBLE_DATA_UPDATER_ROLE => rule!(allow_all), updatable;
-                        NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE => rule!(allow_all), updatable;
-                        DEPOSITOR_ROLE => rule!(allow_all), updatable;
-                        DEPOSITOR_UPDATER_ROLE => rule!(allow_all), updatable;
-                        WITHDRAWER_ROLE => rule!(allow_all), updatable;
-                        WITHDRAWER_UPDATER_ROLE => rule!(allow_all), updatable;
+                    NonFungibleResourceFeatures {
+                        mintable: mintable! {
+                            minter => rule!(allow_all), updatable;
+                            minter_updater => rule!(allow_all), updatable;
+                        },
+                        burnable: burnable! {
+                            burner => rule!(allow_all), updatable;
+                            burner_updater => rule!(allow_all), updatable;
+                        },
+                        freezable: freezable! {
+                            freezer => rule!(allow_all), updatable;
+                            freezer_updater => rule!(allow_all), updatable;
+                        },
+                        recallable: recallable! {
+                            recaller => rule!(allow_all), updatable;
+                            recaller_updater => rule!(allow_all), updatable;
+                        },
+                        restrict_withdraw: restrict_withdraw! {
+                            withdrawer => rule!(allow_all), updatable;
+                            withdrawer_updater => rule!(allow_all), updatable;
+                        },
+                        restrict_deposit: restrict_deposit! {
+                            depositor => rule!(allow_all), updatable;
+                            depositor_updater => rule!(allow_all), updatable;
+                        },
+                        updatable_non_fungible_data: updatable_non_fungible_data! {
+                            non_fungible_data_updater => rule!(allow_all), updatable;
+                            non_fungible_data_updater_updater => rule!(allow_all), updatable;
+                        },
                     },
                     metadata!(),
                     None,
@@ -1246,11 +1269,20 @@ impl TestRunner {
     pub fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            btreeset!(Burn, Recall, Freeze),
-            roles_init! {
-                BURNER_ROLE => rule!(allow_all), locked;
-                RECALLER_ROLE => rule!(allow_all), locked;
-                FREEZER_ROLE => rule!(allow_all), locked;
+            FungibleResourceFeatures {
+                burnable: burnable! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
+                recallable: recallable! {
+                    recaller => rule!(allow_all), locked;
+                    recaller_updater => rule!(deny_all), locked;
+                },
+                freezable: freezable! {
+                    freezer => rule!(allow_all), locked;
+                    freezer_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
             },
             account,
         )
@@ -1259,9 +1291,12 @@ impl TestRunner {
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            btreeset!(Recall),
-            roles_init! {
-                RECALLER_ROLE => rule!(allow_all), locked;
+            FungibleResourceFeatures {
+                recallable: recallable! {
+                    recaller => rule!(allow_all), locked;
+                    recaller_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
             },
             account,
         )
@@ -1275,9 +1310,12 @@ impl TestRunner {
 
         let resource_address = self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            btreeset!(Burn),
-            roles_init! {
-                BURNER_ROLE => rule!(require(auth_resource_address)), locked;
+            FungibleResourceFeatures {
+                burnable: burnable! {
+                    burner => rule!(require(auth_resource_address)), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
             },
             account,
         );
@@ -1293,9 +1331,12 @@ impl TestRunner {
 
         let resource_address = self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            btreeset!(),
-            roles_init! {
-                WITHDRAWER_ROLE => rule!(require(auth_resource_address)), locked;
+            FungibleResourceFeatures {
+                restrict_withdraw: restrict_withdraw! {
+                    withdrawer => rule!(require(auth_resource_address)), locked;
+                    withdrawer_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
             },
             account,
         );
@@ -1315,8 +1356,7 @@ impl TestRunner {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                btreeset!(),
-                roles_init!(),
+                NonFungibleResourceFeatures::default(),
                 metadata!(),
                 Some(entries),
             )
@@ -1342,8 +1382,7 @@ impl TestRunner {
                 OwnerRole::None,
                 true,
                 divisibility,
-                btreeset!(),
-                roles_init!(),
+                FungibleResourceFeatures::default(),
                 metadata!(),
                 Some(amount),
             )
@@ -1369,10 +1408,16 @@ impl TestRunner {
                 OwnerRole::None,
                 true,
                 1u8,
-                btreeset!(Mint, Burn),
-                roles_init! {
-                    MINTER_ROLE => rule!(require(admin_auth)), locked;
-                    BURNER_ROLE => rule!(require(admin_auth)), locked;
+                FungibleResourceFeatures {
+                    mintable: mintable! {
+                        minter => rule!(require(admin_auth)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    burnable: burnable! {
+                        burner => rule!(require(admin_auth)), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
                 },
                 metadata!(),
                 None,
@@ -1401,9 +1446,12 @@ impl TestRunner {
                 owner_role,
                 true,
                 divisibility,
-                btreeset!(Mint),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
+                FungibleResourceFeatures {
+                    mintable: mintable! {
+                        minter => rule!(allow_all), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
                 },
                 metadata!(),
                 amount,
@@ -1431,10 +1479,16 @@ impl TestRunner {
                 owner_role,
                 true,
                 divisibility,
-                btreeset!(Mint, Burn),
-                roles_init! {
-                    MINTER_ROLE => rule!(allow_all), locked;
-                    BURNER_ROLE => rule!(allow_all), locked;
+                FungibleResourceFeatures {
+                    mintable: mintable! {
+                        minter => rule!(allow_all), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    burnable: burnable! {
+                        burner => rule!(allow_all), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
                 },
                 metadata!(),
                 amount,

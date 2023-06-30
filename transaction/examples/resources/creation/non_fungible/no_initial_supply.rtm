@@ -19,15 +19,31 @@ CREATE_NON_FUNGIBLE_RESOURCE
     Enum<NonFungibleIdType::Integer>()
     false # Track Total Supply
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
-    # This array of enums defines the modifiable behaviors of the resource. Each element in
-    # the array defines a different resource behavior. As an example, the first element in this array
+    # This tuple of enums defines the modifiable behaviors of the resource. Each element in
+    # the tuple defines a different resource behavior. As an example, the first element in this tuple
     # defines that the resource is mintable.
-    Array<Enum>(Enum<ResourceAction::Mint>())
-    # This map defines the authorization rules for a given role which maps to a set of methods.
-    # In this example, the "minter", a role which is able to mint new tokens, is given permission
-    # to everyone. This rule is also locked and permanently cant be changed.
-    Map<String, Tuple>(
-        "minter" => Tuple(Enum<1u8>(Enum<AccessRule::AllowAll>()), true)
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
     )
     Tuple(
         Map<String, Tuple>(

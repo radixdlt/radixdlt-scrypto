@@ -2,7 +2,8 @@ use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::{metadata, metadata_init, roles_init};
+use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
+use radix_engine_interface::{metadata, metadata_init, mintable, internal_roles_struct, roles_init, role_definition_entry};
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
@@ -287,9 +288,12 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 OwnerRole::None,
                 false,
                 divisibility,
-                btreeset!(Mint),
-                roles_init! {
-                    MINTER_ROLE => rule!(require(minter_badge_resource_address)), locked;
+                FungibleResourceFeatures {
+                    mintable: mintable! {
+                        minter => rule!(require(minter_badge_resource_address)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
                 },
                 metadata!(),
                 None,
@@ -300,9 +304,12 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 OwnerRole::None,
                 id_type,
                 false,
-                btreeset!(Mint),
-                roles_init! {
-                    MINTER_ROLE => rule!(require(minter_badge_resource_address)), locked;
+                NonFungibleResourceFeatures {
+                    mintable: mintable! {
+                        minter => rule!(require(minter_badge_resource_address)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
                 },
                 metadata!(),
                 None::<BTreeMap<NonFungibleLocalId, SampleNonFungibleData>>,

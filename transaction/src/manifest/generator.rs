@@ -1808,8 +1808,7 @@ mod tests {
                                 "name" => "Token".to_string(), locked;
                             }
                         },
-                        resource_features: btreeset!(),
-                        roles: roles_init!(),
+                        resource_features: NonFungibleResourceFeatures::default(),
                         address_reservation: None,
                     }
                 ),
@@ -1847,8 +1846,7 @@ mod tests {
                             non_fungible_schema: NonFungibleDataSchema::new_schema::<
                                 MyNonFungibleData,
                             >(),
-                            resource_features: btreeset!(),
-                            roles: roles_init!(),
+                            resource_features: NonFungibleResourceFeatures::default(),
                             metadata: metadata!(),
                             address_reservation: None,
                         }
@@ -1905,8 +1903,7 @@ mod tests {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        resource_features: btreeset!(),
-                        roles: roles_init!(),
+                        resource_features: NonFungibleResourceFeatures::default(),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_string(), locked;
@@ -1951,8 +1948,7 @@ mod tests {
                     owner_role: OwnerRole::None,
                     track_total_supply: false,
                     divisibility: 18,
-                    resource_features: btreeset!(),
-                    roles: roles_init!(),
+                    resource_features: FungibleResourceFeatures::default(),
                     metadata: metadata! {
                         init {
                             "name" => "Token".to_owned(), updatable;
@@ -1993,8 +1989,7 @@ mod tests {
                         track_total_supply: false,
                         divisibility: 18,
                         initial_supply: "500".parse().unwrap(),
-                        resource_features: btreeset!(),
-                        roles: roles_init!(),
+                        resource_features: FungibleResourceFeatures::default(),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_owned(), updatable;

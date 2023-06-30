@@ -11,6 +11,8 @@ use radix_engine_common::prelude::*;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::types::*;
 use radix_engine_interface::*;
 
@@ -50,12 +52,16 @@ impl OneResourcePoolBlueprint {
                 owner_role.clone(),
                 true,
                 18,
-                btreeset!(Mint, Burn),
-                roles_init! {
-                    MINTER_ROLE => rule!(require(component_caller_badge.clone())), locked;
-                    MINTER_UPDATER_ROLE => rule!(deny_all), locked;
-                    BURNER_ROLE => rule!(require(component_caller_badge.clone())), locked;
-                    BURNER_UPDATER_ROLE => rule!(deny_all), locked;
+                FungibleResourceFeatures {
+                    mintable: mintable! {
+                        minter => rule!(require(component_caller_badge.clone())), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    burnable: burnable! {
+                        burner => rule!(require(component_caller_badge.clone())), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
                 },
                 metadata_init! {
                     "pool" => address, locked;
