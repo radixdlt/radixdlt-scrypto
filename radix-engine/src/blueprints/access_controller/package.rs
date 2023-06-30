@@ -11,6 +11,7 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::MetadataRoles;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::node_modules::ModuleConfig;
@@ -1202,7 +1203,7 @@ fn locked_access_rules() -> RuleSet {
     }
 }
 
-fn init_roles_from_rule_set(rule_set: RuleSet) -> Roles {
+fn init_roles_from_rule_set(rule_set: RuleSet) -> RolesInit {
     roles2! {
         "this_package" => rule!(require(NonFungibleGlobalId::package_of_direct_caller_badge(ACCESS_CONTROLLER_PACKAGE)));
         "primary" => rule_set.primary_role, updatable;

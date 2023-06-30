@@ -259,7 +259,7 @@ mod genesis_helper {
             let builder = ResourceBuilder::new_fungible(owner_role)
                 .metadata(ModuleConfig {
                     init: metadata.into(),
-                    roles: Roles::default(),
+                    roles: RolesInit::default(),
                 })
                 .with_address(resource.address_reservation);
 

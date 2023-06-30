@@ -97,7 +97,7 @@ impl NewSimpleBadge {
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     metadata: ModuleConfig {
                         init: metadata,
-                        roles: Roles::default(),
+                        roles: RolesInit::default(),
                     },
                     access_rules: btreemap!(
                         ResourceAction::Withdraw => (rule!(allow_all), rule!(deny_all))
