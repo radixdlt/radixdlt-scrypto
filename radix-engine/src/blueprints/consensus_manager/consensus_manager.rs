@@ -550,7 +550,9 @@ impl ConsensusManagerBlueprint {
             let manager_config: ConsensusManagerConfigSubstate =
                 api.field_lock_read_typed(config_handle)?;
             api.field_lock_release(config_handle)?;
-            Some(manager_config.config.validator_creation_xrd_cost)
+
+            let validator_creation_xrd_cost = manager_config.config.validator_creation_usd_cost * api.usd_price()?;
+            Some(validator_creation_xrd_cost)
         } else {
             None
         };

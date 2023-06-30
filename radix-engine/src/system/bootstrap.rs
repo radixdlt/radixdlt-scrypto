@@ -50,7 +50,8 @@ use transaction::validation::ManifestIdAllocator;
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
-    pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal = dec!("1000");
+    pub static ref DEFAULT_VALIDATOR_USD_COST: Decimal = dec!("100");
+    pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal = *DEFAULT_VALIDATOR_USD_COST * Decimal::try_from(DEFAULT_USD_PRICE).unwrap();
 }
 
 //==========================================================================================
@@ -265,7 +266,7 @@ where
                 min_validator_reliability: Decimal::one(),
                 num_owner_stake_units_unlock_epochs: 2,
                 num_fee_increase_delay_epochs: 1,
-                validator_creation_xrd_cost: *DEFAULT_VALIDATOR_XRD_COST,
+                validator_creation_usd_cost: *DEFAULT_VALIDATOR_USD_COST,
             },
             1,
             Some(0),
