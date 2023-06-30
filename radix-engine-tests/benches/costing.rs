@@ -74,7 +74,7 @@ fn bench_spin_loop(c: &mut Criterion) {
     // Note that wasm engine maintains an internal cache, which means costing
     // isn't taking WASM parsing into consideration.
     let wasm_engine = DefaultWasmEngine::default();
-    let mut wasm_execution_units_consumed = 0u32;
+    let mut wasm_execution_units_consumed = 0;
     c.bench_function("costing::spin_loop", |b| {
         b.iter(|| {
             let fee_reserve = SystemLoanFeeReserve::default()
