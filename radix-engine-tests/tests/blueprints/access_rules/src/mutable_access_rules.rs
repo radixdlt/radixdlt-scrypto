@@ -26,9 +26,7 @@ mod mutable_access_rules_component {
                 .globalize()
         }
 
-        pub fn new_with_owner(
-            owner_role: OwnerRole,
-        ) -> Global<MutableAccessRulesComponent> {
+        pub fn new_with_owner(owner_role: OwnerRole) -> Global<MutableAccessRulesComponent> {
             Self {}
                 .instantiate()
                 .prepare_to_globalize(owner_role)

@@ -25,11 +25,17 @@ lazy_static! {
             });
         costs
     };
-
     pub static ref NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT: IndexMap<PackageAddress, IndexMap<&'static str, (u32, u32)>> = {
-        let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, (u32, u32)>> = index_map_new();
-        costs.entry(PACKAGE_PACKAGE).or_default().insert(PACKAGE_PUBLISH_NATIVE_IDENT, (201, 66321));
-        costs.entry(PACKAGE_PACKAGE).or_default().insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (498, 854284));
+        let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, (u32, u32)>> =
+            index_map_new();
+        costs
+            .entry(PACKAGE_PACKAGE)
+            .or_default()
+            .insert(PACKAGE_PUBLISH_NATIVE_IDENT, (201, 66321));
+        costs
+            .entry(PACKAGE_PACKAGE)
+            .or_default()
+            .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (498, 854284));
         costs
     };
 }
@@ -158,7 +164,7 @@ impl FeeTable {
                 NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT
                     .get(package_address)
                     .and_then(|x| x.get(export_name))
-                    .and_then(|value| Some(add(value.1, mul(value.0, cast(*input_size)))) )
+                    .and_then(|value| Some(add(value.1, mul(value.0, cast(*input_size)))))
                     .unwrap_or(411524) // FIXME: this should be for not found only, when the costing for all native function are added, i.e. should be reduced.
             });
 

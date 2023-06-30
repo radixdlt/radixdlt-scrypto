@@ -53,7 +53,7 @@ fn check_native_function_base_costs() {
             }
         }
     }
-    
+
     println!();
     let mut missing_functions = false;
 
@@ -79,7 +79,7 @@ fn check_native_function_base_costs() {
             }
         }
     }
-    
+
     println!();
     assert!(!missing_functions);
 }

@@ -367,9 +367,8 @@ fn update_rule() {
 #[test]
 fn change_lock_owner_role_rules() {
     // Arrange
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner_role(
-        OwnerRole::Updatable(rule!(allow_all)),
-    );
+    let mut test_runner =
+        MutableAccessRulesTestRunner::new_with_owner_role(OwnerRole::Updatable(rule!(allow_all)));
 
     // Act: verify if lock owner role is possible
     let receipt = test_runner.lock_owner_role();
@@ -434,9 +433,9 @@ impl MutableAccessRulesTestRunner {
     pub fn new_with_owner(update_access_rule: AccessRule) -> Self {
         let mut test_runner = TestRunner::builder().build();
         let receipt = Self::create_component_with_owner(
-            OwnerRole::Fixed(update_access_rule), 
-            &mut test_runner
-	);
+            OwnerRole::Fixed(update_access_rule),
+            &mut test_runner,
+        );
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
@@ -448,8 +447,7 @@ impl MutableAccessRulesTestRunner {
 
     pub fn new_with_owner_role(owner_role: OwnerRole) -> Self {
         let mut test_runner = TestRunner::builder().build();
-        let receipt =
-            Self::create_component_with_owner(owner_role, &mut test_runner);
+        let receipt = Self::create_component_with_owner(owner_role, &mut test_runner);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
@@ -458,7 +456,7 @@ impl MutableAccessRulesTestRunner {
             initial_proofs: BTreeSet::new(),
         }
     }
-    
+
     pub fn new(roles: RolesInit) -> Self {
         let mut test_runner = TestRunner::builder().build();
         let receipt = Self::create_component(roles, &mut test_runner);
