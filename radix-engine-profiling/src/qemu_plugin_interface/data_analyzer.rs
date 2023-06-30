@@ -242,7 +242,10 @@ impl DataAnalyzer {
 
                     file.write_fmt(format_args!(
                         "{}<{} ins=\"{}\" duration_us=\"{}\"",
-                        spaces, v.function_name, cpu_ins_cal, duration.as_micros()
+                        spaces,
+                        v.function_name,
+                        cpu_ins_cal,
+                        duration.as_micros()
                     ))
                     .expect(&format!("Unable write to {} file.", file_name));
 

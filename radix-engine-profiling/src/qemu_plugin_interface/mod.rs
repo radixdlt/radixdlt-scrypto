@@ -1,5 +1,9 @@
 use shared_memory::*;
-use std::{fs::File, io::prelude::*, time::{Duration, Instant}};
+use std::{
+    fs::File,
+    io::prelude::*,
+    time::{Duration, Instant},
+};
 
 pub mod data_analyzer;
 pub use data_analyzer::{DataAnalyzer, OutputData, OutputDataEvent, OutputParam, OutputParamValue};
@@ -123,7 +127,9 @@ impl<'a> QemuPluginInterface<'a> {
             cpu_instructions_calibrated: 0,
             function_name: key,
             param: arg.to_vec(),
-            duration: time_end.checked_duration_since(self.counters_stack[self.stack_top].2).unwrap_or_default(),
+            duration: time_end
+                .checked_duration_since(self.counters_stack[self.stack_top].2)
+                .unwrap_or_default(),
         });
 
         let ret = self.counters_stack[self.stack_top].1;
