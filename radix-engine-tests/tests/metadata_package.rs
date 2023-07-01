@@ -28,7 +28,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .set_metadata(
-            package_address.into(),
+            package_address,
             "name".to_string(),
             MetadataValue::String("best package ever!".to_string()),
         )
@@ -71,7 +71,7 @@ fn can_set_package_metadata_with_owner() {
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_proof_from_account(account, PACKAGE_OWNER_BADGE)
         .set_metadata(
-            package_address.into(),
+            package_address,
             "name".to_string(),
             MetadataValue::String("best package ever!".to_string()),
         )

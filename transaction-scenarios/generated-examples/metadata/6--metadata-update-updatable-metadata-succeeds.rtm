@@ -1,0 +1,12 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+SET_METADATA
+    Address("resource_sim1t5snvwea8k5w2fde3w0a22t4zyr4r0p2apn9pp02mvpp7963cx2454")
+    "locked_later"
+    Enum<1u8>(
+        true
+    )
+;
