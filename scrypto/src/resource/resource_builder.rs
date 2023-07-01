@@ -263,7 +263,7 @@ pub trait UpdateAuthBuilder {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be freezeable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .freezeable(freezable! {
+    ///    .freezable(freezable! {
     ///        freezer => rule!(require(resource_address)), locked;
     ///        freezer_updater => rule!(deny_all), locked;
     ///    });
@@ -271,12 +271,12 @@ pub trait UpdateAuthBuilder {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be freezeable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .freezeable(freezable! {
+    ///    .freezable(freezable! {
     ///        freezer => rule!(deny_all), updatable;
     ///        freezer_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn freezeable(self, freezable: Option<FreezableRoles<RoleDefinition>>) -> Self;
+    fn freezable(self, freezable: Option<FreezableRoles<RoleDefinition>>) -> Self;
 
     /// Sets the resource to not be freely withdrawable from a vault.
     ///
@@ -355,7 +355,7 @@ impl UpdateAuthBuilder for InProgressResourceBuilder<FungibleResourceType> {
         self
     }
 
-    fn freezeable(mut self, freezable: Option<FreezableRoles<RoleDefinition>>) -> Self {
+    fn freezable(mut self, freezable: Option<FreezableRoles<RoleDefinition>>) -> Self {
         self.resource_features.freezable = freezable;
         self
     }
@@ -395,7 +395,7 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData> UpdateAuthBuilder
         self
     }
 
-    fn freezeable(mut self, freezable: Option<FreezableRoles<RoleDefinition>>) -> Self {
+    fn freezable(mut self, freezable: Option<FreezableRoles<RoleDefinition>>) -> Self {
         self.resource_features.freezable = freezable;
         self
     }

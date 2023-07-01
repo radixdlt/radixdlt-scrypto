@@ -94,12 +94,39 @@ mod everything {
 
         pub fn public_method(&self) -> ResourceManager {
             ResourceBuilder::new_ruid_non_fungible::<TestNFData>(OwnerRole::None)
+                .mintable(mintable! {
+                    minter => rule!(allow_all), locked;
+                    minter_updater => rule!(allow_all), locked;
+                })
+                .burnable(burnable! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(allow_all), locked;
+                })
+                .freezable(freezable! {
+                    freezer => rule!(allow_all), locked;
+                    freezer_updater => rule!(allow_all), locked;
+                })
+                .recallable(recallable! {
+                    recaller => rule!(allow_all), locked;
+                    recaller_updater => rule!(allow_all), locked;
+                })
+                .restrict_withdraw(restrict_withdraw! {
+                    withdrawer => rule!(allow_all), locked;
+                    withdrawer_updater => rule!(allow_all), locked;
+                })
+                .restrict_deposit(restrict_deposit! {
+                    depositor => rule!(allow_all), locked;
+                    depositor_updater => rule!(allow_all), locked;
+                })
+                .updatable_non_fungible_data(updatable_non_fungible_data! {
+                    non_fungible_data_updater => rule!(allow_all), locked;
+                    non_fungible_data_updater_updater => rule!(allow_all), locked;
+                })
                 .metadata(metadata! {
                     init {
                         "name" => "Super Admin Badge".to_string(), locked;
                     }
                 })
-                .mintable(rule!(allow_all), rule!(allow_all))
                 .create_with_no_initial_supply()
         }
 
