@@ -121,14 +121,17 @@ mod genesis_helper {
             let xrd_payment = ResourceManager(XRD)
                 .new_empty_bucket(&mut ScryptoEnv)
                 .unwrap();
-            let (validator_address, owner_token_bucket) = ConsensusManager(self.consensus_manager)
-                .create_validator(
-                    validator.key,
-                    validator.fee_factor,
-                    xrd_payment,
-                    &mut ScryptoEnv,
-                )
-                .unwrap();
+            let (validator_address, owner_token_bucket, change) =
+                ConsensusManager(self.consensus_manager)
+                    .create_validator(
+                        validator.key,
+                        validator.fee_factor,
+                        xrd_payment,
+                        &mut ScryptoEnv,
+                    )
+                    .unwrap();
+
+            change.drop_empty();
 
             // Deposit the badge to the owner account
             Account(validator.owner)

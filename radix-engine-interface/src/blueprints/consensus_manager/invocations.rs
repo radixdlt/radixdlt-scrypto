@@ -303,7 +303,7 @@ pub struct ConsensusManagerCreateValidatorManifestInput {
     pub xrd_payment: ManifestBucket,
 }
 
-pub type ConsensusManagerCreateValidatorOutput = (ComponentAddress, Bucket);
+pub type ConsensusManagerCreateValidatorOutput = (ComponentAddress, Bucket, Bucket);
 
 pub const CONSENSUS_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 

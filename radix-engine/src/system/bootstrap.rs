@@ -51,7 +51,8 @@ use transaction::validation::ManifestIdAllocator;
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
     pub static ref DEFAULT_VALIDATOR_USD_COST: Decimal = dec!("100");
-    pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal = *DEFAULT_VALIDATOR_USD_COST * Decimal::try_from(DEFAULT_USD_PRICE).unwrap();
+    pub static ref DEFAULT_VALIDATOR_XRD_COST: Decimal =
+        *DEFAULT_VALIDATOR_USD_COST * Decimal::try_from(DEFAULT_USD_PRICE_IN_XRD).unwrap();
 }
 
 //==========================================================================================
