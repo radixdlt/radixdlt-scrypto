@@ -5,6 +5,7 @@ pub enum ClientCostingEntry<'a> {
     RunNativeCode {
         package_address: &'a PackageAddress,
         export_name: &'a str,
+        input_size: usize,
     },
     RunWasmCode {
         package_address: &'a PackageAddress,

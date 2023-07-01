@@ -1,44 +1,44 @@
-Total Cost (XRD)                                                           ,   0.0997112715,   100.00%
-+ Execution Cost (XRD)                                                     ,     0.08784883,    88.10%
-+ Tipping Cost (XRD)                                                       ,   0.0043924415,     4.41%
-+ State Expansion Cost (XRD)                                               ,        0.00747,     7.49%
+Total Cost (XRD)                                                           ,    0.101650254,   100.00%
++ Execution Cost (XRD)                                                     ,     0.08969548,    88.24%
++ Tipping Cost (XRD)                                                       ,    0.004484774,     4.41%
++ State Expansion Cost (XRD)                                               ,        0.00747,     7.35%
 + Royalty Cost (XRD)                                                       ,              0,     0.00%
-Total Cost Units Consumed                                                  ,        8784883,   100.00%
+Total Cost Units Consumed                                                  ,        8969548,   100.00%
 AfterInvoke                                                                ,            886,     0.01%
-AllocateNodeId                                                             ,          13000,     0.15%
+AllocateNodeId                                                             ,          13000,     0.14%
 BeforeInvoke                                                               ,          10734,     0.12%
-CloseSubstate                                                              ,         113500,     1.29%
-Commit::GlobalAccount                                                      ,         100002,     1.14%
-Commit::GlobalVirtualSecp256k1Account                                      ,         900105,    10.25%
-Commit::InternalFungibleVault                                              ,         700082,     7.97%
-CreateNode                                                                 ,          25062,     0.29%
-DropNode                                                                   ,          21588,     0.25%
+CloseSubstate                                                              ,         113500,     1.27%
+Commit::GlobalAccount                                                      ,         100002,     1.11%
+Commit::GlobalVirtualSecp256k1Account                                      ,         900105,    10.04%
+Commit::InternalFungibleVault                                              ,         700082,     7.81%
+CreateNode                                                                 ,          25062,     0.28%
+DropNode                                                                   ,          21588,     0.24%
 EmitEvent                                                                  ,           3228,     0.04%
 LockFee                                                                    ,            500,     0.01%
-MoveModules                                                                ,           4000,     0.05%
-OpenSubstate::GlobalAccount                                                ,         566006,     6.44%
-OpenSubstate::GlobalFungibleResourceManager                                ,         332464,     3.78%
-OpenSubstate::GlobalPackage                                                ,        4455318,    50.72%
-OpenSubstate::GlobalVirtualSecp256k1Account                                ,         643368,     7.32%
+MoveModules                                                                ,           4000,     0.04%
+OpenSubstate::GlobalAccount                                                ,         566006,     6.31%
+OpenSubstate::GlobalFungibleResourceManager                                ,         332464,     3.71%
+OpenSubstate::GlobalPackage                                                ,        4455854,    49.68%
+OpenSubstate::GlobalVirtualSecp256k1Account                                ,         643368,     7.17%
 OpenSubstate::InternalAccount                                              ,            652,     0.01%
-OpenSubstate::InternalFungibleVault                                        ,         168266,     1.92%
-OpenSubstate::InternalGenericComponent                                     ,          58614,     0.67%
-QueryActor                                                                 ,           4000,     0.05%
-ReadSubstate                                                               ,         217526,     2.48%
-RunNativeCode::Worktop_drain                                               ,           6901,     0.08%
-RunNativeCode::Worktop_drop                                                ,           6683,     0.08%
-RunNativeCode::Worktop_put                                                 ,          21275,     0.24%
-RunNativeCode::create                                                      ,           7328,     0.08%
-RunNativeCode::create_empty_vault_FungibleResourceManager                  ,          82304,     0.94%
-RunNativeCode::create_virtual_secp256k1                                    ,          41152,     0.47%
-RunNativeCode::create_with_data                                            ,           1838,     0.02%
-RunNativeCode::get_amount_FungibleBucket                                   ,          41152,     0.47%
-RunNativeCode::lock_fee                                                    ,          47993,     0.55%
-RunNativeCode::put_FungibleVault                                           ,          13471,     0.15%
-RunNativeCode::take_FungibleVault                                          ,          20367,     0.23%
-RunNativeCode::try_deposit_batch_or_abort                                  ,          41152,     0.47%
-RunNativeCode::withdraw                                                    ,          25682,     0.29%
-TxBaseCost                                                                 ,          50000,     0.57%
+OpenSubstate::InternalFungibleVault                                        ,         168266,     1.88%
+OpenSubstate::InternalGenericComponent                                     ,          58614,     0.65%
+QueryActor                                                                 ,           4000,     0.04%
+ReadSubstate                                                               ,         218014,     2.43%
+RunNativeCode::Worktop_drain                                               ,          22525,     0.25%
+RunNativeCode::Worktop_drop                                                ,          16371,     0.18%
+RunNativeCode::Worktop_put                                                 ,          24411,     0.27%
+RunNativeCode::create                                                      ,          54027,     0.60%
+RunNativeCode::create_empty_vault_FungibleResourceManager                  ,          46810,     0.52%
+RunNativeCode::create_virtual_secp256k1                                    ,          24877,     0.28%
+RunNativeCode::create_with_data                                            ,          26638,     0.30%
+RunNativeCode::get_amount_FungibleBucket                                   ,           7453,     0.08%
+RunNativeCode::lock_fee                                                    ,         131708,     1.47%
+RunNativeCode::put_FungibleVault                                           ,          21358,     0.24%
+RunNativeCode::take_FungibleVault                                          ,          53491,     0.60%
+RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,     0.71%
+RunNativeCode::withdraw                                                    ,          47564,     0.53%
+TxBaseCost                                                                 ,          50000,     0.56%
 TxPayloadCost                                                              ,          13450,     0.15%
 TxSignatureVerification                                                    ,           7000,     0.08%
-WriteSubstate                                                              ,          18234,     0.21%
+WriteSubstate                                                              ,          18234,     0.20%

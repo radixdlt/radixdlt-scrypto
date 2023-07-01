@@ -50,6 +50,8 @@ alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-derive/alloc", 
 # to let fuzzing work
 radix_engine_fuzzing = ["arbitrary", "bnum/arbitrary"]
 
+resource_tracker=[]
+
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]
 bench = false

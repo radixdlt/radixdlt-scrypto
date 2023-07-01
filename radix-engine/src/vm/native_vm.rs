@@ -54,7 +54,7 @@ pub struct NativeVmInstance {
 }
 
 impl VmInvoke for NativeVmInstance {
-    #[trace_resources(log=self.package_address.to_hex(),log=export_name)]
+    #[trace_resources(log=self.package_address.is_native_address(), log=self.package_address.to_hex(), log=export_name)]
     fn invoke<Y>(
         &mut self,
         export_name: &str,
@@ -67,6 +67,7 @@ impl VmInvoke for NativeVmInstance {
         api.consume_cost_units(ClientCostingEntry::RunNativeCode {
             package_address: &self.package_address,
             export_name: export_name,
+            input_size: input.len(),
         })?;
 
         match self.native_package_code_id {

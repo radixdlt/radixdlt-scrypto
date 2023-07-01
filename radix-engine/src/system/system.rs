@@ -2072,9 +2072,11 @@ where
                 ClientCostingEntry::RunNativeCode {
                     package_address,
                     export_name,
+                    input_size,
                 } => CostingEntry::RunNativeCode {
                     package_address,
                     export_name,
+                    input_size,
                 },
                 ClientCostingEntry::RunWasmCode {
                     package_address,

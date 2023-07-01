@@ -54,10 +54,16 @@ for path in os.listdir(input_folder):
 
         key = child.tag
         cpu_instructions = int(child.attrib["ins"])
+        #print(tree.getpath(child))
 
         if cpu_instructions == 0 and "return" in child.attrib and child.attrib["return"] == "true":
             #print("Skipping function which returned early: ", child.tag, "\n", file=sys.stderr)
             continue
+        elif cpu_instructions == 0:
+            parent_return = child.xpath(".//*[ancestor-or-self::*[@return='true']]")
+            if parent_return:
+                #print("Skipping function which parent returned early: ", child.tag, "\n", file=sys.stderr)
+                continue
 
 #=====================================#
 #    Add arguments to kernel calls    #
@@ -65,20 +71,20 @@ for path in os.listdir(input_folder):
 
         # handle kernel_inovke
         invoke_size = 0
-        resolve = child.xpath("./self::kernel_invoke/before_invoke")
+        resolve_size = child.xpath("./self::kernel_invoke/before_invoke")
+        if resolve_size:
+            invoke_size = resolve_size[0].attrib["arg0"]
+        resolve = child.xpath("./self::kernel_invoke/invoke")
         if resolve:
-            blueprint_name = resolve[0].attrib["arg1"].replace('"','')
-            fcn_name = resolve[0].attrib["arg2"].replace('"','')
-            receiver = resolve[0].attrib["arg3"].replace('"','') # not used
-            if receiver == "None":
-                receiver = ""
-            else:
-                receiver = "::" + receiver
+            native = "no_native"
+            if resolve[0].attrib["arg0"] == "true":
+                native = "native"
+            pkg = resolve[0].attrib["arg1"].replace('"','')
+            fcn_name = resolve[0].attrib["export_name"]
             if fcn_name in kernel_invoke_divide_by_size:
-                invoke_size = resolve[0].attrib["input_size"]
-                key += "::" + blueprint_name + "::" + fcn_name + "::" + invoke_size
+                key += "::" + native + "::" + pkg + "::" + fcn_name + "::" + invoke_size
             else:
-                key += "::" + blueprint_name + "::" + fcn_name
+                key += "::" + native + "::" + pkg + "::" + fcn_name
 
         # handle kernel_create_node
         param = child.xpath("./self::kernel_create_node/@arg0")
@@ -121,10 +127,11 @@ for path in os.listdir(input_folder):
         for i in range(5):
             nested_call_xpath = nested_call_prefix + nested_call_middle + nested_call_suffix
             kernel_nested_calls = child.xpath(nested_call_xpath)
-            #print("direct child nested calls count: ", len(kernel_nested_calls))
+            #if len(kernel_nested_calls) > 0:
+                #print("  direct child nested calls count: ", len(kernel_nested_calls), nested_call_xpath, cpu_instructions)
             for i in kernel_nested_calls:
-                #print(" call: ", tree.getpath(i))
                 cpu_instructions -= int(i.attrib["ins"])
+                #print("   call: ", tree.getpath(i), cpu_instructions)
             nested_call_middle += "/*[not(local-name() = '" + child.tag + "')]"
 
 #        if not child.tag in api_functions:
@@ -191,3 +198,15 @@ else:
         f.write("\n")
     f.close()
 
+    f = open("/tmp/native_function_base_costs.csv", "w")
+    # skip header row
+    for row in output_tab[1:]:
+        token = "kernel_invoke::native::"
+        if type(row[1]) == str and row[1].find(token) == 0:
+            package_address_and_function = str(row[1][len(token):])
+            if package_address_and_function.count("::") == 1:
+                package_address_and_function = package_address_and_function.replace("::",",")
+                f.write( package_address_and_function + "," + str(row[2]))
+                f.write("\n")
+            #else: function with additional size parameter
+    f.close()

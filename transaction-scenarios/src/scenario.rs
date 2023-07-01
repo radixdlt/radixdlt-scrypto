@@ -150,7 +150,11 @@ impl ScenarioCore {
         }
         builder = builder.notarize(&self.default_notary);
         self.last_transaction_name = Some(logical_name.to_owned());
-        Ok(NextTransaction::of(logical_name.to_owned(), self.stage_counter, builder.build()))
+        Ok(NextTransaction::of(
+            logical_name.to_owned(),
+            self.stage_counter,
+            builder.build(),
+        ))
     }
 
     pub fn finish_scenario(&self, output: ScenarioOutput) -> EndState {
@@ -485,7 +489,10 @@ impl<T> State<T> {
 
 impl<T: Clone> State<T> {
     pub fn get(&self) -> Result<T, ScenarioError> {
-        self.0.as_ref().map(Clone::clone).ok_or(ScenarioError::StateReadBeforeSet)
+        self.0
+            .as_ref()
+            .map(Clone::clone)
+            .ok_or(ScenarioError::StateReadBeforeSet)
     }
 
     // TODO - remove this when we create a better manifest builder which doesn't use callbacks,

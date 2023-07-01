@@ -1,4 +1,5 @@
 use crate::{
+    blueprints::package::*,
     kernel::actor::Actor,
     track::interface::{StoreAccess, StoreAccessInfo, StoreCommit},
     types::*,
@@ -22,6 +23,20 @@ lazy_static! {
                     .or_default()
                     .insert(export_name, cost);
             });
+        costs
+    };
+    pub static ref NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT: IndexMap<PackageAddress, IndexMap<&'static str, (u32, u32)>> = {
+        let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, (u32, u32)>> =
+            index_map_new();
+        // FIXME: investigate the coefficients more, as it's blocking package publishing within 100M cost units
+        costs
+            .entry(PACKAGE_PACKAGE)
+            .or_default()
+            .insert(PACKAGE_PUBLISH_NATIVE_IDENT, (1 /*1001*/, 7424624));
+        costs
+            .entry(PACKAGE_PACKAGE)
+            .or_default()
+            .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (1 /*1055*/, 14305886));
         costs
     };
 }
@@ -137,15 +152,30 @@ impl FeeTable {
     //======================
 
     #[inline]
-    pub fn run_native_code_cost(&self, package_address: &PackageAddress, export_name: &str) -> u32 {
+    pub fn run_native_code_cost(
+        &self,
+        package_address: &PackageAddress,
+        export_name: &str,
+        input_size: &usize,
+    ) -> u32 {
         let native_execution_units = NATIVE_FUNCTION_BASE_COSTS
             .get(package_address)
             .and_then(|x| x.get(export_name).cloned())
-            .unwrap_or(411524); // FIXME: this should be for not found only, when the costing for all native function are added, i.e. should be reduced.
+            .unwrap_or_else(|| {
+                NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT
+                    .get(package_address)
+                    .and_then(|x| x.get(export_name))
+                    .and_then(|value| Some(add(value.1, mul(value.0, cast(*input_size)))))
+                    .expect(&format!(
+                        "Native function not found: {:?}::{}. ",
+                        package_address, export_name
+                    ))
+            });
 
-        // FIXME: figure out the right conversion rate from CPU instructions to execution time
-
-        native_execution_units / 10
+        // Reference EC2 instance c5.4xlarge has CPU clock 3.4 GHz which means in 1 µs it executes 3400 instructions
+        // (1 core, single-threaded operation, skipping CPU cache influence).
+        // Basing on above assumptions return native function execution time in µs: native_execution_units / 3400
+        native_execution_units / 34
     }
 
     #[inline]
