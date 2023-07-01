@@ -26,7 +26,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     # the tuple defines a different resource behavior. As an example, the first element in this tuple
     # defines that the resource is mintable.
     Tuple(
-        Enum<1u8>(
+        Enum<1u8>(                          # Mintable
             Tuple(
                 Tuple(
                     Enum<1u8>(
@@ -42,12 +42,12 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 )
             )
         ),
-        Enum<0u8>(),
-        Enum<0u8>(),
-        Enum<0u8>(),
-        Enum<0u8>(),
-        Enum<0u8>(),
-        Enum<0u8>()
+        Enum<0u8>(),                        # Burnable
+        Enum<0u8>(),                        # Freezable
+        Enum<0u8>(),                        # Recallable
+        Enum<0u8>(),                        # Restrict Withdraw
+        Enum<0u8>(),                        # Restrict Deposit
+        Enum<0u8>()                         # Update Non Fungible Data
     )
     Tuple(
         Map<String, Tuple>(
