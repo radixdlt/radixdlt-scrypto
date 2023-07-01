@@ -21,7 +21,7 @@ where
     next_buffer_id: BufferId,
     package_address: PackageAddress,
     export_name: String,
-    gas_buffer: u32,
+    wasm_execution_units_buffer: u32,
 }
 
 impl<'y, Y> ScryptoRuntime<'y, Y>
@@ -35,7 +35,7 @@ where
             next_buffer_id: 0,
             package_address,
             export_name,
-            gas_buffer: 0,
+            wasm_execution_units_buffer: 0,
         }
     }
 }
@@ -358,23 +358,26 @@ where
             .map_err(InvokeError::downstream)
     }
 
-    fn consume_gas(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
-        // Use buffered gas
-        if self.gas_buffer >= n {
-            self.gas_buffer -= n;
+    fn consume_wasm_execution_units(
+        &mut self,
+        n: u32,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        // Use buffer
+        if self.wasm_execution_units_buffer >= n {
+            self.wasm_execution_units_buffer -= n;
             return Ok(());
         }
 
-        // Request from system
-        let amount = ((n - 1) / 1_000_000 + 1) * 1_000_000;
+        // If we need to request more from the fee reserve, we round `n` up to the nearest `1_000_000`
+        let amount_to_request = ((n - 1) / 1_000_000 + 1) * 1_000_000;
         self.api
             .consume_cost_units(ClientCostingEntry::RunWasmCode {
                 package_address: &self.package_address,
                 export_name: &self.export_name,
-                gas: amount,
+                wasm_execution_units: amount_to_request,
             })
             .map_err(InvokeError::downstream)?;
-        self.gas_buffer += amount - n;
+        self.wasm_execution_units_buffer += amount_to_request - n;
 
         Ok(())
     }

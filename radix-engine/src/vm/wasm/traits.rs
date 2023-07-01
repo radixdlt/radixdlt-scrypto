@@ -126,7 +126,8 @@ pub trait WasmRuntime {
 
     fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn consume_gas(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
+    fn consume_wasm_execution_units(&mut self, n: u32)
+        -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn cost_unit_limit(&mut self) -> Result<u32, InvokeError<WasmRuntimeError>>;
 

@@ -30,7 +30,7 @@ fn test_fee_states() {
     assert_eq!(output.0, DEFAULT_COST_UNIT_LIMIT);
     assert_eq!(
         output.1,
-        Decimal::try_from(DEFAULT_COST_UNIT_PRICE).unwrap()
+        Decimal::try_from(DEFAULT_COST_UNIT_PRICE_IN_XRD).unwrap()
     );
     assert_eq!(output.2, DEFAULT_TIP_PERCENTAGE as u32);
     // At the time checking fee balance, it should be still using system loan. This is because
@@ -41,7 +41,7 @@ fn test_fee_states() {
             && output.3
                 < dec!(500)
                     + Decimal::from(DEFAULT_SYSTEM_LOAN)
-                        * (Decimal::try_from(DEFAULT_COST_UNIT_PRICE).unwrap()
+                        * (Decimal::try_from(DEFAULT_COST_UNIT_PRICE_IN_XRD).unwrap()
                             * (dec!(1) + Decimal::from(DEFAULT_TIP_PERCENTAGE) / dec!(100)))
     );
 }

@@ -157,7 +157,7 @@ impl FeeTable {
         export_name: &str,
         input_size: &usize,
     ) -> u32 {
-        let cpu_instructions = NATIVE_FUNCTION_BASE_COSTS
+        let native_execution_units = NATIVE_FUNCTION_BASE_COSTS
             .get(package_address)
             .and_then(|x| x.get(export_name).cloned())
             .unwrap_or_else(|| {
@@ -174,7 +174,7 @@ impl FeeTable {
         // Reference EC2 instance c5.4xlarge has CPU clock 3.4 GHz which means in 1 µs it executes 3400 instructions
         // (1 core, single-threaded operation, skipping CPU cache influence).
         // Basing on above assumptions return native function execution time in µs:
-        cpu_instructions / 3400
+        native_execution_units / 3400
     }
 
     #[inline]
@@ -182,12 +182,12 @@ impl FeeTable {
         &self,
         _package_address: &PackageAddress,
         _export_name: &str,
-        gas: u32,
+        wasm_execution_units: u32,
     ) -> u32 {
-        // From `costing::spin_loop`, it takes 5.5391 ms for 1918122691 gas' worth of computation.
-        // Therefore, cost for gas: 5.5391 *  1000 / 1918122691 * 100 = 0.00028877714
+        // From `costing::spin_loop`, it takes 5.5391 ms for 1918122691 wasm execution units.
+        // Therefore, cost for single unit: 5.5391 *  1000 / 1918122691 * 100 = 0.00028877714
 
-        gas / 3000
+        wasm_execution_units / 3000
     }
 
     #[inline]

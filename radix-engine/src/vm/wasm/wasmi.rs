@@ -449,9 +449,12 @@ fn assert_access_rule(
     runtime.assert_access_rule(data)
 }
 
-fn consume_gas(caller: Caller<'_, HostState>, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
+fn consume_wasm_execution_units(
+    caller: Caller<'_, HostState>,
+    n: u32,
+) -> Result<(), InvokeError<WasmRuntimeError>> {
     let (_memory, runtime) = grab_runtime!(caller);
-    runtime.consume_gas(n)
+    runtime.consume_wasm_execution_units(n)
 }
 
 fn emit_event(
@@ -878,10 +881,10 @@ impl WasmiModule {
             },
         );
 
-        let host_consume_gas = Func::wrap(
+        let host_consume_wasm_execution_units = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>, n: u32| -> Result<(), Trap> {
-                consume_gas(caller, n).map_err(|e| e.into())
+                consume_wasm_execution_units(caller, n).map_err(|e| e.into())
             },
         );
 
@@ -1022,7 +1025,11 @@ impl WasmiModule {
             ASSERT_ACCESS_RULE_FUNCTION_NAME,
             host_assert_access_rule
         );
-        linker_define!(linker, CONSUME_GAS_FUNCTION_NAME, host_consume_gas);
+        linker_define!(
+            linker,
+            CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
+            host_consume_wasm_execution_units
+        );
         linker_define!(linker, EMIT_EVENT_FUNCTION_NAME, host_emit_event);
         linker_define!(linker, EMIT_LOG_FUNCTION_NAME, host_emit_log);
         linker_define!(linker, PANIC_FUNCTION_NAME, host_panic);
