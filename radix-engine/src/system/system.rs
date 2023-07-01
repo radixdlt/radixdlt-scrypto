@@ -2060,6 +2060,11 @@ where
         &mut self,
         costing_entry: ClientCostingEntry,
     ) -> Result<(), RuntimeError> {
+        // Skip client-side costing requested by TransactionProcessor
+        if self.api.kernel_get_current_depth() == 1 {
+            return Ok(());
+        }
+
         self.api
             .kernel_get_system()
             .modules
@@ -2067,21 +2072,23 @@ where
                 ClientCostingEntry::RunNativeCode {
                     package_address,
                     export_name,
+                    input_size,
                 } => CostingEntry::RunNativeCode {
                     package_address,
                     export_name,
+                    input_size,
                 },
                 ClientCostingEntry::RunWasmCode {
                     package_address,
                     export_name,
-                    gas,
+                    wasm_execution_units,
                 } => CostingEntry::RunWasmCode {
                     package_address,
                     export_name,
-                    gas,
+                    wasm_execution_units,
                 },
-                ClientCostingEntry::RunWasmCodePrepare { size } => {
-                    CostingEntry::RunWasmCodePrepare { size }
+                ClientCostingEntry::PrepareWasmCode { size } => {
+                    CostingEntry::PrepareWasmCode { size }
                 }
             })
     }

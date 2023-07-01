@@ -67,10 +67,11 @@ fn scrypto_cant_emit_unregistered_event() {
 #[test]
 fn scrypto_can_emit_registered_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
 
     let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET, 500u32.into())
         .call_function(
             package_address,
             "ScryptoEvents",
@@ -80,7 +81,7 @@ fn scrypto_can_emit_registered_events() {
         .build();
 
     // Act
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let events = receipt.expect_commit(true).application_events.clone();
@@ -90,7 +91,7 @@ fn scrypto_can_emit_registered_events() {
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
             ref event_data,
         )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-            && is_decoded_equal(&LockFeeEvent { amount: 100.into() }, event_data) =>
+            && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
             true,
         _ => false,
     });
@@ -117,7 +118,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
 
     let (code, definition) = Compile::compile("./tests/blueprints/events_invalid");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
@@ -154,7 +155,7 @@ fn local_type_index_with_misleading_name_fails() {
     );
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .publish_package_advanced(None, code, definition, BTreeMap::new(), OwnerRole::None)
         .build();
 
@@ -182,7 +183,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
     let mut test_runner = TestRunner::builder().without_trace().build();
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .build();
 
     // Act
@@ -198,7 +199,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -214,7 +215,7 @@ fn vault_fungible_recall_emits_correct_events() {
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1.into())
         .call_method(
             account,
@@ -236,7 +237,7 @@ fn vault_fungible_recall_emits_correct_events() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -287,7 +288,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
         let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 100u32.into())
+            .lock_fee(test_runner.faucet_component(), 500u32.into())
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -314,7 +315,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .recall(InternalAddress::new_or_panic(vault_id.into()), 1.into())
         .call_method(
             account,
@@ -336,7 +337,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -389,7 +390,7 @@ fn resource_manager_new_vault_emits_correct_events() {
     let (_, _, account) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_fungible_resource(
             OwnerRole::None,
             false,
@@ -418,7 +419,7 @@ fn resource_manager_new_vault_emits_correct_events() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -452,7 +453,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 100u32.into())
+            .lock_fee(test_runner.faucet_component(), 500u32.into())
             .create_fungible_resource(
                 OwnerRole::None,
                 false,
@@ -482,7 +483,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     };
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .mint_fungible(resource_address, 10.into())
         .burn_from_worktop(10.into(), resource_address)
         .build();
@@ -500,7 +501,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -542,7 +543,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 100u32.into())
+            .lock_fee(test_runner.faucet_component(), 500u32.into())
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -573,7 +574,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 
     let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .mint_non_fungible(resource_address, [(id.clone(), EmptyStruct {})])
         .burn_from_worktop(1.into(), resource_address)
         .build();
@@ -591,7 +592,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -791,7 +792,7 @@ fn validator_registration_emits_correct_event() {
     // Act
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .register_validator(validator_address)
         .build();
@@ -810,7 +811,7 @@ fn validator_registration_emits_correct_event() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -840,7 +841,7 @@ fn validator_unregistration_emits_correct_event() {
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .register_validator(validator_address)
         .build();
@@ -852,7 +853,7 @@ fn validator_unregistration_emits_correct_event() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .unregister_validator(validator_address)
         .build();
@@ -871,7 +872,7 @@ fn validator_unregistration_emits_correct_event() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -901,7 +902,7 @@ fn validator_staking_emits_correct_event() {
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .register_validator(validator_address)
         .build();
@@ -913,7 +914,7 @@ fn validator_staking_emits_correct_event() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .withdraw_from_account(account, RADIX_TOKEN, 100.into())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
@@ -940,7 +941,7 @@ fn validator_staking_emits_correct_event() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -1032,7 +1033,7 @@ fn validator_unstake_emits_correct_events() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .withdraw_from_account(
             account_with_su,
             validator_substate.stake_unit_resource,
@@ -1076,7 +1077,7 @@ fn validator_unstake_emits_correct_events() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 50.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -1183,7 +1184,7 @@ fn validator_claim_xrd_emits_correct_events() {
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .withdraw_from_account(
             account_with_su,
             validator_substate.stake_unit_resource,
@@ -1207,7 +1208,7 @@ fn validator_claim_xrd_emits_correct_events() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .withdraw_from_account(account_with_su, validator_substate.unstake_nft, 1.into())
         .take_all_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
@@ -1243,7 +1244,7 @@ fn validator_claim_xrd_emits_correct_events() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -1318,7 +1319,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .register_validator(validator_address)
         .build();
@@ -1330,7 +1331,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .call_method(
             validator_address,
@@ -1362,7 +1363,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });
@@ -1396,8 +1397,8 @@ fn setting_metadata_emits_correct_events() {
     let resource_address = create_all_allowed_resource(&mut test_runner);
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 10.into())
-        .set_metadata(resource_address.into(), "key", MetadataValue::I32(1))
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .set_metadata(resource_address, "key", MetadataValue::I32(1))
         .build();
 
     // Act
@@ -1418,7 +1419,7 @@ fn setting_metadata_emits_correct_events() {
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
-                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
                 true,
             _ => false,
         });

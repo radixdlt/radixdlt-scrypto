@@ -232,6 +232,27 @@ pub fn stop_timed_recovery_with_no_access_fails() {
 }
 
 #[test]
+pub fn cancel_recovery() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(Some(10));
+    test_runner
+        .initiate_recovery(
+            Role::Primary,
+            AccessRule::AllowAll,
+            AccessRule::DenyAll,
+            AccessRule::DenyAll,
+            Some(1),
+        )
+        .expect_commit_success();
+
+    // Act
+    let receipt = test_runner.cancel_recovery_attempt(Role::Primary);
+
+    //Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 pub fn quick_confirm_semantics_are_correct() {
     // Arrange
     let test_vectors = [
@@ -1651,7 +1672,7 @@ impl AccessControllerTestRunner {
 
         // Creating the access controller component
         let manifest = ManifestBuilder::new()
-            .lock_fee(account, 50.into())
+            .lock_fee(account, 500u32.into())
             .withdraw_from_account(account, controlled_asset, 1.into())
             .take_all_from_worktop(controlled_asset, |builder, bucket| {
                 builder.create_access_controller(

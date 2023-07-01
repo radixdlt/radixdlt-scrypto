@@ -261,7 +261,7 @@ impl Publish {
                 .unwrap_or(get_default_owner_badge()?);
 
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET, 50u32.into())
+                .lock_fee(FAUCET, 5000u32.into())
                 .publish_package_with_owner(
                     code,
                     package_definition,

@@ -1,6 +1,6 @@
 use super::FeeTable;
 use crate::kernel::actor::Actor;
-use crate::track::interface::StoreAccessInfo;
+use crate::track::interface::{StoreAccessInfo, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
 
@@ -19,13 +19,14 @@ pub enum CostingEntry<'a> {
     RunNativeCode {
         package_address: &'a PackageAddress,
         export_name: &'a str,
+        input_size: usize,
     },
     RunWasmCode {
         package_address: &'a PackageAddress,
         export_name: &'a str,
-        gas: u32,
+        wasm_execution_units: u32,
     },
-    RunWasmCodePrepare {
+    PrepareWasmCode {
         size: usize,
     },
 
@@ -86,6 +87,11 @@ pub enum CostingEntry<'a> {
         store_access: &'a StoreAccessInfo,
     },
 
+    /* commit */
+    Commit {
+        store_commit: &'a StoreCommit,
+    },
+
     /* system */
     LockFee,
     QueryFeeReserve,
@@ -124,13 +130,14 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::RunNativeCode {
                 package_address,
                 export_name,
-            } => ft.run_native_code_cost(package_address, export_name),
+                input_size,
+            } => ft.run_native_code_cost(package_address, export_name, input_size),
             CostingEntry::RunWasmCode {
                 package_address,
                 export_name,
-                gas,
-            } => ft.run_wasm_code_cost(package_address, export_name, *gas),
-            CostingEntry::RunWasmCodePrepare { size } => ft.instantiate_wasm_code_cost(*size),
+                wasm_execution_units,
+            } => ft.run_wasm_code_cost(package_address, export_name, *wasm_execution_units),
+            CostingEntry::PrepareWasmCode { size } => ft.instantiate_wasm_code_cost(*size),
             CostingEntry::BeforeInvoke { actor, input_size } => {
                 ft.before_invoke_cost(actor, *input_size)
             }
@@ -169,6 +176,7 @@ impl<'a> CostingEntry<'a> {
             }
             CostingEntry::ScanSubstates { store_access } => ft.scan_substates_cost(store_access),
             CostingEntry::TakeSubstate { store_access } => ft.take_substates_cost(store_access),
+            CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),
             CostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
             CostingEntry::QueryActor => ft.query_actor_cost(),
@@ -198,6 +206,16 @@ impl<'a> CostingEntry<'a> {
                 format!(
                     "OpenSubstate::{}",
                     node_id.entity_type().map(|x| x.into()).unwrap_or("?")
+                )
+            }
+            CostingEntry::Commit { store_commit } => {
+                format!(
+                    "Commit::{}",
+                    store_commit
+                        .node_id()
+                        .entity_type()
+                        .map(|x| x.into())
+                        .unwrap_or("?")
                 )
             }
             x => Into::<&'static str>::into(x).to_string(),

@@ -412,7 +412,7 @@ impl TestRunner {
         proof: NonFungibleGlobalId,
     ) {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .set_metadata(
                 address,
                 key.to_string(),
@@ -648,7 +648,7 @@ impl TestRunner {
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
             .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
                 builder.call_method(
@@ -756,7 +756,7 @@ impl TestRunner {
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
             let manifest = ManifestBuilder::new()
-                .lock_fee(self.faucet_component(), 50.into())
+                .lock_fee(self.faucet_component(), 500u32.into())
                 .create_identity_advanced(OwnerRole::Fixed(rule!(require(owner_id))))
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
@@ -769,7 +769,7 @@ impl TestRunner {
 
     pub fn new_securified_identity(&mut self, account: ComponentAddress) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .create_identity()
             .call_method(
                 account,
@@ -790,7 +790,7 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .call_method(self.faucet_component(), "free", manifest_args!())
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, |builder, bucket| {
                 builder.create_validator(pub_key, Decimal::ONE, bucket);
@@ -857,7 +857,7 @@ impl TestRunner {
         owner_rule: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 5000u32.into())
             .publish_package_advanced(None, code, definition, metadata, owner_rule)
             .build();
 
@@ -872,7 +872,7 @@ impl TestRunner {
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 5000u32.into())
             .publish_package_with_owner(code, definition, owner_badge)
             .build();
 
@@ -933,7 +933,7 @@ impl TestRunner {
             transaction::model::InstructionV1::CallMethod {
                 address: self.faucet_component().into(),
                 method_name: "lock_fee".to_string(),
-                args: manifest_args!(dec!("100")),
+                args: manifest_args!(dec!("500")),
             },
         );
         self.execute_manifest(manifest, initial_proofs)
@@ -1134,7 +1134,7 @@ impl TestRunner {
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .create_fungible_resource(
                 owner_role,
                 true,
@@ -1288,6 +1288,26 @@ impl TestRunner {
         )
     }
 
+    pub fn create_freezeable_non_fungible(&mut self, account: ComponentAddress) -> ResourceAddress {
+        self.create_non_fungible_resource_with_access_rules(
+            NonFungibleResourceFeatures {
+                burnable: burnable! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
+                recallable: recallable! {
+                    recaller => rule!(allow_all), locked;
+                    recaller_updater => rule!(deny_all), locked;
+                },
+                freezable: freezable! {
+                    freezer => rule!(allow_all), locked;
+                    freezer_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
+            },
+            account)
+    }
+
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         self.create_fungible_resource_and_deposit(
             OwnerRole::None,
@@ -1345,18 +1365,26 @@ impl TestRunner {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
+        self.create_non_fungible_resource_with_access_rules(NonFungibleResourceFeatures::default(), account)
+    }
+
+    pub fn create_non_fungible_resource_with_access_rules(
+        &mut self,
+        resource_features: NonFungibleResourceFeatures,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
         let mut entries = BTreeMap::new();
         entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
         entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});
         entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                NonFungibleResourceFeatures::default(),
+                resource_features,
                 metadata!(),
                 Some(entries),
             )
@@ -1377,7 +1405,7 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -1403,7 +1431,7 @@ impl TestRunner {
         let admin_auth = self.create_non_fungible_resource(account);
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -1441,7 +1469,7 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .create_fungible_resource(
                 owner_role,
                 true,
@@ -1474,7 +1502,7 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 50u32.into())
+            .lock_fee(self.faucet_component(), 500u32.into())
             .create_fungible_resource(
                 owner_role,
                 true,

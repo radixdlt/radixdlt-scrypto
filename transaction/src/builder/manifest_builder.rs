@@ -115,6 +115,12 @@ impl ManifestBuilder {
         }
     }
 
+    pub fn add_blob(&mut self, blob: Vec<u8>) -> &mut Self {
+        let hash = hash(&blob);
+        self.blobs.insert(hash, blob);
+        self
+    }
+
     /// Adds a raw instruction.
     pub fn add_instruction(
         &mut self,
@@ -221,6 +227,12 @@ impl ManifestBuilder {
     /// Adds a bucket of resource to worktop.
     pub fn return_to_worktop(&mut self, bucket_id: ManifestBucket) -> &mut Self {
         self.add_instruction(InstructionV1::ReturnToWorktop { bucket_id })
+            .0
+    }
+
+    /// Asserts that worktop contains resource.
+    pub fn assert_worktop_contains_any(&mut self, resource_address: ResourceAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::AssertWorktopContainsAny { resource_address })
             .0
     }
 
@@ -788,9 +800,32 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn set_metadata<S: ToString>(
+    pub fn lock_owner_role(&mut self, address: GlobalAddress) -> &mut Self {
+        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+            address: address.into(),
+            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesLockOwnerRoleInput {}),
+        })
+        .0
+    }
+
+    pub fn get_role(
         &mut self,
         address: GlobalAddress,
+        module: ObjectModuleId,
+        role_key: RoleKey,
+    ) -> &mut Self {
+        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+            address: address.into(),
+            method_name: ACCESS_RULES_GET_ROLE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccessRulesGetRoleInput { module, role_key }),
+        })
+        .0
+    }
+
+    pub fn set_metadata<A: Into<DynamicGlobalAddress>, S: ToString>(
+        &mut self,
+        address: A,
         key: S,
         value: MetadataValue,
     ) -> &mut Self {
@@ -1077,6 +1112,23 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn recall_non_fungibles(
+        &mut self,
+        vault_id: InternalAddress,
+        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+    ) -> &mut Self {
+        let args = to_manifest_value_and_unwrap!(&NonFungibleVaultRecallNonFungiblesInput {
+            non_fungible_local_ids,
+        });
+
+        self.add_instruction(InstructionV1::CallDirectVaultMethod {
+            address: vault_id,
+            method_name: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+            args,
+        });
+        self
+    }
+
     pub fn freeze_withdraw(&mut self, vault_id: InternalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
             address: vault_id,
@@ -1164,6 +1216,16 @@ impl ManifestBuilder {
             blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
             function_name: ACCOUNT_CREATE_ADVANCED_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&AccountCreateAdvancedInput { owner_role }),
+        })
+        .0
+    }
+
+    pub fn new_account(&mut self) -> &mut Self {
+        self.add_instruction(InstructionV1::CallFunction {
+            package_address: ACCOUNT_PACKAGE.into(),
+            blueprint_name: ACCOUNT_BLUEPRINT.to_string(),
+            function_name: ACCOUNT_CREATE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccountCreateInput {}),
         })
         .0
     }

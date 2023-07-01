@@ -38,9 +38,11 @@ pub fn extract_definition(code: &[u8]) -> Result<PackageDefinition, ExtractSchem
     let wasm_engine = DefaultWasmEngine::default();
     let fee_reserve = SystemLoanFeeReserve::default()
         .with_free_credit(Decimal::try_from(DEFAULT_FREE_CREDIT_IN_XRD).unwrap());
-    let mut gas_consumed = 0;
-    let mut runtime: Box<dyn WasmRuntime> =
-        Box::new(NoOpWasmRuntime::new(fee_reserve, &mut gas_consumed));
+    let mut wasm_execution_units_consumed = 0;
+    let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
+        fee_reserve,
+        &mut wasm_execution_units_consumed,
+    ));
     let mut instance = wasm_engine.instantiate(code_hash, &instrumented_code);
     let mut blueprints = BTreeMap::new();
     for function_export in function_exports {

@@ -12,7 +12,7 @@
 CALL_METHOD 
     Address("${faucet_component_address}") 
     "lock_fee"
-    Decimal("10");
+    Decimal("500");
 
 # Calling the "free" method on the faucet component which is the method responsible for dispensing 
 # XRD from the faucet.

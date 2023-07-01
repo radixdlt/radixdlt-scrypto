@@ -2133,19 +2133,6 @@ impl ResourceNativePackage {
                     export: AUTH_ZONE_DRAIN_EXPORT_NAME.to_string(),
                 },
             );
-            functions.insert(
-                AUTH_ZONE_DROP_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: None,
-                    input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<AuthZoneDropInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<AuthZoneDropOutput>(),
-                    ),
-                    export: AUTH_ZONE_DROP_EXPORT_NAME.to_string(),
-                },
-            );
 
             let schema = generate_full_schema(aggregator);
             let auth_zone_blueprint = BlueprintStateSchemaInit {

@@ -466,6 +466,16 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
         .expect_commit_success();
 
     // Act
+    let receipt = test_runner.get_redemption_value(dec!("1.11111111111111"), true);
+
+    // Assert
+    assert_eq!(
+        receipt[&test_runner.pool_resource1],
+        dec!("1.11111111111111")
+    );
+    assert_eq!(receipt[&test_runner.pool_resource2], dec!("1.11")); // rounded due to divisibility == 2
+
+    // Act
     let receipt = test_runner.redeem(dec!("1.11111111111111"), true);
 
     // Assert
@@ -949,7 +959,7 @@ impl TestEnvironment {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_component_address.into(), key, value)
+            .set_metadata(self.pool_component_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -961,7 +971,7 @@ impl TestEnvironment {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_unit_resource_address.into(), key, value)
+            .set_metadata(self.pool_unit_resource_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -1026,6 +1036,24 @@ impl TestEnvironment {
         } else {
             vec![]
         }
+    }
+
+    fn get_redemption_value<D: Into<Decimal>>(
+        &mut self,
+        amount_of_pool_units: D,
+        sign: bool,
+    ) -> TwoResourcePoolGetRedemptionValueOutput {
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                self.pool_component_address,
+                TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
+                to_manifest_value_and_unwrap!(&TwoResourcePoolGetRedemptionValueManifestInput {
+                    amount_of_pool_units: amount_of_pool_units.into(),
+                }),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, sign);
+        receipt.expect_commit_success().output(1)
     }
 }
 

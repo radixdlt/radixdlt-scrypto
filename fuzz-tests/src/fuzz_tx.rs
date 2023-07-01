@@ -620,7 +620,7 @@ impl TxFuzzer {
 
                     Some(InstructionV1::PushToAuthZone { proof_id })
                 }
-                // RecallVault
+                // RecallFromVault
                 42 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
                     let vault_id = {

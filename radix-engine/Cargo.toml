@@ -68,7 +68,7 @@ wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
 moka = ["dep:moka"]
 lru = ["dep:lru"]
 
-resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker"]
+resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker", "radix-engine-common/resource_tracker"]
 
 # This flag is set by fuzz-tests framework and it disables cache in wasm_instrumenter/wasmi/wasmer
 # to prevent non-determinism when fuzzing

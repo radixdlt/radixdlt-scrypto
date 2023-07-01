@@ -25,7 +25,7 @@ fn test_external_bridges() {
 
     // Part 2 - Get a target component address
     let manifest1 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             target_package_address,
             "ExternalBlueprintTarget",
@@ -40,7 +40,7 @@ fn test_external_bridges() {
 
     // Part 3 - Get the caller component address
     let manifest2 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_function(
             caller_package_address,
             "ExternalBlueprintCaller",
@@ -55,7 +55,7 @@ fn test_external_bridges() {
 
     // ACT
     let manifest3 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(
             caller_component_address,
             "run_tests_with_external_blueprint",
@@ -69,7 +69,7 @@ fn test_external_bridges() {
 
     // ACT
     let manifest4 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 50u32.into())
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(
             caller_component_address,
             "run_tests_with_external_component",

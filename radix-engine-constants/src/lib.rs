@@ -72,46 +72,68 @@ pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
 /// The default free credit, for preview only.
 pub const DEFAULT_FREE_CREDIT_IN_XRD: &str = "100";
 
-/// The default cost unit price.
-pub const DEFAULT_COST_UNIT_PRICE: &str = "0.0000005";
-
-/// The default USD price, roughly 1 XRD = 0.07 USD
-pub const DEFAULT_USD_PRICE: &str = "14";
-
 pub const DEFAULT_MAX_EXECUTION_TRACE_DEPTH: usize = 1;
 
 /// The default max call depth, used by transaction executor.
 pub const DEFAULT_MAX_CALL_DEPTH: usize = 8;
 
-/// The default maximum substates reads count per transaction.
-pub const DEFAULT_MAX_SUBSTATE_READS_PER_TRANSACTION: usize = 16 * 1024;
+/// The default max number of substates in track.
+pub const DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK: usize = 512;
 
-/// The default maximum substates writes count per transaction.
-pub const DEFAULT_MAX_SUBSTATE_WRITES_PER_TRANSACTION: usize = 4 * 1024;
+/// The default max number of substates in heap.
+pub const DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_HEAP: usize = 512;
 
 /// The default maximum substate read and write size.
-/// FIXME: Apply this limit in create_node too
 pub const DEFAULT_MAX_SUBSTATE_SIZE: usize = 2 * 1024 * 1024;
 
 /// The default maximum invoke input args size.
 pub const DEFAULT_MAX_INVOKE_INPUT_SIZE: usize = 1 * 1024 * 1024;
 
-/* Fees/tips distribution */
+/// The proposer's share of tips
 pub const TIPS_PROPOSER_SHARE_PERCENTAGE: u8 = 100;
+
+/// The validator set's share of tips
 pub const TIPS_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 0;
+
+/// The proposer's share of fees (execution and state expansion)
 pub const FEES_PROPOSER_SHARE_PERCENTAGE: u8 = 25;
+
+/// The validator set's share of fees  (execution and state expansion)
 pub const FEES_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 25;
 
-/* Logs and events */
+/// The max event size
 pub const DEFAULT_MAX_EVENT_SIZE: usize = 64 * 1024;
+
+/// The max log size
 pub const DEFAULT_MAX_LOG_SIZE: usize = 64 * 1024;
+
+/// The max panic message size
 pub const DEFAULT_MAX_PANIC_MESSAGE_SIZE: usize = 64 * 1024;
+
+/// The max number of events
 pub const DEFAULT_MAX_NUMBER_OF_EVENTS: usize = 256;
+
+/// The max number of logs
 pub const DEFAULT_MAX_NUMBER_OF_LOGS: usize = 256;
+
+/// The max SBOR size of metadata key
+pub const DEFAULT_MAX_METADATA_KEY_STRING_LEN: usize = 100;
+
+/// The max SBOR size of metadata value
+pub const DEFAULT_MAX_METADATA_VALUE_SBOR_LEN: usize = 512;
+
+//==========================
+// TO BE DEFINED
+//==========================
+
+/// The default cost unit price, in XRD.
+pub const DEFAULT_COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
+
+/// The default price for adding a single byte to the substate store, in XRD.
+pub const DEFAULT_STATE_EXPANSION_PRICE_IN_XRD: &str = "0.00001";
+
+/// The default USD price, in XRD
+pub const DEFAULT_USD_PRICE_IN_XRD: &str = "10";
 
 /// The default maximum that a package or component owner is allowed to set their method royalty to
 pub const DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD: &str = "150.0";
-
-/* Metadata */
-pub const DEFAULT_MAX_METADATA_KEY_STRING_LEN: usize = 100;
-pub const DEFAULT_MAX_METADATA_VALUE_SBOR_LEN: usize = 512;

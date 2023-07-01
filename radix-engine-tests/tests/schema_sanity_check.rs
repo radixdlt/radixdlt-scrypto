@@ -1,6 +1,8 @@
 use radix_engine::{
     errors::{RuntimeError, SystemError},
-    system::system_modules::costing::NATIVE_FUNCTION_BASE_COSTS,
+    system::system_modules::costing::{
+        NATIVE_FUNCTION_BASE_COSTS, NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT,
+    },
     types::*,
 };
 use radix_engine_common::prelude::well_known_scrypto_custom_types::*;
@@ -52,6 +54,9 @@ fn check_native_function_base_costs() {
         }
     }
 
+    println!();
+    let mut missing_functions = false;
+
     for (package_address, m) in &lookup {
         for export_name in m {
             if !matches!(
@@ -59,15 +64,28 @@ fn check_native_function_base_costs() {
                     .get(package_address)
                     .map(|x| x.contains_key(export_name.as_str())),
                 Some(true)
-            ) {
+            ) && !matches!(
+                NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT
+                    .get(package_address)
+                    .map(|x| x.contains_key(export_name.as_str())),
+                Some(true)
+            ) && *package_address != FAUCET_PACKAGE
+                && *package_address != GENESIS_HELPER_PACKAGE
+            {
                 println!(
                     "Missing definition: {}, {}",
                     package_address.to_hex(),
                     export_name
                 );
+                missing_functions = true;
             }
         }
     }
+
+    println!();
+
+    // In case of failing see: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3042115875/Running+CPU+costing+evaluation
+    assert!(!missing_functions);
 }
 
 #[test]
@@ -363,7 +381,7 @@ pub fn test_fake_bucket() {
     // Test abusing vault put method
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 50u32.into())
+            .lock_fee(account, 500u32.into())
             .withdraw_from_account(account, RADIX_TOKEN, 100.into())
             .take_from_worktop(RADIX_TOKEN, 100.into(), |builder, bucket| {
                 builder.call_function(

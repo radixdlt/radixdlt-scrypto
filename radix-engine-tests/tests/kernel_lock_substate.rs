@@ -26,7 +26,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     // Create dummy transaction
     let transaction = TestTransaction::new_from_nonce(
         ManifestBuilder::new()
-            .lock_fee(FAUCET, 50u32.into())
+            .lock_fee(FAUCET, 500u32.into())
             .build(),
         1,
     )

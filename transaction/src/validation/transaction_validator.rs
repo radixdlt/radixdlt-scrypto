@@ -186,6 +186,7 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(&bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
+                InstructionV1::AssertWorktopContainsAny { .. } => {}
                 InstructionV1::AssertWorktopContains { .. } => {}
                 InstructionV1::AssertWorktopContainsNonFungibles { .. } => {}
                 InstructionV1::PopFromAuthZone => {

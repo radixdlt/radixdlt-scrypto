@@ -93,9 +93,9 @@ impl ScenarioCore {
         logical_name: &str,
         create_manifest: impl FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
         signers: Vec<&PrivateKey>,
-    ) -> NextTransaction {
+    ) -> Result<NextTransaction, ScenarioError> {
         let mut manifest_builder = ManifestBuilder::new();
-        manifest_builder.lock_fee(FAUCET, dec!(100));
+        manifest_builder.lock_fee(FAUCET, dec!(5000));
         create_manifest(&mut manifest_builder);
         self.next_transaction(logical_name, manifest_builder, signers)
     }
@@ -103,7 +103,7 @@ impl ScenarioCore {
     pub fn next_transaction_free_xrd_from_faucet(
         &mut self,
         to_account: ComponentAddress,
-    ) -> NextTransaction {
+    ) -> Result<NextTransaction, ScenarioError> {
         self.next_transaction_with_faucet_lock_fee(
             "faucet-top-up",
             |builder| {
@@ -130,7 +130,7 @@ impl ScenarioCore {
         logical_name: &str,
         manifest_builder: ManifestBuilder,
         signers: Vec<&PrivateKey>,
-    ) -> NextTransaction {
+    ) -> Result<NextTransaction, ScenarioError> {
         let nonce = self.nonce;
         self.nonce += 1;
         let manifest = manifest_builder.build();
@@ -150,16 +150,18 @@ impl ScenarioCore {
         }
         builder = builder.notarize(&self.default_notary);
         self.last_transaction_name = Some(logical_name.to_owned());
-        NextTransaction::of(logical_name.to_owned(), self.stage_counter, builder.build())
+        Ok(NextTransaction::of(
+            logical_name.to_owned(),
+            self.stage_counter,
+            builder.build(),
+        ))
     }
 
-    /// The `interesting_addresses` should be a list of addresses that the scenario touched/created,
-    /// with a descriptor in lower_snake_case.
-    pub fn finish_scenario(&self, interesting_addresses: DescribedAddresses) -> NextAction {
-        NextAction::Completed(EndState {
+    pub fn finish_scenario(&self, output: ScenarioOutput) -> EndState {
+        EndState {
             next_unused_nonce: self.nonce,
-            interesting_addresses,
-        })
+            output,
+        }
     }
 
     pub fn network(&self) -> &NetworkDefinition {
@@ -177,29 +179,56 @@ impl ScenarioCore {
         }
     }
 
+    pub fn check_previous<'a>(
+        &self,
+        previous: &Option<&'a TransactionReceipt>,
+    ) -> Result<&'a TransactionReceipt, ScenarioError> {
+        match previous {
+            Some(previous) => Ok(previous),
+            None => Err(ScenarioError::MissingPreviousResult),
+        }
+    }
+
     pub fn check_commit_success<'a>(
         &self,
-        previous: &'a Option<&TransactionReceipt>,
+        receipt: &'a TransactionReceipt,
     ) -> Result<&'a CommitResult, ScenarioError> {
-        match previous {
-            Some(receipt) => match &receipt.transaction_result {
-                TransactionResult::Commit(c) => match &c.outcome {
-                    TransactionOutcome::Success(_) => Ok(c),
-                    TransactionOutcome::Failure(err) => Err(ScenarioError::TransactionFailed(
-                        self.last_transaction_description(),
-                        err.clone(),
-                    )),
-                },
-                TransactionResult::Reject(result) => Err(ScenarioError::TransactionRejected(
+        match &receipt.transaction_result {
+            TransactionResult::Commit(c) => match &c.outcome {
+                TransactionOutcome::Success(_) => Ok(c),
+                TransactionOutcome::Failure(err) => Err(ScenarioError::TransactionFailed(
                     self.last_transaction_description(),
-                    result.clone(),
-                )),
-                TransactionResult::Abort(result) => Err(ScenarioError::TransactionAborted(
-                    self.last_transaction_description(),
-                    result.clone(),
+                    err.clone(),
                 )),
             },
-            None => Err(ScenarioError::MissingPreviousResult),
+            TransactionResult::Reject(result) => Err(ScenarioError::TransactionRejected(
+                self.last_transaction_description(),
+                result.clone(),
+            )),
+            TransactionResult::Abort(result) => Err(ScenarioError::TransactionAborted(
+                self.last_transaction_description(),
+                result.clone(),
+            )),
+        }
+    }
+
+    pub fn check_commit_failure<'a>(
+        &self,
+        receipt: &'a TransactionReceipt,
+    ) -> Result<&'a RuntimeError, ScenarioError> {
+        match &receipt.transaction_result {
+            TransactionResult::Commit(c) => match &c.outcome {
+                TransactionOutcome::Success(_) => Err(ScenarioError::TransactionSucceeded),
+                TransactionOutcome::Failure(err) => Ok(err),
+            },
+            TransactionResult::Reject(result) => Err(ScenarioError::TransactionRejected(
+                self.last_transaction_description(),
+                result.clone(),
+            )),
+            TransactionResult::Abort(result) => Err(ScenarioError::TransactionAborted(
+                self.last_transaction_description(),
+                result.clone(),
+            )),
         }
     }
 
@@ -218,10 +247,12 @@ pub struct FullScenarioError {
 pub enum ScenarioError {
     PreviousResultProvidedAtStart,
     MissingPreviousResult,
+    TransactionSucceeded,
     TransactionFailed(String, RuntimeError),
     TransactionRejected(String, RejectResult),
     TransactionAborted(String, AbortResult),
     TransactionValidationFailed(String, TransactionValidationError),
+    StateReadBeforeSet,
     Custom(String),
 }
 
@@ -242,11 +273,11 @@ pub enum NextAction {
 #[derive(Debug)]
 pub struct EndState {
     pub next_unused_nonce: u32,
-    pub interesting_addresses: DescribedAddresses,
+    pub output: ScenarioOutput,
 }
 
 #[derive(Debug)]
-pub struct DescribedAddresses(IndexMap<String, GlobalAddress>);
+pub struct DescribedAddresses(pub IndexMap<String, GlobalAddress>);
 
 impl DescribedAddresses {
     pub fn new() -> Self {
@@ -259,13 +290,7 @@ impl DescribedAddresses {
     }
 }
 
-pub trait ScenarioInstance {
-    /// Consumes the previous receipt, and gets the next transaction in the scenario.
-    fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError>;
-
-    fn metadata(&self) -> ScenarioMetadata;
-}
-
+#[derive(Clone)]
 pub struct ScenarioMetadata {
     /// The logical name of the scenario:
     /// - This is used in Node genesis to specify which scenarios should be run
@@ -273,12 +298,212 @@ pub struct ScenarioMetadata {
     pub logical_name: &'static str,
 }
 
-pub trait ScenarioDefinition: Sized + ScenarioInstance {
+pub trait ScenarioCreator: Sized {
     type Config: Default;
+    type State: Default;
 
-    fn new(core: ScenarioCore) -> Self {
-        Self::new_with_config(core, Default::default())
+    fn create(core: ScenarioCore) -> Box<dyn ScenarioInstance> {
+        Self::create_with_config_and_state(core, Default::default(), Default::default())
     }
 
-    fn new_with_config(core: ScenarioCore, config: Self::Config) -> Self;
+    fn create_with_config_and_state(
+        core: ScenarioCore,
+        config: Self::Config,
+        start_state: Self::State,
+    ) -> Box<dyn ScenarioInstance>;
+}
+
+pub trait ScenarioInstance {
+    fn metadata(&self) -> &ScenarioMetadata;
+
+    /// Consumes the previous receipt, and gets the next transaction in the scenario.
+    fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError>;
+}
+
+pub struct ScenarioBuilder<Config, State> {
+    core: ScenarioCore,
+    metadata: ScenarioMetadata,
+    config: Config,
+    state: State,
+    transactions: Vec<ScenarioTransaction<Config, State>>,
+}
+
+impl<Config: 'static, State: 'static> ScenarioBuilder<Config, State> {
+    pub fn new(
+        core: ScenarioCore,
+        metadata: ScenarioMetadata,
+        config: Config,
+        start_state: State,
+    ) -> Self {
+        Self {
+            core,
+            metadata,
+            config,
+            state: start_state,
+            transactions: vec![],
+        }
+    }
+
+    /// Also checks that the transaction commits successfully
+    pub fn successful_transaction(
+        mut self,
+        creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
+            + 'static,
+    ) -> Self {
+        self.transactions.push(ScenarioTransaction {
+            creator: Box::new(creator),
+            handler: Box::new(|core, _, _, receipt| {
+                core.check_commit_success(&receipt)?;
+                Ok(())
+            }),
+        });
+        self
+    }
+
+    pub fn successful_transaction_with_result_handler(
+        mut self,
+        creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
+            + 'static,
+        handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &CommitResult) -> Result<(), ScenarioError>
+            + 'static,
+    ) -> Self {
+        self.transactions.push(ScenarioTransaction {
+            creator: Box::new(creator),
+            handler: Box::new(
+                move |core, config, state, receipt| -> Result<(), ScenarioError> {
+                    let commit_result = core.check_commit_success(receipt)?;
+                    handler(core, config, state, commit_result)
+                },
+            ),
+        });
+        self
+    }
+
+    pub fn add_transaction_advanced(
+        mut self,
+        creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
+            + 'static,
+        handler: impl Fn(
+                &mut ScenarioCore,
+                &Config,
+                &mut State,
+                &TransactionReceipt,
+            ) -> Result<(), ScenarioError>
+            + 'static,
+    ) -> Self {
+        self.transactions.push(ScenarioTransaction {
+            creator: Box::new(creator),
+            handler: Box::new(handler),
+        });
+        self
+    }
+
+    pub fn finalize(
+        self,
+        finalizer: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<ScenarioOutput, ScenarioError>
+            + 'static,
+    ) -> Box<dyn ScenarioInstance> {
+        Box::new(Scenario::<Config, State> {
+            core: self.core,
+            metadata: self.metadata,
+            config: self.config,
+            state: self.state,
+            transactions: self.transactions,
+            finalizer: Box::new(finalizer),
+        })
+    }
+}
+
+pub struct Scenario<Config, State> {
+    core: ScenarioCore,
+    metadata: ScenarioMetadata,
+    config: Config,
+    state: State,
+    transactions: Vec<ScenarioTransaction<Config, State>>,
+    finalizer: Box<ScenarioFinalizer<Config, State>>,
+}
+
+pub struct ScenarioTransaction<Config, State> {
+    creator: Box<TransactionCreator<Config, State>>,
+    handler: Box<TransactionResultHandler<Config, State>>,
+}
+
+type TransactionCreator<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
+    + 'static;
+type TransactionResultHandler<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State, &TransactionReceipt) -> Result<(), ScenarioError>
+    + 'static;
+type ScenarioFinalizer<Config, State> = dyn Fn(&mut ScenarioCore, &Config, &mut State) -> Result<ScenarioOutput, ScenarioError>
+    + 'static;
+
+#[derive(Debug)]
+pub struct ScenarioOutput {
+    /// The `interesting_addresses` should be a list of addresses that the scenario touched/created,
+    /// with a descriptor in lower_snake_case.
+    pub interesting_addresses: DescribedAddresses,
+}
+
+impl<Config, State> ScenarioInstance for Scenario<Config, State> {
+    fn metadata(&self) -> &ScenarioMetadata {
+        &self.metadata
+    }
+
+    fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError> {
+        let core = &mut self.core;
+        let next_transaction_index = core.next_stage() - 1;
+        if next_transaction_index == 0 {
+            core.check_start(&previous)?;
+        } else {
+            let receipt = core.check_previous(&previous)?;
+            self.transactions[next_transaction_index - 1]
+                .handler
+                .as_ref()(core, &self.config, &mut self.state, receipt)?;
+        }
+        let next_action = if next_transaction_index < self.transactions.len() {
+            let next_transaction = self.transactions[next_transaction_index].creator.as_ref()(
+                core,
+                &self.config,
+                &mut self.state,
+            )?;
+            NextAction::Transaction(next_transaction)
+        } else {
+            let output = self.finalizer.as_ref()(core, &self.config, &mut self.state)?;
+            NextAction::Completed(core.finish_scenario(output))
+        };
+        Ok(next_action)
+    }
+}
+
+/// A helper class for transaction scenario state entries
+pub(crate) struct State<T>(Option<T>);
+
+impl<T> State<T> {
+    #[allow(unused)]
+    pub fn as_ref(&self) -> Result<&T, ScenarioError> {
+        self.0.as_ref().ok_or(ScenarioError::StateReadBeforeSet)
+    }
+
+    pub fn set(&mut self, value: T) {
+        self.0 = Some(value);
+    }
+}
+
+impl<T: Clone> State<T> {
+    pub fn get(&self) -> Result<T, ScenarioError> {
+        self.0
+            .as_ref()
+            .map(Clone::clone)
+            .ok_or(ScenarioError::StateReadBeforeSet)
+    }
+
+    // TODO - remove this when we create a better manifest builder which doesn't use callbacks,
+    // and so have easier error propogation
+    pub fn unwrap(&self) -> T {
+        self.0.as_ref().map(Clone::clone).unwrap()
+    }
+}
+
+impl<T> Default for State<T> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
 }

@@ -139,6 +139,19 @@ fn initial_contribution_to_pool_mints_expected_amount() {
 }
 
 #[test]
+fn initial_contribution_to_pool_check_amount() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new(18);
+
+    // Act
+    test_runner.contribute(10, true).expect_commit_success();
+    let amount = test_runner.get_vault_amount(true);
+
+    // Assert
+    assert_eq!(amount, 10.into());
+}
+
+#[test]
 fn contribution_to_pool_mints_expected_amount_1() {
     // Arrange
     let mut test_runner = TestEnvironment::new(18);
@@ -611,7 +624,7 @@ impl TestEnvironment {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_component_address.into(), key, value)
+            .set_metadata(self.pool_component_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -623,7 +636,7 @@ impl TestEnvironment {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_unit_resource_address.into(), key, value)
+            .set_metadata(self.pool_unit_resource_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -716,7 +729,6 @@ impl TestEnvironment {
         receipt.expect_commit_success().output(1)
     }
 
-    #[allow(unused)]
     fn get_vault_amount(&mut self, sign: bool) -> Decimal {
         let manifest = ManifestBuilder::new()
             .call_method(

@@ -335,6 +335,30 @@ fn contributing_provides_expected_amount_of_pool_units4() {
 }
 
 #[test]
+fn initial_contribution_to_pool_check_amounts() {
+    // Arrange
+    let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
+
+    let contributions = btreemap!(
+        test_runner.pool_resources[0] => dec!("10"),
+        test_runner.pool_resources[1] => dec!("10"),
+        test_runner.pool_resources[2] => dec!("10")
+    );
+
+    // Act
+    test_runner
+        .contribute(contributions, true)
+        .expect_commit_success();
+    let amounts = test_runner.get_vault_amounts(true);
+
+    // Assert
+    assert_eq!(amounts.len(), 3);
+    for item in amounts.iter() {
+        assert_eq!(*item.1, 10.into());
+    }
+}
+
+#[test]
 fn contributing_tokens_that_do_not_belong_to_pool_fails() {
     // Arrange
     let mut test_runner = TestEnvironment::<3>::new([18, 18, 18]);
@@ -403,6 +427,19 @@ fn redemption_of_pool_units_rounds_down_for_resources_with_divisibility_not_18()
         test_runner.pool_resources[1] => dec!("1.11"),
     );
     test_runner.contribute(contributions, true);
+
+    // Act
+    let receipt = test_runner.get_redemption_value(dec!("1.11111111111111"), true);
+
+    // Assert
+    assert_eq!(
+        receipt[&test_runner.pool_resources[0]],
+        expected_change[&test_runner.pool_resources[0]]
+    );
+    assert_eq!(
+        receipt[&test_runner.pool_resources[1]],
+        expected_change[&test_runner.pool_resources[1]]
+    );
 
     // Act
     let receipt = test_runner.redeem(dec!("1.11111111111111"), true);
@@ -714,7 +751,7 @@ impl<const N: usize> TestEnvironment<N> {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_component_address.into(), key, value)
+            .set_metadata(self.pool_component_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -726,7 +763,7 @@ impl<const N: usize> TestEnvironment<N> {
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_unit_resource_address.into(), key, value)
+            .set_metadata(self.pool_unit_resource_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -830,6 +867,36 @@ impl<const N: usize> TestEnvironment<N> {
         } else {
             vec![]
         }
+    }
+
+    fn get_vault_amounts(&mut self, sign: bool) -> MultiResourcePoolGetVaultAmountsOutput {
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                self.pool_component_address,
+                MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
+                to_manifest_value_and_unwrap!(&MultiResourcePoolGetVaultAmountsManifestInput),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, sign);
+        receipt.expect_commit_success().output(1)
+    }
+
+    fn get_redemption_value<D: Into<Decimal>>(
+        &mut self,
+        amount_of_pool_units: D,
+        sign: bool,
+    ) -> MultiResourcePoolGetRedemptionValueOutput {
+        let manifest = ManifestBuilder::new()
+            .call_method(
+                self.pool_component_address,
+                MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
+                to_manifest_value_and_unwrap!(&MultiResourcePoolGetRedemptionValueManifestInput {
+                    amount_of_pool_units: amount_of_pool_units.into(),
+                }),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, sign);
+        receipt.expect_commit_success().output(1)
     }
 }
 

@@ -1,7 +1,7 @@
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
     "lock_fee"
-    Decimal("100")
+    Decimal("5000")
 ;
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
@@ -16,31 +16,51 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t5wkz66n5xvqvhhsm6hn7tv9sf5vp7yctc5eanfd2w86tx6jz2fzsp")
+=======
+    Address("resource_sim1thkghz5egjy44qfeetdc6axluu8ufdpmhl4evw6npps3vhufharc4c")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1th3ttny2fa56m6k34tma9l8vak70evhnru92d6938m33drlmlfv05y")
+=======
+    Address("resource_sim1t54dd48644rq3yfzprruw3cunqj32e4lqx7u7yrrhkjd5xhg6q0k9h")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t4smh4yq9jv3hcnzx4x5spch3ayrvk38txauzu9dakpdn9nm3alfyj")
+=======
+    Address("resource_sim1thmxgmnuuaf523t6z9qd0dadr5pz2vpg73u3rzzlx4fza6pey5ymnd")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t4j7m56k2jctufd0fy2k4xc3zytuajrkqyd4y7gy685hgrlyxywtwx")
+=======
+    Address("resource_sim1thjyc6jyd3ltxl2hpgjvf7fuh7vlmlz9dmrqadrku36dgqezlj9rhk")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1th3dphfsshwqd7azvmrz8jmgxlx57j0h6gx7vtg23m9mhlwsyy2jh5")
+=======
+    Address("resource_sim1t57q5t9kat0lv24wd3mdnc0zwjuwpta334t7xp95hy62s4veatdzle")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
@@ -57,31 +77,51 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t5wkz66n5xvqvhhsm6hn7tv9sf5vp7yctc5eanfd2w86tx6jz2fzsp")
+=======
+    Address("resource_sim1thkghz5egjy44qfeetdc6axluu8ufdpmhl4evw6npps3vhufharc4c")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1th3ttny2fa56m6k34tma9l8vak70evhnru92d6938m33drlmlfv05y")
+=======
+    Address("resource_sim1t54dd48644rq3yfzprruw3cunqj32e4lqx7u7yrrhkjd5xhg6q0k9h")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t4smh4yq9jv3hcnzx4x5spch3ayrvk38txauzu9dakpdn9nm3alfyj")
+=======
+    Address("resource_sim1thmxgmnuuaf523t6z9qd0dadr5pz2vpg73u3rzzlx4fza6pey5ymnd")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t4j7m56k2jctufd0fy2k4xc3zytuajrkqyd4y7gy685hgrlyxywtwx")
+=======
+    Address("resource_sim1thjyc6jyd3ltxl2hpgjvf7fuh7vlmlz9dmrqadrku36dgqezlj9rhk")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1th3dphfsshwqd7azvmrz8jmgxlx57j0h6gx7vtg23m9mhlwsyy2jh5")
+=======
+    Address("resource_sim1t57q5t9kat0lv24wd3mdnc0zwjuwpta334t7xp95hy62s4veatdzle")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
@@ -98,31 +138,51 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t5wkz66n5xvqvhhsm6hn7tv9sf5vp7yctc5eanfd2w86tx6jz2fzsp")
+=======
+    Address("resource_sim1thkghz5egjy44qfeetdc6axluu8ufdpmhl4evw6npps3vhufharc4c")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1th3ttny2fa56m6k34tma9l8vak70evhnru92d6938m33drlmlfv05y")
+=======
+    Address("resource_sim1t54dd48644rq3yfzprruw3cunqj32e4lqx7u7yrrhkjd5xhg6q0k9h")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t4smh4yq9jv3hcnzx4x5spch3ayrvk38txauzu9dakpdn9nm3alfyj")
+=======
+    Address("resource_sim1thmxgmnuuaf523t6z9qd0dadr5pz2vpg73u3rzzlx4fza6pey5ymnd")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1t4j7m56k2jctufd0fy2k4xc3zytuajrkqyd4y7gy685hgrlyxywtwx")
+=======
+    Address("resource_sim1thjyc6jyd3ltxl2hpgjvf7fuh7vlmlz9dmrqadrku36dgqezlj9rhk")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1th3dphfsshwqd7azvmrz8jmgxlx57j0h6gx7vtg23m9mhlwsyy2jh5")
+=======
+    Address("resource_sim1t57q5t9kat0lv24wd3mdnc0zwjuwpta334t7xp95hy62s4veatdzle")
+>>>>>>> develop
     Decimal("333")
 ;
 CALL_METHOD
