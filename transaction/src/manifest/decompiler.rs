@@ -598,7 +598,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = match method_name.as_str() {
                 VAULT_RECALL_IDENT => {
                     fields.push(to_manifest_value(vault_id)?);
-                    "RECALL_VAULT"
+                    "RECALL_FROM_VAULT"
                 }
                 VAULT_FREEZE_IDENT => {
                     fields.push(to_manifest_value(vault_id)?);
