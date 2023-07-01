@@ -409,14 +409,14 @@ CALL_FUNCTION
     "Radiswap"
     "new"
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Address("resource_sim1thkghz5egjy44qfeetdc6axluu8ufdpmhl4evw6npps3vhufharc4c")
+    Address("resource_sim1thazudp52ynxvpfqrvve77k5c9ceekspz2vwhqrftzu29asd6z8gnv")
 ;
 CALL_FUNCTION
     NamedAddress("address1")
     "Radiswap"
     "new"
-    Address("resource_sim1t54dd48644rq3yfzprruw3cunqj32e4lqx7u7yrrhkjd5xhg6q0k9h")
-    Address("resource_sim1thmxgmnuuaf523t6z9qd0dadr5pz2vpg73u3rzzlx4fza6pey5ymnd")
+    Address("resource_sim1tkvm4tn4sqt7672dugdva8tkh4q80e2ef34f383s9w2zl67esvjln6")
+    Address("resource_sim1tky6a3k29yluzlmg697486nsypertp3tzyrn4tvu9xd5f4pgf93p3y")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")

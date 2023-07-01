@@ -52,5 +52,8 @@ pub mod prelude {
     pub use crate::schema::*;
     pub use crate::traits::*;
     pub use crate::types::*;
-    pub use crate::{access_and_or, access_rule_node, role_entry, roles2, rule};
+    pub use crate::{
+        access_and_or, access_rule_node, internal_roles, metadata, metadata_init,
+        metadata_init_set_entry, metadata_roles, role_definition_entry, role_entry, roles2, rule,
+    };
 }

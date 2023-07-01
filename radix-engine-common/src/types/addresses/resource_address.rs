@@ -91,12 +91,18 @@ impl TryFrom<[u8; NodeId::LENGTH]> for ResourceAddress {
     type Error = ParseResourceAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
-        let node_id = NodeId(value);
+        Self::try_from(NodeId(value))
+    }
+}
 
+impl TryFrom<NodeId> for ResourceAddress {
+    type Error = ParseResourceAddressError;
+
+    fn try_from(node_id: NodeId) -> Result<Self, Self::Error> {
         if node_id.is_global_resource_manager() {
             Ok(Self(node_id))
         } else {
-            Err(ParseResourceAddressError::InvalidEntityTypeId(value[0]))
+            Err(ParseResourceAddressError::InvalidEntityTypeId(node_id.0[0]))
         }
     }
 }

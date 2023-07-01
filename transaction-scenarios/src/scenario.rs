@@ -2,6 +2,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT;
 use radix_engine_interface::manifest_args;
 use transaction::errors::TransactionValidationError;
+use transaction::manifest::decompiler::ManifestObjectNames;
 use transaction::validation::{NotarizedTransactionValidator, TransactionValidator};
 
 use crate::internal_prelude::*;
@@ -11,10 +12,8 @@ use crate::accounts::ed25519_account_1;
 pub struct NextTransaction {
     pub logical_name: String,
     pub stage_counter: usize,
-    /// When we have a ManifestBuilderV2 which includes named proofs/buckets and
-    /// comments, this should be a model which includes those, and can be used for
-    /// dumping out a "nicer" manifest.
     pub manifest: TransactionManifestV1,
+    pub naming: ManifestObjectNames,
     pub raw_transaction: RawNotarizedTransaction,
 }
 
@@ -22,6 +21,7 @@ impl NextTransaction {
     pub fn of(
         logical_name: String,
         stage_counter: usize,
+        naming: ManifestObjectNames,
         transaction: NotarizedTransactionV1,
     ) -> Self {
         let manifest = TransactionManifestV1::from_intent(&transaction.signed_intent.intent);
@@ -29,6 +29,7 @@ impl NextTransaction {
             logical_name,
             stage_counter,
             manifest,
+            naming,
             raw_transaction: transaction.to_raw().expect("Transaction could be encoded"),
         }
     }
@@ -56,8 +57,14 @@ impl NextTransaction {
             return;
         };
         let file_name = format!("{}--{}", self.stage_counter, self.logical_name);
-        dump_manifest_to_file_system(&self.manifest, directory_path, Some(&file_name), &network)
-            .unwrap()
+        dump_manifest_to_file_system(
+            &self.manifest,
+            self.naming.clone(),
+            directory_path,
+            Some(&file_name),
+            &network,
+        )
+        .unwrap()
     }
 }
 
@@ -97,7 +104,24 @@ impl ScenarioCore {
         let mut manifest_builder = ManifestBuilder::new();
         manifest_builder.lock_fee(FAUCET, dec!(5000));
         create_manifest(&mut manifest_builder);
-        self.next_transaction(logical_name, manifest_builder, signers)
+        self.next_transaction(
+            logical_name,
+            manifest_builder.build(),
+            Default::default(),
+            signers,
+        )
+    }
+
+    pub fn next_transaction_with_faucet_lock_fee_v2(
+        &mut self,
+        logical_name: &str,
+        create_manifest: impl FnOnce(&mut ManifestNamer, ManifestBuilderV2) -> ManifestBuilderV2,
+        signers: Vec<&PrivateKey>,
+    ) -> Result<NextTransaction, ScenarioError> {
+        let (mut namer, mut builder) = ManifestBuilderV2::new();
+        builder = builder.lock_fee(FAUCET, dec!(5000));
+        builder = create_manifest(&mut namer, builder);
+        self.next_transaction(logical_name, builder.build(), namer.object_names(), signers)
     }
 
     pub fn next_transaction_free_xrd_from_faucet(
@@ -128,12 +152,12 @@ impl ScenarioCore {
     pub fn next_transaction(
         &mut self,
         logical_name: &str,
-        manifest_builder: ManifestBuilder,
+        manifest: TransactionManifestV1,
+        naming: ManifestObjectNames,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
         let nonce = self.nonce;
         self.nonce += 1;
-        let manifest = manifest_builder.build();
         let mut builder = TransactionBuilder::new()
             .header(TransactionHeaderV1 {
                 network_id: self.network.id,
@@ -150,7 +174,12 @@ impl ScenarioCore {
         }
         builder = builder.notarize(&self.default_notary);
         self.last_transaction_name = Some(logical_name.to_owned());
-        Ok(NextTransaction::of(logical_name.to_owned(), self.stage_counter, builder.build()))
+        Ok(NextTransaction::of(
+            logical_name.to_owned(),
+            self.stage_counter,
+            naming,
+            builder.build(),
+        ))
     }
 
     pub fn finish_scenario(&self, output: ScenarioOutput) -> EndState {
@@ -485,7 +514,10 @@ impl<T> State<T> {
 
 impl<T: Clone> State<T> {
     pub fn get(&self) -> Result<T, ScenarioError> {
-        self.0.as_ref().map(Clone::clone).ok_or(ScenarioError::StateReadBeforeSet)
+        self.0
+            .as_ref()
+            .map(Clone::clone)
+            .ok_or(ScenarioError::StateReadBeforeSet)
     }
 
     // TODO - remove this when we create a better manifest builder which doesn't use callbacks,

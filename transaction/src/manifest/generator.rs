@@ -1868,7 +1868,7 @@ mod tests {
                         }
                     ),
                 }],
-                &NetworkDefinition::simulator()
+                &NetworkDefinition::simulator(),
             )
             .unwrap()
         );
