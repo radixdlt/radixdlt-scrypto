@@ -17,6 +17,7 @@ use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::ScryptoVm;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
@@ -36,7 +37,6 @@ use radix_engine_interface::blueprints::package::{
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, freezable, rule};
@@ -1178,21 +1178,21 @@ impl TestRunner {
             OwnerRole::None,
             FungibleResourceFeatures {
                 mintable: mintable! {
-                            minter => rule!(require(mint_auth)), updatable;
-                            minter_updater => rule!(require(admin_auth)), updatable;
-                        },
+                    minter => rule!(require(mint_auth)), updatable;
+                    minter_updater => rule!(require(admin_auth)), updatable;
+                },
                 burnable: burnable! {
-                            burner => rule!(require(burn_auth)), updatable;
-                            burner_updater => rule!(require(admin_auth)), updatable;
-                        },
+                    burner => rule!(require(burn_auth)), updatable;
+                    burner_updater => rule!(require(admin_auth)), updatable;
+                },
                 freezable: freezable! {
-                            freezer => rule!(require(freeze_auth)), updatable;
-                            freezer_updater => rule!(require(admin_auth)), updatable;
-                        },
+                    freezer => rule!(require(freeze_auth)), updatable;
+                    freezer_updater => rule!(require(admin_auth)), updatable;
+                },
                 recallable: recallable! {
-                            recaller => rule!(require(recall_auth)), updatable;
-                            recaller_updater => rule!(require(admin_auth)), updatable;
-                        },
+                    recaller => rule!(require(recall_auth)), updatable;
+                    recaller_updater => rule!(require(admin_auth)), updatable;
+                },
                 restrict_withdraw: restrict_withdraw! {
                     withdrawer => rule!(require(withdraw_auth)), updatable;
                     withdrawer_updater => rule!(require(admin_auth)), updatable;
@@ -1305,7 +1305,8 @@ impl TestRunner {
                 },
                 ..Default::default()
             },
-            account)
+            account,
+        )
     }
 
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
@@ -1365,7 +1366,10 @@ impl TestRunner {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_access_rules(NonFungibleResourceFeatures::default(), account)
+        self.create_non_fungible_resource_with_access_rules(
+            NonFungibleResourceFeatures::default(),
+            account,
+        )
     }
 
     pub fn create_non_fungible_resource_with_access_rules(

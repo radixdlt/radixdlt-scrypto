@@ -1,9 +1,11 @@
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
-use radix_engine_interface::{metadata, metadata_init, mintable, internal_roles_struct, role_definition_entry};
+use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::{
+    internal_roles_struct, metadata, metadata_init, mintable, role_definition_entry,
+};
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;

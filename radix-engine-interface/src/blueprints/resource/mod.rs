@@ -27,10 +27,10 @@ pub use resource_type::*;
 pub use vault::*;
 pub use worktop::*;
 
-use sbor::rust::prelude::*;
 use crate::api::node_modules::auth::RoleDefinition;
-use radix_engine_common::{ScryptoSbor, ManifestSbor};
 use radix_engine_common::math::*;
+use radix_engine_common::{ManifestSbor, ScryptoSbor};
+use sbor::rust::prelude::*;
 use sbor::rust::vec::Vec;
 
 pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {

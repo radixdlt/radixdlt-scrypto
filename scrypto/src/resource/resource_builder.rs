@@ -40,33 +40,28 @@ pub struct ResourceBuilder;
 
 impl ResourceBuilder {
     /// Starts a new builder to create a fungible resource.
-    pub fn new_fungible(
-        owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<FungibleResourceType> {
+    pub fn new_fungible(owner_role: OwnerRole) -> InProgressResourceBuilder<FungibleResourceType> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::String`
     pub fn new_string_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>>
-    {
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Integer`
     pub fn new_integer_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>>
-    {
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Bytes`
     pub fn new_bytes_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>>
-    {
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
@@ -341,10 +336,7 @@ pub trait UpdateAuthBuilder {
     ///        depositor_updater => rule!(require(resource_address)), locked;
     ///    });
     /// ```
-    fn restrict_deposit(
-        self,
-        restrict_deposit: Option<DepositableRoles<RoleDefinition>>,
-    ) -> Self;
+    fn restrict_deposit(self, restrict_deposit: Option<DepositableRoles<RoleDefinition>>) -> Self;
 }
 
 impl UpdateAuthBuilder for InProgressResourceBuilder<FungibleResourceType> {
@@ -368,18 +360,26 @@ impl UpdateAuthBuilder for InProgressResourceBuilder<FungibleResourceType> {
         self
     }
 
-    fn restrict_withdraw(mut self, restrict_withdraw: Option<WithdrawableRoles<RoleDefinition>>) -> Self {
+    fn restrict_withdraw(
+        mut self,
+        restrict_withdraw: Option<WithdrawableRoles<RoleDefinition>>,
+    ) -> Self {
         self.resource_features.restrict_withdraw = restrict_withdraw;
         self
     }
 
-    fn restrict_deposit(mut self, restrict_deposit: Option<DepositableRoles<RoleDefinition>>) -> Self {
+    fn restrict_deposit(
+        mut self,
+        restrict_deposit: Option<DepositableRoles<RoleDefinition>>,
+    ) -> Self {
         self.resource_features.restrict_deposit = restrict_deposit;
         self
     }
 }
 
-impl<T: IsNonFungibleLocalId, D: NonFungibleData> UpdateAuthBuilder for InProgressResourceBuilder<NonFungibleResourceType<T, D>> {
+impl<T: IsNonFungibleLocalId, D: NonFungibleData> UpdateAuthBuilder
+    for InProgressResourceBuilder<NonFungibleResourceType<T, D>>
+{
     fn mintable(mut self, mintable: Option<MintableRoles<RoleDefinition>>) -> Self {
         self.resource_features.mintable = mintable;
         self
@@ -400,18 +400,26 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData> UpdateAuthBuilder for InProgre
         self
     }
 
-    fn restrict_withdraw(mut self, restrict_withdraw: Option<WithdrawableRoles<RoleDefinition>>) -> Self {
+    fn restrict_withdraw(
+        mut self,
+        restrict_withdraw: Option<WithdrawableRoles<RoleDefinition>>,
+    ) -> Self {
         self.resource_features.restrict_withdraw = restrict_withdraw;
         self
     }
 
-    fn restrict_deposit(mut self, restrict_deposit: Option<DepositableRoles<RoleDefinition>>) -> Self {
+    fn restrict_deposit(
+        mut self,
+        restrict_deposit: Option<DepositableRoles<RoleDefinition>>,
+    ) -> Self {
         self.resource_features.restrict_deposit = restrict_deposit;
         self
     }
 }
 
-impl<T: IsNonFungibleLocalId, D: NonFungibleData> InProgressResourceBuilder<NonFungibleResourceType<T, D>> {
+impl<T: IsNonFungibleLocalId, D: NonFungibleData>
+    InProgressResourceBuilder<NonFungibleResourceType<T, D>>
+{
     /// Sets how each non-fungible's mutable data can be updated.
     ///
     /// * The first parameter is the access rule which allows updating the mutable data of each non-fungible.
@@ -446,7 +454,10 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData> InProgressResourceBuilder<NonF
     ///        non_fungible_data_updater_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    pub fn updatable_non_fungible_data(mut self, updatable_non_fungible_data: Option<UpdatableNonFungibleDataRoles<RoleDefinition>>) -> Self {
+    pub fn updatable_non_fungible_data(
+        mut self,
+        updatable_non_fungible_data: Option<UpdatableNonFungibleDataRoles<RoleDefinition>>,
+    ) -> Self {
         self.resource_features.updatable_non_fungible_data = updatable_non_fungible_data;
         self
     }
@@ -865,9 +876,7 @@ fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungi
         .collect()
 }
 
-impl<T: AnyResourceType> private::CanSetMetadata
-    for InProgressResourceBuilder<T>
-{
+impl<T: AnyResourceType> private::CanSetMetadata for InProgressResourceBuilder<T> {
     type OutputBuilder = Self;
 
     fn set_metadata(mut self, metadata: ModuleConfig<MetadataInit>) -> Self::OutputBuilder {
@@ -876,9 +885,7 @@ impl<T: AnyResourceType> private::CanSetMetadata
     }
 }
 
-impl<T: AnyResourceType> private::CanSetAddressReservation
-    for InProgressResourceBuilder<T>
-{
+impl<T: AnyResourceType> private::CanSetAddressReservation for InProgressResourceBuilder<T> {
     type OutputBuilder = Self;
 
     fn set_address(mut self, address_reservation: GlobalAddressReservation) -> Self::OutputBuilder {
@@ -938,9 +945,7 @@ impl<T: AnyResourceType> private::CanAddAuth
 }
  */
 
-impl private::CanCreateWithNoSupply
-    for InProgressResourceBuilder<FungibleResourceType>
-{
+impl private::CanCreateWithNoSupply for InProgressResourceBuilder<FungibleResourceType> {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
         private::CreateWithNoSupply::Fungible {
             owner_role: self.owner_role,

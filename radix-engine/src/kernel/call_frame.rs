@@ -448,9 +448,7 @@ impl<L: Clone> CallFrame<L> {
                 .acquire_lock_virtualize(node_id, partition_num, substate_key, flags, || {
                     default.map(|f| f())
                 })
-                .map_err(|x| {
-                    OpenSubstateError::TrackError(Box::new(x))
-                })?;
+                .map_err(|x| OpenSubstateError::TrackError(Box::new(x)))?;
             store_handle = Some(handle);
             store_access = store_access_info;
             let (value, read_store_access_info) = store.read_substate(handle);

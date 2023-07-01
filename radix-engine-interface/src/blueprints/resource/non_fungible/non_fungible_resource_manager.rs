@@ -98,7 +98,9 @@ impl NonFungibleResourceFeatures {
         }
 
         if let Some(updatable_non_fungible_data) = self.updatable_non_fungible_data {
-            roles.data.extend(updatable_non_fungible_data.to_role_init().data);
+            roles
+                .data
+                .extend(updatable_non_fungible_data.to_role_init().data);
         }
 
         (features, roles)

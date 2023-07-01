@@ -11,14 +11,16 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine_interface::{burnable, internal_roles_struct, metadata_init, mintable, role_definition_entry, rule};
+use radix_engine_interface::{
+    burnable, internal_roles_struct, metadata_init, mintable, role_definition_entry, rule,
+};
 use sbor::rust::mem;
 
 use super::{
@@ -1095,13 +1097,13 @@ impl ValidatorCreator {
             18,
             FungibleResourceFeatures {
                 mintable: mintable! {
-                        minter => rule!(require(global_caller(validator_address))), locked;
-                        minter_updater => rule!(deny_all), locked;
-                    },
+                    minter => rule!(require(global_caller(validator_address))), locked;
+                    minter_updater => rule!(deny_all), locked;
+                },
                 burnable: burnable! {
-                        burner => rule!(require(global_caller(validator_address))), locked;
-                        burner_updater => rule!(deny_all), locked;
-                    },
+                    burner => rule!(require(global_caller(validator_address))), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
                 ..Default::default()
             },
             metadata_init! {
@@ -1131,13 +1133,13 @@ impl ValidatorCreator {
             true,
             NonFungibleResourceFeatures {
                 mintable: mintable! {
-                        minter => rule!(require(global_caller(validator_address))), locked;
-                        minter_updater => rule!(deny_all), locked;
-                    },
+                    minter => rule!(require(global_caller(validator_address))), locked;
+                    minter_updater => rule!(deny_all), locked;
+                },
                 burnable: burnable! {
-                        burner => rule!(require(global_caller(validator_address))), locked;
-                        burner_updater => rule!(deny_all), locked;
-                    },
+                    burner => rule!(require(global_caller(validator_address))), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
                 ..Default::default()
             },
             metadata_init! {

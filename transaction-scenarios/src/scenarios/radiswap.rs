@@ -1,9 +1,9 @@
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 
 use crate::internal_prelude::*;
 
