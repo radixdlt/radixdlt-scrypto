@@ -28,6 +28,8 @@ pub use vault::*;
 pub use worktop::*;
 
 use crate::api::node_modules::auth::RoleDefinition;
+#[cfg(feature = "radix_engine_fuzzing")]
+use arbitrary::Arbitrary;
 use radix_engine_common::math::*;
 use radix_engine_common::{ManifestSbor, ScryptoSbor};
 use sbor::rust::prelude::*;
@@ -49,7 +51,8 @@ macro_rules! resource_roles {
         $actor_field:ident,
         $updater_field:ident,
         $actor_field_name:expr,
-        $updater_field_name:expr
+        $updater_field_name:expr,
+        $default_rule:expr
     ) => {
         #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
         #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
@@ -66,6 +69,15 @@ macro_rules! resource_roles {
                 roles
             }
         }
+
+        impl Default for $roles_struct<RoleDefinition> {
+            fn default() -> Self {
+                Self {
+                    $actor_field: RoleDefinition::locked($default_rule),
+                    $updater_field: RoleDefinition::locked(AccessRule::DenyAll),
+                }
+            }
+        }
     };
 }
 
@@ -74,7 +86,8 @@ resource_roles!(
     minter,
     minter_updater,
     MINTER_ROLE,
-    MINTER_UPDATER_ROLE
+    MINTER_UPDATER_ROLE,
+    AccessRule::DenyAll
 );
 #[macro_export]
 macro_rules! mintable {
@@ -88,7 +101,8 @@ resource_roles!(
     burner,
     burner_updater,
     BURNER_ROLE,
-    BURNER_UPDATER_ROLE
+    BURNER_UPDATER_ROLE,
+    AccessRule::DenyAll
 );
 #[macro_export]
 macro_rules! burnable {
@@ -102,7 +116,8 @@ resource_roles!(
     recaller,
     recaller_updater,
     RECALLER_ROLE,
-    RECALLER_UPDATER_ROLE
+    RECALLER_UPDATER_ROLE,
+    AccessRule::DenyAll
 );
 #[macro_export]
 macro_rules! recallable {
@@ -116,7 +131,8 @@ resource_roles!(
     freezer,
     freezer_updater,
     FREEZER_ROLE,
-    FREEZER_UPDATER_ROLE
+    FREEZER_UPDATER_ROLE,
+    AccessRule::DenyAll
 );
 #[macro_export]
 macro_rules! freezable {
@@ -130,7 +146,8 @@ resource_roles!(
     withdrawer,
     withdrawer_updater,
     WITHDRAWER_ROLE,
-    WITHDRAWER_UPDATER_ROLE
+    WITHDRAWER_UPDATER_ROLE,
+    AccessRule::AllowAll
 );
 #[macro_export]
 macro_rules! restrict_withdraw {
@@ -144,7 +161,8 @@ resource_roles!(
     depositor,
     depositor_updater,
     DEPOSITOR_ROLE,
-    DEPOSITOR_UPDATER_ROLE
+    DEPOSITOR_UPDATER_ROLE,
+    AccessRule::AllowAll
 );
 #[macro_export]
 macro_rules! restrict_deposit {
@@ -158,7 +176,8 @@ resource_roles!(
     non_fungible_data_updater,
     non_fungible_data_updater_updater,
     NON_FUNGIBLE_DATA_UPDATER_ROLE,
-    NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE
+    NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE,
+    AccessRule::DenyAll
 );
 #[macro_export]
 macro_rules! updatable_non_fungible_data {

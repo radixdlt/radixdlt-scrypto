@@ -69,39 +69,72 @@ impl NonFungibleResourceFeatures {
         let mut features = Vec::new();
         let mut roles = RolesInit::new();
 
-        if let Some(mintable) = self.mintable {
-            features.push(MINT_FEATURE);
-            roles.data.extend(mintable.to_role_init().data);
+        if let Some(mintable) = &self.mintable {
+            if mintable
+                .minter
+                .ne(&RoleDefinition::locked(AccessRule::DenyAll))
+            {
+                features.push(MINT_FEATURE);
+            }
         }
 
-        if let Some(burnable) = self.burnable {
-            features.push(BURN_FEATURE);
-            roles.data.extend(burnable.to_role_init().data);
+        if let Some(burnable) = &self.burnable {
+            if burnable
+                .burner
+                .ne(&RoleDefinition::locked(AccessRule::DenyAll))
+            {
+                features.push(BURN_FEATURE);
+            }
         }
 
-        if let Some(freezable) = self.freezable {
-            features.push(VAULT_FREEZE_FEATURE);
-            roles.data.extend(freezable.to_role_init().data);
+        if let Some(freezable) = &self.freezable {
+            if freezable
+                .freezer
+                .ne(&RoleDefinition::locked(AccessRule::DenyAll))
+            {
+                features.push(VAULT_FREEZE_FEATURE);
+            }
         }
 
-        if let Some(recallable) = self.recallable {
-            features.push(VAULT_RECALL_FEATURE);
-            roles.data.extend(recallable.to_role_init().data);
+        if let Some(recallable) = &self.recallable {
+            if recallable
+                .recaller
+                .ne(&RoleDefinition::locked(AccessRule::DenyAll))
+            {
+                features.push(VAULT_RECALL_FEATURE);
+            }
         }
 
-        if let Some(restrict_withdraw) = self.restrict_withdraw {
-            roles.data.extend(restrict_withdraw.to_role_init().data);
-        }
-
-        if let Some(restrict_deposit) = self.restrict_deposit {
-            roles.data.extend(restrict_deposit.to_role_init().data);
-        }
-
-        if let Some(updatable_non_fungible_data) = self.updatable_non_fungible_data {
-            roles
-                .data
-                .extend(updatable_non_fungible_data.to_role_init().data);
-        }
+        roles
+            .data
+            .extend(self.mintable.unwrap_or_default().to_role_init().data);
+        roles
+            .data
+            .extend(self.burnable.unwrap_or_default().to_role_init().data);
+        roles
+            .data
+            .extend(self.recallable.unwrap_or_default().to_role_init().data);
+        roles
+            .data
+            .extend(self.freezable.unwrap_or_default().to_role_init().data);
+        roles.data.extend(
+            self.restrict_deposit
+                .unwrap_or_default()
+                .to_role_init()
+                .data,
+        );
+        roles.data.extend(
+            self.restrict_withdraw
+                .unwrap_or_default()
+                .to_role_init()
+                .data,
+        );
+        roles.data.extend(
+            self.updatable_non_fungible_data
+                .unwrap_or_default()
+                .to_role_init()
+                .data,
+        );
 
         (features, roles)
     }

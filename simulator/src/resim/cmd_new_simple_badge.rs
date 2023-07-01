@@ -8,7 +8,6 @@ use radix_engine_interface::blueprints::resource::{
     NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
-use radix_engine_interface::roles_init;
 use transaction::builder::ManifestBuilder;
 use transaction::model::InstructionV1;
 
