@@ -242,7 +242,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                     manifest_args!(namer.bucket("pool_1_resource_1"), namer.bucket("pool_1_resource_2")),
                                 )
                                 .take_all_from_worktop(
-                                    state.pool_2.resource_1.get()?, 
+                                    state.pool_2.resource_1.get()?,
                                     namer.new_bucket("pool_2_resource_1"),
                                 )
                                 .take_all_from_worktop(
