@@ -368,16 +368,16 @@ where
             return Ok(());
         }
 
-        // Request from system
-        let amount = ((n - 1) / 1_000_000 + 1) * 1_000_000;
+        // If we need to request more from the fee reserve, we round `n` up to the nearest `1_000_000`
+        let amount_to_request = ((n - 1) / 1_000_000 + 1) * 1_000_000;
         self.api
             .consume_cost_units(ClientCostingEntry::RunWasmCode {
                 package_address: &self.package_address,
                 export_name: &self.export_name,
-                wasm_execution_units: amount,
+                wasm_execution_units: amount_to_request,
             })
             .map_err(InvokeError::downstream)?;
-        self.wasm_execution_units_buffer += amount - n;
+        self.wasm_execution_units_buffer += amount_to_request - n;
 
         Ok(())
     }

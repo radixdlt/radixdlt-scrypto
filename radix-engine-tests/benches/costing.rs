@@ -91,7 +91,10 @@ fn bench_spin_loop(c: &mut Criterion) {
         })
     });
 
-    println!("Gas consumed: {}", wasm_execution_units_consumed);
+    println!(
+        "WASM execution units consumed: {}",
+        wasm_execution_units_consumed
+    );
 }
 
 fn bench_instantiate_radiswap(c: &mut Criterion) {
