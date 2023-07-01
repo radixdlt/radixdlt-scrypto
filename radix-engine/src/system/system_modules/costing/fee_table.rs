@@ -138,14 +138,14 @@ impl FeeTable {
 
     #[inline]
     pub fn run_native_code_cost(&self, package_address: &PackageAddress, export_name: &str) -> u32 {
-        let cpu_instructions = NATIVE_FUNCTION_BASE_COSTS
+        let native_execution_units = NATIVE_FUNCTION_BASE_COSTS
             .get(package_address)
             .and_then(|x| x.get(export_name).cloned())
             .unwrap_or(411524); // FIXME: this should be for not found only, when the costing for all native function are added, i.e. should be reduced.
 
         // FIXME: figure out the right conversion rate from CPU instructions to execution time
 
-        cpu_instructions / 10
+        native_execution_units / 10
     }
 
     #[inline]
@@ -153,12 +153,12 @@ impl FeeTable {
         &self,
         _package_address: &PackageAddress,
         _export_name: &str,
-        gas: u32,
+        wasm_execution_units: u32,
     ) -> u32 {
-        // From `costing::spin_loop`, it takes 5.5391 ms for 1918122691 gas' worth of computation.
-        // Therefore, cost for gas: 5.5391 *  1000 / 1918122691 * 100 = 0.00028877714
+        // From `costing::spin_loop`, it takes 5.5391 ms for 1918122691 wasm execution units.
+        // Therefore, cost for single unit: 5.5391 *  1000 / 1918122691 * 100 = 0.00028877714
 
-        gas / 3000
+        wasm_execution_units / 3000
     }
 
     #[inline]

@@ -9,7 +9,7 @@ pub enum ClientCostingEntry<'a> {
     RunWasmCode {
         package_address: &'a PackageAddress,
         export_name: &'a str,
-        gas: u32,
+        wasm_execution_units: u32,
     },
     PrepareWasmCode {
         size: usize,
