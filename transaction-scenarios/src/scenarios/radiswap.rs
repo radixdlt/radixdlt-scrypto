@@ -60,9 +60,9 @@ impl ScenarioCreator for RadiswapScenarioCreator {
         ScenarioBuilder::new(core, metadata, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-create-new-resources",
-                        |builder| {
+                        |namer, builder| {
                             builder.create_fungible_resource(
                                 OwnerRole::None,
                                 false,
@@ -124,6 +124,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 Some(100_000_000_000u64.into()),
                             )
                             .try_deposit_batch_or_abort(config.storing_account.address)
+                            .done()
                         },
                         vec![],
                     )
@@ -144,46 +145,46 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                         "../../../assets/radiswap.schema"
                     ))
                     .unwrap();
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-publish-and-create-pools",
-                        |builder| {
+                        |namer, builder| {
                             builder.allocate_global_address(
                                 BlueprintId {
                                     package_address: PACKAGE_PACKAGE,
                                     blueprint_name: PACKAGE_BLUEPRINT.to_owned(),
                                 },
-                                |builder, reservation, named_address| {
-                                    builder
-                                        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
-                                        .publish_package_advanced(
-                                            Some(reservation),
-                                            code.to_vec(),
-                                            schema,
-                                            metadata_init! {
-                                                "name" => "Radiswap Package".to_owned(), locked;
-                                                "description" => "A package of the logic of a Uniswap v2 style DEX.".to_owned(), locked;
-                                                "tags" => vec!["dex".to_owned(), "pool".to_owned(), "radiswap".to_owned()], locked;
-                                            },
-                                            radix_engine::types::OwnerRole::Fixed(rule!(require(
-                                                NonFungibleGlobalId::from_public_key(
-                                                    &config.radiswap_owner.public_key
-                                                )
-                                            ))),
-                                        ).call_function(
-                                            DynamicPackageAddress::Named(named_address),
-                                            "Radiswap", 
-                                            "new", 
-                                            manifest_args!(state.pool_1.resource_1.unwrap(), state.pool_1.resource_2.unwrap())
-                                        )
-                                        .call_function(
-                                            DynamicPackageAddress::Named(named_address),
-                                            "Radiswap", 
-                                            "new", 
-                                            manifest_args!(state.pool_2.resource_1.unwrap(), state.pool_2.resource_2.unwrap())
-                                        )
-                                        .try_deposit_batch_or_abort(config.storing_account.address)
-                                },
+                                namer.new_address_reservation("radiswap_package_reservation"),
+                                namer.new_named_address("radiswap_package")
                             )
+                            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+                            .publish_package_advanced(
+                                Some(namer.address_reservation("radiswap_package_reservation")),
+                                code.to_vec(),
+                                schema,
+                                metadata_init! {
+                                    "name" => "Radiswap Package".to_owned(), locked;
+                                    "description" => "A package of the logic of a Uniswap v2 style DEX.".to_owned(), locked;
+                                    "tags" => vec!["dex".to_owned(), "pool".to_owned(), "radiswap".to_owned()], locked;
+                                },
+                                radix_engine::types::OwnerRole::Fixed(rule!(require(
+                                    NonFungibleGlobalId::from_public_key(
+                                        &config.radiswap_owner.public_key
+                                    )
+                                ))),
+                            ).call_function(
+                                namer.named_address("radiswap_package"),
+                                "Radiswap", 
+                                "new", 
+                                manifest_args!(state.pool_1.resource_1.unwrap(), state.pool_1.resource_2.unwrap())
+                            )
+                            .call_function(
+                                namer.named_address("radiswap_package"),
+                                "Radiswap", 
+                                "new", 
+                                manifest_args!(state.pool_2.resource_1.unwrap(), state.pool_2.resource_2.unwrap())
+                            )
+                            .try_deposit_batch_or_abort(config.storing_account.address)
+                            .done()
                         },
                         vec![],
                     )
@@ -207,51 +208,54 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-add-liquidity",
-                        |builder| {
+                        |namer, builder| {
                             builder
                                 .call_method(FAUCET_COMPONENT, "free", manifest_args!())
                                 .withdraw_from_account(
                                     config.storing_account.address,
-                                    state.pool_1.resource_2.unwrap(),
+                                    state.pool_1.resource_2.get()?,
                                     7000.into(),
                                 )
                                 .withdraw_from_account(
                                     config.storing_account.address,
-                                    state.pool_2.resource_1.unwrap(),
+                                    state.pool_2.resource_1.get()?,
                                     5000.into(),
                                 )
                                 .withdraw_from_account(
                                     config.storing_account.address,
-                                    state.pool_2.resource_2.unwrap(),
+                                    state.pool_2.resource_2.get()?,
                                     8000.into(),
                                 )
-                                .take_all_from_worktop(state.pool_1.resource_1.unwrap(), |builder, bucket1| {
-                                    builder.take_all_from_worktop(
-                                        state.pool_1.resource_2.unwrap(),
-                                        |builder, bucket2| {
-                                            builder.call_method(
-                                                state.pool_1.radiswap.unwrap(),
-                                                "add_liquidity",
-                                                manifest_args!(bucket1, bucket2),
-                                            )
-                                        },
-                                    )
-                                })
-                                .take_all_from_worktop(state.pool_2.resource_1.unwrap(), |builder, bucket1| {
-                                    builder.take_all_from_worktop(
-                                        state.pool_2.resource_2.unwrap(),
-                                        |builder, bucket2| {
-                                            builder.call_method(
-                                                state.pool_2.radiswap.unwrap(),
-                                                "add_liquidity",
-                                                manifest_args!(bucket1, bucket2),
-                                            )
-                                        },
-                                    )
-                                })
+                                .take_all_from_worktop(
+                                    state.pool_1.resource_1.get()?,
+                                    namer.new_bucket("pool_1_resource_1")
+                                )
+                                .take_all_from_worktop(
+                                    state.pool_1.resource_2.get()?,
+                                    namer.new_bucket("pool_1_resource_2")
+                                )
+                                .call_method(
+                                    state.pool_1.radiswap.get()?,
+                                    "add_liquidity",
+                                    manifest_args!(namer.bucket("pool_1_resource_1"), namer.bucket("pool_1_resource_2")),
+                                )
+                                .take_all_from_worktop(
+                                    state.pool_2.resource_1.get()?, 
+                                    namer.new_bucket("pool_2_resource_1"),
+                                )
+                                .take_all_from_worktop(
+                                        state.pool_2.resource_2.get()?,
+                                        namer.new_bucket("pool_2_resource_2"),
+                                )
+                                .call_method(
+                                    state.pool_2.radiswap.get()?,
+                                    "add_liquidity",
+                                    manifest_args!(namer.bucket("pool_2_resource_1"), namer.bucket("pool_2_resource_2")),
+                                )
                                 .try_deposit_batch_or_abort(config.storing_account.address)
+                                .done()
                         },
                         vec![&config.storing_account.key],
                     )
@@ -259,29 +263,29 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-distribute-tokens",
-                        |builder| {
-                            builder.call_method(FAUCET, "free", manifest_args!());
+                        |namer, mut builder| {
+                            builder = builder.call_method(FAUCET, "free", manifest_args!());
                             for destination_account in [&config.user_account_1, &config.user_account_2, &config.user_account_3]
                             {
                                 for resource_address in [
-                                    state.pool_1.resource_1.unwrap(),
-                                    state.pool_1.resource_2.unwrap(),
-                                    state.pool_2.resource_1.unwrap(),
-                                    state.pool_2.resource_2.unwrap(),
-                                    state.pool_1.pool_unit.unwrap(),
-                                    state.pool_2.pool_unit.unwrap(),
+                                    state.pool_1.resource_1.get()?,
+                                    state.pool_1.resource_2.get()?,
+                                    state.pool_2.resource_1.get()?,
+                                    state.pool_2.resource_2.get()?,
+                                    state.pool_1.pool_unit.get()?,
+                                    state.pool_2.pool_unit.get()?,
                                 ] {
-                                    builder.withdraw_from_account(
+                                    builder = builder.withdraw_from_account(
                                         config.storing_account.address,
                                         resource_address,
                                         333.into(),
                                     );
                                 }
-                                builder.try_deposit_batch_or_abort(destination_account.address);
+                                builder = builder.try_deposit_batch_or_abort(destination_account.address);
                             }
-                            builder
+                            builder.done()
                         },
                         vec![&config.storing_account.key],
                     )
@@ -289,23 +293,25 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-swap-tokens",
-                        |builder| {
+                        |namer, builder| {
                             builder
                                 .withdraw_from_account(
                                     config.user_account_1.address,
-                                    state.pool_1.resource_1.unwrap(),
+                                    state.pool_1.resource_1.get()?,
                                     100.into(),
                                 )
-                                .take_all_from_worktop(state.pool_1.resource_1.unwrap(), |builder, bucket| {
-                                    builder.call_method(
-                                        state.pool_1.radiswap.unwrap(),
-                                        "swap",
-                                        manifest_args!(bucket),
-                                    )
-                                })
+                                .take_all_from_worktop(
+                                    state.pool_1.resource_1.get()?,
+                                    namer.new_bucket("input"),
+                                ).call_method(
+                                    state.pool_1.radiswap.unwrap(),
+                                    "swap",
+                                    manifest_args!(namer.bucket("input")),
+                                )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .done()
                         },
                         vec![&config.user_account_1.key],
                     )
@@ -313,23 +319,25 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-remove-tokens",
-                        |builder| {
+                        |namer, builder| {
                             builder
                                 .withdraw_from_account(
                                     config.user_account_1.address,
-                                    state.pool_1.pool_unit.unwrap(),
+                                    state.pool_1.pool_unit.get()?,
                                     100.into(),
                                 )
-                                .take_all_from_worktop(state.pool_1.pool_unit.unwrap(), |builder, bucket| {
-                                    builder.call_method(
-                                        state.pool_1.radiswap.unwrap(),
-                                        "remove_liquidity",
-                                        manifest_args!(bucket),
-                                    )
-                                })
+                                .take_all_from_worktop(
+                                    state.pool_1.pool_unit.get()?,
+                                    namer.new_bucket("pool_units")
+                                ).call_method(
+                                    state.pool_1.radiswap.unwrap(),
+                                    "remove_liquidity",
+                                    manifest_args!(namer.bucket("pool_units")),
+                                )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .done()
                         },
                         vec![&config.user_account_1.key],
                     )

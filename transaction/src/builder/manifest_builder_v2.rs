@@ -113,7 +113,7 @@ impl ManifestBuilderV2 {
     }
 
     /// Pops the most recent proof from auth zone.
-    pub fn pop_from_auth_zone<F>(self, new_proof: NewManifestProof) -> Self {
+    pub fn pop_from_auth_zone(self, new_proof: NewManifestProof) -> Self {
         self.registrar.register_proof(new_proof);
         self.add_instruction(InstructionV1::PopFromAuthZone {})
     }
@@ -130,7 +130,7 @@ impl ManifestBuilderV2 {
     }
 
     /// Creates proof from the auth zone.
-    pub fn create_proof_from_auth_zone<F>(
+    pub fn create_proof_from_auth_zone(
         self,
         resource_address: ResourceAddress,
         new_proof: NewManifestProof,
@@ -140,7 +140,7 @@ impl ManifestBuilderV2 {
     }
 
     /// Creates proof from the auth zone by amount.
-    pub fn create_proof_from_auth_zone_of_amount<F>(
+    pub fn create_proof_from_auth_zone_of_amount(
         self,
         resource_address: ResourceAddress,
         amount: Decimal,
@@ -154,7 +154,7 @@ impl ManifestBuilderV2 {
     }
 
     /// Creates proof from the auth zone by non-fungible ids.
-    pub fn create_proof_from_auth_zone_of_non_fungibles<F>(
+    pub fn create_proof_from_auth_zone_of_non_fungibles(
         self,
         resource_address: ResourceAddress,
         ids: &BTreeSet<NonFungibleLocalId>,
@@ -168,7 +168,7 @@ impl ManifestBuilderV2 {
     }
 
     /// Creates proof from the auth zone
-    pub fn create_proof_from_auth_zone_of_all<F>(
+    pub fn create_proof_from_auth_zone_of_all(
         self,
         resource_address: ResourceAddress,
         new_proof: NewManifestProof,
@@ -178,7 +178,7 @@ impl ManifestBuilderV2 {
     }
 
     /// Creates proof from a bucket. The bucket is not consumed by this process.
-    pub fn create_proof_from_bucket<F>(
+    pub fn create_proof_from_bucket(
         self,
         bucket: ManifestBucket,
         new_proof: NewManifestProof,
@@ -188,7 +188,7 @@ impl ManifestBuilderV2 {
     }
 
     /// Creates proof from a bucket. The bucket is not consumed by this process.
-    pub fn create_proof_from_bucket_of_amount<F>(
+    pub fn create_proof_from_bucket_of_amount(
         self,
         bucket: ManifestBucket,
         amount: Decimal,
@@ -202,7 +202,7 @@ impl ManifestBuilderV2 {
     }
 
     /// Creates proof from a bucket. The bucket is not consumed by this process.
-    pub fn create_proof_from_bucket_of_non_fungibles<F>(
+    pub fn create_proof_from_bucket_of_non_fungibles(
         self,
         bucket: ManifestBucket,
         ids: BTreeSet<NonFungibleLocalId>,
@@ -216,7 +216,7 @@ impl ManifestBuilderV2 {
     }
 
     /// Creates proof from a bucket. The bucket is not consumed by this process.
-    pub fn create_proof_from_bucket_of_all<F>(
+    pub fn create_proof_from_bucket_of_all(
         self,
         bucket: ManifestBucket,
         new_proof: NewManifestProof,
@@ -226,12 +226,12 @@ impl ManifestBuilderV2 {
     }
 
     /// Clones a proof.
-    pub fn clone_proof<F>(self, proof: ManifestProof, new_proof: NewManifestProof) -> Self {
+    pub fn clone_proof(self, proof: ManifestProof, new_proof: NewManifestProof) -> Self {
         self.registrar.register_proof(new_proof);
         self.add_instruction(InstructionV1::CloneProof { proof_id: proof })
     }
 
-    pub fn allocate_global_address<F>(
+    pub fn allocate_global_address(
         self,
         blueprint_id: BlueprintId,
         new_address_reservation: NewManifestAddressReservation,
@@ -806,7 +806,7 @@ impl ManifestBuilderV2 {
         )
     }
 
-    pub fn burn_bucket(self, bucket: ManifestBucket) -> Self {
+    pub fn burn_resource(self, bucket: ManifestBucket) -> Self {
         self.registrar.consume_bucket(bucket);
         self.add_instruction(InstructionV1::BurnResource { bucket_id: bucket })
     }
@@ -814,13 +814,13 @@ impl ManifestBuilderV2 {
     pub fn burn_from_worktop(self, amount: Decimal, resource_address: ResourceAddress) -> Self {
         let (new_bucket, bucket) = self.registrar.new_named_bucket_pair("to_burn");
         self.take_from_worktop(resource_address, amount, new_bucket)
-            .burn_bucket(bucket)
+            .burn_resource(bucket)
     }
 
     pub fn burn_all_from_worktop(self, resource_address: ResourceAddress) -> Self {
         let (new_bucket, bucket) = self.registrar.new_named_bucket_pair("to_burn");
         self.take_all_from_worktop(resource_address, new_bucket)
-            .burn_bucket(bucket)
+            .burn_resource(bucket)
     }
 
     pub fn burn_non_fungible_from_worktop(
@@ -832,7 +832,7 @@ impl ManifestBuilderV2 {
         let (new_bucket, bucket) = self.registrar.new_named_bucket_pair("to_burn");
 
         self.take_non_fungibles_from_worktop(resource_address, ids, new_bucket)
-            .burn_bucket(bucket)
+            .burn_resource(bucket)
     }
 
     pub fn mint_fungible<A: TryInto<DynamicResourceAddress, Error = E>, E: Debug>(

@@ -68,6 +68,16 @@ impl NextTransaction {
     }
 }
 
+pub(crate) trait Completeable: Sized {
+    fn done<E>(self) -> Result<Self, E>;
+}
+
+impl Completeable for ManifestBuilderV2 {
+    fn done<E>(self) -> Result<Self, E> {
+        Ok(self)
+    }
+}
+
 /// A core set of functionality and utilities common to every scenario
 pub struct ScenarioCore {
     network: NetworkDefinition,
@@ -115,12 +125,15 @@ impl ScenarioCore {
     pub fn next_transaction_with_faucet_lock_fee_v2(
         &mut self,
         logical_name: &str,
-        create_manifest: impl FnOnce(&mut ManifestNamer, ManifestBuilderV2) -> ManifestBuilderV2,
+        create_manifest: impl FnOnce(
+            &mut ManifestNamer,
+            ManifestBuilderV2,
+        ) -> Result<ManifestBuilderV2, ScenarioError>,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
         let (mut namer, mut builder) = ManifestBuilderV2::new();
         builder = builder.lock_fee(FAUCET, dec!(5000));
-        builder = create_manifest(&mut namer, builder);
+        builder = create_manifest(&mut namer, builder)?;
         self.next_transaction(logical_name, builder.build(), namer.object_names(), signers)
     }
 
