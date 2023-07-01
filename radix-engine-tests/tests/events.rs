@@ -18,7 +18,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
 };
-use radix_engine_interface::{burnable, internal_roles_struct, metadata, metadata_init, mintable, recallable, role_definition_entry, roles_init};
+use radix_engine_interface::{burnable, internal_roles_struct, metadata, metadata_init, mintable, recallable, role_definition_entry};
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;

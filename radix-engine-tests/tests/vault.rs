@@ -5,7 +5,7 @@ use radix_engine::errors::{
 use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, TakeNodeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::{burnable, metadata, metadata_init, mintable, roles_init};
+use radix_engine_interface::{metadata, metadata_init};
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;

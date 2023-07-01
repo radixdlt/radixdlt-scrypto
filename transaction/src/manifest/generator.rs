@@ -1523,7 +1523,6 @@ mod tests {
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
     use radix_engine_interface::types::{NonFungibleData, PackageRoyaltyConfig};
     use radix_engine_interface::{dec, pdec, ScryptoSbor};
-    use utils::btreeset;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1783,8 +1782,15 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Array<Enum>()
-                Map<String, Tuple>()
+                Tuple(
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>()
+                )
                 Tuple(
                     Map<String, Tuple>(
                         "name" => Tuple(
@@ -1884,8 +1890,15 @@ mod tests {
                         )
                     )
                 )
-                Array<Enum>()
-                Map<String, Tuple>()
+                Tuple(
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>()
+                )
                 Tuple(
                     Map<String, Tuple>(
                         "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), true)
@@ -1932,8 +1945,14 @@ mod tests {
                 Enum<0u8>()
                 false
                 18u8
-                Array<Enum>()
-                Map<String, Tuple>()
+                Tuple(
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>()
+                )
                 Tuple(
                     Map<String, Tuple>(
                         "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
@@ -1970,8 +1989,14 @@ mod tests {
                 false
                 18u8
                 Decimal("500")
-                Array<Enum>()
-                Map<String, Tuple>()
+                Tuple(
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>()
+                )
                 Tuple(
                     Map<String, Tuple>(
                         "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)

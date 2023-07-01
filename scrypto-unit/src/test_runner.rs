@@ -39,7 +39,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
-use radix_engine_interface::{dec, freezable, roles_init, rule};
+use radix_engine_interface::{dec, freezable, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_substate_layout::{
     BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
@@ -1178,28 +1178,28 @@ impl TestRunner {
             OwnerRole::None,
             FungibleResourceFeatures {
                 mintable: mintable! {
-                            minter => rule!(allow_all), updatable;
-                            minter_updater => rule!(allow_all), updatable;
+                            minter => rule!(require(mint_auth)), updatable;
+                            minter_updater => rule!(require(admin_auth)), updatable;
                         },
                 burnable: burnable! {
-                            burner => rule!(allow_all), updatable;
-                            burner_updater => rule!(allow_all), updatable;
+                            burner => rule!(require(burn_auth)), updatable;
+                            burner_updater => rule!(require(admin_auth)), updatable;
                         },
                 freezable: freezable! {
-                            freezer => rule!(allow_all), updatable;
-                            freezer_updater => rule!(allow_all), updatable;
+                            freezer => rule!(require(freeze_auth)), updatable;
+                            freezer_updater => rule!(require(admin_auth)), updatable;
                         },
                 recallable: recallable! {
-                            recaller => rule!(allow_all), updatable;
-                            recaller_updater => rule!(allow_all), updatable;
+                            recaller => rule!(require(recall_auth)), updatable;
+                            recaller_updater => rule!(require(admin_auth)), updatable;
                         },
                 restrict_withdraw: restrict_withdraw! {
-                    withdrawer => rule!(allow_all), updatable;
-                    withdrawer_updater => rule!(allow_all), updatable;
+                    withdrawer => rule!(require(withdraw_auth)), updatable;
+                    withdrawer_updater => rule!(require(admin_auth)), updatable;
                 },
                 restrict_deposit: restrict_deposit! {
                     depositor => rule!(allow_all), updatable;
-                    depositor_updater => rule!(allow_all), updatable;
+                    depositor_updater => rule!(require(admin_auth)), updatable;
                 },
             },
             account,

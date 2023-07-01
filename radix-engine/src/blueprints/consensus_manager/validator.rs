@@ -18,7 +18,7 @@ use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
-use radix_engine_interface::{burnable, internal_roles_struct, metadata_init, mintable, roles_init, role_definition_entry, rule};
+use radix_engine_interface::{burnable, internal_roles_struct, metadata_init, mintable, role_definition_entry, rule};
 use sbor::rust::mem;
 
 use super::{

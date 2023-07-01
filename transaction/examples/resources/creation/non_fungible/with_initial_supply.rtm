@@ -46,6 +46,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         Enum<0u8>(),
         Enum<0u8>(),
         Enum<0u8>(),
+        Enum<0u8>(),
         Enum<0u8>()
     )
     Tuple(

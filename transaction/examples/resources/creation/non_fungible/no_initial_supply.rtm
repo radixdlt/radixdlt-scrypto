@@ -43,6 +43,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         Enum<0u8>(),
         Enum<0u8>(),
         Enum<0u8>(),
+        Enum<0u8>(),
         Enum<0u8>()
     )
     Tuple(

@@ -1,5 +1,4 @@
 use radix_engine::system::system_modules::costing::FeeSummary;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;

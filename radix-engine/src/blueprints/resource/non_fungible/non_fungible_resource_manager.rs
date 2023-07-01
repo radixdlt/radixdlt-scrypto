@@ -12,7 +12,6 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
 use radix_engine_interface::*;
-use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

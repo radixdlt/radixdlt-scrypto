@@ -10,7 +10,7 @@ pub mod tests {
     use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::blueprints::resource::{NonFungibleResourceFeatures, OwnerRole};
     use radix_engine_interface::blueprints::resource::RolesInit;
-    use radix_engine_interface::{metadata, metadata_init, roles_init};
+    use radix_engine_interface::{metadata, metadata_init};
     use scrypto_derive::NonFungibleData;
 
     #[test]
@@ -762,16 +762,28 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     false
     18u8
     Decimal("12")
-    Array<Enum>(
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
         Enum<0u8>()
-    )
-    Map<String, Tuple>(
-        "minter" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>()
-            ),
-            true
-        )
     )
     Tuple(
         Map<String, Tuple>(
@@ -835,16 +847,28 @@ CREATE_FUNGIBLE_RESOURCE
     Enum<0u8>()
     false
     18u8
-    Array<Enum>(
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
         Enum<0u8>()
-    )
-    Map<String, Tuple>(
-        "minter" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>()
-            ),
-            true
-        )
     )
     Tuple(
         Map<String, Tuple>(
@@ -924,16 +948,29 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             )
         )
     )
-    Array<Enum>(
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
         Enum<0u8>()
-    )
-    Map<String, Tuple>(
-        "minter" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>()
-            ),
-            true
-        )
     )
     Tuple(
         Map<String, Tuple>(
@@ -1002,16 +1039,29 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
-    Array<Enum>(
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
         Enum<0u8>()
-    )
-    Map<String, Tuple>(
-        "minter" => Tuple(
-            Enum<1u8>(
-                Enum<0u8>()
-            ),
-            true
-        )
     )
     Tuple(
         Map<String, Tuple>(

@@ -29,7 +29,6 @@ use radix_engine_interface::blueprints::package::{
     PackagePublishWasmManifestInput, PACKAGE_BLUEPRINT, PACKAGE_CLAIM_ROYALTIES_IDENT,
     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_PUBLISH_WASM_IDENT,
 };
-use radix_engine_interface::blueprints::resource::ResourceFeature::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, CONSENSUS_MANAGER, IDENTITY_PACKAGE,
@@ -51,8 +50,6 @@ use sbor::rust::vec::Vec;
 
 use crate::model::*;
 use crate::validation::*;
-
-use radix_engine_interface::blueprints::resource::RolesInit;
 
 /// Utility for building transaction manifest.
 pub struct ManifestBuilder {
