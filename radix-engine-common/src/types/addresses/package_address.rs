@@ -71,8 +71,6 @@ impl PackageAddress {
             || self.0 == native_addresses::METADATA_MODULE_PACKAGE.0
             || self.0 == native_addresses::ROYALTY_MODULE_PACKAGE.0
             || self.0 == native_addresses::ACCESS_RULES_MODULE_PACKAGE.0
-            || self.0 == native_addresses::GENESIS_HELPER_PACKAGE.0
-            || self.0 == native_addresses::FAUCET_PACKAGE.0
             || self.0 == native_addresses::TRANSACTION_TRACKER_PACKAGE.0
     }
 }
