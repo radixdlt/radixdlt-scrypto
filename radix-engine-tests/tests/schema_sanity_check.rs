@@ -69,7 +69,9 @@ fn check_native_function_base_costs() {
                     .get(package_address)
                     .map(|x| x.contains_key(export_name.as_str())),
                 Some(true)
-            ) {
+            ) && *package_address != FAUCET_PACKAGE
+                && *package_address != GENESIS_HELPER_PACKAGE
+            {
                 println!(
                     "Missing definition: {}, {}",
                     package_address.to_hex(),

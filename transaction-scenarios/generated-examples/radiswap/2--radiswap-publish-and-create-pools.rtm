@@ -17,7 +17,7 @@ PUBLISH_PACKAGE_ADVANCED
     Enum<1u8>(
         AddressReservation("reservation1")
     )
-    Blob("88003243ae9291bc64c7f6a76f8e64a5fa268bc202c7002113a5d39dd704d262")
+    Blob("34b85a539cb0ba73ce153e423c16cadd4c0c31f0ce62f48f517efabcd2ddba69")
     Tuple(
         Map<String, Tuple>(
             "Radiswap" => Tuple(
@@ -339,22 +339,7 @@ PUBLISH_PACKAGE_ADVANCED
                         Map<U8, String>()
                     )
                 ),
-                Enum<1u8>(
-                    Map<String, Enum>(
-                        "add_liquidity" => Enum<1u8>(
-                            Decimal("1")
-                        ),
-                        "new" => Enum<1u8>(
-                            Decimal("5")
-                        ),
-                        "remove_liquidity" => Enum<1u8>(
-                            Decimal("1")
-                        ),
-                        "swap" => Enum<1u8>(
-                            Decimal("2")
-                        )
-                    )
-                ),
+                Enum<0u8>(),
                 Tuple(
                     Enum<0u8>(),
                     Enum<0u8>()
