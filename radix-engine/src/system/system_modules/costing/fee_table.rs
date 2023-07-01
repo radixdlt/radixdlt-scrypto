@@ -173,8 +173,8 @@ impl FeeTable {
 
         // Reference EC2 instance c5.4xlarge has CPU clock 3.4 GHz which means in 1 µs it executes 3400 instructions
         // (1 core, single-threaded operation, skipping CPU cache influence).
-        // Basing on above assumptions return native function execution time in µs:
-        native_execution_units / 3400
+        // Basing on above assumptions return native function execution time in µs: native_execution_units / 3400
+        native_execution_units / 34
     }
 
     #[inline]
