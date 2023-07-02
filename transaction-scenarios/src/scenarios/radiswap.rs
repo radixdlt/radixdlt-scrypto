@@ -62,7 +62,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-create-new-resources",
-                        |namer, builder| {
+                        |builder, namer| {
                             builder.create_fungible_resource(
                                 OwnerRole::None,
                                 false,
@@ -147,7 +147,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                     .unwrap();
                     core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-publish-and-create-pools",
-                        |namer, builder| {
+                        |builder, namer| {
                             builder.allocate_global_address(
                                 BlueprintId {
                                     package_address: PACKAGE_PACKAGE,
@@ -210,7 +210,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-add-liquidity",
-                        |namer, builder| {
+                        |builder, namer| {
                             builder
                                 .call_method(FAUCET_COMPONENT, "free", manifest_args!())
                                 .withdraw_from_account(
@@ -265,7 +265,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-distribute-tokens",
-                        |namer, mut builder| {
+                        |mut builder, namer| {
                             builder = builder.call_method(FAUCET, "free", manifest_args!());
                             for destination_account in [&config.user_account_1, &config.user_account_2, &config.user_account_3]
                             {
@@ -295,7 +295,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-swap-tokens",
-                        |namer, builder| {
+                        |builder, namer| {
                             builder
                                 .withdraw_from_account(
                                     config.user_account_1.address,
@@ -321,7 +321,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee_v2(
                         "radiswap-remove-tokens",
-                        |namer, builder| {
+                        |builder, namer| {
                             builder
                                 .withdraw_from_account(
                                     config.user_account_1.address,

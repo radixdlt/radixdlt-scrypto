@@ -22,17 +22,67 @@ pub struct ManifestBuilderV2 {
 }
 
 impl ManifestBuilderV2 {
-    /// Starts a new transaction builder. Returns a namer and a builder
-    pub fn new() -> (ManifestNamer, Self) {
+    /// Starts a new transaction builder. Returns a builder and a namer.
+    /// The namer is for creating / using buckets, proofs, address reservations
+    /// and named addresses. EG:
+    /// ```
+    /// # use transaction::prelude::*;
+    /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+    /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
+    /// # );
+    /// # let to_account_address = ComponentAddress::virtual_account_from_public_key(
+    /// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
+    /// # );
+    /// let (builder, namer) = ManifestBuilderV2::new();
+    /// let manifest = builder
+    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
+    ///     .take_from_worktop(XRD, dec!(1), namer.new_bucket("xrd"))
+    ///     .try_deposit_or_abort(to_account_address, namer.bucket("xrd"))
+    ///     .build();
+    /// ```
+    pub fn new() -> (Self, ManifestNamer) {
         let (namer, registrar) = ManifestNamer::new();
         let builder = Self {
             registrar,
             instructions: Vec::new(),
             blobs: BTreeMap::default(),
         };
-        (namer, builder)
+        (builder, namer)
     }
 
+    /// Starts a new transaction builder. Returns a builder, but no namer.
+    /// Not having a namer means you can't create / work with named buckets
+    /// or proofs.
+    pub fn new_without_namer() -> Self {
+        let (_, registrar) = ManifestNamer::new();
+        Self {
+            registrar,
+            instructions: Vec::new(),
+            blobs: BTreeMap::default(),
+        }
+    }
+
+    /// This is intended to be called at the start, before the builder
+    /// is used in a chained fashion, eg:
+    /// ```
+    /// # use transaction::prelude::*;
+    /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+    /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
+    /// # );
+    /// # let package_address = FAUCET_PACKAGE; // Just so it compiles
+    /// let (mut builder, namer) = ManifestBuilderV2::new();
+    /// let code_blob_ref = builder.add_blob(vec![]);
+    /// let manifest = builder
+    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
+    ///     // ...
+    ///     .call_function(
+    ///         package_address,
+    ///         "my_blueprint",
+    ///         "func_name",
+    ///         manifest_args!(code_blob_ref),
+    ///     )
+    ///     .build();
+    /// ```
     pub fn add_blob(&mut self, blob: Vec<u8>) -> ManifestBlobRef {
         let hash = hash(&blob);
         self.blobs.insert(hash, blob);
@@ -1021,6 +1071,15 @@ impl ManifestBuilderV2 {
             address: address.into(),
             method_name: ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT.to_string(),
             args,
+        })
+    }
+
+    /// Locks a large fee from the faucet.
+    pub fn lock_fee_from_faucet(self) -> Self {
+        self.add_instruction(InstructionV1::CallMethod {
+            address: FAUCET.into(),
+            method_name: ACCOUNT_LOCK_FEE_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&AccountLockFeeInput { amount: dec!(5000) }),
         })
     }
 

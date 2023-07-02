@@ -43,7 +43,7 @@ impl ManifestNamer {
         (namer, registrar)
     }
 
-    pub fn new_bucket(&mut self, name: impl Into<String>) -> NewManifestBucket {
+    pub fn new_bucket(&self, name: impl Into<String>) -> NewManifestBucket {
         let mut core = self.core.borrow_mut();
         let name = name.into();
         let old_entry = core
@@ -58,7 +58,7 @@ impl ManifestNamer {
         }
     }
 
-    pub fn bucket(&mut self, name: impl AsRef<str>) -> ManifestBucket {
+    pub fn bucket(&self, name: impl AsRef<str>) -> ManifestBucket {
         match self.core.borrow().named_buckets.get(name.as_ref()) {
             Some(ManifestObjectState::Present(bucket)) => bucket.clone(),
             Some(ManifestObjectState::Consumed) => panic!("Bucket with name \"{}\" has already been consumed", name.as_ref()),
@@ -66,7 +66,7 @@ impl ManifestNamer {
         }
     }
 
-    pub fn new_proof(&mut self, name: impl Into<String>) -> NewManifestProof {
+    pub fn new_proof(&self, name: impl Into<String>) -> NewManifestProof {
         let mut core = self.core.borrow_mut();
         let name = name.into();
         let old_entry = core
@@ -81,7 +81,7 @@ impl ManifestNamer {
         }
     }
 
-    pub fn proof(&mut self, name: impl AsRef<str>) -> ManifestProof {
+    pub fn proof(&self, name: impl AsRef<str>) -> ManifestProof {
         match self.core.borrow().named_proofs.get(name.as_ref()) {
             Some(ManifestObjectState::Present(proof)) => proof.clone(),
             Some(ManifestObjectState::Consumed) => panic!("Proof with name \"{}\" has already been consumed", name.as_ref()),
@@ -90,7 +90,7 @@ impl ManifestNamer {
     }
 
     pub fn new_address_reservation(
-        &mut self,
+        &self,
         name: impl Into<String>,
     ) -> NewManifestAddressReservation {
         let mut core = self.core.borrow_mut();
@@ -107,7 +107,7 @@ impl ManifestNamer {
         }
     }
 
-    pub fn address_reservation(&mut self, name: impl AsRef<str>) -> ManifestAddressReservation {
+    pub fn address_reservation(&self, name: impl AsRef<str>) -> ManifestAddressReservation {
         match self.core.borrow().named_address_reservations.get(name.as_ref()) {
             Some(ManifestObjectState::Present(address_reservation)) => address_reservation.clone(),
             Some(ManifestObjectState::Consumed) => panic!("Address reservation with name \"{}\" has already been consumed", name.as_ref()),
@@ -115,7 +115,7 @@ impl ManifestNamer {
         }
     }
 
-    pub fn new_named_address(&mut self, name: impl Into<String>) -> NewManifestNamedAddress {
+    pub fn new_named_address(&self, name: impl Into<String>) -> NewManifestNamedAddress {
         let mut core = self.core.borrow_mut();
         let name = name.into();
         let old_entry = core
@@ -130,7 +130,7 @@ impl ManifestNamer {
         }
     }
 
-    pub fn named_address(&mut self, name: impl AsRef<str>) -> ManifestAddress {
+    pub fn named_address(&self, name: impl AsRef<str>) -> ManifestAddress {
         match self.core.borrow().named_addresses.get(name.as_ref()) {
             Some(ManifestObjectState::Present(address)) => address.clone(),
             Some(ManifestObjectState::Consumed) => unreachable!("Address not consumable"),

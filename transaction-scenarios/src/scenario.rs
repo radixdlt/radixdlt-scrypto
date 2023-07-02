@@ -126,14 +126,14 @@ impl ScenarioCore {
         &mut self,
         logical_name: &str,
         create_manifest: impl FnOnce(
-            &mut ManifestNamer,
             ManifestBuilderV2,
+            &ManifestNamer,
         ) -> Result<ManifestBuilderV2, ScenarioError>,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let (mut namer, mut builder) = ManifestBuilderV2::new();
+        let (mut builder, namer) = ManifestBuilderV2::new();
         builder = builder.lock_fee(FAUCET, dec!(5000));
-        builder = create_manifest(&mut namer, builder)?;
+        builder = create_manifest(builder, &namer)?;
         self.next_transaction(logical_name, builder.build(), namer.object_names(), signers)
     }
 
