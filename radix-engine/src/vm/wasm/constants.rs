@@ -6,7 +6,7 @@ pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 //=================
 // Costing
 //=================
-pub const CONSUME_GAS_FUNCTION_NAME: &str = "gas";
+pub const CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME: &str = "gas";
 pub const COST_UNIT_LIMIT_FUNCTION_NAME: &str = "cost_unit_limit";
 pub const COST_UNIT_PRICE_FUNCTION_NAME: &str = "cost_unit_price";
 pub const TIP_PERCENTAGE_FUNCTION_NAME: &str = "tip_percentage";
@@ -87,4 +87,5 @@ pub const DEFAULT_MAX_NUMBER_OF_GLOBALS: u32 = 512;
 /// The max number of functions
 pub const DEFAULT_MAX_NUMBER_OF_FUNCTIONS: u32 = 64 * 1024;
 
+/// The default number of entries in the engine cache
 pub const DEFAULT_WASM_ENGINE_CACHE_SIZE: usize = 1000;

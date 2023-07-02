@@ -68,6 +68,6 @@ alloc = ["sbor/alloc", "transaction/alloc", "transaction-scenarios/alloc", "radi
 wasmer = ["radix-engine/wasmer"]
 cpu_ram_metrics = ["radix-engine/cpu_ram_metrics"]
 flamegraph = []
-resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker", "radix-engine/resource_tracker"]
+resource_tracker = ["dep:radix-engine-profiling", "resources-tracker-macro/resource_tracker", "radix-engine/resource_tracker", "radix-engine-common/resource_tracker"]
 dump_manifest_to_file = ["transaction/dump_manifest_to_file"]
 rocksdb = ["scrypto-unit/rocksdb"]

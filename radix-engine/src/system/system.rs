@@ -2072,18 +2072,20 @@ where
                 ClientCostingEntry::RunNativeCode {
                     package_address,
                     export_name,
+                    input_size,
                 } => CostingEntry::RunNativeCode {
                     package_address,
                     export_name,
+                    input_size,
                 },
                 ClientCostingEntry::RunWasmCode {
                     package_address,
                     export_name,
-                    gas,
+                    wasm_execution_units,
                 } => CostingEntry::RunWasmCode {
                     package_address,
                     export_name,
-                    gas,
+                    wasm_execution_units,
                 },
                 ClientCostingEntry::PrepareWasmCode { size } => {
                     CostingEntry::PrepareWasmCode { size }

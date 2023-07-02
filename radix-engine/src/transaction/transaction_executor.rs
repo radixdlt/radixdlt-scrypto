@@ -34,9 +34,9 @@ pub struct FeeReserveConfig {
 impl Default for FeeReserveConfig {
     fn default() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE.try_into().unwrap(),
-            usd_price: DEFAULT_USD_PRICE.try_into().unwrap(),
-            state_expansion_price: DEFAULT_STATE_EXPANSION_PRICE.try_into().unwrap(),
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            usd_price: DEFAULT_USD_PRICE_IN_XRD.try_into().unwrap(),
+            state_expansion_price: DEFAULT_STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
             system_loan: DEFAULT_SYSTEM_LOAN,
         }
     }

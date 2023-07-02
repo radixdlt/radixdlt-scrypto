@@ -161,6 +161,10 @@ impl TransactionProcessorBlueprint {
                     worktop.put(bucket, api)?;
                     InstructionOutput::None
                 }
+                InstructionV1::AssertWorktopContainsAny { resource_address } => {
+                    worktop.assert_contains(resource_address, api)?;
+                    InstructionOutput::None
+                }
                 InstructionV1::AssertWorktopContains {
                     amount,
                     resource_address,

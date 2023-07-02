@@ -7,15 +7,18 @@ use sbor::rust::vec::Vec;
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
 pub struct NoOpWasmRuntime<'a> {
     pub fee_reserve: SystemLoanFeeReserve,
-    pub gas_consumed: &'a mut u32,
+    pub wasm_execution_units_consumed: &'a mut u64,
     pub fee_table: FeeTable,
 }
 
 impl<'a> NoOpWasmRuntime<'a> {
-    pub fn new(fee_reserve: SystemLoanFeeReserve, gas_consumed: &'a mut u32) -> Self {
+    pub fn new(
+        fee_reserve: SystemLoanFeeReserve,
+        wasm_execution_units_consumed: &'a mut u64,
+    ) -> Self {
         Self {
             fee_reserve,
-            gas_consumed,
+            wasm_execution_units_consumed,
             fee_table: FeeTable::new(),
         }
     }
@@ -182,8 +185,11 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 
-    fn consume_gas(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.gas_consumed.add_assign(n);
+    fn consume_wasm_execution_units(
+        &mut self,
+        n: u32,
+    ) -> Result<(), InvokeError<WasmRuntimeError>> {
+        self.wasm_execution_units_consumed.add_assign(n as u64);
         self.fee_reserve
             .consume_execution(
                 self.fee_table

@@ -25,7 +25,7 @@ pub type NonFungibleVaultGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLoca
 
 pub const NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT: &str = "recall_non_fungibles";
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct NonFungibleVaultRecallNonFungiblesInput {
     pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
 }

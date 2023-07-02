@@ -6,8 +6,8 @@ CALL_METHOD
 ALLOCATE_GLOBAL_ADDRESS
     Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
     "Package"
-    AddressReservation("radiswap")
-    NamedAddress("radiswap")
+    AddressReservation("radiswap_package_reservation")
+    NamedAddress("radiswap_package")
 ;
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
@@ -15,9 +15,9 @@ CALL_METHOD
 ;
 PUBLISH_PACKAGE_ADVANCED
     Enum<1u8>(
-        AddressReservation("radiswap")
+        AddressReservation("radiswap_package_reservation")
     )
-    Blob("88003243ae9291bc64c7f6a76f8e64a5fa268bc202c7002113a5d39dd704d262")
+    Blob("34b85a539cb0ba73ce153e423c16cadd4c0c31f0ce62f48f517efabcd2ddba69")
     Tuple(
         Map<String, Tuple>(
             "Radiswap" => Tuple(
@@ -339,22 +339,7 @@ PUBLISH_PACKAGE_ADVANCED
                         Map<U8, String>()
                     )
                 ),
-                Enum<1u8>(
-                    Map<String, Enum>(
-                        "add_liquidity" => Enum<1u8>(
-                            Decimal("1")
-                        ),
-                        "new" => Enum<1u8>(
-                            Decimal("5")
-                        ),
-                        "remove_liquidity" => Enum<1u8>(
-                            Decimal("1")
-                        ),
-                        "swap" => Enum<1u8>(
-                            Decimal("2")
-                        )
-                    )
-                ),
+                Enum<0u8>(),
                 Tuple(
                     Enum<0u8>(),
                     Enum<0u8>()
@@ -405,14 +390,14 @@ PUBLISH_PACKAGE_ADVANCED
     )
 ;
 CALL_FUNCTION
-    NamedAddress("radiswap")
+    NamedAddress("radiswap_package")
     "Radiswap"
     "new"
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
     Address("resource_sim1thazudp52ynxvpfqrvve77k5c9ceekspz2vwhqrftzu29asd6z8gnv")
 ;
 CALL_FUNCTION
-    NamedAddress("radiswap")
+    NamedAddress("radiswap_package")
     "Radiswap"
     "new"
     Address("resource_sim1tkvm4tn4sqt7672dugdva8tkh4q80e2ef34f383s9w2zl67esvjln6")
