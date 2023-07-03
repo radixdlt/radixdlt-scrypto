@@ -1,1 +1,1 @@
-RECALL_VAULT Address("${vault_address}") Decimal("1.2");
+RECALL_FROM_VAULT Address("${vault_address}") Decimal("1.2");

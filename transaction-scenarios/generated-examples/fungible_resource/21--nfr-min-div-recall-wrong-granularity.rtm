@@ -3,7 +3,7 @@ CALL_METHOD
     "lock_fee"
     Decimal("5000")
 ;
-RECALL_VAULT
+RECALL_FROM_VAULT
     Address("internal_vault_sim1tz7nweme6depzsp8l9d3qdtxuzdu3snvgkelqydxx5gguvknetr4ud")
     Decimal("123.12321")
 ;

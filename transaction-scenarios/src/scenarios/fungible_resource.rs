@@ -6,15 +6,18 @@ use radix_engine_interface::*;
 
 pub struct FungibleResourceScenario {
     core: ScenarioCore,
+    metadata: ScenarioMetadata,
     config: FungibleResourceScenarioConfig,
+    state: FungibleResourceScenarioState,
 }
 
 pub struct FungibleResourceScenarioConfig {
-    /* Accounts */
     pub user_account_1: VirtualAccount,
     pub user_account_2: VirtualAccount,
+}
 
-    /* Entities - These get created during the scenario */
+#[derive(Default)]
+pub struct FungibleResourceScenarioState {
     pub max_divisibility_fungible_resource: Option<ResourceAddress>,
     pub min_divisibility_fungible_resource: Option<ResourceAddress>,
     pub vault1: Option<InternalAddress>,
@@ -26,38 +29,48 @@ impl Default for FungibleResourceScenarioConfig {
         Self {
             user_account_1: secp256k1_account_1(),
             user_account_2: secp256k1_account_2(),
-            max_divisibility_fungible_resource: Default::default(),
-            min_divisibility_fungible_resource: Default::default(),
-            vault1: Default::default(),
-            vault2: Default::default(),
         }
     }
 }
 
-impl ScenarioDefinition for FungibleResourceScenario {
+impl ScenarioCreator for FungibleResourceScenario {
     type Config = FungibleResourceScenarioConfig;
 
-    fn new_with_config(core: ScenarioCore, config: Self::Config) -> Self {
-        Self { core, config }
+    type State = FungibleResourceScenarioState;
+
+    fn create_with_config_and_state(
+        core: ScenarioCore,
+        config: Self::Config,
+        start_state: Self::State,
+    ) -> Box<dyn ScenarioInstance> {
+        let metadata = ScenarioMetadata {
+            logical_name: "fungible_resource",
+        };
+        Box::new(Self {
+            core,
+            metadata,
+            config,
+            state: start_state,
+        })
     }
 }
 
 impl ScenarioInstance for FungibleResourceScenario {
-    fn metadata(&self) -> ScenarioMetadata {
-        ScenarioMetadata {
-            logical_name: "fungible_resource",
-        }
+    fn metadata(&self) -> &ScenarioMetadata {
+        &self.metadata
     }
 
     fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError> {
         let FungibleResourceScenarioConfig {
             user_account_1,
             user_account_2,
+        } = &mut self.config;
+        let FungibleResourceScenarioState {
             max_divisibility_fungible_resource,
             min_divisibility_fungible_resource,
             vault1,
             vault2,
-        } = &mut self.config;
+        } = &mut self.state;
         let core = &mut self.core;
 
         let up_next = match core.next_stage() {
@@ -89,7 +102,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             2 => {
-                let commit_success = core.check_commit_success(&previous)?;
+                let commit_success = core.check_commit_success(core.check_previous(&previous)?)?;
                 *max_divisibility_fungible_resource =
                     Some(commit_success.new_resource_addresses()[0]);
                 *vault1 = Some(commit_success.new_vault_addresses()[0]);
@@ -105,7 +118,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             3 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-burn",
@@ -125,7 +138,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             4 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-transfer-32-times",
@@ -154,7 +167,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             5 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-freeze-withdraw",
@@ -163,7 +176,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             6 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-freeze-deposit",
@@ -172,7 +185,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             7 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-freeze-deposit",
@@ -181,7 +194,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             8 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-recall-freezed-vault",
@@ -195,7 +208,7 @@ impl ScenarioInstance for FungibleResourceScenario {
             }
             9 => {
                 // FIXME: re-enable this after recalling from frozen vaults is allowed.
-                // core.check_commit_success(&previous)?;
+                // core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-unfreeze-withdraw",
@@ -204,7 +217,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             10 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-unfreeze-deposit",
@@ -213,7 +226,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             11 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-unfreeze-deposit",
@@ -222,7 +235,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             12 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-max-div-recall-unfreezed-vault",
@@ -237,7 +250,7 @@ impl ScenarioInstance for FungibleResourceScenario {
 
             /* MIN DIVISIBILITY */
             13 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-min-div-create",
@@ -265,7 +278,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             14 => {
-                let commit_success = core.check_commit_success(&previous)?;
+                let commit_success = core.check_commit_success(core.check_previous(&previous)?)?;
                 *min_divisibility_fungible_resource =
                     Some(commit_success.new_resource_addresses()[0]);
                 *vault2 = Some(commit_success.new_vault_addresses()[0]);
@@ -281,7 +294,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             15 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-min-div-mint-wrong-granularity",
@@ -294,7 +307,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             16 => {
-                core.check_commit_failure(&previous)?;
+                core.check_commit_failure(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-min-div-transfer-correct-granularity",
@@ -311,7 +324,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             17 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-min-div-transfer-wrong-granularity",
@@ -328,7 +341,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             18 => {
-                core.check_commit_failure(&previous)?;
+                core.check_commit_failure(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-min-div-create-proof-correct-granularity",
@@ -343,7 +356,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             19 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-min-div-create-proof-wrong-granularity",
@@ -358,7 +371,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             20 => {
-                core.check_commit_failure(&previous)?;
+                core.check_commit_failure(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-min-div-recall-correct-granularity",
@@ -371,7 +384,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             21 => {
-                core.check_commit_success(&previous)?;
+                core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
                     "nfr-min-div-recall-wrong-granularity",
@@ -384,22 +397,24 @@ impl ScenarioInstance for FungibleResourceScenario {
                 )
             }
             _ => {
-                core.check_commit_failure(&previous)?;
+                core.check_commit_failure(core.check_previous(&previous)?)?;
 
-                let addresses = DescribedAddresses::new()
-                    .add("user_account_1", user_account_1.address.clone())
-                    .add("user_account_2", user_account_2.address.clone())
-                    .add(
-                        "max_divisibility_fungible_resource",
-                        max_divisibility_fungible_resource.unwrap(),
-                    )
-                    .add(
-                        "min_divisibility_fungible_resource",
-                        min_divisibility_fungible_resource.unwrap(),
-                    );
-                return Ok(core.finish_scenario(addresses));
+                let output = ScenarioOutput {
+                    interesting_addresses: DescribedAddresses::new()
+                        .add("user_account_1", user_account_1.address.clone())
+                        .add("user_account_2", user_account_2.address.clone())
+                        .add(
+                            "max_divisibility_fungible_resource",
+                            max_divisibility_fungible_resource.unwrap(),
+                        )
+                        .add(
+                            "min_divisibility_fungible_resource",
+                            min_divisibility_fungible_resource.unwrap(),
+                        ),
+                };
+                return Ok(NextAction::Completed(core.finish_scenario(output)));
             }
         };
-        Ok(NextAction::Transaction(up_next))
+        Ok(NextAction::Transaction(up_next?))
     }
 }

@@ -1267,6 +1267,17 @@ impl TestRunner {
         self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account)
     }
 
+    pub fn create_freezeable_non_fungible(&mut self, account: ComponentAddress) -> ResourceAddress {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(Burn, (rule!(allow_all), LOCKED));
+        access_rules.insert(Recall, (rule!(allow_all), LOCKED));
+        access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
+
+        self.create_non_fungible_resource_with_access_rules(access_rules, account)
+    }
+
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
@@ -1315,6 +1326,14 @@ impl TestRunner {
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
 
+        self.create_non_fungible_resource_with_access_rules(access_rules, account)
+    }
+
+    pub fn create_non_fungible_resource_with_access_rules(
+        &mut self,
+        access_rules: BTreeMap<ResourceAction, (AccessRule, Mutability)>,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
         let mut entries = BTreeMap::new();
         entries.insert(NonFungibleLocalId::integer(1), EmptyNonFungibleData {});
         entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});

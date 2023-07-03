@@ -112,6 +112,7 @@ fn can_burn_non_fungible() {
             "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
+        .assert_worktop_contains(resource_address, 0.into())
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -571,10 +572,16 @@ fn test_mint_update_and_withdraw() {
     );
     receipt.expect_commit_success();
 
+    let mut nfid_list = BTreeSet::new();
+    nfid_list.insert(NonFungibleLocalId::integer(0)); // ID from NonFungibleTest::create_non_fungible_mutable
+
     // transfer
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .withdraw_from_account(account, nft_resource_address, 1.into())
+        .assert_worktop_contains_any(nft_resource_address)
+        .assert_worktop_contains(nft_resource_address, 1.into())
+        .assert_worktop_contains_non_fungibles(nft_resource_address, &nfid_list)
         .call_method(
             account,
             "try_deposit_batch_or_abort",
@@ -803,6 +810,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
                 own: None,
             }],
         )
+        .assert_worktop_contains_any(resource_address)
         .call_method(
             account,
             "try_deposit_batch_or_abort",
@@ -846,6 +854,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
                 own: None,
             }],
         )
+        .assert_worktop_contains_any(resource_address)
         .call_method(
             account,
             "try_deposit_batch_or_abort",
