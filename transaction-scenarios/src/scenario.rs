@@ -379,6 +379,25 @@ impl<Config: 'static, State: 'static> ScenarioBuilder<Config, State> {
         self
     }
 
+    pub fn failed_transaction_with_error_handler(
+        mut self,
+        creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
+            + 'static,
+        handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &RuntimeError) -> Result<(), ScenarioError>
+            + 'static,
+    ) -> Self {
+        self.transactions.push(ScenarioTransaction {
+            creator: Box::new(creator),
+            handler: Box::new(
+                move |core, config, state, receipt| -> Result<(), ScenarioError> {
+                    let error = core.check_commit_failure(receipt)?;
+                    handler(core, config, state, error)
+                },
+            ),
+        });
+        self
+    }
+
     pub fn add_transaction_advanced(
         mut self,
         creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>

@@ -6,6 +6,6 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "create_proof_of_amount"
-    Address("resource_sim1thd0fuqtxzxyfj7zysfzh3gghd7a5xekydphxcleg82y3kq42rhhl4")
+    Address("resource_sim1t44j32jumc5kp6gzxyxajl68z2g64shmrzysj0pgflm4f5ferrg6kn")
     Decimal("99")
 ;

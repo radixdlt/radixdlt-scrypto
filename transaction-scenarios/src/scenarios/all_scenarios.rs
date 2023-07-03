@@ -23,7 +23,7 @@ impl Iterator for AllScenariosIterator {
             })),
             3 => Some(Box::new(|core| metadata::MetadataScenario::create(core))),
             4 => Some(Box::new(|core| {
-                fungible_resource::FungibleResourceScenario::create(core)
+                fungible_resource::FungibleResourceScenarioCreator::create(core)
             })),
             _ => None,
         }

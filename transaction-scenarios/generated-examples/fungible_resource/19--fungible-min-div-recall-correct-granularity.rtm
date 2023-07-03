@@ -3,9 +3,9 @@ CALL_METHOD
     "lock_fee"
     Decimal("5000")
 ;
-MINT_FUNGIBLE
-    Address("resource_sim1thd0fuqtxzxyfj7zysfzh3gghd7a5xekydphxcleg82y3kq42rhhl4")
-    Decimal("1.1")
+RECALL_FROM_VAULT
+    Address("internal_vault_sim1tqd6xptzvndjdpsng824z8c4f3g4xsszrs7sys5jytsur5synftuge")
+    Decimal("2")
 ;
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")

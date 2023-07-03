@@ -3,12 +3,9 @@ CALL_METHOD
     "lock_fee"
     Decimal("5000")
 ;
-RECALL_FROM_VAULT
-    Address("internal_vault_sim1tz7nweme6depzsp8l9d3qdtxuzdu3snvgkelqydxx5gguvknetr4ud")
-    Decimal("123.12321")
-;
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
-    "try_deposit_batch_or_abort"
-    Expression("ENTIRE_WORKTOP")
+    "create_proof_of_amount"
+    Address("resource_sim1t44j32jumc5kp6gzxyxajl68z2g64shmrzysj0pgflm4f5ferrg6kn")
+    Decimal("0.0001")
 ;

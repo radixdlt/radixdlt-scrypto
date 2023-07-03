@@ -4,13 +4,6 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT;
 use radix_engine_interface::*;
 
-pub struct FungibleResourceScenario {
-    core: ScenarioCore,
-    metadata: ScenarioMetadata,
-    config: FungibleResourceScenarioConfig,
-    state: FungibleResourceScenarioState,
-}
-
 pub struct FungibleResourceScenarioConfig {
     pub user_account_1: VirtualAccount,
     pub user_account_2: VirtualAccount,
@@ -33,7 +26,9 @@ impl Default for FungibleResourceScenarioConfig {
     }
 }
 
-impl ScenarioCreator for FungibleResourceScenario {
+pub struct FungibleResourceScenarioCreator;
+
+impl ScenarioCreator for FungibleResourceScenarioCreator {
     type Config = FungibleResourceScenarioConfig;
 
     type State = FungibleResourceScenarioState;
@@ -46,375 +41,395 @@ impl ScenarioCreator for FungibleResourceScenario {
         let metadata = ScenarioMetadata {
             logical_name: "fungible_resource",
         };
-        Box::new(Self {
-            core,
-            metadata,
-            config,
-            state: start_state,
-        })
-    }
-}
 
-impl ScenarioInstance for FungibleResourceScenario {
-    fn metadata(&self) -> &ScenarioMetadata {
-        &self.metadata
-    }
-
-    fn next(&mut self, previous: Option<&TransactionReceipt>) -> Result<NextAction, ScenarioError> {
-        let FungibleResourceScenarioConfig {
-            user_account_1,
-            user_account_2,
-        } = &mut self.config;
-        let FungibleResourceScenarioState {
-            max_divisibility_fungible_resource,
-            min_divisibility_fungible_resource,
-            vault1,
-            vault2,
-        } = &mut self.state;
-        let core = &mut self.core;
-
-        let up_next = match core.next_stage() {
-            1 => {
-                core.check_start(&previous)?;
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-create",
-                    |builder| {
-                        builder
-                            .create_fungible_resource(
-                                OwnerRole::None,
-                                false,
-                                18,
-                                metadata! {},
-                                btreemap! {
-                                    Mint => (rule!(allow_all), rule!(deny_all)),
-                                    Burn =>  (rule!(allow_all), rule!(deny_all)),
-                                    UpdateNonFungibleData => (rule!(allow_all), rule!(deny_all)),
-                                    Withdraw => (rule!(allow_all), rule!(deny_all)),
-                                    Deposit => (rule!(allow_all), rule!(deny_all)),
-                                    Recall => (rule!(allow_all), rule!(deny_all)),
-                                    Freeze => (rule!(allow_all), rule!(deny_all)),
-                                },
-                                Some(dec!("100000")),
-                            )
-                            .try_deposit_batch_or_abort(user_account_1.address)
-                    },
-                    vec![],
-                )
-            }
-            2 => {
-                let commit_success = core.check_commit_success(core.check_previous(&previous)?)?;
-                *max_divisibility_fungible_resource =
-                    Some(commit_success.new_resource_addresses()[0]);
-                *vault1 = Some(commit_success.new_vault_addresses()[0]);
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-mint",
-                    |builder| {
-                        builder
-                            .mint_fungible(max_divisibility_fungible_resource.unwrap(), dec!("100"))
-                            .try_deposit_batch_or_abort(user_account_1.address)
-                    },
-                    vec![],
-                )
-            }
-            3 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-burn",
-                    |builder| {
-                        builder
-                            .withdraw_from_account(
-                                user_account_1.address,
-                                max_divisibility_fungible_resource.unwrap(),
+        #[allow(unused_variables)]
+        ScenarioBuilder::new(core, metadata, config, start_state)
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-create",
+                        |builder| {
+                            builder
+                                .create_fungible_resource(
+                                    OwnerRole::None,
+                                    false,
+                                    18,
+                                    metadata! {},
+                                    btreemap! {
+                                        Mint => (rule!(allow_all), rule!(deny_all)),
+                                        Burn =>  (rule!(allow_all), rule!(deny_all)),
+                                        UpdateNonFungibleData => (rule!(allow_all), rule!(deny_all)),
+                                        Withdraw => (rule!(allow_all), rule!(deny_all)),
+                                        Deposit => (rule!(allow_all), rule!(deny_all)),
+                                        Recall => (rule!(allow_all), rule!(deny_all)),
+                                        Freeze => (rule!(allow_all), rule!(deny_all)),
+                                    },
+                                    Some(dec!("100000")),
+                                )
+                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                        },
+                        vec![],
+                    )
+                },
+                |core, config, state, result| {
+                    state.max_divisibility_fungible_resource = Some(result.new_resource_addresses()[0]);
+                    state.vault1 = Some(result.new_vault_addresses()[0]);
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-mint",
+                        |builder| {
+                            builder
+                                .mint_fungible(state.max_divisibility_fungible_resource.unwrap(), dec!("100"))
+                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                        },
+                        vec![],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-burn",
+                        |builder| {
+                            builder
+                                .withdraw_from_account(
+                                    config.user_account_1.address,
+                                    state.max_divisibility_fungible_resource.unwrap(),
+                                    dec!("10"),
+                                )
+                                .take_all_from_worktop(
+                                    state.max_divisibility_fungible_resource.unwrap(),
+                                    |builder, bucket| builder.burn_resource(bucket),
+                                )
+                        },
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-transfer-32-times",
+                        |builder| {
+                            let mut builder = builder.withdraw_from_account(
+                                config.user_account_1.address,
+                                state.max_divisibility_fungible_resource.unwrap(),
                                 dec!("10"),
-                            )
-                            .take_all_from_worktop(
-                                max_divisibility_fungible_resource.unwrap(),
-                                |builder, bucket| builder.burn_resource(bucket),
-                            )
-                    },
-                    vec![&user_account_1.key],
-                )
-            }
-            4 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-transfer-32-times",
-                    |builder| {
-                        let mut builder = builder.withdraw_from_account(
-                            user_account_1.address,
-                            max_divisibility_fungible_resource.unwrap(),
-                            dec!("10"),
-                        );
-                        for _ in 0..32 {
-                            builder = builder.take_from_worktop(
-                                max_divisibility_fungible_resource.unwrap(),
-                                dec!("0.001"),
-                                |builder, bucket| {
-                                    builder.call_method(
-                                        user_account_2.address,
-                                        ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-                                        manifest_args!(bucket),
-                                    )
-                                },
                             );
-                        }
-                        builder.try_deposit_batch_or_abort(user_account_1.address)
-                    },
-                    vec![&user_account_1.key],
-                )
-            }
-            5 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
+                            for _ in 0..32 {
+                                builder = builder.take_from_worktop(
+                                    state.max_divisibility_fungible_resource.unwrap(),
+                                    dec!("0.001"),
+                                    |builder, bucket| {
+                                        builder.call_method(
+                                            config.user_account_2.address,
+                                            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+                                            manifest_args!(bucket),
+                                        )
+                                    },
+                                );
+                            }
+                            builder.try_deposit_batch_or_abort(config.user_account_1.address)
+                        },
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-freeze-deposit",
+                        |builder| builder.freeze_deposit(state.vault1.unwrap()),
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-freeze-deposit",
+                        |builder| builder.freeze_burn(state.vault1.unwrap()),
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .failed_transaction_with_error_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-recall-freezed-vault",
+                        |builder| {
+                            builder
+                                .recall(state.vault1.unwrap(), dec!("2"))
+                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                        },
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    // FIXME: Recalling from frozen vaults should be allowed per product requirement
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-unfreeze-withdraw",
+                        |builder| builder.unfreeze_withdraw(state.vault1.unwrap()),
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-unfreeze-deposit",
+                        |builder| builder.unfreeze_deposit(state.vault1.unwrap()),
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-unfreeze-deposit",
+                        |builder| builder.unfreeze_burn(state.vault1.unwrap()),
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-recall-unfreezed-vault",
+                        |builder| {
+                            builder
+                                .recall(state.vault1.unwrap(), dec!("2"))
+                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                        },
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-min-div-create",
+                        |builder| {
+                            builder
+                                .create_fungible_resource(
+                                    OwnerRole::None,
+                                    false,
+                                    0,
+                                    metadata! {},
+                                    btreemap! {
+                                        Mint => (rule!(allow_all), rule!(deny_all)),
+                                        Burn =>  (rule!(allow_all), rule!(deny_all)),
+                                        UpdateNonFungibleData => (rule!(allow_all), rule!(deny_all)),
+                                        Withdraw => (rule!(allow_all), rule!(deny_all)),
+                                        Deposit => (rule!(allow_all), rule!(deny_all)),
+                                        Recall => (rule!(allow_all), rule!(deny_all)),
+                                        Freeze => (rule!(allow_all), rule!(deny_all)),
+                                    },
+                                    Some(dec!("100000")),
+                                )
+                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                        },
+                        vec![],
+                    )
+                },
+                |core, config, state, result| {
+                    state.min_divisibility_fungible_resource =
+                        Some(result.new_resource_addresses()[0]);
+                    state.vault2 = Some(result.new_vault_addresses()[0]);
 
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-freeze-withdraw",
-                    |builder| builder.freeze_withdraw(vault1.unwrap()),
-                    vec![&user_account_1.key],
-                )
-            }
-            6 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-freeze-deposit",
-                    |builder| builder.freeze_deposit(vault1.unwrap()),
-                    vec![&user_account_1.key],
-                )
-            }
-            7 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-freeze-deposit",
-                    |builder| builder.freeze_burn(vault1.unwrap()),
-                    vec![&user_account_1.key],
-                )
-            }
-            8 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-recall-freezed-vault",
-                    |builder| {
-                        builder
-                            .recall(vault1.unwrap(), dec!("2"))
-                            .try_deposit_batch_or_abort(user_account_1.address)
-                    },
-                    vec![&user_account_1.key],
-                )
-            }
-            9 => {
-                // FIXME: re-enable this after recalling from frozen vaults is allowed.
-                // core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-unfreeze-withdraw",
-                    |builder| builder.unfreeze_withdraw(vault1.unwrap()),
-                    vec![&user_account_1.key],
-                )
-            }
-            10 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-unfreeze-deposit",
-                    |builder| builder.unfreeze_deposit(vault1.unwrap()),
-                    vec![&user_account_1.key],
-                )
-            }
-            11 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-unfreeze-deposit",
-                    |builder| builder.unfreeze_burn(vault1.unwrap()),
-                    vec![&user_account_1.key],
-                )
-            }
-            12 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-recall-unfreezed-vault",
-                    |builder| {
-                        builder
-                            .recall(vault1.unwrap(), dec!("2"))
-                            .try_deposit_batch_or_abort(user_account_1.address)
-                    },
-                    vec![&user_account_1.key],
-                )
-            }
-
-            /* MIN DIVISIBILITY */
-            13 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-min-div-create",
-                    |builder| {
-                        builder
-                            .create_fungible_resource(
-                                OwnerRole::None,
-                                false,
-                                0,
-                                metadata! {},
-                                btreemap! {
-                                    Mint => (rule!(allow_all), rule!(deny_all)),
-                                    Burn =>  (rule!(allow_all), rule!(deny_all)),
-                                    UpdateNonFungibleData => (rule!(allow_all), rule!(deny_all)),
-                                    Withdraw => (rule!(allow_all), rule!(deny_all)),
-                                    Deposit => (rule!(allow_all), rule!(deny_all)),
-                                    Recall => (rule!(allow_all), rule!(deny_all)),
-                                    Freeze => (rule!(allow_all), rule!(deny_all)),
-                                },
-                                Some(dec!("100000")),
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-min-div-mint-correct-granularity",
+                        |builder| {
+                            builder
+                                .mint_fungible(state.min_divisibility_fungible_resource.unwrap(), dec!("166"))
+                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                        },
+                        vec![],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .failed_transaction_with_error_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-min-div-mint-wrong-granularity",
+                        |builder| {
+                            builder
+                                .mint_fungible(state.min_divisibility_fungible_resource.unwrap(), dec!("1.1"))
+                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                        },
+                        vec![],
+                    )
+                },
+                |core, config, state, error| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-min-div-transfer-correct-granularity",
+                        |builder| {
+                            builder
+                                .withdraw_from_account(
+                                    config.user_account_1.address,
+                                    state.min_divisibility_fungible_resource.unwrap(),
+                                    dec!("234"),
+                                )
+                                .try_deposit_batch_or_abort(config.user_account_2.address)
+                        },
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .failed_transaction_with_error_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-min-div-transfer-wrong-granularity",
+                        |builder| {
+                            builder
+                                .withdraw_from_account(
+                                    config.user_account_1.address,
+                                    state.min_divisibility_fungible_resource.unwrap(),
+                                    dec!("0.0001"),
+                                )
+                                .try_deposit_batch_or_abort(config.user_account_2.address)
+                        },
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, error| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-min-div-create-proof-correct-granularity",
+                        |builder| {
+                            builder.create_proof_from_account_of_amount(
+                                config.user_account_1.address,
+                                state.min_divisibility_fungible_resource.unwrap(),
+                                dec!("99"),
                             )
-                            .try_deposit_batch_or_abort(user_account_1.address)
-                    },
-                    vec![],
-                )
-            }
-            14 => {
-                let commit_success = core.check_commit_success(core.check_previous(&previous)?)?;
-                *min_divisibility_fungible_resource =
-                    Some(commit_success.new_resource_addresses()[0]);
-                *vault2 = Some(commit_success.new_vault_addresses()[0]);
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-min-div-mint-correct-granularity",
-                    |builder| {
-                        builder
-                            .mint_fungible(min_divisibility_fungible_resource.unwrap(), dec!("166"))
-                            .try_deposit_batch_or_abort(user_account_1.address)
-                    },
-                    vec![],
-                )
-            }
-            15 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-min-div-mint-wrong-granularity",
-                    |builder| {
-                        builder
-                            .mint_fungible(min_divisibility_fungible_resource.unwrap(), dec!("1.1"))
-                            .try_deposit_batch_or_abort(user_account_1.address)
-                    },
-                    vec![],
-                )
-            }
-            16 => {
-                core.check_commit_failure(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-min-div-transfer-correct-granularity",
-                    |builder| {
-                        builder
-                            .withdraw_from_account(
-                                user_account_1.address,
-                                min_divisibility_fungible_resource.unwrap(),
-                                dec!("234"),
-                            )
-                            .try_deposit_batch_or_abort(user_account_2.address)
-                    },
-                    vec![&user_account_1.key],
-                )
-            }
-            17 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-min-div-transfer-wrong-granularity",
-                    |builder| {
-                        builder
-                            .withdraw_from_account(
-                                user_account_1.address,
-                                min_divisibility_fungible_resource.unwrap(),
+                        },
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .failed_transaction_with_error_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-min-div-create-proof-wrong-granularity",
+                        |builder| {
+                            builder.create_proof_from_account_of_amount(
+                                config.user_account_1.address,
+                                state.min_divisibility_fungible_resource.unwrap(),
                                 dec!("0.0001"),
                             )
-                            .try_deposit_batch_or_abort(user_account_2.address)
-                    },
-                    vec![&user_account_1.key],
-                )
-            }
-            18 => {
-                core.check_commit_failure(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-min-div-create-proof-correct-granularity",
-                    |builder| {
-                        builder.create_proof_from_account_of_amount(
-                            user_account_1.address,
-                            min_divisibility_fungible_resource.unwrap(),
-                            dec!("99"),
-                        )
-                    },
-                    vec![&user_account_1.key],
-                )
-            }
-            19 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-min-div-create-proof-wrong-granularity",
-                    |builder| {
-                        builder.create_proof_from_account_of_amount(
-                            user_account_1.address,
-                            min_divisibility_fungible_resource.unwrap(),
-                            dec!("0.0001"),
-                        )
-                    },
-                    vec![&user_account_1.key],
-                )
-            }
-            20 => {
-                core.check_commit_failure(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-min-div-recall-correct-granularity",
-                    |builder| {
-                        builder
-                            .recall(vault2.unwrap(), dec!("2"))
-                            .try_deposit_batch_or_abort(user_account_1.address)
-                    },
-                    vec![&user_account_1.key],
-                )
-            }
-            21 => {
-                core.check_commit_success(core.check_previous(&previous)?)?;
-
-                core.next_transaction_with_faucet_lock_fee(
-                    "fungible-min-div-recall-wrong-granularity",
-                    |builder| {
-                        builder
-                            .recall(vault2.unwrap(), dec!("123.12321"))
-                            .try_deposit_batch_or_abort(user_account_1.address)
-                    },
-                    vec![&user_account_1.key],
-                )
-            }
-            _ => {
-                core.check_commit_failure(core.check_previous(&previous)?)?;
-
-                let output = ScenarioOutput {
+                        },
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, error| {
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-min-div-recall-correct-granularity",
+                        |builder| {
+                            builder
+                                .recall(state.vault2.unwrap(), dec!("2"))
+                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                        },
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, result| {
+                    Ok(())
+                },
+            )
+            .failed_transaction_with_error_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-min-div-recall-wrong-granularity",
+                        |builder| {
+                            builder
+                                .recall(state.vault2.unwrap(), dec!("123.12321"))
+                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                        },
+                        vec![&config.user_account_1.key],
+                    )
+                },
+                |core, config, state, error| {
+                    Ok(())
+                },
+            )
+            .finalize(|core, config, state| {
+                Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                        .add("user_account_1", user_account_1.address.clone())
-                        .add("user_account_2", user_account_2.address.clone())
-                        .add(
-                            "max_divisibility_fungible_resource",
-                            max_divisibility_fungible_resource.unwrap(),
-                        )
-                        .add(
-                            "min_divisibility_fungible_resource",
-                            min_divisibility_fungible_resource.unwrap(),
-                        ),
-                };
-                return Ok(NextAction::Completed(core.finish_scenario(output)));
-            }
-        };
-        Ok(NextAction::Transaction(up_next?))
+                    .add("user_account_1", config.user_account_1.address.clone())
+                    .add("user_account_2", config.user_account_2.address.clone())
+                    .add(
+                        "max_divisibility_fungible_resource",
+                        state.max_divisibility_fungible_resource.unwrap(),
+                    )
+                    .add(
+                        "min_divisibility_fungible_resource",
+                        state.min_divisibility_fungible_resource.unwrap(),
+                    ),
+                })
+            })
     }
 }
