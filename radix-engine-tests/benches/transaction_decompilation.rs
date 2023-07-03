@@ -8,7 +8,7 @@ use radix_engine_common::types::Epoch;
 use radix_engine_common::{manifest_args, ManifestSbor};
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::RolesInit;
-use radix_engine_interface::blueprints::resource::{NonFungibleResourceFeatures, OwnerRole};
+use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
 use radix_engine_interface::{metadata, metadata_init, ScryptoSbor};
 use scrypto::prelude::{AccessRule, ComponentAddress};
 use scrypto::NonFungibleData;
@@ -84,7 +84,7 @@ fn compiled_notarized_transaction() -> Vec<u8> {
             OwnerRole::None,
             NonFungibleIdType::Integer,
             false,
-            NonFungibleResourceFeatures::default(),
+            NonFungibleResourceRoles::default(),
             metadata! {},
             Some(
                 (0u64..10_000u64)

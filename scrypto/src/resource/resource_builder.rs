@@ -91,7 +91,7 @@ impl ResourceBuilder {
 pub struct InProgressResourceBuilder<T: AnyResourceType> {
     owner_role: OwnerRole,
     resource_type: T,
-    resource_features: T::ResourceFeatures,
+    resource_roles: T::ResourceRoles,
     metadata_config: Option<ModuleConfig<MetadataInit>>,
     address_reservation: Option<GlobalAddressReservation>,
 }
@@ -103,21 +103,21 @@ impl<T: AnyResourceType> InProgressResourceBuilder<T> {
             resource_type: T::default(),
             metadata_config: None,
             address_reservation: None,
-            resource_features: T::ResourceFeatures::default(),
+            resource_roles: T::ResourceRoles::default(),
         }
     }
 }
 
 // Various types for ResourceType
 pub trait AnyResourceType: Default {
-    type ResourceFeatures: Default;
+    type ResourceRoles: Default;
 }
 
 pub struct FungibleResourceType {
     divisibility: u8,
 }
 impl AnyResourceType for FungibleResourceType {
-    type ResourceFeatures = FungibleResourceFeatures;
+    type ResourceRoles = FungibleResourceRoles;
 }
 impl Default for FungibleResourceType {
     fn default() -> Self {
@@ -134,7 +134,7 @@ pub struct NonFungibleResourceType<T: IsNonFungibleLocalId, D: NonFungibleData>(
 impl<T: IsNonFungibleLocalId, D: NonFungibleData> AnyResourceType
     for NonFungibleResourceType<T, D>
 {
-    type ResourceFeatures = NonFungibleResourceFeatures;
+    type ResourceRoles = NonFungibleResourceRoles;
 }
 impl<T: IsNonFungibleLocalId, D: NonFungibleData> Default for NonFungibleResourceType<T, D> {
     fn default() -> Self {
@@ -171,13 +171,13 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::mintable;
+    /// use radix_engine_interface::mint_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be mintable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .mintable(mintable! {
+    ///    .mint_roles(mint_roles! {
     ///         minter => rule!(require(resource_address)), locked;
     ///         minter_updater => rule!(deny_all), locked;
     ///     });
@@ -185,12 +185,12 @@ pub trait UpdateAuthBuilder {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be mintable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .mintable(mintable! {
+    ///    .mint_roles(mint_roles! {
     ///         minter => rule!(deny_all), updatable;
     ///         minter_updater => rule!(require(resource_address)), locked;
     ///    });
     /// ```
-    fn mintable(self, mintable: Option<MintableRoles<RoleDefinition>>) -> Self;
+    fn mint_roles(self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self;
 
     /// Sets the resource to be burnable.
     ///
@@ -200,13 +200,13 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::burnable;
+    /// use radix_engine_interface::burn_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be burnable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .burnable(burnable! {
+    ///    .burn_roles(burn_roles! {
     ///        burner => rule!(require(resource_address)), locked;
     ///        burner_updater => rule!(deny_all), locked;
     ///    });
@@ -214,12 +214,12 @@ pub trait UpdateAuthBuilder {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be freely burnable, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .burnable(burnable! {
+    ///    .burn_roles(burn_roles! {
     ///        burner => rule!(allow_all), updatable;
     ///        burner_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn burnable(self, burnable: Option<BurnableRoles<RoleDefinition>>) -> Self;
+    fn burn_roles(self, burn_roles: Option<BurnRoles<RoleDefinition>>) -> Self;
 
     /// Sets the resource to be recallable from vaults.
     ///
@@ -234,7 +234,7 @@ pub trait UpdateAuthBuilder {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be recallable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .recallable(recallable! {
+    ///    .recall_roles(recall_roles! {
     ///        recaller => rule!(require(resource_address)), locked;
     ///        recaller_updater => rule!(deny_all), locked;
     ///    });
@@ -242,12 +242,12 @@ pub trait UpdateAuthBuilder {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be recallable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .recallable(recallable! {
+    ///    .recall_roles(recall_roles! {
     ///        recaller => rule!(deny_all), updatable;
     ///        recaller_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn recallable(self, recallable: Option<RecallableRoles<RoleDefinition>>) -> Self;
+    fn recall_roles(self, recall_roles: Option<RecallRoles<RoleDefinition>>) -> Self;
 
     /// Sets the resource to have freezeable.
     ///
@@ -257,13 +257,13 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::freezable;
+    /// use radix_engine_interface::freeze_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be freezeable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .freezable(freezable! {
+    ///    .freeze_roles(freeze_roles! {
     ///        freezer => rule!(require(resource_address)), locked;
     ///        freezer_updater => rule!(deny_all), locked;
     ///    });
@@ -271,12 +271,12 @@ pub trait UpdateAuthBuilder {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be freezeable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .freezable(freezable! {
+    ///    .freeze_roles(freeze_roles! {
     ///        freezer => rule!(deny_all), updatable;
     ///        freezer_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn freezable(self, freezable: Option<FreezableRoles<RoleDefinition>>) -> Self;
+    fn freeze_roles(self, freeze_roles: Option<FreezeRoles<RoleDefinition>>) -> Self;
 
     /// Sets the resource to not be freely withdrawable from a vault.
     ///
@@ -286,13 +286,13 @@ pub trait UpdateAuthBuilder {
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::restrict_withdraw;
+    /// use radix_engine_interface::withdraw_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be withdrawable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_withdraw(restrict_withdraw! {
+    ///    .withdraw_roles(withdraw_roles! {
     ///        withdrawer => rule!(require(resource_address)), locked;
     ///        withdrawer_updater => rule!(deny_all), locked;
     ///    });
@@ -300,15 +300,12 @@ pub trait UpdateAuthBuilder {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be withdrawable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_withdraw(restrict_withdraw! {
+    ///    .withdraw_roles(withdraw_roles! {
     ///        withdrawer => rule!(deny_all), updatable;
     ///        withdrawer_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    fn restrict_withdraw(
-        self,
-        restrict_withdraw: Option<WithdrawableRoles<RoleDefinition>>,
-    ) -> Self;
+    fn withdraw_roles(self, withdraw_roles: Option<WithdrawRoles<RoleDefinition>>) -> Self;
 
     /// Sets the resource to not be freely depositable into a vault.
     ///
@@ -323,7 +320,7 @@ pub trait UpdateAuthBuilder {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be depositable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_deposit(restrict_deposit! {
+    ///    .deposit_roles(deposit_roles! {
     ///        depositor => rule!(require(resource_address)), locked;
     ///        depositor_updater => rule!(deny_all), locked;
     ///    });
@@ -331,48 +328,42 @@ pub trait UpdateAuthBuilder {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be depositable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_deposit(restrict_deposit! {
+    ///    .deposit_roles(deposit_roles! {
     ///        depositor => rule!(deny_all), locked;
     ///        depositor_updater => rule!(require(resource_address)), locked;
     ///    });
     /// ```
-    fn restrict_deposit(self, restrict_deposit: Option<DepositableRoles<RoleDefinition>>) -> Self;
+    fn deposit_roles(self, deposit_roles: Option<DepositRoles<RoleDefinition>>) -> Self;
 }
 
 impl UpdateAuthBuilder for InProgressResourceBuilder<FungibleResourceType> {
-    fn mintable(mut self, mintable: Option<MintableRoles<RoleDefinition>>) -> Self {
-        self.resource_features.mintable = mintable;
+    fn mint_roles(mut self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.mint_roles = mint_roles;
         self
     }
 
-    fn burnable(mut self, burnable: Option<BurnableRoles<RoleDefinition>>) -> Self {
-        self.resource_features.burnable = burnable;
+    fn burn_roles(mut self, burn_roles: Option<BurnRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.burn_roles = burn_roles;
         self
     }
 
-    fn recallable(mut self, recallable: Option<RecallableRoles<RoleDefinition>>) -> Self {
-        self.resource_features.recallable = recallable;
+    fn recall_roles(mut self, recall_roles: Option<RecallRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.recall_roles = recall_roles;
         self
     }
 
-    fn freezable(mut self, freezable: Option<FreezableRoles<RoleDefinition>>) -> Self {
-        self.resource_features.freezable = freezable;
+    fn freeze_roles(mut self, freeze_roles: Option<FreezeRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.freeze_roles = freeze_roles;
         self
     }
 
-    fn restrict_withdraw(
-        mut self,
-        restrict_withdraw: Option<WithdrawableRoles<RoleDefinition>>,
-    ) -> Self {
-        self.resource_features.restrict_withdraw = restrict_withdraw;
+    fn withdraw_roles(mut self, withdraw_roles: Option<WithdrawRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.withdraw_roles = withdraw_roles;
         self
     }
 
-    fn restrict_deposit(
-        mut self,
-        restrict_deposit: Option<DepositableRoles<RoleDefinition>>,
-    ) -> Self {
-        self.resource_features.restrict_deposit = restrict_deposit;
+    fn deposit_roles(mut self, deposit_roles: Option<DepositRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.deposit_roles = deposit_roles;
         self
     }
 }
@@ -380,39 +371,33 @@ impl UpdateAuthBuilder for InProgressResourceBuilder<FungibleResourceType> {
 impl<T: IsNonFungibleLocalId, D: NonFungibleData> UpdateAuthBuilder
     for InProgressResourceBuilder<NonFungibleResourceType<T, D>>
 {
-    fn mintable(mut self, mintable: Option<MintableRoles<RoleDefinition>>) -> Self {
-        self.resource_features.mintable = mintable;
+    fn mint_roles(mut self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.mint_roles = mint_roles;
         self
     }
 
-    fn burnable(mut self, burnable: Option<BurnableRoles<RoleDefinition>>) -> Self {
-        self.resource_features.burnable = burnable;
+    fn burn_roles(mut self, burn_roles: Option<BurnRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.burn_roles = burn_roles;
         self
     }
 
-    fn recallable(mut self, recallable: Option<RecallableRoles<RoleDefinition>>) -> Self {
-        self.resource_features.recallable = recallable;
+    fn recall_roles(mut self, recall_roles: Option<RecallRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.recall_roles = recall_roles;
         self
     }
 
-    fn freezable(mut self, freezable: Option<FreezableRoles<RoleDefinition>>) -> Self {
-        self.resource_features.freezable = freezable;
+    fn freeze_roles(mut self, freeze_roles: Option<FreezeRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.freeze_roles = freeze_roles;
         self
     }
 
-    fn restrict_withdraw(
-        mut self,
-        restrict_withdraw: Option<WithdrawableRoles<RoleDefinition>>,
-    ) -> Self {
-        self.resource_features.restrict_withdraw = restrict_withdraw;
+    fn withdraw_roles(mut self, withdraw_roles: Option<WithdrawRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.withdraw_roles = withdraw_roles;
         self
     }
 
-    fn restrict_deposit(
-        mut self,
-        restrict_deposit: Option<DepositableRoles<RoleDefinition>>,
-    ) -> Self {
-        self.resource_features.restrict_deposit = restrict_deposit;
+    fn deposit_roles(mut self, deposit_roles: Option<DepositRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.deposit_roles = deposit_roles;
         self
     }
 }
@@ -428,7 +413,7 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData>
     /// ### Examples
     ///
     /// ```no_run
-    /// use radix_engine_interface::updatable_non_fungible_data;
+    /// use radix_engine_interface::non_fungible_data_update_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
@@ -441,7 +426,7 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData>
     /// }
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
-    ///    .updatable_non_fungible_data(updatable_non_fungible_data! {
+    ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
     ///        non_fungible_data_updater => rule!(require(resource_address)), locked;
     ///        non_fungible_data_updater_updater => rule!(deny_all), locked;
     ///    });
@@ -449,16 +434,16 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData>
     /// # let resource_address = RADIX_TOKEN;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
-    ///    .updatable_non_fungible_data(updatable_non_fungible_data! {
+    ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
     ///        non_fungible_data_updater => rule!(deny_all), updatable;
     ///        non_fungible_data_updater_updater => rule!(require(resource_address)), updatable;
     ///    });
     /// ```
-    pub fn updatable_non_fungible_data(
+    pub fn non_fungible_data_update_roles(
         mut self,
-        updatable_non_fungible_data: Option<UpdatableNonFungibleDataRoles<RoleDefinition>>,
+        non_fungible_data_update_roles: Option<NonFungibleDataUpdateRoles<RoleDefinition>>,
     ) -> Self {
-        self.resource_features.updatable_non_fungible_data = updatable_non_fungible_data;
+        self.resource_roles.non_fungible_data_update_roles = non_fungible_data_update_roles;
         self
     }
 }
@@ -483,7 +468,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             private::CreateWithNoSupply::Fungible {
                 owner_role,
                 divisibility,
-                resource_features,
+                resource_roles,
                 metadata,
                 address_reservation,
             } => {
@@ -499,7 +484,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             divisibility,
                             track_total_supply: true,
                             metadata,
-                            resource_features,
+                            resource_roles,
                             address_reservation,
                         })
                         .unwrap(),
@@ -511,7 +496,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 owner_role,
                 id_type,
                 non_fungible_schema,
-                resource_features,
+                resource_roles,
                 metadata,
                 address_reservation,
             } => {
@@ -527,7 +512,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             id_type,
                             track_total_supply: true,
                             non_fungible_schema,
-                            resource_features,
+                            resource_roles,
                             metadata,
                             address_reservation,
                         })
@@ -592,7 +577,7 @@ impl InProgressResourceBuilder<FungibleResourceType> {
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     divisibility: self.resource_type.divisibility,
-                    resource_features: self.resource_features,
+                    resource_roles: self.resource_roles,
                     metadata,
                     initial_supply: amount.into(),
                     address_reservation: self.address_reservation,
@@ -652,7 +637,7 @@ impl<D: NonFungibleData>
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    resource_features: self.resource_features,
+                    resource_roles: self.resource_roles,
                     metadata,
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
@@ -712,7 +697,7 @@ impl<D: NonFungibleData>
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
-                    resource_features: self.resource_features,
+                    resource_roles: self.resource_roles,
                     metadata,
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
@@ -772,7 +757,7 @@ impl<D: NonFungibleData>
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
                     non_fungible_schema,
-                    resource_features: self.resource_features,
+                    resource_roles: self.resource_roles,
                     metadata,
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
@@ -835,7 +820,7 @@ impl<D: NonFungibleData>
                         owner_role: self.owner_role,
                         non_fungible_schema,
                         track_total_supply: true,
-                        resource_features: self.resource_features,
+                        resource_roles: self.resource_roles,
                         metadata,
                         entries: entries
                             .into_iter()
@@ -899,7 +884,7 @@ impl private::CanCreateWithNoSupply for InProgressResourceBuilder<FungibleResour
         private::CreateWithNoSupply::Fungible {
             owner_role: self.owner_role,
             divisibility: self.resource_type.divisibility,
-            resource_features: self.resource_features,
+            resource_roles: self.resource_roles,
             metadata: self.metadata_config,
             address_reservation: self.address_reservation,
         }
@@ -917,7 +902,7 @@ impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
             owner_role: self.owner_role,
             id_type: Y::id_type(),
             non_fungible_schema,
-            resource_features: self.resource_features,
+            resource_roles: self.resource_roles,
             metadata: self.metadata_config,
             address_reservation: self.address_reservation,
         }
@@ -978,7 +963,7 @@ mod private {
         Fungible {
             owner_role: OwnerRole,
             divisibility: u8,
-            resource_features: FungibleResourceFeatures,
+            resource_roles: FungibleResourceRoles,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,
         },
@@ -986,7 +971,7 @@ mod private {
             owner_role: OwnerRole,
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
-            resource_features: NonFungibleResourceFeatures,
+            resource_roles: NonFungibleResourceRoles,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,
         },

@@ -89,7 +89,7 @@ mod bucket_test {
                 auth_bucket.resource_address()
             ))))
             .divisibility(DIVISIBILITY_MAXIMUM)
-            .restrict_withdraw(restrict_withdraw! {
+            .withdraw_roles(withdraw_roles! {
                 withdrawer => OWNER, locked;
                 withdrawer_updater => rule!(deny_all), locked;
             })
@@ -113,7 +113,7 @@ mod bucket_test {
                 badge.resource_address()
             ))))
             .divisibility(DIVISIBILITY_MAXIMUM)
-            .burnable(burnable! {
+            .burn_roles(burn_roles! {
                 burner => OWNER, locked;
                 burner_updater => rule!(deny_all), locked;
             })
@@ -128,7 +128,7 @@ mod bucket_test {
                 .mint_initial_supply(1);
             let mut bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .burnable(burnable! {
+                .burn_roles(burn_roles! {
                     burner => rule!(allow_all), locked;
                     burner_updater => rule!(deny_all), locked;
                 })

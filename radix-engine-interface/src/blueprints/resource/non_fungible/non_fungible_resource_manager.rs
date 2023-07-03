@@ -21,44 +21,44 @@ pub const NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT: &str = "NonFungibleResourceMa
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct NonFungibleResourceFeatures {
-    pub mintable: Option<MintableRoles<RoleDefinition>>,
-    pub burnable: Option<BurnableRoles<RoleDefinition>>,
-    pub freezable: Option<FreezableRoles<RoleDefinition>>,
-    pub recallable: Option<RecallableRoles<RoleDefinition>>,
-    pub restrict_withdraw: Option<WithdrawableRoles<RoleDefinition>>,
-    pub restrict_deposit: Option<DepositableRoles<RoleDefinition>>,
-    pub updatable_non_fungible_data: Option<UpdatableNonFungibleDataRoles<RoleDefinition>>,
+pub struct NonFungibleResourceRoles {
+    pub mint_roles: Option<MintRoles<RoleDefinition>>,
+    pub burn_roles: Option<BurnRoles<RoleDefinition>>,
+    pub freeze_roles: Option<FreezeRoles<RoleDefinition>>,
+    pub recall_roles: Option<RecallRoles<RoleDefinition>>,
+    pub withdraw_roles: Option<WithdrawRoles<RoleDefinition>>,
+    pub deposit_roles: Option<DepositRoles<RoleDefinition>>,
+    pub non_fungible_data_update_roles: Option<NonFungibleDataUpdateRoles<RoleDefinition>>,
 }
 
-impl NonFungibleResourceFeatures {
+impl NonFungibleResourceRoles {
     pub fn single_locked_rule(access_rule: AccessRule) -> Self {
         Self {
-            mintable: mintable! {
+            mint_roles: mint_roles! {
                 minter => access_rule.clone(), locked;
                 minter_updater => rule!(deny_all), locked;
             },
-            burnable: burnable! {
+            burn_roles: burn_roles! {
                 burner => access_rule.clone(), locked;
                 burner_updater => rule!(deny_all), locked;
             },
-            freezable: freezable! {
+            freeze_roles: freeze_roles! {
                 freezer => access_rule.clone(), locked;
                 freezer_updater => rule!(deny_all), locked;
             },
-            recallable: recallable! {
+            recall_roles: recall_roles! {
                 recaller => access_rule.clone(), locked;
                 recaller_updater => rule!(deny_all), locked;
             },
-            updatable_non_fungible_data: updatable_non_fungible_data! {
+            non_fungible_data_update_roles: non_fungible_data_update_roles! {
                 non_fungible_data_updater => access_rule.clone(), locked;
                 non_fungible_data_updater_updater => rule!(deny_all), locked;
             },
-            restrict_withdraw: restrict_withdraw! {
+            withdraw_roles: withdraw_roles! {
                 withdrawer => access_rule.clone(), locked;
                 withdrawer_updater => rule!(deny_all), locked;
             },
-            restrict_deposit: restrict_deposit! {
+            deposit_roles: deposit_roles! {
                 depositor => access_rule.clone(), locked;
                 depositor_updater => rule!(deny_all), locked;
             },
@@ -69,48 +69,42 @@ impl NonFungibleResourceFeatures {
         let mut features = Vec::new();
         let mut roles = RolesInit::new();
 
-        if self.mintable.is_some() {
+        if self.mint_roles.is_some() {
             features.push(MINT_FEATURE);
         }
 
-        if self.burnable.is_some() {
+        if self.burn_roles.is_some() {
             features.push(BURN_FEATURE);
         }
 
-        if self.freezable.is_some() {
+        if self.freeze_roles.is_some() {
             features.push(VAULT_FREEZE_FEATURE);
         }
 
-        if self.recallable.is_some() {
+        if self.recall_roles.is_some() {
             features.push(VAULT_RECALL_FEATURE);
         }
 
         roles
             .data
-            .extend(self.mintable.unwrap_or_default().to_role_init().data);
+            .extend(self.mint_roles.unwrap_or_default().to_role_init().data);
         roles
             .data
-            .extend(self.burnable.unwrap_or_default().to_role_init().data);
+            .extend(self.burn_roles.unwrap_or_default().to_role_init().data);
         roles
             .data
-            .extend(self.recallable.unwrap_or_default().to_role_init().data);
+            .extend(self.recall_roles.unwrap_or_default().to_role_init().data);
         roles
             .data
-            .extend(self.freezable.unwrap_or_default().to_role_init().data);
+            .extend(self.freeze_roles.unwrap_or_default().to_role_init().data);
+        roles
+            .data
+            .extend(self.deposit_roles.unwrap_or_default().to_role_init().data);
+        roles
+            .data
+            .extend(self.withdraw_roles.unwrap_or_default().to_role_init().data);
         roles.data.extend(
-            self.restrict_deposit
-                .unwrap_or_default()
-                .to_role_init()
-                .data,
-        );
-        roles.data.extend(
-            self.restrict_withdraw
-                .unwrap_or_default()
-                .to_role_init()
-                .data,
-        );
-        roles.data.extend(
-            self.updatable_non_fungible_data
+            self.non_fungible_data_update_roles
                 .unwrap_or_default()
                 .to_role_init()
                 .data,
@@ -129,7 +123,7 @@ pub struct NonFungibleResourceManagerCreateInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub resource_features: NonFungibleResourceFeatures,
+    pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
@@ -141,7 +135,7 @@ pub struct NonFungibleResourceManagerCreateManifestInput {
     pub id_type: NonFungibleIdType,
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
-    pub resource_features: NonFungibleResourceFeatures,
+    pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
@@ -159,7 +153,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
-    pub resource_features: NonFungibleResourceFeatures,
+    pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
@@ -172,7 +166,7 @@ pub struct NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: BTreeMap<NonFungibleLocalId, (ManifestValue,)>,
-    pub resource_features: NonFungibleResourceFeatures,
+    pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
@@ -189,7 +183,7 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: Vec<(ScryptoValue,)>,
-    pub resource_features: NonFungibleResourceFeatures,
+    pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }

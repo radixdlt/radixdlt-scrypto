@@ -69,8 +69,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 OwnerRole::None,
                                 false,
                                 18,
-                                FungibleResourceFeatures {
-                                    burnable: burnable! {
+                                FungibleResourceRoles {
+                                    burn_roles: burn_roles! {
                                     burner => rule!(allow_all), locked;
                                     burner_updater => rule!(deny_all), locked;
                                 },
@@ -92,8 +92,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 OwnerRole::None,
                                 true,
                                 18,
-                                FungibleResourceFeatures {
-                                    burnable: burnable! {
+                                FungibleResourceRoles {
+                                    burn_roles: burn_roles! {
                                     burner => rule!(allow_all), locked;
                                     burner_updater => rule!(deny_all), locked;
                                 },
@@ -115,8 +115,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 OwnerRole::None,
                                 true,
                                 18,
-                                FungibleResourceFeatures {
-                                    burnable: burnable! {
+                                FungibleResourceRoles {
+                                    burn_roles: burn_roles! {
                                     burner => rule!(allow_all), locked;
                                     burner_updater => rule!(deny_all), locked;
                                 },

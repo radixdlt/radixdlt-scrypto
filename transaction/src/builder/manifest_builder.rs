@@ -452,7 +452,7 @@ impl ManifestBuilder {
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        resource_features: FungibleResourceFeatures,
+        resource_roles: FungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
@@ -468,7 +468,7 @@ impl ManifestBuilder {
                         divisibility,
                         track_total_supply,
                         metadata,
-                        resource_features,
+                        resource_roles,
                         initial_supply,
                         address_reservation: None,
                     }
@@ -484,7 +484,7 @@ impl ManifestBuilder {
                     divisibility,
                     track_total_supply,
                     metadata,
-                    resource_features,
+                    resource_roles,
                     address_reservation: None,
                 }),
             });
@@ -499,7 +499,7 @@ impl ManifestBuilder {
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
-        resource_features: NonFungibleResourceFeatures,
+        resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Option<T>,
     ) -> &mut Self
@@ -524,7 +524,7 @@ impl ManifestBuilder {
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                        resource_features,
+                        resource_roles,
                         metadata,
                         entries,
                         address_reservation: None,
@@ -542,7 +542,7 @@ impl ManifestBuilder {
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                        resource_features,
+                        resource_roles,
                         metadata,
                         address_reservation: None,
                     }
@@ -943,12 +943,12 @@ impl ManifestBuilder {
             OwnerRole::Fixed(owner_rule),
             true,
             18,
-            FungibleResourceFeatures {
-                mintable: mintable! {
+            FungibleResourceRoles {
+                mint_roles: mint_roles! {
                     minter => OWNER, locked;
                     minter_updater => OWNER, locked;
                 },
-                burnable: burnable! {
+                burn_roles: burn_roles! {
                     burner => OWNER, locked;
                     burner_updater => OWNER, locked;
                 },
@@ -970,7 +970,7 @@ impl ManifestBuilder {
             owner_role,
             true,
             18,
-            FungibleResourceFeatures::default(),
+            FungibleResourceRoles::default(),
             metadata,
             Some(initial_supply),
         )
@@ -986,12 +986,12 @@ impl ManifestBuilder {
             OwnerRole::Fixed(owner_rule),
             false,
             0,
-            FungibleResourceFeatures {
-                mintable: mintable! {
+            FungibleResourceRoles {
+                mint_roles: mint_roles! {
                     minter => OWNER, locked;
                     minter_updater => OWNER, locked;
                 },
-                burnable: burnable! {
+                burn_roles: burn_roles! {
                     burner => OWNER, locked;
                     burner_updater => OWNER, locked;
                 },
@@ -1013,7 +1013,7 @@ impl ManifestBuilder {
             owner_role,
             false,
             0,
-            FungibleResourceFeatures::default(),
+            FungibleResourceRoles::default(),
             metadata,
             Some(initial_supply),
         )

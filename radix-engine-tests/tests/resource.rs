@@ -150,7 +150,7 @@ fn create_fungible_too_high_granularity_should_fail() {
             OwnerRole::None,
             false,
             23u8,
-            FungibleResourceFeatures::default(),
+            FungibleResourceRoles::default(),
             metadata!(),
             Some(dec!("100")),
         )

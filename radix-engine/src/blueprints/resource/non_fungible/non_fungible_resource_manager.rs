@@ -101,7 +101,7 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        resource_features: NonFungibleResourceFeatures,
+        resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -129,7 +129,7 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let (mut features, roles) = resource_features.to_features_and_roles();
+        let (mut features, roles) = resource_roles.to_features_and_roles();
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
@@ -162,7 +162,7 @@ impl NonFungibleResourceManagerBlueprint {
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
-        resource_features: NonFungibleResourceFeatures,
+        resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -224,7 +224,7 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let (mut features, roles) = resource_features.to_features_and_roles();
+        let (mut features, roles) = resource_roles.to_features_and_roles();
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
@@ -258,7 +258,7 @@ impl NonFungibleResourceManagerBlueprint {
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         entries: Vec<(ScryptoValue,)>,
-        resource_features: NonFungibleResourceFeatures,
+        resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -300,7 +300,7 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let (mut features, roles) = resource_features.to_features_and_roles();
+        let (mut features, roles) = resource_roles.to_features_and_roles();
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }

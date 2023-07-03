@@ -607,16 +607,16 @@ impl AccessControllerNativePackage {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,
-                        resource_features: NonFungibleResourceFeatures {
-                            mintable: mintable! {
+                        resource_roles: NonFungibleResourceRoles {
+                            mint_roles: mint_roles! {
                                 minter => rule!(require(global_component_caller_badge.clone())), locked;
                                 minter_updater => rule!(deny_all), locked;
                             },
-                            burnable: burnable! {
+                            burn_roles: burn_roles! {
                                 burner => rule!(allow_all), locked;
                                 burner_updater => rule!(allow_all), locked;
                             },
-                            restrict_withdraw: restrict_withdraw! {
+                            withdraw_roles: withdraw_roles! {
                                 withdrawer => rule!(deny_all), locked;
                                 withdrawer_updater => rule!(deny_all), locked;
                             },

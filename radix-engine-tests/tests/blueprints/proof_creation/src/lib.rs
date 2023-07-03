@@ -258,7 +258,7 @@ mod pc {
 
         pub fn create_fungible_bucket() -> Bucket {
             ResourceBuilder::new_fungible(OwnerRole::None)
-                .burnable(burnable! {
+                .burn_roles(burn_roles! {
                     burner => AccessRule::AllowAll, locked;
                     burner_updater => AccessRule::DenyAll, locked;
                 })
@@ -267,7 +267,7 @@ mod pc {
 
         pub fn create_non_fungible_bucket() -> Bucket {
             ResourceBuilder::new_integer_non_fungible(OwnerRole::None)
-                .burnable(burnable! {
+                .burn_roles(burn_roles! {
                     burner => AccessRule::AllowAll, locked;
                     burner_updater => AccessRule::DenyAll, locked;
                 })

@@ -36,15 +36,15 @@ mod non_fungible_test {
                     "name" => "Katz's Sandwiches".to_owned(), locked;
                 }
             })
-            .mintable(mintable! {
+            .mint_roles(mint_roles! {
                 minter => OWNER, locked;
                 minter_updater => rule!(deny_all), locked;
             })
-            .burnable(burnable! {
+            .burn_roles(burn_roles! {
                 burner => rule!(allow_all), locked;
                 burner_updater => rule!(deny_all), locked;
             })
-            .updatable_non_fungible_data(updatable_non_fungible_data! {
+            .non_fungible_data_update_roles(non_fungible_data_update_roles! {
                 non_fungible_data_updater => OWNER, locked;
                 non_fungible_data_updater_updater => rule!(deny_all), locked;
             })
@@ -88,7 +88,7 @@ mod non_fungible_test {
                         "name" => "Katz's Sandwiches".to_owned(), locked;
                     }
                 })
-                .burnable(burnable! {
+                .burn_roles(burn_roles! {
                     burner => rule!(allow_all), locked;
                     burner_updater => rule!(deny_all), locked;
                 })
@@ -457,7 +457,7 @@ mod non_fungible_test {
                         owner_role: OwnerRole::None,
                         id_type: NonFungibleIdType::RUID,
                         track_total_supply: false,
-                        resource_features: NonFungibleResourceFeatures::default(),
+                        resource_roles: NonFungibleResourceRoles::default(),
                         metadata: metadata! {},
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries,
@@ -539,7 +539,7 @@ mod non_fungible_test {
 
         pub fn create_mintable_ruid_non_fungible() -> ResourceManager {
             ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
-                .mintable(mintable! {
+                .mint_roles(mint_roles! {
                     minter => rule!(allow_all), locked;
                     minter_updater => rule!(deny_all), locked;
                 })
@@ -550,7 +550,7 @@ mod non_fungible_test {
             // creating non-fungible id with id type set to default (RUID)
             let resource_manager =
                 ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
-                    .mintable(mintable! {
+                    .mint_roles(mint_roles! {
                         minter => rule!(allow_all), locked;
                         minter_updater => rule!(deny_all), locked;
                     })

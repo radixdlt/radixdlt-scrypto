@@ -92,7 +92,7 @@ impl NewSimpleBadge {
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    resource_features: NonFungibleResourceFeatures::default(),
+                    resource_roles: NonFungibleResourceRoles::default(),
                     metadata: ModuleConfig {
                         init: metadata,
                         roles: RolesInit::default(),

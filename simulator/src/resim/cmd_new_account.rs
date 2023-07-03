@@ -79,7 +79,7 @@ impl NewAccount {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        resource_features: NonFungibleResourceFeatures::default(),
+                        resource_roles: NonFungibleResourceRoles::default(),
                         metadata: metadata!(
                             init {
                                 "name" => "Owner Badge".to_owned(), locked;

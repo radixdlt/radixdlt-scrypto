@@ -9,7 +9,7 @@ pub mod tests {
     use crate::signing::ed25519::Ed25519PrivateKey;
     use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::blueprints::resource::RolesInit;
-    use radix_engine_interface::blueprints::resource::{NonFungibleResourceFeatures, OwnerRole};
+    use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
     use radix_engine_interface::{metadata, metadata_init};
     use scrypto_derive::NonFungibleData;
 
@@ -1543,7 +1543,7 @@ CALL_METHOD
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                NonFungibleResourceFeatures::default(),
+                NonFungibleResourceRoles::default(),
                 metadata!(),
                 Some([(NonFungibleLocalId::integer(1), EmptyStruct {})]),
             )

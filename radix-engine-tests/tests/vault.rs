@@ -629,7 +629,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
+                NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )

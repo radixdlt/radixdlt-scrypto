@@ -23,7 +23,7 @@ mod nf_data_with_global {
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
 
-            // Create  resource with initial supply
+            // Create resource with initial supply
             let bucket1 = ResourceBuilder::new_integer_non_fungible::<NFDataWithGlobal>(
                 OwnerRole::None,
             )
@@ -32,15 +32,15 @@ mod nf_data_with_global {
                     "name" => "NFDataWithGlobal".to_owned(), locked;
                 }
             })
-            .mintable(mintable! {
+            .mint_roles(mint_roles! {
                 minter => rule!(require(mint_badge.resource_address())), locked;
                 minter_updater => rule!(deny_all), locked;
             })
-            .burnable(burnable! {
+            .burn_roles(burn_roles! {
                 burner => rule!(allow_all), locked;
                 burner_updater => rule!(deny_all), locked;
             })
-            .updatable_non_fungible_data(updatable_non_fungible_data! {
+            .non_fungible_data_update_roles(non_fungible_data_update_roles! {
                 non_fungible_data_updater => rule!(require(mint_badge.resource_address())), locked;
                 non_fungible_data_updater_updater => rule!(deny_all), locked;
             })

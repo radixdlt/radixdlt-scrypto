@@ -19,7 +19,7 @@ use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{
-    burnable, internal_roles_struct, metadata_init, mintable, role_definition_entry, rule,
+    burn_roles, internal_roles_struct, metadata_init, mint_roles, role_definition_entry, rule,
 };
 use sbor::rust::mem;
 
@@ -1095,12 +1095,12 @@ impl ValidatorCreator {
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             true,
             18,
-            FungibleResourceFeatures {
-                mintable: mintable! {
+            FungibleResourceRoles {
+                mint_roles: mint_roles! {
                     minter => rule!(require(global_caller(validator_address))), locked;
                     minter_updater => rule!(deny_all), locked;
                 },
-                burnable: burnable! {
+                burn_roles: burn_roles! {
                     burner => rule!(require(global_caller(validator_address))), locked;
                     burner_updater => rule!(deny_all), locked;
                 },
@@ -1131,12 +1131,12 @@ impl ValidatorCreator {
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             NonFungibleIdType::RUID,
             true,
-            NonFungibleResourceFeatures {
-                mintable: mintable! {
+            NonFungibleResourceRoles {
+                mint_roles: mint_roles! {
                     minter => rule!(require(global_caller(validator_address))), locked;
                     minter_updater => rule!(deny_all), locked;
                 },
-                burnable: burnable! {
+                burn_roles: burn_roles! {
                     burner => rule!(require(global_caller(validator_address))), locked;
                     burner_updater => rule!(deny_all), locked;
                 },

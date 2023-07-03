@@ -153,7 +153,7 @@ fn static_resource_should_be_callable() {
                             owner_role: OwnerRole::None,
                             track_total_supply: true,
                             divisibility: 0u8,
-                            resource_features: FungibleResourceFeatures::default(),
+                            resource_roles: FungibleResourceRoles::default(),
                             metadata: metadata!(),
                             initial_supply: Decimal::from(10),
                             address_reservation: Some(ManifestAddressReservation(0)),

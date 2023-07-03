@@ -17,7 +17,7 @@ fn package_burn_is_only_callable_within_resource_package() {
                 OwnerRole::None,
                 true,
                 18,
-                FungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
+                FungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 None,
             )
@@ -59,7 +59,7 @@ fn can_burn_by_amount_from_fungible_vault() {
                 OwnerRole::None,
                 true,
                 18,
-                FungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
+                FungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 None,
             )
@@ -115,7 +115,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
+                NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -177,7 +177,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
+                NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -246,7 +246,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
                 OwnerRole::None,
                 true,
                 18,
-                FungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
+                FungibleResourceRoles::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 None,
             )
@@ -306,7 +306,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
+                NonFungibleResourceRoles::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -372,7 +372,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
+                NonFungibleResourceRoles::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -442,7 +442,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
                 OwnerRole::None,
                 true,
                 18,
-                FungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
+                FungibleResourceRoles::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 None,
             )
@@ -501,7 +501,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
+                NonFungibleResourceRoles::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -566,7 +566,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
+                NonFungibleResourceRoles::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -632,7 +632,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
                 OwnerRole::None,
                 true,
                 18,
-                FungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
+                FungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 None,
             )
@@ -688,7 +688,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
+                NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -750,7 +750,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(rule!(allow_all)),
+                NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                 metadata!(),
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
@@ -818,7 +818,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
                 OwnerRole::None,
                 true,
                 18,
-                FungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
+                FungibleResourceRoles::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Some(100.into()),
             )
@@ -867,7 +867,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
+                NonFungibleResourceRoles::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Some(btreemap!(
                     NonFungibleLocalId::integer(1) => EmptyStruct {},
@@ -915,7 +915,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
-                NonFungibleResourceFeatures::single_locked_rule(virtual_signature_rule),
+                NonFungibleResourceRoles::single_locked_rule(virtual_signature_rule),
                 metadata!(),
                 Some(btreemap!(
                     NonFungibleLocalId::integer(1) => EmptyStruct {},

@@ -14,39 +14,39 @@ pub const FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT: &str = "create";
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Default, Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct FungibleResourceFeatures {
-    pub mintable: Option<MintableRoles<RoleDefinition>>,
-    pub burnable: Option<BurnableRoles<RoleDefinition>>,
-    pub freezable: Option<FreezableRoles<RoleDefinition>>,
-    pub recallable: Option<RecallableRoles<RoleDefinition>>,
-    pub restrict_withdraw: Option<WithdrawableRoles<RoleDefinition>>,
-    pub restrict_deposit: Option<DepositableRoles<RoleDefinition>>,
+pub struct FungibleResourceRoles {
+    pub mint_roles: Option<MintRoles<RoleDefinition>>,
+    pub burn_roles: Option<BurnRoles<RoleDefinition>>,
+    pub freeze_roles: Option<FreezeRoles<RoleDefinition>>,
+    pub recall_roles: Option<RecallRoles<RoleDefinition>>,
+    pub withdraw_roles: Option<WithdrawRoles<RoleDefinition>>,
+    pub deposit_roles: Option<DepositRoles<RoleDefinition>>,
 }
 
-impl FungibleResourceFeatures {
+impl FungibleResourceRoles {
     pub fn single_locked_rule(access_rule: AccessRule) -> Self {
         Self {
-            mintable: mintable! {
+            mint_roles: mint_roles! {
                 minter => access_rule.clone(), locked;
                 minter_updater => rule!(deny_all), locked;
             },
-            burnable: burnable! {
+            burn_roles: burn_roles! {
                 burner => access_rule.clone(), locked;
                 burner_updater => rule!(deny_all), locked;
             },
-            freezable: freezable! {
+            freeze_roles: freeze_roles! {
                 freezer => access_rule.clone(), locked;
                 freezer_updater => rule!(deny_all), locked;
             },
-            recallable: recallable! {
+            recall_roles: recall_roles! {
                 recaller => access_rule.clone(), locked;
                 recaller_updater => rule!(deny_all), locked;
             },
-            restrict_withdraw: restrict_withdraw! {
+            withdraw_roles: withdraw_roles! {
                 withdrawer => access_rule.clone(), locked;
                 withdrawer_updater => rule!(deny_all), locked;
             },
-            restrict_deposit: restrict_deposit! {
+            deposit_roles: deposit_roles! {
                 depositor => access_rule.clone(), locked;
                 depositor_updater => rule!(deny_all), locked;
             },
@@ -57,46 +57,40 @@ impl FungibleResourceFeatures {
         let mut features = Vec::new();
         let mut roles = RolesInit::new();
 
-        if self.mintable.is_some() {
+        if self.mint_roles.is_some() {
             features.push(MINT_FEATURE);
         }
 
-        if self.burnable.is_some() {
+        if self.burn_roles.is_some() {
             features.push(BURN_FEATURE);
         }
 
-        if self.freezable.is_some() {
+        if self.freeze_roles.is_some() {
             features.push(VAULT_FREEZE_FEATURE);
         }
 
-        if self.recallable.is_some() {
+        if self.recall_roles.is_some() {
             features.push(VAULT_RECALL_FEATURE);
         }
 
         roles
             .data
-            .extend(self.mintable.unwrap_or_default().to_role_init().data);
+            .extend(self.mint_roles.unwrap_or_default().to_role_init().data);
         roles
             .data
-            .extend(self.burnable.unwrap_or_default().to_role_init().data);
+            .extend(self.burn_roles.unwrap_or_default().to_role_init().data);
         roles
             .data
-            .extend(self.recallable.unwrap_or_default().to_role_init().data);
+            .extend(self.recall_roles.unwrap_or_default().to_role_init().data);
         roles
             .data
-            .extend(self.freezable.unwrap_or_default().to_role_init().data);
-        roles.data.extend(
-            self.restrict_deposit
-                .unwrap_or_default()
-                .to_role_init()
-                .data,
-        );
-        roles.data.extend(
-            self.restrict_withdraw
-                .unwrap_or_default()
-                .to_role_init()
-                .data,
-        );
+            .extend(self.freeze_roles.unwrap_or_default().to_role_init().data);
+        roles
+            .data
+            .extend(self.deposit_roles.unwrap_or_default().to_role_init().data);
+        roles
+            .data
+            .extend(self.withdraw_roles.unwrap_or_default().to_role_init().data);
 
         (features, roles)
     }
@@ -108,7 +102,7 @@ pub struct FungibleResourceManagerCreateInput {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
     pub divisibility: u8,
-    pub resource_features: FungibleResourceFeatures,
+    pub resource_roles: FungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
@@ -119,7 +113,7 @@ pub struct FungibleResourceManagerCreateManifestInput {
     pub owner_role: OwnerRole,
     pub track_total_supply: bool,
     pub divisibility: u8,
-    pub resource_features: FungibleResourceFeatures,
+    pub resource_roles: FungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }
@@ -136,7 +130,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
     pub initial_supply: Decimal,
-    pub resource_features: FungibleResourceFeatures,
+    pub resource_roles: FungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<GlobalAddressReservation>,
 }
@@ -148,7 +142,7 @@ pub struct FungibleResourceManagerCreateWithInitialSupplyManifestInput {
     pub track_total_supply: bool,
     pub divisibility: u8,
     pub initial_supply: Decimal,
-    pub resource_features: FungibleResourceFeatures,
+    pub resource_roles: FungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }

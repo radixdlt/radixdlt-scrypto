@@ -20,7 +20,7 @@ mod resource_test {
                             "name" => "Super Admin Badge".to_owned(), locked;
                         }
                     })
-                    .mintable(mintable! {
+                    .mint_roles(mint_roles! {
                         minter => rule!(allow_all), updatable;
                         minter_updater => rule!(allow_all), updatable;
                     })
@@ -42,11 +42,11 @@ mod resource_test {
                     "name" => "TestToken".to_owned(), locked;
                 }
             })
-            .mintable(mintable! {
+            .mint_roles(mint_roles! {
                 minter => OWNER, locked;
                 minter_updater => rule!(deny_all), locked;
             })
-            .burnable(burnable! {
+            .burn_roles(burn_roles! {
                 burner => OWNER, locked;
                 burner_updater => rule!(deny_all), locked;
             })
@@ -70,11 +70,11 @@ mod resource_test {
                     "name" => "TestToken".to_owned(), locked;
                 }
             })
-            .mintable(mintable! {
+            .mint_roles(mint_roles! {
                 minter => OWNER, locked;
                 minter_updater => rule!(deny_all), locked;
             })
-            .burnable(burnable! {
+            .burn_roles(burn_roles! {
                 burner => OWNER, locked;
                 burner_updater => rule!(deny_all), locked;
             })
@@ -121,11 +121,11 @@ mod resource_test {
                     "name" => "TestToken".to_owned(), locked;
                 }
             })
-            .mintable(mintable! {
+            .mint_roles(mint_roles! {
                 minter => OWNER, locked;
                 minter_updater => rule!(deny_all), locked;
             })
-            .burnable(burnable! {
+            .burn_roles(burn_roles! {
                 burner => OWNER, locked;
                 burner_updater => rule!(deny_all), locked;
             })

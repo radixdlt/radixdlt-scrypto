@@ -39,15 +39,15 @@ mod basic_flash_loan {
                         "name" => "Promise token for BasicFlashLoan - must be returned to be burned!".to_string(), locked;
                     }
                 })
-                .mintable(mintable! {
+                .mint_roles(mint_roles! {
                     minter => OWNER, locked;
                     minter_updater => rule!(deny_all), locked;
                 })
-                .burnable(burnable! {
+                .burn_roles(burn_roles! {
                     burner => OWNER, locked;
                     burner_updater => rule!(deny_all), locked;
                 })
-                .restrict_deposit(restrict_deposit! {
+                .deposit_roles(deposit_roles! {
                     depositor => rule!(deny_all), locked;
                     depositor_updater => rule!(deny_all), locked;
                 })

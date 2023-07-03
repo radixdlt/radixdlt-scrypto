@@ -15,11 +15,11 @@ mod mint_and_burn {
         pub fn new() {
             let resource_manager =
                 ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
-                    .mintable(mintable! {
+                    .mint_roles(mint_roles! {
                         minter => rule!(allow_all), locked;
                         minter_updater => rule!(deny_all), locked;
                     })
-                    .burnable(burnable! {
+                    .burn_roles(burn_roles! {
                         burner => rule!(allow_all), locked;
                         burner_updater => rule!(deny_all), locked;
                     })

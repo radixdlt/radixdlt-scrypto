@@ -260,11 +260,11 @@ mod genesis_helper {
             };
 
             ResourceBuilder::new_fungible(owner_role)
-                .mintable(mintable! {
+                .mint_roles(mint_roles! {
                     minter => OWNER, updatable;
                     minter_updater => OWNER, updatable;
                 })
-                .burnable(burnable! {
+                .burn_roles(burn_roles! {
                     burner => OWNER, updatable;
                     burner_updater => OWNER, updatable;
                 })

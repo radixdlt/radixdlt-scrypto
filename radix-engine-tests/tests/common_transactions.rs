@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{
-    internal_roles_struct, metadata, metadata_init, mintable, role_definition_entry,
+    internal_roles_struct, metadata, metadata_init, mint_roles, role_definition_entry,
 };
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
@@ -290,8 +290,8 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 OwnerRole::None,
                 false,
                 divisibility,
-                FungibleResourceFeatures {
-                    mintable: mintable! {
+                FungibleResourceRoles {
+                    mint_roles: mint_roles! {
                         minter => rule!(require(minter_badge_resource_address)), locked;
                         minter_updater => rule!(deny_all), locked;
                     },
@@ -306,8 +306,8 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 OwnerRole::None,
                 id_type,
                 false,
-                NonFungibleResourceFeatures {
-                    mintable: mintable! {
+                NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
                         minter => rule!(require(minter_badge_resource_address)), locked;
                         minter_updater => rule!(deny_all), locked;
                     },

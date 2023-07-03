@@ -156,12 +156,12 @@ impl ScenarioInstance for MetadataScenario {
                                 OwnerRole::None,
                                 false,
                                 18,
-                                FungibleResourceFeatures {
-                                    mintable: mintable! {
+                                FungibleResourceRoles {
+                                    mint_roles: mint_roles! {
                                         minter => rule!(deny_all), locked;
                                         minter_updater => rule!(deny_all), locked;
                                     },
-                                    burnable: burnable! {
+                                    burn_roles: burn_roles! {
                                         burner => rule!(allow_all), locked;
                                         burner_updater => rule!(deny_all), locked;
                                     },
@@ -195,12 +195,12 @@ impl ScenarioInstance for MetadataScenario {
                                 ))),
                                 false,
                                 18,
-                                FungibleResourceFeatures {
-                                    mintable: mintable! {
+                                FungibleResourceRoles {
+                                    mint_roles: mint_roles! {
                                         minter => rule!(deny_all), locked;
                                         minter_updater => rule!(deny_all), locked;
                                     },
-                                    burnable: burnable! {
+                                    burn_roles: burn_roles! {
                                         burner => rule!(allow_all), locked;
                                         burner_updater => rule!(deny_all), locked;
                                     },

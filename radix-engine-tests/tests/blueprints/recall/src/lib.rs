@@ -11,15 +11,15 @@ mod recall {
     impl RecallTest {
         pub fn new() -> Global<RecallTest> {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-                .mintable(mintable! {
+                .mint_roles(mint_roles! {
                     minter => rule!(allow_all), locked;
                     minter_updater => rule!(deny_all), locked;
                 })
-                .burnable(burnable! {
+                .burn_roles(burn_roles! {
                     burner => rule!(allow_all), locked;
                     burner_updater => rule!(deny_all), locked;
                 })
-                .recallable(recallable! {
+                .recall_roles(recall_roles! {
                     recaller => rule!(allow_all), locked;
                     recaller_updater => rule!(deny_all), locked;
                 })

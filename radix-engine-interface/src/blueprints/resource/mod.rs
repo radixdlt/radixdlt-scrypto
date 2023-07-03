@@ -82,7 +82,7 @@ macro_rules! resource_roles {
 }
 
 resource_roles!(
-    MintableRoles,
+    MintRoles,
     minter,
     minter_updater,
     MINTER_ROLE,
@@ -90,14 +90,14 @@ resource_roles!(
     AccessRule::DenyAll
 );
 #[macro_export]
-macro_rules! mintable {
+macro_rules! mint_roles {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some(internal_roles_struct!(MintableRoles, $($role => $rule, $locked;)*))
+        Some(internal_roles_struct!(MintRoles, $($role => $rule, $locked;)*))
     });
 }
 
 resource_roles!(
-    BurnableRoles,
+    BurnRoles,
     burner,
     burner_updater,
     BURNER_ROLE,
@@ -105,14 +105,14 @@ resource_roles!(
     AccessRule::DenyAll
 );
 #[macro_export]
-macro_rules! burnable {
+macro_rules! burn_roles {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some(internal_roles_struct!(BurnableRoles, $($role => $rule, $locked;)*))
+        Some(internal_roles_struct!(BurnRoles, $($role => $rule, $locked;)*))
     });
 }
 
 resource_roles!(
-    RecallableRoles,
+    RecallRoles,
     recaller,
     recaller_updater,
     RECALLER_ROLE,
@@ -120,14 +120,14 @@ resource_roles!(
     AccessRule::DenyAll
 );
 #[macro_export]
-macro_rules! recallable {
+macro_rules! recall_roles {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some(internal_roles_struct!(RecallableRoles, $($role => $rule, $locked;)*))
+        Some(internal_roles_struct!(RecallRoles, $($role => $rule, $locked;)*))
     });
 }
 
 resource_roles!(
-    FreezableRoles,
+    FreezeRoles,
     freezer,
     freezer_updater,
     FREEZER_ROLE,
@@ -135,14 +135,14 @@ resource_roles!(
     AccessRule::DenyAll
 );
 #[macro_export]
-macro_rules! freezable {
+macro_rules! freeze_roles {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some(internal_roles_struct!(FreezableRoles, $($role => $rule, $locked;)*))
+        Some(internal_roles_struct!(FreezeRoles, $($role => $rule, $locked;)*))
     });
 }
 
 resource_roles!(
-    WithdrawableRoles,
+    WithdrawRoles,
     withdrawer,
     withdrawer_updater,
     WITHDRAWER_ROLE,
@@ -150,14 +150,14 @@ resource_roles!(
     AccessRule::AllowAll
 );
 #[macro_export]
-macro_rules! restrict_withdraw {
+macro_rules! withdraw_roles {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some(internal_roles_struct!(WithdrawableRoles, $($role => $rule, $locked;)*))
+        Some(internal_roles_struct!(WithdrawRoles, $($role => $rule, $locked;)*))
     });
 }
 
 resource_roles!(
-    DepositableRoles,
+    DepositRoles,
     depositor,
     depositor_updater,
     DEPOSITOR_ROLE,
@@ -165,14 +165,14 @@ resource_roles!(
     AccessRule::AllowAll
 );
 #[macro_export]
-macro_rules! restrict_deposit {
+macro_rules! deposit_roles {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some(internal_roles_struct!(DepositableRoles, $($role => $rule, $locked;)*))
+        Some(internal_roles_struct!(DepositRoles, $($role => $rule, $locked;)*))
     });
 }
 
 resource_roles!(
-    UpdatableNonFungibleDataRoles,
+    NonFungibleDataUpdateRoles,
     non_fungible_data_updater,
     non_fungible_data_updater_updater,
     NON_FUNGIBLE_DATA_UPDATER_ROLE,
@@ -180,8 +180,8 @@ resource_roles!(
     AccessRule::DenyAll
 );
 #[macro_export]
-macro_rules! updatable_non_fungible_data {
+macro_rules! non_fungible_data_update_roles {
     {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some(internal_roles_struct!(UpdatableNonFungibleDataRoles, $($role => $rule, $locked;)*))
+        Some(internal_roles_struct!(NonFungibleDataUpdateRoles, $($role => $rule, $locked;)*))
     });
 }

@@ -64,12 +64,12 @@ impl MultiResourcePoolBlueprint {
                 owner_role.clone(),
                 true,
                 18,
-                FungibleResourceFeatures {
-                    mintable: mintable! {
+                FungibleResourceRoles {
+                    mint_roles: mint_roles! {
                         minter => rule!(require(component_caller_badge.clone())), locked;
                         minter_updater => rule!(deny_all), locked;
                     },
-                    burnable: burnable! {
+                    burn_roles: burn_roles! {
                         burner => rule!(require(component_caller_badge.clone())), locked;
                         burner_updater => rule!(deny_all), locked;
                     },

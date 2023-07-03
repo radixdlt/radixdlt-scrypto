@@ -75,7 +75,7 @@ impl FungibleResourceManagerBlueprint {
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        resource_features: FungibleResourceFeatures,
+        resource_roles: FungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -96,7 +96,7 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
-        let (mut features, roles) = resource_features.to_features_and_roles();
+        let (mut features, roles) = resource_roles.to_features_and_roles();
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
@@ -129,7 +129,7 @@ impl FungibleResourceManagerBlueprint {
         track_total_supply: bool,
         divisibility: u8,
         initial_supply: Decimal,
-        resource_features: FungibleResourceFeatures,
+        resource_roles: FungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -150,7 +150,7 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
-        let (mut features, roles) = resource_features.to_features_and_roles();
+        let (mut features, roles) = resource_roles.to_features_and_roles();
         if track_total_supply {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }

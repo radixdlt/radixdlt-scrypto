@@ -38,8 +38,8 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{
-    burnable, internal_roles_struct, metadata, metadata_init, mintable, restrict_withdraw,
-    role_definition_entry, rule,
+    burn_roles, internal_roles_struct, metadata, metadata_init, mint_roles, role_definition_entry,
+    rule, withdraw_roles,
 };
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
@@ -571,12 +571,12 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     track_total_supply: false,
                     divisibility: 18,
-                    resource_features: FungibleResourceFeatures {
-                        mintable: mintable! {
+                    resource_roles: FungibleResourceRoles {
+                        mint_roles: mint_roles! {
                             minter => rule!(require(global_caller(CONSENSUS_MANAGER))), locked;
                             minter_updater => rule!(deny_all), locked;
                         },
-                        burnable: burnable! {
+                        burn_roles: burn_roles! {
                             burner => rule!(require(global_caller(CONSENSUS_MANAGER))), locked;
                             burner_updater => rule!(deny_all), locked;
                         },
@@ -615,8 +615,8 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    resource_features: NonFungibleResourceFeatures {
-                        restrict_withdraw: restrict_withdraw! {
+                    resource_roles: NonFungibleResourceRoles {
+                        withdraw_roles: withdraw_roles! {
                             withdrawer => rule!(deny_all), locked;
                             withdrawer_updater => rule!(deny_all), locked;
                         },
@@ -652,8 +652,8 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    resource_features: NonFungibleResourceFeatures {
-                        restrict_withdraw: restrict_withdraw! {
+                    resource_roles: NonFungibleResourceRoles {
+                        withdraw_roles: withdraw_roles! {
                             withdrawer => rule!(deny_all), locked;
                             withdrawer_updater => rule!(deny_all), locked;
                         },
@@ -689,8 +689,8 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<PackageOwnerBadgeData>(),
-                    resource_features: NonFungibleResourceFeatures {
-                        mintable: mintable! {
+                    resource_roles: NonFungibleResourceRoles {
+                        mint_roles: mint_roles! {
                             minter => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE))), locked;
                             minter_updater => rule!(deny_all), locked;
                         },
@@ -726,8 +726,8 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<IdentityOwnerBadgeData>(),
-                    resource_features: NonFungibleResourceFeatures {
-                        mintable: mintable! {
+                    resource_roles: NonFungibleResourceRoles {
+                        mint_roles: mint_roles! {
                             minter => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))), locked;
                             minter_updater => rule!(deny_all), locked;
                         },
@@ -804,8 +804,8 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<AccountOwnerBadgeData>(),
-                    resource_features: NonFungibleResourceFeatures {
-                        mintable: mintable! {
+                    resource_roles: NonFungibleResourceRoles {
+                        mint_roles: mint_roles! {
                             minter => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))), locked;
                             minter_updater => rule!(deny_all), locked;
                         },
@@ -907,7 +907,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    resource_features: NonFungibleResourceFeatures::default(),
+                    resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
                             "name" => "ECDSA secp256k1 Virtual Badges".to_owned(), locked;
@@ -938,7 +938,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    resource_features: NonFungibleResourceFeatures::default(),
+                    resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
                             "name" => "EdDSA Ed25519 Virtual Badges".to_owned(), locked;
@@ -969,7 +969,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    resource_features: NonFungibleResourceFeatures::default(),
+                    resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
                             "name" => "System Transaction Badge".to_owned(), locked;

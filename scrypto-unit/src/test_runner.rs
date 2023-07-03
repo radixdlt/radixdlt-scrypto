@@ -39,7 +39,7 @@ use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
-use radix_engine_interface::{dec, freezable, rule};
+use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_substate_layout::{
     BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
@@ -1130,7 +1130,7 @@ impl TestRunner {
     fn create_fungible_resource_and_deposit(
         &mut self,
         owner_role: OwnerRole,
-        resource_features: FungibleResourceFeatures,
+        resource_roles: FungibleResourceRoles,
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
@@ -1139,7 +1139,7 @@ impl TestRunner {
                 owner_role,
                 true,
                 0,
-                resource_features,
+                resource_roles,
                 metadata!(),
                 Some(5.into()),
             )
@@ -1176,28 +1176,28 @@ impl TestRunner {
 
         let token_address = self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            FungibleResourceFeatures {
-                mintable: mintable! {
+            FungibleResourceRoles {
+                mint_roles: mint_roles! {
                     minter => rule!(require(mint_auth)), updatable;
                     minter_updater => rule!(require(admin_auth)), updatable;
                 },
-                burnable: burnable! {
+                burn_roles: burn_roles! {
                     burner => rule!(require(burn_auth)), updatable;
                     burner_updater => rule!(require(admin_auth)), updatable;
                 },
-                freezable: freezable! {
+                freeze_roles: freeze_roles! {
                     freezer => rule!(require(freeze_auth)), updatable;
                     freezer_updater => rule!(require(admin_auth)), updatable;
                 },
-                recallable: recallable! {
+                recall_roles: recall_roles! {
                     recaller => rule!(require(recall_auth)), updatable;
                     recaller_updater => rule!(require(admin_auth)), updatable;
                 },
-                restrict_withdraw: restrict_withdraw! {
+                withdraw_roles: withdraw_roles! {
                     withdrawer => rule!(require(withdraw_auth)), updatable;
                     withdrawer_updater => rule!(require(admin_auth)), updatable;
                 },
-                restrict_deposit: restrict_deposit! {
+                deposit_roles: deposit_roles! {
                     depositor => rule!(allow_all), updatable;
                     depositor_updater => rule!(require(admin_auth)), updatable;
                 },
@@ -1227,32 +1227,32 @@ impl TestRunner {
                     owner_role,
                     NonFungibleIdType::Integer,
                     false,
-                    NonFungibleResourceFeatures {
-                        mintable: mintable! {
+                    NonFungibleResourceRoles {
+                        mint_roles: mint_roles! {
                             minter => rule!(allow_all), updatable;
                             minter_updater => rule!(allow_all), updatable;
                         },
-                        burnable: burnable! {
+                        burn_roles: burn_roles! {
                             burner => rule!(allow_all), updatable;
                             burner_updater => rule!(allow_all), updatable;
                         },
-                        freezable: freezable! {
+                        freeze_roles: freeze_roles! {
                             freezer => rule!(allow_all), updatable;
                             freezer_updater => rule!(allow_all), updatable;
                         },
-                        recallable: recallable! {
+                        recall_roles: recall_roles! {
                             recaller => rule!(allow_all), updatable;
                             recaller_updater => rule!(allow_all), updatable;
                         },
-                        restrict_withdraw: restrict_withdraw! {
+                        withdraw_roles: withdraw_roles! {
                             withdrawer => rule!(allow_all), updatable;
                             withdrawer_updater => rule!(allow_all), updatable;
                         },
-                        restrict_deposit: restrict_deposit! {
+                        deposit_roles: deposit_roles! {
                             depositor => rule!(allow_all), updatable;
                             depositor_updater => rule!(allow_all), updatable;
                         },
-                        updatable_non_fungible_data: updatable_non_fungible_data! {
+                        non_fungible_data_update_roles: non_fungible_data_update_roles! {
                             non_fungible_data_updater => rule!(allow_all), updatable;
                             non_fungible_data_updater_updater => rule!(allow_all), updatable;
                         },
@@ -1269,16 +1269,16 @@ impl TestRunner {
     pub fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            FungibleResourceFeatures {
-                burnable: burnable! {
+            FungibleResourceRoles {
+                burn_roles: burn_roles! {
                     burner => rule!(allow_all), locked;
                     burner_updater => rule!(deny_all), locked;
                 },
-                recallable: recallable! {
+                recall_roles: recall_roles! {
                     recaller => rule!(allow_all), locked;
                     recaller_updater => rule!(deny_all), locked;
                 },
-                freezable: freezable! {
+                freeze_roles: freeze_roles! {
                     freezer => rule!(allow_all), locked;
                     freezer_updater => rule!(deny_all), locked;
                 },
@@ -1290,16 +1290,16 @@ impl TestRunner {
 
     pub fn create_freezeable_non_fungible(&mut self, account: ComponentAddress) -> ResourceAddress {
         self.create_non_fungible_resource_with_access_rules(
-            NonFungibleResourceFeatures {
-                burnable: burnable! {
+            NonFungibleResourceRoles {
+                burn_roles: burn_roles! {
                     burner => rule!(allow_all), locked;
                     burner_updater => rule!(deny_all), locked;
                 },
-                recallable: recallable! {
+                recall_roles: recall_roles! {
                     recaller => rule!(allow_all), locked;
                     recaller_updater => rule!(deny_all), locked;
                 },
-                freezable: freezable! {
+                freeze_roles: freeze_roles! {
                     freezer => rule!(allow_all), locked;
                     freezer_updater => rule!(deny_all), locked;
                 },
@@ -1312,8 +1312,8 @@ impl TestRunner {
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
         self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            FungibleResourceFeatures {
-                recallable: recallable! {
+            FungibleResourceRoles {
+                recall_roles: recall_roles! {
                     recaller => rule!(allow_all), locked;
                     recaller_updater => rule!(deny_all), locked;
                 },
@@ -1331,8 +1331,8 @@ impl TestRunner {
 
         let resource_address = self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            FungibleResourceFeatures {
-                burnable: burnable! {
+            FungibleResourceRoles {
+                burn_roles: burn_roles! {
                     burner => rule!(require(auth_resource_address)), locked;
                     burner_updater => rule!(deny_all), locked;
                 },
@@ -1352,8 +1352,8 @@ impl TestRunner {
 
         let resource_address = self.create_fungible_resource_and_deposit(
             OwnerRole::None,
-            FungibleResourceFeatures {
-                restrict_withdraw: restrict_withdraw! {
+            FungibleResourceRoles {
+                withdraw_roles: withdraw_roles! {
                     withdrawer => rule!(require(auth_resource_address)), locked;
                     withdrawer_updater => rule!(deny_all), locked;
                 },
@@ -1367,14 +1367,14 @@ impl TestRunner {
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         self.create_non_fungible_resource_with_access_rules(
-            NonFungibleResourceFeatures::default(),
+            NonFungibleResourceRoles::default(),
             account,
         )
     }
 
     pub fn create_non_fungible_resource_with_access_rules(
         &mut self,
-        resource_features: NonFungibleResourceFeatures,
+        resource_roles: NonFungibleResourceRoles,
         account: ComponentAddress,
     ) -> ResourceAddress {
         let mut entries = BTreeMap::new();
@@ -1388,7 +1388,7 @@ impl TestRunner {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
-                resource_features,
+                resource_roles,
                 metadata!(),
                 Some(entries),
             )
@@ -1414,7 +1414,7 @@ impl TestRunner {
                 OwnerRole::None,
                 true,
                 divisibility,
-                FungibleResourceFeatures::default(),
+                FungibleResourceRoles::default(),
                 metadata!(),
                 Some(amount),
             )
@@ -1440,12 +1440,12 @@ impl TestRunner {
                 OwnerRole::None,
                 true,
                 1u8,
-                FungibleResourceFeatures {
-                    mintable: mintable! {
+                FungibleResourceRoles {
+                    mint_roles: mint_roles! {
                         minter => rule!(require(admin_auth)), locked;
                         minter_updater => rule!(deny_all), locked;
                     },
-                    burnable: burnable! {
+                    burn_roles: burn_roles! {
                         burner => rule!(require(admin_auth)), locked;
                         burner_updater => rule!(deny_all), locked;
                     },
@@ -1478,8 +1478,8 @@ impl TestRunner {
                 owner_role,
                 true,
                 divisibility,
-                FungibleResourceFeatures {
-                    mintable: mintable! {
+                FungibleResourceRoles {
+                    mint_roles: mint_roles! {
                         minter => rule!(allow_all), locked;
                         minter_updater => rule!(deny_all), locked;
                     },
@@ -1511,12 +1511,12 @@ impl TestRunner {
                 owner_role,
                 true,
                 divisibility,
-                FungibleResourceFeatures {
-                    mintable: mintable! {
+                FungibleResourceRoles {
+                    mint_roles: mint_roles! {
                         minter => rule!(allow_all), locked;
                         minter_updater => rule!(deny_all), locked;
                     },
-                    burnable: burnable! {
+                    burn_roles: burn_roles! {
                         burner => rule!(allow_all), locked;
                         burner_updater => rule!(deny_all), locked;
                     },

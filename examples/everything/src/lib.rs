@@ -94,31 +94,31 @@ mod everything {
 
         pub fn public_method(&self) -> ResourceManager {
             ResourceBuilder::new_ruid_non_fungible::<TestNFData>(OwnerRole::None)
-                .mintable(mintable! {
+                .mint_roles(mint_roles! {
                     minter => rule!(allow_all), locked;
                     minter_updater => rule!(allow_all), locked;
                 })
-                .burnable(burnable! {
+                .burn_roles(burn_roles! {
                     burner => rule!(allow_all), locked;
                     burner_updater => rule!(allow_all), locked;
                 })
-                .freezable(freezable! {
+                .freeze_roles(freeze_roles! {
                     freezer => rule!(allow_all), locked;
                     freezer_updater => rule!(allow_all), locked;
                 })
-                .recallable(recallable! {
+                .recall_roles(recall_roles! {
                     recaller => rule!(allow_all), locked;
                     recaller_updater => rule!(allow_all), locked;
                 })
-                .restrict_withdraw(restrict_withdraw! {
+                .withdraw_roles(withdraw_roles! {
                     withdrawer => rule!(allow_all), locked;
                     withdrawer_updater => rule!(allow_all), locked;
                 })
-                .restrict_deposit(restrict_deposit! {
+                .deposit_roles(deposit_roles! {
                     depositor => rule!(allow_all), locked;
                     depositor_updater => rule!(allow_all), locked;
                 })
-                .updatable_non_fungible_data(updatable_non_fungible_data! {
+                .non_fungible_data_update_roles(non_fungible_data_update_roles! {
                     non_fungible_data_updater => rule!(allow_all), locked;
                     non_fungible_data_updater_updater => rule!(allow_all), locked;
                 })

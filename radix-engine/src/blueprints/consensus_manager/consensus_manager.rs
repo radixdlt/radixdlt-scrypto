@@ -20,7 +20,7 @@ use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{
-    internal_roles_struct, metadata_init, mintable, role_definition_entry, rule,
+    internal_roles_struct, metadata_init, mint_roles, role_definition_entry, rule,
 };
 
 const MILLIS_IN_SECOND: i64 = 1000;
@@ -241,8 +241,8 @@ impl ConsensusManagerBlueprint {
                 OwnerRole::Fixed(rule!(require(global_caller(consensus_manager_address)))),
                 NonFungibleIdType::Bytes,
                 true,
-                NonFungibleResourceFeatures {
-                    mintable: mintable! {
+                NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
                         minter => rule!(require(global_id)), locked;
                         minter_updater => rule!(deny_all), locked;
                     },
