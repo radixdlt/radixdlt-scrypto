@@ -27,6 +27,8 @@ use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::consensus_manager::{
@@ -35,7 +37,10 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{metadata, metadata_init, rule};
+use radix_engine_interface::{
+    burn_roles, internal_roles_struct, metadata, metadata_init, mint_roles, role_definition_entry,
+    rule, withdraw_roles,
+};
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
 use radix_engine_store_interface::{
@@ -552,22 +557,6 @@ pub fn create_system_bootstrap_transaction(
 
     // XRD Token
     {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        access_rules.insert(
-            Mint,
-            (
-                rule!(require(global_caller(CONSENSUS_MANAGER))),
-                rule!(deny_all),
-            ),
-        );
-        access_rules.insert(
-            Burn,
-            (
-                rule!(require(global_caller(CONSENSUS_MANAGER))),
-                rule!(deny_all),
-            ),
-        );
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(RADIX_TOKEN),
@@ -582,6 +571,17 @@ pub fn create_system_bootstrap_transaction(
                     owner_role: OwnerRole::Fixed(rule!(require(AuthAddresses::system_role()))),
                     track_total_supply: false,
                     divisibility: 18,
+                    resource_roles: FungibleResourceRoles {
+                        mint_roles: mint_roles! {
+                            minter => rule!(require(global_caller(CONSENSUS_MANAGER))), locked;
+                            minter_updater => rule!(deny_all), locked;
+                        },
+                        burn_roles: burn_roles! {
+                            burner => rule!(require(global_caller(CONSENSUS_MANAGER))), locked;
+                            burner_updater => rule!(deny_all), locked;
+                        },
+                        ..Default::default()
+                    },
                     metadata: metadata! {
                         init {
                             "symbol" => "XRD".to_owned(), locked;
@@ -592,7 +592,6 @@ pub fn create_system_bootstrap_transaction(
                             "tags" => Vec::<String>::new(), locked;
                         }
                     },
-                    access_rules,
                     initial_supply: Decimal::zero(),
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
@@ -602,8 +601,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Package Token
     {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE),
@@ -618,6 +615,13 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    resource_roles: NonFungibleResourceRoles {
+                        withdraw_roles: withdraw_roles! {
+                            withdrawer => rule!(deny_all), locked;
+                            withdrawer_updater => rule!(deny_all), locked;
+                        },
+                        ..Default::default()
+                    },
                     metadata: metadata! {
                         init {
                             "name" => "Package Virtual Badges".to_owned(), locked;
@@ -626,7 +630,6 @@ pub fn create_system_bootstrap_transaction(
                             "icon_url" => Url("https://assets.radixdlt.com/icons/icon-package_of_direct_caller_virtual_badge.png".to_owned()), locked;
                         }
                     },
-                    access_rules,
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
@@ -635,8 +638,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Object Token
     {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(deny_all), rule!(deny_all)));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(GLOBAL_CALLER_VIRTUAL_BADGE),
@@ -651,6 +652,13 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    resource_roles: NonFungibleResourceRoles {
+                        withdraw_roles: withdraw_roles! {
+                            withdrawer => rule!(deny_all), locked;
+                            withdrawer_updater => rule!(deny_all), locked;
+                        },
+                        ..Default::default()
+                    },
                     metadata: metadata! {
                         init {
                             "name" => "Global Caller Virtual Badges".to_owned(), locked;
@@ -659,7 +667,6 @@ pub fn create_system_bootstrap_transaction(
                             "icon_url" => Url("https://assets.radixdlt.com/icons/icon-global_caller_virtual_badge.png".to_owned()), locked;
                         }
                     },
-                    access_rules,
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
@@ -668,16 +675,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Package Owner Token
     {
-        // TODO: Integrate this into package instantiation to remove circular dependency
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            Mint,
-            (
-                rule!(require(package_of_direct_caller(PACKAGE_PACKAGE))),
-                rule!(deny_all),
-            ),
-        );
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(PACKAGE_OWNER_BADGE),
@@ -692,6 +689,13 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::RUID,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<PackageOwnerBadgeData>(),
+                    resource_roles: NonFungibleResourceRoles {
+                        mint_roles: mint_roles! {
+                            minter => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE))), locked;
+                            minter_updater => rule!(deny_all), locked;
+                        },
+                        ..Default::default()
+                    },
                     metadata: metadata! {
                         init {
                             "name" => "Package Owner Badges".to_owned(), locked;
@@ -700,7 +704,6 @@ pub fn create_system_bootstrap_transaction(
                             "icon_url" => Url("https://assets.radixdlt.com/icons/icon-package_owner_badge.png".to_owned()), locked;
                         }
                     },
-                    access_rules,
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
@@ -709,16 +712,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Identity Package
     {
-        // TODO: Integrate this into package instantiation to remove circular dependency
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            Mint,
-            (
-                rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))),
-                rule!(deny_all),
-            ),
-        );
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(IDENTITY_OWNER_BADGE),
@@ -733,6 +726,13 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<IdentityOwnerBadgeData>(),
+                    resource_roles: NonFungibleResourceRoles {
+                        mint_roles: mint_roles! {
+                            minter => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))), locked;
+                            minter_updater => rule!(deny_all), locked;
+                        },
+                        ..Default::default()
+                    },
                     metadata: metadata! {
                         init {
                             "name" => "Identity Owner Badges".to_owned(), locked;
@@ -741,7 +741,6 @@ pub fn create_system_bootstrap_transaction(
                             "icon_url" => Url("https://assets.radixdlt.com/icons/icon-identity_owner_badge.png".to_owned()), locked;
                         }
                     },
-                    access_rules,
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
@@ -791,16 +790,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Account Package
     {
-        // TODO: Integrate this into package instantiation to remove circular dependency
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            Mint,
-            (
-                rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))),
-                rule!(deny_all),
-            ),
-        );
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(ACCOUNT_OWNER_BADGE),
@@ -815,6 +804,13 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<AccountOwnerBadgeData>(),
+                    resource_roles: NonFungibleResourceRoles {
+                        mint_roles: mint_roles! {
+                            minter => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))), locked;
+                            minter_updater => rule!(deny_all), locked;
+                        },
+                        ..Default::default()
+                    },
                     metadata: metadata! {
                         init {
                             "name" => "Account Owner Badges".to_owned(), locked;
@@ -826,7 +822,6 @@ pub fn create_system_bootstrap_transaction(
                             "icon_url" => Url("https://assets.radixdlt.com/icons/icon-account_owner_badge.png".to_owned()), locked;
                         }
                     },
-                    access_rules,
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
@@ -898,8 +893,6 @@ pub fn create_system_bootstrap_transaction(
 
     // ECDSA Secp256k1
     {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(SECP256K1_SIGNATURE_VIRTUAL_BADGE),
@@ -914,6 +907,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
                             "name" => "ECDSA secp256k1 Virtual Badges".to_owned(), locked;
@@ -922,7 +916,6 @@ pub fn create_system_bootstrap_transaction(
                             "icon_url" => Url("https://assets.radixdlt.com/icons/icon-ecdsa_secp256k1_signature_virtual_badge.png".to_owned()), locked;
                         }
                     },
-                    access_rules,
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
@@ -931,8 +924,6 @@ pub fn create_system_bootstrap_transaction(
 
     // Ed25519
     {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(ED25519_SIGNATURE_VIRTUAL_BADGE),
@@ -947,6 +938,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
                             "name" => "EdDSA Ed25519 Virtual Badges".to_owned(), locked;
@@ -955,7 +947,6 @@ pub fn create_system_bootstrap_transaction(
                             "icon_url" => Url("https://assets.radixdlt.com/icons/icon-eddsa_ed25519_signature_virtual_badge.png".to_owned()), locked;
                         }
                     },
-                    access_rules,
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),
@@ -964,8 +955,6 @@ pub fn create_system_bootstrap_transaction(
 
     // System Token
     {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
             GlobalAddress::from(SYSTEM_TRANSACTION_BADGE),
@@ -980,6 +969,7 @@ pub fn create_system_bootstrap_transaction(
                     id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    resource_roles: NonFungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
                             "name" => "System Transaction Badge".to_owned(), locked;
@@ -988,7 +978,6 @@ pub fn create_system_bootstrap_transaction(
                             "icon_url" => Url("https://assets.radixdlt.com/icons/icon-system_transaction_badge.png".to_owned()), locked;
                         }
                     },
-                    access_rules,
                     address_reservation: Some(id_allocator.new_address_reservation_id()),
                 }
             ),

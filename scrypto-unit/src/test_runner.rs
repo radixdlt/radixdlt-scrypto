@@ -17,6 +17,7 @@ use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::ScryptoVm;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
@@ -38,7 +39,7 @@ use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
-use radix_engine_interface::{dec, rule};
+use radix_engine_interface::{dec, freeze_roles, rule};
 use radix_engine_queries::query::{ResourceAccounter, StateTreeTraverser, VaultFinder};
 use radix_engine_queries::typed_substate_layout::{
     BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
@@ -54,7 +55,6 @@ use radix_engine_store_interface::{
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto::modules::Mutability::*;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
@@ -1130,7 +1130,7 @@ impl TestRunner {
     fn create_fungible_resource_and_deposit(
         &mut self,
         owner_role: OwnerRole,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, Mutability)>,
+        resource_roles: FungibleResourceRoles,
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new()
@@ -1139,8 +1139,8 @@ impl TestRunner {
                 owner_role,
                 true,
                 0,
+                resource_roles,
                 metadata!(),
-                access_rules,
                 Some(5.into()),
             )
             .call_method(
@@ -1155,7 +1155,6 @@ impl TestRunner {
 
     pub fn create_restricted_token(
         &mut self,
-        owner_role: OwnerRole,
         account: ComponentAddress,
     ) -> (
         ResourceAddress,
@@ -1175,49 +1174,36 @@ impl TestRunner {
         let freeze_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            Mint,
-            (
-                rule!(require(mint_auth)),
-                MUTABLE(rule!(require(admin_auth))),
-            ),
+        let token_address = self.create_fungible_resource_and_deposit(
+            OwnerRole::None,
+            FungibleResourceRoles {
+                mint_roles: mint_roles! {
+                    minter => rule!(require(mint_auth)), updatable;
+                    minter_updater => rule!(require(admin_auth)), updatable;
+                },
+                burn_roles: burn_roles! {
+                    burner => rule!(require(burn_auth)), updatable;
+                    burner_updater => rule!(require(admin_auth)), updatable;
+                },
+                freeze_roles: freeze_roles! {
+                    freezer => rule!(require(freeze_auth)), updatable;
+                    freezer_updater => rule!(require(admin_auth)), updatable;
+                },
+                recall_roles: recall_roles! {
+                    recaller => rule!(require(recall_auth)), updatable;
+                    recaller_updater => rule!(require(admin_auth)), updatable;
+                },
+                withdraw_roles: withdraw_roles! {
+                    withdrawer => rule!(require(withdraw_auth)), updatable;
+                    withdrawer_updater => rule!(require(admin_auth)), updatable;
+                },
+                deposit_roles: deposit_roles! {
+                    depositor => rule!(allow_all), updatable;
+                    depositor_updater => rule!(require(admin_auth)), updatable;
+                },
+            },
+            account,
         );
-        access_rules.insert(
-            Burn,
-            (
-                rule!(require(burn_auth)),
-                MUTABLE(rule!(require(admin_auth))),
-            ),
-        );
-        access_rules.insert(
-            Withdraw,
-            (
-                rule!(require(withdraw_auth)),
-                MUTABLE(rule!(require(admin_auth))),
-            ),
-        );
-        access_rules.insert(
-            Recall,
-            (
-                rule!(require(recall_auth)),
-                MUTABLE(rule!(require(admin_auth))),
-            ),
-        );
-        access_rules.insert(
-            Freeze,
-            (
-                rule!(require(freeze_auth)),
-                MUTABLE(rule!(require(admin_auth))),
-            ),
-        );
-        access_rules.insert(
-            Deposit,
-            (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
-        );
-
-        let token_address =
-            self.create_fungible_resource_and_deposit(owner_role, access_rules, account);
 
         (
             token_address,
@@ -1235,19 +1221,43 @@ impl TestRunner {
         &mut self,
         owner_role: OwnerRole,
     ) -> ResourceAddress {
-        let mut access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)> = BTreeMap::new();
-        for key in ALL_RESOURCE_AUTH_KEYS {
-            access_rules.insert(key, (rule!(allow_all), rule!(allow_all)));
-        }
-
         let receipt = self.execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .create_non_fungible_resource::<_, Vec<_>, ()>(
+                .create_non_fungible_resource::<Vec<_>, ()>(
                     owner_role,
                     NonFungibleIdType::Integer,
                     false,
+                    NonFungibleResourceRoles {
+                        mint_roles: mint_roles! {
+                            minter => rule!(allow_all), updatable;
+                            minter_updater => rule!(allow_all), updatable;
+                        },
+                        burn_roles: burn_roles! {
+                            burner => rule!(allow_all), updatable;
+                            burner_updater => rule!(allow_all), updatable;
+                        },
+                        freeze_roles: freeze_roles! {
+                            freezer => rule!(allow_all), updatable;
+                            freezer_updater => rule!(allow_all), updatable;
+                        },
+                        recall_roles: recall_roles! {
+                            recaller => rule!(allow_all), updatable;
+                            recaller_updater => rule!(allow_all), updatable;
+                        },
+                        withdraw_roles: withdraw_roles! {
+                            withdrawer => rule!(allow_all), updatable;
+                            withdrawer_updater => rule!(allow_all), updatable;
+                        },
+                        deposit_roles: deposit_roles! {
+                            depositor => rule!(allow_all), updatable;
+                            depositor_updater => rule!(allow_all), updatable;
+                        },
+                        non_fungible_data_update_roles: non_fungible_data_update_roles! {
+                            non_fungible_data_updater => rule!(allow_all), updatable;
+                            non_fungible_data_updater_updater => rule!(allow_all), updatable;
+                        },
+                    },
                     metadata!(),
-                    access_rules,
                     None,
                 )
                 .build(),
@@ -1257,34 +1267,60 @@ impl TestRunner {
     }
 
     pub fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(Burn, (rule!(allow_all), LOCKED));
-        access_rules.insert(Recall, (rule!(allow_all), LOCKED));
-        access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
-
-        self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account)
+        self.create_fungible_resource_and_deposit(
+            OwnerRole::None,
+            FungibleResourceRoles {
+                burn_roles: burn_roles! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
+                recall_roles: recall_roles! {
+                    recaller => rule!(allow_all), locked;
+                    recaller_updater => rule!(deny_all), locked;
+                },
+                freeze_roles: freeze_roles! {
+                    freezer => rule!(allow_all), locked;
+                    freezer_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
+            },
+            account,
+        )
     }
 
     pub fn create_freezeable_non_fungible(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(Burn, (rule!(allow_all), LOCKED));
-        access_rules.insert(Recall, (rule!(allow_all), LOCKED));
-        access_rules.insert(Freeze, (rule!(allow_all), LOCKED));
-
-        self.create_non_fungible_resource_with_access_rules(access_rules, account)
+        self.create_non_fungible_resource_with_access_rules(
+            NonFungibleResourceRoles {
+                burn_roles: burn_roles! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
+                recall_roles: recall_roles! {
+                    recaller => rule!(allow_all), locked;
+                    recaller_updater => rule!(deny_all), locked;
+                },
+                freeze_roles: freeze_roles! {
+                    freezer => rule!(allow_all), locked;
+                    freezer_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
+            },
+            account,
+        )
     }
 
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Recall, (rule!(allow_all), LOCKED));
-
-        self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account)
+        self.create_fungible_resource_and_deposit(
+            OwnerRole::None,
+            FungibleResourceRoles {
+                recall_roles: recall_roles! {
+                    recaller => rule!(allow_all), locked;
+                    recaller_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
+            },
+            account,
+        )
     }
 
     pub fn create_restricted_burn_token(
@@ -1293,12 +1329,17 @@ impl TestRunner {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
-        let resource_address =
-            self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account);
+        let resource_address = self.create_fungible_resource_and_deposit(
+            OwnerRole::None,
+            FungibleResourceRoles {
+                burn_roles: burn_roles! {
+                    burner => rule!(require(auth_resource_address)), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
+            },
+            account,
+        );
 
         (auth_resource_address, resource_address)
     }
@@ -1309,29 +1350,31 @@ impl TestRunner {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            (rule!(require(auth_resource_address)), LOCKED),
+        let resource_address = self.create_fungible_resource_and_deposit(
+            OwnerRole::None,
+            FungibleResourceRoles {
+                withdraw_roles: withdraw_roles! {
+                    withdrawer => rule!(require(auth_resource_address)), locked;
+                    withdrawer_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
+            },
+            account,
         );
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-        let resource_address =
-            self.create_fungible_resource_and_deposit(OwnerRole::None, access_rules, account);
 
         (auth_resource_address, resource_address)
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-
-        self.create_non_fungible_resource_with_access_rules(access_rules, account)
+        self.create_non_fungible_resource_with_access_rules(
+            NonFungibleResourceRoles::default(),
+            account,
+        )
     }
 
     pub fn create_non_fungible_resource_with_access_rules(
         &mut self,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, Mutability)>,
+        resource_roles: NonFungibleResourceRoles,
         account: ComponentAddress,
     ) -> ResourceAddress {
         let mut entries = BTreeMap::new();
@@ -1345,8 +1388,8 @@ impl TestRunner {
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
+                resource_roles,
                 metadata!(),
-                access_rules,
                 Some(entries),
             )
             .call_method(
@@ -1365,17 +1408,14 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 500u32.into())
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
                 divisibility,
+                FungibleResourceRoles::default(),
                 metadata!(),
-                access_rules,
                 Some(amount),
             )
             .call_method(
@@ -1394,14 +1434,26 @@ impl TestRunner {
     ) -> (ResourceAddress, ResourceAddress) {
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(Mint, (rule!(require(admin_auth)), LOCKED));
-        access_rules.insert(Burn, (rule!(require(admin_auth)), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 500u32.into())
-            .create_fungible_resource(OwnerRole::None, true, 1u8, metadata!(), access_rules, None)
+            .create_fungible_resource(
+                OwnerRole::None,
+                true,
+                1u8,
+                FungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(require(admin_auth)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    burn_roles: burn_roles! {
+                        burner => rule!(require(admin_auth)), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
+                },
+                metadata!(),
+                None,
+            )
             .call_method(
                 account,
                 ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
@@ -1420,18 +1472,20 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 500u32.into())
             .create_fungible_resource(
                 owner_role,
                 true,
                 divisibility,
+                FungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(allow_all), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
+                },
                 metadata!(),
-                access_rules,
                 amount,
             )
             .call_method(
@@ -1451,19 +1505,24 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(Deposit, (rule!(allow_all), LOCKED));
-        access_rules.insert(Mint, (rule!(allow_all), LOCKED));
-        access_rules.insert(Burn, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee(self.faucet_component(), 500u32.into())
             .create_fungible_resource(
                 owner_role,
                 true,
                 divisibility,
+                FungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(allow_all), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    burn_roles: burn_roles! {
+                        burner => rule!(allow_all), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
+                },
                 metadata!(),
-                access_rules,
                 amount,
             )
             .call_method(

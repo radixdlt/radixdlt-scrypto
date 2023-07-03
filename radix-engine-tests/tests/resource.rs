@@ -1,12 +1,10 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::types::blueprints::resource::ResourceAction;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::{metadata, metadata_init};
-use scrypto::prelude::Mutability::LOCKED;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -144,9 +142,6 @@ fn create_fungible_too_high_granularity_should_fail() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let _package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
-    let mut access_rules = BTreeMap::new();
-    access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-    access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -155,8 +150,8 @@ fn create_fungible_too_high_granularity_should_fail() {
             OwnerRole::None,
             false,
             23u8,
+            FungibleResourceRoles::default(),
             metadata!(),
-            access_rules,
             Some(dec!("100")),
         )
         .build();

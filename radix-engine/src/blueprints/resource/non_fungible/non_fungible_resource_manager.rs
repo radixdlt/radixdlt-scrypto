@@ -18,6 +18,7 @@ use radix_engine_interface::*;
 pub enum NonFungibleResourceManagerError {
     NonFungibleAlreadyExists(Box<NonFungibleGlobalId>),
     NonFungibleNotFound(Box<NonFungibleGlobalId>),
+    InvalidRole(String),
     InvalidField(String),
     FieldNotMutable(String),
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
@@ -100,7 +101,7 @@ impl NonFungibleResourceManagerBlueprint {
         id_type: NonFungibleIdType,
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -128,7 +129,10 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let features = features(track_total_supply, &access_rules);
+        let (mut features, roles) = resource_roles.to_features_and_roles();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -146,7 +150,7 @@ impl NonFungibleResourceManagerBlueprint {
             owner_role,
             object_id,
             address_reservation,
-            access_rules,
+            roles,
             metadata,
             api,
         )
@@ -158,7 +162,7 @@ impl NonFungibleResourceManagerBlueprint {
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         entries: BTreeMap<NonFungibleLocalId, (ScryptoValue,)>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -220,7 +224,10 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let features = features(track_total_supply, &access_rules);
+        let (mut features, roles) = resource_roles.to_features_and_roles();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -237,7 +244,7 @@ impl NonFungibleResourceManagerBlueprint {
             owner_role,
             object_id,
             address_reservation,
-            access_rules,
+            roles,
             metadata,
             ids,
             api,
@@ -251,7 +258,7 @@ impl NonFungibleResourceManagerBlueprint {
         track_total_supply: bool,
         non_fungible_schema: NonFungibleDataSchema,
         entries: Vec<(ScryptoValue,)>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -293,7 +300,10 @@ impl NonFungibleResourceManagerBlueprint {
             type_index: vec![non_fungible_schema.non_fungible],
         };
 
-        let features = features(track_total_supply, &access_rules);
+        let (mut features, roles) = resource_roles.to_features_and_roles();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -310,7 +320,7 @@ impl NonFungibleResourceManagerBlueprint {
             owner_role,
             object_id,
             address_reservation,
-            access_rules,
+            roles,
             metadata,
             ids,
             api,

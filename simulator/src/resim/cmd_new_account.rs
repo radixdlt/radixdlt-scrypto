@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::{
     require, FromPublicKey, NonFungibleDataSchema,
-    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput, ResourceAction,
+    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
 };
@@ -79,13 +79,11 @@ impl NewAccount {
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: false,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        resource_roles: NonFungibleResourceRoles::default(),
                         metadata: metadata!(
                             init {
                                 "name" => "Owner Badge".to_owned(), locked;
                             }
-                        ),
-                        access_rules: btreemap!(
-                            ResourceAction::Withdraw => (rule!(allow_all), rule!(deny_all))
                         ),
                         entries: btreemap!(
                             NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),

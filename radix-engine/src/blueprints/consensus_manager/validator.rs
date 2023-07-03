@@ -11,13 +11,16 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::metadata_init;
-use radix_engine_interface::rule;
+use radix_engine_interface::{
+    burn_roles, internal_roles_struct, metadata_init, mint_roles, role_definition_entry, rule,
+};
 use sbor::rust::mem;
 
 use super::{
@@ -1088,29 +1091,21 @@ impl ValidatorCreator {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut stake_unit_resource_auth = BTreeMap::new();
-        stake_unit_resource_auth.insert(
-            Mint,
-            (
-                rule!(require(global_caller(validator_address))),
-                rule!(deny_all),
-            ),
-        );
-        stake_unit_resource_auth.insert(
-            Burn,
-            (
-                rule!(require(global_caller(validator_address))),
-                rule!(deny_all),
-            ),
-        );
-        stake_unit_resource_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        stake_unit_resource_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
-
         let stake_unit_resman = ResourceManager::new_fungible(
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             true,
             18,
-            stake_unit_resource_auth,
+            FungibleResourceRoles {
+                mint_roles: mint_roles! {
+                    minter => rule!(require(global_caller(validator_address))), locked;
+                    minter_updater => rule!(deny_all), locked;
+                },
+                burn_roles: burn_roles! {
+                    burner => rule!(require(global_caller(validator_address))), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
+            },
             metadata_init! {
                 "name" => "Liquid Stake Units".to_owned(), locked;
                 "description" => "Liquid Stake Unit tokens that represent a proportion of XRD stake delegated to a Radix Network validator.".to_owned(), locked;
@@ -1132,29 +1127,21 @@ impl ValidatorCreator {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut unstake_nft_auth = BTreeMap::new();
-        unstake_nft_auth.insert(
-            Mint,
-            (
-                rule!(require(global_caller(validator_address))),
-                rule!(deny_all),
-            ),
-        );
-        unstake_nft_auth.insert(
-            Burn,
-            (
-                rule!(require(global_caller(validator_address))),
-                rule!(deny_all),
-            ),
-        );
-        unstake_nft_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        unstake_nft_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
-
         let unstake_resman = ResourceManager::new_non_fungible::<UnstakeData, Y, RuntimeError, _>(
             OwnerRole::Fixed(rule!(require(global_caller(validator_address)))),
             NonFungibleIdType::RUID,
             true,
-            unstake_nft_auth,
+            NonFungibleResourceRoles {
+                mint_roles: mint_roles! {
+                    minter => rule!(require(global_caller(validator_address))), locked;
+                    minter_updater => rule!(deny_all), locked;
+                },
+                burn_roles: burn_roles! {
+                    burner => rule!(require(global_caller(validator_address))), locked;
+                    burner_updater => rule!(deny_all), locked;
+                },
+                ..Default::default()
+            },
             metadata_init! {
                 "name" => "Stake Claims NFTs".to_owned(), locked;
                 "description" => "Unique Stake Claim tokens that represent a timed claimable amount of XRD stake from a Radix Network validator.".to_owned(), locked;

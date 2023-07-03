@@ -10,7 +10,10 @@ mod invalid_init_stored_bucket {
         pub fn create() -> Global<InvalidInitStoredBucket> {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
-                .restrict_withdraw(rule!(allow_all), rule!(deny_all))
+                .withdraw_roles(withdraw_roles! {
+                    withdrawer => rule!(allow_all), locked;
+                    withdrawer_updater => rule!(deny_all), locked;
+                })
                 .mint_initial_supply(Decimal::from(5));
 
             let component = InvalidInitStoredBucket { bucket }.instantiate();
@@ -33,7 +36,10 @@ mod invalid_stored_bucket_in_owned_component {
         pub fn create_bucket_in_owned_component() -> Global<InvalidStoredBucketInOwnedComponent> {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
-                .restrict_withdraw(rule!(allow_all), rule!(deny_all))
+                .withdraw_roles(withdraw_roles! {
+                    withdrawer => rule!(allow_all), locked;
+                    withdrawer_updater => rule!(deny_all), locked;
+                })
                 .mint_initial_supply(Decimal::from(5));
 
             let component = InvalidStoredBucketInOwnedComponent {

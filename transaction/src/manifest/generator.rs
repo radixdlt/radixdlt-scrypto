@@ -1516,8 +1516,8 @@ mod tests {
     use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::blueprints::consensus_manager::ConsensusManagerCreateValidatorManifestInput;
     use radix_engine_interface::blueprints::resource::{
-        AccessRule, NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
-        NonFungibleResourceManagerMintRuidManifestInput, ResourceAction,
+        NonFungibleDataSchema, NonFungibleResourceManagerMintManifestInput,
+        NonFungibleResourceManagerMintRuidManifestInput,
     };
     use radix_engine_interface::network::NetworkDefinition;
     use radix_engine_interface::schema::BlueprintStateSchemaInit;
@@ -1782,15 +1782,14 @@ mod tests {
                     Enum<0u8>(66u8),
                     Array<String>()
                 )
-                Map<Enum, Tuple>(
-                    Enum<ResourceAction::Withdraw>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    ),
-                    Enum<ResourceAction::Deposit>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    )
+                Tuple(
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>()
                 )
                 Tuple(
                     Map<String, Tuple>(
@@ -1817,16 +1816,7 @@ mod tests {
                                 "name" => "Token".to_string(), locked;
                             }
                         },
-                        access_rules: BTreeMap::from([
-                            (
-                                ResourceAction::Withdraw,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
-                            ),
-                            (
-                                ResourceAction::Deposit,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
-                            ),
-                        ]),
+                        resource_roles: NonFungibleResourceRoles::default(),
                         address_reservation: None,
                     }
                 ),
@@ -1864,7 +1854,7 @@ mod tests {
                             non_fungible_schema: NonFungibleDataSchema::new_schema::<
                                 MyNonFungibleData,
                             >(),
-                            access_rules: BTreeMap::new(),
+                            resource_roles: NonFungibleResourceRoles::default(),
                             metadata: metadata!(),
                             address_reservation: None,
                         }
@@ -1900,15 +1890,14 @@ mod tests {
                         )
                     )
                 )
-                Map<Enum, Tuple>(
-                    Enum<ResourceAction::Withdraw>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    ),
-                    Enum<ResourceAction::Deposit>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    )
+                Tuple(
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>()
                 )
                 Tuple(
                     Map<String, Tuple>(
@@ -1929,21 +1918,12 @@ mod tests {
                         track_total_supply: false,
                         id_type: NonFungibleIdType::Integer,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                        resource_roles: NonFungibleResourceRoles::default(),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_string(), locked;
                             }
                         },
-                        access_rules: BTreeMap::from([
-                            (
-                                ResourceAction::Withdraw,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
-                            ),
-                            (
-                                ResourceAction::Deposit,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
-                            ),
-                        ]),
                         entries: BTreeMap::from([(
                             NonFungibleLocalId::integer(1),
                             (to_manifest_value_and_unwrap!(&(
@@ -1965,15 +1945,13 @@ mod tests {
                 Enum<0u8>()
                 false
                 18u8
-                Map<Enum, Tuple>(
-                    Enum<ResourceAction::Withdraw>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    ),
-                    Enum<ResourceAction::Deposit>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    )
+                Tuple(
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>()
                 )
                 Tuple(
                     Map<String, Tuple>(
@@ -1991,16 +1969,7 @@ mod tests {
                     owner_role: OwnerRole::None,
                     track_total_supply: false,
                     divisibility: 18,
-                    access_rules: BTreeMap::from([
-                        (
-                            ResourceAction::Withdraw,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                        (
-                            ResourceAction::Deposit,
-                            (AccessRule::AllowAll, AccessRule::DenyAll)
-                        ),
-                    ]),
+                    resource_roles: FungibleResourceRoles::default(),
                     metadata: metadata! {
                         init {
                             "name" => "Token".to_owned(), updatable;
@@ -2020,15 +1989,13 @@ mod tests {
                 false
                 18u8
                 Decimal("500")
-                Map<Enum, Tuple>(
-                    Enum<ResourceAction::Withdraw>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    ),
-                    Enum<ResourceAction::Deposit>() => Tuple(
-                        Enum<AccessRule::AllowAll>(),
-                        Enum<AccessRule::DenyAll>()
-                    )
+                Tuple(
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>(),
+                    Enum<0u8>()
                 )
                 Tuple(
                     Map<String, Tuple>(
@@ -2049,16 +2016,7 @@ mod tests {
                         track_total_supply: false,
                         divisibility: 18,
                         initial_supply: "500".parse().unwrap(),
-                        access_rules: BTreeMap::from([
-                            (
-                                ResourceAction::Withdraw,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
-                            ),
-                            (
-                                ResourceAction::Deposit,
-                                (AccessRule::AllowAll, AccessRule::DenyAll)
-                            ),
-                        ]),
+                        resource_roles: FungibleResourceRoles::default(),
                         metadata: metadata! {
                             init {
                                 "name" => "Token".to_owned(), updatable;
