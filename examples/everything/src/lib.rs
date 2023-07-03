@@ -64,8 +64,12 @@ mod everything {
                 })
                 .enable_component_royalties(component_royalties! {
                     roles {
-                        royalty_admin => rule!(allow_all), updatable;
-                        royalty_admin_updater => OWNER, locked;
+                        royalty_setter => rule!(allow_all), updatable;
+                        royalty_setter_updater => OWNER, locked;
+                        royalty_locker => OWNER, updatable;
+                        royalty_locker_updater => rule!(deny_all), locked;
+                        royalty_claimer => OWNER, updatable;
+                        royalty_claimer_updater => rule!(deny_all), locked;
                     },
                     init {
                         public_method => Xrd(1.into()), updatable;
