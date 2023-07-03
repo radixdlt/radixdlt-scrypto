@@ -988,7 +988,7 @@ impl PackageNativePackage {
                 let rtn = Self::publish_native(
                     input.package_address,
                     input.native_package_code_id,
-                    input.setup,
+                    input.definition,
                     input.metadata,
                     api,
                 )?;
@@ -1000,7 +1000,7 @@ impl PackageNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = Self::publish_wasm(input.code, input.setup, input.metadata, api)?;
+                let rtn = Self::publish_wasm(input.code, input.definition, input.metadata, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -1012,7 +1012,7 @@ impl PackageNativePackage {
                 let rtn = Self::publish_wasm_advanced(
                     input.package_address,
                     input.code,
-                    input.setup,
+                    input.definition,
                     input.metadata,
                     input.owner_role,
                     api,

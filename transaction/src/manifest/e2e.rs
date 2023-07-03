@@ -36,15 +36,15 @@ ALLOCATE_GLOBAL_ADDRESS
     NamedAddress("address1")
 ;
 PUBLISH_PACKAGE_ADVANCED
-    Enum<1u8>(
-        AddressReservation("reservation1")
-    )
-    Blob("${code_blob_hash}")
+    Enum<0u8>()
     Tuple(
         Map<String, Tuple>()
     )
+    Blob("${code_blob_hash}")
     Map<String, Tuple>()
-    Enum<0u8>()
+    Enum<1u8>(
+        AddressReservation("reservation1")
+    )
 ;
 CALL_FUNCTION
     NamedAddress("address1")
@@ -74,10 +74,10 @@ CALL_METHOD
 ;
 PUBLISH_PACKAGE_ADVANCED
     Enum<0u8>()
-    Blob("${code_blob_hash}")
     Tuple(
         Map<String, Tuple>()
     )
+    Blob("${code_blob_hash}")
     Map<String, Tuple>()
     Enum<0u8>()
 ;

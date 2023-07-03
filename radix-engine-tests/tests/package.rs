@@ -312,7 +312,7 @@ fn should_not_be_able_to_publish_native_packages() {
             to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: None,
                 native_package_code_id: 0u64,
-                setup: PackageDefinition::default(),
+                definition: PackageDefinition::default(),
                 metadata: metadata_init!(),
             }),
         )

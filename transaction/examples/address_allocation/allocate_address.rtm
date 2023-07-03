@@ -18,13 +18,13 @@ ALLOCATE_GLOBAL_ADDRESS
     NamedAddress("my_package")
 ;
 PUBLISH_PACKAGE_ADVANCED
-    Some(AddressReservation("my_reservation"))
-    Blob("${code_blob_hash}")
+    Enum<0u8>()
     Tuple(
         Map<String, Tuple>()
     )
+    Blob("${code_blob_hash}")
     Map<String, Tuple>()
-    Enum<0u8>()
+    Some(AddressReservation("my_reservation"))
 ;
 CALL_FUNCTION
     NamedAddress("my_package")

@@ -14,10 +14,10 @@ CALL_METHOD
 
 # Publishing a new package and setting some of its royalty and access rules.
 PUBLISH_PACKAGE_ADVANCED
-    None
-    Blob("${code_blob_hash}")
+    Enum<0u8>()               # Owner AccessRule
     Tuple(
         Map<String, Tuple>()
     )
+    Blob("${code_blob_hash}")
     Map<String, Tuple>()        # Metadata
-    Enum<0u8>();               # Owner AccessRule
+    None;

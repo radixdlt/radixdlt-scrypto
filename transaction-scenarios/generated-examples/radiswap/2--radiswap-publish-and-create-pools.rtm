@@ -15,9 +15,16 @@ CALL_METHOD
 ;
 PUBLISH_PACKAGE_ADVANCED
     Enum<1u8>(
-        AddressReservation("reservation1")
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]")
+                    )
+                )
+            )
+        )
     )
-    Blob("ec86d26a879f1330cb452306729ccab76fa0d818935c66cd449ffc84e707c743")
     Tuple(
         Map<String, Tuple>(
             "Radiswap" => Tuple(
@@ -347,6 +354,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
+    Blob("ec86d26a879f1330cb452306729ccab76fa0d818935c66cd449ffc84e707c743")
     Map<String, Tuple>(
         "description" => Tuple(
             Enum<1u8>(
@@ -378,15 +386,7 @@ PUBLISH_PACKAGE_ADVANCED
         )
     )
     Enum<1u8>(
-        Enum<2u8>(
-            Enum<0u8>(
-                Enum<0u8>(
-                    Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]")
-                    )
-                )
-            )
-        )
+        AddressReservation("reservation1")
     )
 ;
 CALL_FUNCTION
