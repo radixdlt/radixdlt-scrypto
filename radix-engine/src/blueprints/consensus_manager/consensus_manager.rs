@@ -201,10 +201,6 @@ pub enum ConsensusManagerError {
     },
     AlreadyStarted,
     NotXrd,
-    InvalidXrdPayment {
-        expected: Decimal,
-        actual: Decimal,
-    },
 }
 
 pub const CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX: CollectionIndex = 0u8;
@@ -550,7 +546,10 @@ impl ConsensusManagerBlueprint {
             let manager_config: ConsensusManagerConfigSubstate =
                 api.field_lock_read_typed(config_handle)?;
             api.field_lock_release(config_handle)?;
-            Some(manager_config.config.validator_creation_xrd_cost)
+
+            let validator_creation_xrd_cost =
+                manager_config.config.validator_creation_usd_cost * api.usd_price()?;
+            Some(validator_creation_xrd_cost)
         } else {
             None
         };
@@ -565,7 +564,7 @@ impl ConsensusManagerBlueprint {
         fee_factor: Decimal,
         xrd_payment: Bucket,
         api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket), RuntimeError>
+    ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -577,27 +576,14 @@ impl ConsensusManagerBlueprint {
 
         let validator_xrd_cost = Self::get_validator_xrd_cost(api)?;
         if let Some(xrd_cost) = validator_xrd_cost {
-            let payment_amount = xrd_payment.amount(api)?;
-            if !payment_amount.eq(&xrd_cost) {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ConsensusManagerError(
-                        ConsensusManagerError::InvalidXrdPayment {
-                            actual: payment_amount,
-                            expected: xrd_cost,
-                        },
-                    ),
-                ));
-            }
-
-            xrd_payment.burn(api)?;
-        } else {
-            xrd_payment.drop_empty(api)?;
+            let xrd_paid = xrd_payment.take(xrd_cost, api)?;
+            xrd_paid.burn(api)?;
         }
 
         let (validator_address, owner_token_bucket) =
             ValidatorCreator::create(key, false, fee_factor, api)?;
 
-        Ok((validator_address, owner_token_bucket))
+        Ok((validator_address, owner_token_bucket, xrd_payment))
     }
 
     fn check_non_decreasing_and_update_timestamps<Y>(

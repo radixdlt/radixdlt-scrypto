@@ -1,6 +1,7 @@
 use radix_engine::blueprints::consensus_manager::{
     Validator, ValidatorEmissionAppliedEvent, ValidatorError,
 };
+use radix_engine::blueprints::resource::BucketError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::types::*;
@@ -414,7 +415,7 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
     assert!(result.next_epoch().is_none());
 }
 
-fn create_validator_with_wrong_payment_amount_should_fail(amount: Decimal) {
+fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_success: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -428,29 +429,44 @@ fn create_validator_with_wrong_payment_amount_should_fail(amount: Decimal) {
                 builder.create_validator(public_key, Decimal::ONE, bucket);
                 builder
             })
+            .call_method(
+                account,
+                "try_deposit_batch_or_abort",
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::ConsensusManagerError(
-                ConsensusManagerError::InvalidXrdPayment { .. }
-            ))
-        )
-    });
+    if expect_success {
+        receipt.expect_commit_success();
+    } else {
+        receipt.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::ApplicationError(ApplicationError::BucketError(
+                    BucketError::ResourceError(ResourceError::InsufficientBalance)
+                ))
+            )
+        });
+    }
 }
 
 #[test]
 fn create_validator_with_not_enough_payment_should_fail() {
-    create_validator_with_wrong_payment_amount_should_fail(*DEFAULT_VALIDATOR_XRD_COST - dec!("1"))
+    create_validator_with_low_payment_amount_should_fail(
+        *DEFAULT_VALIDATOR_XRD_COST - dec!("1"),
+        false,
+    )
 }
 
 #[test]
-fn create_validator_with_too_much_payment_should_fail() {
-    create_validator_with_wrong_payment_amount_should_fail(*DEFAULT_VALIDATOR_XRD_COST + dec!("1"))
+fn create_validator_with_too_much_payment_should_succeed() {
+    create_validator_with_low_payment_amount_should_fail(
+        *DEFAULT_VALIDATOR_XRD_COST + dec!("1"),
+        true,
+    )
 }
 
 #[test]

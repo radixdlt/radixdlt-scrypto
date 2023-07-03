@@ -20,7 +20,7 @@ impl ConsensusManager {
         fee_factor: Decimal,
         xrd_payment: Bucket,
         api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket), E>
+    ) -> Result<(ComponentAddress, Bucket, Bucket), E>
     where
         Y: ClientObjectApi<E>,
     {
