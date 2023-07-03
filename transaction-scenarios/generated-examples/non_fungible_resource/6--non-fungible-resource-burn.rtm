@@ -1,0 +1,36 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "withdraw"
+    Address("resource_sim1nt3wh08hqf390waga5qhf6g3j6mx6lvaumecp0vtx2e93ke3ythjp2")
+    Decimal("2")
+;
+TAKE_ALL_FROM_WORKTOP
+    Address("resource_sim1nt3wh08hqf390waga5qhf6g3j6mx6lvaumecp0vtx2e93ke3ythjp2")
+    Bucket("bucket1")
+;
+BURN_RESOURCE
+    Bucket("bucket1")
+;
+CALL_METHOD
+    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    "withdraw_non_fungibles"
+    Address("resource_sim1nt3wh08hqf390waga5qhf6g3j6mx6lvaumecp0vtx2e93ke3ythjp2")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#110#")
+    )
+;
+TAKE_NON_FUNGIBLES_FROM_WORKTOP
+    Address("resource_sim1nt3wh08hqf390waga5qhf6g3j6mx6lvaumecp0vtx2e93ke3ythjp2")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#110#")
+    )
+    Bucket("bucket2")
+;
+BURN_RESOURCE
+    Bucket("bucket2")
+;
