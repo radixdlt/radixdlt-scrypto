@@ -23,24 +23,28 @@ mod nf_data_with_global {
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
 
-            // Create  resource with initial supply
-            let bucket1 =
-                ResourceBuilder::new_integer_non_fungible::<NFDataWithGlobal>(OwnerRole::None)
-                    .metadata(metadata! {
-                        init {
-                            "name" => "NFDataWithGlobal".to_owned(), locked;
-                        }
-                    })
-                    .mintable(
-                        rule!(require(mint_badge.resource_address())),
-                        rule!(deny_all),
-                    )
-                    .burnable(rule!(allow_all), rule!(deny_all))
-                    .updatable_non_fungible_data(
-                        rule!(require(mint_badge.resource_address())),
-                        rule!(deny_all),
-                    )
-                    .mint_initial_supply([(1u64.into(), NFDataWithGlobal { global })]);
+            // Create resource with initial supply
+            let bucket1 = ResourceBuilder::new_integer_non_fungible::<NFDataWithGlobal>(
+                OwnerRole::None,
+            )
+            .metadata(metadata! {
+                init {
+                    "name" => "NFDataWithGlobal".to_owned(), locked;
+                }
+            })
+            .mint_roles(mint_roles! {
+                minter => rule!(require(mint_badge.resource_address())), locked;
+                minter_updater => rule!(deny_all), locked;
+            })
+            .burn_roles(burn_roles! {
+                burner => rule!(allow_all), locked;
+                burner_updater => rule!(deny_all), locked;
+            })
+            .non_fungible_data_update_roles(non_fungible_data_update_roles! {
+                non_fungible_data_updater => rule!(require(mint_badge.resource_address())), locked;
+                non_fungible_data_updater_updater => rule!(deny_all), locked;
+            })
+            .mint_initial_supply([(1u64.into(), NFDataWithGlobal { global })]);
 
             // Mint a non-fungible
             let bucket2 = mint_badge.authorize(|| {

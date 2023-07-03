@@ -12,12 +12,16 @@ use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{metadata_init, rule};
+use radix_engine_interface::{
+    internal_roles_struct, metadata_init, mint_roles, role_definition_entry, rule,
+};
 
 const MILLIS_IN_SECOND: i64 = 1000;
 const SECONDS_IN_MINUTE: i64 = 60;
@@ -227,17 +231,9 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         {
-            let mut access_rules = BTreeMap::new();
-
             // TODO: remove mint and premint all tokens
-            {
-                let global_id =
-                    NonFungibleGlobalId::package_of_direct_caller_badge(CONSENSUS_MANAGER_PACKAGE);
-                access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
-            }
-
-            access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-
+            let global_id =
+                NonFungibleGlobalId::package_of_direct_caller_badge(CONSENSUS_MANAGER_PACKAGE);
             let consensus_manager_address =
                 api.get_reservation_address(consensus_manager_address_reservation.0.as_node_id())?;
 
@@ -245,7 +241,13 @@ impl ConsensusManagerBlueprint {
                 OwnerRole::Fixed(rule!(require(global_caller(consensus_manager_address)))),
                 NonFungibleIdType::Bytes,
                 true,
-                access_rules,
+                NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(require(global_id)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
+                },
                 metadata_init! {
                     "name" => "Validator Owner Badges".to_owned(), locked;
                     "description" => "Badges created by the Radix system that provide individual control over the validator components created for validator node-runners.".to_owned(), locked;

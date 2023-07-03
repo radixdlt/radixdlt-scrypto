@@ -1,6 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::ClientBlueprintApi;
 use crate::runtime::Runtime;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::*;
@@ -39,40 +40,35 @@ pub struct ResourceBuilder;
 
 impl ResourceBuilder {
     /// Starts a new builder to create a fungible resource.
-    pub fn new_fungible(
-        owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<FungibleResourceType, NoAuth> {
+    pub fn new_fungible(owner_role: OwnerRole) -> InProgressResourceBuilder<FungibleResourceType> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::String`
     pub fn new_string_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>, NoAuth>
-    {
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Integer`
     pub fn new_integer_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>, NoAuth>
-    {
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::Bytes`
     pub fn new_bytes_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>, NoAuth>
-    {
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>> {
         InProgressResourceBuilder::new(owner_role)
     }
 
     /// Starts a new builder to create a non-fungible resource with a `NonFungibleIdType::RUID`
     pub fn new_ruid_non_fungible<D: NonFungibleData>(
         owner_role: OwnerRole,
-    ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>, NoAuth> {
+    ) -> InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>> {
         InProgressResourceBuilder::new(owner_role)
     }
 }
@@ -92,52 +88,37 @@ impl ResourceBuilder {
 ///     .mint_initial_supply(5);
 /// ```
 #[must_use]
-pub struct InProgressResourceBuilder<T: AnyResourceType, A: ConfiguredAuth> {
+pub struct InProgressResourceBuilder<T: AnyResourceType> {
     owner_role: OwnerRole,
     resource_type: T,
+    resource_roles: T::ResourceRoles,
     metadata_config: Option<ModuleConfig<MetadataInit>>,
     address_reservation: Option<GlobalAddressReservation>,
-    auth: A,
 }
 
-impl<T: AnyResourceType> InProgressResourceBuilder<T, NoAuth> {
+impl<T: AnyResourceType> InProgressResourceBuilder<T> {
     fn new(owner_role: OwnerRole) -> Self {
         Self {
             owner_role,
             resource_type: T::default(),
             metadata_config: None,
             address_reservation: None,
-            auth: NoAuth,
+            resource_roles: T::ResourceRoles::default(),
         }
     }
 }
 
-pub trait ConfiguredAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)>;
-}
-
-pub struct NoAuth;
-impl ConfiguredAuth for NoAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
-        BTreeMap::new()
-    }
-}
-
-pub struct AccessRuleAuth(BTreeMap<ResourceAction, (AccessRule, AccessRule)>);
-
-impl ConfiguredAuth for AccessRuleAuth {
-    fn into_access_rules(self) -> BTreeMap<ResourceAction, (AccessRule, AccessRule)> {
-        self.0
-    }
-}
-
 // Various types for ResourceType
-pub trait AnyResourceType: Default {}
+pub trait AnyResourceType: Default {
+    type ResourceRoles: Default;
+}
 
 pub struct FungibleResourceType {
     divisibility: u8,
 }
-impl AnyResourceType for FungibleResourceType {}
+impl AnyResourceType for FungibleResourceType {
+    type ResourceRoles = FungibleResourceRoles;
+}
 impl Default for FungibleResourceType {
     fn default() -> Self {
         Self {
@@ -153,21 +134,12 @@ pub struct NonFungibleResourceType<T: IsNonFungibleLocalId, D: NonFungibleData>(
 impl<T: IsNonFungibleLocalId, D: NonFungibleData> AnyResourceType
     for NonFungibleResourceType<T, D>
 {
+    type ResourceRoles = NonFungibleResourceRoles;
 }
 impl<T: IsNonFungibleLocalId, D: NonFungibleData> Default for NonFungibleResourceType<T, D> {
     fn default() -> Self {
         Self(PhantomData, PhantomData)
     }
-}
-
-// Builder types
-pub trait IsFungibleBuilder {}
-impl<A: ConfiguredAuth> IsFungibleBuilder for InProgressResourceBuilder<FungibleResourceType, A> {}
-
-pub trait IsNonFungibleBuilder {}
-impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> IsNonFungibleBuilder
-    for InProgressResourceBuilder<NonFungibleResourceType<Y, D>, A>
-{
 }
 
 ////////////////////////////////////////////////////////////
@@ -190,8 +162,8 @@ pub trait SetAddressReservationBuilder: private::CanSetAddressReservation {
 }
 impl<B: private::CanSetAddressReservation> SetAddressReservationBuilder for B {}
 
-pub trait UpdateAuthBuilder: private::CanAddAuth {
-    /// Sets the resource to be mintable.
+pub trait UpdateAuthBuilder {
+    /// Sets the resource to be mintable
     ///
     /// * The first parameter is the access rule which allows minting of the resource.
     /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
@@ -199,25 +171,26 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use radix_engine_interface::mint_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be mintable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .mintable(rule!(require(resource_address)), LOCKED);
+    ///    .mint_roles(mint_roles! {
+    ///         minter => rule!(require(resource_address)), locked;
+    ///         minter_updater => rule!(deny_all), locked;
+    ///     });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be mintable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .mintable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .mint_roles(mint_roles! {
+    ///         minter => rule!(deny_all), updatable;
+    ///         minter_updater => rule!(require(resource_address)), locked;
+    ///    });
     /// ```
-    fn mintable<R: Into<AccessRule>>(
-        self,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self::OutputBuilder {
-        self.add_auth(Mint, method_auth, mutability.into())
-    }
+    fn mint_roles(self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self;
 
     /// Sets the resource to be burnable.
     ///
@@ -227,25 +200,26 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use radix_engine_interface::burn_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be burnable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .burnable(rule!(require(resource_address)), LOCKED);
+    ///    .burn_roles(burn_roles! {
+    ///        burner => rule!(require(resource_address)), locked;
+    ///        burner_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be freely burnable, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .burnable(rule!(allow_all), MUTABLE(rule!(require(resource_address))));
+    ///    .burn_roles(burn_roles! {
+    ///        burner => rule!(allow_all), updatable;
+    ///        burner_updater => rule!(require(resource_address)), updatable;
+    ///    });
     /// ```
-    fn burnable<R: Into<AccessRule>>(
-        self,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self::OutputBuilder {
-        self.add_auth(Burn, method_auth, mutability.into())
-    }
+    fn burn_roles(self, burn_roles: Option<BurnRoles<RoleDefinition>>) -> Self;
 
     /// Sets the resource to be recallable from vaults.
     ///
@@ -260,22 +234,22 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be recallable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .recallable(rule!(require(resource_address)), LOCKED);
+    ///    .recall_roles(recall_roles! {
+    ///        recaller => rule!(require(resource_address)), locked;
+    ///        recaller_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be recallable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .recallable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .recall_roles(recall_roles! {
+    ///        recaller => rule!(deny_all), updatable;
+    ///        recaller_updater => rule!(require(resource_address)), updatable;
+    ///    });
     /// ```
-    fn recallable<R: Into<AccessRule>>(
-        self,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self::OutputBuilder {
-        self.add_auth(Recall, method_auth, mutability.into())
-    }
+    fn recall_roles(self, recall_roles: Option<RecallRoles<RoleDefinition>>) -> Self;
 
-    /// Sets the resource to have freezeable.
+    /// Sets the resource to have vaults be freezable.
     ///
     /// * The first parameter is the access rule which allows freezing of the vault.
     /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
@@ -283,27 +257,28 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use radix_engine_interface::freeze_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be freezeable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .freezeable(rule!(require(resource_address)), LOCKED);
+    ///    .freeze_roles(freeze_roles! {
+    ///        freezer => rule!(require(resource_address)), locked;
+    ///        freezer_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be freezeable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .freezeable(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .freeze_roles(freeze_roles! {
+    ///        freezer => rule!(deny_all), updatable;
+    ///        freezer_updater => rule!(require(resource_address)), updatable;
+    ///    });
     /// ```
-    fn freezeable<R: Into<AccessRule>>(
-        self,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self::OutputBuilder {
-        self.add_auth(Freeze, method_auth, mutability.into())
-    }
+    fn freeze_roles(self, freeze_roles: Option<FreezeRoles<RoleDefinition>>) -> Self;
 
-    /// Sets the resource to not be freely withdrawable from a vault.
+    /// Sets the role rules of withdrawing from a vault of this resource.
     ///
     /// * The first parameter is the access rule which allows withdrawing from a vault.
     /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
@@ -311,27 +286,28 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// ### Examples
     ///
     /// ```no_run
+    /// use radix_engine_interface::withdraw_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be withdrawable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_withdraw(rule!(require(resource_address)), LOCKED);
+    ///    .withdraw_roles(withdraw_roles! {
+    ///        withdrawer => rule!(require(resource_address)), locked;
+    ///        withdrawer_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be withdrawable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_withdraw(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .withdraw_roles(withdraw_roles! {
+    ///        withdrawer => rule!(deny_all), updatable;
+    ///        withdrawer_updater => rule!(require(resource_address)), updatable;
+    ///    });
     /// ```
-    fn restrict_withdraw<R: Into<AccessRule>>(
-        self,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self::OutputBuilder {
-        self.add_auth(Withdraw, method_auth, mutability.into())
-    }
+    fn withdraw_roles(self, withdraw_roles: Option<WithdrawRoles<RoleDefinition>>) -> Self;
 
-    /// Sets the resource to not be freely depositable into a vault.
+    /// Sets the roles rules of depositing this resource into a vault.
     ///
     /// * The first parameter is the access rule which allows depositing into a vault.
     /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
@@ -344,24 +320,91 @@ pub trait UpdateAuthBuilder: private::CanAddAuth {
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to be depositable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_deposit(rule!(require(resource_address)), LOCKED);
+    ///    .deposit_roles(deposit_roles! {
+    ///        depositor => rule!(require(resource_address)), locked;
+    ///        depositor_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Sets the resource to not be depositable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
-    ///    .restrict_deposit(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .deposit_roles(deposit_roles! {
+    ///        depositor => rule!(deny_all), locked;
+    ///        depositor_updater => rule!(require(resource_address)), locked;
+    ///    });
     /// ```
-    fn restrict_deposit<R: Into<AccessRule>>(
-        self,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self::OutputBuilder {
-        self.add_auth(Deposit, method_auth, mutability.into())
+    fn deposit_roles(self, deposit_roles: Option<DepositRoles<RoleDefinition>>) -> Self;
+}
+
+impl UpdateAuthBuilder for InProgressResourceBuilder<FungibleResourceType> {
+    fn mint_roles(mut self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.mint_roles = mint_roles;
+        self
+    }
+
+    fn burn_roles(mut self, burn_roles: Option<BurnRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.burn_roles = burn_roles;
+        self
+    }
+
+    fn recall_roles(mut self, recall_roles: Option<RecallRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.recall_roles = recall_roles;
+        self
+    }
+
+    fn freeze_roles(mut self, freeze_roles: Option<FreezeRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.freeze_roles = freeze_roles;
+        self
+    }
+
+    fn withdraw_roles(mut self, withdraw_roles: Option<WithdrawRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.withdraw_roles = withdraw_roles;
+        self
+    }
+
+    fn deposit_roles(mut self, deposit_roles: Option<DepositRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.deposit_roles = deposit_roles;
+        self
     }
 }
-impl<B: private::CanAddAuth> UpdateAuthBuilder for B {}
 
-pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAuth {
+impl<T: IsNonFungibleLocalId, D: NonFungibleData> UpdateAuthBuilder
+    for InProgressResourceBuilder<NonFungibleResourceType<T, D>>
+{
+    fn mint_roles(mut self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.mint_roles = mint_roles;
+        self
+    }
+
+    fn burn_roles(mut self, burn_roles: Option<BurnRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.burn_roles = burn_roles;
+        self
+    }
+
+    fn recall_roles(mut self, recall_roles: Option<RecallRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.recall_roles = recall_roles;
+        self
+    }
+
+    fn freeze_roles(mut self, freeze_roles: Option<FreezeRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.freeze_roles = freeze_roles;
+        self
+    }
+
+    fn withdraw_roles(mut self, withdraw_roles: Option<WithdrawRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.withdraw_roles = withdraw_roles;
+        self
+    }
+
+    fn deposit_roles(mut self, deposit_roles: Option<DepositRoles<RoleDefinition>>) -> Self {
+        self.resource_roles.deposit_roles = deposit_roles;
+        self
+    }
+}
+
+impl<T: IsNonFungibleLocalId, D: NonFungibleData>
+    InProgressResourceBuilder<NonFungibleResourceType<T, D>>
+{
     /// Sets how each non-fungible's mutable data can be updated.
     ///
     /// * The first parameter is the access rule which allows updating the mutable data of each non-fungible.
@@ -370,6 +413,7 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// ### Examples
     ///
     /// ```no_run
+    /// use radix_engine_interface::non_fungible_data_update_roles;
     /// use scrypto::prelude::*;
     ///
     /// # let resource_address = RADIX_TOKEN;
@@ -382,22 +426,27 @@ pub trait UpdateNonFungibleAuthBuilder: IsNonFungibleBuilder + private::CanAddAu
     /// }
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
-    ///    .updatable_non_fungible_data(rule!(require(resource_address)), LOCKED);
+    ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
+    ///        non_fungible_data_updater => rule!(require(resource_address)), locked;
+    ///        non_fungible_data_updater_updater => rule!(deny_all), locked;
+    ///    });
     ///
     /// # let resource_address = RADIX_TOKEN;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
-    ///    .updatable_non_fungible_data(rule!(deny_all), MUTABLE(rule!(require(resource_address))));
+    ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
+    ///        non_fungible_data_updater => rule!(deny_all), updatable;
+    ///        non_fungible_data_updater_updater => rule!(require(resource_address)), updatable;
+    ///    });
     /// ```
-    fn updatable_non_fungible_data<R: Into<AccessRule>>(
-        self,
-        method_auth: AccessRule,
-        mutability: R,
-    ) -> Self::OutputBuilder {
-        self.add_auth(UpdateNonFungibleData, method_auth, mutability.into())
+    pub fn non_fungible_data_update_roles(
+        mut self,
+        non_fungible_data_update_roles: Option<NonFungibleDataUpdateRoles<RoleDefinition>>,
+    ) -> Self {
+        self.resource_roles.non_fungible_data_update_roles = non_fungible_data_update_roles;
+        self
     }
 }
-impl<B: IsNonFungibleBuilder + private::CanAddAuth> UpdateNonFungibleAuthBuilder for B {}
 
 pub trait SetOwnerBuilder: private::CanAddOwner {
     /// Sets the owner badge to be the given non-fungible.
@@ -419,9 +468,9 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
             private::CreateWithNoSupply::Fungible {
                 owner_role,
                 divisibility,
+                resource_roles,
                 metadata,
                 address_reservation,
-                access_rules,
             } => {
                 let metadata = metadata.unwrap_or_else(|| Default::default());
 
@@ -435,7 +484,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             divisibility,
                             track_total_supply: true,
                             metadata,
-                            access_rules,
+                            resource_roles,
                             address_reservation,
                         })
                         .unwrap(),
@@ -447,7 +496,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                 owner_role,
                 id_type,
                 non_fungible_schema,
-                access_rules,
+                resource_roles,
                 metadata,
                 address_reservation,
             } => {
@@ -463,7 +512,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
                             id_type,
                             track_total_supply: true,
                             non_fungible_schema,
-                            access_rules,
+                            resource_roles,
                             metadata,
                             address_reservation,
                         })
@@ -477,7 +526,7 @@ pub trait CreateWithNoSupplyBuilder: private::CanCreateWithNoSupply {
 }
 impl<B: private::CanCreateWithNoSupply> CreateWithNoSupplyBuilder for B {}
 
-impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
+impl InProgressResourceBuilder<FungibleResourceType> {
     /// Set the resource's divisibility: the number of digits of precision after the decimal point in its balances.
     ///
     /// * `0` means the resource is not divisible (balances are always whole numbers)
@@ -503,7 +552,7 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     }
 }
 
-impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
+impl InProgressResourceBuilder<FungibleResourceType> {
     /// Creates resource with the given initial supply.
     ///
     /// # Example
@@ -528,8 +577,8 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
                     owner_role: self.owner_role,
                     track_total_supply: true,
                     divisibility: self.resource_type.divisibility,
+                    resource_roles: self.resource_roles,
                     metadata,
-                    access_rules: self.auth.into_access_rules(),
                     initial_supply: amount.into(),
                     address_reservation: self.address_reservation,
                 })
@@ -544,8 +593,8 @@ impl<A: ConfiguredAuth> InProgressResourceBuilder<FungibleResourceType, A> {
     }
 }
 
-impl<A: ConfiguredAuth, D: NonFungibleData>
-    InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>, A>
+impl<D: NonFungibleData>
+    InProgressResourceBuilder<NonFungibleResourceType<StringNonFungibleLocalId, D>>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
     ///
@@ -588,8 +637,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: StringNonFungibleLocalId::id_type(),
                     non_fungible_schema,
+                    resource_roles: self.resource_roles,
                     metadata,
-                    access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
                 })
@@ -604,8 +653,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     }
 }
 
-impl<A: ConfiguredAuth, D: NonFungibleData>
-    InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>, A>
+impl<D: NonFungibleData>
+    InProgressResourceBuilder<NonFungibleResourceType<IntegerNonFungibleLocalId, D>>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
     ///
@@ -648,8 +697,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     track_total_supply: true,
                     id_type: IntegerNonFungibleLocalId::id_type(),
                     non_fungible_schema,
+                    resource_roles: self.resource_roles,
                     metadata,
-                    access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
                 })
@@ -664,8 +713,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     }
 }
 
-impl<A: ConfiguredAuth, D: NonFungibleData>
-    InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>, A>
+impl<D: NonFungibleData>
+    InProgressResourceBuilder<NonFungibleResourceType<BytesNonFungibleLocalId, D>>
 {
     /// Creates the non-fungible resource, and mints an individual non-fungible for each key/data pair provided.
     ///
@@ -708,8 +757,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                     id_type: BytesNonFungibleLocalId::id_type(),
                     track_total_supply: true,
                     non_fungible_schema,
+                    resource_roles: self.resource_roles,
                     metadata,
-                    access_rules: self.auth.into_access_rules(),
                     entries: map_entries(entries),
                     address_reservation: self.address_reservation,
                 })
@@ -724,8 +773,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
     }
 }
 
-impl<A: ConfiguredAuth, D: NonFungibleData>
-    InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>, A>
+impl<D: NonFungibleData>
+    InProgressResourceBuilder<NonFungibleResourceType<RUIDNonFungibleLocalId, D>>
 {
     /// Creates the RUID non-fungible resource, and mints an individual non-fungible for each piece of data provided.
     ///
@@ -761,8 +810,6 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
             .take()
             .unwrap_or_else(|| Default::default());
 
-        let access_rules = self.auth.into_access_rules();
-
         ScryptoEnv
             .call_function(
                 RESOURCE_PACKAGE,
@@ -773,8 +820,8 @@ impl<A: ConfiguredAuth, D: NonFungibleData>
                         owner_role: self.owner_role,
                         non_fungible_schema,
                         track_total_supply: true,
+                        resource_roles: self.resource_roles,
                         metadata,
-                        access_rules,
                         entries: entries
                             .into_iter()
                             .map(|data| {
@@ -814,9 +861,7 @@ fn map_entries<T: IntoIterator<Item = (Y, V)>, V: NonFungibleData, Y: IsNonFungi
         .collect()
 }
 
-impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetMetadata
-    for InProgressResourceBuilder<T, A>
-{
+impl<T: AnyResourceType> private::CanSetMetadata for InProgressResourceBuilder<T> {
     type OutputBuilder = Self;
 
     fn set_metadata(mut self, metadata: ModuleConfig<MetadataInit>) -> Self::OutputBuilder {
@@ -825,9 +870,7 @@ impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetMetadata
     }
 }
 
-impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetAddressReservation
-    for InProgressResourceBuilder<T, A>
-{
+impl<T: AnyResourceType> private::CanSetAddressReservation for InProgressResourceBuilder<T> {
     type OutputBuilder = Self;
 
     fn set_address(mut self, address_reservation: GlobalAddressReservation) -> Self::OutputBuilder {
@@ -836,55 +879,20 @@ impl<T: AnyResourceType, A: ConfiguredAuth> private::CanSetAddressReservation
     }
 }
 
-impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, NoAuth> {
-    type OutputBuilder = InProgressResourceBuilder<T, AccessRuleAuth>;
-
-    fn add_auth(
-        self,
-        method: ResourceAction,
-        method_auth: AccessRule,
-        mutability: AccessRule,
-    ) -> Self::OutputBuilder {
-        Self::OutputBuilder {
-            owner_role: self.owner_role,
-            resource_type: self.resource_type,
-            auth: AccessRuleAuth(btreemap! { method => (method_auth, mutability) }),
-            metadata_config: self.metadata_config,
-            address_reservation: self.address_reservation,
-        }
-    }
-}
-
-impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, AccessRuleAuth> {
-    type OutputBuilder = Self;
-
-    fn add_auth(
-        mut self,
-        method: ResourceAction,
-        method_auth: AccessRule,
-        mutability: AccessRule,
-    ) -> Self::OutputBuilder {
-        self.auth.0.insert(method, (method_auth, mutability));
-        self
-    }
-}
-
-impl<A: ConfiguredAuth> private::CanCreateWithNoSupply
-    for InProgressResourceBuilder<FungibleResourceType, A>
-{
+impl private::CanCreateWithNoSupply for InProgressResourceBuilder<FungibleResourceType> {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
         private::CreateWithNoSupply::Fungible {
             owner_role: self.owner_role,
             divisibility: self.resource_type.divisibility,
-            access_rules: self.auth.into_access_rules(),
+            resource_roles: self.resource_roles,
             metadata: self.metadata_config,
             address_reservation: self.address_reservation,
         }
     }
 }
 
-impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
-    for InProgressResourceBuilder<NonFungibleResourceType<Y, D>, A>
+impl<Y: IsNonFungibleLocalId, D: NonFungibleData> private::CanCreateWithNoSupply
+    for InProgressResourceBuilder<NonFungibleResourceType<Y, D>>
 {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
         let mut non_fungible_schema = NonFungibleDataSchema::new_schema::<D>();
@@ -894,7 +902,7 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
             owner_role: self.owner_role,
             id_type: Y::id_type(),
             non_fungible_schema,
-            access_rules: self.auth.into_access_rules(),
+            resource_roles: self.resource_roles,
             metadata: self.metadata_config,
             address_reservation: self.address_reservation,
         }
@@ -915,9 +923,7 @@ impl<A: ConfiguredAuth, Y: IsNonFungibleLocalId, D: NonFungibleData> private::Ca
 /// See https://stackoverflow.com/a/53207767 for more information on this.
 mod private {
     use super::*;
-    use radix_engine_interface::blueprints::resource::{
-        AccessRule, NonFungibleGlobalId, ResourceAction,
-    };
+    use radix_engine_interface::blueprints::resource::{NonFungibleGlobalId, ResourceFeature};
 
     pub trait CanSetMetadata: Sized {
         type OutputBuilder;
@@ -934,11 +940,12 @@ mod private {
     pub trait CanAddAuth: Sized {
         type OutputBuilder;
 
-        fn add_auth(
+        fn add_roles(self, role_init: RolesInit) -> Self::OutputBuilder;
+
+        fn add_action_and_roles(
             self,
-            method: ResourceAction,
-            auth: AccessRule,
-            mutability: AccessRule,
+            method: ResourceFeature,
+            role_init: RolesInit,
         ) -> Self::OutputBuilder;
     }
 
@@ -956,7 +963,7 @@ mod private {
         Fungible {
             owner_role: OwnerRole,
             divisibility: u8,
-            access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+            resource_roles: FungibleResourceRoles,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,
         },
@@ -964,7 +971,7 @@ mod private {
             owner_role: OwnerRole,
             id_type: NonFungibleIdType,
             non_fungible_schema: NonFungibleDataSchema,
-            access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+            resource_roles: NonFungibleResourceRoles,
             metadata: Option<ModuleConfig<MetadataInit>>,
             address_reservation: Option<GlobalAddressReservation>,
         },
