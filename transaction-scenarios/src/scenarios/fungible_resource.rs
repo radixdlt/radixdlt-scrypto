@@ -77,7 +77,7 @@ impl ScenarioInstance for FungibleResourceScenario {
             1 => {
                 core.check_start(&previous)?;
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-create",
+                    "fungible-max-div-create",
                     |builder| {
                         builder
                             .create_fungible_resource(
@@ -108,7 +108,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 *vault1 = Some(commit_success.new_vault_addresses()[0]);
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-mint",
+                    "fungible-max-div-mint",
                     |builder| {
                         builder
                             .mint_fungible(max_divisibility_fungible_resource.unwrap(), dec!("100"))
@@ -121,7 +121,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-burn",
+                    "fungible-max-div-burn",
                     |builder| {
                         builder
                             .withdraw_from_account(
@@ -141,7 +141,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-transfer-32-times",
+                    "fungible-max-div-transfer-32-times",
                     |builder| {
                         let mut builder = builder.withdraw_from_account(
                             user_account_1.address,
@@ -170,7 +170,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-freeze-withdraw",
+                    "fungible-max-div-freeze-withdraw",
                     |builder| builder.freeze_withdraw(vault1.unwrap()),
                     vec![&user_account_1.key],
                 )
@@ -179,7 +179,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-freeze-deposit",
+                    "fungible-max-div-freeze-deposit",
                     |builder| builder.freeze_deposit(vault1.unwrap()),
                     vec![&user_account_1.key],
                 )
@@ -188,7 +188,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-freeze-deposit",
+                    "fungible-max-div-freeze-deposit",
                     |builder| builder.freeze_burn(vault1.unwrap()),
                     vec![&user_account_1.key],
                 )
@@ -197,7 +197,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-recall-freezed-vault",
+                    "fungible-max-div-recall-freezed-vault",
                     |builder| {
                         builder
                             .recall(vault1.unwrap(), dec!("2"))
@@ -211,7 +211,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 // core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-unfreeze-withdraw",
+                    "fungible-max-div-unfreeze-withdraw",
                     |builder| builder.unfreeze_withdraw(vault1.unwrap()),
                     vec![&user_account_1.key],
                 )
@@ -220,7 +220,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-unfreeze-deposit",
+                    "fungible-max-div-unfreeze-deposit",
                     |builder| builder.unfreeze_deposit(vault1.unwrap()),
                     vec![&user_account_1.key],
                 )
@@ -229,7 +229,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-unfreeze-deposit",
+                    "fungible-max-div-unfreeze-deposit",
                     |builder| builder.unfreeze_burn(vault1.unwrap()),
                     vec![&user_account_1.key],
                 )
@@ -238,7 +238,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-max-div-recall-unfreezed-vault",
+                    "fungible-max-div-recall-unfreezed-vault",
                     |builder| {
                         builder
                             .recall(vault1.unwrap(), dec!("2"))
@@ -253,7 +253,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-min-div-create",
+                    "fungible-min-div-create",
                     |builder| {
                         builder
                             .create_fungible_resource(
@@ -284,7 +284,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 *vault2 = Some(commit_success.new_vault_addresses()[0]);
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-min-div-mint-correct-granularity",
+                    "fungible-min-div-mint-correct-granularity",
                     |builder| {
                         builder
                             .mint_fungible(min_divisibility_fungible_resource.unwrap(), dec!("166"))
@@ -297,7 +297,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-min-div-mint-wrong-granularity",
+                    "fungible-min-div-mint-wrong-granularity",
                     |builder| {
                         builder
                             .mint_fungible(min_divisibility_fungible_resource.unwrap(), dec!("1.1"))
@@ -310,7 +310,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_failure(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-min-div-transfer-correct-granularity",
+                    "fungible-min-div-transfer-correct-granularity",
                     |builder| {
                         builder
                             .withdraw_from_account(
@@ -327,7 +327,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-min-div-transfer-wrong-granularity",
+                    "fungible-min-div-transfer-wrong-granularity",
                     |builder| {
                         builder
                             .withdraw_from_account(
@@ -344,7 +344,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_failure(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-min-div-create-proof-correct-granularity",
+                    "fungible-min-div-create-proof-correct-granularity",
                     |builder| {
                         builder.create_proof_from_account_of_amount(
                             user_account_1.address,
@@ -359,7 +359,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-min-div-create-proof-wrong-granularity",
+                    "fungible-min-div-create-proof-wrong-granularity",
                     |builder| {
                         builder.create_proof_from_account_of_amount(
                             user_account_1.address,
@@ -374,7 +374,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_failure(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-min-div-recall-correct-granularity",
+                    "fungible-min-div-recall-correct-granularity",
                     |builder| {
                         builder
                             .recall(vault2.unwrap(), dec!("2"))
@@ -387,7 +387,7 @@ impl ScenarioInstance for FungibleResourceScenario {
                 core.check_commit_success(core.check_previous(&previous)?)?;
 
                 core.next_transaction_with_faucet_lock_fee(
-                    "nfr-min-div-recall-wrong-granularity",
+                    "fungible-min-div-recall-wrong-granularity",
                     |builder| {
                         builder
                             .recall(vault2.unwrap(), dec!("123.12321"))
