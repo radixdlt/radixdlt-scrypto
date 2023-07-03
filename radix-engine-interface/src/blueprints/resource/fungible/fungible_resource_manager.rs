@@ -57,40 +57,20 @@ impl FungibleResourceFeatures {
         let mut features = Vec::new();
         let mut roles = RolesInit::new();
 
-        if let Some(mintable) = &self.mintable {
-            if mintable
-                .minter
-                .ne(&RoleDefinition::locked(AccessRule::DenyAll))
-            {
-                features.push(MINT_FEATURE);
-            }
+        if self.mintable.is_some() {
+            features.push(MINT_FEATURE);
         }
 
-        if let Some(burnable) = &self.burnable {
-            if burnable
-                .burner
-                .ne(&RoleDefinition::locked(AccessRule::DenyAll))
-            {
-                features.push(BURN_FEATURE);
-            }
+        if self.burnable.is_some() {
+            features.push(BURN_FEATURE);
         }
 
-        if let Some(freezable) = &self.freezable {
-            if freezable
-                .freezer
-                .ne(&RoleDefinition::locked(AccessRule::DenyAll))
-            {
-                features.push(VAULT_FREEZE_FEATURE);
-            }
+        if self.freezable.is_some() {
+            features.push(VAULT_FREEZE_FEATURE);
         }
 
-        if let Some(recallable) = &self.recallable {
-            if recallable
-                .recaller
-                .ne(&RoleDefinition::locked(AccessRule::DenyAll))
-            {
-                features.push(VAULT_RECALL_FEATURE);
-            }
+        if self.recallable.is_some() {
+            features.push(VAULT_RECALL_FEATURE);
         }
 
         roles

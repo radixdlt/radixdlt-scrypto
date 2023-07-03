@@ -89,7 +89,6 @@ fn test_bootstrap_receipt_should_match_constants() {
     assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next());
 }
 
-
 fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
@@ -177,14 +176,11 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
 
     println!("{:?}", resource_creation_receipt);
 
-    let created_owner_badge = resource_creation_receipt
-        .expect_commit_success()
-        .new_resource_addresses()[1];
-    let created_resource = resource_creation_receipt
-        .expect_commit_success()
-        .new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
-
     if owned_resource {
+        let created_owner_badge = resource_creation_receipt
+            .expect_commit_success()
+            .new_resource_addresses()[1];
+
         assert_eq!(
             resource_creation_receipt
                 .expect_commit_success()
@@ -198,6 +194,9 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         );
     }
 
+    let created_resource = resource_creation_receipt
+        .expect_commit_success()
+        .new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
     assert_eq!(
         allocation_receipt
             .expect_commit_success()
@@ -220,7 +219,6 @@ fn test_genesis_resource_with_initial_owned_allocation() {
 fn test_genesis_resource_with_initial_unowned_allocation() {
     test_genesis_resource_with_initial_allocation(false);
 }
-
 
 #[test]
 fn test_genesis_stake_allocation() {

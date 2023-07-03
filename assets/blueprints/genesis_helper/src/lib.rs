@@ -276,7 +276,10 @@ mod genesis_helper {
                     .create_with_no_initial_supply();
             } else {
                 builder
-                    .mintable(rule!(deny_all), rule!(deny_all))
+                    .mintable(mintable! {
+                        minter => rule!(deny_all), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    })
                     .create_with_no_initial_supply();
             }
         }
