@@ -28,23 +28,27 @@ mod non_fungible_test {
                 .mint_initial_supply(1);
 
             // Create non-fungible resource with mutable supply
-            let resource_manager =
-                ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
-                    .metadata(metadata! {
-                        init {
-                            "name" => "Katz's Sandwiches".to_owned(), locked;
-                        }
-                    })
-                    .mintable(
-                        rule!(require(mint_badge.resource_address())),
-                        rule!(deny_all),
-                    )
-                    .burnable(rule!(allow_all), rule!(deny_all))
-                    .updatable_non_fungible_data(
-                        rule!(require(mint_badge.resource_address())),
-                        rule!(deny_all),
-                    )
-                    .create_with_no_initial_supply();
+            let resource_manager = ResourceBuilder::new_integer_non_fungible::<Sandwich>(
+                OwnerRole::Fixed(rule!(require(mint_badge.resource_address()))),
+            )
+            .metadata(metadata! {
+                init {
+                    "name" => "Katz's Sandwiches".to_owned(), locked;
+                }
+            })
+            .mint_roles(mint_roles! {
+                minter => OWNER, locked;
+                minter_updater => rule!(deny_all), locked;
+            })
+            .burn_roles(burn_roles! {
+                burner => rule!(allow_all), locked;
+                burner_updater => rule!(deny_all), locked;
+            })
+            .non_fungible_data_update_roles(non_fungible_data_update_roles! {
+                non_fungible_data_updater => OWNER, locked;
+                non_fungible_data_updater_updater => rule!(deny_all), locked;
+            })
+            .create_with_no_initial_supply();
 
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
@@ -84,7 +88,10 @@ mod non_fungible_test {
                         "name" => "Katz's Sandwiches".to_owned(), locked;
                     }
                 })
-                .burnable(rule!(allow_all), rule!(deny_all))
+                .burn_roles(burn_roles! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(deny_all), locked;
+                })
                 .mint_initial_supply([
                     Sandwich {
                         name: "Zero".to_owned(),
@@ -450,8 +457,8 @@ mod non_fungible_test {
                         owner_role: OwnerRole::None,
                         id_type: NonFungibleIdType::RUID,
                         track_total_supply: false,
+                        resource_roles: NonFungibleResourceRoles::default(),
                         metadata: metadata! {},
-                        access_rules: BTreeMap::new(),
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                         entries,
                         address_reservation: None,
@@ -532,7 +539,10 @@ mod non_fungible_test {
 
         pub fn create_mintable_ruid_non_fungible() -> ResourceManager {
             ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
-                .mintable(rule!(allow_all), rule!(deny_all))
+                .mint_roles(mint_roles! {
+                    minter => rule!(allow_all), locked;
+                    minter_updater => rule!(deny_all), locked;
+                })
                 .create_with_no_initial_supply()
         }
 
@@ -540,7 +550,10 @@ mod non_fungible_test {
             // creating non-fungible id with id type set to default (RUID)
             let resource_manager =
                 ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
-                    .mintable(rule!(allow_all), rule!(deny_all))
+                    .mint_roles(mint_roles! {
+                        minter => rule!(allow_all), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    })
                     .metadata(metadata! {
                         init {
                             "name" => "Katz's Sandwiches".to_owned(), locked;

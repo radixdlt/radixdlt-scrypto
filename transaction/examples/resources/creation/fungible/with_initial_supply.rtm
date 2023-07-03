@@ -20,35 +20,31 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     false # Track Total Supply
     18u8
     Decimal("${initial_supply}")
-    Map<Enum, Tuple>(
-        # This array of tuples defines the behavior of the resource. Each element in the array 
-        # defines different resource behaviors. As an example, the first element in this array
-        # defines the withdraw behavior while the second element in the array defines the deposit
-        # behavior.
-        # 
-        # Each tuple of the array is made up of two elements: 
-        # 1. An enum of the `ResourceAction` or the method that we would like to define the
-        #    behavior of. 
-        # 2. A tuple of two elements: 
-        #       a. The current behaviour. 
-        #       b. The mutability of the behaviour. As in, who can change the current behavior in 
-        #          the future.
-        # 
-        # Lets take `Tuple(Enum<ResourceAction::Withdraw>(), Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()))` as an
-        # example. This means that anybody who is in possession of the resource may withdraw it from
-        # a vault that they control. This behavior is permanent and can not be changed by anybody
-        # as the mutability is a `Enum<AccessRule::DenyAll>()`.
-        # 
-        #        ┌ We Are customizing the "Withdraw" behavior of the resource
-        #        │                       
-        #        │                       ┌ The resource may be withdrawn by anybody who has it
-        #        │                       │                 
-        #        │                       │                 ┌ The withdraw behavior (the resource is withdrawable by
-        #        │                       │                 │ by anybody who has the resource) is permanent and can't 
-        #        │                       │                 │ be changed in the future.
-        #        │                       │                 │
-        Enum<ResourceAction::Withdraw>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>()),
-        Enum<ResourceAction::Deposit>() => Tuple(Enum<AccessRule::AllowAll>(), Enum<AccessRule::DenyAll>())
+    # This tuple of enums defines the modifiable behaviors of the resource. Each element in
+    # the tuple defines a different resource behavior. As an example, the first element in this tuple
+    # defines that the resource is mintable.
+    Tuple(
+        Enum<1u8>(                          # Mintable
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<0u8>(),                        # Burnable
+        Enum<0u8>(),                        # Freezable
+        Enum<0u8>(),                        # Recallable
+        Enum<0u8>(),                        # Restrict Withdraw
+        Enum<0u8>()                         # Restrict Deposit
     )
     Tuple(
         Map<String, Tuple>(

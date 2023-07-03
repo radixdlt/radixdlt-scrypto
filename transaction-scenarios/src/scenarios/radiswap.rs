@@ -1,4 +1,6 @@
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::*;
@@ -67,6 +69,13 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 OwnerRole::None,
                                 false,
                                 18,
+                                FungibleResourceRoles {
+                                    burn_roles: burn_roles! {
+                                    burner => rule!(allow_all), locked;
+                                    burner_updater => rule!(deny_all), locked;
+                                },
+                                    ..Default::default()
+                                },
                                 metadata! {
                                     init {
                                         "name" => "Bitcoin".to_owned(), locked;
@@ -77,16 +86,19 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                         "info_url" => "https://www.example.com/".to_owned(), locked;
                                     }
                                 },
-                                btreemap! {
-                                    Mint => (rule!(deny_all), rule!(deny_all)),
-                                    Burn => (rule!(allow_all), rule!(deny_all))
-                                },
                                 Some(100_000_000_000u64.into()),
                             )
                             .create_fungible_resource(
                                 OwnerRole::None,
                                 true,
                                 18,
+                                FungibleResourceRoles {
+                                    burn_roles: burn_roles! {
+                                    burner => rule!(allow_all), locked;
+                                    burner_updater => rule!(deny_all), locked;
+                                },
+                                    ..Default::default()
+                                },
                                 metadata! {
                                     init {
                                         "name" => "Ethereum".to_owned(), locked;
@@ -97,16 +109,19 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                         "info_url" => "https://www.example.com/".to_owned(), locked;
                                     }
                                 },
-                                btreemap! {
-                                    Mint => (rule!(deny_all), rule!(deny_all)),
-                                    Burn => (rule!(allow_all), rule!(deny_all))
-                                },
                                 Some(100_000_000_000u64.into()),
                             )
                             .create_fungible_resource(
                                 OwnerRole::None,
                                 true,
                                 18,
+                                FungibleResourceRoles {
+                                    burn_roles: burn_roles! {
+                                    burner => rule!(allow_all), locked;
+                                    burner_updater => rule!(deny_all), locked;
+                                },
+                                    ..Default::default()
+                                },
                                 metadata! {
                                     init {
                                         "name" => "Ethereum".to_owned(), locked;
@@ -116,10 +131,6 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                         "icon_url" => "https://www.example.com/".to_owned(), locked;
                                         "info_url" => "https://www.example.com/".to_owned(), locked;
                                     }
-                                },
-                                btreemap! {
-                                    Mint => (rule!(deny_all), rule!(deny_all)),
-                                    Burn => (rule!(allow_all), rule!(deny_all))
                                 },
                                 Some(100_000_000_000u64.into()),
                             )

@@ -27,8 +27,14 @@ mod proofs {
                     && require(superadmin_badge.resource_address())
             );
             let token = ResourceBuilder::new_fungible(OwnerRole::None)
-                .mintable(organizational_access_rule.clone(), LOCKED)
-                .restrict_withdraw(organizational_access_rule.clone(), LOCKED)
+                .mint_roles(mint_roles! {
+                    minter => organizational_access_rule.clone(), locked;
+                    minter_updater => rule!(deny_all), locked;
+                })
+                .withdraw_roles(withdraw_roles! {
+                    withdrawer => organizational_access_rule.clone(), locked;
+                    withdrawer_updater => rule!(deny_all), locked;
+                })
                 .mint_initial_supply(100);
 
             let component = Self {}
