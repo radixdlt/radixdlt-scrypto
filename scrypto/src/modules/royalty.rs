@@ -3,7 +3,15 @@ use crate::modules::ModuleHandle;
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::types::RoyaltyAmount;
-use radix_engine_interface::api::node_modules::royalty::{ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentRoyaltyCreateInput, ComponentSetRoyaltyInput, COMPONENT_ROYALTY_SETTER_ROLE, COMPONENT_ROYALTY_SETTER_UPDATER_ROLE, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT, COMPONENT_ROYALTY_LOCKER_UPDATER_ROLE, COMPONENT_ROYALTY_LOCKER_ROLE, COMPONENT_ROYALTY_CLAIMER_ROLE, COMPONENT_ROYALTY_CLAIMER_UPDATER_ROLE};
+use radix_engine_interface::api::node_modules::royalty::{
+    ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentRoyaltyCreateInput,
+    ComponentSetRoyaltyInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIMER_ROLE,
+    COMPONENT_ROYALTY_CLAIMER_UPDATER_ROLE, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
+    COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_LOCKER_ROLE,
+    COMPONENT_ROYALTY_LOCKER_UPDATER_ROLE, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
+    COMPONENT_ROYALTY_SETTER_ROLE, COMPONENT_ROYALTY_SETTER_UPDATER_ROLE,
+    COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
+};
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::Bucket;
@@ -101,18 +109,12 @@ impl<T> RoyaltyRoles<T> {
                 COMPONENT_ROYALTY_SETTER_UPDATER_ROLE,
                 self.royalty_setter_updater,
             ),
-            (
-                COMPONENT_ROYALTY_LOCKER_ROLE,
-                self.royalty_locker,
-            ),
+            (COMPONENT_ROYALTY_LOCKER_ROLE, self.royalty_locker),
             (
                 COMPONENT_ROYALTY_LOCKER_UPDATER_ROLE,
                 self.royalty_locker_updater,
             ),
-            (
-                COMPONENT_ROYALTY_CLAIMER_ROLE,
-                self.royalty_claimer,
-            ),
+            (COMPONENT_ROYALTY_CLAIMER_ROLE, self.royalty_claimer),
             (
                 COMPONENT_ROYALTY_CLAIMER_UPDATER_ROLE,
                 self.royalty_claimer_updater,
