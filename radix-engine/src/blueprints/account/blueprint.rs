@@ -639,15 +639,11 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+        let mut kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             ACCOUNT_VAULT_INDEX,
             &encoded_key,
-            if create {
-                LockFlags::MUTABLE
-            } else {
-                LockFlags::read_only()
-            },
+            LockFlags::read_only(),
         )?;
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it if
@@ -660,9 +656,16 @@ impl AccountBlueprint {
                 Option::Some(own) => Ok(Vault(own)),
                 Option::None => {
                     if create {
+                        api.key_value_entry_release(kv_store_entry_lock_handle)?;
+                        kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+                            OBJECT_HANDLE_SELF,
+                            ACCOUNT_VAULT_INDEX,
+                            &encoded_key,
+                            LockFlags::MUTABLE,
+                        )?;
                         let vault = Vault::create(resource_address, api)?;
-
                         api.key_value_entry_set_typed(kv_store_entry_lock_handle, &vault.0)?;
+                        api.key_value_entry_lock(kv_store_entry_lock_handle)?;
                         Ok(vault)
                     } else {
                         Err(AccountError::VaultDoesNotExist { resource_address })

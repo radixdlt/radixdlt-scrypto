@@ -725,7 +725,7 @@ impl NonFungibleResourceManagerBlueprint {
                 api.key_value_entry_remove(handle)?;
                 // Tombstone the non fungible
                 // TODO: RUID non fungibles with no data don't need to go through this process
-                api.key_value_entry_freeze(handle)?;
+                api.key_value_entry_lock(handle)?;
                 api.key_value_entry_release(handle)?;
             }
         }

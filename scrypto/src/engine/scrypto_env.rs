@@ -229,7 +229,7 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn key_value_entry_freeze(
+    fn key_value_entry_lock(
         &mut self,
         _handle: KeyValueEntryHandle,
     ) -> Result<(), ClientApiError> {

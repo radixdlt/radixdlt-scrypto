@@ -1597,7 +1597,7 @@ where
 
     // Costing through kernel
     // FIXME: Should this release lock or continue allow to mutate entry until lock released?
-    fn key_value_entry_freeze(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
+    fn key_value_entry_lock(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
             SystemLockData::KeyValueEntry(
