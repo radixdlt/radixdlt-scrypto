@@ -259,32 +259,21 @@ mod genesis_helper {
                 Some(owner_badge_address) => OwnerRole::Fixed(rule!(require(owner_badge_address))),
             };
 
-            let builder = ResourceBuilder::new_fungible(owner_role)
+            ResourceBuilder::new_fungible(owner_role)
+                .mintable(mintable! {
+                    minter => OWNER, updatable;
+                    minter_updater => OWNER, updatable;
+                })
+                .burnable(burnable! {
+                    burner => OWNER, updatable;
+                    burner_updater => OWNER, updatable;
+                })
                 .metadata(ModuleConfig {
                     init: metadata.into(),
                     roles: RolesInit::default(),
                 })
-                .with_address(resource.address_reservation);
-
-            if owner_badge_address.is_some() {
-                builder
-                    .mintable(mintable! {
-                        minter => OWNER, updatable;
-                        minter_updater => OWNER, updatable;
-                    })
-                    .burnable(burnable! {
-                        burner => OWNER, updatable;
-                        burner_updater => OWNER, updatable;
-                    })
-                    .create_with_no_initial_supply();
-            } else {
-                builder
-                    .mintable(mintable! {
-                        minter => rule!(deny_all), locked;
-                        minter_updater => rule!(deny_all), locked;
-                    })
-                    .create_with_no_initial_supply();
-            }
+                .with_address(resource.address_reservation)
+                .create_with_no_initial_supply();
         }
 
         fn allocate_resources(

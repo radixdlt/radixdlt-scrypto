@@ -1,5 +1,4 @@
-use crate::blueprints::resource::{FungibleResourceManagerError, NonFungibleResourceManagerError};
-use crate::errors::{ApplicationError, RuntimeError};
+use crate::errors::RuntimeError;
 use crate::types::*;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
@@ -10,17 +9,13 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
-fn add_package_role(roles: &mut RolesInit) -> Result<(), String> {
+fn add_package_role(roles: &mut RolesInit) {
     // Meta roles
     // TODO: Remove
-    {
-        roles.define_immutable_role(
-            RESOURCE_PACKAGE_ROLE,
-            rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
-        );
-    }
-
-    Ok(())
+    roles.define_immutable_role(
+        RESOURCE_PACKAGE_ROLE,
+        rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
+    );
 }
 
 pub fn globalize_resource_manager<Y>(
@@ -34,17 +29,7 @@ pub fn globalize_resource_manager<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    add_package_role(&mut main_roles).map_err(|err| {
-        if object_id.is_global_fungible_resource_manager() {
-            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
-                FungibleResourceManagerError::InvalidRole(err),
-            ))
-        } else {
-            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
-                NonFungibleResourceManagerError::InvalidRole(err),
-            ))
-        }
-    })?;
+    add_package_role(&mut main_roles);
 
     let roles = btreemap!(
         ObjectModuleId::Main => main_roles,
@@ -79,17 +64,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    add_package_role(&mut main_roles).map_err(|err| {
-        if object_id.is_global_fungible_resource_manager() {
-            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
-                FungibleResourceManagerError::InvalidRole(err),
-            ))
-        } else {
-            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
-                NonFungibleResourceManagerError::InvalidRole(err),
-            ))
-        }
-    })?;
+    add_package_role(&mut main_roles);
 
     let roles = btreemap!(
         ObjectModuleId::Main => main_roles,
@@ -132,17 +107,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    add_package_role(&mut main_roles).map_err(|err| {
-        if object_id.is_global_fungible_resource_manager() {
-            RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
-                FungibleResourceManagerError::InvalidRole(err),
-            ))
-        } else {
-            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
-                NonFungibleResourceManagerError::InvalidRole(err),
-            ))
-        }
-    })?;
+    add_package_role(&mut main_roles);
 
     let roles = btreemap!(
         ObjectModuleId::Main => main_roles,
