@@ -92,6 +92,18 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyInput {
     pub address_reservation: Option<GlobalAddressReservation>,
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
+    pub owner_role: OwnerRole,
+    pub track_total_supply: bool,
+    pub non_fungible_schema: NonFungibleDataSchema,
+    pub entries: Vec<(ManifestValue,)>,
+    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub metadata: ModuleConfig<MetadataInit>,
+    pub address_reservation: Option<ManifestAddressReservation>,
+}
+
 pub type NonFungibleResourceManagerCreateRuidWithInitialSupplyOutput = (ResourceAddress, Bucket);
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT: &str = "update_non_fungible_data";
