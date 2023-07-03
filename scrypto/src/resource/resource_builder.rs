@@ -163,7 +163,7 @@ pub trait SetAddressReservationBuilder: private::CanSetAddressReservation {
 impl<B: private::CanSetAddressReservation> SetAddressReservationBuilder for B {}
 
 pub trait UpdateAuthBuilder {
-    /// Sets the resource to be mintable.
+    /// Sets the resource to be mintable
     ///
     /// * The first parameter is the access rule which allows minting of the resource.
     /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
@@ -249,7 +249,7 @@ pub trait UpdateAuthBuilder {
     /// ```
     fn recall_roles(self, recall_roles: Option<RecallRoles<RoleDefinition>>) -> Self;
 
-    /// Sets the resource to have freezeable.
+    /// Sets the resource to have vaults be freezable.
     ///
     /// * The first parameter is the access rule which allows freezing of the vault.
     /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
@@ -278,7 +278,7 @@ pub trait UpdateAuthBuilder {
     /// ```
     fn freeze_roles(self, freeze_roles: Option<FreezeRoles<RoleDefinition>>) -> Self;
 
-    /// Sets the resource to not be freely withdrawable from a vault.
+    /// Sets the role rules of withdrawing from a vault of this resource.
     ///
     /// * The first parameter is the access rule which allows withdrawing from a vault.
     /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
@@ -307,7 +307,7 @@ pub trait UpdateAuthBuilder {
     /// ```
     fn withdraw_roles(self, withdraw_roles: Option<WithdrawRoles<RoleDefinition>>) -> Self;
 
-    /// Sets the resource to not be freely depositable into a vault.
+    /// Sets the roles rules of depositing this resource into a vault.
     ///
     /// * The first parameter is the access rule which allows depositing into a vault.
     /// * The second parameter is the mutability / access rule which controls if and how the access rule can be updated.
