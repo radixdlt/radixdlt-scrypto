@@ -10,48 +10,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
-fn verify_and_defaults_to_main_roles(roles: &mut RolesInit) -> Result<(), String> {
-    for role in roles.data.keys() {
-        match role.key.as_str() {
-            WITHDRAWER_ROLE
-            | DEPOSITOR_ROLE
-            | MINTER_ROLE
-            | MINTER_UPDATER_ROLE
-            | BURNER_ROLE
-            | BURNER_UPDATER_ROLE
-            | NON_FUNGIBLE_DATA_UPDATER_ROLE
-            | NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE
-            | WITHDRAWER_UPDATER_ROLE
-            | DEPOSITOR_UPDATER_ROLE
-            | RECALLER_ROLE
-            | RECALLER_UPDATER_ROLE
-            | FREEZER_ROLE
-            | FREEZER_UPDATER_ROLE => {}
-            _ => return Err(format!("Invalid Role: {:?}", role)),
-        };
-    }
-
-    for (role, default_rule) in [
-        (WITHDRAWER_ROLE, AccessRule::AllowAll),
-        (DEPOSITOR_ROLE, AccessRule::AllowAll),
-        (MINTER_ROLE, AccessRule::DenyAll),
-        (MINTER_UPDATER_ROLE, AccessRule::DenyAll),
-        (BURNER_ROLE, AccessRule::DenyAll),
-        (BURNER_UPDATER_ROLE, AccessRule::DenyAll),
-        (NON_FUNGIBLE_DATA_UPDATER_ROLE, AccessRule::DenyAll),
-        (NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, AccessRule::DenyAll),
-        (WITHDRAWER_UPDATER_ROLE, AccessRule::DenyAll),
-        (DEPOSITOR_UPDATER_ROLE, AccessRule::DenyAll),
-        (RECALLER_ROLE, AccessRule::DenyAll),
-        (RECALLER_UPDATER_ROLE, AccessRule::DenyAll),
-        (FREEZER_ROLE, AccessRule::DenyAll),
-        (FREEZER_UPDATER_ROLE, AccessRule::DenyAll),
-    ] {
-        if !roles.data.contains_key(&RoleKey::new(role)) {
-            roles.define_immutable_role(role, default_rule);
-        }
-    }
-
+fn add_package_role(roles: &mut RolesInit) -> Result<(), String> {
     // Meta roles
     // TODO: Remove
     {
@@ -104,7 +63,7 @@ pub fn globalize_resource_manager<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    verify_and_defaults_to_main_roles(&mut main_roles).map_err(|err| {
+    add_package_role(&mut main_roles).map_err(|err| {
         if object_id.is_global_fungible_resource_manager() {
             RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::InvalidRole(err),
@@ -149,7 +108,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    verify_and_defaults_to_main_roles(&mut main_roles).map_err(|err| {
+    add_package_role(&mut main_roles).map_err(|err| {
         if object_id.is_global_fungible_resource_manager() {
             RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::InvalidRole(err),
@@ -202,7 +161,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    verify_and_defaults_to_main_roles(&mut main_roles).map_err(|err| {
+    add_package_role(&mut main_roles).map_err(|err| {
         if object_id.is_global_fungible_resource_manager() {
             RuntimeError::ApplicationError(ApplicationError::FungibleResourceManagerError(
                 FungibleResourceManagerError::InvalidRole(err),
