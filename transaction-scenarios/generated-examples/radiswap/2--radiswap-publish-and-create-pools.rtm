@@ -17,7 +17,7 @@ PUBLISH_PACKAGE_ADVANCED
     Enum<1u8>(
         AddressReservation("reservation1")
     )
-    Blob("0004b044634f08e2308e4f0a550d7f9bb43c3695a43f965924dee34183a89935")
+    Blob("ec86d26a879f1330cb452306729ccab76fa0d818935c66cd449ffc84e707c743")
     Tuple(
         Map<String, Tuple>(
             "Radiswap" => Tuple(

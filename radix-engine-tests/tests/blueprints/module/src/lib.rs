@@ -1,4 +1,3 @@
-use scrypto::api::node_modules::auth::*;
 use scrypto::api::node_modules::royalty::*;
 use scrypto::api::*;
 use scrypto::engine::scrypto_env::*;
@@ -44,7 +43,7 @@ mod component_module {
                     ACCESS_RULES_BLUEPRINT,
                     ACCESS_RULES_CREATE_IDENT,
                     scrypto_encode(&AccessRulesCreateInput {
-                        owner_role: OwnerRole::None,
+                        owner_role: OwnerRole::None.into(),
                         roles: BTreeMap::new(),
                     })
                     .unwrap(),

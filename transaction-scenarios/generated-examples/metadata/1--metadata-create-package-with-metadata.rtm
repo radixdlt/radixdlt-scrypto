@@ -17,7 +17,7 @@ PUBLISH_PACKAGE_ADVANCED
     Enum<1u8>(
         AddressReservation("reservation1")
     )
-    Blob("72a300c9d8358b4e8f5ed9a4d287b3a96e060a6e1931e3f9de26ea9952380fae")
+    Blob("e1cc15cba2e8774f19d75ae7e2e31e78484f2f91fd5d3155300469a45df1af76")
     Tuple(
         Map<String, Tuple>(
             "MetadataTest" => Tuple(

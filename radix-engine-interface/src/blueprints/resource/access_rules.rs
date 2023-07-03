@@ -189,21 +189,14 @@ pub enum OwnerRole {
     Fixed(AccessRule),
     /// Rule protected Owner role which may only be updated by the owner themself
     Updatable(AccessRule),
-    /// Rule protected Owner role which may only be updated by the object
-    /// containing the access rules.
-    /// This is currently primarily used for Presecurified objects
-    UpdatableByObject(AccessRule),
 }
 
-impl OwnerRole {
-    pub fn to_entry(self) -> OwnerRoleEntry {
+impl Into<OwnerRoleEntry> for OwnerRole {
+    fn into(self) -> OwnerRoleEntry {
         match self {
             OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
             OwnerRole::Fixed(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::None),
             OwnerRole::Updatable(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::Owner),
-            OwnerRole::UpdatableByObject(rule) => {
-                OwnerRoleEntry::new(rule, OwnerRoleUpdater::Object)
-            }
         }
     }
 }
