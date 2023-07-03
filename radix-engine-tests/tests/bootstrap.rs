@@ -89,8 +89,8 @@ fn test_bootstrap_receipt_should_match_constants() {
     assert_eq!(wrap_up_epoch_change.epoch, genesis_epoch.next());
 }
 
-#[test]
-fn test_genesis_resource_with_initial_allocation() {
+
+fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let mut substate_db = InMemorySubstateDatabase::standard();
     let token_holder = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
@@ -113,7 +113,11 @@ fn test_genesis_resource_with_initial_allocation() {
             "symbol".to_string(),
             MetadataValue::String("TST".to_string()),
         )],
-        owner: Some(resource_owner),
+        owner: if owned_resource {
+            Some(resource_owner)
+        } else {
+            None
+        },
     };
     let resource_allocation = GenesisResourceAllocation {
         account_index: 0,
@@ -179,17 +183,21 @@ fn test_genesis_resource_with_initial_allocation() {
     let created_resource = resource_creation_receipt
         .expect_commit_success()
         .new_resource_addresses()[0]; // The resource address is preallocated, thus [0]
-    assert_eq!(
-        resource_creation_receipt
-            .expect_commit_success()
-            .state_update_summary
-            .balance_changes
-            .get(&GlobalAddress::from(resource_owner))
-            .unwrap()
-            .get(&created_owner_badge)
-            .unwrap(),
-        &BalanceChange::Fungible(1.into())
-    );
+
+    if owned_resource {
+        assert_eq!(
+            resource_creation_receipt
+                .expect_commit_success()
+                .state_update_summary
+                .balance_changes
+                .get(&GlobalAddress::from(resource_owner))
+                .unwrap()
+                .get(&created_owner_badge)
+                .unwrap(),
+            &BalanceChange::Fungible(1.into())
+        );
+    }
+
     assert_eq!(
         allocation_receipt
             .expect_commit_success()
@@ -202,6 +210,17 @@ fn test_genesis_resource_with_initial_allocation() {
         &BalanceChange::Fungible(allocation_amount)
     );
 }
+
+#[test]
+fn test_genesis_resource_with_initial_owned_allocation() {
+    test_genesis_resource_with_initial_allocation(true);
+}
+
+#[test]
+fn test_genesis_resource_with_initial_unowned_allocation() {
+    test_genesis_resource_with_initial_allocation(false);
+}
+
 
 #[test]
 fn test_genesis_stake_allocation() {
