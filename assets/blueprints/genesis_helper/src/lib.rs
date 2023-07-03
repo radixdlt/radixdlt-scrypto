@@ -275,7 +275,9 @@ mod genesis_helper {
                     })
                     .create_with_no_initial_supply();
             } else {
-                builder.create_with_no_initial_supply();
+                builder
+                    .mintable(rule!(deny_all), rule!(deny_all))
+                    .create_with_no_initial_supply();
             }
         }
 
