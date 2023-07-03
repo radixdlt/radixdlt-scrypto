@@ -894,57 +894,6 @@ impl<T: AnyResourceType> private::CanSetAddressReservation for InProgressResourc
     }
 }
 
-/*
-impl<T: AnyResourceType> private::CanAddAuth for InProgressResourceBuilder<T, NoAuth> {
-    type OutputBuilder = InProgressResourceBuilder<T, ResourceActionRolesInit>;
-
-    fn add_roles(self, role_init: RolesInit) -> Self::OutputBuilder {
-        Self::OutputBuilder {
-            owner_role: self.owner_role,
-            resource_type: self.resource_type,
-            config: ResourceActionRolesInit(btreeset!(), role_init),
-            metadata_config: self.metadata_config,
-            address_reservation: self.address_reservation,
-        }
-    }
-
-    fn add_action_and_roles(
-        self,
-        action: ResourceFeature,
-        role_init: RolesInit,
-    ) -> Self::OutputBuilder {
-        Self::OutputBuilder {
-            owner_role: self.owner_role,
-            resource_type: self.resource_type,
-            config: ResourceActionRolesInit(btreeset!(action), role_init),
-            metadata_config: self.metadata_config,
-            address_reservation: self.address_reservation,
-        }
-    }
-}
-
-impl<T: AnyResourceType> private::CanAddAuth
-    for InProgressResourceBuilder<T, ResourceActionRolesInit>
-{
-    type OutputBuilder = Self;
-
-    fn add_roles(mut self, role_init: RolesInit) -> Self::OutputBuilder {
-        self.resource_features.1.data.extend(role_init.data);
-        self
-    }
-
-    fn add_action_and_roles(
-        mut self,
-        action: ResourceFeature,
-        role_init: RolesInit,
-    ) -> Self::OutputBuilder {
-        self.resource_features.0.insert(action);
-        self.resource_features.1.data.extend(role_init.data);
-        self
-    }
-}
- */
-
 impl private::CanCreateWithNoSupply for InProgressResourceBuilder<FungibleResourceType> {
     fn into_create_with_no_supply_invocation(self) -> private::CreateWithNoSupply {
         private::CreateWithNoSupply::Fungible {

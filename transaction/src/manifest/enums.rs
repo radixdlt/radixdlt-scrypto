@@ -112,16 +112,6 @@ lazy_static! {
 
         known_enum!(
             m,
-            enum ResourceAction {
-                Mint = 0;
-                Burn = 1;
-                Recall = 2;
-                Freeze = 3;
-            }
-        );
-
-        known_enum!(
-            m,
             enum NonFungibleIdType {
                 String = 0;
                 Integer = 1;

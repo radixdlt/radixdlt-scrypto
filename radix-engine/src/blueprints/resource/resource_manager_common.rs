@@ -23,35 +23,6 @@ fn add_package_role(roles: &mut RolesInit) -> Result<(), String> {
     Ok(())
 }
 
-pub fn features(
-    track_total_supply: bool,
-    supported_actions: &BTreeSet<ResourceFeature>,
-) -> Vec<&str> {
-    let mut features = Vec::new();
-
-    if track_total_supply {
-        features.push(TRACK_TOTAL_SUPPLY_FEATURE);
-    }
-
-    if supported_actions.contains(&ResourceFeature::Freeze) {
-        features.push(VAULT_FREEZE_FEATURE);
-    }
-
-    if supported_actions.contains(&ResourceFeature::Recall) {
-        features.push(VAULT_RECALL_FEATURE);
-    }
-
-    if supported_actions.contains(&ResourceFeature::Mint) {
-        features.push(MINT_FEATURE);
-    }
-
-    if supported_actions.contains(&ResourceFeature::Burn) {
-        features.push(BURN_FEATURE);
-    }
-
-    features
-}
-
 pub fn globalize_resource_manager<Y>(
     owner_role: OwnerRole,
     object_id: NodeId,
