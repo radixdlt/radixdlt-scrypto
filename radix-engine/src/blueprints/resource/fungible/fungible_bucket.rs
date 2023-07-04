@@ -100,25 +100,7 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            FungibleBucketField::Liquid.into(),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
-        let liquid_amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
-
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            FungibleBucketField::Locked.into(),
-            LockFlags::read_only(),
-        )?;
-        let substate_ref: LockedFungibleResource = api.field_lock_read_typed(handle)?;
-        let locked_amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
-
-        Ok(liquid_amount + locked_amount)
+        Ok(Self::liquid_amount(api)? + Self::locked_amount(api)?)
     }
 
     pub fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>

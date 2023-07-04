@@ -182,12 +182,16 @@ impl NonFungibleBucketBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
-        let max_locked: Decimal = locked.ids.len().into();
+        let locked_amount = locked.ids.len() as u32;
 
+        let n = check_non_fungible_amount(&amount).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::InvalidAmount,
+            ))
+        })?;
         // Take from liquid if needed
-        if amount > max_locked {
-            let delta = amount - max_locked;
-            let resource = Self::internal_take_by_amount(&delta, api)?;
+        if n > locked_amount {
+            let resource = Self::internal_take_by_amount(n - locked_amount, api)?;
 
             for nf in resource.into_ids() {
                 locked.ids.insert(nf, 0);
