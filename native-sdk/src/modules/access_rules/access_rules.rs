@@ -1,8 +1,6 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesLockOwnerRoleInput, AccessRulesLockRoleInput,
-    AccessRulesSetAndLockOwnerRoleInput, AccessRulesSetAndLockRoleInput,
-    AccessRulesSetOwnerRoleInput, AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT,
-    ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
+    AccessRulesCreateInput, AccessRulesLockOwnerRoleInput, AccessRulesSetOwnerRoleInput,
+    AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
     ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -89,23 +87,6 @@ pub trait AccessRulesObject {
         Ok(())
     }
 
-    fn set_and_lock_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
-        &self,
-        rule: A,
-        api: &mut Y,
-    ) -> Result<(), E> {
-        let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_method_advanced(
-            node_id,
-            false,
-            module_id,
-            ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-            scrypto_encode(&AccessRulesSetAndLockOwnerRoleInput { rule: rule.into() }).unwrap(),
-        )?;
-
-        Ok(())
-    }
-
     fn set_role<
         Y: ClientApi<E>,
         E: Debug + ScryptoDecode,
@@ -125,62 +106,6 @@ pub trait AccessRulesObject {
             module_id,
             ACCESS_RULES_SET_ROLE_IDENT,
             scrypto_encode(&AccessRulesSetRoleInput {
-                module,
-                role_key: role_key.into(),
-                rule: rule.into(),
-            })
-            .unwrap(),
-        )?;
-
-        Ok(())
-    }
-
-    fn lock_role<
-        Y: ClientApi<E>,
-        E: Debug + ScryptoDecode,
-        R: Into<RoleKey>,
-        A: Into<AccessRule>,
-    >(
-        &self,
-        module: ObjectModuleId,
-        role_key: R,
-        api: &mut Y,
-    ) -> Result<(), E> {
-        let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_method_advanced(
-            node_id,
-            false,
-            module_id,
-            ACCESS_RULES_LOCK_ROLE_IDENT,
-            scrypto_encode(&AccessRulesLockRoleInput {
-                module,
-                role_key: role_key.into(),
-            })
-            .unwrap(),
-        )?;
-
-        Ok(())
-    }
-
-    fn set_and_lock_role<
-        Y: ClientApi<E>,
-        E: Debug + ScryptoDecode,
-        R: Into<RoleKey>,
-        A: Into<AccessRule>,
-    >(
-        &self,
-        module: ObjectModuleId,
-        role_key: R,
-        rule: A,
-        api: &mut Y,
-    ) -> Result<(), E> {
-        let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_method_advanced(
-            node_id,
-            false,
-            module_id,
-            ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
-            scrypto_encode(&AccessRulesSetAndLockRoleInput {
                 module,
                 role_key: role_key.into(),
                 rule: rule.into(),

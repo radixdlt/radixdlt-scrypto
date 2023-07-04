@@ -578,12 +578,12 @@ pub fn create_system_bootstrap_transaction(
                     divisibility: 18,
                     resource_roles: FungibleResourceRoles {
                         mint_roles: mint_roles! {
-                            minter => rule!(require(global_caller(CONSENSUS_MANAGER))), locked;
-                            minter_updater => rule!(deny_all), locked;
+                            minter => rule!(require(global_caller(CONSENSUS_MANAGER)));
+                            minter_updater => rule!(deny_all);
                         },
                         burn_roles: burn_roles! {
-                            burner => rule!(require(global_caller(CONSENSUS_MANAGER))), locked;
-                            burner_updater => rule!(deny_all), locked;
+                            burner => rule!(require(global_caller(CONSENSUS_MANAGER)));
+                            burner_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -622,8 +622,8 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     resource_roles: NonFungibleResourceRoles {
                         withdraw_roles: withdraw_roles! {
-                            withdrawer => rule!(deny_all), locked;
-                            withdrawer_updater => rule!(deny_all), locked;
+                            withdrawer => rule!(deny_all);
+                            withdrawer_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -659,8 +659,8 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     resource_roles: NonFungibleResourceRoles {
                         withdraw_roles: withdraw_roles! {
-                            withdrawer => rule!(deny_all), locked;
-                            withdrawer_updater => rule!(deny_all), locked;
+                            withdrawer => rule!(deny_all);
+                            withdrawer_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -696,8 +696,8 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<PackageOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
-                            minter => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE))), locked;
-                            minter_updater => rule!(deny_all), locked;
+                            minter => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE)));
+                            minter_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -733,8 +733,8 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<IdentityOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
-                            minter => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))), locked;
-                            minter_updater => rule!(deny_all), locked;
+                            minter => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE)));
+                            minter_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -811,8 +811,8 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<AccountOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
-                            minter => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))), locked;
-                            minter_updater => rule!(deny_all), locked;
+                            minter => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE)));
+                            minter_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },

@@ -37,16 +37,16 @@ mod non_fungible_test {
                 }
             })
             .mint_roles(mint_roles! {
-                minter => OWNER, locked;
-                minter_updater => rule!(deny_all), locked;
+                minter => OWNER;
+                minter_updater => rule!(deny_all);
             })
             .burn_roles(burn_roles! {
-                burner => rule!(allow_all), locked;
-                burner_updater => rule!(deny_all), locked;
+                burner => rule!(allow_all);
+                burner_updater => rule!(deny_all);
             })
             .non_fungible_data_update_roles(non_fungible_data_update_roles! {
-                non_fungible_data_updater => OWNER, locked;
-                non_fungible_data_updater_updater => rule!(deny_all), locked;
+                non_fungible_data_updater => OWNER;
+                non_fungible_data_updater_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
 
@@ -89,8 +89,8 @@ mod non_fungible_test {
                     }
                 })
                 .burn_roles(burn_roles! {
-                    burner => rule!(allow_all), locked;
-                    burner_updater => rule!(deny_all), locked;
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
                 })
                 .mint_initial_supply([
                     Sandwich {
@@ -540,8 +540,8 @@ mod non_fungible_test {
         pub fn create_mintable_ruid_non_fungible() -> ResourceManager {
             ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
                 .mint_roles(mint_roles! {
-                    minter => rule!(allow_all), locked;
-                    minter_updater => rule!(deny_all), locked;
+                    minter => rule!(allow_all);
+                    minter_updater => rule!(deny_all);
                 })
                 .create_with_no_initial_supply()
         }
@@ -551,8 +551,8 @@ mod non_fungible_test {
             let resource_manager =
                 ResourceBuilder::new_ruid_non_fungible::<Sandwich>(OwnerRole::None)
                     .mint_roles(mint_roles! {
-                        minter => rule!(allow_all), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(deny_all);
                     })
                     .metadata(metadata! {
                         init {

@@ -603,23 +603,8 @@ impl TxFuzzer {
                         Err(_) => None,
                     }
                 }
-                // LockRole
-                39 => {
-                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
-                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let input = AccessRulesLockRoleInput::arbitrary(&mut unstructured).unwrap();
-
-                    match to_manifest_value(&input) {
-                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
-                            address: address.into(),
-                            method_name: ACCESS_RULES_LOCK_ROLE_IDENT.to_string(),
-                            args,
-                        }),
-                        Err(_) => None,
-                    }
-                }
                 // MintFungible
-                40 => {
+                39 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::CallMethod {
@@ -629,7 +614,7 @@ impl TxFuzzer {
                     })
                 }
                 // MintNonFungible
-                41 => {
+                40 => {
                     let input =
                         NonFungibleResourceManagerMintManifestInput::arbitrary(&mut unstructured)
                             .unwrap();
@@ -644,7 +629,7 @@ impl TxFuzzer {
                     }
                 }
                 // MintRuidNonFungible
-                42 => {
+                41 => {
                     let input = NonFungibleResourceManagerMintRuidManifestInput::arbitrary(
                         &mut unstructured,
                     )
@@ -660,9 +645,9 @@ impl TxFuzzer {
                     }
                 }
                 // PopFromAuthZone
-                43 => Some(InstructionV1::PopFromAuthZone {}),
+                42 => Some(InstructionV1::PopFromAuthZone {}),
                 // PublishPackage | PublishPackageAdvanced
-                44 | 45 => {
+                43 | 44 => {
                     // Publishing package involves a compilation by scrypto compiler.
                     // In case of AFL invoking external tool breaks fuzzing.
                     // For now we skip this step
@@ -671,13 +656,13 @@ impl TxFuzzer {
                     None
                 }
                 // PushToAuthZone
-                46 => {
+                45 => {
                     let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();
 
                     Some(InstructionV1::PushToAuthZone { proof_id })
                 }
                 // RecallFromVault
-                47 => {
+                46 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
                     let vault_id = {
                         let vaults = self
@@ -699,7 +684,7 @@ impl TxFuzzer {
                     })
                 }
                 // RecallNonFungiblesFromVault
-                48 => {
+                47 => {
                     let input = NonFungibleVaultRecallNonFungiblesInput {
                         non_fungible_local_ids: BTreeSet::from_iter(non_fungible_ids.clone().into_iter()),
                     };
@@ -714,7 +699,7 @@ impl TxFuzzer {
                     }
                 }
                 // RemoveMetadata
-                49 => {
+                48 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
@@ -726,43 +711,13 @@ impl TxFuzzer {
                     })
                 }
                 // ReturnToWorktop
-                50 => {
+                49 => {
                     let bucket_id = *unstructured.choose(&buckets[..]).unwrap();
 
                     Some(InstructionV1::ReturnToWorktop { bucket_id })
                 }
-                // SetAndLockOnwerRole
-                51 => {
-                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
-                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let input = AccessRulesSetAndLockOwnerRoleInput::arbitrary(&mut unstructured).unwrap();
-
-                    match to_manifest_value(&input) {
-                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
-                            address: address.into(),
-                            method_name: ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT.to_string(),
-                            args,
-                        }),
-                        Err(_) => None,
-                    }
-                }
-                // SetAndLockRole
-                52 => {
-                    global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
-                    let address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let input = AccessRulesSetAndLockRoleInput::arbitrary(&mut unstructured).unwrap();
-
-                    match to_manifest_value(&input) {
-                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
-                            address: address.into(),
-                            method_name: ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT.to_string(),
-                            args,
-                        }),
-                        Err(_) => None,
-                    }
-                }
                 // SetComponentRoyalty
-                53 => {
+                50 => {
                     let method = String::arbitrary(&mut unstructured).unwrap();
                     let amount = RoyaltyAmount::arbitrary(&mut unstructured).unwrap();
 
@@ -773,7 +728,7 @@ impl TxFuzzer {
                     })
                 }
                 // SetMetadata
-                54 => {
+                51 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let key = String::arbitrary(&mut unstructured).unwrap();
@@ -786,7 +741,7 @@ impl TxFuzzer {
                     })
                 }
                 // SetOwnerRole
-                55 => {
+                52 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input = AccessRulesSetOwnerRoleInput::arbitrary(&mut unstructured).unwrap();
@@ -801,7 +756,7 @@ impl TxFuzzer {
                     }
                 }
                 // SetRole
-                56 => {
+                53 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input = AccessRulesSetRoleInput::arbitrary(&mut unstructured).unwrap();
@@ -816,9 +771,9 @@ impl TxFuzzer {
                     }
                 }
                 // TakeAllFromWorktop
-                57 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
+                54 => Some(InstructionV1::TakeAllFromWorktop { resource_address }),
                 // TakeFromWorktop
-                58 => {
+                55 => {
                     let amount = Decimal::arbitrary(&mut unstructured).unwrap();
 
                     Some(InstructionV1::TakeFromWorktop {
@@ -827,12 +782,12 @@ impl TxFuzzer {
                     })
                 }
                 // TakeNonFungiblesFromWorktop
-                59 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
+                56 => Some(InstructionV1::TakeNonFungiblesFromWorktop {
                     ids: non_fungible_ids.clone(),
                     resource_address,
                 }),
                 // UnfreezeVault
-                60 => {
+                57 => {
                     let vault_id = {
                         let vaults = self
                             .runner

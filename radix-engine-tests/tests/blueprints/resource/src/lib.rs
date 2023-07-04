@@ -21,8 +21,8 @@ mod resource_test {
                         }
                     })
                     .mint_roles(mint_roles! {
-                        minter => rule!(allow_all), updatable;
-                        minter_updater => rule!(allow_all), updatable;
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(allow_all);
                     })
                     .create_with_no_initial_supply();
 
@@ -43,12 +43,12 @@ mod resource_test {
                 }
             })
             .mint_roles(mint_roles! {
-                minter => OWNER, locked;
-                minter_updater => rule!(deny_all), locked;
+                minter => OWNER;
+                minter_updater => rule!(deny_all);
             })
             .burn_roles(burn_roles! {
-                burner => OWNER, locked;
-                burner_updater => rule!(deny_all), locked;
+                burner => OWNER;
+                burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
             (badge, resource_manager)
@@ -71,12 +71,12 @@ mod resource_test {
                 }
             })
             .mint_roles(mint_roles! {
-                minter => OWNER, locked;
-                minter_updater => rule!(deny_all), locked;
+                minter => OWNER;
+                minter_updater => rule!(deny_all);
             })
             .burn_roles(burn_roles! {
-                burner => OWNER, locked;
-                burner_updater => rule!(deny_all), locked;
+                burner => OWNER;
+                burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
             let tokens = badge.authorize(|| resource_manager.mint(amount));
@@ -122,12 +122,12 @@ mod resource_test {
                 }
             })
             .mint_roles(mint_roles! {
-                minter => OWNER, locked;
-                minter_updater => rule!(deny_all), locked;
+                minter => OWNER;
+                minter_updater => rule!(deny_all);
             })
             .burn_roles(burn_roles! {
-                burner => OWNER, locked;
-                burner_updater => rule!(deny_all), locked;
+                burner => OWNER;
+                burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
             (badge, resource_manager)

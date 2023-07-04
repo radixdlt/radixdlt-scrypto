@@ -740,22 +740,7 @@ SET_OWNER_ROLE
 LOCK_OWNER_ROLE
     Address("${resource_address}")
 ;
-SET_AND_LOCK_OWNER_ROLE
-    Address("${resource_address}")
-    Enum<0u8>()
-;
 SET_ROLE
-    Address("${resource_address}")
-    Enum<0u8>()
-    "hello"
-    Enum<0u8>()
-;
-LOCK_ROLE
-    Address("${resource_address}")
-    Enum<0u8>()
-    "hello"
-;
-SET_AND_LOCK_ROLE
     Address("${resource_address}")
     Enum<0u8>()
     "hello"
@@ -791,17 +776,11 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Tuple(
         Enum<1u8>(
             Tuple(
-                Tuple(
-                    Enum<1u8>(
-                        Enum<0u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<0u8>()
                 ),
-                Tuple(
-                    Enum<1u8>(
-                        Enum<1u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<1u8>()
                 )
             )
         ),
@@ -838,7 +817,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 true
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>()
     )
     Enum<0u8>()
 ;
@@ -876,17 +855,11 @@ CREATE_FUNGIBLE_RESOURCE
     Tuple(
         Enum<1u8>(
             Tuple(
-                Tuple(
-                    Enum<1u8>(
-                        Enum<0u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<0u8>()
                 ),
-                Tuple(
-                    Enum<1u8>(
-                        Enum<1u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<1u8>()
                 )
             )
         ),
@@ -923,7 +896,7 @@ CREATE_FUNGIBLE_RESOURCE
                 true
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>()
     )
     Enum<0u8>()
 ;
@@ -977,17 +950,11 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Tuple(
         Enum<1u8>(
             Tuple(
-                Tuple(
-                    Enum<1u8>(
-                        Enum<0u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<0u8>()
                 ),
-                Tuple(
-                    Enum<1u8>(
-                        Enum<1u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<1u8>()
                 )
             )
         ),
@@ -1017,7 +984,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 false
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>()
     )
     Enum<0u8>()
 ;
@@ -1068,17 +1035,11 @@ CREATE_NON_FUNGIBLE_RESOURCE
     Tuple(
         Enum<1u8>(
             Tuple(
-                Tuple(
-                    Enum<1u8>(
-                        Enum<0u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<0u8>()
                 ),
-                Tuple(
-                    Enum<1u8>(
-                        Enum<1u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<1u8>()
                 )
             )
         ),
@@ -1108,7 +1069,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
                 false
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>()
     )
     Enum<0u8>()
 ;

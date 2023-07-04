@@ -1177,28 +1177,28 @@ impl TestRunner {
             OwnerRole::None,
             FungibleResourceRoles {
                 mint_roles: mint_roles! {
-                    minter => rule!(require(mint_auth)), updatable;
-                    minter_updater => rule!(require(admin_auth)), updatable;
+                    minter => rule!(require(mint_auth));
+                    minter_updater => rule!(require(admin_auth));
                 },
                 burn_roles: burn_roles! {
-                    burner => rule!(require(burn_auth)), updatable;
-                    burner_updater => rule!(require(admin_auth)), updatable;
+                    burner => rule!(require(burn_auth));
+                    burner_updater => rule!(require(admin_auth));
                 },
                 freeze_roles: freeze_roles! {
-                    freezer => rule!(require(freeze_auth)), updatable;
-                    freezer_updater => rule!(require(admin_auth)), updatable;
+                    freezer => rule!(require(freeze_auth));
+                    freezer_updater => rule!(require(admin_auth));
                 },
                 recall_roles: recall_roles! {
-                    recaller => rule!(require(recall_auth)), updatable;
-                    recaller_updater => rule!(require(admin_auth)), updatable;
+                    recaller => rule!(require(recall_auth));
+                    recaller_updater => rule!(require(admin_auth));
                 },
                 withdraw_roles: withdraw_roles! {
-                    withdrawer => rule!(require(withdraw_auth)), updatable;
-                    withdrawer_updater => rule!(require(admin_auth)), updatable;
+                    withdrawer => rule!(require(withdraw_auth));
+                    withdrawer_updater => rule!(require(admin_auth));
                 },
                 deposit_roles: deposit_roles! {
-                    depositor => rule!(allow_all), updatable;
-                    depositor_updater => rule!(require(admin_auth)), updatable;
+                    depositor => rule!(allow_all);
+                    depositor_updater => rule!(require(admin_auth));
                 },
             },
             account,
@@ -1228,32 +1228,32 @@ impl TestRunner {
                     false,
                     NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
-                            minter => rule!(allow_all), updatable;
-                            minter_updater => rule!(allow_all), updatable;
+                            minter => rule!(allow_all);
+                            minter_updater => rule!(allow_all);
                         },
                         burn_roles: burn_roles! {
-                            burner => rule!(allow_all), updatable;
-                            burner_updater => rule!(allow_all), updatable;
+                            burner => rule!(allow_all);
+                            burner_updater => rule!(allow_all);
                         },
                         freeze_roles: freeze_roles! {
-                            freezer => rule!(allow_all), updatable;
-                            freezer_updater => rule!(allow_all), updatable;
+                            freezer => rule!(allow_all);
+                            freezer_updater => rule!(allow_all);
                         },
                         recall_roles: recall_roles! {
-                            recaller => rule!(allow_all), updatable;
-                            recaller_updater => rule!(allow_all), updatable;
+                            recaller => rule!(allow_all);
+                            recaller_updater => rule!(allow_all);
                         },
                         withdraw_roles: withdraw_roles! {
-                            withdrawer => rule!(allow_all), updatable;
-                            withdrawer_updater => rule!(allow_all), updatable;
+                            withdrawer => rule!(allow_all);
+                            withdrawer_updater => rule!(allow_all);
                         },
                         deposit_roles: deposit_roles! {
-                            depositor => rule!(allow_all), updatable;
-                            depositor_updater => rule!(allow_all), updatable;
+                            depositor => rule!(allow_all);
+                            depositor_updater => rule!(allow_all);
                         },
                         non_fungible_data_update_roles: non_fungible_data_update_roles! {
-                            non_fungible_data_updater => rule!(allow_all), updatable;
-                            non_fungible_data_updater_updater => rule!(allow_all), updatable;
+                            non_fungible_data_updater => rule!(allow_all);
+                            non_fungible_data_updater_updater => rule!(allow_all);
                         },
                     },
                     metadata!(),
@@ -1270,16 +1270,16 @@ impl TestRunner {
             OwnerRole::None,
             FungibleResourceRoles {
                 burn_roles: burn_roles! {
-                    burner => rule!(allow_all), locked;
-                    burner_updater => rule!(deny_all), locked;
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
                 },
                 recall_roles: recall_roles! {
-                    recaller => rule!(allow_all), locked;
-                    recaller_updater => rule!(deny_all), locked;
+                    recaller => rule!(allow_all);
+                    recaller_updater => rule!(deny_all);
                 },
                 freeze_roles: freeze_roles! {
-                    freezer => rule!(allow_all), locked;
-                    freezer_updater => rule!(deny_all), locked;
+                    freezer => rule!(allow_all);
+                    freezer_updater => rule!(deny_all);
                 },
                 ..Default::default()
             },
@@ -1291,16 +1291,16 @@ impl TestRunner {
         self.create_non_fungible_resource_with_access_rules(
             NonFungibleResourceRoles {
                 burn_roles: burn_roles! {
-                    burner => rule!(allow_all), locked;
-                    burner_updater => rule!(deny_all), locked;
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
                 },
                 recall_roles: recall_roles! {
-                    recaller => rule!(allow_all), locked;
-                    recaller_updater => rule!(deny_all), locked;
+                    recaller => rule!(allow_all);
+                    recaller_updater => rule!(deny_all);
                 },
                 freeze_roles: freeze_roles! {
-                    freezer => rule!(allow_all), locked;
-                    freezer_updater => rule!(deny_all), locked;
+                    freezer => rule!(allow_all);
+                    freezer_updater => rule!(deny_all);
                 },
                 ..Default::default()
             },
@@ -1313,8 +1313,8 @@ impl TestRunner {
             OwnerRole::None,
             FungibleResourceRoles {
                 recall_roles: recall_roles! {
-                    recaller => rule!(allow_all), locked;
-                    recaller_updater => rule!(deny_all), locked;
+                    recaller => rule!(allow_all);
+                    recaller_updater => rule!(deny_all);
                 },
                 ..Default::default()
             },
@@ -1332,8 +1332,8 @@ impl TestRunner {
             OwnerRole::None,
             FungibleResourceRoles {
                 burn_roles: burn_roles! {
-                    burner => rule!(require(auth_resource_address)), locked;
-                    burner_updater => rule!(deny_all), locked;
+                    burner => rule!(require(auth_resource_address));
+                    burner_updater => rule!(deny_all);
                 },
                 ..Default::default()
             },
@@ -1353,8 +1353,8 @@ impl TestRunner {
             OwnerRole::None,
             FungibleResourceRoles {
                 withdraw_roles: withdraw_roles! {
-                    withdrawer => rule!(require(auth_resource_address)), locked;
-                    withdrawer_updater => rule!(deny_all), locked;
+                    withdrawer => rule!(require(auth_resource_address));
+                    withdrawer_updater => rule!(deny_all);
                 },
                 ..Default::default()
             },
@@ -1441,12 +1441,12 @@ impl TestRunner {
                 1u8,
                 FungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(require(admin_auth)), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(require(admin_auth));
+                        minter_updater => rule!(deny_all);
                     },
                     burn_roles: burn_roles! {
-                        burner => rule!(require(admin_auth)), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => rule!(require(admin_auth));
+                        burner_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },
@@ -1479,8 +1479,8 @@ impl TestRunner {
                 divisibility,
                 FungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(allow_all), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },
@@ -1512,12 +1512,12 @@ impl TestRunner {
                 divisibility,
                 FungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(allow_all), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(deny_all);
                     },
                     burn_roles: burn_roles! {
-                        burner => rule!(allow_all), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => rule!(allow_all);
+                        burner_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },

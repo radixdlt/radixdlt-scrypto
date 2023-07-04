@@ -11,10 +11,10 @@ mod metadata_component {
                 .prepare_to_globalize(OwnerRole::None)
                 .metadata(metadata! {
                     roles {
-                        metadata_setter => rule!(allow_all), locked;
-                        metadata_setter_updater => rule!(deny_all), locked;
-                        metadata_locker => rule!(allow_all), locked;
-                        metadata_locker_updater => rule!(deny_all), locked;
+                        metadata_setter => rule!(allow_all);
+                        metadata_setter_updater => rule!(deny_all);
+                        metadata_locker => rule!(allow_all);
+                        metadata_locker_updater => rule!(deny_all);
                     },
                     init {
                         key.clone() => value.clone(), locked;
