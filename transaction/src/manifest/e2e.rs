@@ -341,6 +341,29 @@ CALL_FUNCTION
     }
 
     #[test]
+    fn test_resource_recall_nonfungibles() {
+        compile_and_decompile_with_inversion_test(
+            "resource_recall_nonfungibles",
+            apply_address_replacements(include_str!(
+                "../../examples/resources/recall_non_fungibles.rtm"
+            )),
+            &NetworkDefinition::simulator(),
+            vec![],
+            apply_address_replacements(
+                r##"
+RECALL_NON_FUNGIBLES_FROM_VAULT
+    Address("${vault_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#123#"),
+        NonFungibleLocalId("#456#")
+    )
+;
+"##,
+            ),
+        );
+    }
+
+    #[test]
     fn test_call_method() {
         compile_and_decompile_with_inversion_test(
             "call_method",

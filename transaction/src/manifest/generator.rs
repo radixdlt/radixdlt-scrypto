@@ -630,6 +630,13 @@ where
                 args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
+        ast::Instruction::RecallNonFungiblesFromVault { vault_id, args } => {
+            InstructionV1::CallDirectVaultMethod {
+                address: generate_local_address(vault_id, address_bech32_decoder)?,
+                method_name: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+            }
+        }
 
         /* call function aliases */
         ast::Instruction::PublishPackage { args } => InstructionV1::CallFunction {

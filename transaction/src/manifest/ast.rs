@@ -158,6 +158,10 @@ pub enum Instruction {
         vault_id: Value,
         args: Vec<Value>,
     },
+    RecallNonFungiblesFromVault {
+        vault_id: Value,
+        args: Vec<Value>,
+    },
 
     /* Call function aliases */
     PublishPackage {

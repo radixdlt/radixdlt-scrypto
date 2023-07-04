@@ -67,6 +67,7 @@ pub enum InstructionIdent {
     RecallFromVault,
     FreezeVault,
     UnfreezeVault,
+    RecallNonFungiblesFromVault,
 
     // ==============
     // Call function aliases
@@ -163,6 +164,7 @@ impl InstructionIdent {
             "RECALL_FROM_VAULT" => InstructionIdent::RecallFromVault,
             "FREEZE_VAULT" => InstructionIdent::FreezeVault,
             "UNFREEZE_VAULT" => InstructionIdent::UnfreezeVault,
+            "RECALL_NON_FUNGIBLES_FROM_VAULT" => InstructionIdent::RecallNonFungiblesFromVault,
 
             // ==============
             // Call function aliases
@@ -630,6 +632,12 @@ impl Parser {
                 vault_id: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
+            InstructionIdent::RecallNonFungiblesFromVault => {
+                Instruction::RecallNonFungiblesFromVault {
+                    vault_id: self.parse_value()?,
+                    args: self.parse_values_till_semicolon()?,
+                }
+            }
 
             /* Call function aliases */
             InstructionIdent::PublishPackage => Instruction::PublishPackage {
