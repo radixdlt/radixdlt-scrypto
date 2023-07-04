@@ -42,7 +42,7 @@ impl ResourceType {
             ResourceType::Fungible { divisibility } => {
                 check_fungible_amount(&amount, *divisibility)
             }
-            ResourceType::NonFungible { .. } => check_non_fungible_amount(&amount),
+            ResourceType::NonFungible { .. } => check_non_fungible_amount(&amount).is_ok(),
         }
     }
 }

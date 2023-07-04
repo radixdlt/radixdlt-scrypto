@@ -41,8 +41,16 @@ pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
         && amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into())) == BnumI256::from(0)
 }
 
-pub fn check_non_fungible_amount(amount: &Decimal) -> bool {
-    !amount.is_negative() && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
+pub fn check_non_fungible_amount(amount: &Decimal) -> Result<u32, ()> {
+    // Integers between [0..u32::MAX]
+    if amount >= &Decimal::from(u32::MIN)
+        && amount <= &Decimal::from(u32::MAX)
+        && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
+    {
+        Ok(u32::from_str(&amount.to_string()).unwrap())
+    } else {
+        Err(())
+    }
 }
 
 #[macro_export]
@@ -187,6 +195,8 @@ macro_rules! non_fungible_data_update_roles {
     });
 }
 
+/// Define the withdraw strategy when request amount does not match underlying
+/// resource divisibility.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
 pub enum WithdrawStrategy {
     Exact,
@@ -203,5 +213,11 @@ impl ForWithdrawal for Decimal {
             WithdrawStrategy::Exact => self.clone(),
             WithdrawStrategy::Rounded(mode) => self.round(divisibility as u32, mode),
         }
+    }
+}
+
+impl Default for WithdrawStrategy {
+    fn default() -> Self {
+        Self::Exact
     }
 }

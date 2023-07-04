@@ -33,11 +33,9 @@ impl NonFungibleVaultBlueprint {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         // Check amount
-        if !check_non_fungible_amount(amount) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::InvalidAmount),
-            ));
-        }
+        check_non_fungible_amount(&amount).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
+        })?;
 
         // Take
         let taken = NonFungibleVault::take(*amount, api)?;
@@ -59,11 +57,9 @@ impl NonFungibleVaultBlueprint {
         let amount = amount.for_withdrawal(0, withdraw_strategy);
 
         // Check amount
-        if !check_non_fungible_amount(&amount) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::InvalidAmount),
-            ));
-        }
+        check_non_fungible_amount(&amount).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
+        })?;
 
         // Take
         let taken = NonFungibleVault::take(amount, api)?;
@@ -129,11 +125,9 @@ impl NonFungibleVaultBlueprint {
     {
         Self::assert_recallable(api)?;
 
-        if !check_non_fungible_amount(&amount) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::InvalidAmount),
-            ));
-        }
+        check_non_fungible_amount(&amount).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
+        })?;
 
         let taken = NonFungibleVault::take(amount, api)?;
 
@@ -214,11 +208,9 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !check_non_fungible_amount(&amount) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::InvalidAmount),
-            ));
-        }
+        check_non_fungible_amount(&amount).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
+        })?;
 
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;

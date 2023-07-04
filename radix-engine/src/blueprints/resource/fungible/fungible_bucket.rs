@@ -168,34 +168,39 @@ impl FungibleBucketBlueprint {
         Ok(divisibility)
     }
 
-    pub fn take<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let input: BucketTakeInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
+        Self::take_advanced(amount, WithdrawStrategy::Exact, api)
+    }
+
+    pub fn take_advanced<Y>(
+        amount: &Decimal,
+        withdraw_strategy: WithdrawStrategy,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        // Apply withdraw strategy
+        let divisibility = Self::get_divisibility(api)?;
+        let amount = amount.for_withdrawal(divisibility, withdraw_strategy);
 
         // Check amount
-        {
-            let divisibility = Self::get_divisibility(api)?;
-            if !(check_fungible_amount(&input.amount, divisibility)) {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::BucketError(BucketError::InvalidAmount),
-                ));
-            }
+        if !(check_fungible_amount(&amount, divisibility)) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::InvalidAmount),
+            ));
         }
 
         // Take
-        let taken = FungibleBucket::take(input.amount, api)?;
+        let taken = FungibleBucket::take(amount, api)?;
 
         // Create node
         let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
 
-        Ok(IndexedScryptoValue::from_typed(&bucket))
+        Ok(bucket)
     }
 
     pub fn put<Y>(

@@ -74,17 +74,39 @@ impl NonFungibleBucket {
         Ok(ids)
     }
 
-    pub fn take<Y>(amount: Decimal, api: &mut Y) -> Result<LiquidNonFungibleResource, RuntimeError>
+    pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::take_advanced(amount, WithdrawStrategy::Exact, api)
+    }
+
+    pub fn take_advanced<Y>(
+        amount: &Decimal,
+        withdraw_strategy: WithdrawStrategy,
+        api: &mut Y,
+    ) -> Result<LiquidNonFungibleResource, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // Apply withdraw strategy
+        let amount = amount.for_withdrawal(0, withdraw_strategy);
+
+        // Check amount
+        let n = check_non_fungible_amount(&amount).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::InvalidAmount,
+            ))
+        })?;
+
+        // Take
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate: LiquidNonFungibleResource = api.field_lock_read_typed(handle)?;
-        let taken = substate.take_by_amount(amount).map_err(|e| {
+        let taken = substate.take_by_amount(n).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
             ))
@@ -160,7 +182,7 @@ impl NonFungibleBucket {
         // Take from liquid if needed
         if amount > max_locked {
             let delta = amount - max_locked;
-            let resource = NonFungibleBucket::take(delta, api)?;
+            let resource = NonFungibleBucket::take(&delta, api)?;
 
             for nf in resource.into_ids() {
                 locked.ids.insert(nf, 0);
@@ -276,31 +298,34 @@ impl NonFungibleBucket {
 pub struct NonFungibleBucketBlueprint;
 
 impl NonFungibleBucketBlueprint {
-    pub fn take<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    pub fn take<Y>(amount: &Decimal, api: &mut Y) -> Result<Bucket, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let input: BucketTakeInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
-
-        // Check amount
-        if !check_non_fungible_amount(&input.amount) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::InvalidAmount),
-            ));
-        }
-
         // Take
-        let taken = NonFungibleBucket::take(input.amount, api)?;
+        let taken = NonFungibleBucket::take(amount, api)?;
 
         // Create node
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
 
-        Ok(IndexedScryptoValue::from_typed(&bucket))
+        Ok(bucket)
+    }
+
+    pub fn take_advanced<Y>(
+        amount: &Decimal,
+        withdraw_strategy: WithdrawStrategy,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // Take
+        let taken = NonFungibleBucket::take_advanced(amount, withdraw_strategy, api)?;
+
+        // Create node
+        let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
+
+        Ok(bucket)
     }
 
     pub fn take_non_fungibles<Y>(
@@ -393,6 +418,7 @@ impl NonFungibleBucketBlueprint {
         Self::create_proof_of_amount(receiver, Decimal::ONE, api)
     }
 
+    // TODO: remove
     pub fn create_proof_of_amount<Y>(
         receiver: &NodeId,
         amount: Decimal,
@@ -401,11 +427,11 @@ impl NonFungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        if !check_non_fungible_amount(&amount) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::BucketError(BucketError::InvalidAmount),
-            ));
-        }
+        check_non_fungible_amount(&amount).map_err(|_| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::InvalidAmount,
+            ))
+        })?;
 
         let proof_info = ProofMoveableSubstate { restricted: false };
         let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
