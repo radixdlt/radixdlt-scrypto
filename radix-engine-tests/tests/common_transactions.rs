@@ -292,8 +292,8 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 divisibility,
                 FungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(require(minter_badge_resource_address)), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(require(minter_badge_resource_address));
+                        minter_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },
@@ -308,8 +308,8 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 false,
                 NonFungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(require(minter_badge_resource_address)), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(require(minter_badge_resource_address));
+                        minter_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },

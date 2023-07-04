@@ -550,8 +550,8 @@ macro_rules! component_royalties {
 /// Roles macro for main module
 #[macro_export]
 macro_rules! roles {
-    ( $($role:ident => $rule:expr, $locked:ident;)* ) => ({
-        internal_roles!(MethodRoles, $($role => $rule, $locked;)*)
+    ( $($role:ident => $rule:expr;)* ) => ({
+        internal_roles!(MethodRoles, $($role => $rule;)*)
     });
 }
 

@@ -28,12 +28,12 @@ mod proofs {
             );
             let token = ResourceBuilder::new_fungible(OwnerRole::None)
                 .mint_roles(mint_roles! {
-                    minter => organizational_access_rule.clone(), locked;
-                    minter_updater => rule!(deny_all), locked;
+                    minter => organizational_access_rule.clone();
+                    minter_updater => rule!(deny_all);
                 })
                 .withdraw_roles(withdraw_roles! {
-                    withdrawer => organizational_access_rule.clone(), locked;
-                    withdrawer_updater => rule!(deny_all), locked;
+                    withdrawer => organizational_access_rule.clone();
+                    withdrawer_updater => rule!(deny_all);
                 })
                 .mint_initial_supply(100);
 
@@ -41,7 +41,7 @@ mod proofs {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles! {
-                    auth => organizational_access_rule, locked;
+                    auth => organizational_access_rule;
                 })
                 .globalize();
             (

@@ -59,17 +59,17 @@ mod everything {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles! {
-                    some_role => rule!(require(XRD)), updatable;
-                    some_role_updater => rule!(require(SOME_RESOURCE.address())), locked;
+                    some_role => rule!(require(XRD));
+                    some_role_updater => rule!(require(SOME_RESOURCE.address()));
                 })
                 .enable_component_royalties(component_royalties! {
                     roles {
-                        royalty_setter => rule!(allow_all), updatable;
-                        royalty_setter_updater => OWNER, locked;
-                        royalty_locker => OWNER, updatable;
-                        royalty_locker_updater => rule!(deny_all), locked;
-                        royalty_claimer => OWNER, updatable;
-                        royalty_claimer_updater => rule!(deny_all), locked;
+                        royalty_setter => rule!(allow_all);
+                        royalty_setter_updater => OWNER;
+                        royalty_locker => OWNER;
+                        royalty_locker_updater => rule!(deny_all);
+                        royalty_claimer => OWNER;
+                        royalty_claimer_updater => rule!(deny_all);
                     },
                     init {
                         public_method => Xrd(1.into()), updatable;
@@ -78,10 +78,10 @@ mod everything {
                 })
                 .metadata(metadata! {
                     roles {
-                        metadata_locker => rule!(allow_all), locked;
-                        metadata_locker_updater => rule!(allow_all), locked;
-                        metadata_setter => OWNER, locked;
-                        metadata_setter_updater => rule!(deny_all), locked;
+                        metadata_locker => rule!(allow_all);
+                        metadata_locker_updater => rule!(allow_all);
+                        metadata_setter => OWNER;
+                        metadata_setter_updater => rule!(deny_all);
                     },
                     init {
                         "some_key" => "string_value".to_string(), updatable;
@@ -99,32 +99,32 @@ mod everything {
         pub fn public_method(&self) -> ResourceManager {
             ResourceBuilder::new_ruid_non_fungible::<TestNFData>(OwnerRole::None)
                 .mint_roles(mint_roles! {
-                    minter => rule!(allow_all), locked;
-                    minter_updater => rule!(allow_all), locked;
+                    minter => rule!(allow_all);
+                    minter_updater => rule!(allow_all);
                 })
                 .burn_roles(burn_roles! {
-                    burner => rule!(allow_all), locked;
-                    burner_updater => rule!(allow_all), locked;
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(allow_all);
                 })
                 .freeze_roles(freeze_roles! {
-                    freezer => rule!(allow_all), locked;
-                    freezer_updater => rule!(allow_all), locked;
+                    freezer => rule!(allow_all);
+                    freezer_updater => rule!(allow_all);
                 })
                 .recall_roles(recall_roles! {
-                    recaller => rule!(allow_all), locked;
-                    recaller_updater => rule!(allow_all), locked;
+                    recaller => rule!(allow_all);
+                    recaller_updater => rule!(allow_all);
                 })
                 .withdraw_roles(withdraw_roles! {
-                    withdrawer => rule!(allow_all), locked;
-                    withdrawer_updater => rule!(allow_all), locked;
+                    withdrawer => rule!(allow_all);
+                    withdrawer_updater => rule!(allow_all);
                 })
                 .deposit_roles(deposit_roles! {
-                    depositor => rule!(allow_all), locked;
-                    depositor_updater => rule!(allow_all), locked;
+                    depositor => rule!(allow_all);
+                    depositor_updater => rule!(allow_all);
                 })
                 .non_fungible_data_update_roles(non_fungible_data_update_roles! {
-                    non_fungible_data_updater => rule!(allow_all), locked;
-                    non_fungible_data_updater_updater => rule!(allow_all), locked;
+                    non_fungible_data_updater => rule!(allow_all);
+                    non_fungible_data_updater_updater => rule!(allow_all);
                 })
                 .metadata(metadata! {
                     init {
