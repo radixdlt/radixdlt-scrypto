@@ -181,6 +181,35 @@ impl Decimal {
                     }
                 }
             }
+            RoundingMode::MidpointNearestEven => {
+                if self.0 % divisor == BnumI256::zero() {
+                    self.clone()
+                } else {
+                    let digit = (self.0 / (divisor / BnumI256::from(10i128))
+                        % BnumI256::from(10i128))
+                    .abs();
+                    if digit < 5.into() {
+                        Self(self.0 / divisor * divisor)
+                    } else if digit == 5.into() {
+                        let breaker = ((self.0 / divisor) % BnumI256::from(10i128)).abs();
+                        if breaker % BnumI256::from(2i128) == BnumI256::ZERO {
+                            Self(self.0 / divisor * divisor)
+                        } else {
+                            if self.is_negative() {
+                                Self((self.0 / divisor - BnumI256::one()) * divisor)
+                            } else {
+                                Self((self.0 / divisor + BnumI256::one()) * divisor)
+                            }
+                        }
+                    } else {
+                        if self.is_negative() {
+                            Self((self.0 / divisor - BnumI256::one()) * divisor)
+                        } else {
+                            Self((self.0 / divisor + BnumI256::one()) * divisor)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -988,7 +1017,7 @@ mod tests {
     }
 
     #[test]
-    fn test_round_towards_zero_decimal() {
+    fn test_rounding_to_zero_decimal() {
         let mode = RoundingMode::ToZero;
         assert_eq!(dec!("1.2").round(0, mode).to_string(), "1");
         assert_eq!(dec!("1.0").round(0, mode).to_string(), "1");
@@ -1000,7 +1029,7 @@ mod tests {
     }
 
     #[test]
-    fn test_round_away_from_zero_decimal() {
+    fn test_rounding_away_from_zero_decimal() {
         let mode = RoundingMode::AwayFromZero;
         assert_eq!(dec!("1.2").round(0, mode).to_string(), "2");
         assert_eq!(dec!("1.0").round(0, mode).to_string(), "1");
@@ -1012,7 +1041,7 @@ mod tests {
     }
 
     #[test]
-    fn test_round_towards_nearest_and_half_towards_zero_decimal() {
+    fn test_rounding_midpoint_toward_zero_decimal() {
         let mode = RoundingMode::MidpointTowardZero;
         assert_eq!(dec!("5.5").round(0, mode).to_string(), "5");
         assert_eq!(dec!("2.5").round(0, mode).to_string(), "2");
@@ -1027,7 +1056,7 @@ mod tests {
     }
 
     #[test]
-    fn test_round_towards_nearest_and_half_away_from_zero_decimal() {
+    fn test_rounding_midpoint_away_from_zero_decimal() {
         let mode = RoundingMode::MidpointAwayFromZero;
         assert_eq!(dec!("5.5").round(0, mode).to_string(), "6");
         assert_eq!(dec!("2.5").round(0, mode).to_string(), "3");
@@ -1042,10 +1071,36 @@ mod tests {
     }
 
     #[test]
-    fn test_various_decimal_places_decimal() {
+    fn test_rounding_midpoint_away_from_zero_with_various_decimal_places_decimal() {
         let mode = RoundingMode::MidpointAwayFromZero;
         let num = dec!("-2.555555555555555555");
         assert_eq!(num.round(0, mode).to_string(), "-3");
+        assert_eq!(num.round(1, mode).to_string(), "-2.6");
+        assert_eq!(num.round(2, mode).to_string(), "-2.56");
+        assert_eq!(num.round(17, mode).to_string(), "-2.55555555555555556");
+        assert_eq!(num.round(18, mode).to_string(), "-2.555555555555555555");
+    }
+
+    #[test]
+    fn test_rounding_midpoint_nearest_even_zero_decimal() {
+        let mode = RoundingMode::MidpointNearestEven;
+        assert_eq!(dec!("5.5").round(0, mode).to_string(), "6");
+        assert_eq!(dec!("2.5").round(0, mode).to_string(), "2");
+        assert_eq!(dec!("1.6").round(0, mode).to_string(), "2");
+        assert_eq!(dec!("1.1").round(0, mode).to_string(), "1");
+        assert_eq!(dec!("1.0").round(0, mode).to_string(), "1");
+        assert_eq!(dec!("-1.0").round(0, mode).to_string(), "-1");
+        assert_eq!(dec!("-1.1").round(0, mode).to_string(), "-1");
+        assert_eq!(dec!("-1.6").round(0, mode).to_string(), "-2");
+        assert_eq!(dec!("-2.5").round(0, mode).to_string(), "-2");
+        assert_eq!(dec!("-5.5").round(0, mode).to_string(), "-6");
+    }
+
+    #[test]
+    fn test_rounding_nearest_even_with_various_decimal_places_decimal() {
+        let mode = RoundingMode::MidpointNearestEven;
+        let num = dec!("-2.555555555555555555");
+        assert_eq!(num.round(0, mode).to_string(), "-2");
         assert_eq!(num.round(1, mode).to_string(), "-2.6");
         assert_eq!(num.round(2, mode).to_string(), "-2.56");
         assert_eq!(num.round(17, mode).to_string(), "-2.55555555555555556");
