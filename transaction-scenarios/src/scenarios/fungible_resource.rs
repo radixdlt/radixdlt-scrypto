@@ -364,7 +364,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                             "min_divisibility_fungible_resource",
                             state.min_divisibility_fungible_resource.unwrap(),
                         )
-                        .add("vault1", state.vault1.unwrap()),
+                        .add("fungible_vault", state.vault1.unwrap()),
                 })
             })
     }

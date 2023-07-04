@@ -4,8 +4,8 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::*;
 
 pub struct NonFungibleResourceScenarioConfig {
-    pub user_account_1: VirtualAccount,
-    pub user_account_2: VirtualAccount,
+    pub main_account: VirtualAccount,
+    pub occasional_recipient_account: VirtualAccount,
 }
 
 #[derive(Default)]
@@ -20,8 +20,8 @@ pub struct NonFungibleResourceScenarioState {
 impl Default for NonFungibleResourceScenarioConfig {
     fn default() -> Self {
         Self {
-            user_account_1: secp256k1_account_1(),
-            user_account_2: secp256k1_account_2(),
+            main_account: secp256k1_account_1(),
+            occasional_recipient_account: secp256k1_account_2(),
         }
     }
 }
@@ -68,7 +68,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     metadata! {},
                                     Some(entries),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_batch_or_abort(config.main_account.address)
                         },
                         vec![],
                     )
@@ -102,7 +102,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     metadata! {},
                                     Some(entries),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_batch_or_abort(config.main_account.address)
                         },
                         vec![],
                     )
@@ -135,7 +135,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     metadata! {},
                                     Some(entries),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_batch_or_abort(config.main_account.address)
                         },
                         vec![],
                     )
@@ -164,7 +164,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                                     Some(entries),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_batch_or_abort(config.main_account.address)
                         },
                         vec![],
                     )
@@ -195,7 +195,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     state.integer_non_fungible_resource.unwrap(),
                                     entries,
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_batch_or_abort(config.main_account.address)
                         },
                         vec![],
                     )
@@ -209,7 +209,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         |builder| {
                             builder
                                 .withdraw_from_account(
-                                    config.user_account_1.address,
+                                    config.main_account.address,
                                     state.integer_non_fungible_resource.unwrap(),
                                     dec!("2"),
                                 )
@@ -218,7 +218,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     |builder, bucket| builder.burn_resource(bucket),
                                 )
                                 .withdraw_non_fungibles_from_account(
-                                    config.user_account_1.address,
+                                    config.main_account.address,
                                     state.integer_non_fungible_resource.unwrap(),
                                     &btreeset!(NonFungibleLocalId::integer(110)),
                                 )
@@ -228,7 +228,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     |builder, bucket| builder.burn_resource(bucket),
                                 )
                         },
-                        vec![&config.user_account_1.key],
+                        vec![&config.main_account.key],
                     )
                 },
                 |core, config, state, result| Ok(()),
@@ -240,13 +240,15 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         |builder| {
                             builder
                                 .withdraw_from_account(
-                                    config.user_account_1.address,
+                                    config.main_account.address,
                                     state.integer_non_fungible_resource.unwrap(),
                                     dec!("1"),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_2.address)
+                                .try_deposit_batch_or_abort(
+                                    config.occasional_recipient_account.address,
+                                )
                         },
-                        vec![&config.user_account_1.key],
+                        vec![&config.main_account.key],
                     )
                 },
                 |core, config, state, result| Ok(()),
@@ -256,7 +258,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee(
                         "non-fungible-resource-freeze-deposit",
                         |builder| builder.freeze_deposit(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
+                        vec![&config.main_account.key],
                     )
                 },
                 |core, config, state, result| Ok(()),
@@ -266,7 +268,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee(
                         "non-fungible-resource-freeze-deposit",
                         |builder| builder.freeze_burn(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
+                        vec![&config.main_account.key],
                     )
                 },
                 |core, config, state, result| Ok(()),
@@ -274,16 +276,16 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
             .failed_transaction_with_error_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
-                        "non-fungible-resource-recall-freezed-vault",
+                        "non-fungible-resource-recall-frozen-vault",
                         |builder| {
                             builder
                                 .recall_non_fungibles(
                                     state.vault1.unwrap(),
                                     btreeset!(NonFungibleLocalId::integer(120)),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_batch_or_abort(config.main_account.address)
                         },
-                        vec![&config.user_account_1.key],
+                        vec![&config.main_account.key],
                     )
                 },
                 |core, config, state, result| {
@@ -296,7 +298,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee(
                         "non-fungible-resource-unfreeze-withdraw",
                         |builder| builder.unfreeze_withdraw(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
+                        vec![&config.main_account.key],
                     )
                 },
                 |core, config, state, result| Ok(()),
@@ -306,7 +308,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee(
                         "non-fungible-resource-unfreeze-deposit",
                         |builder| builder.unfreeze_deposit(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
+                        vec![&config.main_account.key],
                     )
                 },
                 |core, config, state, result| Ok(()),
@@ -314,9 +316,9 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
             .successful_transaction_with_result_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
-                        "non-fungible-resource-unfreeze-deposit",
+                        "non-fungible-resource-unfreeze-burn",
                         |builder| builder.unfreeze_burn(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
+                        vec![&config.main_account.key],
                     )
                 },
                 |core, config, state, result| Ok(()),
@@ -324,16 +326,16 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
             .successful_transaction_with_result_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
-                        "non-fungible-resource-recall-unfreezed-vault",
+                        "non-fungible-resource-recall-unfrozen-vault",
                         |builder| {
                             builder
                                 .recall_non_fungibles(
                                     state.vault1.unwrap(),
                                     btreeset!(NonFungibleLocalId::integer(130)),
                                 )
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .try_deposit_batch_or_abort(config.main_account.address)
                         },
-                        vec![&config.user_account_1.key],
+                        vec![&config.main_account.key],
                     )
                 },
                 |core, config, state, result| Ok(()),
@@ -341,8 +343,11 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                        .add("user_account_1", config.user_account_1.address.clone())
-                        .add("user_account_2", config.user_account_2.address.clone())
+                        .add("main_account", config.main_account.address.clone())
+                        .add(
+                            "occasional_recipient_account",
+                            config.occasional_recipient_account.address.clone(),
+                        )
                         .add(
                             "integer_non_fungible_resource",
                             state.integer_non_fungible_resource.unwrap(),
@@ -358,7 +363,8 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         .add(
                             "ruid_non_fungible_resource",
                             state.ruid_non_fungible_resource.unwrap(),
-                        ),
+                        )
+                        .add("non_fungible_vault", state.vault1.unwrap()),
                 })
             })
     }
