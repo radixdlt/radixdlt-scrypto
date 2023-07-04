@@ -201,7 +201,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
             })
             .successful_transaction(|core, config, state| {
                 core.next_transaction_with_faucet_lock_fee(
-                    "fungible-max-div-free-withdraw-again",
+                    "fungible-max-div-freeze-withdraw-again",
                     |builder| builder.freeze_withdraw(state.vault1.unwrap()),
                     vec![&config.user_account_1.key],
                 )
@@ -363,7 +363,8 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         .add(
                             "min_divisibility_fungible_resource",
                             state.min_divisibility_fungible_resource.unwrap(),
-                        ),
+                        )
+                        .add("vault1", state.vault1.unwrap()),
                 })
             })
     }
