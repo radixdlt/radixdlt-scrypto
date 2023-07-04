@@ -1,0 +1,11 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+FREEZE_VAULT
+    Address("internal_vault_sim1nrexhvl5g2rekp4mx256etq2d2kl9hauw9x58233lace0fht7nrd8m")
+    Tuple(
+        4u32
+    )
+;

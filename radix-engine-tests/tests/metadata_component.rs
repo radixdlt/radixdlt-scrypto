@@ -223,7 +223,7 @@ fn cannot_set_address_metadata_after_freezing() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .freeze_metadata(component_address.into(), "other_key".to_string())
+        .lock_metadata(component_address.into(), "other_key".to_string())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
