@@ -353,12 +353,11 @@ impl ResourceNativePackage {
                             RECALLER_UPDATER_ROLE => updaters: [RECALLER_UPDATER_ROLE];
                             FREEZER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
                             FREEZER_UPDATER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
-                            RESOURCE_PACKAGE_ROLE;
                         },
                         methods {
                             FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINTER_ROLE];
                             RESOURCE_MANAGER_BURN_IDENT => [BURNER_ROLE];
-                            RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            RESOURCE_MANAGER_PACKAGE_BURN_IDENT => MethodAccessibility::OwnPackageOnly;
                             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
@@ -674,14 +673,13 @@ impl ResourceNativePackage {
                             FREEZER_UPDATER_ROLE => updaters: [FREEZER_UPDATER_ROLE];
                             NON_FUNGIBLE_DATA_UPDATER_ROLE => updaters: [NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE];
                             NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE => updaters: [NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE];
-                            RESOURCE_PACKAGE_ROLE;
                         },
                         methods {
                             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT => [MINTER_ROLE];
                             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT => [MINTER_ROLE];
                             NON_FUNGIBLE_RESOURCE_MANAGER_MINT_SINGLE_RUID_IDENT => [MINTER_ROLE];
                             RESOURCE_MANAGER_BURN_IDENT => [BURNER_ROLE];
-                            RESOURCE_MANAGER_PACKAGE_BURN_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            RESOURCE_MANAGER_PACKAGE_BURN_IDENT => MethodAccessibility::OwnPackageOnly;
                             NON_FUNGIBLE_RESOURCE_MANAGER_UPDATE_DATA_IDENT => [NON_FUNGIBLE_DATA_UPDATER_ROLE];
                             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
@@ -927,8 +925,8 @@ impl ResourceNativePackage {
                             VAULT_RECALL_IDENT => [RECALLER_ROLE];
                             VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
                             VAULT_BURN_IDENT => [BURNER_ROLE];
-                            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT => MethodAccessibility::OwnPackageOnly;
+                            FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT => MethodAccessibility::OwnPackageOnly;
                         },
                     }),
                 },
@@ -1223,8 +1221,8 @@ impl ResourceNativePackage {
                             VAULT_BURN_IDENT => [BURNER_ROLE];
                             NON_FUNGIBLE_VAULT_BURN_NON_FUNGIBLES_IDENT => [BURNER_ROLE];
 
-                            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_IDENT => MethodAccessibility::OwnPackageOnly;
+                            NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_IDENT => MethodAccessibility::OwnPackageOnly;
                         },
                     }),
                 },
@@ -1407,8 +1405,8 @@ impl ResourceNativePackage {
                             BUCKET_PUT_IDENT => MethodAccessibility::Public;
                             BUCKET_TAKE_IDENT => MethodAccessibility::Public;
 
-                            FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => MethodAccessibility::OwnPackageOnly;
+                            FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => MethodAccessibility::OwnPackageOnly;
                         },
                         roles: RoleSpecification::UseOuter,
                     }),
@@ -1626,8 +1624,8 @@ impl ResourceNativePackage {
                             NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
-                            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
-                            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => [RESOURCE_PACKAGE_ROLE];
+                            NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_IDENT => MethodAccessibility::OwnPackageOnly;
+                            NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_IDENT => MethodAccessibility::OwnPackageOnly;
                         },
                         roles: RoleSpecification::UseOuter,
                     }),
@@ -2197,7 +2195,7 @@ impl ResourceNativePackage {
                     input.owner_role,
                     input.track_total_supply,
                     input.divisibility,
-                    input.access_rules,
+                    input.resource_roles,
                     input.metadata,
                     input.address_reservation,
                     api,
@@ -2214,7 +2212,7 @@ impl ResourceNativePackage {
                     input.track_total_supply,
                     input.divisibility,
                     input.initial_supply,
-                    input.access_rules,
+                    input.resource_roles,
                     input.metadata,
                     input.address_reservation,
                     api,
@@ -2291,7 +2289,7 @@ impl ResourceNativePackage {
                     input.id_type,
                     input.track_total_supply,
                     input.non_fungible_schema,
-                    input.access_rules,
+                    input.resource_roles,
                     input.metadata,
                     input.address_reservation,
                     api,
@@ -2309,7 +2307,7 @@ impl ResourceNativePackage {
                     input.track_total_supply,
                     input.non_fungible_schema,
                     input.entries,
-                    input.access_rules,
+                    input.resource_roles,
                     input.metadata,
                     input.address_reservation,
                     api,
@@ -2327,7 +2325,7 @@ impl ResourceNativePackage {
                     input.track_total_supply,
                     input.non_fungible_schema,
                     input.entries,
-                    input.access_rules,
+                    input.resource_roles,
                     input.metadata,
                     input.address_reservation,
                     api,

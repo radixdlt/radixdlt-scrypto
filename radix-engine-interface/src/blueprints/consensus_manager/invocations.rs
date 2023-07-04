@@ -48,7 +48,7 @@ pub struct ConsensusManagerConfig {
     pub num_owner_stake_units_unlock_epochs: u64,
     pub num_fee_increase_delay_epochs: u64,
 
-    pub validator_creation_xrd_cost: Decimal,
+    pub validator_creation_usd_cost: Decimal,
 }
 
 impl ConsensusManagerConfig {
@@ -303,7 +303,7 @@ pub struct ConsensusManagerCreateValidatorManifestInput {
     pub xrd_payment: ManifestBucket,
 }
 
-pub type ConsensusManagerCreateValidatorOutput = (ComponentAddress, Bucket);
+pub type ConsensusManagerCreateValidatorOutput = (ComponentAddress, Bucket, Bucket);
 
 pub const CONSENSUS_MANAGER_UPDATE_VALIDATOR_IDENT: &str = "update_validator";
 

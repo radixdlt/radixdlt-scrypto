@@ -4,8 +4,8 @@ CALL_METHOD
     Decimal("5000")
 ;
 SET_METADATA
-    Address("resource_sim1t5fj9x6nnjsg7rp0e0cgcfzmnyj6dgfcxww3ht209fpc50zxs3wckc")
-    "locked_on_create"
+    Address("resource_sim1thn7lqjm2v7xmmwdwu235slxn5zkx8amgn6jrwfkanuqu949hqjg2c")
+    "locked_later"
     Enum<1u8>(
         true
     )

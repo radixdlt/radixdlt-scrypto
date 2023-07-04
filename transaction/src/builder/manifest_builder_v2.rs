@@ -9,7 +9,6 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::ResourceAction::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 
 /// Utility for building transaction manifest.
@@ -314,19 +313,15 @@ impl ManifestBuilderV2 {
     }
 
     /// Creates a fungible resource
-    pub fn create_fungible_resource<R: Into<AccessRule>>(
+    pub fn create_fungible_resource(
         self,
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
+        resource_roles: FungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> Self {
-        let access_rules = access_rules
-            .into_iter()
-            .map(|(k, v)| (k, (v.0, v.1.into())))
-            .collect();
         let instruction = if let Some(initial_supply) = initial_supply {
             InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -339,7 +334,7 @@ impl ManifestBuilderV2 {
                         divisibility,
                         track_total_supply,
                         metadata,
-                        access_rules,
+                        resource_roles,
                         initial_supply,
                         address_reservation: None,
                     }
@@ -355,7 +350,7 @@ impl ManifestBuilderV2 {
                     divisibility,
                     track_total_supply,
                     metadata,
-                    access_rules,
+                    resource_roles,
                     address_reservation: None,
                 }),
             }
@@ -364,25 +359,19 @@ impl ManifestBuilderV2 {
     }
 
     /// Creates a new non-fungible resource
-    pub fn create_non_fungible_resource<R, T, V>(
+    pub fn create_non_fungible_resource<T, V>(
         self,
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
+        resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<T>,
     ) -> Self
     where
-        R: Into<AccessRule>,
         T: IntoIterator<Item = (NonFungibleLocalId, V)>,
         V: ManifestEncode + NonFungibleData,
     {
-        let access_rules = access_rules
-            .into_iter()
-            .map(|(k, v)| (k, (v.0, v.1.into())))
-            .collect();
-
         let instruction = if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
@@ -400,8 +389,8 @@ impl ManifestBuilderV2 {
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        resource_roles,
                         metadata,
-                        access_rules,
                         entries,
                         address_reservation: None,
                     }
@@ -418,7 +407,7 @@ impl ManifestBuilderV2 {
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                        access_rules,
+                        resource_roles,
                         metadata,
                         address_reservation: None,
                     }
@@ -775,20 +764,27 @@ impl ManifestBuilderV2 {
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         self,
-        owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
-        minter_rule: AccessRule,
+        owner_rule: AccessRule,
     ) -> Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-        access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
-        access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
-
-        let initial_supply = Option::None;
-        self.create_fungible_resource(owner_role, true, 18, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(
+            OwnerRole::Fixed(owner_rule),
+            true,
+            18,
+            FungibleResourceRoles {
+                mint_roles: mint_roles! {
+                    minter => OWNER, locked;
+                    minter_updater => OWNER, locked;
+                },
+                burn_roles: burn_roles! {
+                    burner => OWNER, locked;
+                    burner_updater => OWNER, locked;
+                },
+                ..Default::default()
+            },
+            metadata,
+            None,
+        )
     }
 
     /// Creates a token resource with fixed supply.
@@ -798,18 +794,12 @@ impl ManifestBuilderV2 {
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-
         self.create_fungible_resource(
             owner_role,
             true,
             18,
+            FungibleResourceRoles::default(),
             metadata,
-            access_rules,
             Some(initial_supply),
         )
     }
@@ -817,20 +807,27 @@ impl ManifestBuilderV2 {
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         self,
-        owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
-        minter_rule: AccessRule,
+        owner_rule: AccessRule,
     ) -> Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-        access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
-        access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
-
-        let initial_supply = Option::None;
-        self.create_fungible_resource(owner_role, false, 0, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(
+            OwnerRole::Fixed(owner_rule),
+            false,
+            0,
+            FungibleResourceRoles {
+                mint_roles: mint_roles! {
+                    minter => OWNER, locked;
+                    minter_updater => OWNER, locked;
+                },
+                burn_roles: burn_roles! {
+                    burner => OWNER, locked;
+                    burner_updater => OWNER, locked;
+                },
+                ..Default::default()
+            },
+            metadata,
+            None,
+        )
     }
 
     /// Creates a badge resource with fixed supply.
@@ -840,18 +837,12 @@ impl ManifestBuilderV2 {
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-
         self.create_fungible_resource(
             owner_role,
             false,
             0,
+            FungibleResourceRoles::default(),
             metadata,
-            access_rules,
             Some(initial_supply),
         )
     }

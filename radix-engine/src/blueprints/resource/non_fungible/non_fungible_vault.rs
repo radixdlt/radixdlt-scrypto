@@ -289,9 +289,10 @@ impl NonFungibleVaultBlueprint {
         let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::VaultFrozenFlag.into(),
-            LockFlags::MUTABLE,
+            LockFlags::read_only(),
         )?;
         let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+        api.field_lock_release(frozen_flag_handle)?;
 
         if frozen.frozen.intersects(flags) {
             return Err(RuntimeError::ApplicationError(

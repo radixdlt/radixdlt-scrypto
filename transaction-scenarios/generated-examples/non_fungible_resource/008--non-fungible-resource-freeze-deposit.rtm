@@ -3,7 +3,9 @@ CALL_METHOD
     "lock_fee"
     Decimal("5000")
 ;
-LOCK_METADATA
-    Address("resource_sim1t5fj9x6nnjsg7rp0e0cgcfzmnyj6dgfcxww3ht209fpc50zxs3wckc")
-    "locked_later"
+FREEZE_VAULT
+    Address("internal_vault_sim1nq7yruy24lze49j7awld24eamyu8tge0mv2whv9cw2e4jygqn6sldu")
+    Tuple(
+        2u32
+    )
 ;

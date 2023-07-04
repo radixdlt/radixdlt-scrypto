@@ -15,8 +15,14 @@ mod mint_and_burn {
         pub fn new() {
             let resource_manager =
                 ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
-                    .mintable(rule!(allow_all), rule!(deny_all))
-                    .burnable(rule!(allow_all), rule!(deny_all))
+                    .mint_roles(mint_roles! {
+                        minter => rule!(allow_all), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    })
+                    .burn_roles(burn_roles! {
+                        burner => rule!(allow_all), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    })
                     .create_with_no_initial_supply();
 
             let vault = resource_manager.create_empty_vault();

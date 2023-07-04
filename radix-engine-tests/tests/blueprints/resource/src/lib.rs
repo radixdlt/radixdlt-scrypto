@@ -20,7 +20,10 @@ mod resource_test {
                             "name" => "Super Admin Badge".to_owned(), locked;
                         }
                     })
-                    .mintable(rule!(allow_all), rule!(allow_all))
+                    .mint_roles(mint_roles! {
+                        minter => rule!(allow_all), updatable;
+                        minter_updater => rule!(allow_all), updatable;
+                    })
                     .create_with_no_initial_supply();
 
             super_admin_manager.set_mintable(rule!(require(super_admin_manager.address())));
@@ -30,16 +33,24 @@ mod resource_test {
             let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let resource_manager = ResourceBuilder::new_fungible(OwnerRole::None)
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata! {
-                    init {
-                        "name" => "TestToken".to_owned(), locked;
-                    }
-                })
-                .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .create_with_no_initial_supply();
+            let resource_manager = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
+                badge.resource_address()
+            ))))
+            .divisibility(DIVISIBILITY_MAXIMUM)
+            .metadata(metadata! {
+                init {
+                    "name" => "TestToken".to_owned(), locked;
+                }
+            })
+            .mint_roles(mint_roles! {
+                minter => OWNER, locked;
+                minter_updater => rule!(deny_all), locked;
+            })
+            .burn_roles(burn_roles! {
+                burner => OWNER, locked;
+                burner_updater => rule!(deny_all), locked;
+            })
+            .create_with_no_initial_supply();
             (badge, resource_manager)
         }
 
@@ -50,16 +61,24 @@ mod resource_test {
             let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let resource_manager = ResourceBuilder::new_fungible(OwnerRole::None)
-                .divisibility(divisibility)
-                .metadata(metadata! {
-                    init {
-                        "name" => "TestToken".to_owned(), locked;
-                    }
-                })
-                .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .create_with_no_initial_supply();
+            let resource_manager = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
+                badge.resource_address()
+            ))))
+            .divisibility(divisibility)
+            .metadata(metadata! {
+                init {
+                    "name" => "TestToken".to_owned(), locked;
+                }
+            })
+            .mint_roles(mint_roles! {
+                minter => OWNER, locked;
+                minter_updater => rule!(deny_all), locked;
+            })
+            .burn_roles(burn_roles! {
+                burner => OWNER, locked;
+                burner_updater => rule!(deny_all), locked;
+            })
+            .create_with_no_initial_supply();
             let tokens = badge.authorize(|| resource_manager.mint(amount));
             (badge, tokens, resource_manager)
         }
@@ -93,16 +112,24 @@ mod resource_test {
             let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let resource_manager = ResourceBuilder::new_fungible(OwnerRole::None)
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata(metadata! {
-                    init {
-                        "name" => "TestToken".to_owned(), locked;
-                    }
-                })
-                .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .create_with_no_initial_supply();
+            let resource_manager = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
+                badge.resource_address()
+            ))))
+            .divisibility(DIVISIBILITY_MAXIMUM)
+            .metadata(metadata! {
+                init {
+                    "name" => "TestToken".to_owned(), locked;
+                }
+            })
+            .mint_roles(mint_roles! {
+                minter => OWNER, locked;
+                minter_updater => rule!(deny_all), locked;
+            })
+            .burn_roles(burn_roles! {
+                burner => OWNER, locked;
+                burner_updater => rule!(deny_all), locked;
+            })
+            .create_with_no_initial_supply();
             (badge, resource_manager)
         }
 

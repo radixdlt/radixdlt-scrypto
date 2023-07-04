@@ -22,6 +22,12 @@ impl Iterator for AllScenariosIterator {
                 radiswap::RadiswapScenarioCreator::create(core)
             })),
             3 => Some(Box::new(|core| metadata::MetadataScenario::create(core))),
+            4 => Some(Box::new(|core| {
+                fungible_resource::FungibleResourceScenarioCreator::create(core)
+            })),
+            5 => Some(Box::new(|core| {
+                non_fungible_resource::NonFungibleResourceScenarioCreator::create(core)
+            })),
             _ => None,
         }
     }

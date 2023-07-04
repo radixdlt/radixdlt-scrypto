@@ -9,7 +9,7 @@ pub mod tests {
     use crate::signing::ed25519::Ed25519PrivateKey;
     use radix_engine_interface::api::node_modules::ModuleConfig;
     use radix_engine_interface::blueprints::resource::RolesInit;
-    use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole};
+    use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
     use radix_engine_interface::{metadata, metadata_init};
     use scrypto_derive::NonFungibleData;
 
@@ -110,6 +110,9 @@ CALL_METHOD
     Address("${component_address}")
     "buy_gumball"
     Bucket("bucket1")
+;
+ASSERT_WORKTOP_CONTAINS_ANY
+    Address("${gumball_resource_address}")
 ;
 ASSERT_WORKTOP_CONTAINS
     Address("${gumball_resource_address}")
@@ -334,6 +337,29 @@ CALL_FUNCTION
     "BlueprintName"
     "f"
     "string"
+;
+"##,
+            ),
+        );
+    }
+
+    #[test]
+    fn test_resource_recall_nonfungibles() {
+        compile_and_decompile_with_inversion_test(
+            "resource_recall_nonfungibles",
+            apply_address_replacements(include_str!(
+                "../../examples/resources/recall_non_fungibles.rtm"
+            )),
+            &NetworkDefinition::simulator(),
+            vec![],
+            apply_address_replacements(
+                r##"
+RECALL_NON_FUNGIBLES_FROM_VAULT
+    Address("${vault_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#123#"),
+        NonFungibleLocalId("#456#")
+    )
 ;
 "##,
             ),
@@ -762,15 +788,28 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     false
     18u8
     Decimal("12")
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
         ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
     )
     Tuple(
         Map<String, Tuple>(
@@ -834,15 +873,28 @@ CREATE_FUNGIBLE_RESOURCE
     Enum<0u8>()
     false
     18u8
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
         ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
     )
     Tuple(
         Map<String, Tuple>(
@@ -922,15 +974,29 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             )
         )
     )
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
         ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
     )
     Tuple(
         Map<String, Tuple>(
@@ -999,15 +1065,29 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Array<String>()
     )
-    Map<Enum, Tuple>(
-        Enum<3u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
         ),
-        Enum<4u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
-        )
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>(),
+        Enum<0u8>()
     )
     Tuple(
         Map<String, Tuple>(
@@ -1489,8 +1569,8 @@ CALL_METHOD
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 false,
+                NonFungibleResourceRoles::default(),
                 metadata!(),
-                BTreeMap::<_, (_, AccessRule)>::new(),
                 Some([(NonFungibleLocalId::integer(1), EmptyStruct {})]),
             )
             .build();

@@ -9,7 +9,6 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::ResourceAction::{Burn, Mint};
 use radix_engine_interface::blueprints::resource::*;
 
 /// Utility for building transaction manifest.
@@ -408,19 +407,15 @@ impl ManifestBuilder {
     }
 
     /// Creates a fungible resource
-    pub fn create_fungible_resource<R: Into<AccessRule>>(
+    pub fn create_fungible_resource(
         &mut self,
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
+        resource_roles: FungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
-        let access_rules = access_rules
-            .into_iter()
-            .map(|(k, v)| (k, (v.0, v.1.into())))
-            .collect();
         if let Some(initial_supply) = initial_supply {
             self.add_instruction(InstructionV1::CallFunction {
                 package_address: RESOURCE_PACKAGE.into(),
@@ -433,7 +428,7 @@ impl ManifestBuilder {
                         divisibility,
                         track_total_supply,
                         metadata,
-                        access_rules,
+                        resource_roles,
                         initial_supply,
                         address_reservation: None,
                     }
@@ -449,7 +444,7 @@ impl ManifestBuilder {
                     divisibility,
                     track_total_supply,
                     metadata,
-                    access_rules,
+                    resource_roles,
                     address_reservation: None,
                 }),
             });
@@ -459,25 +454,19 @@ impl ManifestBuilder {
     }
 
     /// Creates a new non-fungible resource
-    pub fn create_non_fungible_resource<R, T, V>(
+    pub fn create_non_fungible_resource<T, V>(
         &mut self,
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
         track_total_supply: bool,
+        resource_roles: NonFungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
-        R: Into<AccessRule>,
         T: IntoIterator<Item = (NonFungibleLocalId, V)>,
         V: ManifestEncode + NonFungibleData,
     {
-        let access_rules = access_rules
-            .into_iter()
-            .map(|(k, v)| (k, (v.0, v.1.into())))
-            .collect();
-
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
@@ -495,8 +484,8 @@ impl ManifestBuilder {
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        resource_roles,
                         metadata,
-                        access_rules,
                         entries,
                         address_reservation: None,
                     }
@@ -513,8 +502,65 @@ impl ManifestBuilder {
                         id_type,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
-                        access_rules,
+                        resource_roles,
                         metadata,
+                        address_reservation: None,
+                    }
+                ),
+            });
+        }
+
+        self
+    }
+
+    pub fn create_ruid_non_fungible_resource<T, V>(
+        &mut self,
+        owner_role: OwnerRole,
+        track_total_supply: bool,
+        metadata: ModuleConfig<MetadataInit>,
+        resource_roles: NonFungibleResourceRoles,
+        initial_supply: Option<T>,
+    ) -> &mut Self
+    where
+        T: IntoIterator<Item = V>,
+        V: ManifestEncode + NonFungibleData,
+    {
+        if let Some(initial_supply) = initial_supply {
+            let entries = initial_supply
+                .into_iter()
+                .map(|e| (to_manifest_value_and_unwrap!(&e),))
+                .collect();
+
+            self.add_instruction(InstructionV1::CallFunction {
+                package_address: RESOURCE_PACKAGE.into(),
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
+                args: to_manifest_value_and_unwrap!(
+                    &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
+                        owner_role,
+                        track_total_supply,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        resource_roles,
+                        metadata,
+                        entries,
+                        address_reservation: None,
+                    }
+                ),
+            });
+        } else {
+            self.add_instruction(InstructionV1::CallFunction {
+                package_address: RESOURCE_PACKAGE.into(),
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(
+                    &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
+                        owner_role,
+                        track_total_supply,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        resource_roles,
+                        metadata,
+                        entries: vec![],
                         address_reservation: None,
                     }
                 ),
@@ -808,7 +854,7 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn freeze_metadata(&mut self, address: GlobalAddress, key: String) -> &mut Self {
+    pub fn lock_metadata(&mut self, address: GlobalAddress, key: String) -> &mut Self {
         self.add_instruction(InstructionV1::CallMetadataMethod {
             address: address.into(),
             method_name: METADATA_LOCK_IDENT.to_string(),
@@ -907,20 +953,27 @@ impl ManifestBuilder {
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
-        owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
-        minter_rule: AccessRule,
+        owner_rule: AccessRule,
     ) -> &mut Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-        access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
-        access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
-
-        let initial_supply = Option::None;
-        self.create_fungible_resource(owner_role, true, 18, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(
+            OwnerRole::Fixed(owner_rule),
+            true,
+            18,
+            FungibleResourceRoles {
+                mint_roles: mint_roles! {
+                    minter => OWNER, locked;
+                    minter_updater => OWNER, locked;
+                },
+                burn_roles: burn_roles! {
+                    burner => OWNER, locked;
+                    burner_updater => OWNER, locked;
+                },
+                ..Default::default()
+            },
+            metadata,
+            None,
+        )
     }
 
     /// Creates a token resource with fixed supply.
@@ -930,18 +983,12 @@ impl ManifestBuilder {
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> &mut Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-
         self.create_fungible_resource(
             owner_role,
             true,
             18,
+            FungibleResourceRoles::default(),
             metadata,
-            access_rules,
             Some(initial_supply),
         )
     }
@@ -949,20 +996,27 @@ impl ManifestBuilder {
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         &mut self,
-        owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
-        minter_rule: AccessRule,
+        owner_rule: AccessRule,
     ) -> &mut Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-        access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
-        access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
-
-        let initial_supply = Option::None;
-        self.create_fungible_resource(owner_role, false, 0, metadata, access_rules, initial_supply)
+        self.create_fungible_resource(
+            OwnerRole::Fixed(owner_rule),
+            false,
+            0,
+            FungibleResourceRoles {
+                mint_roles: mint_roles! {
+                    minter => OWNER, locked;
+                    minter_updater => OWNER, locked;
+                },
+                burn_roles: burn_roles! {
+                    burner => OWNER, locked;
+                    burner_updater => OWNER, locked;
+                },
+                ..Default::default()
+            },
+            metadata,
+            None,
+        )
     }
 
     /// Creates a badge resource with fixed supply.
@@ -972,18 +1026,12 @@ impl ManifestBuilder {
         metadata: ModuleConfig<MetadataInit>,
         initial_supply: Decimal,
     ) -> &mut Self {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceAction::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-
         self.create_fungible_resource(
             owner_role,
             false,
             0,
+            FungibleResourceRoles::default(),
             metadata,
-            access_rules,
             Some(initial_supply),
         )
     }
@@ -998,6 +1046,11 @@ impl ManifestBuilder {
                 .add_instruction(InstructionV1::BurnResource { bucket_id })
                 .0
         })
+    }
+
+    pub fn burn_resource(&mut self, bucket_id: ManifestBucket) -> &mut Self {
+        self.add_instruction(InstructionV1::BurnResource { bucket_id })
+            .0
     }
 
     pub fn burn_all_from_worktop(&mut self, resource_address: ResourceAddress) -> &mut Self {

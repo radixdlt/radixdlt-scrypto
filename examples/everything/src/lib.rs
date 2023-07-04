@@ -64,8 +64,12 @@ mod everything {
                 })
                 .enable_component_royalties(component_royalties! {
                     roles {
-                        royalty_admin => rule!(allow_all), updatable;
-                        royalty_admin_updater => OWNER, locked;
+                        royalty_setter => rule!(allow_all), updatable;
+                        royalty_setter_updater => OWNER, locked;
+                        royalty_locker => OWNER, updatable;
+                        royalty_locker_updater => rule!(deny_all), locked;
+                        royalty_claimer => OWNER, updatable;
+                        royalty_claimer_updater => rule!(deny_all), locked;
                     },
                     init {
                         public_method => Xrd(1.into()), updatable;
@@ -94,12 +98,39 @@ mod everything {
 
         pub fn public_method(&self) -> ResourceManager {
             ResourceBuilder::new_ruid_non_fungible::<TestNFData>(OwnerRole::None)
+                .mint_roles(mint_roles! {
+                    minter => rule!(allow_all), locked;
+                    minter_updater => rule!(allow_all), locked;
+                })
+                .burn_roles(burn_roles! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(allow_all), locked;
+                })
+                .freeze_roles(freeze_roles! {
+                    freezer => rule!(allow_all), locked;
+                    freezer_updater => rule!(allow_all), locked;
+                })
+                .recall_roles(recall_roles! {
+                    recaller => rule!(allow_all), locked;
+                    recaller_updater => rule!(allow_all), locked;
+                })
+                .withdraw_roles(withdraw_roles! {
+                    withdrawer => rule!(allow_all), locked;
+                    withdrawer_updater => rule!(allow_all), locked;
+                })
+                .deposit_roles(deposit_roles! {
+                    depositor => rule!(allow_all), locked;
+                    depositor_updater => rule!(allow_all), locked;
+                })
+                .non_fungible_data_update_roles(non_fungible_data_update_roles! {
+                    non_fungible_data_updater => rule!(allow_all), locked;
+                    non_fungible_data_updater_updater => rule!(allow_all), locked;
+                })
                 .metadata(metadata! {
                     init {
                         "name" => "Super Admin Badge".to_string(), locked;
                     }
                 })
-                .mintable(rule!(allow_all), rule!(allow_all))
                 .create_with_no_initial_supply()
         }
 

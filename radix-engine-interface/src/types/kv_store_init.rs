@@ -46,6 +46,10 @@ impl<K: Ord, V> KeyValueStoreInit<K, V> {
         self.data.insert(key.into(), entry);
     }
 
+    pub fn set_entry<E: Into<K>>(&mut self, key: E, entry: KeyValueStoreInitEntry<V>) {
+        self.data.insert(key.into(), entry);
+    }
+
     pub fn lock_empty<E: Into<K>>(&mut self, key: E) {
         let entry = KeyValueStoreInitEntry {
             value: None,
@@ -60,6 +64,22 @@ impl<K: Ord, V> KeyValueStoreInit<K, V> {
 pub struct KeyValueStoreInitEntry<V> {
     pub value: Option<V>,
     pub lock: bool,
+}
+
+impl<V> KeyValueStoreInitEntry<V> {
+    pub fn locked(value: V) -> Self {
+        Self {
+            value: Some(value),
+            lock: true,
+        }
+    }
+
+    pub fn updatable(value: V) -> Self {
+        Self {
+            value: Some(value),
+            lock: false,
+        }
+    }
 }
 
 #[macro_export]

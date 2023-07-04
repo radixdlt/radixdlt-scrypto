@@ -1,8 +1,9 @@
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::{metadata, metadata_init};
+use radix_engine_interface::{metadata, metadata_init, mint_roles};
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
@@ -281,22 +282,20 @@ fn test_manifest_with_restricted_minting_resource<F>(
     let minter_badge_resource_address =
         test_runner.create_fungible_resource(dec!("1"), 0, component_address);
 
-    let access_rules = BTreeMap::from([(
-        ResourceAction::Mint,
-        (
-            rule!(require(minter_badge_resource_address)),
-            rule!(deny_all),
-        ),
-    )]);
-
     let manifest = match resource_type {
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()
             .create_fungible_resource(
                 OwnerRole::None,
                 false,
                 divisibility,
+                FungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(require(minter_badge_resource_address)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
+                },
                 metadata!(),
-                access_rules,
                 None,
             )
             .build(),
@@ -305,8 +304,14 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 OwnerRole::None,
                 id_type,
                 false,
+                NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(require(minter_badge_resource_address)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
+                },
                 metadata!(),
-                access_rules,
                 None::<BTreeMap<NonFungibleLocalId, SampleNonFungibleData>>,
             )
             .build(),
