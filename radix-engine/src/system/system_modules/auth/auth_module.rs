@@ -257,7 +257,7 @@ impl AuthModule {
 
         match method_permissions.get(&method_key) {
             Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
-            Some(MethodAccessibility::PackageOnly) => {
+            Some(MethodAccessibility::OwnPackageOnly) => {
                 let package = callee.module_object_info.blueprint_id.package_address;
                 Ok(ResolvedPermission::AccessRule(rule!(require(
                     package_of_direct_caller(package)

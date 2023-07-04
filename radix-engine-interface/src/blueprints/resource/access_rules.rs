@@ -46,7 +46,7 @@ pub enum MethodAccessibility {
     /// Method is only accessible by any role in the role list
     RoleProtected(RoleList),
     /// Only the package this method is a part of may access this method
-    PackageOnly,
+    OwnPackageOnly,
 }
 
 impl MethodAccessibility {
