@@ -38,7 +38,8 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
     NON_FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT, NON_FUNGIBLE_RESOURCE_MANAGER_MINT_RUID_IDENT,
-    VAULT_FREEZE_IDENT, VAULT_RECALL_IDENT, VAULT_UNFREEZE_IDENT,
+    NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT, VAULT_FREEZE_IDENT, VAULT_RECALL_IDENT,
+    VAULT_UNFREEZE_IDENT,
 };
 use radix_engine_interface::constants::{
     ACCESS_CONTROLLER_PACKAGE, ACCOUNT_PACKAGE, IDENTITY_PACKAGE, RESOURCE_PACKAGE,
@@ -209,10 +210,6 @@ pub fn decompile_instruction<F: fmt::Write>(
         InstructionV1::ReturnToWorktop { bucket_id } => {
             ("RETURN_TO_WORKTOP", to_manifest_value(&(bucket_id,))?)
         }
-        InstructionV1::AssertWorktopContainsAny { resource_address } => (
-            "ASSERT_WORKTOP_CONTAINS_ANY",
-            to_manifest_value(&(resource_address))?,
-        ),
         InstructionV1::AssertWorktopContains {
             amount,
             resource_address,
@@ -226,6 +223,10 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => (
             "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES",
             to_manifest_value(&(resource_address, ids))?,
+        ),
+        InstructionV1::AssertWorktopContainsAny { resource_address } => (
+            "ASSERT_WORKTOP_CONTAINS_ANY",
+            to_manifest_value(&(resource_address,))?,
         ),
         InstructionV1::PopFromAuthZone => {
             let proof = context.new_proof();
@@ -607,6 +608,10 @@ pub fn decompile_instruction<F: fmt::Write>(
                 VAULT_UNFREEZE_IDENT => {
                     fields.push(to_manifest_value(vault_id)?);
                     "UNFREEZE_VAULT"
+                }
+                NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT => {
+                    fields.push(to_manifest_value(vault_id)?);
+                    "RECALL_NON_FUNGIBLES_FROM_VAULT"
                 }
                 /* Default */
                 _ => {

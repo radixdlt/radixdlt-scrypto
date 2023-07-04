@@ -9,28 +9,17 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
-fn add_package_role(roles: &mut RolesInit) {
-    // Meta roles
-    // TODO: Remove
-    roles.define_immutable_role(
-        RESOURCE_PACKAGE_ROLE,
-        rule!(require(package_of_direct_caller(RESOURCE_PACKAGE))),
-    );
-}
-
 pub fn globalize_resource_manager<Y>(
     owner_role: OwnerRole,
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
-    mut main_roles: RolesInit,
+    main_roles: RolesInit,
     metadata: ModuleConfig<MetadataInit>,
     api: &mut Y,
 ) -> Result<ResourceAddress, RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
 {
-    add_package_role(&mut main_roles);
-
     let roles = btreemap!(
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,
@@ -56,7 +45,7 @@ pub fn globalize_fungible_with_initial_supply<Y>(
     owner_role: OwnerRole,
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
-    mut main_roles: RolesInit,
+    main_roles: RolesInit,
     metadata: ModuleConfig<MetadataInit>,
     initial_supply: Decimal,
     api: &mut Y,
@@ -64,8 +53,6 @@ pub fn globalize_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    add_package_role(&mut main_roles);
-
     let roles = btreemap!(
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,
@@ -99,7 +86,7 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
     owner_role: OwnerRole,
     object_id: NodeId,
     resource_address_reservation: GlobalAddressReservation,
-    mut main_roles: RolesInit,
+    main_roles: RolesInit,
     metadata: ModuleConfig<MetadataInit>,
     ids: BTreeSet<NonFungibleLocalId>,
     api: &mut Y,
@@ -107,8 +94,6 @@ pub fn globalize_non_fungible_with_initial_supply<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    add_package_role(&mut main_roles);
-
     let roles = btreemap!(
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,

@@ -371,7 +371,9 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                         MethodAccessibility::RoleProtected(role_list) => {
                             check_list(role_list)?;
                         }
-                        MethodAccessibility::Public | MethodAccessibility::OuterObjectOnly => {}
+                        MethodAccessibility::OwnPackageOnly
+                        | MethodAccessibility::Public
+                        | MethodAccessibility::OuterObjectOnly => {}
                     }
                 }
 

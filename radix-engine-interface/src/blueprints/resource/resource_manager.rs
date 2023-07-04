@@ -9,9 +9,6 @@ pub const VAULT_RECALL_FEATURE: &str = "vault_recall";
 pub const MINT_FEATURE: &str = "mint";
 pub const BURN_FEATURE: &str = "burn";
 
-// Meta-roles
-pub const RESOURCE_PACKAGE_ROLE: &str = "resource_package";
-
 // Main roles
 pub const MINTER_ROLE: &str = "minter";
 pub const MINTER_UPDATER_ROLE: &str = "minter_updater";
