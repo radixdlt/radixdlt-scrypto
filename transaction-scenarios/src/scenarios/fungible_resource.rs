@@ -77,7 +77,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     Ok(())
                 },
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-max-div-mint",
@@ -88,12 +88,9 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         },
                         vec![],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-max-div-burn",
@@ -111,12 +108,9 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         },
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-max-div-transfer-32-times",
@@ -143,39 +137,39 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         },
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "fungible-max-div-freeze-withdraw",
+                        |builder| builder.freeze_withdraw(state.vault1.unwrap()),
+                        vec![&config.user_account_1.key],
+                    )
+                }
+            )
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-max-div-freeze-deposit",
                         |builder| builder.freeze_deposit(state.vault1.unwrap()),
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-freeze-deposit",
+                        "fungible-max-div-freeze-burn",
                         |builder| builder.freeze_burn(state.vault1.unwrap()),
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
             .failed_transaction_with_error_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-recall-freezed-vault",
+                        "fungible-max-div-recall-frozen-vault",
                         |builder| {
                             builder
                                 .recall(state.vault1.unwrap(), dec!("2"))
@@ -189,46 +183,37 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     Ok(())
                 },
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-max-div-unfreeze-withdraw",
                         |builder| builder.unfreeze_withdraw(state.vault1.unwrap()),
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-max-div-unfreeze-deposit",
                         |builder| builder.unfreeze_deposit(state.vault1.unwrap()),
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-unfreeze-deposit",
+                        "fungible-max-div-unfreeze-burn",
                         |builder| builder.unfreeze_burn(state.vault1.unwrap()),
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-recall-unfreezed-vault",
+                        "fungible-max-div-recall-unfrozen-vault",
                         |builder| {
                             builder
                                 .recall(state.vault1.unwrap(), dec!("2"))
@@ -236,10 +221,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         },
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
             .successful_transaction_with_result_handler(
                 |core, config, state| {
@@ -276,7 +258,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     Ok(())
                 },
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-min-div-mint-correct-granularity",
@@ -287,10 +269,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         },
                         vec![],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
             .failed_transaction_with_error_handler(
                 |core, config, state| {
@@ -308,7 +287,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     Ok(())
                 },
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-min-div-transfer-correct-granularity",
@@ -323,10 +302,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         },
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
             .failed_transaction_with_error_handler(
                 |core, config, state| {
@@ -348,7 +324,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     Ok(())
                 },
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-min-div-create-proof-correct-granularity",
@@ -361,10 +337,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         },
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
             .failed_transaction_with_error_handler(
                 |core, config, state| {
@@ -384,7 +357,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     Ok(())
                 },
             )
-            .successful_transaction_with_result_handler(
+            .successful_transaction(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-min-div-recall-correct-granularity",
@@ -395,10 +368,7 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         },
                         vec![&config.user_account_1.key],
                     )
-                },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                }
             )
             .failed_transaction_with_error_handler(
                 |core, config, state| {

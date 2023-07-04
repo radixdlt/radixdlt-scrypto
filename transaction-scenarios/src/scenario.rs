@@ -55,7 +55,7 @@ impl NextTransaction {
         let Some(directory_path) = dump_directory else {
             return;
         };
-        let file_name = format!("{}--{}", self.stage_counter, self.logical_name);
+        let file_name = format!("{:03}--{}", self.stage_counter, self.logical_name);
         dump_manifest_to_file_system(&self.manifest, directory_path, Some(&file_name), &network)
             .unwrap()
     }
