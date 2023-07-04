@@ -8,7 +8,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
-use crate::system::system::{DynSubstate, KeyValueEntrySubstate};
+use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
@@ -483,7 +483,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 LockFlags::MUTABLE,
                 SystemLockData::Default,
             )?;
-            let mut auth_zone_substate: DynSubstate<(AuthZone,)> =
+            let mut auth_zone_substate: FieldSubstate<AuthZone> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
             let proofs = core::mem::replace(&mut auth_zone_substate.value.0.proofs, Vec::new());
             api.kernel_write_substate(

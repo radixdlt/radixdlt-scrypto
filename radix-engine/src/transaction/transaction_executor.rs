@@ -4,7 +4,7 @@ use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrack
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
-use crate::system::system::{DynSubstate, KeyValueEntrySubstate, SubstateMutability};
+use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
@@ -375,7 +375,7 @@ where
                 return None;
             }
         };
-        let substate: DynSubstate<(ConsensusManagerSubstate,)> = track.read_substate(handle).0.as_typed().unwrap();
+        let substate: FieldSubstate<ConsensusManagerSubstate> = track.read_substate(handle).0.as_typed().unwrap();
         track.close_substate(handle);
         Some(substate.value.0.epoch)
     }
@@ -415,7 +415,7 @@ where
             )
             .unwrap()
             .0;
-        let substate: DynSubstate<(TransactionTrackerSubstate,)> =
+        let substate: FieldSubstate<TransactionTrackerSubstate> =
             track.read_substate(handle).0.as_typed().unwrap();
         track.close_substate(handle);
 
@@ -616,7 +616,7 @@ where
                 )
                 .unwrap();
             let (substate_value, _store_access) = track.read_substate(handle);
-            let mut substate: DynSubstate<(LiquidFungibleResource,)> = substate_value.as_typed().unwrap();
+            let mut substate: FieldSubstate<LiquidFungibleResource> = substate_value.as_typed().unwrap();
             substate.value.0.put(LiquidFungibleResource::new(amount));
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
@@ -655,7 +655,7 @@ where
                 )
                 .unwrap();
             let (substate_value, _store_access) = track.read_substate(handle);
-            let mut substate: DynSubstate<(LiquidFungibleResource,)> = substate_value.as_typed().unwrap();
+            let mut substate: FieldSubstate<LiquidFungibleResource> = substate_value.as_typed().unwrap();
             substate.value.0.put(locked);
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
@@ -687,7 +687,7 @@ where
                 )
                 .unwrap()
                 .0;
-            let substate: DynSubstate<(ConsensusManagerSubstate,)> =
+            let substate: FieldSubstate<ConsensusManagerSubstate> =
                 track.read_substate(handle).0.as_typed().unwrap();
             let current_leader = substate.value.0.current_leader;
             track.close_substate(handle);
@@ -702,7 +702,7 @@ where
                 )
                 .unwrap()
                 .0;
-            let mut substate: DynSubstate<(ValidatorRewardsSubstate,)> =
+            let mut substate: FieldSubstate<ValidatorRewardsSubstate> =
                 track.read_substate(handle).0.as_typed().unwrap();
             let proposer_rewards = if let Some(current_leader) = current_leader {
                 let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
@@ -735,7 +735,7 @@ where
                 )
                 .unwrap()
                 .0;
-            let mut substate: DynSubstate<(LiquidFungibleResource,)> =
+            let mut substate: FieldSubstate<LiquidFungibleResource> =
                 track.read_substate(handle).0.as_typed().unwrap();
             substate.value.0.put(
                 collected_fees
@@ -765,7 +765,7 @@ where
             )
             .unwrap()
             .0;
-        let mut transaction_tracker: DynSubstate<(TransactionTrackerSubstate,)> =
+        let mut transaction_tracker: FieldSubstate<TransactionTrackerSubstate> =
             track.read_substate(handle).0.as_typed().unwrap();
 
         // Update the status of the intent hash
@@ -828,7 +828,7 @@ where
         }
         track.update_substate(
             handle,
-            IndexedScryptoValue::from_typed(&DynSubstate::new((transaction_tracker.value.0,))),
+            IndexedScryptoValue::from_typed(&FieldSubstate::new_field(transaction_tracker.value.0)),
 
         );
         track.close_substate(handle);

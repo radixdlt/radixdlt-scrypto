@@ -1,5 +1,5 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::DynSubstate;
+use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::{FieldKey, MapKey, ScryptoValue, SubstateKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
@@ -129,7 +129,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(LiquidFungibleResource,)>>(
+                        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                             &node_id,
                             MAIN_BASE_PARTITION,
                             &FungibleVaultField::LiquidFungible.into(),
@@ -149,7 +149,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(LiquidNonFungibleVault,)>>(
+                        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidNonFungibleVault>>(
                             &node_id,
                             MAIN_BASE_PARTITION,
                             &NonFungibleVaultField::LiquidNonFungible.into(),

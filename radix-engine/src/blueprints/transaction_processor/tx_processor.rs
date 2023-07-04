@@ -20,7 +20,7 @@ use transaction::data::transform;
 use transaction::data::TransformHandler;
 use transaction::model::*;
 use transaction::validation::*;
-use crate::system::system::DynSubstate;
+use crate::system::system::{FieldSubstate};
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct TransactionProcessorRunInput {
@@ -102,7 +102,7 @@ impl TransactionProcessorBlueprint {
             worktop_node_id,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
-                    WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&DynSubstate::new((WorktopSubstate::new(),)))
+                    WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(WorktopSubstate::new()))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {

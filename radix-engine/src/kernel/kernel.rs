@@ -13,7 +13,7 @@ use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::{DynSubstate, SystemService};
+use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
@@ -471,7 +471,7 @@ where
                     &FungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
-            let liquid: DynSubstate<(LiquidFungibleResource,)> = substate.as_typed().unwrap();
+            let liquid: FieldSubstate<LiquidFungibleResource> = substate.as_typed().unwrap();
 
             Some(BucketSnapshot::Fungible {
                 resource_address,
@@ -486,7 +486,7 @@ where
                     &NonFungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
-            let liquid: DynSubstate<(LiquidNonFungibleResource,)> = substate.as_typed().unwrap();
+            let liquid: FieldSubstate<LiquidNonFungibleResource> = substate.as_typed().unwrap();
 
             Some(BucketSnapshot::NonFungible {
                 resource_address,
@@ -541,7 +541,7 @@ where
                     &FungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
-            let proof: DynSubstate<(FungibleProofSubstate,)> = substate.as_typed().unwrap();
+            let proof: FieldSubstate<FungibleProofSubstate> = substate.as_typed().unwrap();
 
             Some(ProofSnapshot::Fungible {
                 resource_address,
@@ -568,7 +568,7 @@ where
                     &NonFungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
-            let proof: DynSubstate<(NonFungibleProofSubstate,)> = substate.as_typed().unwrap();
+            let proof: FieldSubstate<NonFungibleProofSubstate> = substate.as_typed().unwrap();
 
             Some(ProofSnapshot::NonFungible {
                 resource_address,

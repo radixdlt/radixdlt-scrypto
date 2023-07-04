@@ -12,7 +12,7 @@ use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
-use crate::system::system::DynSubstate;
+use crate::system::system::{FieldSubstate};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NodeMoveError {
@@ -59,7 +59,7 @@ impl NodeMoveModule {
                         LockFlags::MUTABLE,
                         SystemLockData::default(),
                     )?;
-                    let mut proof: DynSubstate<(ProofMoveableSubstate,)> =
+                    let mut proof: FieldSubstate<ProofMoveableSubstate> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                     if proof.value.0.restricted {
@@ -81,7 +81,7 @@ impl NodeMoveModule {
                         LockFlags::read_only(),
                         SystemLockData::default(),
                     )?;
-                    let proof: DynSubstate<(ProofMoveableSubstate,)> =
+                    let proof: FieldSubstate<ProofMoveableSubstate> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                     if proof.value.0.restricted {
@@ -121,7 +121,7 @@ impl NodeMoveModule {
                         LockFlags::MUTABLE,
                         SystemLockData::default(),
                     )?;
-                    let mut proof: DynSubstate<(ProofMoveableSubstate,)> =
+                    let mut proof: FieldSubstate<ProofMoveableSubstate> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                     if proof.value.0.restricted {
@@ -143,7 +143,7 @@ impl NodeMoveModule {
                         LockFlags::read_only(),
                         SystemLockData::default(),
                     )?;
-                    let proof: DynSubstate<(ProofMoveableSubstate,)> =
+                    let proof: FieldSubstate<ProofMoveableSubstate> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
                     if proof.value.0.restricted {

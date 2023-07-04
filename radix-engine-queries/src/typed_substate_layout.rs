@@ -14,7 +14,7 @@ pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
-use radix_engine::system::system::DynSubstate;
+use radix_engine::system::system::{FieldSubstate};
 pub use radix_engine::system::system::KeyValueEntrySubstate;
 pub use radix_engine_interface::api::node_modules::royalty::*;
 use transaction::prelude::IntentHash;
@@ -455,13 +455,13 @@ pub enum TypedTypeInfoModuleSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesModuleSubstateValue {
-    OwnerRole(DynSubstate<(OwnerRoleSubstate,)>),
+    OwnerRole(FieldSubstate<OwnerRoleSubstate>),
     Rule(KeyValueEntrySubstate<AccessRule>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedRoyaltyModuleSubstateValue {
-    ComponentRoyalty(DynSubstate<(ComponentRoyaltySubstate,)>),
+    ComponentRoyalty(FieldSubstate<ComponentRoyaltySubstate>),
     ComponentMethodRoyalty(ComponentMethodRoyaltySubstate),
 }
 
@@ -508,84 +508,84 @@ pub enum TypedMainModuleSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedPackageFieldValue {
-    Royalty(DynSubstate<(PackageRoyaltyAccumulatorSubstate,)>),
+    Royalty(FieldSubstate<PackageRoyaltyAccumulatorSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedFungibleResourceManagerFieldValue {
-    Divisibility(DynSubstate<(FungibleResourceManagerDivisibilitySubstate,)>),
-    TotalSupply(DynSubstate<(FungibleResourceManagerTotalSupplySubstate,)>),
+    Divisibility(FieldSubstate<FungibleResourceManagerDivisibilitySubstate>),
+    TotalSupply(FieldSubstate<FungibleResourceManagerTotalSupplySubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleResourceManagerFieldValue {
-    IdType(DynSubstate<(NonFungibleResourceManagerIdTypeSubstate,)>),
-    MutableFields(DynSubstate<(NonFungibleResourceManagerMutableFieldsSubstate,)>),
-    TotalSupply(DynSubstate<(NonFungibleResourceManagerTotalSupplySubstate,)>),
+    IdType(FieldSubstate<NonFungibleResourceManagerIdTypeSubstate>),
+    MutableFields(FieldSubstate<NonFungibleResourceManagerMutableFieldsSubstate>),
+    TotalSupply(FieldSubstate<NonFungibleResourceManagerTotalSupplySubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedFungibleVaultFieldValue {
-    Balance(DynSubstate<(FungibleVaultBalanceSubstate,)>),
-    VaultFrozenFlag(DynSubstate<(VaultFrozenFlag,)>),
+    Balance(FieldSubstate<FungibleVaultBalanceSubstate>),
+    VaultFrozenFlag(FieldSubstate<VaultFrozenFlag>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleVaultFieldValue {
-    Balance(DynSubstate<(NonFungibleVaultBalanceSubstate,)>),
-    VaultFrozenFlag(DynSubstate<(VaultFrozenFlag,)>),
+    Balance(FieldSubstate<NonFungibleVaultBalanceSubstate>),
+    VaultFrozenFlag(FieldSubstate<VaultFrozenFlag>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedConsensusManagerFieldValue {
-    Config(DynSubstate<(ConsensusManagerConfigSubstate,)>),
-    ConsensusManager(DynSubstate<(ConsensusManagerSubstate,)>),
-    ValidatorRewards(DynSubstate<(ValidatorRewardsSubstate,)>),
-    CurrentValidatorSet(DynSubstate<(CurrentValidatorSetSubstate,)>),
-    CurrentProposalStatistic(DynSubstate<(CurrentProposalStatisticSubstate,)>),
-    CurrentTimeRoundedToMinutes(DynSubstate<(ProposerMinuteTimestampSubstate,)>),
-    CurrentTime(DynSubstate<(ProposerMilliTimestampSubstate,)>),
+    Config(FieldSubstate<ConsensusManagerConfigSubstate>),
+    ConsensusManager(FieldSubstate<ConsensusManagerSubstate>),
+    ValidatorRewards(FieldSubstate<ValidatorRewardsSubstate>),
+    CurrentValidatorSet(FieldSubstate<CurrentValidatorSetSubstate>),
+    CurrentProposalStatistic(FieldSubstate<CurrentProposalStatisticSubstate>),
+    CurrentTimeRoundedToMinutes(FieldSubstate<ProposerMinuteTimestampSubstate>),
+    CurrentTime(FieldSubstate<ProposerMilliTimestampSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedValidatorFieldValue {
-    Validator(DynSubstate<(ValidatorSubstate,)>),
-    ProtocolUpdateReadinessSignal(DynSubstate<(ValidatorProtocolUpdateReadinessSignalSubstate,)>),
+    Validator(FieldSubstate<ValidatorSubstate>),
+    ProtocolUpdateReadinessSignal(FieldSubstate<ValidatorProtocolUpdateReadinessSignalSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessControllerFieldValue {
-    AccessController(DynSubstate<(AccessControllerSubstate,)>),
+    AccessController(FieldSubstate<AccessControllerSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum GenericScryptoComponentFieldValue {
-    State(DynSubstate<(ScryptoValue,)>),
+    State(FieldSubstate<ScryptoValue>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedAccountFieldValue {
-    Account(DynSubstate<(AccountSubstate,)>),
+    Account(FieldSubstate<AccountSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedOneResourcePoolFieldValue {
-    OneResourcePool(DynSubstate<(one_resource_pool::OneResourcePoolSubstate,)>),
+    OneResourcePool(FieldSubstate<one_resource_pool::OneResourcePoolSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedTwoResourcePoolFieldValue {
-    TwoResourcePool(DynSubstate<(two_resource_pool::TwoResourcePoolSubstate,)>),
+    TwoResourcePool(FieldSubstate<two_resource_pool::TwoResourcePoolSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedMultiResourcePoolFieldValue {
-    MultiResourcePool(DynSubstate<(multi_resource_pool::MultiResourcePoolSubstate,)>),
+    MultiResourcePool(FieldSubstate<multi_resource_pool::MultiResourcePoolSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedTransactionTrackerFieldValue {
-    TransactionTracker(DynSubstate<(TransactionTrackerSubstate,)>),
+    TransactionTracker(FieldSubstate<TransactionTrackerSubstate>),
 }
 
 pub fn to_typed_substate_value(

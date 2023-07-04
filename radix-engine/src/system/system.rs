@@ -45,7 +45,6 @@ pub enum SubstateMutability {
     Immutable,
 }
 
-// FIXME: Extend this use into substate fields
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct DynSubstate<E> {
     pub value: E,
@@ -53,19 +52,23 @@ pub struct DynSubstate<E> {
 }
 
 impl<E> DynSubstate<E> {
-    pub fn new(value: E) -> Self {
-        Self {
-            value,
-            mutability: SubstateMutability::Mutable,
-        }
-    }
-
     pub fn lock(&mut self) {
         self.mutability = SubstateMutability::Immutable;
     }
 
     pub fn is_mutable(&self) -> bool {
         matches!(self.mutability, SubstateMutability::Mutable)
+    }
+}
+
+pub type FieldSubstate<V> = DynSubstate<(V,)>;
+
+impl<V> FieldSubstate<V> {
+    pub fn new_field(value: V) -> Self {
+        Self {
+            value: (value,),
+            mutability: SubstateMutability::Mutable,
+        }
     }
 }
 
@@ -353,11 +356,7 @@ where
 
                     partition.insert(
                         SubstateKey::Field(i as u8),
-                        IndexedScryptoValue::from_typed(&DynSubstate::new((value,)))
-                        /*
-                        IndexedScryptoValue::from_vec(field)
-                            .expect("Checked by payload-schema validation"),
-                         */
+                        IndexedScryptoValue::from_typed(&FieldSubstate::new_field(value))
                     );
                 }
 
@@ -1226,20 +1225,10 @@ where
             }
         }
 
-        /*
-        self.api.kernel_read_substate(handle).map(|v| {
-            let wrapper: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-            scrypto_encode(&wrapper.value).unwrap()
-        })
-         */
-
         self.api
             .kernel_read_substate(lock_handle)
             .map(|v| {
-                let wrapper: DynSubstate<(ScryptoValue,)> = v.as_typed()
-                    .map_err(|e| {
-                        e
-                    }).unwrap();
+                let wrapper: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
                 scrypto_encode(&wrapper.value.0).unwrap()
             })
     }
@@ -1274,7 +1263,7 @@ where
             .expect("Should be valid due to payload check");
 
         let substate =
-            IndexedScryptoValue::from_typed(&DynSubstate::new((value,)));
+            IndexedScryptoValue::from_typed(&FieldSubstate::new_field(value));
         self.api.kernel_write_substate(lock_handle, substate)?;
 
         Ok(())
@@ -1594,16 +1583,8 @@ where
         let fields = user_substates
             .into_iter()
             .map(|(_key, v)| {
-                let substate: DynSubstate<(ScryptoValue,)> = v.as_typed().unwrap();
+                let substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
                 scrypto_encode(&substate.value.0).unwrap()
-                    /*
-                let value: ScryptoValue = scrypto_decode(&buffer)
-                    .expect("Should be valid due to payload check");
-
-                let substate =
-                    IndexedScryptoValue::from_typed(&DynSubstate::new((value,)));
-                v.into()
-                     */
             })
             .collect();
 

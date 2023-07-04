@@ -6,7 +6,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
-use crate::system::system::DynSubstate;
+use crate::system::system::{FieldSubstate};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct NonFungibleProofSubstate {
@@ -170,7 +170,7 @@ impl NonFungibleProofBlueprint {
             LockFlags::read_only(),
             SystemLockData::Default,
         )?;
-        let proof_substate: DynSubstate<(NonFungibleProofSubstate,)> =
+        let proof_substate: FieldSubstate<NonFungibleProofSubstate> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         proof_substate.value.0.drop_proof(api)?;
         api.kernel_close_substate(handle)?;

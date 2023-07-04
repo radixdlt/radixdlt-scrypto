@@ -7,7 +7,7 @@ use native_sdk::resource::{NativeBucket, NativeNonFungibleBucket, ResourceManage
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
-use crate::system::system::DynSubstate;
+use crate::system::system::{FieldSubstate};
 
 #[derive(Debug, ScryptoSbor)]
 pub struct WorktopSubstate {
@@ -56,10 +56,10 @@ impl WorktopBlueprint {
             LockFlags::MUTABLE,
             SystemLockData::Default,
         )?;
-        let mut worktop_substate: DynSubstate<(WorktopSubstate,)> =
+        let mut worktop_substate: FieldSubstate<WorktopSubstate> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
         let resources = core::mem::replace(&mut worktop_substate.value.0.resources, BTreeMap::new());
-        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&DynSubstate::new((worktop_substate,))))?;
+        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&FieldSubstate::new_field(worktop_substate)))?;
         api.kernel_close_substate(handle)?;
 
         // Recursively drop buckets

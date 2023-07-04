@@ -9,7 +9,7 @@ use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::{DynSubstate, SystemService};
+use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
@@ -336,7 +336,7 @@ impl AuthModule {
             auth_zone_node_id,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
-                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&DynSubstate::new((auth_zone,)))
+                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
