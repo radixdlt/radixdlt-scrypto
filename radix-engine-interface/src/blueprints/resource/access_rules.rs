@@ -1,13 +1,14 @@
+use std::collections::BTreeMap;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::types::KeyValueStoreInit;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use crate::api::node_modules::auth::ToRoleEntry;
 
 use super::AccessRule;
 
@@ -210,32 +211,25 @@ impl OwnerRole {
     }
 }
 
-pub type RolesInit = KeyValueStoreInit<RoleKey, AccessRule>;
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
+pub struct RolesInit {
+    pub data: BTreeMap<RoleKey, Option<AccessRule>>,
+}
 
 impl RolesInit {
-    pub fn define_immutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
-        self.set_and_lock(role.into(), access_rule);
+    pub fn new() -> Self {
+        RolesInit {
+            data: BTreeMap::new(),
+        }
     }
 
-    pub fn define_mutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
-        self.set(role.into(), access_rule);
-    }
-
-    pub fn define_role<K: Into<RoleKey>>(
+    pub fn define_role<K: Into<RoleKey>, R: ToRoleEntry>(
         &mut self,
         role: K,
-        access_rule: AccessRule,
-        locked: bool,
+        access_rule: R,
     ) {
-        self.set_raw(role.into(), Some(access_rule), locked);
-    }
-
-    pub fn define_role_raw<K: Into<RoleKey>>(
-        &mut self,
-        role: K,
-        access_rule: Option<AccessRule>,
-        locked: bool,
-    ) {
-        self.set_raw(role.into(), access_rule, locked);
+        self.data.insert(role.into(), access_rule.to_role_entry());
     }
 }

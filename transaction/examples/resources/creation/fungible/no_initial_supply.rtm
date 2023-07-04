@@ -25,14 +25,8 @@ CREATE_FUNGIBLE_RESOURCE
     Tuple(
         Enum<Option::Some>(                                                     # Specify Mint Roles
             Tuple(
-                Tuple(                                                          # Minter Role
-                    Enum<Option::Some>(Enum<AccessRule::AllowAll>()),           # Minter Role Rule
-                    true                                                        # Temporary boolean, ignore as this will be removed soon
-                ),
-                Tuple(                                                          # Minter Updater Role
-                    Enum<Option::Some>(Enum<AccessRule::DenyAll>()),            # Mintoer Updater Role Rule
-                    true                                                        # Temporary boolean, ignore as this will be removed soon
-                )
+                Enum<Option::Some>(Enum<AccessRule::AllowAll>()),           # Minter Role Rule
+                Enum<Option::Some>(Enum<AccessRule::DenyAll>())             # Minter Updater Role Rule
             )
         ),
         Enum<0u8>(),                                                            # Use Default Burn Roles
@@ -62,6 +56,6 @@ CREATE_FUNGIBLE_RESOURCE
                 true                                                                      # Locked Resource Description
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>()
     )
     Enum<0u8>();                                                                         # No Address Reservation

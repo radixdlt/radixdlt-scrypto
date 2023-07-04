@@ -16,7 +16,7 @@ pub trait SecurifiedAccessRules {
     ) -> Result<AccessRules, RuntimeError> {
         let mut roles = RolesInit::new();
         if let Some(securify_role) = Self::SECURIFY_ROLE {
-            roles.define_immutable_role(RoleKey::new(securify_role), AccessRule::DenyAll);
+            roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
         let roles = btreemap!(ObjectModuleId::Main => roles);
         let access_rules = AccessRules::create(owner_role, roles, api)?;
@@ -32,7 +32,7 @@ pub trait SecurifiedAccessRules {
             Self::mint_securified_badge(owner_badge_data, non_fungible_local_id, api)?;
         let mut roles = RolesInit::new();
         if let Some(securify_role) = Self::SECURIFY_ROLE {
-            roles.define_immutable_role(RoleKey::new(securify_role), AccessRule::DenyAll);
+            roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
         let roles = btreemap!(ObjectModuleId::Main => roles);
         let access_rules = AccessRules::create(OwnerRole::Fixed(owner_rule), roles, api)?;
@@ -71,7 +71,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         let mut roles = RolesInit::new();
         let owner_rule = rule!(require(owner_id));
         if let Some(securify_role) = Self::SECURIFY_ROLE {
-            roles.define_mutable_role(RoleKey::new(securify_role), owner_rule.clone());
+            roles.define_role(RoleKey::new(securify_role), owner_rule.clone());
         }
 
         let roles = btreemap!(

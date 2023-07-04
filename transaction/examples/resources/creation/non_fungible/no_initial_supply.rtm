@@ -23,24 +23,18 @@ CREATE_NON_FUNGIBLE_RESOURCE
     # the tuple defines a different resource behavior. As an example, the first element in this tuple
     # defines that the resource is mintable.
     Tuple(
-        Enum<Option::Some>(                                                     # Specify Mint Roles
+        Enum<Option::Some>(                                                # Specify Mint Roles
             Tuple(
-                Tuple(                                                          # Minter Role
-                    Enum<Option::Some>(Enum<AccessRule::AllowAll>()),           # Minter Role Rule
-                    true                                                        # Temporary boolean, ignore as this will be removed soon
-                ),
-                Tuple(                                                          # Minter Updater Role
-                    Enum<Option::Some>(Enum<AccessRule::DenyAll>()),            # Mintoer Updater Role Rule
-                    true                                                        # Temporary boolean, ignore as this will be removed soon
-                )
+                Enum<Option::Some>(Enum<AccessRule::AllowAll>()),          # Minter Role Rule
+                Enum<Option::Some>(Enum<AccessRule::DenyAll>())            # Minter Updater Role Rule
             )
         ),
-        Enum<0u8>(),                                                            # Use Default Burn Roles
-        Enum<0u8>(),                                                            # Use Default Freeze Roles
-        Enum<0u8>(),                                                            # Use Default Recall Roles
-        Enum<0u8>(),                                                            # Use Default Withdraw Roles
-        Enum<0u8>(),                                                            # Use Default Deposit Roles
-        Enum<0u8>()                                                             # Use Default Non Fungible Data Update Roles
+        Enum<0u8>(),                                                       # Use Default Burn Roles
+        Enum<0u8>(),                                                       # Use Default Freeze Roles
+        Enum<0u8>(),                                                       # Use Default Recall Roles
+        Enum<0u8>(),                                                       # Use Default Withdraw Roles
+        Enum<0u8>(),                                                       # Use Default Deposit Roles
+        Enum<0u8>()                                                        # Use Default Non Fungible Data Update Roles
     )
     Tuple(
         Map<String, Tuple>(
@@ -57,6 +51,6 @@ CREATE_NON_FUNGIBLE_RESOURCE
                 false
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>()
     )
     Enum<0u8>();

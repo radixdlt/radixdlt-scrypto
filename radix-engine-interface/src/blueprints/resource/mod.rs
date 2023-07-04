@@ -64,8 +64,8 @@ macro_rules! resource_roles {
         impl $roles_struct<RoleDefinition> {
             pub fn to_role_init(self) -> $crate::blueprints::resource::RolesInit {
                 let mut roles = $crate::blueprints::resource::RolesInit::new();
-                roles.set_entry($actor_field_name, self.$actor_field);
-                roles.set_entry($updater_field_name, self.$updater_field);
+                roles.define_role($actor_field_name, self.$actor_field);
+                roles.define_role($updater_field_name, self.$updater_field);
                 roles
             }
         }
@@ -73,8 +73,8 @@ macro_rules! resource_roles {
         impl Default for $roles_struct<RoleDefinition> {
             fn default() -> Self {
                 Self {
-                    $actor_field: RoleDefinition::locked($default_rule),
-                    $updater_field: RoleDefinition::locked(AccessRule::DenyAll),
+                    $actor_field: Some($default_rule),
+                    $updater_field: Some(AccessRule::DenyAll),
                 }
             }
         }
