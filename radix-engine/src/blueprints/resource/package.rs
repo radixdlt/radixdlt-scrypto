@@ -68,6 +68,7 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME: &str =
     "drop_empty_bucket_NonFungibleResourceManager";
 
 const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_FungibleVault";
+const FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME: &str = "take_advanced_FungibleVault";
 const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_FungibleVault";
 const FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleVault";
 const FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_FungibleVault";
@@ -81,6 +82,7 @@ const FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleVa
 const FUNGIBLE_VAULT_BURN_EXPORT_NAME: &str = "burn_FungibleVault";
 
 const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME: &str = "take_advanced_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_NonFungibleVault";
@@ -765,6 +767,19 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
+                VAULT_TAKE_ADVANCED_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeAdvancedInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeAdvancedOutput>(),
+                    ),
+                    export: FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 VAULT_PUT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -961,6 +976,7 @@ impl ResourceNativePackage {
                             VAULT_FREEZE_IDENT => [FREEZER_ROLE];
                             VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
                             VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                            VAULT_TAKE_ADVANCED_IDENT => [WITHDRAWER_ROLE];
                             FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAWER_ROLE];
                             VAULT_RECALL_IDENT => [RECALLER_ROLE];
                             VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
@@ -1004,6 +1020,19 @@ impl ResourceNativePackage {
                         aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
                     ),
                     export: NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                VAULT_TAKE_ADVANCED_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeAdvancedInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeAdvancedOutput>(),
+                    ),
+                    export: NON_FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1252,6 +1281,7 @@ impl ResourceNativePackage {
                             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
                             VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                            VAULT_TAKE_ADVANCED_IDENT => [WITHDRAWER_ROLE];
                             NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAWER_ROLE];
                             VAULT_RECALL_IDENT => [RECALLER_ROLE];
                             VAULT_FREEZE_IDENT => [FREEZER_ROLE];
@@ -2526,6 +2556,17 @@ impl ResourceNativePackage {
                 let rtn = FungibleVaultBlueprint::take(&input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME => {
+                let input: VaultTakeAdvancedInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::take_advanced(
+                    &input.amount,
+                    input.withdraw_strategy,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
                 let input: VaultRecallInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -2603,6 +2644,17 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
+            NON_FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME => {
+                let input: VaultTakeAdvancedInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::take_advanced(
+                    &input.amount,
+                    input.withdraw_strategy,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 let input: VaultTakeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))

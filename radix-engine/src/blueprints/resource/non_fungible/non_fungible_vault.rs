@@ -46,6 +46,32 @@ impl NonFungibleVaultBlueprint {
         NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
     }
 
+    pub fn take_advanced<Y>(
+        amount: &Decimal,
+        withdraw_strategy: WithdrawStrategy,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
+
+        let amount = amount.for_withdrawal(0, withdraw_strategy);
+
+        // Check amount
+        if !check_non_fungible_amount(&amount) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::InvalidAmount),
+            ));
+        }
+
+        // Take
+        let taken = NonFungibleVault::take(amount, api)?;
+
+        // Create node
+        NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
+    }
+
     pub fn take_non_fungibles<Y>(
         non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

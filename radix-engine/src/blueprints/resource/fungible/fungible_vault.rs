@@ -51,6 +51,34 @@ impl FungibleVaultBlueprint {
         FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)
     }
 
+    pub fn take_advanced<Y>(
+        amount: &Decimal,
+        withdraw_strategy: WithdrawStrategy,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
+
+        let divisibility = Self::get_divisibility(api)?;
+
+        let amount = amount.for_withdrawal(divisibility, withdraw_strategy);
+
+        // Check amount
+        if !check_fungible_amount(&amount, divisibility) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::VaultError(VaultError::InvalidAmount),
+            ));
+        }
+
+        // Take
+        let taken = FungibleVault::take(amount, api)?;
+
+        // Create node
+        FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)
+    }
+
     pub fn put<Y>(bucket: Bucket, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
