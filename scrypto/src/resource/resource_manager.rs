@@ -255,4 +255,18 @@ impl ResourceManagerStub {
             },
         )
     }
+
+    pub fn amount_for_withdrawal(
+        &self,
+        request_amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+    ) {
+        self.call(
+            RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT,
+            &ResourceManagerGetAmountForWithdrawalInput {
+                request_amount,
+                withdraw_strategy,
+            },
+        )
+    }
 }

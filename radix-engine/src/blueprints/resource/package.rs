@@ -289,7 +289,7 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_IDENT.to_string(),
+                RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: TypeRef::Static(
@@ -382,7 +382,7 @@ impl ResourceNativePackage {
                             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
-                            RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
                         }
@@ -624,7 +624,7 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_IDENT.to_string(),
+                RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
                     input: TypeRef::Static(
@@ -723,7 +723,7 @@ impl ResourceNativePackage {
                             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
-                            RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => MethodAccessibility::Public;

@@ -92,7 +92,7 @@ pub struct ResourceManagerGetTotalSupplyInput {}
 
 pub type ResourceManagerGetTotalSupplyOutput = Option<Decimal>;
 
-pub const RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_IDENT: &str = "amount_for_withdrawal";
+pub const RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT: &str = "amount_for_withdrawal";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ResourceManagerGetAmountForWithdrawalInput {
