@@ -12,12 +12,16 @@ use native_sdk::resource::{NativeBucket, ResourceManager};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{metadata_init, rule};
+use radix_engine_interface::{
+    internal_roles_struct, metadata_init, mint_roles, role_definition_entry, rule,
+};
 
 const MILLIS_IN_SECOND: i64 = 1000;
 const SECONDS_IN_MINUTE: i64 = 60;
@@ -201,10 +205,6 @@ pub enum ConsensusManagerError {
     },
     AlreadyStarted,
     NotXrd,
-    InvalidXrdPayment {
-        expected: Decimal,
-        actual: Decimal,
-    },
 }
 
 pub const CONSENSUS_MANAGER_REGISTERED_VALIDATORS_BY_STAKE_INDEX: CollectionIndex = 0u8;
@@ -231,17 +231,9 @@ impl ConsensusManagerBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         {
-            let mut access_rules = BTreeMap::new();
-
             // TODO: remove mint and premint all tokens
-            {
-                let global_id =
-                    NonFungibleGlobalId::package_of_direct_caller_badge(CONSENSUS_MANAGER_PACKAGE);
-                access_rules.insert(Mint, (rule!(require(global_id)), rule!(deny_all)));
-            }
-
-            access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-
+            let global_id =
+                NonFungibleGlobalId::package_of_direct_caller_badge(CONSENSUS_MANAGER_PACKAGE);
             let consensus_manager_address =
                 api.get_reservation_address(consensus_manager_address_reservation.0.as_node_id())?;
 
@@ -249,7 +241,13 @@ impl ConsensusManagerBlueprint {
                 OwnerRole::Fixed(rule!(require(global_caller(consensus_manager_address)))),
                 NonFungibleIdType::Bytes,
                 true,
-                access_rules,
+                NonFungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(require(global_id)), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
+                },
                 metadata_init! {
                     "name" => "Validator Owner Badges".to_owned(), locked;
                     "description" => "Badges created by the Radix system that provide individual control over the validator components created for validator node-runners.".to_owned(), locked;
@@ -550,7 +548,10 @@ impl ConsensusManagerBlueprint {
             let manager_config: ConsensusManagerConfigSubstate =
                 api.field_lock_read_typed(config_handle)?;
             api.field_lock_release(config_handle)?;
-            Some(manager_config.config.validator_creation_xrd_cost)
+
+            let validator_creation_xrd_cost =
+                manager_config.config.validator_creation_usd_cost * api.usd_price()?;
+            Some(validator_creation_xrd_cost)
         } else {
             None
         };
@@ -565,7 +566,7 @@ impl ConsensusManagerBlueprint {
         fee_factor: Decimal,
         xrd_payment: Bucket,
         api: &mut Y,
-    ) -> Result<(ComponentAddress, Bucket), RuntimeError>
+    ) -> Result<(ComponentAddress, Bucket, Bucket), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -577,27 +578,14 @@ impl ConsensusManagerBlueprint {
 
         let validator_xrd_cost = Self::get_validator_xrd_cost(api)?;
         if let Some(xrd_cost) = validator_xrd_cost {
-            let payment_amount = xrd_payment.amount(api)?;
-            if !payment_amount.eq(&xrd_cost) {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ConsensusManagerError(
-                        ConsensusManagerError::InvalidXrdPayment {
-                            actual: payment_amount,
-                            expected: xrd_cost,
-                        },
-                    ),
-                ));
-            }
-
-            xrd_payment.burn(api)?;
-        } else {
-            xrd_payment.drop_empty(api)?;
+            let xrd_paid = xrd_payment.take(xrd_cost, api)?;
+            xrd_paid.burn(api)?;
         }
 
         let (validator_address, owner_token_bucket) =
             ValidatorCreator::create(key, false, fee_factor, api)?;
 
-        Ok((validator_address, owner_token_bucket))
+        Ok((validator_address, owner_token_bucket, xrd_payment))
     }
 
     fn check_non_decreasing_and_update_timestamps<Y>(

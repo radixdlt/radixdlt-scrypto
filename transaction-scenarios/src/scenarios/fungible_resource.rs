@@ -54,16 +54,8 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                     OwnerRole::None,
                                     false,
                                     18,
-                                    metadata! {},
-                                    btreemap! {
-                                        Mint => (rule!(allow_all), rule!(deny_all)),
-                                        Burn =>  (rule!(allow_all), rule!(deny_all)),
-                                        UpdateNonFungibleData => (rule!(allow_all), rule!(deny_all)),
-                                        Withdraw => (rule!(allow_all), rule!(deny_all)),
-                                        Deposit => (rule!(allow_all), rule!(deny_all)),
-                                        Recall => (rule!(allow_all), rule!(deny_all)),
-                                        Freeze => (rule!(allow_all), rule!(deny_all)),
-                                    },
+                                    FungibleResourceRoles::single_locked_rule(rule!(allow_all)),
+                                    metadata!(),
                                     Some(dec!("100000")),
                                 )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
@@ -72,100 +64,92 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     )
                 },
                 |core, config, state, result| {
-                    state.max_divisibility_fungible_resource = Some(result.new_resource_addresses()[0]);
+                    state.max_divisibility_fungible_resource =
+                        Some(result.new_resource_addresses()[0]);
                     state.vault1 = Some(result.new_vault_addresses()[0]);
                     Ok(())
                 },
             )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-mint",
-                        |builder| {
-                            builder
-                                .mint_fungible(state.max_divisibility_fungible_resource.unwrap(), dec!("100"))
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
-                        },
-                        vec![],
-                    )
-                }
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-burn",
-                        |builder| {
-                            builder
-                                .withdraw_from_account(
-                                    config.user_account_1.address,
-                                    state.max_divisibility_fungible_resource.unwrap(),
-                                    dec!("10"),
-                                )
-                                .take_all_from_worktop(
-                                    state.max_divisibility_fungible_resource.unwrap(),
-                                    |builder, bucket| builder.burn_resource(bucket),
-                                )
-                        },
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-transfer-32-times",
-                        |builder| {
-                            let mut builder = builder.withdraw_from_account(
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-mint",
+                    |builder| {
+                        builder
+                            .mint_fungible(
+                                state.max_divisibility_fungible_resource.unwrap(),
+                                dec!("100"),
+                            )
+                            .try_deposit_batch_or_abort(config.user_account_1.address)
+                    },
+                    vec![],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-burn",
+                    |builder| {
+                        builder
+                            .withdraw_from_account(
                                 config.user_account_1.address,
                                 state.max_divisibility_fungible_resource.unwrap(),
                                 dec!("10"),
+                            )
+                            .take_all_from_worktop(
+                                state.max_divisibility_fungible_resource.unwrap(),
+                                |builder, bucket| builder.burn_resource(bucket),
+                            )
+                    },
+                    vec![&config.user_account_1.key],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-transfer-32-times",
+                    |builder| {
+                        let mut builder = builder.withdraw_from_account(
+                            config.user_account_1.address,
+                            state.max_divisibility_fungible_resource.unwrap(),
+                            dec!("10"),
+                        );
+                        for _ in 0..32 {
+                            builder = builder.take_from_worktop(
+                                state.max_divisibility_fungible_resource.unwrap(),
+                                dec!("0.001"),
+                                |builder, bucket| {
+                                    builder.call_method(
+                                        config.user_account_2.address,
+                                        ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
+                                        manifest_args!(bucket),
+                                    )
+                                },
                             );
-                            for _ in 0..32 {
-                                builder = builder.take_from_worktop(
-                                    state.max_divisibility_fungible_resource.unwrap(),
-                                    dec!("0.001"),
-                                    |builder, bucket| {
-                                        builder.call_method(
-                                            config.user_account_2.address,
-                                            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-                                            manifest_args!(bucket),
-                                        )
-                                    },
-                                );
-                            }
-                            builder.try_deposit_batch_or_abort(config.user_account_1.address)
-                        },
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-freeze-withdraw",
-                        |builder| builder.freeze_withdraw(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-freeze-deposit",
-                        |builder| builder.freeze_deposit(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-freeze-burn",
-                        |builder| builder.freeze_burn(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
+                        }
+                        builder.try_deposit_batch_or_abort(config.user_account_1.address)
+                    },
+                    vec![&config.user_account_1.key],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-freeze-withdraw",
+                    |builder| builder.freeze_withdraw(state.vault1.unwrap()),
+                    vec![&config.user_account_1.key],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-freeze-deposit",
+                    |builder| builder.freeze_deposit(state.vault1.unwrap()),
+                    vec![&config.user_account_1.key],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-freeze-burn",
+                    |builder| builder.freeze_burn(state.vault1.unwrap()),
+                    vec![&config.user_account_1.key],
+                )
+            })
             .failed_transaction_with_error_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
@@ -183,46 +167,45 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     Ok(())
                 },
             )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-unfreeze-withdraw",
-                        |builder| builder.unfreeze_withdraw(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-unfreeze-deposit",
-                        |builder| builder.unfreeze_deposit(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-unfreeze-burn",
-                        |builder| builder.unfreeze_burn(state.vault1.unwrap()),
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-recall-unfrozen-vault",
-                        |builder| {
-                            builder
-                                .recall(state.vault1.unwrap(), dec!("2"))
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
-                        },
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-unfreeze-withdraw",
+                    |builder| builder.unfreeze_withdraw(state.vault1.unwrap()),
+                    vec![&config.user_account_1.key],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-unfreeze-deposit",
+                    |builder| builder.unfreeze_deposit(state.vault1.unwrap()),
+                    vec![&config.user_account_1.key],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-unfreeze-burn",
+                    |builder| builder.unfreeze_burn(state.vault1.unwrap()),
+                    vec![&config.user_account_1.key],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-recall-unfrozen-vault",
+                    |builder| {
+                        builder
+                            .recall(state.vault1.unwrap(), dec!("2"))
+                            .try_deposit_batch_or_abort(config.user_account_1.address)
+                    },
+                    vec![&config.user_account_1.key],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-free-withdraw-again",
+                    |builder| builder.freeze_withdraw(state.vault1.unwrap()),
+                    vec![&config.user_account_1.key],
+                )
+            })
             .successful_transaction_with_result_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
@@ -233,16 +216,8 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                     OwnerRole::None,
                                     false,
                                     0,
-                                    metadata! {},
-                                    btreemap! {
-                                        Mint => (rule!(allow_all), rule!(deny_all)),
-                                        Burn =>  (rule!(allow_all), rule!(deny_all)),
-                                        UpdateNonFungibleData => (rule!(allow_all), rule!(deny_all)),
-                                        Withdraw => (rule!(allow_all), rule!(deny_all)),
-                                        Deposit => (rule!(allow_all), rule!(deny_all)),
-                                        Recall => (rule!(allow_all), rule!(deny_all)),
-                                        Freeze => (rule!(allow_all), rule!(deny_all)),
-                                    },
+                                    FungibleResourceRoles::single_locked_rule(rule!(allow_all)),
+                                    metadata!(),
                                     Some(dec!("100000")),
                                 )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
@@ -258,52 +233,52 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     Ok(())
                 },
             )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-min-div-mint-correct-granularity",
-                        |builder| {
-                            builder
-                                .mint_fungible(state.min_divisibility_fungible_resource.unwrap(), dec!("166"))
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
-                        },
-                        vec![],
-                    )
-                }
-            )
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-min-div-mint-correct-granularity",
+                    |builder| {
+                        builder
+                            .mint_fungible(
+                                state.min_divisibility_fungible_resource.unwrap(),
+                                dec!("166"),
+                            )
+                            .try_deposit_batch_or_abort(config.user_account_1.address)
+                    },
+                    vec![],
+                )
+            })
             .failed_transaction_with_error_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
                         "fungible-min-div-mint-wrong-granularity",
                         |builder| {
                             builder
-                                .mint_fungible(state.min_divisibility_fungible_resource.unwrap(), dec!("1.1"))
+                                .mint_fungible(
+                                    state.min_divisibility_fungible_resource.unwrap(),
+                                    dec!("1.1"),
+                                )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
                         },
                         vec![],
                     )
                 },
-                |core, config, state, error| {
-                    Ok(())
-                },
+                |core, config, state, error| Ok(()),
             )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-min-div-transfer-correct-granularity",
-                        |builder| {
-                            builder
-                                .withdraw_from_account(
-                                    config.user_account_1.address,
-                                    state.min_divisibility_fungible_resource.unwrap(),
-                                    dec!("234"),
-                                )
-                                .try_deposit_batch_or_abort(config.user_account_2.address)
-                        },
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-min-div-transfer-correct-granularity",
+                    |builder| {
+                        builder
+                            .withdraw_from_account(
+                                config.user_account_1.address,
+                                state.min_divisibility_fungible_resource.unwrap(),
+                                dec!("234"),
+                            )
+                            .try_deposit_batch_or_abort(config.user_account_2.address)
+                    },
+                    vec![&config.user_account_1.key],
+                )
+            })
             .failed_transaction_with_error_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
@@ -320,25 +295,21 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, error| {
-                    Ok(())
-                },
+                |core, config, state, error| Ok(()),
             )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-min-div-create-proof-correct-granularity",
-                        |builder| {
-                            builder.create_proof_from_account_of_amount(
-                                config.user_account_1.address,
-                                state.min_divisibility_fungible_resource.unwrap(),
-                                dec!("99"),
-                            )
-                        },
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-min-div-create-proof-correct-granularity",
+                    |builder| {
+                        builder.create_proof_from_account_of_amount(
+                            config.user_account_1.address,
+                            state.min_divisibility_fungible_resource.unwrap(),
+                            dec!("99"),
+                        )
+                    },
+                    vec![&config.user_account_1.key],
+                )
+            })
             .failed_transaction_with_error_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
@@ -353,23 +324,19 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, error| {
-                    Ok(())
-                },
+                |core, config, state, error| Ok(()),
             )
-            .successful_transaction(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-min-div-recall-correct-granularity",
-                        |builder| {
-                            builder
-                                .recall(state.vault2.unwrap(), dec!("2"))
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
-                        },
-                        vec![&config.user_account_1.key],
-                    )
-                }
-            )
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-min-div-recall-correct-granularity",
+                    |builder| {
+                        builder
+                            .recall(state.vault2.unwrap(), dec!("2"))
+                            .try_deposit_batch_or_abort(config.user_account_1.address)
+                    },
+                    vec![&config.user_account_1.key],
+                )
+            })
             .failed_transaction_with_error_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
@@ -382,23 +349,21 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, error| {
-                    Ok(())
-                },
+                |core, config, state, error| Ok(()),
             )
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                    .add("user_account_1", config.user_account_1.address.clone())
-                    .add("user_account_2", config.user_account_2.address.clone())
-                    .add(
-                        "max_divisibility_fungible_resource",
-                        state.max_divisibility_fungible_resource.unwrap(),
-                    )
-                    .add(
-                        "min_divisibility_fungible_resource",
-                        state.min_divisibility_fungible_resource.unwrap(),
-                    ),
+                        .add("user_account_1", config.user_account_1.address.clone())
+                        .add("user_account_2", config.user_account_2.address.clone())
+                        .add(
+                            "max_divisibility_fungible_resource",
+                            state.max_divisibility_fungible_resource.unwrap(),
+                        )
+                        .add(
+                            "min_divisibility_fungible_resource",
+                            state.min_divisibility_fungible_resource.unwrap(),
+                        ),
                 })
             })
     }

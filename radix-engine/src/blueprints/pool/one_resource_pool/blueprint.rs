@@ -8,6 +8,8 @@ use native_sdk::resource::*;
 use native_sdk::runtime::Runtime;
 use radix_engine_common::math::*;
 use radix_engine_common::prelude::*;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
+use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::pool::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -46,20 +48,21 @@ impl OneResourcePoolBlueprint {
         let pool_unit_resource_manager = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
 
-            let access_rules = btreemap!(
-                Mint => (
-                    rule!(require(component_caller_badge.clone())),
-                    AccessRule::DenyAll,
-                ),
-                Burn => (rule!(require(component_caller_badge.clone())), AccessRule::DenyAll),
-                Recall => (AccessRule::DenyAll, AccessRule::DenyAll)
-            );
-
             ResourceManager::new_fungible(
                 owner_role.clone(),
                 true,
                 18,
-                access_rules,
+                FungibleResourceRoles {
+                    mint_roles: mint_roles! {
+                        minter => rule!(require(component_caller_badge.clone())), locked;
+                        minter_updater => rule!(deny_all), locked;
+                    },
+                    burn_roles: burn_roles! {
+                        burner => rule!(require(component_caller_badge.clone())), locked;
+                        burner_updater => rule!(deny_all), locked;
+                    },
+                    ..Default::default()
+                },
                 metadata_init! {
                     "pool" => address, locked;
                 },

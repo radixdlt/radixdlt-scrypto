@@ -6,7 +6,7 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<0u8>()
     false
-    18u8
+    0u8
     Decimal("100000")
     Tuple(
         Enum<1u8>(
