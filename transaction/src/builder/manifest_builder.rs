@@ -553,24 +553,18 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn create_ruid_non_fungible_resource<R, T, V>(
+    pub fn create_ruid_non_fungible_resource<T, V>(
         &mut self,
         owner_role: OwnerRole,
         track_total_supply: bool,
         metadata: ModuleConfig<MetadataInit>,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, R)>,
+        resource_roles: NonFungibleResourceRoles,
         initial_supply: Option<T>,
     ) -> &mut Self
     where
-        R: Into<AccessRule>,
         T: IntoIterator<Item = V>,
         V: ManifestEncode + NonFungibleData,
     {
-        let access_rules = access_rules
-            .into_iter()
-            .map(|(k, v)| (k, (v.0, v.1.into())))
-            .collect();
-
         if let Some(initial_supply) = initial_supply {
             let entries = initial_supply
                 .into_iter()
@@ -587,8 +581,8 @@ impl ManifestBuilder {
                         owner_role,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        resource_roles,
                         metadata,
-                        access_rules,
                         entries,
                         address_reservation: None,
                     }
@@ -604,8 +598,8 @@ impl ManifestBuilder {
                         owner_role,
                         track_total_supply,
                         non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        resource_roles,
                         metadata,
-                        access_rules,
                         entries: vec![],
                         address_reservation: None,
                     }

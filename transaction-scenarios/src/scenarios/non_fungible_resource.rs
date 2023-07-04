@@ -64,16 +64,8 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     OwnerRole::None,
                                     NonFungibleIdType::Integer,
                                     false,
+                                    NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                                     metadata! {},
-                                    btreemap! {
-                                        Mint => (rule!(allow_all), rule!(deny_all)),
-                                        Burn =>  (rule!(allow_all), rule!(deny_all)),
-                                        UpdateNonFungibleData => (rule!(allow_all), rule!(deny_all)),
-                                        Withdraw => (rule!(allow_all), rule!(deny_all)),
-                                        Deposit => (rule!(allow_all), rule!(deny_all)),
-                                        Recall => (rule!(allow_all), rule!(deny_all)),
-                                        Freeze => (rule!(allow_all), rule!(deny_all)),
-                                    },
                                     Some(entries),
                                 )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
@@ -93,23 +85,21 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         "non-fungible-resource-create-string",
                         |builder| {
                             let mut entries = BTreeMap::new();
-                            entries.insert(NonFungibleLocalId::string("my_nft").unwrap(), ComplexFungibleData {
-                                a: 859,
-                                b: vec!["hi".repeat(50)],
-                                c: AnotherObject {
-                                    f1: btreemap!()
-                                }
-                            });
+                            entries.insert(
+                                NonFungibleLocalId::string("my_nft").unwrap(),
+                                ComplexFungibleData {
+                                    a: 859,
+                                    b: vec!["hi".repeat(50)],
+                                    c: AnotherObject { f1: btreemap!() },
+                                },
+                            );
                             builder
                                 .create_non_fungible_resource(
                                     OwnerRole::None,
                                     NonFungibleIdType::String,
                                     false,
+                                    NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                                     metadata! {},
-                                    btreemap! {
-                                        Mint => (rule!(allow_all), rule!(deny_all)),
-                                        Burn =>  (rule!(allow_all), rule!(deny_all)),
-                                    },
                                     Some(entries),
                                 )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
@@ -128,23 +118,21 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         "non-fungible-resource-create-bytes",
                         |builder| {
                             let mut entries = BTreeMap::new();
-                            entries.insert(NonFungibleLocalId::bytes(vec![0u8; 16]).unwrap(), ComplexFungibleData {
-                                a: 859,
-                                b: vec!["hi".repeat(50)],
-                                c: AnotherObject {
-                                    f1: btreemap!()
-                                }
-                            });
+                            entries.insert(
+                                NonFungibleLocalId::bytes(vec![0u8; 16]).unwrap(),
+                                ComplexFungibleData {
+                                    a: 859,
+                                    b: vec!["hi".repeat(50)],
+                                    c: AnotherObject { f1: btreemap!() },
+                                },
+                            );
                             builder
                                 .create_non_fungible_resource(
                                     OwnerRole::None,
                                     NonFungibleIdType::Bytes,
                                     false,
+                                    NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                                     metadata! {},
-                                    btreemap! {
-                                        Mint => (rule!(allow_all), rule!(deny_all)),
-                                        Burn =>  (rule!(allow_all), rule!(deny_all)),
-                                    },
                                     Some(entries),
                                 )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
@@ -163,22 +151,17 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         "non-fungible-resource-create-ruid",
                         |builder| {
                             let mut entries = Vec::new();
-                            entries.push(  ComplexFungibleData {
+                            entries.push(ComplexFungibleData {
                                 a: 859,
                                 b: vec!["hi".repeat(50)],
-                                c: AnotherObject {
-                                    f1: btreemap!()
-                                }
+                                c: AnotherObject { f1: btreemap!() },
                             });
                             builder
                                 .create_ruid_non_fungible_resource(
                                     OwnerRole::None,
                                     false,
                                     metadata! {},
-                                    btreemap! {
-                                        Mint => (rule!(allow_all), rule!(deny_all)),
-                                        Burn =>  (rule!(allow_all), rule!(deny_all)),
-                                    },
+                                    NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                                     Some(entries),
                                 )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
@@ -198,24 +181,26 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         |builder| {
                             let mut entries = BTreeMap::new();
                             for i in 100..132 {
-                                entries.insert(NonFungibleLocalId::integer(i), ComplexFungibleData {
-                                    a: 859,
-                                    b: vec!["hi".repeat(50)],
-                                    c: AnotherObject {
-                                        f1: btreemap!()
-                                    }
-                                });
+                                entries.insert(
+                                    NonFungibleLocalId::integer(i),
+                                    ComplexFungibleData {
+                                        a: 859,
+                                        b: vec!["hi".repeat(50)],
+                                        c: AnotherObject { f1: btreemap!() },
+                                    },
+                                );
                             }
                             builder
-                                .mint_non_fungible(state.integer_non_fungible_resource.unwrap(), entries)
+                                .mint_non_fungible(
+                                    state.integer_non_fungible_resource.unwrap(),
+                                    entries,
+                                )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
                         },
                         vec![],
                     )
                 },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                |core, config, state, result| Ok(()),
             )
             .successful_transaction_with_result_handler(
                 |core, config, state| {
@@ -246,9 +231,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                |core, config, state, result| Ok(()),
             )
             .successful_transaction_with_result_handler(
                 |core, config, state| {
@@ -256,18 +239,17 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         "non-fungible-resource-transfer",
                         |builder| {
                             builder
-                            .withdraw_from_account(
-                                config.user_account_1.address,
-                                state.integer_non_fungible_resource.unwrap(),
-                                dec!("1"))
-                            .try_deposit_batch_or_abort(config.user_account_2.address)
+                                .withdraw_from_account(
+                                    config.user_account_1.address,
+                                    state.integer_non_fungible_resource.unwrap(),
+                                    dec!("1"),
+                                )
+                                .try_deposit_batch_or_abort(config.user_account_2.address)
                         },
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                |core, config, state, result| Ok(()),
             )
             .successful_transaction_with_result_handler(
                 |core, config, state| {
@@ -277,9 +259,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                |core, config, state, result| Ok(()),
             )
             .successful_transaction_with_result_handler(
                 |core, config, state| {
@@ -289,9 +269,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                |core, config, state, result| Ok(()),
             )
             .failed_transaction_with_error_handler(
                 |core, config, state| {
@@ -299,7 +277,10 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         "non-fungible-resource-recall-freezed-vault",
                         |builder| {
                             builder
-                                .recall_non_fungibles(state.vault1.unwrap(), btreeset!(NonFungibleLocalId::integer(120)))
+                                .recall_non_fungibles(
+                                    state.vault1.unwrap(),
+                                    btreeset!(NonFungibleLocalId::integer(120)),
+                                )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
                         },
                         vec![&config.user_account_1.key],
@@ -318,9 +299,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                |core, config, state, result| Ok(()),
             )
             .successful_transaction_with_result_handler(
                 |core, config, state| {
@@ -330,9 +309,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                |core, config, state, result| Ok(()),
             )
             .successful_transaction_with_result_handler(
                 |core, config, state| {
@@ -342,9 +319,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                |core, config, state, result| Ok(()),
             )
             .successful_transaction_with_result_handler(
                 |core, config, state| {
@@ -352,37 +327,38 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                         "non-fungible-resource-recall-unfreezed-vault",
                         |builder| {
                             builder
-                                .recall_non_fungibles(state.vault1.unwrap(), btreeset!(NonFungibleLocalId::integer(130)))
+                                .recall_non_fungibles(
+                                    state.vault1.unwrap(),
+                                    btreeset!(NonFungibleLocalId::integer(130)),
+                                )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
                         },
                         vec![&config.user_account_1.key],
                     )
                 },
-                |core, config, state, result| {
-                    Ok(())
-                },
+                |core, config, state, result| Ok(()),
             )
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                    .add("user_account_1", config.user_account_1.address.clone())
-                    .add("user_account_2", config.user_account_2.address.clone())
-                    .add(
-                        "integer_non_fungible_resource",
-                        state.integer_non_fungible_resource.unwrap(),
-                    )
-                    .add(
-                        "string_non_fungible_resource",
-                        state.string_non_fungible_resource.unwrap(),
-                    )
-                    .add(
-                        "bytes_non_fungible_resource",
-                        state.bytes_non_fungible_resource.unwrap(),
-                    )
-                    .add(
-                        "ruid_non_fungible_resource",
-                        state.ruid_non_fungible_resource.unwrap(),
-                    ),
+                        .add("user_account_1", config.user_account_1.address.clone())
+                        .add("user_account_2", config.user_account_2.address.clone())
+                        .add(
+                            "integer_non_fungible_resource",
+                            state.integer_non_fungible_resource.unwrap(),
+                        )
+                        .add(
+                            "string_non_fungible_resource",
+                            state.string_non_fungible_resource.unwrap(),
+                        )
+                        .add(
+                            "bytes_non_fungible_resource",
+                            state.bytes_non_fungible_resource.unwrap(),
+                        )
+                        .add(
+                            "ruid_non_fungible_resource",
+                            state.ruid_non_fungible_resource.unwrap(),
+                        ),
                 })
             })
     }

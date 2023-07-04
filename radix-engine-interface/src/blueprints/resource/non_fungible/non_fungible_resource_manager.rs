@@ -195,7 +195,7 @@ pub struct NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
     pub track_total_supply: bool,
     pub non_fungible_schema: NonFungibleDataSchema,
     pub entries: Vec<(ManifestValue,)>,
-    pub access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+    pub resource_roles: NonFungibleResourceRoles,
     pub metadata: ModuleConfig<MetadataInit>,
     pub address_reservation: Option<ManifestAddressReservation>,
 }

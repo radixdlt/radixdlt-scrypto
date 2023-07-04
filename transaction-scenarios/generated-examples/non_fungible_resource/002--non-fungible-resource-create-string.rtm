@@ -5,7 +5,7 @@ CALL_METHOD
 ;
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<0u8>()
-    Enum<2u8>()
+    Enum<0u8>()
     false
     Tuple(
         Tuple(
@@ -136,7 +136,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         )
     )
     Map<NonFungibleLocalId, Tuple>(
-        NonFungibleLocalId("[00000000000000000000000000000000]") => Tuple(
+        NonFungibleLocalId("<my_nft>") => Tuple(
             Tuple(
                 859u32,
                 Array<String>(
@@ -148,14 +148,118 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             )
         )
     )
-    Map<Enum, Tuple>(
-        Enum<0u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
+    Tuple(
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
         ),
-        Enum<1u8>() => Tuple(
-            Enum<0u8>(),
-            Enum<1u8>()
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
+        ),
+        Enum<1u8>(
+            Tuple(
+                Tuple(
+                    Enum<1u8>(
+                        Enum<0u8>()
+                    ),
+                    true
+                ),
+                Tuple(
+                    Enum<1u8>(
+                        Enum<1u8>()
+                    ),
+                    true
+                )
+            )
         )
     )
     Tuple(
