@@ -24,6 +24,7 @@ pub use resource::*;
 pub use resource_manager::ResourceFeature::*;
 pub use resource_manager::*;
 pub use resource_type::*;
+use sbor::Sbor;
 pub use vault::*;
 pub use worktop::*;
 
@@ -186,18 +187,18 @@ macro_rules! non_fungible_data_update_roles {
     });
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
 pub enum WithdrawStrategy {
     Exact,
     Rounded(RoundingMode),
 }
 
-pub trait ForWithdraw {
-    fn for_withdraw(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal;
+pub trait ForWithdrawal {
+    fn for_withdrawal(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal;
 }
 
-impl ForWithdraw for Decimal {
-    fn for_withdraw(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal {
+impl ForWithdrawal for Decimal {
+    fn for_withdrawal(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal {
         match withdraw_strategy {
             WithdrawStrategy::Exact => self.clone(),
             WithdrawStrategy::Rounded(mode) => self.round(divisibility as u32, mode),

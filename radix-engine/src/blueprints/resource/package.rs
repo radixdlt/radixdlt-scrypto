@@ -40,6 +40,8 @@ const FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME: &str =
+    "amount_for_withdrawal_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME: &str =
     "drop_empty_bucket_FungibleResourceManager";
 
@@ -60,6 +62,8 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME: &str =
+    "amount_for_withdrawal_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME: &str =
     "drop_empty_bucket_NonFungibleResourceManager";
 
@@ -285,6 +289,22 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
+                RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetAmountForWithdrawalInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetAmountForWithdrawalOutput>(
+                            ),
+                    ),
+                    export: FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
@@ -362,6 +382,7 @@ impl ResourceNativePackage {
                             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
                         }
@@ -603,6 +624,22 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
+                RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetAmountForWithdrawalInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetAmountForWithdrawalOutput>(
+                            ),
+                    ),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
@@ -686,6 +723,7 @@ impl ResourceNativePackage {
                             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => MethodAccessibility::Public;
@@ -2281,6 +2319,18 @@ impl ResourceNativePackage {
                 let rtn = FungibleResourceManagerBlueprint::get_total_supply(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME => {
+                let input: ResourceManagerGetAmountForWithdrawalInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = FungibleResourceManagerBlueprint::amount_for_withdrawal(
+                    api,
+                    input.request_amount,
+                    input.withdraw_strategy,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME => {
                 let input: NonFungibleResourceManagerCreateInput =
                     input.as_typed().map_err(|e| {
@@ -2439,6 +2489,18 @@ impl ResourceNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleResourceManagerBlueprint::get_total_supply(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME => {
+                let input: ResourceManagerGetAmountForWithdrawalInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleResourceManagerBlueprint::amount_for_withdrawal(
+                    api,
+                    input.request_amount,
+                    input.withdraw_strategy,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => {
