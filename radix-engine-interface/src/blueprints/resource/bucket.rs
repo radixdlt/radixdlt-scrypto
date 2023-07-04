@@ -1,4 +1,5 @@
 use super::Proof;
+use super::WithdrawStrategy;
 use crate::data::scrypto::model::Own;
 use crate::data::scrypto::ScryptoCustomTypeKind;
 use crate::data::scrypto::ScryptoCustomValueKind;
@@ -17,6 +18,16 @@ pub struct BucketTakeInput {
 }
 
 pub type BucketTakeOutput = Bucket;
+
+pub const BUCKET_TAKE_ADVANCED_IDENT: &str = "take_advanced";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct BucketTakeAdvancedInput {
+    pub amount: Decimal,
+    pub withdraw_strategy: WithdrawStrategy,
+}
+
+pub type BucketTakeAdvancedOutput = Bucket;
 
 pub const BUCKET_PUT_IDENT: &str = "put";
 

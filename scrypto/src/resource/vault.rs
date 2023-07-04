@@ -43,6 +43,12 @@ pub trait ScryptoVault {
 
     fn take_all(&mut self) -> Self::BucketType;
 
+    fn take_advanced<A: Into<Decimal>>(
+        &mut self,
+        amount: A,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Self::BucketType;
+
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
 
     fn as_fungible(&self) -> FungibleVault;
@@ -188,6 +194,26 @@ impl ScryptoVault for Vault {
         self.take(self.amount())
     }
 
+    fn take_advanced<A: Into<Decimal>>(
+        &mut self,
+        amount: A,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Bucket {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0.as_node_id(),
+                VAULT_TAKE_ADVANCED_IDENT,
+                scrypto_encode(&VaultTakeAdvancedInput {
+                    amount: amount.into(),
+                    withdraw_strategy,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
     /// Uses resources in this vault as authorization for an operation.
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         LocalAuthZone::push(self.create_proof());
@@ -277,6 +303,14 @@ impl ScryptoVault for FungibleVault {
 
     fn take_all(&mut self) -> Self::BucketType {
         FungibleBucket(self.0.take_all())
+    }
+
+    fn take_advanced<A: Into<Decimal>>(
+        &mut self,
+        amount: A,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Self::BucketType {
+        FungibleBucket(self.0.take_advanced(amount, withdraw_strategy))
     }
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
@@ -385,6 +419,14 @@ impl ScryptoVault for NonFungibleVault {
 
     fn take_all(&mut self) -> Self::BucketType {
         NonFungibleBucket(self.0.take_all())
+    }
+
+    fn take_advanced<A: Into<Decimal>>(
+        &mut self,
+        amount: A,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Self::BucketType {
+        NonFungibleBucket(self.0.take_advanced(amount, withdraw_strategy))
     }
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {

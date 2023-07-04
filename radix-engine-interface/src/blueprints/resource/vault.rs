@@ -36,6 +36,16 @@ pub struct VaultTakeInput {
 
 pub type VaultTakeOutput = Bucket;
 
+pub const VAULT_TAKE_ADVANCED_IDENT: &str = "take_advanced";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct VaultTakeAdvancedInput {
+    pub amount: Decimal,
+    pub withdraw_strategy: WithdrawStrategy,
+}
+
+pub type VaultTakeAdvancedOutput = Bucket;
+
 pub const VAULT_GET_AMOUNT_IDENT: &str = "get_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
