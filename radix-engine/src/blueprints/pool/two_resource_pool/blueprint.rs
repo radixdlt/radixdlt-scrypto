@@ -256,12 +256,12 @@ impl TwoResourcePoolBlueprint {
                     };
 
                     if divisibility1 != 18 {
-                        amount1 = amount1
-                            .round(divisibility1 as u32, RoundingMode::TowardsNegativeInfinity)
+                        amount1 =
+                            amount1.round(divisibility1 as u32, RoundingMode::ToNegativeInfinity)
                     }
                     if divisibility2 != 18 {
-                        amount2 = amount2
-                            .round(divisibility2 as u32, RoundingMode::TowardsNegativeInfinity)
+                        amount2 =
+                            amount2.round(divisibility2 as u32, RoundingMode::ToNegativeInfinity)
                     }
 
                     let pool_units_to_mint = amount1 / reserves1 * pool_unit_total_supply;
@@ -543,8 +543,7 @@ impl TwoResourcePoolBlueprint {
                     let amount_owed = if divisibility == 18 {
                         amount_owed
                     } else {
-                        amount_owed
-                            .round(divisibility as u32, RoundingMode::TowardsNegativeInfinity)
+                        amount_owed.round(divisibility as u32, RoundingMode::ToNegativeInfinity)
                     };
 
                     (resource_address, amount_owed)

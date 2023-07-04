@@ -98,12 +98,12 @@ impl Decimal {
 
     /// Returns the largest integer that is equal to or less than this number.
     pub fn floor(&self) -> Self {
-        self.round(0, RoundingMode::TowardsNegativeInfinity)
+        self.round(0, RoundingMode::ToNegativeInfinity)
     }
 
     /// Returns the smallest integer that is equal to or greater than this number.
     pub fn ceiling(&self) -> Self {
-        self.round(0, RoundingMode::TowardsPositiveInfinity)
+        self.round(0, RoundingMode::ToPositiveInfinity)
     }
 
     pub fn round(&self, decimal_places: u32, mode: RoundingMode) -> Self {
@@ -111,7 +111,7 @@ impl Decimal {
 
         let divisor: BnumI256 = BnumI256::from(10i8).pow(Self::SCALE - decimal_places);
         match mode {
-            RoundingMode::TowardsPositiveInfinity => {
+            RoundingMode::ToPositiveInfinity => {
                 if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else if self.is_negative() {
@@ -120,7 +120,7 @@ impl Decimal {
                     Self((self.0 / divisor + BnumI256::one()) * divisor)
                 }
             }
-            RoundingMode::TowardsNegativeInfinity => {
+            RoundingMode::ToNegativeInfinity => {
                 if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else if self.is_negative() {
@@ -129,7 +129,7 @@ impl Decimal {
                     Self(self.0 / divisor * divisor)
                 }
             }
-            RoundingMode::TowardsZero => {
+            RoundingMode::ToZero => {
                 if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else {
@@ -145,7 +145,7 @@ impl Decimal {
                     Self((self.0 / divisor + BnumI256::one()) * divisor)
                 }
             }
-            RoundingMode::TowardsNearestAndHalfTowardsZero => {
+            RoundingMode::MidpointTowardZero => {
                 if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else {
@@ -163,7 +163,7 @@ impl Decimal {
                     }
                 }
             }
-            RoundingMode::TowardsNearestAndHalfAwayFromZero => {
+            RoundingMode::MidpointAwayFromZero => {
                 if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else {
@@ -989,7 +989,7 @@ mod tests {
 
     #[test]
     fn test_round_towards_zero_decimal() {
-        let mode = RoundingMode::TowardsZero;
+        let mode = RoundingMode::ToZero;
         assert_eq!(dec!("1.2").round(0, mode).to_string(), "1");
         assert_eq!(dec!("1.0").round(0, mode).to_string(), "1");
         assert_eq!(dec!("0.9").round(0, mode).to_string(), "0");
@@ -1013,7 +1013,7 @@ mod tests {
 
     #[test]
     fn test_round_towards_nearest_and_half_towards_zero_decimal() {
-        let mode = RoundingMode::TowardsNearestAndHalfTowardsZero;
+        let mode = RoundingMode::MidpointTowardZero;
         assert_eq!(dec!("5.5").round(0, mode).to_string(), "5");
         assert_eq!(dec!("2.5").round(0, mode).to_string(), "2");
         assert_eq!(dec!("1.6").round(0, mode).to_string(), "2");
@@ -1028,7 +1028,7 @@ mod tests {
 
     #[test]
     fn test_round_towards_nearest_and_half_away_from_zero_decimal() {
-        let mode = RoundingMode::TowardsNearestAndHalfAwayFromZero;
+        let mode = RoundingMode::MidpointAwayFromZero;
         assert_eq!(dec!("5.5").round(0, mode).to_string(), "6");
         assert_eq!(dec!("2.5").round(0, mode).to_string(), "3");
         assert_eq!(dec!("1.6").round(0, mode).to_string(), "2");
@@ -1043,7 +1043,7 @@ mod tests {
 
     #[test]
     fn test_various_decimal_places_decimal() {
-        let mode = RoundingMode::TowardsNearestAndHalfAwayFromZero;
+        let mode = RoundingMode::MidpointAwayFromZero;
         let num = dec!("-2.555555555555555555");
         assert_eq!(num.round(0, mode).to_string(), "-3");
         assert_eq!(num.round(1, mode).to_string(), "-2.6");

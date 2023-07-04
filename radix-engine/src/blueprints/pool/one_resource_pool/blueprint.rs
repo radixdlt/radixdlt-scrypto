@@ -355,7 +355,7 @@ impl OneResourcePoolBlueprint {
         } else {
             amount_owed.round(
                 pool_resource_divisibility as u32,
-                RoundingMode::TowardsNegativeInfinity,
+                RoundingMode::ToNegativeInfinity,
             )
         }
     }
