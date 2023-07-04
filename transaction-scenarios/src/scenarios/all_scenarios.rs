@@ -25,6 +25,9 @@ impl Iterator for AllScenariosIterator {
             4 => Some(Box::new(|core| {
                 fungible_resource::FungibleResourceScenarioCreator::create(core)
             })),
+            5 => Some(Box::new(|core| {
+                non_fungible_resource::NonFungibleResourceScenarioCreator::create(core)
+            })),
             _ => None,
         }
     }

@@ -553,6 +553,63 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn create_ruid_non_fungible_resource<T, V>(
+        &mut self,
+        owner_role: OwnerRole,
+        track_total_supply: bool,
+        metadata: ModuleConfig<MetadataInit>,
+        resource_roles: NonFungibleResourceRoles,
+        initial_supply: Option<T>,
+    ) -> &mut Self
+    where
+        T: IntoIterator<Item = V>,
+        V: ManifestEncode + NonFungibleData,
+    {
+        if let Some(initial_supply) = initial_supply {
+            let entries = initial_supply
+                .into_iter()
+                .map(|e| (to_manifest_value_and_unwrap!(&e),))
+                .collect();
+
+            self.add_instruction(InstructionV1::CallFunction {
+                package_address: RESOURCE_PACKAGE.into(),
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_RUID_WITH_INITIAL_SUPPLY_IDENT
+                    .to_string(),
+                args: to_manifest_value_and_unwrap!(
+                    &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
+                        owner_role,
+                        track_total_supply,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        resource_roles,
+                        metadata,
+                        entries,
+                        address_reservation: None,
+                    }
+                ),
+            });
+        } else {
+            self.add_instruction(InstructionV1::CallFunction {
+                package_address: RESOURCE_PACKAGE.into(),
+                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(
+                    &NonFungibleResourceManagerCreateRuidWithInitialSupplyManifestInput {
+                        owner_role,
+                        track_total_supply,
+                        non_fungible_schema: NonFungibleDataSchema::new_schema::<V>(),
+                        resource_roles,
+                        metadata,
+                        entries: vec![],
+                        address_reservation: None,
+                    }
+                ),
+            });
+        }
+
+        self
+    }
+
     pub fn create_identity_advanced(&mut self, owner_rule: OwnerRole) -> &mut Self {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: IDENTITY_PACKAGE.into(),
