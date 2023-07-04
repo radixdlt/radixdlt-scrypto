@@ -36,6 +36,10 @@ pub enum Instruction {
         ids: Value,
     },
 
+    AssertWorktopContainsAny {
+        resource_address: Value,
+    },
+
     PopFromAuthZone {
         new_proof: Value,
     },
@@ -155,6 +159,10 @@ pub enum Instruction {
         args: Vec<Value>,
     },
     UnfreezeVault {
+        vault_id: Value,
+        args: Vec<Value>,
+    },
+    RecallNonFungiblesFromVault {
         vault_id: Value,
         args: Vec<Value>,
     },
