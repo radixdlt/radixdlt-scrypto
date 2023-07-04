@@ -2647,12 +2647,11 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: FungibleVaultLockFungibleAmountInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = FungibleVaultBlueprint::lock_amount(&receiver, input.amount, api)?;
+                let rtn = FungibleVaultBlueprint::lock_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME => {
@@ -2786,13 +2785,11 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: NonFungibleVaultLockNonFungiblesInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn =
-                    NonFungibleVaultBlueprint::lock_non_fungibles(&receiver, input.local_ids, api)?;
+                let rtn = NonFungibleVaultBlueprint::lock_non_fungibles(&input.local_ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
@@ -2956,11 +2953,10 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: FungibleBucketLockAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn = FungibleBucketBlueprint::lock_amount(&receiver, input.amount, api)?;
+                let rtn = FungibleBucketBlueprint::lock_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME => {
@@ -3066,16 +3062,11 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: NonFungibleBucketLockNonFungiblesInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleBucketBlueprint::lock_non_fungibles(
-                    &receiver,
-                    input.local_ids,
-                    api,
-                )?;
+                let rtn = NonFungibleBucketBlueprint::lock_non_fungibles(&input.local_ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {

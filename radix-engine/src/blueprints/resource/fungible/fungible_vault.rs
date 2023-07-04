@@ -229,8 +229,15 @@ impl FungibleVaultBlueprint {
             ));
         }
 
+        Self::lock_amount(amount, api)?;
+
         let proof_info = ProofMoveableSubstate { restricted: false };
-        let proof = Self::lock_amount(receiver, amount, api)?;
+        let proof = FungibleProofSubstate::new(
+            amount,
+            btreemap!(
+                LocalRef::Vault(Reference(receiver.clone().into())) => amount
+            ),
+        );
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             vec![
@@ -257,11 +264,7 @@ impl FungibleVaultBlueprint {
     //===================
 
     // protected method
-    pub fn lock_amount<Y>(
-        receiver: &NodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<FungibleProofSubstate, RuntimeError>
+    pub fn lock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -284,15 +287,7 @@ impl FungibleVaultBlueprint {
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(FungibleProofSubstate::new(
-            amount,
-            btreemap!(
-                LocalRef::Vault(Reference(receiver.clone().into())) => amount
-            ),
-        )
-        .map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e)))
-        })?)
+        Ok(())
     }
 
     // protected method

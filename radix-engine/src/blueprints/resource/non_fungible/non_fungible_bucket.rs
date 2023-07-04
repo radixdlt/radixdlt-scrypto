@@ -117,23 +117,28 @@ impl NonFungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        check_non_fungible_amount(&amount).map_err(|_| {
+        let n = check_non_fungible_amount(&amount).map_err(|_| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::InvalidAmount,
             ))
         })?;
 
-        let proof_info = ProofMoveableSubstate { restricted: false };
-        let proof = Self::lock_amount(receiver, amount, api)?;
-        let proof_id = api.new_simple_object(
-            NON_FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
-            ],
-        )?;
+        let locked_local_ids = Self::locked_non_fungible_local_ids(api)?;
+        let liquid_local_ids = Self::liquid_non_fungible_local_ids(api)?;
+        if n as usize > locked_local_ids.len() + liquid_local_ids.len() {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::BucketError(BucketError::ResourceError(
+                    ResourceError::InsufficientBalance,
+                )),
+            ));
+        }
+        let ids = locked_local_ids
+            .into_iter()
+            .chain(liquid_local_ids.into_iter())
+            .take(n as usize)
+            .collect();
 
-        Ok(Proof(Own(proof_id)))
+        Self::create_proof_of_non_fungibles(receiver, ids, api)
     }
 
     pub fn create_proof_of_non_fungibles<Y>(
@@ -144,8 +149,15 @@ impl NonFungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::lock_non_fungibles(&ids, api)?;
+
         let proof_info = ProofMoveableSubstate { restricted: false };
-        let proof = Self::lock_non_fungibles(receiver, ids, api)?;
+        let proof = NonFungibleProofSubstate::new(
+            ids.clone(),
+            btreemap!(
+                LocalRef::Bucket(Reference(receiver.clone())) => ids
+            ),
+        );
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
@@ -167,68 +179,10 @@ impl NonFungibleBucketBlueprint {
     // Protected method
     //===================
 
-    pub fn lock_amount<Y>(
-        receiver: &NodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<NonFungibleProofSubstate, RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            NonFungibleBucketField::Locked.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
-        let locked_amount = locked.ids.len() as u32;
-
-        let n = check_non_fungible_amount(&amount).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::InvalidAmount,
-            ))
-        })?;
-        // Take from liquid if needed
-        if n > locked_amount {
-            let resource = Self::internal_take_by_amount(n - locked_amount, api)?;
-
-            for nf in resource.into_ids() {
-                locked.ids.insert(nf, 0);
-            }
-        }
-
-        // Increase lock count
-        let n: usize = amount
-            .to_string()
-            .parse()
-            .expect("Failed to convert amount to usize");
-        let ids_for_proof: BTreeSet<NonFungibleLocalId> =
-            locked.ids.keys().cloned().into_iter().take(n).collect();
-        for id in &ids_for_proof {
-            locked.ids.entry(id.clone()).or_default().add_assign(1);
-        }
-
-        api.field_lock_write_typed(handle, &locked)?;
-
-        // Issue proof
-        Ok(NonFungibleProofSubstate::new(
-            ids_for_proof.clone(),
-            btreemap!(
-                LocalRef::Bucket(Reference(receiver.clone())) => ids_for_proof
-            ),
-        )
-        .map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
-                e,
-            )))
-        })?)
-    }
-
     pub fn lock_non_fungibles<Y>(
-        receiver: &NodeId,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<NonFungibleProofSubstate, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
@@ -248,24 +202,14 @@ impl NonFungibleBucketBlueprint {
         Self::internal_take(&delta, api)?;
 
         // Increase lock count
-        for id in &ids {
+        for id in ids {
             locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
 
         api.field_lock_write_typed(handle, &locked)?;
 
         // Issue proof
-        Ok(NonFungibleProofSubstate::new(
-            ids.clone(),
-            btreemap!(
-                LocalRef::Bucket(Reference(receiver.clone())) => ids
-            ),
-        )
-        .map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(BucketError::ProofError(
-                e,
-            )))
-        })?)
+        Ok(())
     }
 
     pub fn unlock_non_fungibles<Y>(
