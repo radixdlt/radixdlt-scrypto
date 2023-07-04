@@ -1097,7 +1097,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rounding_nearest_even_with_various_decimal_places_decimal() {
+    fn test_rounding_midpoint_nearest_even_with_various_decimal_places_decimal() {
         let mode = RoundingMode::MidpointNearestEven;
         let num = dec!("-2.555555555555555555");
         assert_eq!(num.round(0, mode).to_string(), "-2");
@@ -1105,6 +1105,12 @@ mod tests {
         assert_eq!(num.round(2, mode).to_string(), "-2.56");
         assert_eq!(num.round(17, mode).to_string(), "-2.55555555555555556");
         assert_eq!(num.round(18, mode).to_string(), "-2.555555555555555555");
+        let num = dec!("2.555555555555555555");
+        assert_eq!(num.round(0, mode).to_string(), "2");
+        assert_eq!(num.round(1, mode).to_string(), "2.6");
+        assert_eq!(num.round(2, mode).to_string(), "2.56");
+        assert_eq!(num.round(17, mode).to_string(), "2.55555555555555556");
+        assert_eq!(num.round(18, mode).to_string(), "2.555555555555555555");
     }
 
     #[test]
