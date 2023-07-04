@@ -412,10 +412,6 @@ impl<O: HasStub> HasAccessRules for Global<O> {
         self.access_rules().lock_owner_role()
     }
 
-    fn set_and_lock_owner_role<A: Into<AccessRule>>(&self, rule: A) {
-        self.access_rules().set_and_lock_owner_role(rule);
-    }
-
     fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.access_rules().set_role(name, rule);
     }

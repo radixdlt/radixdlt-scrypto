@@ -5,10 +5,8 @@ use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesGetRoleInput, AccessRulesLockOwnerRoleInput,
-    AccessRulesSetAndLockOwnerRoleInput,
     AccessRulesSetOwnerRoleInput, AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT,
     ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_GET_ROLE_IDENT, ACCESS_RULES_LOCK_OWNER_ROLE_IDENT,
-    ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT,
     ACCESS_RULES_SET_OWNER_ROLE_IDENT,
     ACCESS_RULES_SET_ROLE_IDENT,
 };
@@ -23,7 +21,6 @@ use sbor::rust::prelude::*;
 pub trait HasAccessRules {
     fn set_owner_role<A: Into<AccessRule>>(&self, rule: A);
     fn lock_owner_role<A: Into<AccessRule>>(&self);
-    fn set_and_lock_owner_role<A: Into<AccessRule>>(&self, rule: A);
     fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
     fn get_role(&self, name: &str) -> Option<AccessRule>;
     fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
@@ -58,13 +55,6 @@ impl AccessRules {
         self.call_ignore_rtn(
             ACCESS_RULES_LOCK_OWNER_ROLE_IDENT,
             &AccessRulesLockOwnerRoleInput {},
-        );
-    }
-
-    pub fn set_and_lock_owner_role<A: Into<AccessRule>>(&self, rule: A) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT,
-            &AccessRulesSetAndLockOwnerRoleInput { rule: rule.into() },
         );
     }
 

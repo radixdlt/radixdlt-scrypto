@@ -96,7 +96,6 @@ pub enum InstructionIdent {
     ClaimComponentRoyalties,
     SetOwnerRole,
     LockOwnerRole,
-    SetAndLockOwnerRole,
     SetRole,
 
     // ==============
@@ -196,7 +195,6 @@ impl InstructionIdent {
             "CLAIM_COMPONENT_ROYALTIES" => InstructionIdent::ClaimComponentRoyalties,
             "SET_OWNER_ROLE" => InstructionIdent::SetOwnerRole,
             "LOCK_OWNER_ROLE" => InstructionIdent::LockOwnerRole,
-            "SET_AND_LOCK_OWNER_ROLE" => InstructionIdent::SetAndLockOwnerRole,
             "SET_ROLE" => InstructionIdent::SetRole,
 
             // ==============
@@ -709,10 +707,6 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::LockOwnerRole => Instruction::LockOwnerRole {
-                address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
-            },
-            InstructionIdent::SetAndLockOwnerRole => Instruction::SetAndLockOwnerRole {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

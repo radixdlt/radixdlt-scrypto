@@ -1,6 +1,5 @@
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesLockOwnerRoleInput,
-    AccessRulesSetAndLockOwnerRoleInput,
     AccessRulesSetOwnerRoleInput, AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT,
     ACCESS_RULES_CREATE_IDENT,
     ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
@@ -84,23 +83,6 @@ pub trait AccessRulesObject {
             module_id,
             ACCESS_RULES_SET_OWNER_ROLE_IDENT,
             scrypto_encode(&AccessRulesLockOwnerRoleInput {}).unwrap(),
-        )?;
-
-        Ok(())
-    }
-
-    fn set_and_lock_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
-        &self,
-        rule: A,
-        api: &mut Y,
-    ) -> Result<(), E> {
-        let (node_id, module_id) = self.self_id();
-        let _rtn = api.call_method_advanced(
-            node_id,
-            false,
-            module_id,
-            ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-            scrypto_encode(&AccessRulesSetAndLockOwnerRoleInput { rule: rule.into() }).unwrap(),
         )?;
 
         Ok(())

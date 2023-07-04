@@ -102,7 +102,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         let (bucket, owner_rule) =
             Self::mint_securified_badge(owner_badge_data, non_fungible_local_id, api)?;
 
-        access_rules.set_and_lock_owner_role(owner_rule, api)?;
+        access_rules.set_owner_role(owner_rule, api)?;
 
         Ok(bucket)
     }
