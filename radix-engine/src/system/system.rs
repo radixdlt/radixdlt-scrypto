@@ -53,7 +53,14 @@ pub struct DynSubstate<E> {
 }
 
 impl<E> DynSubstate<E> {
-    pub fn freeze(&mut self) {
+    pub fn new(value: E) -> Self {
+        Self {
+            value,
+            mutability: SubstateMutability::Mutable,
+        }
+    }
+
+    pub fn lock(&mut self) {
         self.mutability = SubstateMutability::Immutable;
     }
 
@@ -340,10 +347,17 @@ where
                         Condition::Always => {}
                     }
 
+
+                    let value: ScryptoValue = scrypto_decode(&field)
+                        .expect("Checked by payload-schema validation");
+
                     partition.insert(
                         SubstateKey::Field(i as u8),
+                        IndexedScryptoValue::from_typed(&DynSubstate::new((value,)))
+                        /*
                         IndexedScryptoValue::from_vec(field)
                             .expect("Checked by payload-schema validation"),
+                         */
                     );
                 }
 
@@ -1212,9 +1226,22 @@ where
             }
         }
 
+        /*
+        self.api.kernel_read_substate(handle).map(|v| {
+            let wrapper: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
+            scrypto_encode(&wrapper.value).unwrap()
+        })
+         */
+
         self.api
             .kernel_read_substate(lock_handle)
-            .map(|v| v.as_slice().to_vec())
+            .map(|v| {
+                let wrapper: DynSubstate<(ScryptoValue,)> = v.as_typed()
+                    .map_err(|e| {
+                        e
+                    }).unwrap();
+                scrypto_encode(&wrapper.value.0).unwrap()
+            })
     }
 
     // Costing through kernel
@@ -1243,8 +1270,11 @@ where
             }
         }
 
+        let value: ScryptoValue = scrypto_decode(&buffer)
+            .expect("Should be valid due to payload check");
+
         let substate =
-            IndexedScryptoValue::from_vec(buffer).expect("Should be valid due to payload check");
+            IndexedScryptoValue::from_typed(&DynSubstate::new((value,)));
         self.api.kernel_write_substate(lock_handle, substate)?;
 
         Ok(())
@@ -1563,7 +1593,18 @@ where
         let user_substates = node_substates.remove(&MAIN_BASE_PARTITION).unwrap();
         let fields = user_substates
             .into_iter()
-            .map(|(_key, v)| v.into())
+            .map(|(_key, v)| {
+                let substate: DynSubstate<(ScryptoValue,)> = v.as_typed().unwrap();
+                scrypto_encode(&substate.value.0).unwrap()
+                    /*
+                let value: ScryptoValue = scrypto_decode(&buffer)
+                    .expect("Should be valid due to payload check");
+
+                let substate =
+                    IndexedScryptoValue::from_typed(&DynSubstate::new((value,)));
+                v.into()
+                     */
+            })
             .collect();
 
         Ok(fields)
@@ -1612,7 +1653,7 @@ where
 
         let v = self.api.kernel_read_substate(handle)?;
         let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-        kv_entry.freeze();
+        kv_entry.lock();
         let indexed = IndexedScryptoValue::from_typed(&kv_entry);
         self.api.kernel_write_substate(handle, indexed)?;
         Ok(())

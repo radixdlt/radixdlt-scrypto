@@ -4,7 +4,7 @@ use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrack
 use crate::errors::*;
 use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
-use crate::system::system::{KeyValueEntrySubstate, SubstateMutability};
+use crate::system::system::{DynSubstate, KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
@@ -375,9 +375,9 @@ where
                 return None;
             }
         };
-        let substate: ConsensusManagerSubstate = track.read_substate(handle).0.as_typed().unwrap();
+        let substate: DynSubstate<(ConsensusManagerSubstate,)> = track.read_substate(handle).0.as_typed().unwrap();
         track.close_substate(handle);
-        Some(substate.epoch)
+        Some(substate.value.0.epoch)
     }
 
     fn validate_epoch_range(
@@ -415,11 +415,12 @@ where
             )
             .unwrap()
             .0;
-        let substate: TransactionTrackerSubstate =
+        let substate: DynSubstate<(TransactionTrackerSubstate,)> =
             track.read_substate(handle).0.as_typed().unwrap();
         track.close_substate(handle);
 
         let partition_number = substate
+            .value.0
             .partition_for_expiry_epoch(expiry_epoch)
             .expect("Transaction tracker should cover all valid epoch ranges");
 
@@ -615,8 +616,8 @@ where
                 )
                 .unwrap();
             let (substate_value, _store_access) = track.read_substate(handle);
-            let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
-            substate.put(LiquidFungibleResource::new(amount));
+            let mut substate: DynSubstate<(LiquidFungibleResource,)> = substate_value.as_typed().unwrap();
+            substate.value.0.put(LiquidFungibleResource::new(amount));
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
         }
@@ -654,8 +655,8 @@ where
                 )
                 .unwrap();
             let (substate_value, _store_access) = track.read_substate(handle);
-            let mut substate: LiquidFungibleResource = substate_value.as_typed().unwrap();
-            substate.put(locked);
+            let mut substate: DynSubstate<(LiquidFungibleResource,)> = substate_value.as_typed().unwrap();
+            substate.value.0.put(locked);
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
 
@@ -686,9 +687,9 @@ where
                 )
                 .unwrap()
                 .0;
-            let substate: ConsensusManagerSubstate =
+            let substate: DynSubstate<(ConsensusManagerSubstate,)> =
                 track.read_substate(handle).0.as_typed().unwrap();
-            let current_leader = substate.current_leader;
+            let current_leader = substate.value.0.current_leader;
             track.close_substate(handle);
 
             // Update validator rewards
@@ -701,12 +702,13 @@ where
                 )
                 .unwrap()
                 .0;
-            let mut substate: ValidatorRewardsSubstate =
+            let mut substate: DynSubstate<(ValidatorRewardsSubstate,)> =
                 track.read_substate(handle).0.as_typed().unwrap();
             let proposer_rewards = if let Some(current_leader) = current_leader {
                 let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
                     + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
                 substate
+                    .value.0
                     .proposer_rewards
                     .entry(current_leader)
                     .or_default()
@@ -719,7 +721,7 @@ where
                 tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
                     + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
             };
-            let vault_node_id = substate.rewards_vault.0 .0;
+            let vault_node_id = substate.value.0.rewards_vault.0 .0;
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
 
@@ -733,9 +735,9 @@ where
                 )
                 .unwrap()
                 .0;
-            let mut substate: LiquidFungibleResource =
+            let mut substate: DynSubstate<(LiquidFungibleResource,)> =
                 track.read_substate(handle).0.as_typed().unwrap();
-            substate.put(
+            substate.value.0.put(
                 collected_fees
                     .take_by_amount(proposer_rewards + validator_set_rewards)
                     .unwrap(),
@@ -763,7 +765,7 @@ where
             )
             .unwrap()
             .0;
-        let mut transaction_tracker: TransactionTrackerSubstate =
+        let mut transaction_tracker: DynSubstate<(TransactionTrackerSubstate,)> =
             track.read_substate(handle).0.as_typed().unwrap();
 
         // Update the status of the intent hash
@@ -773,7 +775,7 @@ where
         } = intent_hash
         {
             if let Some(partition_number) =
-                transaction_tracker.partition_for_expiry_epoch(*expiry_epoch)
+                transaction_tracker.value.0.partition_for_expiry_epoch(*expiry_epoch)
             {
                 let handle = track
                     .acquire_lock_virtualize(
@@ -816,9 +818,9 @@ where
         //
         // Also, we need to make sure epoch doesn't jump by a large distance.
         if next_epoch.number()
-            >= transaction_tracker.start_epoch + transaction_tracker.epochs_per_partition
+            >= transaction_tracker.value.0.start_epoch + transaction_tracker.value.0.epochs_per_partition
         {
-            let discarded_partition = transaction_tracker.advance();
+            let discarded_partition = transaction_tracker.value.0.advance();
             track.delete_partition(
                 TRANSACTION_TRACKER.as_node_id(),
                 PartitionNumber(discarded_partition),
@@ -826,7 +828,8 @@ where
         }
         track.update_substate(
             handle,
-            IndexedScryptoValue::from_typed(&transaction_tracker),
+            IndexedScryptoValue::from_typed(&DynSubstate::new((transaction_tracker.value.0,))),
+
         );
         track.close_substate(handle);
     }

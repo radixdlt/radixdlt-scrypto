@@ -8,7 +8,7 @@ use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::errors::*;
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system::{DynSubstate, KeyValueEntrySubstate};
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
     PreviewError, TransactionReceipt, TransactionResult,
@@ -443,38 +443,37 @@ impl TestRunner {
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
         let accumulator = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, ComponentRoyaltySubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(ComponentRoyaltySubstate,)>>(
                 component_address.as_node_id(),
                 ROYALTY_FIELDS_PARTITION,
                 &RoyaltyField::RoyaltyAccumulator.into(),
             )
-            .unwrap();
+            .unwrap().value.0;
         self.substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(LiquidFungibleResource,)>>(
                 accumulator.royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
             )
-            .map(|r| r.amount())
-            .unwrap()
+            .unwrap().value.0.amount()
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let output = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, PackageRoyaltyAccumulatorSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(PackageRoyaltyAccumulatorSubstate,)>>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),
-            )?;
+            )?.value.0;
 
         self.substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(LiquidFungibleResource,)>>(
                 output.royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
             )
-            .map(|r| r.amount())
+            .map(|r| r.value.0.amount())
     }
 
     pub fn account_balance(
@@ -604,12 +603,12 @@ impl TestRunner {
 
     pub fn inspect_fungible_vault(&mut self, vault_id: NodeId) -> Option<Decimal> {
         self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(LiquidFungibleResource,)>>(
                 &vault_id,
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
             )
-            .map(|output| output.amount())
+            .map(|output| output.value.0.amount())
     }
 
     pub fn inspect_non_fungible_vault(
@@ -618,12 +617,12 @@ impl TestRunner {
     ) -> Option<(Decimal, Option<NonFungibleLocalId>)> {
         let amount = self
             .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(LiquidNonFungibleVault,)>>(
                 &vault_id,
                 MAIN_BASE_PARTITION,
                 &NonFungibleVaultField::LiquidNonFungible.into(),
             )
-            .map(|vault| vault.amount);
+            .map(|vault| vault.value.0.amount);
 
         let mut substate_iter = self
             .substate_db()
@@ -704,23 +703,23 @@ impl TestRunner {
 
     pub fn get_validator_info(&self, address: ComponentAddress) -> ValidatorSubstate {
         self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, ValidatorSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(ValidatorSubstate,)>>(
                 address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &ValidatorField::Validator.into(),
             )
-            .unwrap()
+            .unwrap().value.0
     }
 
     pub fn get_active_validator_with_key(&self, key: &Secp256k1PublicKey) -> ComponentAddress {
         let substate = self
             .substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, CurrentValidatorSetSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(CurrentValidatorSetSubstate,)>>(
                 CONSENSUS_MANAGER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &ConsensusManagerField::CurrentValidatorSet.into(),
             )
-            .unwrap();
+            .unwrap().value.0;
 
         substate
             .validator_set
@@ -1560,13 +1559,13 @@ impl TestRunner {
     pub fn set_current_epoch(&mut self, epoch: Epoch) {
         let mut substate = self
             .substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(ConsensusManagerSubstate,)>>(
                 &CONSENSUS_MANAGER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap();
-        substate.epoch = epoch;
+        substate.value.0.epoch = epoch;
         self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
@@ -1708,23 +1707,25 @@ impl TestRunner {
     /// most recent round change.
     pub fn get_current_proposer_timestamp_ms(&mut self) -> i64 {
         self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, ProposerMilliTimestampSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(ProposerMilliTimestampSubstate,)>>(
                 CONSENSUS_MANAGER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &ConsensusManagerField::CurrentTime.into(),
             )
             .unwrap()
+            .value.0
             .epoch_milli
     }
 
     pub fn get_consensus_manager_state(&mut self) -> ConsensusManagerSubstate {
         self.substate_db()
-            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, DynSubstate<(ConsensusManagerSubstate,)>>(
                 CONSENSUS_MANAGER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap()
+            .value.0
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {

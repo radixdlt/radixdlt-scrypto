@@ -7,6 +7,7 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
+use crate::system::system::DynSubstate;
 
 use super::AuthZoneError;
 
@@ -34,12 +35,12 @@ impl From<ComposedProof> for BTreeMap<SubstateKey, IndexedScryptoValue> {
     fn from(value: ComposedProof) -> Self {
         match value {
             ComposedProof::Fungible(info, proof, ..) => btreemap!(
-                FungibleProofField::Moveable.into() => IndexedScryptoValue::from_typed(&info),
-                FungibleProofField::ProofRefs.into() => IndexedScryptoValue::from_typed(&proof),
+                FungibleProofField::Moveable.into() => IndexedScryptoValue::from_typed(&DynSubstate::new((info,))),
+                FungibleProofField::ProofRefs.into() => IndexedScryptoValue::from_typed(&DynSubstate::new((proof,))),
             ),
             ComposedProof::NonFungible(info, proof, ..) => btreemap!(
-                NonFungibleProofField::Moveable.into() => IndexedScryptoValue::from_typed(&info),
-                NonFungibleProofField::ProofRefs.into() => IndexedScryptoValue::from_typed(&proof),
+                NonFungibleProofField::Moveable.into() => IndexedScryptoValue::from_typed(&DynSubstate::new((info,))),
+                NonFungibleProofField::ProofRefs.into() => IndexedScryptoValue::from_typed(&DynSubstate::new((proof,))),
             ),
         }
     }
@@ -169,9 +170,9 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
                     LockFlags::read_only(),
                     SystemLockData::default(),
                 )?;
-                let proof: FungibleProofSubstate =
+                let proof: DynSubstate<(FungibleProofSubstate,)> =
                     api.kernel_read_substate(handle)?.as_typed().unwrap();
-                for (container, locked_amount) in &proof.evidence {
+                for (container, locked_amount) in &proof.value.0.evidence {
                     if let Some(existing) = max.get_mut(container) {
                         *existing = Decimal::max(*existing, locked_amount.clone());
                     } else {
@@ -221,9 +222,9 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
                     LockFlags::read_only(),
                     SystemLockData::default(),
                 )?;
-                let proof: NonFungibleProofSubstate =
+                let proof: DynSubstate<(NonFungibleProofSubstate,)> =
                     api.kernel_read_substate(handle)?.as_typed().unwrap();
-                for (container, locked_ids) in &proof.evidence {
+                for (container, locked_ids) in &proof.value.0.evidence {
                     total.extend(locked_ids.clone());
                     if let Some(ids) = per_container.get_mut(container) {
                         ids.extend(locked_ids.clone());
@@ -267,8 +268,8 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let substate: FungibleProofSubstate = api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let proof = substate.clone();
+        let substate: DynSubstate<(FungibleProofSubstate,)> = api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let proof = substate.value.0.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_zero() {
                 break 'outer;
@@ -356,9 +357,9 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let substate: NonFungibleProofSubstate =
+        let substate: DynSubstate<(NonFungibleProofSubstate,)> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let proof = substate.clone();
+        let proof = substate.value.0.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_empty() {
                 break 'outer;

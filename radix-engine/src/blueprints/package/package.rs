@@ -30,7 +30,7 @@ use sbor::LocalTypeIndex;
 use crate::roles_template;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::royalty::RoyaltyUtil;
-use crate::system::system::{KeyValueEntrySubstate, SubstateMutability, SystemService};
+use crate::system::system::{DynSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
@@ -1334,10 +1334,10 @@ impl PackageRoyaltyNativeBlueprint {
                 SystemLockData::default(),
             )?;
 
-            let substate: PackageRoyaltyAccumulatorSubstate =
+            let substate: DynSubstate<(PackageRoyaltyAccumulatorSubstate,)> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            let vault_id = substate.royalty_vault.0;
+            let vault_id = substate.value.0.royalty_vault.0;
             let package_address = PackageAddress::new_or_panic(receiver.0);
             apply_royalty_cost(
                 api,

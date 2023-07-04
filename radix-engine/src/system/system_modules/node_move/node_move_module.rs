@@ -12,6 +12,7 @@ use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
+use crate::system::system::DynSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NodeMoveError {
@@ -58,10 +59,10 @@ impl NodeMoveModule {
                         LockFlags::MUTABLE,
                         SystemLockData::default(),
                     )?;
-                    let mut proof: ProofMoveableSubstate =
+                    let mut proof: DynSubstate<(ProofMoveableSubstate,)> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-                    if proof.restricted {
+                    if proof.value.0.restricted {
                         return Err(RuntimeError::SystemModuleError(
                             SystemModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
                                 node_id,
@@ -69,7 +70,7 @@ impl NodeMoveModule {
                         ));
                     }
 
-                    proof.change_to_restricted();
+                    proof.value.0.change_to_restricted();
                     api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
                     api.kernel_close_substate(handle)?;
                 } else if callee.is_auth_zone() {
@@ -80,10 +81,10 @@ impl NodeMoveModule {
                         LockFlags::read_only(),
                         SystemLockData::default(),
                     )?;
-                    let proof: ProofMoveableSubstate =
+                    let proof: DynSubstate<(ProofMoveableSubstate,)> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-                    if proof.restricted {
+                    if proof.value.0.restricted {
                         return Err(RuntimeError::SystemModuleError(
                             SystemModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
                                 node_id,
@@ -120,10 +121,10 @@ impl NodeMoveModule {
                         LockFlags::MUTABLE,
                         SystemLockData::default(),
                     )?;
-                    let mut proof: ProofMoveableSubstate =
+                    let mut proof: DynSubstate<(ProofMoveableSubstate,)> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-                    if proof.restricted {
+                    if proof.value.0.restricted {
                         return Err(RuntimeError::SystemModuleError(
                             SystemModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
                                 node_id,
@@ -131,7 +132,7 @@ impl NodeMoveModule {
                         ));
                     }
 
-                    proof.change_to_restricted();
+                    proof.value.0.change_to_restricted();
                     api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
                     api.kernel_close_substate(handle)?;
                 } else if callee.is_auth_zone() {
@@ -142,10 +143,10 @@ impl NodeMoveModule {
                         LockFlags::read_only(),
                         SystemLockData::default(),
                     )?;
-                    let proof: ProofMoveableSubstate =
+                    let proof: DynSubstate<(ProofMoveableSubstate,)> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-                    if proof.restricted {
+                    if proof.value.0.restricted {
                         return Err(RuntimeError::SystemModuleError(
                             SystemModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
                                 node_id,
