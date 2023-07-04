@@ -167,7 +167,6 @@ impl NonFungibleBucketBlueprint {
     // Protected method
     //===================
 
-    // protected method
     pub fn lock_amount<Y>(
         receiver: &NodeId,
         amount: Decimal,
@@ -225,7 +224,6 @@ impl NonFungibleBucketBlueprint {
         })?)
     }
 
-    // protected method
     pub fn lock_non_fungibles<Y>(
         receiver: &NodeId,
         ids: BTreeSet<NonFungibleLocalId>,
@@ -270,7 +268,6 @@ impl NonFungibleBucketBlueprint {
         })?)
     }
 
-    // protected method
     pub fn unlock_non_fungibles<Y>(
         ids: BTreeSet<NonFungibleLocalId>,
         api: &mut Y,

@@ -159,7 +159,6 @@ impl FungibleBucketBlueprint {
     // Protected method
     //===================
 
-    // protected method
     pub fn lock_amount<Y>(
         receiver: &NodeId,
         amount: Decimal,
@@ -201,7 +200,6 @@ impl FungibleBucketBlueprint {
         })?)
     }
 
-    // protected method
     pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,

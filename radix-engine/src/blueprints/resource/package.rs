@@ -2697,7 +2697,7 @@ impl ResourceNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::take_non_fungibles(
-                    input.non_fungible_local_ids,
+                    &input.non_fungible_local_ids,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2818,7 +2818,7 @@ impl ResourceNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::burn_non_fungibles(
-                    input.non_fungible_local_ids,
+                    &input.non_fungible_local_ids,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
