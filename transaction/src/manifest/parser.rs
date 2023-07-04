@@ -98,7 +98,6 @@ pub enum InstructionIdent {
     LockOwnerRole,
     SetAndLockOwnerRole,
     SetRole,
-    SetAndLockRole,
 
     // ==============
     // Call main-method aliases
@@ -199,7 +198,6 @@ impl InstructionIdent {
             "LOCK_OWNER_ROLE" => InstructionIdent::LockOwnerRole,
             "SET_AND_LOCK_OWNER_ROLE" => InstructionIdent::SetAndLockOwnerRole,
             "SET_ROLE" => InstructionIdent::SetRole,
-            "SET_AND_LOCK_ROLE" => InstructionIdent::SetAndLockRole,
 
             // ==============
             // Call main-method aliases
@@ -719,10 +717,6 @@ impl Parser {
                 args: self.parse_values_till_semicolon()?,
             },
             InstructionIdent::SetRole => Instruction::SetRole {
-                address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
-            },
-            InstructionIdent::SetAndLockRole => Instruction::SetAndLockRole {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

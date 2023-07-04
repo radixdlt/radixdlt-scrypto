@@ -6,7 +6,7 @@ use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::address::AddressBech32Encoder;
 use radix_engine_interface::api::node_modules::auth::{
     ACCESS_RULES_LOCK_OWNER_ROLE_IDENT,
-    ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
+    ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT,
     ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
@@ -563,10 +563,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                 (address, ACCESS_RULES_SET_ROLE_IDENT) => {
                     fields.push(address.to_instruction_argument());
                     "SET_ROLE"
-                }
-                (address, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT) => {
-                    fields.push(address.to_instruction_argument());
-                    "SET_AND_LOCK_ROLE"
                 }
 
                 /* Default */

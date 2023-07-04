@@ -91,7 +91,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
     ) -> Result<Bucket, RuntimeError> {
         let access_rules = AttachedAccessRules(*receiver);
         if let Some(securify_role) = Self::SECURIFY_ROLE {
-            access_rules.set_and_lock_role(
+            access_rules.set_role(
                 ObjectModuleId::Main,
                 RoleKey::new(securify_role),
                 AccessRule::DenyAll,

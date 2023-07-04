@@ -424,25 +424,12 @@ impl<O: HasStub> HasAccessRules for Global<O> {
         self.access_rules().get_role(name)
     }
 
-    fn set_and_lock_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules().set_and_lock_role(name, rule);
-    }
-
     fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.access_rules().set_metadata_role(name, rule);
     }
 
-    fn set_and_lock_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules().set_and_lock_metadata_role(name, rule);
-    }
-
     fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.access_rules().set_component_royalties_role(name, rule);
-    }
-
-    fn set_and_lock_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules()
-            .set_and_lock_component_royalties_role(name, rule);
     }
 }
 
