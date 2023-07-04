@@ -197,9 +197,22 @@ impl PreciseDecimal {
                 if self.0 % divisor == BnumI512::zero() {
                     self.clone()
                 } else {
-                    let digit = ((self.0 / divisor) % BnumI512::from(10i128)).abs();
-                    if digit % BnumI512::from(2i128) == BnumI512::ZERO {
+                    let digit = (self.0 / (divisor / BnumI512::from(10i128))
+                        % BnumI512::from(10i128))
+                    .abs();
+                    if digit < 5.into() {
                         Self(self.0 / divisor * divisor)
+                    } else if digit == 5.into() {
+                        let breaker = ((self.0 / divisor) % BnumI512::from(10i128)).abs();
+                        if breaker % BnumI512::from(2i128) == BnumI512::ZERO {
+                            Self(self.0 / divisor * divisor)
+                        } else {
+                            if self.is_negative() {
+                                Self((self.0 / divisor - BnumI512::one()) * divisor)
+                            } else {
+                                Self((self.0 / divisor + BnumI512::one()) * divisor)
+                            }
+                        }
                     } else {
                         if self.is_negative() {
                             Self((self.0 / divisor - BnumI512::one()) * divisor)
