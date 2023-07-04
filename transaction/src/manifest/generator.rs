@@ -329,6 +329,14 @@ where
             resource_address: generate_resource_address(resource_address, address_bech32_decoder)?,
             ids: generate_non_fungible_local_ids(ids)?,
         },
+        ast::Instruction::AssertWorktopContainsAny { resource_address } => {
+            InstructionV1::AssertWorktopContainsAny {
+                resource_address: generate_resource_address(
+                    resource_address,
+                    address_bech32_decoder,
+                )?,
+            }
+        }
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
@@ -627,6 +635,13 @@ where
             InstructionV1::CallDirectVaultMethod {
                 address: generate_local_address(vault_id, address_bech32_decoder)?,
                 method_name: VAULT_UNFREEZE_IDENT.to_string(),
+                args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
+            }
+        }
+        ast::Instruction::RecallNonFungiblesFromVault { vault_id, args } => {
+            InstructionV1::CallDirectVaultMethod {
+                address: generate_local_address(vault_id, address_bech32_decoder)?,
+                method_name: NON_FUNGIBLE_VAULT_RECALL_NON_FUNGIBLES_IDENT.to_string(),
                 args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }

@@ -256,7 +256,7 @@ impl ScenarioInstance for MetadataScenario {
                 core.next_transaction_with_faucet_lock_fee(
                     "metadata-lock-metadata",
                     |builder| {
-                        builder.freeze_metadata(
+                        builder.lock_metadata(
                             resource_with_metadata2.unwrap().into(),
                             "locked_later".to_string(),
                         )

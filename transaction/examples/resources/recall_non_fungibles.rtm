@@ -1,0 +1,1 @@
+RECALL_NON_FUNGIBLES_FROM_VAULT Address("${vault_address}") Array<NonFungibleLocalId>(NonFungibleLocalId("#123#"), NonFungibleLocalId("#456#"));
