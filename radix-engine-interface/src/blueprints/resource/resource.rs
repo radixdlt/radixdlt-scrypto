@@ -72,11 +72,6 @@ impl LiquidFungibleResource {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct LiquidNonFungibleVault {
-    pub amount: Decimal,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleResource {
     /// The total non-fungible ids.
     pub ids: BTreeSet<NonFungibleLocalId>,
@@ -189,4 +184,9 @@ impl LockedNonFungibleResource {
     pub fn ids(&self) -> BTreeSet<NonFungibleLocalId> {
         self.ids.keys().cloned().collect()
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct LiquidNonFungibleVault {
+    pub amount: Decimal,
 }
