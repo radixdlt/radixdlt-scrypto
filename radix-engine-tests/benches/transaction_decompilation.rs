@@ -10,7 +10,7 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::RolesInit;
 use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
 use radix_engine_interface::{metadata, metadata_init, ScryptoSbor};
-use scrypto::prelude::{AccessRule, ComponentAddress};
+use scrypto::prelude::ComponentAddress;
 use scrypto::NonFungibleData;
 use transaction::builder::{ManifestBuilder, TransactionBuilder};
 use transaction::manifest::{compile, decompile, BlobProvider};
