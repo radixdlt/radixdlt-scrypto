@@ -11,8 +11,8 @@ use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::AddressBech32Decoder;
 use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT,
-    ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
+    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_OWNER_ROLE_IDENT,
+    ACCESS_RULES_SET_ROLE_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::metadata::{
@@ -1730,7 +1730,7 @@ mod tests {
     #[test]
     fn test_publish_instruction() {
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Map<String, Tuple>() Map<String, Enum>() Map<String, Enum>() Map<String, Tuple>();"#,
+            r#"PUBLISH_PACKAGE_ADVANCED Blob("a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0") Map<String, Tuple>() Map<String, Enum>() Map<String, Enum>() Map<String, Enum>();"#,
             InstructionV1::CallFunction {
                 package_address: PACKAGE_PACKAGE.into(),
                 blueprint_name: PACKAGE_BLUEPRINT.to_string(),
@@ -1785,7 +1785,7 @@ mod tests {
                             true
                         ),
                     ),
-                    Map<String, Tuple>()
+                    Map<String, Enum>()
                 )
                 Enum<0u8>();"#,
             InstructionV1::CallFunction {
@@ -1890,7 +1890,7 @@ mod tests {
                     Map<String, Tuple>(
                         "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), true)
                     ),
-                    Map<String, Tuple>()
+                    Map<String, Enum>()
                 )
                 Enum<0u8>()
             ;"##,
@@ -1944,7 +1944,7 @@ mod tests {
                     Map<String, Tuple>(
                         "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
                     ),
-                    Map<String, Tuple>()
+                    Map<String, Enum>()
                 )
                 Enum<0u8>()
             ;"#,
@@ -1988,7 +1988,7 @@ mod tests {
                     Map<String, Tuple>(
                         "name" => Tuple(Enum<Option::Some>(Enum<Metadata::String>("Token")), false)
                     ),
-                    Map<String, Tuple>()
+                    Map<String, Enum>()
                 )
                 Enum<0u8>()
             ;"#,

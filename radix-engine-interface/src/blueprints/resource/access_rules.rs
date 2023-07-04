@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use crate::api::node_modules::auth::ToRoleEntry;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
@@ -8,7 +8,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use crate::api::node_modules::auth::ToRoleEntry;
+use std::collections::BTreeMap;
 
 use super::AccessRule;
 
@@ -225,11 +225,7 @@ impl RolesInit {
         }
     }
 
-    pub fn define_role<K: Into<RoleKey>, R: ToRoleEntry>(
-        &mut self,
-        role: K,
-        access_rule: R,
-    ) {
+    pub fn define_role<K: Into<RoleKey>, R: ToRoleEntry>(&mut self, role: K, access_rule: R) {
         self.data.insert(role.into(), access_rule.to_role_entry());
     }
 }

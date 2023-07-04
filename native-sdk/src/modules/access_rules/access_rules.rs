@@ -1,7 +1,6 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesLockOwnerRoleInput,
-    AccessRulesSetOwnerRoleInput, AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT,
-    ACCESS_RULES_CREATE_IDENT,
+    AccessRulesCreateInput, AccessRulesLockOwnerRoleInput, AccessRulesSetOwnerRoleInput,
+    AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
     ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
