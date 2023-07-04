@@ -21,6 +21,7 @@ pub struct StateUpdateSummary {
     pub new_packages: Vec<PackageAddress>,
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
+    pub new_vaults: Vec<InternalAddress>,
     pub balance_changes: IndexMap<GlobalAddress, IndexMap<ResourceAddress, BalanceChange>>,
     /// This field accounts for Direct vault recalls (and the owner is not loaded during the transaction);
     pub direct_vault_updates: IndexMap<NodeId, IndexMap<ResourceAddress, BalanceChange>>,
@@ -34,6 +35,7 @@ impl StateUpdateSummary {
         let mut new_packages = index_set_new();
         let mut new_components = index_set_new();
         let mut new_resources = index_set_new();
+        let mut new_vaults = index_set_new();
 
         for (node_id, tracked) in updates {
             if tracked.is_new {
@@ -46,6 +48,9 @@ impl StateUpdateSummary {
                 if node_id.is_global_resource_manager() {
                     new_resources.insert(ResourceAddress::new_or_panic(node_id.0));
                 }
+                if node_id.is_internal_vault() {
+                    new_vaults.insert(InternalAddress::new_or_panic(node_id.0));
+                }
             }
         }
 
@@ -56,6 +61,7 @@ impl StateUpdateSummary {
             new_packages: new_packages.into_iter().collect(),
             new_components: new_components.into_iter().collect(),
             new_resources: new_resources.into_iter().collect(),
+            new_vaults: new_vaults.into_iter().collect(),
             balance_changes,
             direct_vault_updates,
         }
