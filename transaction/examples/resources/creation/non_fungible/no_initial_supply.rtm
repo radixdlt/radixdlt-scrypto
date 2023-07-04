@@ -29,12 +29,12 @@ CREATE_NON_FUNGIBLE_RESOURCE
                 Enum<Option::Some>(Enum<AccessRule::DenyAll>())            # Minter Updater Role Rule
             )
         ),
-        Enum<0u8>(),                                                       # Use Default Burn Roles
-        Enum<0u8>(),                                                       # Use Default Freeze Roles
-        Enum<0u8>(),                                                       # Use Default Recall Roles
-        Enum<0u8>(),                                                       # Use Default Withdraw Roles
-        Enum<0u8>(),                                                       # Use Default Deposit Roles
-        Enum<0u8>()                                                        # Use Default Non Fungible Data Update Roles
+        Enum<Option::None>(),                                              # Use Default Burn Roles
+        Enum<Option::None>(),                                              # Use Default Freeze Roles
+        Enum<Option::None>(),                                              # Use Default Recall Roles
+        Enum<Option::None>(),                                              # Use Default Withdraw Roles
+        Enum<Option::None>(),                                              # Use Default Deposit Roles
+        Enum<Option::None>()                                               # Use Default Non Fungible Data Update Roles
     )
     Tuple(
         Map<String, Tuple>(
@@ -53,4 +53,4 @@ CREATE_NON_FUNGIBLE_RESOURCE
         ),
         Map<String, Enum>()
     )
-    Enum<0u8>();
+    Enum<Option::None>();

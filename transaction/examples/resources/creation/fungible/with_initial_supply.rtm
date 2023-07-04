@@ -30,11 +30,11 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                 Enum<Option::Some>(Enum<AccessRule::DenyAll>())             # Minter Updater Role Rule
             )
         ),
-        Enum<0u8>(),                                                        # Use Default Burn Roles
-        Enum<0u8>(),                                                        # Use Default Freeze Roles
-        Enum<0u8>(),                                                        # Use Default Recall Roles
-        Enum<0u8>(),                                                        # Use Default Withdraw Roles
-        Enum<0u8>()                                                         # Use Default Deposit Roles
+        Enum<Option::None>(),                                               # Use Default Burn Roles
+        Enum<Option::None>(),                                               # Use Default Freeze Roles
+        Enum<Option::None>(),                                               # Use Default Recall Roles
+        Enum<Option::None>(),                                               # Use Default Withdraw Roles
+        Enum<Option::None>()                                                # Use Default Deposit Roles
     )
     Tuple(
         Map<String, Tuple>(
@@ -59,7 +59,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         ),
         Map<String, Enum>()
     )
-    Enum<0u8>();                                                                           # No Address Reservation
+    Enum<Option::None>();                                                                           # No Address Reservation
 
 # Depositing the entirety of the initial supply of the newly created resource into our account 
 # component.

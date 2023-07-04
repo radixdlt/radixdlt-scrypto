@@ -23,31 +23,31 @@ CREATE_FUNGIBLE_RESOURCE
     # the tuple defines a different resource behavior. As an example, the first element in this tuple
     # defines that the resource is mintable.
     Tuple(
-        Enum<Option::Some>(                                                     # Specify Mint Roles
+        Enum<Option::Some>(                                                 # Specify Mint Roles
             Tuple(
                 Enum<Option::Some>(Enum<AccessRule::AllowAll>()),           # Minter Role Rule
                 Enum<Option::Some>(Enum<AccessRule::DenyAll>())             # Minter Updater Role Rule
             )
         ),
-        Enum<0u8>(),                                                            # Use Default Burn Roles
-        Enum<0u8>(),                                                            # Use Default Freeze Roles
-        Enum<0u8>(),                                                            # Use Default Recall Roles
-        Enum<0u8>(),                                                            # Use Default Withdraw Roles
-        Enum<0u8>()                                                             # Use Default Deposit Roles
+        Enum<Option::None>(),                                               # Use Default Burn Roles
+        Enum<Option::None>(),                                               # Use Default Freeze Roles
+        Enum<Option::None>(),                                               # Use Default Recall Roles
+        Enum<Option::None>(),                                               # Use Default Withdraw Roles
+        Enum<Option::None>()                                                # Use Default Deposit Roles
     )
     Tuple(
         Map<String, Tuple>(
             "name" => Tuple(
                 Enum<Option::Some>(
-                    Enum<Metadata::String>("MyResource")                               # Resource Name
+                    Enum<Metadata::String>("MyResource")                    # Resource Name
                 ),
-                true                                                                   # Locked Resource Name
+                true                                                        # Locked Resource Name
             ),
             "symbol" => Tuple(
                 Enum<Option::Some>(
-                    Enum<Metadata::String>("RSRC"),                                   # Resource Symbol
+                    Enum<Metadata::String>("RSRC"),                         # Resource Symbol
                 ),
-                true                                                                   # Locked Resource Symbol
+                true                                                        # Locked Resource Symbol
             ),
             "description" => Tuple(
                 Enum<Option::Some>(
@@ -58,4 +58,4 @@ CREATE_FUNGIBLE_RESOURCE
         ),
         Map<String, Enum>()
     )
-    Enum<0u8>();                                                                         # No Address Reservation
+    Enum<Option::None>();                                                   # No Address Reservation
