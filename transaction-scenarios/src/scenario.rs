@@ -55,7 +55,7 @@ impl NextTransaction {
         let Some(directory_path) = dump_directory else {
             return;
         };
-        let file_name = format!("{}--{}", self.stage_counter, self.logical_name);
+        let file_name = format!("{:03}--{}", self.stage_counter, self.logical_name);
         dump_manifest_to_file_system(&self.manifest, directory_path, Some(&file_name), &network)
             .unwrap()
     }
@@ -277,14 +277,63 @@ pub struct EndState {
 }
 
 #[derive(Debug)]
-pub struct DescribedAddresses(pub IndexMap<String, GlobalAddress>);
+pub enum DescribedAddress {
+    Global(GlobalAddress),
+    Internal(InternalAddress),
+    NonFungible(NonFungibleGlobalId),
+}
+
+impl From<&VirtualAccount> for DescribedAddress {
+    fn from(value: &VirtualAccount) -> Self {
+        Self::Global(value.address.clone().into())
+    }
+}
+
+impl From<GlobalAddress> for DescribedAddress {
+    fn from(value: GlobalAddress) -> Self {
+        Self::Global(value)
+    }
+}
+
+impl From<PackageAddress> for DescribedAddress {
+    fn from(value: PackageAddress) -> Self {
+        Self::Global(value.into())
+    }
+}
+
+impl From<ComponentAddress> for DescribedAddress {
+    fn from(value: ComponentAddress) -> Self {
+        Self::Global(value.into())
+    }
+}
+
+impl From<ResourceAddress> for DescribedAddress {
+    fn from(value: ResourceAddress) -> Self {
+        Self::Global(value.into())
+    }
+}
+
+impl From<InternalAddress> for DescribedAddress {
+    fn from(value: InternalAddress) -> Self {
+        Self::Internal(value)
+    }
+}
+
+impl From<NonFungibleGlobalId> for DescribedAddress {
+    fn from(value: NonFungibleGlobalId) -> Self {
+        Self::NonFungible(value)
+    }
+}
+
+#[derive(Debug)]
+pub struct DescribedAddresses(pub IndexMap<String, DescribedAddress>);
 
 impl DescribedAddresses {
     pub fn new() -> Self {
         Self(indexmap!())
     }
 
-    pub fn add(mut self, descriptor: impl ToString, address: impl Into<GlobalAddress>) -> Self {
+    pub fn add(mut self, descriptor: impl ToString, address: impl Into<DescribedAddress>) -> Self {
         self.0.insert(descriptor.to_string(), address.into());
         self
     }
@@ -373,6 +422,25 @@ impl<Config: 'static, State: 'static> ScenarioBuilder<Config, State> {
                 move |core, config, state, receipt| -> Result<(), ScenarioError> {
                     let commit_result = core.check_commit_success(receipt)?;
                     handler(core, config, state, commit_result)
+                },
+            ),
+        });
+        self
+    }
+
+    pub fn failed_transaction_with_error_handler(
+        mut self,
+        creator: impl Fn(&mut ScenarioCore, &Config, &mut State) -> Result<NextTransaction, ScenarioError>
+            + 'static,
+        handler: impl Fn(&mut ScenarioCore, &Config, &mut State, &RuntimeError) -> Result<(), ScenarioError>
+            + 'static,
+    ) -> Self {
+        self.transactions.push(ScenarioTransaction {
+            creator: Box::new(creator),
+            handler: Box::new(
+                move |core, config, state, receipt| -> Result<(), ScenarioError> {
+                    let error = core.check_commit_failure(receipt)?;
+                    handler(core, config, state, error)
                 },
             ),
         });

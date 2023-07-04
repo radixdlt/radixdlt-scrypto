@@ -37,6 +37,7 @@ pub enum InstructionIdent {
     ReturnToWorktop,
     AssertWorktopContains,
     AssertWorktopContainsNonFungibles,
+    AssertWorktopContainsAny,
 
     PopFromAuthZone,
     PushToAuthZone,
@@ -67,6 +68,7 @@ pub enum InstructionIdent {
     RecallFromVault,
     FreezeVault,
     UnfreezeVault,
+    RecallNonFungiblesFromVault,
 
     // ==============
     // Call function aliases
@@ -123,6 +125,7 @@ impl InstructionIdent {
             "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES" => {
                 InstructionIdent::AssertWorktopContainsNonFungibles
             }
+            "ASSERT_WORKTOP_CONTAINS_ANY" => InstructionIdent::AssertWorktopContainsAny,
 
             "POP_FROM_AUTH_ZONE" => InstructionIdent::PopFromAuthZone,
             "PUSH_TO_AUTH_ZONE" => InstructionIdent::PushToAuthZone,
@@ -163,6 +166,7 @@ impl InstructionIdent {
             "RECALL_FROM_VAULT" => InstructionIdent::RecallFromVault,
             "FREEZE_VAULT" => InstructionIdent::FreezeVault,
             "UNFREEZE_VAULT" => InstructionIdent::UnfreezeVault,
+            "RECALL_NON_FUNGIBLES_FROM_VAULT" => InstructionIdent::RecallNonFungiblesFromVault,
 
             // ==============
             // Call function aliases
@@ -515,6 +519,9 @@ impl Parser {
                     ids: self.parse_value()?,
                 }
             }
+            InstructionIdent::AssertWorktopContainsAny => Instruction::AssertWorktopContainsAny {
+                resource_address: self.parse_value()?,
+            },
             InstructionIdent::PopFromAuthZone => Instruction::PopFromAuthZone {
                 new_proof: self.parse_value()?,
             },
@@ -630,6 +637,12 @@ impl Parser {
                 vault_id: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
+            InstructionIdent::RecallNonFungiblesFromVault => {
+                Instruction::RecallNonFungiblesFromVault {
+                    vault_id: self.parse_value()?,
+                    args: self.parse_values_till_semicolon()?,
+                }
+            }
 
             /* Call function aliases */
             InstructionIdent::PublishPackage => Instruction::PublishPackage {

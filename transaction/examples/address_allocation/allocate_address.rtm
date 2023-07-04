@@ -18,7 +18,7 @@ ALLOCATE_GLOBAL_ADDRESS
     NamedAddress("my_package")
 ;
 PUBLISH_PACKAGE_ADVANCED
-    Enum<0u8>()
+    Enum<AccessRule::AllowAll>()
     Tuple(
         Map<String, Tuple>()
     )

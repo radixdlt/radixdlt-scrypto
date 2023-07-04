@@ -14,10 +14,10 @@ CALL_METHOD
 
 # Publishing a new package and setting some of its royalty and access rules.
 PUBLISH_PACKAGE_ADVANCED
-    Enum<0u8>()               # Owner AccessRule
-    Tuple(
+    Enum<AccessRule::AllowAll>() # Owner AccessRule
+    Tuple(                       # Package Definition
         Map<String, Tuple>()
     )
-    Blob("${code_blob_hash}")
-    Map<String, Tuple>()        # Metadata
-    None;
+    Blob("${code_blob_hash}")    # Package Code
+    Map<String, Tuple>()         # Metadata
+    None;                        # Address Reservation

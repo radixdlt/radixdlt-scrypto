@@ -111,6 +111,9 @@ CALL_METHOD
     "buy_gumball"
     Bucket("bucket1")
 ;
+ASSERT_WORKTOP_CONTAINS_ANY
+    Address("${gumball_resource_address}")
+;
 ASSERT_WORKTOP_CONTAINS
     Address("${gumball_resource_address}")
     Decimal("3")
@@ -334,6 +337,29 @@ CALL_FUNCTION
     "BlueprintName"
     "f"
     "string"
+;
+"##,
+            ),
+        );
+    }
+
+    #[test]
+    fn test_resource_recall_nonfungibles() {
+        compile_and_decompile_with_inversion_test(
+            "resource_recall_nonfungibles",
+            apply_address_replacements(include_str!(
+                "../../examples/resources/recall_non_fungibles.rtm"
+            )),
+            &NetworkDefinition::simulator(),
+            vec![],
+            apply_address_replacements(
+                r##"
+RECALL_NON_FUNGIBLES_FROM_VAULT
+    Address("${vault_address}")
+    Array<NonFungibleLocalId>(
+        NonFungibleLocalId("#123#"),
+        NonFungibleLocalId("#456#")
+    )
 ;
 "##,
             ),
