@@ -1,7 +1,7 @@
 use crate::modules::HasAccessRules;
 use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
-use radix_engine_interface::api::node_modules::metadata::METADATA_SETTER_ROLE;
+use radix_engine_interface::api::node_modules::metadata::{METADATA_SETTER_ROLE, METADATA_SETTER_UPDATER_ROLE};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::resource_address_type_data;
@@ -90,31 +90,31 @@ impl ResourceManager {
     }
 
     pub fn lock_mintable(&self) {
-        self.0.lock_role(MINTER_ROLE);
+        self.0.set_role(MINTER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
     pub fn lock_burnable(&self) {
-        self.0.lock_role(BURNER_ROLE);
+        self.0.set_role(BURNER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
     pub fn lock_updatable_non_fungible_data(&self) {
-        self.0.lock_role(NON_FUNGIBLE_DATA_UPDATER_ROLE);
+        self.0.set_role(NON_FUNGIBLE_DATA_UPDATER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
     pub fn lock_withdrawable(&self) {
-        self.0.lock_role(WITHDRAWER_ROLE);
+        self.0.set_role(WITHDRAWER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
     pub fn lock_depositable(&self) {
-        self.0.lock_role(DEPOSITOR_ROLE);
+        self.0.set_role(DEPOSITOR_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
     pub fn lock_recallable(&self) {
-        self.0.lock_role(RECALLER_ROLE);
+        self.0.set_role(RECALLER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
     pub fn lock_freezeable(&self) {
-        self.0.lock_role(FREEZER_ROLE);
+        self.0.set_role(FREEZER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 
     pub fn set_updatable_metadata(&self, access_rule: AccessRule) {
@@ -122,7 +122,7 @@ impl ResourceManager {
     }
 
     pub fn lock_updatable_metadata(&self) {
-        self.0.lock_metadata_role(METADATA_SETTER_ROLE);
+        self.0.set_metadata_role(METADATA_SETTER_UPDATER_ROLE, AccessRule::DenyAll);
     }
 }
 

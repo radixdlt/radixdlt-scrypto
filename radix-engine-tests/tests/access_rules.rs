@@ -123,28 +123,6 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
 }
 
 #[test]
-fn access_rules_method_auth_cant_be_locked_when_required_proofs_are_not_present() {
-    // Arrange
-    let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
-    let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
-        virtual_badge_non_fungible_global_id.clone()
-    )));
-
-    // Act
-    let receipt = test_runner.lock_role(RoleKey::new("borrow_funds_auth"));
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemModuleError(SystemModuleError::AuthError(..))
-        )
-    });
-}
-
-#[test]
 fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     // Arrange
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
@@ -160,35 +138,6 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
 
     // Assert
     receipt.expect_commit_success();
-}
-
-#[test]
-fn access_rules_method_auth_can_be_locked_when_required_proofs_are_present() {
-    // Arrange
-    let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
-    let public_key = private_key.public_key();
-    let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
-        virtual_badge_non_fungible_global_id.clone()
-    )));
-    test_runner.add_initial_proof(virtual_badge_non_fungible_global_id);
-
-    // Act
-    let receipt = test_runner.lock_role(RoleKey::new("borrow_funds_auth"));
-
-    // Assert
-    receipt.expect_commit_success();
-
-    // Act
-    let receipt = test_runner.set_role_rule(RoleKey::new("borrow_funds_auth"), rule!(allow_all));
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemError(SystemError::MutatingImmutableSubstate)
-        )
-    });
 }
 
 fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
@@ -492,17 +441,6 @@ impl MutableAccessRulesTestRunner {
     pub fn get_role(&mut self, role_key: RoleKey) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
             .get_role(
-                self.component_address.into(),
-                ObjectModuleId::Main,
-                role_key,
-            )
-            .build();
-        self.execute_manifest(manifest)
-    }
-
-    pub fn lock_role(&mut self, role_key: RoleKey) -> TransactionReceipt {
-        let manifest = Self::manifest_builder()
-            .lock_role(
                 self.component_address.into(),
                 ObjectModuleId::Main,
                 role_key,

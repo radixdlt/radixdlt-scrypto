@@ -11,7 +11,7 @@ use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_interface::address::AddressBech32Decoder;
 use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_LOCK_ROLE_IDENT,
+    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT,
     ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT,
     ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
 };
@@ -793,11 +793,6 @@ where
         ast::Instruction::SetRole { address, args } => InstructionV1::CallAccessRulesMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
-            args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
-        },
-        ast::Instruction::LockRole { address, args } => InstructionV1::CallAccessRulesMethod {
-            address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
-            method_name: ACCESS_RULES_LOCK_ROLE_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
         ast::Instruction::SetAndLockRole { address, args } => {

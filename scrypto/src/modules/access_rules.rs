@@ -5,10 +5,10 @@ use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
     AccessRulesCreateInput, AccessRulesGetRoleInput, AccessRulesLockOwnerRoleInput,
-    AccessRulesLockRoleInput, AccessRulesSetAndLockOwnerRoleInput, AccessRulesSetAndLockRoleInput,
+    AccessRulesSetAndLockOwnerRoleInput, AccessRulesSetAndLockRoleInput,
     AccessRulesSetOwnerRoleInput, AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT,
     ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_GET_ROLE_IDENT, ACCESS_RULES_LOCK_OWNER_ROLE_IDENT,
-    ACCESS_RULES_LOCK_ROLE_IDENT, ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT,
+    ACCESS_RULES_SET_AND_LOCK_OWNER_ROLE_IDENT,
     ACCESS_RULES_SET_AND_LOCK_ROLE_IDENT, ACCESS_RULES_SET_OWNER_ROLE_IDENT,
     ACCESS_RULES_SET_ROLE_IDENT,
 };
@@ -26,13 +26,10 @@ pub trait HasAccessRules {
     fn set_and_lock_owner_role<A: Into<AccessRule>>(&self, rule: A);
     fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
     fn get_role(&self, name: &str) -> Option<AccessRule>;
-    fn lock_role(&self, name: &str);
     fn set_and_lock_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
     fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
-    fn lock_metadata_role(&self, name: &str);
     fn set_and_lock_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
     fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
-    fn lock_component_royalties_role(&self, name: &str);
     fn set_and_lock_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
 }
 
@@ -95,16 +92,6 @@ impl AccessRules {
         )
     }
 
-    fn internal_lock_role(&self, module: ObjectModuleId, name: &str) {
-        self.call_ignore_rtn(
-            ACCESS_RULES_LOCK_ROLE_IDENT,
-            &AccessRulesLockRoleInput {
-                module,
-                role_key: RoleKey::new(name),
-            },
-        );
-    }
-
     fn internal_set_and_lock_role<A: Into<AccessRule>>(
         &self,
         module: ObjectModuleId,
@@ -129,10 +116,6 @@ impl AccessRules {
         self.internal_get_role(ObjectModuleId::Main, name)
     }
 
-    pub fn lock_role(&self, name: &str) {
-        self.internal_lock_role(ObjectModuleId::Main, name);
-    }
-
     pub fn set_and_lock_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.internal_set_and_lock_role(ObjectModuleId::Main, name, rule);
     }
@@ -145,10 +128,6 @@ impl AccessRules {
         self.internal_get_role(ObjectModuleId::Metadata, name);
     }
 
-    pub fn lock_metadata_role(&self, name: &str) {
-        self.internal_lock_role(ObjectModuleId::Metadata, name);
-    }
-
     pub fn set_and_lock_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.internal_set_and_lock_role(ObjectModuleId::Metadata, name, rule);
     }
@@ -159,10 +138,6 @@ impl AccessRules {
 
     pub fn get_component_royalties_role<A: Into<AccessRule>>(&self, name: &str) {
         self.internal_get_role(ObjectModuleId::Royalty, name);
-    }
-
-    pub fn lock_component_royalties_role(&self, name: &str) {
-        self.internal_lock_role(ObjectModuleId::Royalty, name);
     }
 
     pub fn set_and_lock_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
