@@ -837,7 +837,7 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn freeze_metadata(&mut self, address: GlobalAddress, key: String) -> &mut Self {
+    pub fn lock_metadata(&mut self, address: GlobalAddress, key: String) -> &mut Self {
         self.add_instruction(InstructionV1::CallMetadataMethod {
             address: address.into(),
             method_name: METADATA_LOCK_IDENT.to_string(),
@@ -1029,6 +1029,11 @@ impl ManifestBuilder {
                 .add_instruction(InstructionV1::BurnResource { bucket_id })
                 .0
         })
+    }
+
+    pub fn burn_resource(&mut self, bucket_id: ManifestBucket) -> &mut Self {
+        self.add_instruction(InstructionV1::BurnResource { bucket_id })
+            .0
     }
 
     pub fn burn_all_from_worktop(&mut self, resource_address: ResourceAddress) -> &mut Self {
