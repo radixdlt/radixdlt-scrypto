@@ -121,21 +121,14 @@ impl FungibleBucketBlueprint {
         Ok(liquid_amount + locked_amount)
     }
 
-    pub fn get_resource_address<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    pub fn get_resource_address<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let _input: BucketGetResourceAddressInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
-
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
 
-        Ok(IndexedScryptoValue::from_typed(&resource_address))
+        Ok(resource_address)
     }
 
     pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
@@ -204,7 +197,7 @@ impl FungibleBucketBlueprint {
         // Take from liquid if needed
         if amount > max_locked {
             let delta = amount - max_locked;
-            FungibleBucket::take(delta, api)?;
+            Self::internal_take(delta, api)?;
         }
 
         // Increase lock count
@@ -250,6 +243,83 @@ impl FungibleBucketBlueprint {
         api.field_lock_write_typed(handle, &locked)?;
 
         let delta = max_locked - locked.amount();
-        FungibleBucket::put(LiquidFungibleResource::new(delta), api)
+        Self::internal_put(LiquidFungibleResource::new(delta), api)
+    }
+
+    //===================
+    // Helper methods
+    //===================
+
+    fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            FungibleBucketField::Liquid.into(),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
+        let amount = substate_ref.amount();
+        api.field_lock_release(handle)?;
+        Ok(amount)
+    }
+
+    fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            FungibleBucketField::Locked.into(),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref: LockedFungibleResource = api.field_lock_read_typed(handle)?;
+        let amount = substate_ref.amount();
+        api.field_lock_release(handle)?;
+        Ok(amount)
+    }
+
+    fn internal_take<Y>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<LiquidFungibleResource, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            FungibleBucketField::Liquid.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
+        let taken = substate.take_by_amount(amount).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::BucketError(
+                BucketError::ResourceError(e),
+            ))
+        })?;
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
+        Ok(taken)
+    }
+
+    fn internal_put<Y>(resource: LiquidFungibleResource, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if resource.is_empty() {
+            return Ok(());
+        }
+
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            FungibleBucketField::Liquid.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
+        substate.put(resource);
+        api.field_lock_write_typed(handle, &substate)?;
+        api.field_lock_release(handle)?;
+        Ok(())
     }
 }
