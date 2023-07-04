@@ -329,6 +329,14 @@ where
             resource_address: generate_resource_address(resource_address, address_bech32_decoder)?,
             ids: generate_non_fungible_local_ids(ids)?,
         },
+        ast::Instruction::AssertWorktopContainsAny { resource_address } => {
+            InstructionV1::AssertWorktopContainsAny {
+                resource_address: generate_resource_address(
+                    resource_address,
+                    address_bech32_decoder,
+                )?,
+            }
+        }
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)

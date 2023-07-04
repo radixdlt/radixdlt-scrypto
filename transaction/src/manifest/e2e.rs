@@ -111,6 +111,9 @@ CALL_METHOD
     "buy_gumball"
     Bucket("bucket1")
 ;
+ASSERT_WORKTOP_CONTAINS_ANY
+    Address("${gumball_resource_address}")
+;
 ASSERT_WORKTOP_CONTAINS
     Address("${gumball_resource_address}")
     Decimal("3")

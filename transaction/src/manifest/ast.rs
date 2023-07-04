@@ -36,6 +36,10 @@ pub enum Instruction {
         ids: Value,
     },
 
+    AssertWorktopContainsAny {
+        resource_address: Value,
+    },
+
     PopFromAuthZone {
         new_proof: Value,
     },

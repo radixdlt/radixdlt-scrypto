@@ -37,6 +37,7 @@ pub enum InstructionIdent {
     ReturnToWorktop,
     AssertWorktopContains,
     AssertWorktopContainsNonFungibles,
+    AssertWorktopContainsAny,
 
     PopFromAuthZone,
     PushToAuthZone,
@@ -124,6 +125,7 @@ impl InstructionIdent {
             "ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES" => {
                 InstructionIdent::AssertWorktopContainsNonFungibles
             }
+            "ASSERT_WORKTOP_CONTAINS_ANY" => InstructionIdent::AssertWorktopContainsAny,
 
             "POP_FROM_AUTH_ZONE" => InstructionIdent::PopFromAuthZone,
             "PUSH_TO_AUTH_ZONE" => InstructionIdent::PushToAuthZone,
@@ -517,6 +519,9 @@ impl Parser {
                     ids: self.parse_value()?,
                 }
             }
+            InstructionIdent::AssertWorktopContainsAny => Instruction::AssertWorktopContainsAny {
+                resource_address: self.parse_value()?,
+            },
             InstructionIdent::PopFromAuthZone => Instruction::PopFromAuthZone {
                 new_proof: self.parse_value()?,
             },
