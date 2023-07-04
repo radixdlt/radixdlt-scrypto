@@ -624,21 +624,13 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
-        let access_rules = btreemap!(
-            Mint => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Withdraw => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-            Recall => (AccessRule::AllowAll, AccessRule::DenyAll),
-            UpdateNonFungibleData => (AccessRule::AllowAll, AccessRule::DenyAll),
-        );
         let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
                 true,
+                NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                 metadata!(),
-                access_rules,
                 Option::<BTreeMap<NonFungibleLocalId, EmptyStruct>>::None,
             )
             .build();

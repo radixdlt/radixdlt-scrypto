@@ -41,7 +41,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         _update_metadata_auth,
         freeze_auth,
         admin_auth,
-    ) = test_runner.create_restricted_token(OwnerRole::None, account);
+    ) = test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {

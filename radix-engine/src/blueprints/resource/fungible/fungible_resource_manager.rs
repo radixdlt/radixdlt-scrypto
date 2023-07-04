@@ -24,6 +24,7 @@ lazy_static! {
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum FungibleResourceManagerError {
+    InvalidRole(String),
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,
     InvalidDivisibility(u8),
@@ -74,7 +75,7 @@ impl FungibleResourceManagerBlueprint {
         owner_role: OwnerRole,
         track_total_supply: bool,
         divisibility: u8,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        resource_roles: FungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -95,7 +96,10 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
-        let features = features(track_total_supply, &access_rules);
+        let (mut features, roles) = resource_roles.to_features_and_roles();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -112,7 +116,7 @@ impl FungibleResourceManagerBlueprint {
             owner_role,
             object_id,
             address_reservation,
-            access_rules,
+            roles,
             metadata,
             api,
         )?;
@@ -125,7 +129,7 @@ impl FungibleResourceManagerBlueprint {
         track_total_supply: bool,
         divisibility: u8,
         initial_supply: Decimal,
-        access_rules: BTreeMap<ResourceAction, (AccessRule, AccessRule)>,
+        resource_roles: FungibleResourceRoles,
         metadata: ModuleConfig<MetadataInit>,
         address_reservation: Option<GlobalAddressReservation>,
         api: &mut Y,
@@ -146,7 +150,10 @@ impl FungibleResourceManagerBlueprint {
             }
         };
 
-        let features = features(track_total_supply, &access_rules);
+        let (mut features, roles) = resource_roles.to_features_and_roles();
+        if track_total_supply {
+            features.push(TRACK_TOTAL_SUPPLY_FEATURE);
+        }
 
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -165,7 +172,7 @@ impl FungibleResourceManagerBlueprint {
             owner_role,
             object_id,
             address_reservation,
-            access_rules,
+            roles,
             metadata,
             initial_supply,
             api,

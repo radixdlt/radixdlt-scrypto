@@ -1,0 +1,9 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+LOCK_METADATA
+    Address("resource_sim1tkjjssgd64my4gs20h04jeyzhsjuv05cjwwq9fhggy879fnmmv569p")
+    "locked_later"
+;

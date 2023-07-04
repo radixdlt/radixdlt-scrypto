@@ -11,6 +11,7 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::MetadataRoles;
 use radix_engine_interface::api::node_modules::metadata::Url;
@@ -588,18 +589,6 @@ impl AccessControllerNativePackage {
             let global_component_caller_badge =
                 NonFungibleGlobalId::global_caller_badge(GlobalCaller::GlobalObject(address));
 
-            let access_rules = btreemap! {
-                Mint => (
-                    rule!(require(global_component_caller_badge.clone())),
-                    AccessRule::DenyAll,
-                ),
-                Burn => (AccessRule::AllowAll, AccessRule::DenyAll),
-                Withdraw => (AccessRule::DenyAll, AccessRule::DenyAll),
-                Deposit => (AccessRule::AllowAll, AccessRule::DenyAll),
-                Recall => (AccessRule::DenyAll, AccessRule::DenyAll),
-                UpdateNonFungibleData => (AccessRule::DenyAll, AccessRule::DenyAll),
-            };
-
             let resource_address = {
                 let (local_type_index, schema) =
                     generate_full_schema_from_single_type::<(), ScryptoCustomSchema>();
@@ -614,11 +603,25 @@ impl AccessControllerNativePackage {
                     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
                     NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_IDENT,
                     scrypto_encode(&NonFungibleResourceManagerCreateInput {
-                        owner_role: OwnerRole::Fixed(rule!(require(global_component_caller_badge))),
+                        owner_role: OwnerRole::Fixed(rule!(require(global_component_caller_badge.clone()))),
                         id_type: NonFungibleIdType::Integer,
                         track_total_supply: true,
                         non_fungible_schema,
-                        access_rules: access_rules.into(),
+                        resource_roles: NonFungibleResourceRoles {
+                            mint_roles: mint_roles! {
+                                minter => rule!(require(global_component_caller_badge.clone())), locked;
+                                minter_updater => rule!(deny_all), locked;
+                            },
+                            burn_roles: burn_roles! {
+                                burner => rule!(allow_all), locked;
+                                burner_updater => rule!(allow_all), locked;
+                            },
+                            withdraw_roles: withdraw_roles! {
+                                withdrawer => rule!(deny_all), locked;
+                                withdrawer_updater => rule!(deny_all), locked;
+                            },
+                            ..Default::default()
+                        },
                         metadata: metadata! {
                             roles {
                                 metadata_setter => AccessRule::DenyAll, locked;

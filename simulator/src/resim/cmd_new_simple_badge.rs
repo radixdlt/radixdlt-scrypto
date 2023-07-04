@@ -3,14 +3,11 @@ use colored::Colorize;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataInit, MetadataValue, Url};
 use radix_engine_interface::api::node_modules::ModuleConfig;
+use radix_engine_interface::blueprints::resource::NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT;
 use radix_engine_interface::blueprints::resource::{
     NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
     NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
 };
-use radix_engine_interface::blueprints::resource::{
-    ResourceAction, NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-};
-use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::InstructionV1;
 
@@ -95,13 +92,11 @@ impl NewSimpleBadge {
                     id_type: NonFungibleIdType::Integer,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
+                    resource_roles: NonFungibleResourceRoles::default(),
                     metadata: ModuleConfig {
                         init: metadata,
                         roles: RolesInit::default(),
                     },
-                    access_rules: btreemap!(
-                        ResourceAction::Withdraw => (rule!(allow_all), rule!(deny_all))
-                    ),
                     entries: btreemap!(
                         NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),
                     ),

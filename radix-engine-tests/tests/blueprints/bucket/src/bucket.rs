@@ -85,13 +85,15 @@ mod bucket_test {
             let auth_bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .restrict_withdraw(
-                    rule!(require(auth_bucket.resource_address())),
-                    rule!(deny_all),
-                )
-                .mint_initial_supply(5);
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
+                auth_bucket.resource_address()
+            ))))
+            .divisibility(DIVISIBILITY_MAXIMUM)
+            .withdraw_roles(withdraw_roles! {
+                withdrawer => OWNER, locked;
+                withdrawer_updater => rule!(deny_all), locked;
+            })
+            .mint_initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);
 
             let token_bucket = auth_bucket.authorize(|| vault.take(1));
@@ -107,10 +109,15 @@ mod bucket_test {
             let badge = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .mint_initial_supply(1);
-            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
-                .mint_initial_supply(5);
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::Fixed(rule!(require(
+                badge.resource_address()
+            ))))
+            .divisibility(DIVISIBILITY_MAXIMUM)
+            .burn_roles(burn_roles! {
+                burner => OWNER, locked;
+                burner_updater => rule!(deny_all), locked;
+            })
+            .mint_initial_supply(5);
             badge.authorize(|| bucket.burn());
             vec![badge]
         }
@@ -121,7 +128,10 @@ mod bucket_test {
                 .mint_initial_supply(1);
             let mut bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .burnable(rule!(allow_all), rule!(deny_all))
+                .burn_roles(burn_roles! {
+                    burner => rule!(allow_all), locked;
+                    burner_updater => rule!(deny_all), locked;
+                })
                 .mint_initial_supply(5);
             let bucket2 = bucket1.take(2);
             badge.authorize(|| bucket1.burn());
