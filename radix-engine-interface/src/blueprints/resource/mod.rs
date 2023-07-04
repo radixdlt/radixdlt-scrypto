@@ -185,3 +185,22 @@ macro_rules! non_fungible_data_update_roles {
         Some(internal_roles_struct!(NonFungibleDataUpdateRoles, $($role => $rule, $locked;)*))
     });
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WithdrawStrategy {
+    Exact,
+    Rounded(RoundingMode),
+}
+
+pub trait ForWithdraw {
+    fn for_withdraw(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal;
+}
+
+impl ForWithdraw for Decimal {
+    fn for_withdraw(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal {
+        match withdraw_strategy {
+            WithdrawStrategy::Exact => self.clone(),
+            WithdrawStrategy::Rounded(mode) => self.round(divisibility as u32, mode),
+        }
+    }
+}
