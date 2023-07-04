@@ -3,9 +3,8 @@ CALL_METHOD
     "lock_fee"
     Decimal("5000")
 ;
-CALL_DIRECT_VAULT_METHOD
+RECALL_NON_FUNGIBLES_FROM_VAULT
     Address("internal_vault_sim1nrexhvl5g2rekp4mx256etq2d2kl9hauw9x58233lace0fht7nrd8m")
-    "recall_non_fungibles"
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#120#")
     )
