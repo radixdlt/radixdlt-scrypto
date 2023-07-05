@@ -232,17 +232,20 @@ impl NonFungibleVaultBlueprint {
         Self::lock_non_fungibles(&ids, api)?;
 
         let proof_info = ProofMoveableSubstate { restricted: false };
-        let proof = NonFungibleProofSubstate::new(
+        let proof_evidence = NonFungibleProofSubstate::new(
             ids.clone(),
             btreemap!(
                 LocalRef::Vault(Reference(receiver.clone().into()))=> ids
             ),
-        );
+        )
+        .map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e)))
+        })?;
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
+                scrypto_encode(&proof_evidence).unwrap(),
             ],
         )?;
         Ok(Proof(Own(proof_id)))

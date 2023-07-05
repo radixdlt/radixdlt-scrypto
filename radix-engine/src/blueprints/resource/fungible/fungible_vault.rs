@@ -232,17 +232,21 @@ impl FungibleVaultBlueprint {
         Self::lock_amount(amount, api)?;
 
         let proof_info = ProofMoveableSubstate { restricted: false };
-        let proof = FungibleProofSubstate::new(
+        let proof_evidence = FungibleProofSubstate::new(
             amount,
             btreemap!(
                 LocalRef::Vault(Reference(receiver.clone().into())) => amount
             ),
-        );
+        )
+        .map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e)))
+        })?;
+
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
+                scrypto_encode(&proof_evidence).unwrap(),
             ],
         )?;
 
