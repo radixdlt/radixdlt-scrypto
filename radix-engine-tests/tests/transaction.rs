@@ -53,8 +53,8 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 500u32.into())
-        .create_proof_from_account(account, RADIX_TOKEN)
-        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("100"))
+        .create_proof_from_auth_zone_of_all(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
         })
         .call_method(
@@ -62,7 +62,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
             "try_deposit_batch_or_abort",
             manifest_args!(ManifestExpression::EntireWorktop),
         )
-        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
+        .create_proof_from_auth_zone_of_all(RADIX_TOKEN, |builder, proof_id| {
             builder.push_to_auth_zone(proof_id)
         })
         .call_method(

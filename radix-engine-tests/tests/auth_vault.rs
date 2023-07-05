@@ -50,7 +50,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
             auth_resource_address,
             &BTreeSet::from([NonFungibleLocalId::integer(1)]),
             |builder, bucket_id| {
-                builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
+                builder.create_proof_from_bucket_of_all(&bucket_id, |builder, proof_id| {
                     builder
                         .push_to_auth_zone(proof_id)
                         .withdraw_from_account(account, token_resource_address, Decimal::one())

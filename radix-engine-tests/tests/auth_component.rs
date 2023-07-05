@@ -186,7 +186,11 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, auth_id.resource_address())
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            auth_id.resource_address(),
+            &btreeset!(auth_id.local_id()),
+        )
         .call_method(
             my_component,
             "cross_component_call",

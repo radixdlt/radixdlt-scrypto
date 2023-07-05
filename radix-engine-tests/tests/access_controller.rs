@@ -2009,7 +2009,11 @@ impl AccessControllerTestRunner {
             Role::Recovery => self.recovery_role_badge,
             Role::Confirmation => self.confirmation_role_badge,
         };
-        manifest_builder.create_proof_from_account(self.account.0, resource_address);
+        manifest_builder.create_proof_from_account_of_amount(
+            self.account.0,
+            resource_address,
+            dec!("1"),
+        );
         manifest_builder
     }
 

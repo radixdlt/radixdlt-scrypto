@@ -337,8 +337,8 @@ impl ScryptoFungibleVault for FungibleVault {
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
-                VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
-                scrypto_encode(&VaultCreateProofOfAmountInput {
+                FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
+                scrypto_encode(&FungibleVaultCreateProofOfAmountInput {
                     amount: amount.into(),
                 })
                 .unwrap(),

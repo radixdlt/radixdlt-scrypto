@@ -229,7 +229,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
+            builder.create_proof_from_bucket_of_all(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
                 builder.withdraw_from_account(account, RADIX_TOKEN, 1.into());
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
@@ -263,7 +263,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
+            builder.create_proof_from_bucket_of_all(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
                 builder.withdraw_from_account(account, RADIX_TOKEN, 1.into());
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
@@ -297,7 +297,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_from_worktop(RADIX_TOKEN, dec!("1"), |builder, bucket_id| {
-            builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
+            builder.create_proof_from_bucket_of_all(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
                 builder.withdraw_from_account(account, RADIX_TOKEN, 1.into());
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
@@ -330,7 +330,7 @@ fn can_update_updatable_owner_role_account() {
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
+            builder.create_proof_from_bucket_of_all(&bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
                 builder.set_owner_role(account.into(), AccessRule::DenyAll);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));

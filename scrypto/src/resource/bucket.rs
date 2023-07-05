@@ -306,8 +306,8 @@ impl ScryptoFungibleBucket for FungibleBucket {
         let rtn = env
             .call_method(
                 self.0 .0.as_node_id(),
-                BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
-                scrypto_encode(&BucketCreateProofOfAmountInput {
+                FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
+                scrypto_encode(&FungibleBucketCreateProofOfAmountInput {
                     amount: amount.into(),
                 })
                 .unwrap(),
