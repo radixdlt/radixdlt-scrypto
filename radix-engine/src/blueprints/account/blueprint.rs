@@ -704,8 +704,7 @@ impl AccountBlueprint {
                     AccountDefaultDepositRule::Accept => true,
                     AccountDefaultDepositRule::Reject => false,
                     AccountDefaultDepositRule::AllowExisting => {
-                        *resource_address == XRD
-                            || Self::does_vault_exist(resource_address, api)?
+                        *resource_address == XRD || Self::does_vault_exist(resource_address, api)?
                     }
                 }
             }

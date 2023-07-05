@@ -111,13 +111,18 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                             dec!("10"),
                         );
                         for _ in 0..32 {
-                            let (bucket_name, new_bucket) = namer.new_collision_free_bucket("transfer");
-                            builder = builder.take_from_worktop(
-                                state.max_divisibility_fungible_resource.unwrap(),
-                                dec!("0.001"),
-                                new_bucket
-                            )
-                            .try_deposit_or_abort(config.user_account_2.address, namer.bucket(bucket_name));
+                            let (bucket_name, new_bucket) =
+                                namer.new_collision_free_bucket("transfer");
+                            builder = builder
+                                .take_from_worktop(
+                                    state.max_divisibility_fungible_resource.unwrap(),
+                                    dec!("0.001"),
+                                    new_bucket,
+                                )
+                                .try_deposit_or_abort(
+                                    config.user_account_2.address,
+                                    namer.bucket(bucket_name),
+                                );
                         }
                         builder.try_deposit_batch_or_abort(config.user_account_1.address)
                     },

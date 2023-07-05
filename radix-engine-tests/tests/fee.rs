@@ -8,8 +8,8 @@ use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::prelude::*;
 use transaction::prelude::PreviewFlags;
+use transaction::prelude::*;
 use utils::ContextualDisplay;
 
 fn run_manifest<F>(f: F) -> TransactionReceipt
@@ -40,7 +40,7 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
                     package_address,
                     "Fee",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build(),

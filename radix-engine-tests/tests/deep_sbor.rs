@@ -61,11 +61,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     let depth = 10usize;
     let manifest = ManifestBuilderV2::new()
         .lock_fee_from_faucet()
-        .call_method(
-            component_address,
-            "set_depth",
-            manifest_args!(XRD, depth),
-        )
+        .call_method(component_address, "set_depth", manifest_args!(XRD, depth))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -74,11 +70,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     let depth = 100usize;
     let manifest = ManifestBuilderV2::new()
         .lock_fee_from_faucet()
-        .call_method(
-            component_address,
-            "set_depth",
-            manifest_args!(XRD, depth),
-        )
+        .call_method(component_address, "set_depth", manifest_args!(XRD, depth))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|f| f.to_string().contains("MaxDepthExceeded"));

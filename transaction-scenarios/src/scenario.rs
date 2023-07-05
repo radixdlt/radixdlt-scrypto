@@ -110,10 +110,7 @@ impl ScenarioCore {
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
         let (builder, namer) = ManifestBuilderV2::new_with_namer();
-        let manifest = builder
-            .lock_fee_from_faucet()
-            .then(create_manifest)
-            .build();
+        let manifest = builder.lock_fee_from_faucet().then(create_manifest).build();
         self.next_transaction(logical_name, manifest, namer.object_names(), signers)
     }
 

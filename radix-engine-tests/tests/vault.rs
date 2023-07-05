@@ -654,7 +654,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();

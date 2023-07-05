@@ -800,7 +800,9 @@ impl<const N: usize> TestEnvironment<N> {
                 builder.call_method(
                     self.pool_component_address,
                     MULTI_RESOURCE_POOL_REDEEM_IDENT,
-                    to_manifest_value_and_unwrap!(&MultiResourcePoolRedeemManifestInput { bucket: namer.bucket("pool_unit") }),
+                    to_manifest_value_and_unwrap!(&MultiResourcePoolRedeemManifestInput {
+                        bucket: namer.bucket("pool_unit")
+                    }),
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)

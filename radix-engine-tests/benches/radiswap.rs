@@ -113,7 +113,11 @@ fn bench_radiswap(c: &mut Criterion) {
         .withdraw_from_account(account3, btc, btc_to_swap)
         .take_all_from_worktop(btc, "to_trade")
         .with_namer(|builder, namer| {
-            builder.call_method(component_address, "swap", manifest_args!(namer.bucket("to_trade")))
+            builder.call_method(
+                component_address,
+                "swap",
+                manifest_args!(namer.bucket("to_trade")),
+            )
         })
         .try_deposit_batch_or_abort(account3)
         .build();

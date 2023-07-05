@@ -46,8 +46,7 @@ impl CallMethod {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut builder = ManifestBuilderV2::new()
-            .lock_fee_from_faucet();
+        let mut builder = ManifestBuilderV2::new().lock_fee_from_faucet();
         for resource_specifier in proofs {
             builder = create_proof_from_account(
                 builder,
@@ -58,14 +57,15 @@ impl CallMethod {
             .map_err(Error::FailedToBuildArguments)?
         }
 
-        let manifest = self.add_call_method_instruction_with_schema(
-            builder,
-            &address_bech32_decoder,
-            self.component_address.0,
-            self.method_name.clone(),
-            self.arguments.clone(),
-            Some(default_account),
-        )?
+        let manifest = self
+            .add_call_method_instruction_with_schema(
+                builder,
+                &address_bech32_decoder,
+                self.component_address.0,
+                self.method_name.clone(),
+                self.arguments.clone(),
+                Some(default_account),
+            )?
             .try_deposit_batch_or_refund(default_account)
             .build();
         handle_manifest(

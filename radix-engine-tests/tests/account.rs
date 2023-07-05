@@ -4,9 +4,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::account::{
-    AccountSecurifyInput, ACCOUNT_SECURIFY_IDENT,
-};
+use radix_engine_interface::blueprints::account::{AccountSecurifyInput, ACCOUNT_SECURIFY_IDENT};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -101,9 +99,7 @@ where
     );
 
     // Assert
-    let other_account_balance: Decimal = test_runner
-        .account_balance(other_account, XRD)
-        .unwrap();
+    let other_account_balance: Decimal = test_runner.account_balance(other_account, XRD).unwrap();
     let transfer_amount = other_account_balance - 10000 /* initial balance */;
 
     assert_eq!(

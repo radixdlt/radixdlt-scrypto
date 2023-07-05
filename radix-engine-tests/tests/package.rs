@@ -4,6 +4,7 @@ use radix_engine::errors::{
 };
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
+use radix_engine::vm::wasm::PrepareError;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, PackageDefinition,
@@ -17,7 +18,6 @@ use radix_engine_interface::schema::{
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
 use transaction::prelude::*;
-use radix_engine::vm::wasm::PrepareError;
 
 #[test]
 fn missing_memory_should_cause_error() {

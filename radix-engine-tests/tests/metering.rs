@@ -479,12 +479,11 @@ fn should_be_able_run_large_manifest() {
     let namer = builder.namer();
     for _ in 0..40 {
         let (bucket_name, new_bucket) = namer.new_collision_free_bucket("bucket");
-        builder = builder.take_from_worktop(XRD, 1, new_bucket)
+        builder = builder
+            .take_from_worktop(XRD, 1, new_bucket)
             .return_to_worktop(bucket_name);
     }
-    let manifest = builder
-        .try_deposit_batch_or_abort(account)
-        .build();
+    let manifest = builder.try_deposit_batch_or_abort(account).build();
 
     let (receipt, _) = execute_with_time_logging(
         &mut test_runner,
@@ -508,9 +507,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     for _ in 0..5 {
         builder = builder.create_proof_from_account_of_amount(account, resource_address, 1);
     }
-    let manifest = builder
-        .lock_standard_test_fee(account)
-        .build();
+    let manifest = builder.lock_standard_test_fee(account).build();
 
     let (receipt, _) = execute_with_time_logging(
         &mut test_runner,

@@ -55,7 +55,10 @@ impl ManifestNamerCore {
         }
     }
 
-    pub fn new_named_bucket_collision_free(&mut self, prefix: &str) -> (String, NamedManifestBucket) {
+    pub fn new_named_bucket_collision_free(
+        &mut self,
+        prefix: &str,
+    ) -> (String, NamedManifestBucket) {
         for name_counter in 1..u32::MAX {
             let name = if name_counter == 1 {
                 prefix.to_string()
@@ -64,7 +67,7 @@ impl ManifestNamerCore {
             };
             if !self.named_buckets.contains_key(&name) {
                 let new = self.new_named_bucket(&name);
-                return (name, new)
+                return (name, new);
             }
         }
         panic!("Did not resolve a name");
@@ -141,7 +144,7 @@ impl ManifestNamerCore {
             };
             if !self.named_proofs.contains_key(&name) {
                 let new = self.new_named_proof(&name);
-                return (name, new)
+                return (name, new);
             }
         }
         panic!("Did not resolve a name");
@@ -212,7 +215,10 @@ impl ManifestNamerCore {
         }
     }
 
-    pub fn new_named_address_reservation_collision_free(&mut self, prefix: &str) -> (String, NamedManifestAddressReservation) {
+    pub fn new_named_address_reservation_collision_free(
+        &mut self,
+        prefix: &str,
+    ) -> (String, NamedManifestAddressReservation) {
         for name_counter in 1..u32::MAX {
             let name = if name_counter == 1 {
                 prefix.to_string()
@@ -221,13 +227,16 @@ impl ManifestNamerCore {
             };
             if !self.named_address_reservations.contains_key(&name) {
                 let new = self.new_named_address_reservation(&name);
-                return (name, new)
+                return (name, new);
             }
         }
         panic!("Did not resolve a name");
     }
 
-    pub fn resolve_named_address_reservation(&self, name: impl AsRef<str>) -> ManifestAddressReservation {
+    pub fn resolve_named_address_reservation(
+        &self,
+        name: impl AsRef<str>,
+    ) -> ManifestAddressReservation {
         match self.named_address_reservations.get(name.as_ref()) {
             Some(ManifestObjectState::Present(address_reservation)) => address_reservation.clone(),
             Some(ManifestObjectState::Consumed) => panic!("Address reservation with name \"{}\" has already been consumed", name.as_ref()),
@@ -281,7 +290,10 @@ impl ManifestNamerCore {
         }
     }
 
-    pub fn new_named_address_collision_free(&mut self, prefix: &str) -> (String, NamedManifestAddress) {
+    pub fn new_named_address_collision_free(
+        &mut self,
+        prefix: &str,
+    ) -> (String, NamedManifestAddress) {
         for name_counter in 1..u32::MAX {
             let name = if name_counter == 1 {
                 prefix.to_string()
@@ -290,7 +302,7 @@ impl ManifestNamerCore {
             };
             if !self.named_addresses.contains_key(&name) {
                 let new = self.new_named_address(&name);
-                return (name, new)
+                return (name, new);
             }
         }
         panic!("Did not resolve a name");
@@ -338,8 +350,13 @@ impl ManifestNamer {
         self.core.borrow_mut().new_named_bucket(name)
     }
 
-    pub fn new_collision_free_bucket(&self, prefix: impl Into<String>) -> (String, NamedManifestBucket) {
-        self.core.borrow_mut().new_named_bucket_collision_free(&prefix.into())
+    pub fn new_collision_free_bucket(
+        &self,
+        prefix: impl Into<String>,
+    ) -> (String, NamedManifestBucket) {
+        self.core
+            .borrow_mut()
+            .new_named_bucket_collision_free(&prefix.into())
     }
 
     pub fn bucket(&self, name: impl AsRef<str>) -> ManifestBucket {
@@ -350,8 +367,13 @@ impl ManifestNamer {
         self.core.borrow_mut().new_named_proof(name)
     }
 
-    pub fn new_collision_free_proof(&self, prefix: impl Into<String>) -> (String, NamedManifestProof) {
-        self.core.borrow_mut().new_named_proof_collision_free(&prefix.into())
+    pub fn new_collision_free_proof(
+        &self,
+        prefix: impl Into<String>,
+    ) -> (String, NamedManifestProof) {
+        self.core
+            .borrow_mut()
+            .new_named_proof_collision_free(&prefix.into())
     }
 
     pub fn proof(&self, name: impl AsRef<str>) -> ManifestProof {
@@ -365,8 +387,13 @@ impl ManifestNamer {
         self.core.borrow_mut().new_named_address_reservation(name)
     }
 
-    pub fn new_collision_free_address_reservation(&self, prefix: impl Into<String>) -> (String, NamedManifestAddressReservation) {
-        self.core.borrow_mut().new_named_address_reservation_collision_free(&prefix.into())
+    pub fn new_collision_free_address_reservation(
+        &self,
+        prefix: impl Into<String>,
+    ) -> (String, NamedManifestAddressReservation) {
+        self.core
+            .borrow_mut()
+            .new_named_address_reservation_collision_free(&prefix.into())
     }
 
     pub fn address_reservation(&self, name: impl AsRef<str>) -> ManifestAddressReservation {
@@ -377,8 +404,13 @@ impl ManifestNamer {
         self.core.borrow_mut().new_named_address(name)
     }
 
-    pub fn new_collision_free_named_address(&self, prefix: impl Into<String>) -> (String, NamedManifestAddress) {
-        self.core.borrow_mut().new_named_address_collision_free(&prefix.into())
+    pub fn new_collision_free_named_address(
+        &self,
+        prefix: impl Into<String>,
+    ) -> (String, NamedManifestAddress) {
+        self.core
+            .borrow_mut()
+            .new_named_address_collision_free(&prefix.into())
     }
 
     pub fn named_address(&self, name: impl AsRef<str>) -> ManifestAddress {
@@ -408,7 +440,9 @@ impl ManifestNameRegistrar {
     }
 
     pub fn namer(&self) -> ManifestNamer {
-        ManifestNamer { core: self.core.clone() }
+        ManifestNamer {
+            core: self.core.clone(),
+        }
     }
 
     /// This is intended for registering a bucket name to an allocated identifier, as part of processing a manifest
@@ -616,7 +650,9 @@ pub trait ResolvableComponentAddress {
 
 impl<A: TryInto<DynamicComponentAddress, Error = E>, E: Debug> ResolvableComponentAddress for A {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicComponentAddress {
-        let address = self.try_into().expect("Address was not valid ComponentAddress");
+        let address = self
+            .try_into()
+            .expect("Address was not valid ComponentAddress");
         registrar.check_address_exists(address);
         address
     }
@@ -630,14 +666,18 @@ pub trait ResolvableResourceAddress: Sized {
     fn resolve_static(self, registrar: &ManifestNameRegistrar) -> ResourceAddress {
         match self.resolve(registrar) {
             DynamicResourceAddress::Static(address) => address,
-            DynamicResourceAddress::Named(_) => panic!("This address needs to be a static/fixed address"),
+            DynamicResourceAddress::Named(_) => {
+                panic!("This address needs to be a static/fixed address")
+            }
         }
     }
 }
 
 impl<A: TryInto<DynamicResourceAddress, Error = E>, E: Debug> ResolvableResourceAddress for A {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicResourceAddress {
-        let address = self.try_into().expect("Address was not valid ResourceAddress");
+        let address = self
+            .try_into()
+            .expect("Address was not valid ResourceAddress");
         registrar.check_address_exists(address);
         address
     }
@@ -651,14 +691,18 @@ pub trait ResolvablePackageAddress: Sized {
     fn resolve_static(self, registrar: &ManifestNameRegistrar) -> PackageAddress {
         match self.resolve(registrar) {
             DynamicPackageAddress::Static(address) => address,
-            DynamicPackageAddress::Named(_) => panic!("This address needs to be a static/fixed address"),
+            DynamicPackageAddress::Named(_) => {
+                panic!("This address needs to be a static/fixed address")
+            }
         }
     }
 }
 
 impl<A: TryInto<DynamicPackageAddress, Error = E>, E: Debug> ResolvablePackageAddress for A {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicPackageAddress {
-        let address = self.try_into().expect("Address was not valid PackageAddress");
+        let address = self
+            .try_into()
+            .expect("Address was not valid PackageAddress");
         registrar.check_address_exists(address);
         address
     }
@@ -670,7 +714,9 @@ pub trait ResolvableGlobalAddress {
 
 impl<A: TryInto<DynamicGlobalAddress, Error = E>, E: Debug> ResolvableGlobalAddress for A {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> DynamicGlobalAddress {
-        let address = self.try_into().expect("Address was not valid GlobalAddress");
+        let address = self
+            .try_into()
+            .expect("Address was not valid GlobalAddress");
         registrar.check_address_exists(address);
         address
     }

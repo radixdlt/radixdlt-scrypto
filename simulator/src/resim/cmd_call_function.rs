@@ -59,7 +59,8 @@ impl CallFunction {
             )
             .map_err(Error::FailedToBuildArguments)?;
         }
-        let manifest = self.add_call_function_instruction_with_schema(
+        let manifest = self
+            .add_call_function_instruction_with_schema(
                 builder,
                 &address_bech32_decoder,
                 self.package_address.0,
@@ -133,11 +134,6 @@ impl CallFunction {
             ))
         })?;
 
-        Ok(builder.call_function(
-            package_address,
-            blueprint_name,
-            function_name,
-            built_args,
-        ))
+        Ok(builder.call_function(package_address, blueprint_name, function_name, built_args))
     }
 }

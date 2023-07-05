@@ -79,7 +79,7 @@ impl ManifestBuilderV2 {
     pub fn with_bucket(
         self,
         bucket: impl ExistingManifestBucket,
-        next: impl FnOnce(Self, ManifestBucket) -> Self
+        next: impl FnOnce(Self, ManifestBucket) -> Self,
     ) -> Self {
         let bucket = bucket.resolve(&self.registrar);
         next(self, bucket)
@@ -133,8 +133,7 @@ impl ManifestBuilderV2 {
             InstructionV1::TakeAllFromWorktop { .. }
             | InstructionV1::TakeFromWorktop { .. }
             | InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
-                let (bucket_name, named_bucket) = namer
-                    .new_collision_free_bucket("bucket");
+                let (bucket_name, named_bucket) = namer.new_collision_free_bucket("bucket");
                 self.registrar.register_bucket(named_bucket);
                 new_bucket = Some(namer.bucket(bucket_name));
             }
@@ -148,18 +147,18 @@ impl ManifestBuilderV2 {
             | InstructionV1::CreateProofFromBucketOfNonFungibles { .. }
             | InstructionV1::CreateProofFromBucketOfAll { .. }
             | InstructionV1::CloneProof { .. } => {
-                let (proof_name, named_proof) = namer
-                    .new_collision_free_proof("proof");
+                let (proof_name, named_proof) = namer.new_collision_free_proof("proof");
                 self.registrar.register_proof(named_proof);
                 new_proof = Some(namer.proof(proof_name));
             }
             InstructionV1::AllocateGlobalAddress { .. } => {
-                let (reservation_name, named_reservation) = namer
-                    .new_collision_free_address_reservation("reservation");
-                self.registrar.register_address_reservation(named_reservation);
+                let (reservation_name, named_reservation) =
+                    namer.new_collision_free_address_reservation("reservation");
+                self.registrar
+                    .register_address_reservation(named_reservation);
 
-                let (address_name, named_address) = namer
-                    .new_collision_free_named_address("address");
+                let (address_name, named_address) =
+                    namer.new_collision_free_named_address("address");
                 self.registrar.register_named_address(named_address);
                 new_address_reservation = Some(namer.address_reservation(reservation_name));
                 new_address_id = Some(namer.named_address_id(address_name));
@@ -386,7 +385,11 @@ impl ManifestBuilderV2 {
     }
 
     /// Clones a proof.
-    pub fn clone_proof(self, proof: impl ExistingManifestProof, new_proof: impl NewManifestProof) -> Self {
+    pub fn clone_proof(
+        self,
+        proof: impl ExistingManifestProof,
+        new_proof: impl NewManifestProof,
+    ) -> Self {
         let proof = proof.resolve(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_instruction(InstructionV1::CloneProof { proof_id: proof })
@@ -697,7 +700,11 @@ impl ManifestBuilderV2 {
         })
     }
 
-    pub fn claim_xrd(self, validator_address: impl ResolvableComponentAddress, bucket: impl ExistingManifestBucket) -> Self {
+    pub fn claim_xrd(
+        self,
+        validator_address: impl ResolvableComponentAddress,
+        bucket: impl ExistingManifestBucket,
+    ) -> Self {
         let address = validator_address.resolve(&self.registrar);
         let bucket = bucket.mark_consumed(&self.registrar);
         self.add_instruction(InstructionV1::CallMethod {
@@ -739,10 +746,7 @@ impl ManifestBuilderV2 {
         })
     }
 
-    pub fn claim_package_royalties(
-        self,
-        package_address: impl ResolvablePackageAddress,
-    ) -> Self {
+    pub fn claim_package_royalties(self, package_address: impl ResolvablePackageAddress) -> Self {
         let address = package_address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallMethod {
             address: address.into(),
@@ -783,7 +787,10 @@ impl ManifestBuilderV2 {
         })
     }
 
-    pub fn claim_component_royalties(self, component_address: impl ResolvableComponentAddress) -> Self {
+    pub fn claim_component_royalties(
+        self,
+        component_address: impl ResolvableComponentAddress,
+    ) -> Self {
         let address = component_address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: address.into(),
@@ -792,11 +799,7 @@ impl ManifestBuilderV2 {
         })
     }
 
-    pub fn set_owner_role(
-        self,
-        address: impl ResolvableGlobalAddress,
-        rule: AccessRule,
-    ) -> Self {
+    pub fn set_owner_role(self, address: impl ResolvableGlobalAddress, rule: AccessRule) -> Self {
         let address = address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
@@ -838,10 +841,7 @@ impl ManifestBuilderV2 {
         })
     }
 
-    pub fn lock_owner_role(
-        self,
-        address: impl ResolvableGlobalAddress,
-    ) -> Self {
+    pub fn lock_owner_role(self, address: impl ResolvableGlobalAddress) -> Self {
         let address = address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
@@ -1087,7 +1087,11 @@ impl ManifestBuilderV2 {
         self.add_instruction(InstructionV1::BurnResource { bucket_id: bucket })
     }
 
-    pub fn burn_from_worktop(self, amount: impl ResolvableDecimal, resource_address: impl ResolvableResourceAddress) -> Self {
+    pub fn burn_from_worktop(
+        self,
+        amount: impl ResolvableDecimal,
+        resource_address: impl ResolvableResourceAddress,
+    ) -> Self {
         let amount = amount.resolve();
         let resource_address = resource_address.resolve(&self.registrar);
 
@@ -1137,8 +1141,7 @@ impl ManifestBuilderV2 {
         self,
         resource_address: impl ResolvableResourceAddress,
         entries: T,
-    ) -> Self
-    {
+    ) -> Self {
         let address = resource_address.resolve(&self.registrar);
 
         let entries = entries
@@ -1158,9 +1161,8 @@ impl ManifestBuilderV2 {
     pub fn mint_ruid_non_fungible<T: IntoIterator<Item = V>, V: ManifestEncode>(
         self,
         resource_address: impl ResolvableResourceAddress,
-        entries: T
-    ) -> Self
-    {
+        entries: T,
+    ) -> Self {
         let address = resource_address.resolve(&self.registrar);
 
         let entries = entries
@@ -1336,10 +1338,7 @@ impl ManifestBuilderV2 {
     }
 
     /// Locks a large fee from the XRD vault of an account.
-    pub fn lock_standard_test_fee(
-        self,
-        account_address: impl ResolvableComponentAddress,
-    ) -> Self {
+    pub fn lock_standard_test_fee(self, account_address: impl ResolvableComponentAddress) -> Self {
         self.lock_fee(account_address, 5000)
     }
 
@@ -1526,10 +1525,7 @@ impl ManifestBuilderV2 {
         self.call_method(address, ACCOUNT_DEPOSIT_IDENT, manifest_args!(bucket))
     }
 
-    pub fn deposit_batch(
-        self,
-        account_address: impl ResolvableComponentAddress,
-    ) -> Self {
+    pub fn deposit_batch(self, account_address: impl ResolvableComponentAddress) -> Self {
         let address = account_address.resolve(&self.registrar);
 
         self.registrar.consume_all_buckets();

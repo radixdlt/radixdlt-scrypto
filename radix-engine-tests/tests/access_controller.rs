@@ -2003,8 +2003,7 @@ impl AccessControllerTestRunner {
             Role::Recovery => self.recovery_role_badge,
             Role::Confirmation => self.confirmation_role_badge,
         };
-        ManifestBuilderV2::new()
-            .create_proof_from_account(self.account.0, resource_address)
+        ManifestBuilderV2::new().create_proof_from_account(self.account.0, resource_address)
     }
 
     fn set_current_minute(&mut self, minutes: i64) {

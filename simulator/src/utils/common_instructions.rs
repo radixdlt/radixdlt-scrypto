@@ -290,29 +290,28 @@ fn build_call_argument<'a>(
             ) =>
         {
             let resource_specifier = parse_resource_specifier(&argument, address_bech32_decoder)
-                .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;            let namer = builder.namer();
+                .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
+            let namer = builder.namer();
             let (proof_name, new_proof) = namer.new_collision_free_proof("proof");
             let builder = match resource_specifier {
                 ResourceSpecifier::Amount(amount, resource_address) => {
                     if let Some(account) = account {
-                        builder.create_proof_from_account_of_amount(
-                            account,
-                            resource_address,
-                            amount,
-                        )
-                        .pop_from_auth_zone(new_proof)
+                        builder
+                            .create_proof_from_account_of_amount(account, resource_address, amount)
+                            .pop_from_auth_zone(new_proof)
                     } else {
                         todo!("Take from worktop and create proof")
                     }
                 }
                 ResourceSpecifier::Ids(ids, resource_address) => {
                     if let Some(account) = account {
-                        builder.create_proof_from_account_of_non_fungibles(
-                            account,
-                            resource_address,
-                            ids,
-                        )
-                        .pop_from_auth_zone(new_proof)
+                        builder
+                            .create_proof_from_account_of_non_fungibles(
+                                account,
+                                resource_address,
+                                ids,
+                            )
+                            .pop_from_auth_zone(new_proof)
                     } else {
                         todo!("Take from worktop and create proof")
                     }

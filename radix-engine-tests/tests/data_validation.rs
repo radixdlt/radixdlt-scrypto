@@ -38,7 +38,7 @@ fn create_manifest_with_middle(
                 component_address,
                 namer.bucket("empty_bucket"),
                 namer.bucket("bucket"),
-                namer.proof("proof")
+                namer.proof("proof"),
             )
         })
         .return_to_worktop("proof_bucket")

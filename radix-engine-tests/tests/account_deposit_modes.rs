@@ -521,7 +521,7 @@ impl AccountDepositModesTestRunner {
                     manifest_args!(vec![namer.bucket("free_tokens")])
                 } else {
                     manifest_args!(namer.bucket("free_tokens"))
-                }
+                },
             )
             .build();
         self.execute_manifest(manifest, sign)

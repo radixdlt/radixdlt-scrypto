@@ -7,8 +7,8 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::ScryptoVm;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
-use transaction::prelude::*;
 use transaction::errors::TransactionValidationError;
+use transaction::prelude::*;
 use transaction::validation::*;
 
 #[test]
@@ -113,9 +113,7 @@ fn test_normal_transaction_flow() {
         {
             let mut builder = ManifestBuilderV2::new();
             builder.add_blob([123u8; 1023 * 1024].to_vec());
-            builder.lock_fee_from_faucet()
-                .clear_auth_zone()
-                .build()
+            builder.lock_fee_from_faucet().clear_auth_zone().build()
         },
     )
     .to_raw()

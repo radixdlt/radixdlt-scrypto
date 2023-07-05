@@ -44,7 +44,11 @@ fn test_balance_changes_when_success() {
             .withdraw_from_account(account, XRD, Decimal::ONE)
             .take_all_from_worktop(XRD, "bucket")
             .with_namer(|builder, namer| {
-                builder.call_method(component_address, "put", manifest_args!(namer.bucket("bucket")))
+                builder.call_method(
+                    component_address,
+                    "put",
+                    manifest_args!(namer.bucket("bucket")),
+                )
             })
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -116,7 +120,11 @@ fn test_balance_changes_when_failure() {
             .withdraw_from_account(account, XRD, Decimal::ONE)
             .take_all_from_worktop(XRD, "bucket")
             .with_namer(|builder: ManifestBuilderV2, namer| {
-                builder.call_method(component_address, "boom", manifest_args!(namer.bucket("bucket")))
+                builder.call_method(
+                    component_address,
+                    "boom",
+                    manifest_args!(namer.bucket("bucket")),
+                )
             })
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

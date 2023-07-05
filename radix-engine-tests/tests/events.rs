@@ -21,8 +21,8 @@ use radix_engine_interface::{burn_roles, metadata, metadata_init, mint_roles, re
 use scrypto::prelude::{AccessRule, FromPublicKey};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
-use transaction::prelude::*;
 use transaction::model::InstructionV1;
+use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 // TODO: In the future, the ClientAPI should only be able to add events to the event store. It
@@ -181,9 +181,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
     // Arrange
     let mut test_runner = TestRunner::builder().without_trace().build();
 
-    let manifest = ManifestBuilderV2::new()
-        .lock_fee_from_faucet()
-        .build();
+    let manifest = ManifestBuilderV2::new().lock_fee_from_faucet().build();
 
     // Act
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -1004,11 +1002,7 @@ fn validator_unstake_emits_correct_events() {
     // Act
     let manifest = ManifestBuilderV2::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(
-            account_with_su,
-            validator_substate.stake_unit_resource,
-            1,
-        )
+        .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
         .try_deposit_batch_or_abort(account_with_su)
@@ -1150,11 +1144,7 @@ fn validator_claim_xrd_emits_correct_events() {
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilderV2::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(
-            account_with_su,
-            validator_substate.stake_unit_resource,
-            1,
-        )
+        .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
         .try_deposit_batch_or_abort(account_with_su)

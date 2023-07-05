@@ -83,7 +83,7 @@ fn can_burn_by_amount_from_fungible_vault() {
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("to_burn"))
+                    manifest_args!(namer.bucket("to_burn")),
                 )
             })
             .build();
@@ -151,7 +151,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("to_burn"))
+                    manifest_args!(namer.bucket("to_burn")),
                 )
             })
             .build();
@@ -219,7 +219,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();
@@ -288,7 +288,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();
@@ -360,7 +360,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();
@@ -432,7 +432,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();
@@ -502,7 +502,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();
@@ -573,7 +573,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();
@@ -644,7 +644,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();
@@ -710,7 +710,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();
@@ -778,7 +778,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();
@@ -846,7 +846,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket"))
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build();

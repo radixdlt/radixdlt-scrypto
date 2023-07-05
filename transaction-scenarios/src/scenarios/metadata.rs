@@ -87,25 +87,32 @@ impl ScenarioInstance for MetadataScenario {
                     "metadata-create-package-with-metadata",
                     |builder| {
                         let namer = builder.namer();
-                        builder.allocate_global_address(
-                            PACKAGE_PACKAGE,
-                            PACKAGE_BLUEPRINT,
-                            namer.new_address_reservation("metadata_package_address_reservation"),
-                            namer.new_named_address("metadata_package_address"),
-                        )
-                        .get_free_xrd_from_faucet()
-                        .publish_package_advanced(
-                            Some(namer.address_reservation("metadata_package_address_reservation")),
-                            code.to_vec(),
-                            schema,
-                            create_metadata(),
-                            radix_engine::types::OwnerRole::Fixed(rule!(require(
-                                NonFungibleGlobalId::from_public_key(
-                                    &user_account_1.public_key
-                                )
-                            ))),
-                        )
-                        .try_deposit_batch_or_abort(user_account_1.address)
+                        builder
+                            .allocate_global_address(
+                                PACKAGE_PACKAGE,
+                                PACKAGE_BLUEPRINT,
+                                namer.new_address_reservation(
+                                    "metadata_package_address_reservation",
+                                ),
+                                namer.new_named_address("metadata_package_address"),
+                            )
+                            .get_free_xrd_from_faucet()
+                            .publish_package_advanced(
+                                Some(
+                                    namer.address_reservation(
+                                        "metadata_package_address_reservation",
+                                    ),
+                                ),
+                                code.to_vec(),
+                                schema,
+                                create_metadata(),
+                                radix_engine::types::OwnerRole::Fixed(rule!(require(
+                                    NonFungibleGlobalId::from_public_key(
+                                        &user_account_1.public_key
+                                    )
+                                ))),
+                            )
+                            .try_deposit_batch_or_abort(user_account_1.address)
                     },
                     vec![],
                 )
@@ -118,21 +125,29 @@ impl ScenarioInstance for MetadataScenario {
                     "metadata-create-component-with-metadata",
                     |builder| {
                         let namer = builder.namer();
-                        let mut builder = builder.allocate_global_address(
-                            package_with_metadata.unwrap(),
-                            "MetadataTest",
-                            namer.new_address_reservation("metadata_component_address_reservation"),
-                            namer.new_named_address("metadata_component_address"),
-                        )
-                        .get_free_xrd_from_faucet()
-                        .call_function(
-                            package_with_metadata.unwrap(),
-                            "MetadataTest",
-                            "new_with_address",
-                            manifest_args!(namer.address_reservation("metadata_component_address_reservation")),
-                        );
+                        let mut builder = builder
+                            .allocate_global_address(
+                                package_with_metadata.unwrap(),
+                                "MetadataTest",
+                                namer.new_address_reservation(
+                                    "metadata_component_address_reservation",
+                                ),
+                                namer.new_named_address("metadata_component_address"),
+                            )
+                            .get_free_xrd_from_faucet()
+                            .call_function(
+                                package_with_metadata.unwrap(),
+                                "MetadataTest",
+                                "new_with_address",
+                                manifest_args!(namer
+                                    .address_reservation("metadata_component_address_reservation")),
+                            );
                         for (k, v) in create_metadata() {
-                            builder = builder.set_metadata(namer.named_address("metadata_component_address"), k, v);
+                            builder = builder.set_metadata(
+                                namer.named_address("metadata_component_address"),
+                                k,
+                                v,
+                            );
                         }
                         builder.try_deposit_batch_or_abort(user_account_1.address)
                     },
@@ -252,10 +267,7 @@ impl ScenarioInstance for MetadataScenario {
                 core.next_transaction_with_faucet_lock_fee(
                     "metadata-lock-metadata",
                     |builder| {
-                        builder.lock_metadata(
-                            resource_with_metadata2.unwrap(),
-                            "locked_later",
-                        )
+                        builder.lock_metadata(resource_with_metadata2.unwrap(), "locked_later")
                     },
                     vec![&user_account_1.key],
                 )

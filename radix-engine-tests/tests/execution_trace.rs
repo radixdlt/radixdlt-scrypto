@@ -3,8 +3,8 @@ use radix_engine::system::system_modules::execution_trace::{
 };
 use radix_engine::types::*;
 use scrypto_unit::*;
-use transaction::prelude::*;
 use transaction::model::PreviewFlags;
+use transaction::prelude::*;
 
 #[test]
 fn test_trace_resource_transfers() {

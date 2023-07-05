@@ -1,9 +1,7 @@
 use std::collections::BTreeMap;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use radix_engine::types::{
-    NetworkDefinition, NonFungibleIdType, NonFungibleLocalId,
-};
+use radix_engine::types::{NetworkDefinition, NonFungibleIdType, NonFungibleLocalId};
 use radix_engine_common::types::Epoch;
 use radix_engine_common::ManifestSbor;
 use radix_engine_interface::api::node_modules::ModuleConfig;
@@ -12,12 +10,12 @@ use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, Own
 use radix_engine_interface::{metadata, metadata_init, ScryptoSbor};
 use scrypto::prelude::ComponentAddress;
 use scrypto::NonFungibleData;
-use transaction::prelude::*;
 use transaction::manifest::{compile, decompile, BlobProvider};
 use transaction::model::{
     PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
     TransactionPayloadPreparable,
 };
+use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {

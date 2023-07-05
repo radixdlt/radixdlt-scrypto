@@ -29,10 +29,10 @@ where
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
-    let mut builder = ManifestBuilderV2::new()
-        .lock_fee_from_faucet();
+    let mut builder = ManifestBuilderV2::new().lock_fee_from_faucet();
     if as_owner {
-        builder = builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE);
+        builder =
+            builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE);
     }
     let manifest = builder
         .signal_protocol_update_readiness(validator_address, "a".repeat(name_len).as_str())

@@ -2,9 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::blueprints::resource::{
-    require, FromPublicKey
-};
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::{metadata, metadata_init, rule};
 use rand::Rng;
@@ -78,7 +76,7 @@ impl NewAccount {
                     ),
                     Some(btreemap!(
                         NonFungibleLocalId::integer(1) => (),
-                    ))
+                    )),
                 )
                 .try_deposit_batch_or_refund(account)
                 .build();

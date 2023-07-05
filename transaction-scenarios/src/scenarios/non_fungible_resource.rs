@@ -213,9 +213,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                     state.integer_non_fungible_resource.unwrap(),
                                     2,
                                 )
-                                .burn_all_from_worktop(
-                                    state.integer_non_fungible_resource.unwrap(),
-                                )
+                                .burn_all_from_worktop(state.integer_non_fungible_resource.unwrap())
                                 .withdraw_non_fungibles_from_account(
                                     config.main_account.address,
                                     state.integer_non_fungible_resource.unwrap(),

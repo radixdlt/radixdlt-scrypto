@@ -86,7 +86,7 @@ impl NewSimpleBadge {
                 },
                 Some(btreemap!(
                     NonFungibleLocalId::integer(1) => (),
-                ))
+                )),
             )
             .try_deposit_batch_or_refund(default_account)
             .build();

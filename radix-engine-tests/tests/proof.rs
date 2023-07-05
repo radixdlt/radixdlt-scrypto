@@ -424,7 +424,7 @@ fn can_compose_bucket_and_vault_proof() {
                         "new",
                         manifest_args!(namer.bucket("bucket")),
                     )
-            })
+                })
         },
     );
 
@@ -542,7 +542,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]),
-            "bucket"
+            "bucket",
         )
         .with_namer(|builder, namer| {
             builder.call_method(
@@ -636,7 +636,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]),
-            "proof"
+            "proof",
         )
         .with_namer(|builder, namer| {
             builder.call_function(

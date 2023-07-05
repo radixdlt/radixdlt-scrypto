@@ -245,12 +245,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
     let component_address = {
         let manifest = ManifestBuilderV2::new()
-            .call_function(
-                package_address,
-                "AssertAccessRule",
-                "new",
-                manifest_args!(),
-            )
+            .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
@@ -288,12 +283,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 
     let component_address = {
         let manifest = ManifestBuilderV2::new()
-            .call_function(
-                package_address,
-                "AssertAccessRule",
-                "new",
-                manifest_args!(),
-            )
+            .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
         let receipt = test_runner.execute_manifest_ignoring_fee(
@@ -489,22 +479,14 @@ impl MutableAccessRulesTestRunner {
 
     pub fn get_role(&mut self, role_key: RoleKey) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .get_role(
-                self.component_address,
-                ObjectModuleId::Main,
-                role_key,
-            )
+            .get_role(self.component_address, ObjectModuleId::Main, role_key)
             .build();
         self.execute_manifest(manifest)
     }
 
     pub fn lock_role(&mut self, role_key: RoleKey) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .lock_role(
-                self.component_address,
-                ObjectModuleId::Main,
-                role_key,
-            )
+            .lock_role(self.component_address, ObjectModuleId::Main, role_key)
             .build();
         self.execute_manifest(manifest)
     }

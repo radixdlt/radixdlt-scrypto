@@ -53,12 +53,7 @@ fn test_add_local_ref_to_stored_substate() {
     // Instantiate component
     let component_address = {
         let manifest = ManifestBuilderV2::new()
-            .call_function(
-                package_address,
-                "ReferenceTest",
-                "new",
-                manifest_args!(),
-            )
+            .call_function(package_address, "ReferenceTest", "new", manifest_args!())
             .build();
 
         let receipt = test_runner.execute_manifest_ignoring_fee(

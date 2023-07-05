@@ -647,11 +647,11 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     receipt.expect_commit_success();
 
     // Act
-    let mut builder = ManifestBuilderV2::new()
-        .lock_fee_from_faucet();
+    let mut builder = ManifestBuilderV2::new().lock_fee_from_faucet();
 
     if owner {
-        builder = builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE);
+        builder =
+            builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE);
     }
 
     let manifest = builder
@@ -1772,11 +1772,7 @@ fn cannot_claim_unstake_immediately() {
     // Act
     let manifest = ManifestBuilderV2::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(
-            account_with_su,
-            validator_substate.stake_unit_resource,
-            1,
-        )
+        .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
         .take_all_from_worktop(validator_substate.unstake_nft, "unstake_nft")
@@ -1820,11 +1816,7 @@ fn can_claim_unstake_after_epochs() {
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilderV2::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(
-            account_with_su,
-            validator_substate.stake_unit_resource,
-            1,
-        )
+        .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
         .try_deposit_batch_or_abort(account_with_su)
@@ -2421,11 +2413,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilderV2::new()
         .lock_fee_from_faucet()
-        .withdraw_from_account(
-            account_with_su,
-            validator_substate.stake_unit_resource,
-            1,
-        )
+        .withdraw_from_account(account_with_su, validator_substate.stake_unit_resource, 1)
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
         .unstake_validator(validator_address, "stake_units")
         .try_deposit_batch_or_abort(account_with_su)

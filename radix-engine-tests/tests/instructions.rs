@@ -52,9 +52,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
             // We capture the proof before the namer knows that the proof has been cleared,
             // which causes a panic in the namer and would void the test too early!
             let proof = namer.proof("proof");
-            builder
-                .drop_all_proofs()
-                .drop_proof(proof) // Proof should fail after CLEAR_AUTH_ZONE
+            builder.drop_all_proofs().drop_proof(proof) // Proof should fail after CLEAR_AUTH_ZONE
         })
         .build();
     let receipt = test_runner.execute_manifest(
