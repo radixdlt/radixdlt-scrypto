@@ -64,7 +64,7 @@ fn can_call_protected_function_with_auth() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(account, RADIX_TOKEN)
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
         .call_function(
             package_address,
             "FunctionAccessRules",
@@ -257,7 +257,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(account, RADIX_TOKEN)
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
         .call_method(
             component_address,
             "assert_access_rule",

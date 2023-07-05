@@ -348,7 +348,7 @@ fn can_move_restricted_proofs_internally() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(account, RADIX_TOKEN)
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof| {
             builder.call_method(
                 component_address,
