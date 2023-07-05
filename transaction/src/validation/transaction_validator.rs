@@ -200,11 +200,6 @@ impl NotarizedTransactionValidator {
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::ClearAuthZone => {}
-                InstructionV1::CreateProofFromAuthZone { .. } => {
-                    id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
                 InstructionV1::CreateProofFromAuthZoneOfAmount { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
@@ -218,11 +213,6 @@ impl NotarizedTransactionValidator {
                 InstructionV1::CreateProofFromAuthZoneOfAll { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                InstructionV1::CreateProofFromBucket { bucket_id } => {
-                    id_validator
-                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CreateProofFromBucketOfAmount { bucket_id, .. } => {

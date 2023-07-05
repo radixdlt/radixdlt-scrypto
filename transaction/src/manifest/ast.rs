@@ -50,11 +50,6 @@ pub enum Instruction {
 
     ClearAuthZone,
 
-    CreateProofFromAuthZone {
-        resource_address: Value,
-        new_proof: Value,
-    },
-
     CreateProofFromAuthZoneOfAmount {
         resource_address: Value,
         amount: Value,
@@ -73,11 +68,6 @@ pub enum Instruction {
     },
 
     ClearSignatureProofs,
-
-    CreateProofFromBucket {
-        bucket: Value,
-        new_proof: Value,
-    },
 
     CreateProofFromBucketOfAmount {
         bucket: Value,

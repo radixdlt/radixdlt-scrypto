@@ -141,11 +141,9 @@ impl ManifestBuilder {
                 new_buckets.push(self.id_allocator.new_bucket_id());
             }
             InstructionV1::PopFromAuthZone { .. }
-            | InstructionV1::CreateProofFromAuthZone { .. }
             | InstructionV1::CreateProofFromAuthZoneOfAmount { .. }
             | InstructionV1::CreateProofFromAuthZoneOfNonFungibles { .. }
             | InstructionV1::CreateProofFromAuthZoneOfAll { .. }
-            | InstructionV1::CreateProofFromBucket { .. }
             | InstructionV1::CreateProofFromBucketOfAmount { .. }
             | InstructionV1::CreateProofFromBucketOfNonFungibles { .. }
             | InstructionV1::CreateProofFromBucketOfAll { .. }
@@ -279,20 +277,6 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::ClearAuthZone).0
     }
 
-    /// Creates proof from the auth zone.
-    pub fn create_proof_from_auth_zone<F>(
-        &mut self,
-        resource_address: ResourceAddress,
-        then: F,
-    ) -> &mut Self
-    where
-        F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
-    {
-        let (builder, _, proof_id) =
-            self.add_instruction(InstructionV1::CreateProofFromAuthZone { resource_address });
-        then(builder, proof_id.unwrap())
-    }
-
     /// Creates proof from the auth zone by amount.
     pub fn create_proof_from_auth_zone_of_amount<F>(
         &mut self,
@@ -340,17 +324,6 @@ impl ManifestBuilder {
     {
         let (builder, _, proof_id) =
             self.add_instruction(InstructionV1::CreateProofFromAuthZoneOfAll { resource_address });
-        then(builder, proof_id.unwrap())
-    }
-
-    /// Creates proof from a bucket.
-    pub fn create_proof_from_bucket<F>(&mut self, bucket_id: &ManifestBucket, then: F) -> &mut Self
-    where
-        F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
-    {
-        let (builder, _, proof_id) = self.add_instruction(InstructionV1::CreateProofFromBucket {
-            bucket_id: bucket_id.clone(),
-        });
         then(builder, proof_id.unwrap())
     }
 

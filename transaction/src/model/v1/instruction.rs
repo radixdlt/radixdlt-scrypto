@@ -219,10 +219,6 @@ pub enum InstructionV1 {
     #[sbor(discriminator(INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR))]
     ClearAuthZone,
 
-    /// Creates a proof from the auth zone
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_DISCRIMINATOR))]
-    CreateProofFromAuthZone { resource_address: ResourceAddress },
-
     /// Creates a proof from the auth zone, by the given amount
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR))]
     CreateProofFromAuthZoneOfAmount {
@@ -247,10 +243,6 @@ pub enum InstructionV1 {
     //==============
     // Named bucket
     //==============
-    /// Creates a proof from a bucket.
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_DISCRIMINATOR))]
-    CreateProofFromBucket { bucket_id: ManifestBucket },
-
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR))]
     CreateProofFromBucketOfAmount {
         bucket_id: ManifestBucket,
