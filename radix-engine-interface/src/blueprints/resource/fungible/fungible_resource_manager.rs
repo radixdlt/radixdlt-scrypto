@@ -92,12 +92,6 @@ impl FungibleResourceRoles {
             .data
             .extend(self.withdraw_roles.unwrap_or_default().to_role_init().data);
 
-        // FIXME: This will get removed once we remove locks from all role rules.
-        // For now, we just overwrite whatever the user has specified
-        for role_rule in roles.data.values_mut() {
-            role_rule.lock = false;
-        }
-
         (features, roles)
     }
 }

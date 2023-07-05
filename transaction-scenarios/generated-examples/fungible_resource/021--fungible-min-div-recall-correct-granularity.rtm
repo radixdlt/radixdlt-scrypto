@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 RECALL_FROM_VAULT
-    Address("internal_vault_sim1tzks0m6w5hqjkm987yyde5a4dj7r7fzlhpc5s5vj059n0dz5sym02h")
+    Address("internal_vault_sim1tzkfjpd5u07c4r78sf0ujk2aq35prp6fxvke0klds0thgqfmfhsdys")
     Decimal("2")
 ;
 CALL_METHOD

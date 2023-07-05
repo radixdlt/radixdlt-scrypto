@@ -740,22 +740,7 @@ SET_OWNER_ROLE
 LOCK_OWNER_ROLE
     Address("${resource_address}")
 ;
-SET_AND_LOCK_OWNER_ROLE
-    Address("${resource_address}")
-    Enum<0u8>()
-;
 SET_ROLE
-    Address("${resource_address}")
-    Enum<0u8>()
-    "hello"
-    Enum<0u8>()
-;
-LOCK_ROLE
-    Address("${resource_address}")
-    Enum<0u8>()
-    "hello"
-;
-SET_AND_LOCK_ROLE
     Address("${resource_address}")
     Enum<0u8>()
     "hello"
@@ -785,23 +770,17 @@ CALL_METHOD
 ;
 CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<0u8>()
-    false
+    true
     18u8
     Decimal("12")
     Tuple(
         Enum<1u8>(
             Tuple(
-                Tuple(
-                    Enum<1u8>(
-                        Enum<0u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<0u8>()
                 ),
-                Tuple(
-                    Enum<1u8>(
-                        Enum<1u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<1u8>()
                 )
             )
         ),
@@ -820,25 +799,18 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                     )
                 ),
                 true
-            ),
-            "symbol" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "RSRC"
-                    )
-                ),
-                true
-            ),
-            "description" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "A very innovative and important resource"
-                    )
-                ),
-                true
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>(
+            "metadata_setter" => Enum<1u8>(
+                Enum<0u8>()
+            ),
+            "metadata_setter_updater" => Enum<0u8>(),
+            "metadata_locker" => Enum<1u8>(
+                Enum<1u8>()
+            ),
+            "metadata_locker_updater" => Enum<0u8>()
+        )
     )
     Enum<0u8>()
 ;
@@ -871,22 +843,16 @@ CALL_METHOD
 ;
 CREATE_FUNGIBLE_RESOURCE
     Enum<0u8>()
-    false
+    true
     18u8
     Tuple(
         Enum<1u8>(
             Tuple(
-                Tuple(
-                    Enum<1u8>(
-                        Enum<0u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<0u8>()
                 ),
-                Tuple(
-                    Enum<1u8>(
-                        Enum<1u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<1u8>()
                 )
             )
         ),
@@ -905,25 +871,18 @@ CREATE_FUNGIBLE_RESOURCE
                     )
                 ),
                 true
-            ),
-            "symbol" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "RSRC"
-                    )
-                ),
-                true
-            ),
-            "description" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "A very innovative and important resource"
-                    )
-                ),
-                true
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>(
+            "metadata_setter" => Enum<1u8>(
+                Enum<0u8>()
+            ),
+            "metadata_setter_updater" => Enum<0u8>(),
+            "metadata_locker" => Enum<1u8>(
+                Enum<1u8>()
+            ),
+            "metadata_locker_updater" => Enum<0u8>()
+        )
     )
     Enum<0u8>()
 ;
@@ -954,7 +913,7 @@ CALL_METHOD
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Enum<0u8>()
     Enum<1u8>()
-    false
+    true
     Tuple(
         Tuple(
             Array<Enum>(),
@@ -977,17 +936,11 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Tuple(
         Enum<1u8>(
             Tuple(
-                Tuple(
-                    Enum<1u8>(
-                        Enum<0u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<0u8>()
                 ),
-                Tuple(
-                    Enum<1u8>(
-                        Enum<1u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<1u8>()
                 )
             )
         ),
@@ -1007,17 +960,18 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                     )
                 ),
                 true
-            ),
-            "description" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "A very innovative and important resource"
-                    )
-                ),
-                false
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>(
+            "metadata_setter" => Enum<1u8>(
+                Enum<0u8>()
+            ),
+            "metadata_setter_updater" => Enum<0u8>(),
+            "metadata_locker" => Enum<1u8>(
+                Enum<1u8>()
+            ),
+            "metadata_locker_updater" => Enum<0u8>()
+        )
     )
     Enum<0u8>()
 ;
@@ -1053,7 +1007,7 @@ CALL_METHOD
 CREATE_NON_FUNGIBLE_RESOURCE
     Enum<0u8>()
     Enum<1u8>()
-    false
+    true
     Tuple(
         Tuple(
             Array<Enum>(),
@@ -1068,17 +1022,11 @@ CREATE_NON_FUNGIBLE_RESOURCE
     Tuple(
         Enum<1u8>(
             Tuple(
-                Tuple(
-                    Enum<1u8>(
-                        Enum<0u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<0u8>()
                 ),
-                Tuple(
-                    Enum<1u8>(
-                        Enum<1u8>()
-                    ),
-                    true
+                Enum<1u8>(
+                    Enum<1u8>()
                 )
             )
         ),
@@ -1098,17 +1046,18 @@ CREATE_NON_FUNGIBLE_RESOURCE
                     )
                 ),
                 true
-            ),
-            "description" => Tuple(
-                Enum<1u8>(
-                    Enum<0u8>(
-                        "A very innovative and important resource"
-                    )
-                ),
-                false
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>(
+            "metadata_setter" => Enum<1u8>(
+                Enum<0u8>()
+            ),
+            "metadata_setter_updater" => Enum<0u8>(),
+            "metadata_locker" => Enum<1u8>(
+                Enum<1u8>()
+            ),
+            "metadata_locker_updater" => Enum<0u8>()
+        )
     )
     Enum<0u8>()
 ;

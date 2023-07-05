@@ -6,7 +6,7 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "withdraw"
-    Address("resource_sim1nfhg2z5ay9uf29jwe2hjkv8qx5uqkzuk7jpyxzggazpazmtjed8le6")
+    Address("resource_sim1ngm8wfjnfmmfv37sm9xdu8tqhx9kgpkwx8h222rxgmp3vmt57l2sva")
     Decimal("1")
 ;
 CALL_METHOD

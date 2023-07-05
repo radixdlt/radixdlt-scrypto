@@ -16,52 +16,36 @@ CALL_METHOD
 # Creating a new resource with a divisibility of 18 and a name of `MyResource`. The resource has 
 # default resource behavior where it can be withdrawn and deposited by anybody.
 CREATE_FUNGIBLE_RESOURCE
-    Enum<0u8>()
-    false # Track Total Supply
-    18u8
-    # This tuple of enums defines the modifiable behaviors of the resource. Each element in
-    # the tuple defines a different resource behavior. As an example, the first element in this tuple
-    # defines that the resource is mintable.
+    # Owner role - This gets metadata permissions, and is the default for other permissions
+    # Can set as Enum<OwnerRole::Fixed>(access_rule)  or Enum<OwnerRole::Updatable>(access_rule)
+    Enum<OwnerRole::None>()
+    true             # Whether the engine should track supply (avoid for massively parallelizable tokens)
+    18u8             # Divisibility (between 0u8 and 18u8)
     Tuple(
-        Enum<Option::Some>(                                                     # Specify Mint Roles
+        Some(         # Mint Roles (if None: defaults to DenyAll, DenyAll)
             Tuple(
-                Tuple(                                                          # Minter Role
-                    Enum<Option::Some>(Enum<AccessRule::AllowAll>()),           # Minter Role Rule
-                    true                                                        # Temporary boolean, ignore as this will be removed soon
-                ),
-                Tuple(                                                          # Minter Updater Role
-                    Enum<Option::Some>(Enum<AccessRule::DenyAll>()),            # Mintoer Updater Role Rule
-                    true                                                        # Temporary boolean, ignore as this will be removed soon
-                )
+                Some(Enum<AccessRule::AllowAll>()),  # Minter (if None: defaults to Owner)
+                Some(Enum<AccessRule::DenyAll>())    # Minter Updater (if None: defaults to Owner)
             )
         ),
-        Enum<0u8>(),                                                            # Use Default Burn Roles
-        Enum<0u8>(),                                                            # Use Default Freeze Roles
-        Enum<0u8>(),                                                            # Use Default Recall Roles
-        Enum<0u8>(),                                                            # Use Default Withdraw Roles
-        Enum<0u8>()                                                             # Use Default Deposit Roles
+        None,        # Burn Roles (if None: defaults to DenyAll, DenyAll)
+        None,        # Freeze Roles (if None: defaults to DenyAll, DenyAll)
+        None,        # Recall Roles (if None: defaults to DenyAll, DenyAll)
+        None,        # Withdraw Roles (if None: defaults to AllowAll, DenyAll)
+        None         # Deposit Roles (if None: defaults to AllowAll, DenyAll)
     )
-    Tuple(
-        Map<String, Tuple>(
+    Tuple(                                                                   # Metadata initialization
+        Map<String, Tuple>(                                                  # Initial metadata values
             "name" => Tuple(
-                Enum<Option::Some>(
-                    Enum<Metadata::String>("MyResource")                               # Resource Name
-                ),
-                true                                                                   # Locked Resource Name
-            ),
-            "symbol" => Tuple(
-                Enum<Option::Some>(
-                    Enum<Metadata::String>("RSRC"),                                   # Resource Symbol
-                ),
-                true                                                                   # Locked Resource Symbol
-            ),
-            "description" => Tuple(
-                Enum<Option::Some>(
-                    Enum<Metadata::String>("A very innovative and important resource")    # Resource Description
-                ),
-                true                                                                      # Locked Resource Description
+                Some(Enum<Metadata::String>("MyResource")),    # Resource Name
+                true                                                         # Locked
             )
         ),
-        Map<String, Tuple>()
+        Map<String, Enum>(                                                   # Metadata roles
+            "metadata_setter" => Some(Enum<AccessRule::AllowAll>()),         # Metadata setter role
+            "metadata_setter_updater" => None,                               # Metadata setter updater role as None defaults to OWNER
+            "metadata_locker" => Some(Enum<AccessRule::DenyAll>()),          # Metadata locker role
+            "metadata_locker_updater" => None                                # Metadata locker updater role as None defaults to OWNER
+        )
     )
-    Enum<0u8>();                                                                         # No Address Reservation
+    None;             # No Address Reservation
