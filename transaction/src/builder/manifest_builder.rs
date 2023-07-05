@@ -1415,22 +1415,6 @@ impl ManifestBuilder {
     }
 
     /// Creates resource proof from an account.
-    pub fn create_proof_from_account(
-        &mut self,
-        account: ComponentAddress,
-        resource_address: ResourceAddress,
-    ) -> &mut Self {
-        let args = to_manifest_value_and_unwrap!(&AccountCreateProofInput { resource_address });
-
-        self.add_instruction(InstructionV1::CallMethod {
-            address: account.into(),
-            method_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
-            args,
-        })
-        .0
-    }
-
-    /// Creates resource proof from an account.
     pub fn create_proof_from_account_of_amount(
         &mut self,
         account: ComponentAddress,

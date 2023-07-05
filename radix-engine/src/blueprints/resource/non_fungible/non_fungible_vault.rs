@@ -182,13 +182,6 @@ impl NonFungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        Self::create_proof_of_amount(receiver, Decimal::ONE, api)
-    }
-
     pub fn create_proof_of_amount<Y>(
         receiver: &NodeId,
         amount: Decimal,

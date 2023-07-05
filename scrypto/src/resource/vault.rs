@@ -35,10 +35,6 @@ pub trait ScryptoVault {
 
     fn is_empty(&self) -> bool;
 
-    fn create_proof(&self) -> Self::ProofType;
-
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType;
-
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self::BucketType;
 
     fn take_all(&mut self) -> Self::BucketType;
@@ -62,6 +58,8 @@ pub trait ScryptoFungibleVault {
     fn lock_fee<A: Into<Decimal>>(&mut self, amount: A);
 
     fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A);
+
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> FungibleProof;
 }
 
 pub trait ScryptoNonFungibleVault {
@@ -146,33 +144,6 @@ impl ScryptoVault for Vault {
         ResourceAddress::try_from(info.get_outer_object().as_ref()).unwrap()
     }
 
-    fn create_proof(&self) -> Proof {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                VAULT_CREATE_PROOF_IDENT,
-                scrypto_encode(&VaultCreateProofInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
-    }
-
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
-                scrypto_encode(&VaultCreateProofOfAmountInput {
-                    amount: amount.into(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
-    }
-
     /// Takes some amount of resource from this vault into a bucket.
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
         let mut env = ScryptoEnv;
@@ -216,7 +187,8 @@ impl ScryptoVault for Vault {
 
     /// Uses resources in this vault as authorization for an operation.
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        LocalAuthZone::push(self.create_proof());
+        // FIXME: accept amount or non-fungibles
+        // LocalAuthZone::push(self.create_proof());
         let output = f();
         LocalAuthZone::pop().drop();
         output
@@ -289,14 +261,6 @@ impl ScryptoVault for FungibleVault {
         self.0.is_empty()
     }
 
-    fn create_proof(&self) -> Self::ProofType {
-        FungibleProof(self.0.create_proof())
-    }
-
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType {
-        FungibleProof(self.0.create_proof_of_amount(amount))
-    }
-
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self::BucketType {
         FungibleBucket(self.0.take(amount))
     }
@@ -367,6 +331,21 @@ impl ScryptoFungibleVault for FungibleVault {
             )
             .unwrap();
     }
+
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> FungibleProof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0 .0.as_node_id(),
+                VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
+                scrypto_encode(&VaultCreateProofOfAmountInput {
+                    amount: amount.into(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
 }
 
 //====================
@@ -403,14 +382,6 @@ impl ScryptoVault for NonFungibleVault {
 
     fn is_empty(&self) -> bool {
         self.0.is_empty()
-    }
-
-    fn create_proof(&self) -> Self::ProofType {
-        NonFungibleProof(self.0.create_proof())
-    }
-
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType {
-        NonFungibleProof(self.0.create_proof_of_amount(amount))
     }
 
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self::BucketType {

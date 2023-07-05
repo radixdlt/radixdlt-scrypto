@@ -26,10 +26,6 @@ pub trait ScryptoBucket {
 
     fn burn(self);
 
-    fn create_proof(&self) -> Self::ProofType;
-
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType;
-
     fn create_proof_of_all(&self) -> Self::ProofType;
 
     fn resource_address(&self) -> ResourceAddress;
@@ -59,7 +55,9 @@ pub trait ScryptoBucket {
     fn as_non_fungible(&self) -> NonFungibleBucket;
 }
 
-pub trait ScryptoFungibleBucket {}
+pub trait ScryptoFungibleBucket {
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> FungibleProof;
+}
 
 pub trait ScryptoNonFungibleBucket {
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
@@ -114,33 +112,6 @@ impl ScryptoBucket for Bucket {
     fn burn(self) {
         let manager = self.resource_manager();
         manager.burn(self);
-    }
-
-    fn create_proof(&self) -> Proof {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                BUCKET_CREATE_PROOF_IDENT,
-                scrypto_encode(&BucketCreateProofInput {}).unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
-    }
-
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Proof {
-        let mut env = ScryptoEnv;
-        let rtn = env
-            .call_method(
-                self.0.as_node_id(),
-                BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
-                scrypto_encode(&BucketCreateProofOfAmountInput {
-                    amount: amount.into(),
-                })
-                .unwrap(),
-            )
-            .unwrap();
-        scrypto_decode(&rtn).unwrap()
     }
 
     fn create_proof_of_all(&self) -> Proof {
@@ -233,7 +204,8 @@ impl ScryptoBucket for Bucket {
 
     /// Uses resources in this bucket as authorization for an operation.
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        LocalAuthZone::push(self.create_proof());
+        // FIXME: accept amount or non-fungibles
+        // LocalAuthZone::push(self.create_proof());
         let output = f();
         LocalAuthZone::pop().drop();
         output
@@ -283,14 +255,6 @@ impl ScryptoBucket for FungibleBucket {
         self.0.burn()
     }
 
-    fn create_proof(&self) -> Self::ProofType {
-        FungibleProof(self.0.create_proof())
-    }
-
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType {
-        FungibleProof(self.0.create_proof_of_amount(amount))
-    }
-
     fn create_proof_of_all(&self) -> Self::ProofType {
         FungibleProof(self.0.create_proof_of_all())
     }
@@ -336,7 +300,22 @@ impl ScryptoBucket for FungibleBucket {
     }
 }
 
-impl ScryptoFungibleBucket for FungibleBucket {}
+impl ScryptoFungibleBucket for FungibleBucket {
+    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> FungibleProof {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0 .0.as_node_id(),
+                BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
+                scrypto_encode(&BucketCreateProofOfAmountInput {
+                    amount: amount.into(),
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+}
 
 //====================
 // Non-Fungible bucket
@@ -362,14 +341,6 @@ impl ScryptoBucket for NonFungibleBucket {
 
     fn burn(self) {
         self.0.burn()
-    }
-
-    fn create_proof(&self) -> Self::ProofType {
-        NonFungibleProof(self.0.create_proof())
-    }
-
-    fn create_proof_of_amount<A: Into<Decimal>>(&self, amount: A) -> Self::ProofType {
-        NonFungibleProof(self.0.create_proof_of_amount(amount))
     }
 
     fn create_proof_of_all(&self) -> Self::ProofType {

@@ -502,23 +502,6 @@ impl AccountBlueprint {
         Ok(bucket)
     }
 
-    pub fn create_proof<Y>(
-        resource_address: ResourceAddress,
-        api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let proof = Self::get_vault(
-            resource_address,
-            |vault, api| vault.create_proof(api),
-            false,
-            api,
-        )?;
-
-        Ok(proof)
-    }
-
     pub fn create_proof_of_amount<Y>(
         resource_address: ResourceAddress,
         amount: Decimal,
