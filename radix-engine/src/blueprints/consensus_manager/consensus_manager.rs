@@ -241,8 +241,8 @@ impl ConsensusManagerBlueprint {
                 true,
                 NonFungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(require(global_id)), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(require(global_id));
+                        minter_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },

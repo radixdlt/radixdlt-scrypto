@@ -24,6 +24,7 @@ pub use resource::*;
 pub use resource_manager::ResourceFeature::*;
 pub use resource_manager::*;
 pub use resource_type::*;
+use sbor::Sbor;
 pub use vault::*;
 pub use worktop::*;
 
@@ -40,8 +41,16 @@ pub fn check_fungible_amount(amount: &Decimal, divisibility: u8) -> bool {
         && amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into())) == BnumI256::from(0)
 }
 
-pub fn check_non_fungible_amount(amount: &Decimal) -> bool {
-    !amount.is_negative() && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
+pub fn check_non_fungible_amount(amount: &Decimal) -> Result<u32, ()> {
+    // Integers between [0..u32::MAX]
+    if amount >= &Decimal::from(u32::MIN)
+        && amount <= &Decimal::from(u32::MAX)
+        && amount.0 % BnumI256::from(10i128.pow(18)) == BnumI256::from(0)
+    {
+        Ok(u32::from_str(&amount.to_string()).unwrap())
+    } else {
+        Err(())
+    }
 }
 
 #[macro_export]
@@ -64,8 +73,8 @@ macro_rules! resource_roles {
         impl $roles_struct<RoleDefinition> {
             pub fn to_role_init(self) -> $crate::blueprints::resource::RolesInit {
                 let mut roles = $crate::blueprints::resource::RolesInit::new();
-                roles.set_entry($actor_field_name, self.$actor_field);
-                roles.set_entry($updater_field_name, self.$updater_field);
+                roles.define_role($actor_field_name, self.$actor_field);
+                roles.define_role($updater_field_name, self.$updater_field);
                 roles
             }
         }
@@ -73,8 +82,8 @@ macro_rules! resource_roles {
         impl Default for $roles_struct<RoleDefinition> {
             fn default() -> Self {
                 Self {
-                    $actor_field: RoleDefinition::locked($default_rule),
-                    $updater_field: RoleDefinition::locked(AccessRule::DenyAll),
+                    $actor_field: Some($default_rule),
+                    $updater_field: Some(AccessRule::DenyAll),
                 }
             }
         }
@@ -91,8 +100,8 @@ resource_roles!(
 );
 #[macro_export]
 macro_rules! mint_roles {
-    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some($crate::internal_roles_struct!(MintRoles, $($role => $rule, $locked;)*))
+    {$($role:ident => $rule:expr;)*} => ({
+        Some($crate::internal_roles_struct!(MintRoles, $($role => $rule;)*))
     });
 }
 
@@ -106,8 +115,8 @@ resource_roles!(
 );
 #[macro_export]
 macro_rules! burn_roles {
-    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some($crate::internal_roles_struct!(BurnRoles, $($role => $rule, $locked;)*))
+    {$($role:ident => $rule:expr;)*} => ({
+        Some($crate::internal_roles_struct!(BurnRoles, $($role => $rule;)*))
     });
 }
 
@@ -121,8 +130,8 @@ resource_roles!(
 );
 #[macro_export]
 macro_rules! recall_roles {
-    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some($crate::internal_roles_struct!(RecallRoles, $($role => $rule, $locked;)*))
+    {$($role:ident => $rule:expr;)*} => ({
+        Some($crate::internal_roles_struct!(RecallRoles, $($role => $rule;)*))
     });
 }
 
@@ -136,8 +145,8 @@ resource_roles!(
 );
 #[macro_export]
 macro_rules! freeze_roles {
-    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some($crate::internal_roles_struct!(FreezeRoles, $($role => $rule, $locked;)*))
+    {$($role:ident => $rule:expr;)*} => ({
+        Some($crate::internal_roles_struct!(FreezeRoles, $($role => $rule;)*))
     });
 }
 
@@ -151,8 +160,8 @@ resource_roles!(
 );
 #[macro_export]
 macro_rules! withdraw_roles {
-    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some($crate::internal_roles_struct!(WithdrawRoles, $($role => $rule, $locked;)*))
+    {$($role:ident => $rule:expr;)*} => ({
+        Some($crate::internal_roles_struct!(WithdrawRoles, $($role => $rule;)*))
     });
 }
 
@@ -166,8 +175,8 @@ resource_roles!(
 );
 #[macro_export]
 macro_rules! deposit_roles {
-    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some($crate::internal_roles_struct!(DepositRoles, $($role => $rule, $locked;)*))
+    {$($role:ident => $rule:expr;)*} => ({
+        Some($crate::internal_roles_struct!(DepositRoles, $($role => $rule;)*))
     });
 }
 
@@ -181,7 +190,34 @@ resource_roles!(
 );
 #[macro_export]
 macro_rules! non_fungible_data_update_roles {
-    {$($role:ident => $rule:expr, $locked:ident;)*} => ({
-        Some($crate::internal_roles_struct!(NonFungibleDataUpdateRoles, $($role => $rule, $locked;)*))
+    {$($role:ident => $rule:expr;)*} => ({
+        Some($crate::internal_roles_struct!(NonFungibleDataUpdateRoles, $($role => $rule;)*))
     });
+}
+
+/// Define the withdraw strategy when request amount does not match underlying
+/// resource divisibility.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
+pub enum WithdrawStrategy {
+    Exact,
+    Rounded(RoundingMode),
+}
+
+pub trait ForWithdrawal {
+    fn for_withdrawal(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal;
+}
+
+impl ForWithdrawal for Decimal {
+    fn for_withdrawal(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal {
+        match withdraw_strategy {
+            WithdrawStrategy::Exact => self.clone(),
+            WithdrawStrategy::Rounded(mode) => self.round(divisibility, mode),
+        }
+    }
+}
+
+impl Default for WithdrawStrategy {
+    fn default() -> Self {
+        Self::Exact
+    }
 }

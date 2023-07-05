@@ -288,8 +288,8 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 false,
                 NonFungibleResourceRoles {
                     recall_roles: recall_roles! {
-                        recaller => rule!(allow_all), locked;
-                        recaller_updater => rule!(deny_all), locked;
+                        recaller => rule!(allow_all);
+                        recaller_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },
@@ -441,12 +441,12 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
                 18,
                 FungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(allow_all), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(deny_all);
                     },
                     burn_roles: burn_roles! {
-                        burner => rule!(allow_all), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => rule!(allow_all);
+                        burner_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },
@@ -527,12 +527,12 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                 false,
                 NonFungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(allow_all), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(deny_all);
                     },
                     burn_roles: burn_roles! {
-                        burner => rule!(allow_all), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => rule!(allow_all);
+                        burner_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },
@@ -1429,16 +1429,16 @@ fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress 
             18,
             FungibleResourceRoles {
                 mint_roles: mint_roles! {
-                    minter => rule!(allow_all), locked;
-                    minter_updater => rule!(deny_all), locked;
+                    minter => rule!(allow_all);
+                    minter_updater => rule!(deny_all);
                 },
                 burn_roles: burn_roles! {
-                    burner => rule!(allow_all), locked;
-                    burner_updater => rule!(deny_all), locked;
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
                 },
                 recall_roles: recall_roles! {
-                    recaller => rule!(allow_all), locked;
-                    recaller_updater => rule!(deny_all), locked;
+                    recaller => rule!(allow_all);
+                    recaller_updater => rule!(deny_all);
                 },
                 ..Default::default()
             },

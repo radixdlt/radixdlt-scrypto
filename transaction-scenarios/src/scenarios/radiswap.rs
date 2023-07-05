@@ -71,8 +71,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 18,
                                 FungibleResourceRoles {
                                     burn_roles: burn_roles! {
-                                    burner => rule!(allow_all), locked;
-                                    burner_updater => rule!(deny_all), locked;
+                                    burner => rule!(allow_all);
+                                    burner_updater => rule!(deny_all);
                                 },
                                     ..Default::default()
                                 },
@@ -94,8 +94,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 18,
                                 FungibleResourceRoles {
                                     burn_roles: burn_roles! {
-                                    burner => rule!(allow_all), locked;
-                                    burner_updater => rule!(deny_all), locked;
+                                    burner => rule!(allow_all);
+                                    burner_updater => rule!(deny_all);
                                 },
                                     ..Default::default()
                                 },
@@ -117,8 +117,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 18,
                                 FungibleResourceRoles {
                                     burn_roles: burn_roles! {
-                                    burner => rule!(allow_all), locked;
-                                    burner_updater => rule!(deny_all), locked;
+                                    burner => rule!(allow_all);
+                                    burner_updater => rule!(deny_all);
                                 },
                                     ..Default::default()
                                 },
@@ -153,7 +153,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                 |core, config, state| {
                     let code = include_bytes!("../../../assets/radiswap.wasm");
                     let schema = manifest_decode::<PackageDefinition>(include_bytes!(
-                        "../../../assets/radiswap.schema"
+                        "../../../assets/radiswap.rpd"
                     ))
                     .unwrap();
                     core.next_transaction_with_faucet_lock_fee_fallible(

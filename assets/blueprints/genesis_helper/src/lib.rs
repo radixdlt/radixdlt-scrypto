@@ -261,12 +261,12 @@ mod genesis_helper {
 
             ResourceBuilder::new_fungible(owner_role)
                 .mint_roles(mint_roles! {
-                    minter => OWNER, updatable;
-                    minter_updater => OWNER, updatable;
+                    minter => OWNER;
+                    minter_updater => OWNER;
                 })
                 .burn_roles(burn_roles! {
-                    burner => OWNER, updatable;
-                    burner_updater => OWNER, updatable;
+                    burner => OWNER;
+                    burner_updater => OWNER;
                 })
                 .metadata(ModuleConfig {
                     init: metadata.into(),

@@ -79,7 +79,7 @@ impl ScenarioInstance for MetadataScenario {
 
                 let code = include_bytes!("../../../assets/metadata.wasm");
                 let schema = manifest_decode::<PackageDefinition>(include_bytes!(
-                    "../../../assets/metadata.schema"
+                    "../../../assets/metadata.rpd"
                 ))
                 .unwrap();
 
@@ -159,12 +159,12 @@ impl ScenarioInstance for MetadataScenario {
                                 18,
                                 FungibleResourceRoles {
                                     mint_roles: mint_roles! {
-                                        minter => rule!(deny_all), locked;
-                                        minter_updater => rule!(deny_all), locked;
+                                        minter => rule!(deny_all);
+                                        minter_updater => rule!(deny_all);
                                     },
                                     burn_roles: burn_roles! {
-                                        burner => rule!(allow_all), locked;
-                                        burner_updater => rule!(deny_all), locked;
+                                        burner => rule!(allow_all);
+                                        burner_updater => rule!(deny_all);
                                     },
                                     ..Default::default()
                                 },
@@ -198,12 +198,12 @@ impl ScenarioInstance for MetadataScenario {
                                 18,
                                 FungibleResourceRoles {
                                     mint_roles: mint_roles! {
-                                        minter => rule!(deny_all), locked;
-                                        minter_updater => rule!(deny_all), locked;
+                                        minter => rule!(deny_all);
+                                        minter_updater => rule!(deny_all);
                                     },
                                     burn_roles: burn_roles! {
-                                        burner => rule!(allow_all), locked;
-                                        burner_updater => rule!(deny_all), locked;
+                                        burner => rule!(allow_all);
+                                        burner_updater => rule!(deny_all);
                                     },
                                     ..Default::default()
                                 },

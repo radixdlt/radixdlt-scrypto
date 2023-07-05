@@ -40,16 +40,16 @@ mod basic_flash_loan {
                     }
                 })
                 .mint_roles(mint_roles! {
-                    minter => OWNER, locked;
-                    minter_updater => rule!(deny_all), locked;
+                    minter => OWNER;
+                    minter_updater => rule!(deny_all);
                 })
                 .burn_roles(burn_roles! {
-                    burner => OWNER, locked;
-                    burner_updater => rule!(deny_all), locked;
+                    burner => OWNER;
+                    burner_updater => rule!(deny_all);
                 })
                 .deposit_roles(deposit_roles! {
-                    depositor => rule!(deny_all), locked;
-                    depositor_updater => rule!(deny_all), locked;
+                    depositor => rule!(deny_all);
+                    depositor_updater => rule!(deny_all);
                 })
                 .create_with_no_initial_supply();
 

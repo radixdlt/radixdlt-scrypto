@@ -54,12 +54,12 @@ impl OneResourcePoolBlueprint {
                 18,
                 FungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(require(component_caller_badge.clone())), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(require(component_caller_badge.clone()));
+                        minter_updater => rule!(deny_all);
                     },
                     burn_roles: burn_roles! {
-                        burner => rule!(require(component_caller_badge.clone())), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => rule!(require(component_caller_badge.clone()));
+                        burner_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },
@@ -266,6 +266,7 @@ impl OneResourcePoolBlueprint {
 
     pub fn protected_withdraw<Y>(
         amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
     ) -> Result<OneResourcePoolProtectedWithdrawOutput, RuntimeError>
     where
@@ -273,10 +274,18 @@ impl OneResourcePoolBlueprint {
     {
         let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
-        let bucket = substate.vault.take(amount, api)?;
+        let bucket = substate
+            .vault
+            .take_advanced(amount, withdraw_strategy, api)?;
         api.field_lock_release(handle)?;
+        let withdrawn_amount = bucket.amount(api)?;
 
-        Runtime::emit_event(api, WithdrawEvent { amount })?;
+        Runtime::emit_event(
+            api,
+            WithdrawEvent {
+                amount: withdrawn_amount,
+            },
+        )?;
 
         Ok(bucket)
     }
@@ -353,10 +362,7 @@ impl OneResourcePoolBlueprint {
         if pool_resource_divisibility == 18 {
             amount_owed
         } else {
-            amount_owed.round(
-                pool_resource_divisibility as u32,
-                RoundingMode::TowardsNegativeInfinity,
-            )
+            amount_owed.round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
         }
     }
 

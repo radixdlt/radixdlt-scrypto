@@ -1095,12 +1095,12 @@ impl ValidatorCreator {
             18,
             FungibleResourceRoles {
                 mint_roles: mint_roles! {
-                    minter => rule!(require(global_caller(validator_address))), locked;
-                    minter_updater => rule!(deny_all), locked;
+                    minter => rule!(require(global_caller(validator_address)));
+                    minter_updater => rule!(deny_all);
                 },
                 burn_roles: burn_roles! {
-                    burner => rule!(require(global_caller(validator_address))), locked;
-                    burner_updater => rule!(deny_all), locked;
+                    burner => rule!(require(global_caller(validator_address)));
+                    burner_updater => rule!(deny_all);
                 },
                 ..Default::default()
             },
@@ -1131,12 +1131,12 @@ impl ValidatorCreator {
             true,
             NonFungibleResourceRoles {
                 mint_roles: mint_roles! {
-                    minter => rule!(require(global_caller(validator_address))), locked;
-                    minter_updater => rule!(deny_all), locked;
+                    minter => rule!(require(global_caller(validator_address)));
+                    minter_updater => rule!(deny_all);
                 },
                 burn_roles: burn_roles! {
-                    burner => rule!(require(global_caller(validator_address))), locked;
-                    burner_updater => rule!(deny_all), locked;
+                    burner => rule!(require(global_caller(validator_address)));
+                    burner_updater => rule!(deny_all);
                 },
                 ..Default::default()
             },

@@ -90,8 +90,8 @@ mod bucket_test {
             ))))
             .divisibility(DIVISIBILITY_MAXIMUM)
             .withdraw_roles(withdraw_roles! {
-                withdrawer => OWNER, locked;
-                withdrawer_updater => rule!(deny_all), locked;
+                withdrawer => OWNER;
+                withdrawer_updater => rule!(deny_all);
             })
             .mint_initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);
@@ -114,8 +114,8 @@ mod bucket_test {
             ))))
             .divisibility(DIVISIBILITY_MAXIMUM)
             .burn_roles(burn_roles! {
-                burner => OWNER, locked;
-                burner_updater => rule!(deny_all), locked;
+                burner => OWNER;
+                burner_updater => rule!(deny_all);
             })
             .mint_initial_supply(5);
             badge.authorize(|| bucket.burn());
@@ -129,8 +129,8 @@ mod bucket_test {
             let mut bucket1 = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .burn_roles(burn_roles! {
-                    burner => rule!(allow_all), locked;
-                    burner_updater => rule!(deny_all), locked;
+                    burner => rule!(allow_all);
+                    burner_updater => rule!(deny_all);
                 })
                 .mint_initial_supply(5);
             let bucket2 = bucket1.take(2);
@@ -164,7 +164,7 @@ mod bucket_test {
                     }
                 })
                 .mint_initial_supply(1u32);
-            bucket.create_proof();
+            let _ = bucket.create_proof();
 
             Self {
                 vault: Vault::with_bucket(bucket),
@@ -177,7 +177,7 @@ mod bucket_test {
         pub fn drop_locked_non_fungible_bucket() {
             let bucket = ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
                 .mint_initial_supply([MyData {}]);
-            bucket.create_proof();
+            let _ = bucket.create_proof();
 
             Self {
                 vault: Vault::with_bucket(bucket),

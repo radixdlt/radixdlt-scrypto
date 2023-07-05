@@ -21,8 +21,8 @@ mod resource_test {
                         }
                     })
                     .mint_roles(mint_roles! {
-                        minter => rule!(allow_all), updatable;
-                        minter_updater => rule!(allow_all), updatable;
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(allow_all);
                     })
                     .create_with_no_initial_supply();
 
@@ -43,12 +43,12 @@ mod resource_test {
                 }
             })
             .mint_roles(mint_roles! {
-                minter => OWNER, locked;
-                minter_updater => rule!(deny_all), locked;
+                minter => OWNER;
+                minter_updater => rule!(deny_all);
             })
             .burn_roles(burn_roles! {
-                burner => OWNER, locked;
-                burner_updater => rule!(deny_all), locked;
+                burner => OWNER;
+                burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
             (badge, resource_manager)
@@ -71,12 +71,12 @@ mod resource_test {
                 }
             })
             .mint_roles(mint_roles! {
-                minter => OWNER, locked;
-                minter_updater => rule!(deny_all), locked;
+                minter => OWNER;
+                minter_updater => rule!(deny_all);
             })
             .burn_roles(burn_roles! {
-                burner => OWNER, locked;
-                burner_updater => rule!(deny_all), locked;
+                burner => OWNER;
+                burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
             let tokens = badge.authorize(|| resource_manager.mint(amount));
@@ -122,12 +122,12 @@ mod resource_test {
                 }
             })
             .mint_roles(mint_roles! {
-                minter => OWNER, locked;
-                minter_updater => rule!(deny_all), locked;
+                minter => OWNER;
+                minter_updater => rule!(deny_all);
             })
             .burn_roles(burn_roles! {
-                burner => OWNER, locked;
-                burner_updater => rule!(deny_all), locked;
+                burner => OWNER;
+                burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
             (badge, resource_manager)
@@ -203,6 +203,118 @@ mod auth_resource {
 
         pub fn burn(&self, bucket: Bucket) {
             bucket.burn();
+        }
+    }
+}
+
+#[blueprint]
+mod rounding {
+    struct RoundingTest {
+        vault: Vault,
+    }
+
+    impl RoundingTest {
+        pub fn fungible_resource_amount_for_withdrawal() -> Bucket {
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .divisibility(2)
+                .mint_initial_supply(100);
+            let manager = bucket.resource_manager();
+            assert_eq!(
+                manager.amount_for_withdrawal(dec!("1.515"), WithdrawStrategy::Exact),
+                dec!("1.515")
+            );
+            assert_eq!(
+                manager.amount_for_withdrawal(
+                    dec!("1.515"),
+                    WithdrawStrategy::Rounded(RoundingMode::ToZero)
+                ),
+                dec!("1.51")
+            );
+            assert_eq!(
+                manager.amount_for_withdrawal(
+                    dec!("1.515"),
+                    WithdrawStrategy::Rounded(RoundingMode::ToNearestMidpointToEven)
+                ),
+                dec!("1.52")
+            );
+            bucket
+        }
+
+        pub fn non_fungible_resource_amount_for_withdrawal() -> Bucket {
+            let bucket = ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                .mint_initial_supply(vec![(
+                    0u64.into(),
+                    TestNFData {
+                        name: "name".to_string(),
+                        available: false,
+                    },
+                )]);
+            let manager = bucket.resource_manager();
+            assert_eq!(
+                manager.amount_for_withdrawal(dec!("1.515"), WithdrawStrategy::Exact),
+                dec!("1.515")
+            );
+            assert_eq!(
+                manager.amount_for_withdrawal(
+                    dec!("1.515"),
+                    WithdrawStrategy::Rounded(RoundingMode::ToZero)
+                ),
+                dec!("1")
+            );
+            assert_eq!(
+                manager.amount_for_withdrawal(
+                    dec!("1.515"),
+                    WithdrawStrategy::Rounded(RoundingMode::ToNearestMidpointToEven)
+                ),
+                dec!("2")
+            );
+            bucket
+        }
+
+        pub fn fungible_resource_take_advanced() {
+            let mut bucket = Self::fungible_resource_amount_for_withdrawal();
+            let bucket2 = bucket.take_advanced(
+                dec!("1.231"),
+                WithdrawStrategy::Rounded(RoundingMode::ToZero),
+            );
+            assert_eq!(bucket2.amount(), dec!("1.23"));
+            bucket.put(bucket2);
+
+            let mut vault = Vault::with_bucket(bucket);
+            let bucket2 = vault.take_advanced(
+                dec!("1.231"),
+                WithdrawStrategy::Rounded(RoundingMode::ToZero),
+            );
+            assert_eq!(bucket2.amount(), dec!("1.23"));
+            vault.put(bucket2);
+
+            Self { vault }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
+        }
+
+        pub fn non_fungible_resource_take_advanced() {
+            let mut bucket = Self::non_fungible_resource_amount_for_withdrawal();
+            let bucket2 = bucket.take_advanced(
+                dec!("1.231"),
+                WithdrawStrategy::Rounded(RoundingMode::ToZero),
+            );
+            assert_eq!(bucket2.amount(), dec!("1"));
+            bucket.put(bucket2);
+
+            let mut vault = Vault::with_bucket(bucket);
+            let bucket2 = vault.take_advanced(
+                dec!("1.231"),
+                WithdrawStrategy::Rounded(RoundingMode::ToZero),
+            );
+            assert_eq!(bucket2.amount(), dec!("1"));
+            vault.put(bucket2);
+
+            Self { vault }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
         }
     }
 }

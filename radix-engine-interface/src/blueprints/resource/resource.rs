@@ -72,11 +72,6 @@ impl LiquidFungibleResource {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct LiquidNonFungibleVault {
-    pub amount: Decimal,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct LiquidNonFungibleResource {
     /// The total non-fungible ids.
     pub ids: BTreeSet<NonFungibleLocalId>,
@@ -108,24 +103,15 @@ impl LiquidNonFungibleResource {
     }
 
     pub fn put(&mut self, other: LiquidNonFungibleResource) -> Result<(), ResourceError> {
-        // update liquidity
         self.ids.extend(other.ids);
         Ok(())
     }
 
-    pub fn take_by_amount(
-        &mut self,
-        amount_to_take: Decimal,
-    ) -> Result<LiquidNonFungibleResource, ResourceError> {
-        // deduct from liquidity pool
-        if Decimal::from(self.ids.len()) < amount_to_take {
+    pub fn take_by_amount(&mut self, n: u32) -> Result<LiquidNonFungibleResource, ResourceError> {
+        if self.ids.len() < n as usize {
             return Err(ResourceError::InsufficientBalance);
         }
-        let n: usize = amount_to_take
-            .to_string()
-            .parse()
-            .expect("Failed to convert amount to usize");
-        let ids: BTreeSet<NonFungibleLocalId> = self.ids.iter().take(n).cloned().collect();
+        let ids: BTreeSet<NonFungibleLocalId> = self.ids.iter().take(n as usize).cloned().collect();
         self.take_by_ids(&ids)
     }
 
@@ -142,8 +128,9 @@ impl LiquidNonFungibleResource {
     }
 
     pub fn take_all(&mut self) -> LiquidNonFungibleResource {
-        self.take_by_amount(self.amount())
-            .expect("Take all from `Resource` should not fail")
+        LiquidNonFungibleResource {
+            ids: core::mem::replace(&mut self.ids, btreeset!()),
+        }
     }
 }
 
@@ -197,4 +184,9 @@ impl LockedNonFungibleResource {
     pub fn ids(&self) -> BTreeSet<NonFungibleLocalId> {
         self.ids.keys().cloned().collect()
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct LiquidNonFungibleVault {
+    pub amount: Decimal,
 }

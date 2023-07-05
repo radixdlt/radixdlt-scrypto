@@ -34,7 +34,7 @@ fn bench_radiswap(c: &mut Criterion) {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
-        manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
+        manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap(),
         btreemap!(),
         OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -46,7 +46,7 @@ fn bench_radiswap(c: &mut Criterion) {
         }
         test_runner.publish_package(
             include_bytes!("../../assets/radiswap.wasm").to_vec(),
-            manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
+            manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap(),
             btreemap!(),
             OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
         );

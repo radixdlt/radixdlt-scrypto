@@ -178,16 +178,16 @@ pub trait UpdateAuthBuilder {
     /// // Sets the resource to be mintable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .mint_roles(mint_roles! {
-    ///         minter => rule!(require(resource_address)), locked;
-    ///         minter_updater => rule!(deny_all), locked;
+    ///         minter => rule!(require(resource_address));
+    ///         minter_updater => rule!(deny_all);
     ///     });
     ///
     /// # let resource_address = XRD;
     /// // Sets the resource to not be mintable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .mint_roles(mint_roles! {
-    ///         minter => rule!(deny_all), updatable;
-    ///         minter_updater => rule!(require(resource_address)), locked;
+    ///         minter => rule!(deny_all);
+    ///         minter_updater => rule!(require(resource_address));
     ///    });
     /// ```
     fn mint_roles(self, mint_roles: Option<MintRoles<RoleDefinition>>) -> Self;
@@ -207,16 +207,16 @@ pub trait UpdateAuthBuilder {
     /// // Sets the resource to be burnable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .burn_roles(burn_roles! {
-    ///        burner => rule!(require(resource_address)), locked;
-    ///        burner_updater => rule!(deny_all), locked;
+    ///        burner => rule!(require(resource_address));
+    ///        burner_updater => rule!(deny_all);
     ///    });
     ///
     /// # let resource_address = XRD;
     /// // Sets the resource to be freely burnable, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .burn_roles(burn_roles! {
-    ///        burner => rule!(allow_all), updatable;
-    ///        burner_updater => rule!(require(resource_address)), updatable;
+    ///        burner => rule!(allow_all);
+    ///        burner_updater => rule!(require(resource_address));
     ///    });
     /// ```
     fn burn_roles(self, burn_roles: Option<BurnRoles<RoleDefinition>>) -> Self;
@@ -235,16 +235,16 @@ pub trait UpdateAuthBuilder {
     /// // Sets the resource to be recallable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .recall_roles(recall_roles! {
-    ///        recaller => rule!(require(resource_address)), locked;
-    ///        recaller_updater => rule!(deny_all), locked;
+    ///        recaller => rule!(require(resource_address));
+    ///        recaller_updater => rule!(deny_all);
     ///    });
     ///
     /// # let resource_address = XRD;
     /// // Sets the resource to not be recallable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .recall_roles(recall_roles! {
-    ///        recaller => rule!(deny_all), updatable;
-    ///        recaller_updater => rule!(require(resource_address)), updatable;
+    ///        recaller => rule!(deny_all);
+    ///        recaller_updater => rule!(require(resource_address));
     ///    });
     /// ```
     fn recall_roles(self, recall_roles: Option<RecallRoles<RoleDefinition>>) -> Self;
@@ -264,16 +264,16 @@ pub trait UpdateAuthBuilder {
     /// // Sets the resource to be freezeable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .freeze_roles(freeze_roles! {
-    ///        freezer => rule!(require(resource_address)), locked;
-    ///        freezer_updater => rule!(deny_all), locked;
+    ///        freezer => rule!(require(resource_address));
+    ///        freezer_updater => rule!(deny_all);
     ///    });
     ///
     /// # let resource_address = XRD;
     /// // Sets the resource to not be freezeable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .freeze_roles(freeze_roles! {
-    ///        freezer => rule!(deny_all), updatable;
-    ///        freezer_updater => rule!(require(resource_address)), updatable;
+    ///        freezer => rule!(deny_all);
+    ///        freezer_updater => rule!(require(resource_address));
     ///    });
     /// ```
     fn freeze_roles(self, freeze_roles: Option<FreezeRoles<RoleDefinition>>) -> Self;
@@ -293,16 +293,16 @@ pub trait UpdateAuthBuilder {
     /// // Sets the resource to be withdrawable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .withdraw_roles(withdraw_roles! {
-    ///        withdrawer => rule!(require(resource_address)), locked;
-    ///        withdrawer_updater => rule!(deny_all), locked;
+    ///        withdrawer => rule!(require(resource_address));
+    ///        withdrawer_updater => rule!(deny_all);
     ///    });
     ///
     /// # let resource_address = XRD;
     /// // Sets the resource to not be withdrawable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .withdraw_roles(withdraw_roles! {
-    ///        withdrawer => rule!(deny_all), updatable;
-    ///        withdrawer_updater => rule!(require(resource_address)), updatable;
+    ///        withdrawer => rule!(deny_all);
+    ///        withdrawer_updater => rule!(require(resource_address));
     ///    });
     /// ```
     fn withdraw_roles(self, withdraw_roles: Option<WithdrawRoles<RoleDefinition>>) -> Self;
@@ -321,16 +321,16 @@ pub trait UpdateAuthBuilder {
     /// // Sets the resource to be depositable with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .deposit_roles(deposit_roles! {
-    ///        depositor => rule!(require(resource_address)), locked;
-    ///        depositor_updater => rule!(deny_all), locked;
+    ///        depositor => rule!(require(resource_address));
+    ///        depositor_updater => rule!(deny_all);
     ///    });
     ///
     /// # let resource_address = XRD;
     /// // Sets the resource to not be depositable, but this is can be changed in future by the second rule
     /// ResourceBuilder::new_fungible(OwnerRole::None)
     ///    .deposit_roles(deposit_roles! {
-    ///        depositor => rule!(deny_all), locked;
-    ///        depositor_updater => rule!(require(resource_address)), locked;
+    ///        depositor => rule!(deny_all);
+    ///        depositor_updater => rule!(require(resource_address));
     ///    });
     /// ```
     fn deposit_roles(self, deposit_roles: Option<DepositRoles<RoleDefinition>>) -> Self;
@@ -427,16 +427,16 @@ impl<T: IsNonFungibleLocalId, D: NonFungibleData>
     /// // Permits the updating of non-fungible mutable data with a proof of a specific resource, and this is locked forever.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
     ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
-    ///        non_fungible_data_updater => rule!(require(resource_address)), locked;
-    ///        non_fungible_data_updater_updater => rule!(deny_all), locked;
+    ///        non_fungible_data_updater => rule!(require(resource_address));
+    ///        non_fungible_data_updater_updater => rule!(deny_all);
     ///    });
     ///
     /// # let resource_address = XRD;
     /// // Does not currently permit the updating of non-fungible mutable data, but this is can be changed in future by the second rule.
     /// ResourceBuilder::new_ruid_non_fungible::<NFData>(OwnerRole::None)
     ///    .non_fungible_data_update_roles(non_fungible_data_update_roles! {
-    ///        non_fungible_data_updater => rule!(deny_all), updatable;
-    ///        non_fungible_data_updater_updater => rule!(require(resource_address)), updatable;
+    ///        non_fungible_data_updater => rule!(deny_all);
+    ///        non_fungible_data_updater_updater => rule!(require(resource_address));
     ///    });
     /// ```
     pub fn non_fungible_data_update_roles(

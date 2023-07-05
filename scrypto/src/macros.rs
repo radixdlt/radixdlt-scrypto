@@ -139,7 +139,7 @@ macro_rules! include_schema {
             env!("CARGO_MANIFEST_DIR"),
             "/target/wasm32-unknown-unknown/release/",
             $bin_name,
-            ".schema"
+            ".rpd"
         ))
     };
     ($package_dir: expr, $bin_name: expr) => {
@@ -147,7 +147,7 @@ macro_rules! include_schema {
             $package_dir,
             "/target/wasm32-unknown-unknown/release/",
             $bin_name,
-            ".schema"
+            ".rpd"
         ))
     };
 }
@@ -550,8 +550,8 @@ macro_rules! component_royalties {
 /// Roles macro for main module
 #[macro_export]
 macro_rules! roles {
-    ( $($role:ident => $rule:expr, $locked:ident;)* ) => ({
-        internal_roles!(MethodRoles, $($role => $rule, $locked;)*)
+    ( $($role:ident => $rule:expr;)* ) => ({
+        internal_roles!(MethodRoles, $($role => $rule;)*)
     });
 }
 

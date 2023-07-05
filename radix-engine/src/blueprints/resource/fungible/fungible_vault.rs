@@ -33,19 +33,32 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::take_advanced(amount, WithdrawStrategy::Exact, api)
+    }
+
+    pub fn take_advanced<Y>(
+        amount: &Decimal,
+        withdraw_strategy: WithdrawStrategy,
+        api: &mut Y,
+    ) -> Result<Bucket, RuntimeError>
+    where
+        Y: KernelNodeApi + ClientApi<RuntimeError>,
+    {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
+        // Apply withdraw strategy
         let divisibility = Self::get_divisibility(api)?;
+        let amount = amount.for_withdrawal(divisibility, withdraw_strategy);
 
         // Check amount
-        if !check_fungible_amount(amount, divisibility) {
+        if !check_fungible_amount(&amount, divisibility) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::InvalidAmount),
             ));
         }
 
         // Take
-        let taken = FungibleVault::take(*amount, api)?;
+        let taken = Self::internal_take(amount, api)?;
 
         // Create node
         FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)
@@ -61,7 +74,7 @@ impl FungibleVaultBlueprint {
         let other_bucket = drop_fungible_bucket(bucket.0.as_node_id(), api)?;
 
         // Put
-        FungibleVault::put(other_bucket.liquid, api)?;
+        Self::internal_put(other_bucket.liquid, api)?;
 
         Ok(())
     }
@@ -70,7 +83,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let amount = FungibleVault::liquid_amount(api)? + FungibleVault::locked_amount(api)?;
+        let amount = Self::liquid_amount(api)? + Self::locked_amount(api)?;
 
         Ok(amount)
     }
@@ -148,7 +161,7 @@ impl FungibleVaultBlueprint {
             ));
         }
 
-        let taken = FungibleVault::take(amount, api)?;
+        let taken = Self::internal_take(amount, api)?;
 
         let bucket = FungibleResourceManagerBlueprint::create_bucket(taken.amount(), api)?;
 
@@ -216,13 +229,24 @@ impl FungibleVaultBlueprint {
             ));
         }
 
+        Self::lock_amount(amount, api)?;
+
         let proof_info = ProofMoveableSubstate { restricted: false };
-        let proof = FungibleVault::lock_amount(receiver, amount, api)?;
+        let proof_evidence = FungibleProofSubstate::new(
+            amount,
+            btreemap!(
+                LocalRef::Vault(Reference(receiver.clone().into())) => amount
+            ),
+        )
+        .map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e)))
+        })?;
+
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             vec![
                 scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
+                scrypto_encode(&proof_evidence).unwrap(),
             ],
         )?;
 
@@ -240,29 +264,66 @@ impl FungibleVaultBlueprint {
     }
 
     //===================
-    // Protected method
+    // Protected methods
     //===================
 
-    pub fn lock_amount<Y>(
-        receiver: &NodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    // protected method
+    pub fn lock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        FungibleVault::lock_amount(receiver, amount, api)?;
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            FungibleVaultField::LockedFungible.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
+        let max_locked = locked.amount();
+
+        // Take from liquid if needed
+        if amount > max_locked {
+            let delta = amount - max_locked;
+            Self::internal_take(delta, api)?;
+        }
+
+        // Increase lock count
+        locked.amounts.entry(amount).or_default().add_assign(1);
+        api.field_lock_write_typed(handle, &locked)?;
+
+        // Issue proof
         Ok(())
     }
 
+    // protected method
     pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        FungibleVault::unlock_amount(amount, api)?;
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            FungibleVaultField::LockedFungible.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
 
-        Ok(())
+        let max_locked = locked.amount();
+        let cnt = locked
+            .amounts
+            .remove(&amount)
+            .expect("Attempted to unlock an amount that is not locked");
+        if cnt > 1 {
+            locked.amounts.insert(amount, cnt - 1);
+        }
+
+        api.field_lock_write_typed(handle, &locked)?;
+
+        let delta = max_locked - locked.amount();
+        Self::internal_put(LiquidFungibleResource::new(delta), api)
     }
+
+    //===================
+    // Helper methods
+    //===================
 
     fn assert_not_frozen<Y>(flags: VaultFreezeFlags, api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -314,12 +375,8 @@ impl FungibleVaultBlueprint {
 
         Ok(())
     }
-}
 
-pub struct FungibleVault;
-
-impl FungibleVault {
-    pub fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    fn liquid_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -334,7 +391,7 @@ impl FungibleVault {
         Ok(amount)
     }
 
-    pub fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
+    fn locked_amount<Y>(api: &mut Y) -> Result<Decimal, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -349,7 +406,10 @@ impl FungibleVault {
         Ok(amount)
     }
 
-    pub fn take<Y>(amount: Decimal, api: &mut Y) -> Result<LiquidFungibleResource, RuntimeError>
+    fn internal_take<Y>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<LiquidFungibleResource, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -372,7 +432,7 @@ impl FungibleVault {
         Ok(taken)
     }
 
-    pub fn put<Y>(resource: LiquidFungibleResource, api: &mut Y) -> Result<(), RuntimeError>
+    fn internal_put<Y>(resource: LiquidFungibleResource, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -395,71 +455,5 @@ impl FungibleVault {
         Runtime::emit_event(api, event)?;
 
         Ok(())
-    }
-
-    // protected method
-    pub fn lock_amount<Y>(
-        receiver: &NodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<FungibleProofSubstate, RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            FungibleVaultField::LockedFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
-        let max_locked = locked.amount();
-
-        // Take from liquid if needed
-        if amount > max_locked {
-            let delta = amount - max_locked;
-            FungibleVault::take(delta, api)?;
-        }
-
-        // Increase lock count
-        locked.amounts.entry(amount).or_default().add_assign(1);
-        api.field_lock_write_typed(handle, &locked)?;
-
-        // Issue proof
-        Ok(FungibleProofSubstate::new(
-            amount,
-            btreemap!(
-                LocalRef::Vault(Reference(receiver.clone().into())) => amount
-            ),
-        )
-        .map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::ProofError(e)))
-        })?)
-    }
-
-    // protected method
-    pub fn unlock_amount<Y>(amount: Decimal, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            FungibleVaultField::LockedFungible.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
-
-        let max_locked = locked.amount();
-        let cnt = locked
-            .amounts
-            .remove(&amount)
-            .expect("Attempted to unlock an amount that is not locked");
-        if cnt > 1 {
-            locked.amounts.insert(amount, cnt - 1);
-        }
-
-        api.field_lock_write_typed(handle, &locked)?;
-
-        let delta = max_locked - locked.amount();
-        FungibleVault::put(LiquidFungibleResource::new(delta), api)
     }
 }

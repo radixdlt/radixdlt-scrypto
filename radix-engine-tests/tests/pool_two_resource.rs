@@ -653,7 +653,48 @@ fn withdraw_emits_expected_event() {
     test_runner
         .protected_deposit(test_runner.pool_resource1, dec!("2.22"), true)
         .expect_commit_success();
-    let receipt = test_runner.protected_withdraw(test_runner.pool_resource1, dec!("2.22"), true);
+    let receipt = test_runner.protected_withdraw(
+        test_runner.pool_resource1,
+        dec!("2.22"),
+        WithdrawStrategy::Exact,
+        true,
+    );
+
+    // Assert
+    let WithdrawEvent {
+        resource_address,
+        amount,
+    } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(resource_address, test_runner.pool_resource1);
+    assert_eq!(amount, dec!("2.22"));
+}
+
+#[test]
+fn withdraw_with_rounding_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new((2, 2));
+
+    // Act
+    test_runner
+        .protected_deposit(test_runner.pool_resource1, dec!("2.22"), true)
+        .expect_commit_success();
+    let receipt = test_runner.protected_withdraw(
+        test_runner.pool_resource1,
+        dec!("2.2211"),
+        WithdrawStrategy::Rounded(RoundingMode::ToZero),
+        true,
+    );
 
     // Assert
     let WithdrawEvent {
@@ -810,7 +851,12 @@ pub fn protected_withdraw_fails_without_proper_authority_present() {
     test_runner
         .protected_deposit(test_runner.pool_resource1, 10, true)
         .expect_commit_success();
-    let receipt = test_runner.protected_withdraw(test_runner.pool_resource1, 10, false);
+    let receipt = test_runner.protected_withdraw(
+        test_runner.pool_resource1,
+        10,
+        WithdrawStrategy::Exact,
+        false,
+    );
 
     // Assert
     receipt.expect_specific_failure(is_auth_error)
@@ -1006,6 +1052,7 @@ impl TestEnvironment {
         &mut self,
         resource_address: ResourceAddress,
         amount: D,
+        withdraw_strategy: WithdrawStrategy,
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
@@ -1015,6 +1062,7 @@ impl TestEnvironment {
                 TwoResourcePoolProtectedWithdrawManifestInput {
                     resource_address,
                     amount: amount.into(),
+                    withdraw_strategy,
                 },
             )
             .try_deposit_batch_or_abort(self.account_component_address)

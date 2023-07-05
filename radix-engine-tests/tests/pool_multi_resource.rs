@@ -611,7 +611,48 @@ fn withdraws_emits_expected_event() {
     test_runner
         .protected_deposit(test_runner.pool_resources[0], dec!("2.22"), true)
         .expect_commit_success();
-    let receipt = test_runner.protected_withdraw(test_runner.pool_resources[0], dec!("2.22"), true);
+    let receipt = test_runner.protected_withdraw(
+        test_runner.pool_resources[0],
+        dec!("2.22"),
+        WithdrawStrategy::Exact,
+        true,
+    );
+
+    // Assert
+    let WithdrawEvent {
+        resource_address,
+        amount,
+    } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(resource_address, test_runner.pool_resources[0]);
+    assert_eq!(amount, dec!("2.22"));
+}
+
+#[test]
+fn withdraws_with_rounding_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::<2>::new([2, 2]);
+
+    // Act
+    test_runner
+        .protected_deposit(test_runner.pool_resources[0], dec!("2.22"), true)
+        .expect_commit_success();
+    let receipt = test_runner.protected_withdraw(
+        test_runner.pool_resources[0],
+        dec!("2.211"),
+        WithdrawStrategy::Rounded(RoundingMode::AwayFromZero),
+        true,
+    );
 
     // Assert
     let WithdrawEvent {
@@ -672,7 +713,12 @@ fn cant_withdraw_without_proper_signature() {
     test_runner
         .protected_deposit(test_runner.pool_resources[0], 10, true)
         .expect_commit_success();
-    let receipt = test_runner.protected_withdraw(test_runner.pool_resources[0], 10, false);
+    let receipt = test_runner.protected_withdraw(
+        test_runner.pool_resources[0],
+        10,
+        WithdrawStrategy::Exact,
+        false,
+    );
 
     // Assert
     receipt.expect_specific_failure(is_auth_error)
@@ -835,6 +881,7 @@ impl<const N: usize> TestEnvironment<N> {
         &mut self,
         resource_address: ResourceAddress,
         amount: D,
+        withdraw_strategy: WithdrawStrategy,
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
@@ -844,6 +891,7 @@ impl<const N: usize> TestEnvironment<N> {
                 MultiResourcePoolProtectedWithdrawManifestInput {
                     resource_address,
                     amount: amount.into(),
+                    withdraw_strategy,
                 },
             )
             .try_deposit_batch_or_abort(self.account_component_address)

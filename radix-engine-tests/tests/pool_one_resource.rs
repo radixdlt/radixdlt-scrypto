@@ -310,7 +310,7 @@ fn redeem_and_get_redemption_value_agree_on_amount_to_get_when_redeeming_after_p
         .protected_deposit(50, true)
         .expect_commit_success();
     test_runner
-        .protected_withdraw(20, true)
+        .protected_withdraw(20, WithdrawStrategy::Exact, true)
         .expect_commit_success();
     let receipt = test_runner.redeem(amount_to_redeem, true);
 
@@ -337,7 +337,7 @@ fn protected_withdraw_from_the_pool_lowers_how_much_resources_the_pool_units_are
     test_runner.contribute(100, true).expect_commit_success();
 
     // Act
-    test_runner.protected_withdraw(50, true);
+    test_runner.protected_withdraw(50, WithdrawStrategy::Exact, true);
     let receipt = test_runner.redeem(100, true);
 
     // Assert
@@ -495,7 +495,38 @@ fn withdraw_emits_expected_event() {
     test_runner
         .protected_deposit(dec!("2.22"), true)
         .expect_commit_success();
-    let receipt = test_runner.protected_withdraw(dec!("2.22"), true);
+    let receipt = test_runner.protected_withdraw(dec!("2.22"), WithdrawStrategy::Exact, true);
+
+    // Assert
+    let WithdrawEvent { amount } = receipt
+        .expect_commit_success()
+        .application_events
+        .iter()
+        .find_map(|(event_type_identifier, event_data)| {
+            if test_runner.test_runner.event_name(event_type_identifier) == "WithdrawEvent" {
+                Some(scrypto_decode(event_data).unwrap())
+            } else {
+                None
+            }
+        })
+        .unwrap();
+    assert_eq!(amount, dec!("2.22"));
+}
+
+#[test]
+fn withdraw_with_rounding_emits_expected_event() {
+    // Arrange
+    let mut test_runner = TestEnvironment::new(2);
+
+    // Act
+    test_runner
+        .protected_deposit(dec!("2.22"), true)
+        .expect_commit_success();
+    let receipt = test_runner.protected_withdraw(
+        dec!("2.2211"),
+        WithdrawStrategy::Rounded(RoundingMode::ToZero),
+        true,
+    );
 
     // Assert
     let WithdrawEvent { amount } = receipt
@@ -534,7 +565,7 @@ pub fn protected_withdraw_fails_without_proper_authority_present() {
     test_runner
         .protected_deposit(10, true)
         .expect_commit_success();
-    let receipt = test_runner.protected_withdraw(10, false);
+    let receipt = test_runner.protected_withdraw(10, WithdrawStrategy::Exact, false);
 
     // Assert
     receipt.expect_specific_failure(is_auth_error)
@@ -701,6 +732,7 @@ impl TestEnvironment {
     fn protected_withdraw<D: Into<Decimal>>(
         &mut self,
         amount: D,
+        withdraw_strategy: WithdrawStrategy,
         sign: bool,
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
@@ -709,6 +741,7 @@ impl TestEnvironment {
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
                 OneResourcePoolProtectedWithdrawManifestInput {
                     amount: amount.into(),
+                    withdraw_strategy,
                 },
             )
             .try_deposit_batch_or_abort(self.account_component_address)

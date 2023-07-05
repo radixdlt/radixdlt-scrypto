@@ -15,9 +15,16 @@ CALL_METHOD
 ;
 PUBLISH_PACKAGE_ADVANCED
     Enum<1u8>(
-        AddressReservation("radiswap_package_reservation")
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]")
+                    )
+                )
+            )
+        )
     )
-    Blob("d2f768badf82de1b8c73ba3050757d1369b25bc1d9f250f366fc2d6f2840fd2e")
     Tuple(
         Map<String, Tuple>(
             "Radiswap" => Tuple(
@@ -347,6 +354,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
+    Blob("4f79140463f26c411f3daba359a8dba1b49d26368d1be333e84be53cd545fede")
     Map<String, Tuple>(
         "description" => Tuple(
             Enum<1u8>(
@@ -378,15 +386,7 @@ PUBLISH_PACKAGE_ADVANCED
         )
     )
     Enum<1u8>(
-        Enum<2u8>(
-            Enum<0u8>(
-                Enum<0u8>(
-                    Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]")
-                    )
-                )
-            )
-        )
+        AddressReservation("radiswap_package_reservation")
     )
 ;
 CALL_FUNCTION
@@ -394,14 +394,14 @@ CALL_FUNCTION
     "Radiswap"
     "new"
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Address("resource_sim1th97mz9p73hpmkk9pxjmy70jj2qn3eyqc6kxajawe7wh7wq2wgdglq")
+    Address("resource_sim1th47ntgk0vvcujeeucmtzhmnch00ems7su7akeszjutt582tqw8cnx")
 ;
 CALL_FUNCTION
     NamedAddress("radiswap_package")
     "Radiswap"
     "new"
-    Address("resource_sim1t4fl975pay673qpkqwxry3pmlsappnnv3a88v986gp89hkm87xqr5g")
-    Address("resource_sim1tk7tj73758znycw52mztglvknr3ywu7evd9ehrwrs9ag4uyncta89e")
+    Address("resource_sim1thvtyk4j7ry44p2fq5ucjwfay2n7d9gcl2huyv0hwpj0ffjehs3tcd")
+    Address("resource_sim1themku2nqm2ktjmz529wr786ckk8cyn9cljhfe8c4c8zqslrkp5dcl")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")

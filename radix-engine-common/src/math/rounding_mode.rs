@@ -1,16 +1,23 @@
-/// Defines how rounding should be done.
-#[derive(Clone, Copy, PartialEq, Eq)]
+use sbor::Sbor;
+
+/// Defines the rounding strategy.
+///
+/// Following the same naming convention as https://docs.rs/rust_decimal/latest/rust_decimal/enum.RoundingStrategy.html.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
 pub enum RoundingMode {
-    /// Rounds towards positive infinity, e.g. `3.1 -> 4`, `-3.1 -> -3`.
-    TowardsPositiveInfinity,
-    /// Rounds towards negative infinity, e.g. `3.1 -> 3`, `-3.1 -> -4`.
-    TowardsNegativeInfinity,
-    /// Rounds towards zero, e.g. `3.1 -> 3`, `-3.1 -> -3`.
-    TowardsZero,
-    /// Rounds away from zero, e.g. `3.1 -> 4`, `-3.1 -> -4`.
+    /// The number is always rounded toward positive infinity, e.g. `3.1 -> 4`, `-3.1 -> -3`.
+    ToPositiveInfinity,
+    /// The number is always rounded toward negative infinity, e.g. `3.1 -> 3`, `-3.1 -> -4`.
+    ToNegativeInfinity,
+    /// The number is always rounded toward zero, e.g. `3.1 -> 3`, `-3.1 -> -3`.
+    ToZero,
+    /// The number is always rounded away from zero, e.g. `3.1 -> 4`, `-3.1 -> -4`.
     AwayFromZero,
-    /// Rounds to the nearest and when a number is halfway between two others, it's rounded towards zero, e.g. `3.5 -> 3`, `-3.5 -> -3`.
-    TowardsNearestAndHalfTowardsZero,
-    /// Rounds to the nearest and when a number is halfway between two others, it's rounded away zero, e.g. `3.5 -> 4`, `-3.5 -> -4`.
-    TowardsNearestAndHalfAwayFromZero,
+
+    /// The number is rounded to the nearest, and when it is halfway between two others, it's rounded toward zero, e.g. `3.5 -> 3`, `-3.5 -> -3`.
+    ToNearestMidpointTowardZero,
+    /// The number is rounded to the nearest, and when it is halfway between two others, it's rounded away from zero, e.g. `3.5 -> 4`, `-3.5 -> -4`.
+    ToNearestMidpointAwayFromZero,
+    /// The number is rounded to the nearest, and when it is halfway between two others, it's rounded toward the nearest even number. Also known as "Bankers Rounding".
+    ToNearestMidpointToEven,
 }

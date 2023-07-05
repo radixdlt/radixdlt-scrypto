@@ -35,32 +35,32 @@ impl NonFungibleResourceRoles {
     pub fn single_locked_rule(access_rule: AccessRule) -> Self {
         Self {
             mint_roles: mint_roles! {
-                minter => access_rule.clone(), locked;
-                minter_updater => rule!(deny_all), locked;
+                minter => access_rule.clone();
+                minter_updater => rule!(deny_all);
             },
             burn_roles: burn_roles! {
-                burner => access_rule.clone(), locked;
-                burner_updater => rule!(deny_all), locked;
+                burner => access_rule.clone();
+                burner_updater => rule!(deny_all);
             },
             freeze_roles: freeze_roles! {
-                freezer => access_rule.clone(), locked;
-                freezer_updater => rule!(deny_all), locked;
+                freezer => access_rule.clone();
+                freezer_updater => rule!(deny_all);
             },
             recall_roles: recall_roles! {
-                recaller => access_rule.clone(), locked;
-                recaller_updater => rule!(deny_all), locked;
+                recaller => access_rule.clone();
+                recaller_updater => rule!(deny_all);
             },
             non_fungible_data_update_roles: non_fungible_data_update_roles! {
-                non_fungible_data_updater => access_rule.clone(), locked;
-                non_fungible_data_updater_updater => rule!(deny_all), locked;
+                non_fungible_data_updater => access_rule.clone();
+                non_fungible_data_updater_updater => rule!(deny_all);
             },
             withdraw_roles: withdraw_roles! {
-                withdrawer => access_rule.clone(), locked;
-                withdrawer_updater => rule!(deny_all), locked;
+                withdrawer => access_rule.clone();
+                withdrawer_updater => rule!(deny_all);
             },
             deposit_roles: deposit_roles! {
-                depositor => access_rule.clone(), locked;
-                depositor_updater => rule!(deny_all), locked;
+                depositor => access_rule.clone();
+                depositor_updater => rule!(deny_all);
             },
         }
     }

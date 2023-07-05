@@ -609,25 +609,25 @@ impl AccessControllerNativePackage {
                         non_fungible_schema,
                         resource_roles: NonFungibleResourceRoles {
                             mint_roles: mint_roles! {
-                                minter => rule!(require(global_component_caller_badge.clone())), locked;
-                                minter_updater => rule!(deny_all), locked;
+                                minter => rule!(require(global_component_caller_badge.clone()));
+                                minter_updater => rule!(deny_all);
                             },
                             burn_roles: burn_roles! {
-                                burner => rule!(allow_all), locked;
-                                burner_updater => rule!(allow_all), locked;
+                                burner => rule!(allow_all);
+                                burner_updater => rule!(allow_all);
                             },
                             withdraw_roles: withdraw_roles! {
-                                withdrawer => rule!(deny_all), locked;
-                                withdrawer_updater => rule!(deny_all), locked;
+                                withdrawer => rule!(deny_all);
+                                withdrawer_updater => rule!(deny_all);
                             },
                             ..Default::default()
                         },
                         metadata: metadata! {
                             roles {
-                                metadata_setter => AccessRule::DenyAll, locked;
-                                metadata_setter_updater => AccessRule::DenyAll, locked;
-                                metadata_locker => AccessRule::DenyAll, locked;
-                                metadata_locker_updater => AccessRule::DenyAll, locked;
+                                metadata_setter => AccessRule::DenyAll;
+                                metadata_setter_updater => AccessRule::DenyAll;
+                                metadata_locker => AccessRule::DenyAll;
+                                metadata_locker_updater => AccessRule::DenyAll;
                             },
                             init {
                                 "name" => "Recovery Badge".to_owned(), locked;

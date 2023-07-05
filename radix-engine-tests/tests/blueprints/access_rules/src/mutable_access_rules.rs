@@ -11,7 +11,6 @@ mod mutable_access_rules_component {
             borrow_funds => restrict_to: [borrow_funds_auth];
             deposit_funds => restrict_to: [deposit_funds_auth];
             set_authority_rules => PUBLIC;
-            lock_authority => PUBLIC;
         }
     }
 
@@ -31,18 +30,14 @@ mod mutable_access_rules_component {
                 .instantiate()
                 .prepare_to_globalize(owner_role)
                 .roles(roles! {
-                    borrow_funds_auth => rule!(require(XRD)), updatable;
-                    deposit_funds_auth => OWNER, locked;
+                    borrow_funds_auth => rule!(require(XRD));
+                    deposit_funds_auth => OWNER;
                 })
                 .globalize()
         }
 
         pub fn set_authority_rules(&self, role: String, rule: AccessRule) {
             Runtime::global_component().set_role(role.as_str(), rule);
-        }
-
-        pub fn lock_authority(&self, role: String) {
-            Runtime::global_component().lock_role(role.as_str());
         }
 
         // The methods that the access rules will be added to

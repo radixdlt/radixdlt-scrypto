@@ -40,6 +40,8 @@ const FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_FungibleResourceManager";
+const FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME: &str =
+    "amount_for_withdrawal_FungibleResourceManager";
 const FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME: &str =
     "drop_empty_bucket_FungibleResourceManager";
 
@@ -60,10 +62,13 @@ const NON_FUNGIBLE_RESOURCE_MANAGER_GET_RESOURCE_TYPE_EXPORT_NAME: &str =
     "get_resource_type_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_GET_TOTAL_SUPPLY_EXPORT_NAME: &str =
     "get_total_supply_NonFungibleResourceManager";
+const NON_FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME: &str =
+    "amount_for_withdrawal_NonFungibleResourceManager";
 const NON_FUNGIBLE_RESOURCE_MANAGER_DROP_EMPTY_BUCKET_EXPORT_NAME: &str =
     "drop_empty_bucket_NonFungibleResourceManager";
 
 const FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_FungibleVault";
+const FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME: &str = "take_advanced_FungibleVault";
 const FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_FungibleVault";
 const FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleVault";
 const FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_FungibleVault";
@@ -77,6 +82,7 @@ const FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleVa
 const FUNGIBLE_VAULT_BURN_EXPORT_NAME: &str = "burn_FungibleVault";
 
 const NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME: &str = "take_NonFungibleVault";
+const NON_FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME: &str = "take_advanced_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_PUT_EXPORT_NAME: &str = "put_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_NonFungibleVault";
@@ -91,6 +97,7 @@ const NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
 const NON_FUNGIBLE_VAULT_BURN_EXPORT_NAME: &str = "burn_NonFungibleVault";
 
 const FUNGIBLE_BUCKET_TAKE_EXPORT_NAME: &str = "take_FungibleBucket";
+const FUNGIBLE_BUCKET_TAKE_ADVANCED_EXPORT_NAME: &str = "take_advanced_FungibleBucket";
 const FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_FungibleBucket";
 const FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleBucket";
 const FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
@@ -103,6 +110,9 @@ const FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME: &str = "lock_amount_FungibleBucke
 const FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME: &str = "unlock_amount_FungibleBucket";
 
 const NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME: &str = "take_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_TAKE_ADVANCED_EXPORT_NAME: &str = "take_advanced_NonFungibleBucket";
+const NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "take_non_fungibles_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
@@ -118,8 +128,6 @@ const NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
     "unlock_fungibles_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
     "unlock_non_fungibles_NonFungibleBucket";
-const NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME: &str =
-    "take_non_fungibles_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME: &str =
     "get_non_fungible_local_ids_NonFungibleBucket";
 
@@ -285,6 +293,22 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
+                RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetAmountForWithdrawalInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetAmountForWithdrawalOutput>(
+                            ),
+                    ),
+                    export: FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
@@ -361,6 +385,7 @@ impl ResourceNativePackage {
                             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
                         }
@@ -602,6 +627,22 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
+                RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref()),
+                    input: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetAmountForWithdrawalInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator
+                            .add_child_type_and_descendents::<ResourceManagerGetAmountForWithdrawalOutput>(
+                            ),
+                    ),
+                    export: NON_FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
                 RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
@@ -684,6 +725,7 @@ impl ResourceNativePackage {
                             RESOURCE_MANAGER_CREATE_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_CREATE_EMPTY_VAULT_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT => MethodAccessibility::Public;
+                            RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_DROP_EMPTY_BUCKET_IDENT => MethodAccessibility::Public;
                             RESOURCE_MANAGER_GET_RESOURCE_TYPE_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => MethodAccessibility::Public;
@@ -722,6 +764,19 @@ impl ResourceNativePackage {
                         aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
                     ),
                     export: FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                VAULT_TAKE_ADVANCED_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeAdvancedInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeAdvancedOutput>(),
+                    ),
+                    export: FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -921,6 +976,7 @@ impl ResourceNativePackage {
                             VAULT_FREEZE_IDENT => [FREEZER_ROLE];
                             VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
                             VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                            VAULT_TAKE_ADVANCED_IDENT => [WITHDRAWER_ROLE];
                             FUNGIBLE_VAULT_LOCK_FEE_IDENT => [WITHDRAWER_ROLE];
                             VAULT_RECALL_IDENT => [RECALLER_ROLE];
                             VAULT_PUT_IDENT => [DEPOSITOR_ROLE];
@@ -964,6 +1020,19 @@ impl ResourceNativePackage {
                         aggregator.add_child_type_and_descendents::<VaultTakeOutput>(),
                     ),
                     export: NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                VAULT_TAKE_ADVANCED_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeAdvancedInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<VaultTakeAdvancedOutput>(),
+                    ),
+                    export: NON_FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1212,6 +1281,7 @@ impl ResourceNativePackage {
                             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
                             VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
+                            VAULT_TAKE_ADVANCED_IDENT => [WITHDRAWER_ROLE];
                             NON_FUNGIBLE_VAULT_TAKE_NON_FUNGIBLES_IDENT => [WITHDRAWER_ROLE];
                             VAULT_RECALL_IDENT => [RECALLER_ROLE];
                             VAULT_FREEZE_IDENT => [FREEZER_ROLE];
@@ -1267,6 +1337,19 @@ impl ResourceNativePackage {
                         aggregator.add_child_type_and_descendents::<BucketTakeOutput>(),
                     ),
                     export: FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                BUCKET_TAKE_ADVANCED_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeAdvancedInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeAdvancedOutput>(),
+                    ),
+                    export: FUNGIBLE_BUCKET_TAKE_ADVANCED_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -1404,6 +1487,7 @@ impl ResourceNativePackage {
                             BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_PUT_IDENT => MethodAccessibility::Public;
                             BUCKET_TAKE_IDENT => MethodAccessibility::Public;
+                            BUCKET_TAKE_ADVANCED_IDENT => MethodAccessibility::Public;
 
                             FUNGIBLE_BUCKET_LOCK_AMOUNT_IDENT => MethodAccessibility::OwnPackageOnly;
                             FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT => MethodAccessibility::OwnPackageOnly;
@@ -1454,7 +1538,32 @@ impl ResourceNativePackage {
                     export: NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME.to_string(),
                 },
             );
-
+            functions.insert(
+                BUCKET_TAKE_ADVANCED_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeAdvancedInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeAdvancedOutput>(),
+                    ),
+                    export: NON_FUNGIBLE_BUCKET_TAKE_ADVANCED_EXPORT_NAME.to_string(),
+                },
+            );
+            functions.insert(
+                NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
+                FunctionSchemaInit {
+                    receiver: Some(ReceiverInfo::normal_ref_mut()),
+                    input: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
+                    ),
+                    output: TypeRef::Static(
+                        aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
+                    ),
+                    export: NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME.to_string(),
+                },
+            );
             functions.insert(
                 BUCKET_GET_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
@@ -1534,19 +1643,6 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<BucketTakeNonFungiblesOutput>(),
-                    ),
-                    export: NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
                 NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref()),
@@ -1620,6 +1716,7 @@ impl ResourceNativePackage {
                             BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_PUT_IDENT => MethodAccessibility::Public;
                             BUCKET_TAKE_IDENT => MethodAccessibility::Public;
+                            BUCKET_TAKE_ADVANCED_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
@@ -2279,6 +2376,18 @@ impl ResourceNativePackage {
                 let rtn = FungibleResourceManagerBlueprint::get_total_supply(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME => {
+                let input: ResourceManagerGetAmountForWithdrawalInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = FungibleResourceManagerBlueprint::amount_for_withdrawal(
+                    api,
+                    input.request_amount,
+                    input.withdraw_strategy,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_EXPORT_NAME => {
                 let input: NonFungibleResourceManagerCreateInput =
                     input.as_typed().map_err(|e| {
@@ -2439,6 +2548,18 @@ impl ResourceNativePackage {
                 let rtn = NonFungibleResourceManagerBlueprint::get_total_supply(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            NON_FUNGIBLE_RESOURCE_MANAGER_AMOUNT_FOR_WITHDRAWAL_EXPORT_NAME => {
+                let input: ResourceManagerGetAmountForWithdrawalInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleResourceManagerBlueprint::amount_for_withdrawal(
+                    api,
+                    input.request_amount,
+                    input.withdraw_strategy,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_RESOURCE_MANAGER_GET_NON_FUNGIBLE_IDENT => {
                 let input: NonFungibleResourceManagerGetNonFungibleInput =
                     input.as_typed().map_err(|e| {
@@ -2460,6 +2581,17 @@ impl ResourceNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = FungibleVaultBlueprint::take(&input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME => {
+                let input: VaultTakeAdvancedInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleVaultBlueprint::take_advanced(
+                    &input.amount,
+                    input.withdraw_strategy,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_RECALL_EXPORT_NAME => {
@@ -2515,12 +2647,11 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: FungibleVaultLockFungibleAmountInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = FungibleVaultBlueprint::lock_amount(&receiver, input.amount, api)?;
+                let rtn = FungibleVaultBlueprint::lock_amount(input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_VAULT_UNLOCK_AMOUNT_EXPORT_NAME => {
@@ -2539,6 +2670,17 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
+            NON_FUNGIBLE_VAULT_TAKE_ADVANCED_EXPORT_NAME => {
+                let input: VaultTakeAdvancedInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleVaultBlueprint::take_advanced(
+                    &input.amount,
+                    input.withdraw_strategy,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_VAULT_TAKE_EXPORT_NAME => {
                 let input: VaultTakeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -2552,7 +2694,7 @@ impl ResourceNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::take_non_fungibles(
-                    input.non_fungible_local_ids,
+                    &input.non_fungible_local_ids,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2643,13 +2785,11 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
                 let input: NonFungibleVaultLockNonFungiblesInput =
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn =
-                    NonFungibleVaultBlueprint::lock_non_fungibles(&receiver, input.local_ids, api)?;
+                let rtn = NonFungibleVaultBlueprint::lock_non_fungibles(&input.local_ids, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
@@ -2673,7 +2813,7 @@ impl ResourceNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::burn_non_fungibles(
-                    input.non_fungible_local_ids,
+                    &input.non_fungible_local_ids,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2746,8 +2886,31 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
-            FUNGIBLE_BUCKET_PUT_EXPORT_NAME => FungibleBucketBlueprint::put(input, api),
-            FUNGIBLE_BUCKET_TAKE_EXPORT_NAME => FungibleBucketBlueprint::take(input, api),
+            FUNGIBLE_BUCKET_PUT_EXPORT_NAME => {
+                let input: BucketPutInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleBucketBlueprint::put(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_BUCKET_TAKE_EXPORT_NAME => {
+                let input: BucketTakeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleBucketBlueprint::take(input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            FUNGIBLE_BUCKET_TAKE_ADVANCED_EXPORT_NAME => {
+                let input: BucketTakeAdvancedInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleBucketBlueprint::take_advanced(
+                    input.amount,
+                    input.withdraw_strategy,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME => {
                 let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -2758,7 +2921,11 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&amount))
             }
             FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
-                FungibleBucketBlueprint::get_resource_address(input, api)
+                let _input: BucketGetResourceAddressInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleBucketBlueprint::get_resource_address(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME => {
                 let receiver = Runtime::get_node_id(api)?;
@@ -2786,15 +2953,51 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_LOCK_AMOUNT_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
-                FungibleBucketBlueprint::lock_amount(&receiver, input, api)
+                let input: FungibleBucketLockAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleBucketBlueprint::lock_amount(input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             FUNGIBLE_BUCKET_UNLOCK_AMOUNT_EXPORT_NAME => {
-                FungibleBucketBlueprint::unlock_amount(input, api)
+                let input: FungibleBucketLockAmountInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleBucketBlueprint::unlock_amount(input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-
-            NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME => NonFungibleBucketBlueprint::put(input, api),
-            NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME => NonFungibleBucketBlueprint::take(input, api),
+            NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME => {
+                let input: BucketPutInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleBucketBlueprint::put(input.bucket, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_BUCKET_TAKE_EXPORT_NAME => {
+                let input: BucketTakeInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleBucketBlueprint::take(&input.amount, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_BUCKET_TAKE_ADVANCED_EXPORT_NAME => {
+                let input: BucketTakeAdvancedInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleBucketBlueprint::take_advanced(
+                    &input.amount,
+                    input.withdraw_strategy,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME => {
+                let input: BucketTakeNonFungiblesInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleBucketBlueprint::take_non_fungibles(&input.ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME => {
                 let _input: BucketGetAmountInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -2805,7 +3008,11 @@ impl ResourceNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&amount))
             }
             NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME => {
-                NonFungibleBucketBlueprint::get_resource_address(input, api)
+                let _input: BucketGetResourceAddressInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let address = NonFungibleBucketBlueprint::get_resource_address(api)?;
+                Ok(IndexedScryptoValue::from_typed(&address))
             }
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME => {
                 let receiver = Runtime::get_node_id(api)?;
@@ -2848,17 +3055,27 @@ impl ResourceNativePackage {
             }
 
             NON_FUNGIBLE_BUCKET_GET_NON_FUNGIBLE_LOCAL_IDS_EXPORT_NAME => {
-                NonFungibleBucketBlueprint::get_non_fungible_local_ids(input, api)
-            }
-            NON_FUNGIBLE_BUCKET_TAKE_NON_FUNGIBLES_EXPORT_NAME => {
-                NonFungibleBucketBlueprint::take_non_fungibles(input, api)
+                let _input: BucketGetNonFungibleLocalIdsInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleBucketBlueprint::get_non_fungible_local_ids(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_LOCK_NON_FUNGIBLES_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
-                NonFungibleBucketBlueprint::lock_non_fungibles(&receiver, input, api)
+                let input: NonFungibleBucketLockNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleBucketBlueprint::lock_non_fungibles(&input.local_ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_UNLOCK_NON_FUNGIBLES_EXPORT_NAME => {
-                NonFungibleBucketBlueprint::unlock_non_fungibles(input, api)
+                let input: NonFungibleBucketUnlockNonFungiblesInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = NonFungibleBucketBlueprint::unlock_non_fungibles(input.local_ids, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
             WORKTOP_DROP_IDENT => WorktopBlueprint::drop(input, api),

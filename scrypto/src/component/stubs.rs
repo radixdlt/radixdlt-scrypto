@@ -42,7 +42,7 @@ extern_blueprint_internal! {
         /// It is the responsibility of the applications using the pool blueprint to ensure that
         /// this function is called with a [`Decimal`] of an appropriate number of decimal places
         /// for the given resource.
-        fn protected_withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
+        fn protected_withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal, withdraw_strategy: WithdrawStrategy) -> Bucket;
         fn redeem(&mut self, bucket: Bucket) -> Vec<Bucket>;
     }
 }
@@ -74,7 +74,7 @@ extern_blueprint_internal! {
         /// It is the responsibility of the applications using the pool blueprint to ensure that
         /// this function is called with a [`Decimal`] of an appropriate number of decimal places
         /// for the given resource.
-        fn protected_withdraw(&mut self, amount: Decimal) -> Bucket;
+        fn protected_withdraw(&mut self, amount: Decimal, withdraw_strategy: WithdrawStrategy) -> Bucket;
         fn redeem(&mut self, bucket: Bucket) -> Bucket;
     }
 }
@@ -106,7 +106,7 @@ extern_blueprint_internal! {
         /// It is the responsibility of the applications using the pool blueprint to ensure that
         /// this function is called with a [`Decimal`] of an appropriate number of decimal places
         /// for the given resource.
-        fn protected_withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
+        fn protected_withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal, withdraw_strategy: WithdrawStrategy) -> Bucket;
         fn redeem(&mut self, bucket: Bucket) -> (Bucket, Bucket);
     }
 }
