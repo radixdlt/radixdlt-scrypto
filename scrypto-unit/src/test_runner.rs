@@ -1,4 +1,3 @@
-use std::convert::Infallible;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -22,7 +21,6 @@ use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
     ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
@@ -35,7 +33,6 @@ use radix_engine_interface::blueprints::package::{
     PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
-use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::time::Instant;
@@ -56,7 +53,6 @@ use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto::prelude::*;
-use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionManifestV1;
 use transaction::model::{
     BlobV1, Executable, InstructionV1, IntentV1, MessageV1, PreviewFlags, PreviewIntentV1,
@@ -411,8 +407,8 @@ impl TestRunner {
         value: &str,
         proof: NonFungibleGlobalId,
     ) {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .set_metadata(
                 address,
                 key.to_string(),
@@ -483,7 +479,7 @@ impl TestRunner {
         resource_address: ResourceAddress,
     ) -> Option<Decimal> {
         let vaults = self.get_component_vaults(account_address, resource_address);
-        let index = if resource_address.eq(&RADIX_TOKEN) {
+        let index = if resource_address.eq(&XRD) {
             // To account for royalty vault
             1usize
         } else {
@@ -647,16 +643,11 @@ impl TestRunner {
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
-            .call_method(self.faucet_component(), "free", manifest_args!())
-            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.call_method(
-                    account_address,
-                    ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-                    manifest_args!(bucket),
-                )
-            })
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "free_xrd")
+            .try_deposit_or_abort(account_address, "free_xrd")
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -664,7 +655,7 @@ impl TestRunner {
     }
 
     pub fn new_account_advanced(&mut self, owner_rule: OwnerRole) -> ComponentAddress {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .new_account_advanced(owner_rule)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -672,13 +663,9 @@ impl TestRunner {
 
         let account = receipt.expect_commit(true).new_component_addresses()[0];
 
-        let manifest = ManifestBuilder::new()
-            .call_method(self.faucet_component(), "free", manifest_args!())
-            .call_method(
-                account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+        let manifest = ManifestBuilderV2::new()
+            .get_free_xrd_from_faucet()
+            .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -755,8 +742,8 @@ impl TestRunner {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-            let manifest = ManifestBuilder::new()
-                .lock_fee(self.faucet_component(), 500u32.into())
+            let manifest = ManifestBuilderV2::new()
+                .lock_fee_from_faucet()
                 .create_identity_advanced(OwnerRole::Fixed(rule!(require(owner_id))))
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
@@ -768,14 +755,10 @@ impl TestRunner {
     }
 
     pub fn new_securified_identity(&mut self, account: ComponentAddress) -> ComponentAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .create_identity()
-            .call_method(
-                account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -789,18 +772,12 @@ impl TestRunner {
         pub_key: Secp256k1PublicKey,
         account: ComponentAddress,
     ) -> ComponentAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
-            .call_method(self.faucet_component(), "free", manifest_args!())
-            .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, |builder, bucket| {
-                builder.create_validator(pub_key, Decimal::ONE, bucket);
-                builder
-            })
-            .call_method(
-                account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
+            .create_validator(pub_key, Decimal::ONE, "xrd_creation_fee")
+            .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt.expect_commit(true).new_component_addresses()[0];
@@ -856,8 +833,8 @@ impl TestRunner {
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 5000u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .publish_package_advanced(None, code, definition, metadata, owner_rule)
             .build();
 
@@ -871,8 +848,8 @@ impl TestRunner {
         definition: PackageDefinition,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 5000u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .publish_package_with_owner(code, definition, owner_badge)
             .build();
 
@@ -1084,7 +1061,7 @@ impl TestRunner {
         args: ManifestValue,
     ) -> TransactionReceipt {
         self.execute_manifest_ignoring_fee(
-            ManifestBuilder::new()
+            ManifestBuilderV2::new()
                 .call_function(package_address, blueprint_name, function_name, args)
                 .build(),
             vec![],
@@ -1120,7 +1097,7 @@ impl TestRunner {
         args: ManifestValue,
     ) -> TransactionReceipt {
         self.execute_manifest_ignoring_fee(
-            ManifestBuilder::new()
+            ManifestBuilderV2::new()
                 .call_method(component_address, method_name, args)
                 .build(),
             vec![],
@@ -1133,8 +1110,8 @@ impl TestRunner {
         resource_roles: FungibleResourceRoles,
         to: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .create_fungible_resource(
                 owner_role,
                 true,
@@ -1143,11 +1120,7 @@ impl TestRunner {
                 metadata!(),
                 Some(5.into()),
             )
-            .call_method(
-                to,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(to)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1222,7 +1195,7 @@ impl TestRunner {
         owner_role: OwnerRole,
     ) -> ResourceAddress {
         let receipt = self.execute_manifest_ignoring_fee(
-            ManifestBuilder::new()
+            ManifestBuilderV2::new()
                 .create_non_fungible_resource::<Vec<_>, ()>(
                     owner_role,
                     NonFungibleIdType::Integer,
@@ -1382,8 +1355,8 @@ impl TestRunner {
         entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});
         entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
 
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -1392,11 +1365,7 @@ impl TestRunner {
                 metadata!(),
                 Some(entries),
             )
-            .call_method(
-                account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1408,8 +1377,8 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -1418,11 +1387,7 @@ impl TestRunner {
                 metadata!(),
                 Some(amount),
             )
-            .call_method(
-                account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1434,8 +1399,8 @@ impl TestRunner {
     ) -> (ResourceAddress, ResourceAddress) {
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -1454,11 +1419,7 @@ impl TestRunner {
                 metadata!(),
                 None,
             )
-            .call_method(
-                account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
@@ -1472,8 +1433,8 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .create_fungible_resource(
                 owner_role,
                 true,
@@ -1488,11 +1449,7 @@ impl TestRunner {
                 metadata!(),
                 amount,
             )
-            .call_method(
-                account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1505,8 +1462,8 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .create_fungible_resource(
                 owner_role,
                 true,
@@ -1525,11 +1482,7 @@ impl TestRunner {
                 metadata!(),
                 amount,
             )
-            .call_method(
-                account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]
@@ -1541,16 +1494,11 @@ impl TestRunner {
         handler: F,
     ) -> ComponentAddress
     where
-        F: FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
+        F: FnOnce(ManifestBuilderV2) -> ManifestBuilderV2,
     {
-        let manifest = ManifestBuilder::new()
-            .call_method(
-                self.faucet_component(),
-                "lock_fee",
-                manifest_args!(dec!("100")),
-            )
-            .borrow_mut(|builder| Result::<_, Infallible>::Ok(handler(builder)))
-            .unwrap()
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
+            .then(handler)
             .build();
 
         let receipt = self.execute_manifest(manifest, initial_proofs);

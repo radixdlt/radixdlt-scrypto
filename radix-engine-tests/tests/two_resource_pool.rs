@@ -436,13 +436,13 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_function(
             POOL_PACKAGE,
             TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
             TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
             to_manifest_value_and_unwrap!(&TwoResourcePoolInstantiateManifestInput {
-                resource_addresses: (non_fungible_resource, RADIX_TOKEN),
+                resource_addresses: (non_fungible_resource, XRD),
                 pool_manager_rule: rule!(allow_all),
             }),
         )
@@ -865,7 +865,7 @@ impl TestEnvironment {
         );
 
         let (pool_component, pool_unit_resource) = {
-            let manifest = ManifestBuilder::new()
+            let manifest = ManifestBuilderV2::new()
                 .call_function(
                     POOL_PACKAGE,
                     TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -914,19 +914,21 @@ impl TestEnvironment {
         A: Into<Decimal>,
         B: Into<Decimal>,
     {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .mint_fungible(resource_address1, amount1.into())
             .mint_fungible(resource_address2, amount2.into())
-            .take_all_from_worktop(resource_address1, |builder, bucket1| {
-                builder.take_all_from_worktop(resource_address2, |builder, bucket2| {
-                    builder.call_method(
-                        self.pool_component_address,
-                        TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-                        to_manifest_value_and_unwrap!(&TwoResourcePoolContributeManifestInput {
-                            buckets: (bucket1, bucket2),
-                        }),
-                    )
-                })
+            .take_all_from_worktop(resource_address1, "resource_1")
+            .take_all_from_worktop(resource_address2, "resource_2")
+            .with_namer(|builder, namer| {
+                let bucket1 = namer.bucket("resource_1");
+                let bucket2 = namer.bucket("resource_2");
+                builder.call_method(
+                    self.pool_component_address,
+                    TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
+                    to_manifest_value_and_unwrap!(&TwoResourcePoolContributeManifestInput {
+                        buckets: (bucket1, bucket2),
+                    }),
+                )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
             .build();
@@ -934,13 +936,15 @@ impl TestEnvironment {
     }
 
     fn redeem<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .withdraw_from_account(
                 self.account_component_address,
                 self.pool_unit_resource_address,
                 amount.into(),
             )
-            .take_all_from_worktop(self.pool_unit_resource_address, |builder, bucket| {
+            .take_all_from_worktop(self.pool_unit_resource_address, "pool_units")
+            .with_namer(|builder, namer| {
+                let bucket = namer.bucket("pool_units");
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_REDEEM_IDENT,
@@ -958,8 +962,8 @@ impl TestEnvironment {
         value: MetadataValue,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_component_address, key, value)
+        let manifest = ManifestBuilderV2::new()
+            .set_metadata(self.pool_component_address, key.to_string(), value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -970,8 +974,8 @@ impl TestEnvironment {
         value: MetadataValue,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_unit_resource_address, key, value)
+        let manifest = ManifestBuilderV2::new()
+            .set_metadata(self.pool_unit_resource_address, key.to_string(), value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -982,14 +986,15 @@ impl TestEnvironment {
         amount: D,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .mint_fungible(resource_address, amount.into())
-            .take_all_from_worktop(resource_address, |builder, bucket| {
+            .take_all_from_worktop(resource_address, "deposit")
+            .with_namer(|builder, namer| {
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
                     to_manifest_value_and_unwrap!(&TwoResourcePoolProtectedDepositManifestInput {
-                        bucket
+                        bucket: namer.bucket("deposit")
                     }),
                 )
             })
@@ -1003,7 +1008,7 @@ impl TestEnvironment {
         amount: D,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_method(
                 self.pool_component_address,
                 TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
@@ -1043,7 +1048,7 @@ impl TestEnvironment {
         amount_of_pool_units: D,
         sign: bool,
     ) -> TwoResourcePoolGetRedemptionValueOutput {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_method(
                 self.pool_component_address,
                 TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,

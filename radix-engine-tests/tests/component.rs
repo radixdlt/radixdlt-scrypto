@@ -2,7 +2,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn test_component() {
@@ -11,8 +11,8 @@ fn test_component() {
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Create component
-    let manifest1 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest1 = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "ComponentTest",
@@ -27,8 +27,8 @@ fn test_component() {
     let component = receipt1.expect_commit(true).new_component_addresses()[0];
 
     // Call functions & methods
-    let manifest2 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest2 = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "ComponentTest",
@@ -37,11 +37,7 @@ fn test_component() {
         )
         .call_method(component, "get_component_state", manifest_args!())
         .call_method(component, "put_component_state", manifest_args!())
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt2 = test_runner.execute_manifest(
         manifest2,
@@ -57,8 +53,8 @@ fn invalid_blueprint_name_should_cause_error() {
     let package_addr = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_addr,
             "NonExistentBlueprint",

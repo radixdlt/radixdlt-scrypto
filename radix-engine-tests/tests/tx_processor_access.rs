@@ -6,8 +6,7 @@ use radix_engine_interface::blueprints::transaction_processor::{
 };
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::model::InstructionV1;
+use transaction::prelude::*;
 
 #[derive(Debug, Eq, PartialEq, ManifestSbor)]
 pub struct ManifestTransactionProcessorRunInput {
@@ -25,8 +24,8 @@ fn should_not_be_able_to_call_tx_processor_in_tx_processor() {
     let manifest_encoded_instructions = manifest_encode(&instructions).unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,
@@ -61,8 +60,8 @@ fn calling_transaction_processor_from_scrypto_should_not_panic() {
     // Act
     let manifest_encoded_instructions: Vec<u8> = vec![0u8];
     let references: Vec<Reference> = vec![];
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ExecuteManifest",
@@ -84,8 +83,8 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     let (_, _, account1) = test_runner.new_account(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/tx_processor_access");
     let initial_balance = test_runner.account_balance(account0, XRD).unwrap();
-    let instructions = ManifestBuilder::new()
-        .withdraw_from_account(account0, XRD, 10.into())
+    let instructions = ManifestBuilderV2::new()
+        .withdraw_from_account(account0, XRD, 10)
         .try_deposit_batch_or_abort(account1)
         .build()
         .instructions;
@@ -93,8 +92,8 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     let references: Vec<ComponentAddress> = vec![account0, account1];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ExecuteManifest",

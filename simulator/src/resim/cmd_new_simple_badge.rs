@@ -3,13 +3,6 @@ use colored::Colorize;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataInit, MetadataValue, Url};
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::blueprints::resource::NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT;
-use radix_engine_interface::blueprints::resource::{
-    NonFungibleDataSchema, NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
-    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-};
-use transaction::builder::ManifestBuilder;
-use transaction::model::InstructionV1;
 
 use crate::resim::*;
 
@@ -80,35 +73,22 @@ impl NewSimpleBadge {
             metadata.set_and_lock("icon_url", MetadataValue::Url(Url(icon_url)));
         };
 
-        let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 5000u32.into())
-            .add_instruction(InstructionV1::CallFunction {
-                package_address: RESOURCE_PACKAGE.into(),
-                blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
-                    .to_string(),
-                args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                    owner_role: OwnerRole::None,
-                    id_type: NonFungibleIdType::Integer,
-                    track_total_supply: false,
-                    non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                    resource_roles: NonFungibleResourceRoles::default(),
-                    metadata: ModuleConfig {
-                        init: metadata,
-                        roles: RolesInit::default(),
-                    },
-                    entries: btreemap!(
-                        NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),
-                    ),
-                    address_reservation: None,
-                }),
-            })
-            .0
-            .call_method(
-                default_account,
-                "try_deposit_batch_or_refund",
-                manifest_args!(ManifestExpression::EntireWorktop),
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
+            .create_non_fungible_resource(
+                OwnerRole::None,
+                NonFungibleIdType::Integer,
+                false,
+                NonFungibleResourceRoles::default(),
+                ModuleConfig {
+                    init: metadata,
+                    roles: RolesInit::default(),
+                },
+                Some(btreemap!(
+                    NonFungibleLocalId::integer(1) => (),
+                ))
             )
+            .try_deposit_batch_or_refund(default_account)
             .build();
         let receipt = handle_manifest(
             manifest,

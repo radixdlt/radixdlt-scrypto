@@ -8,7 +8,7 @@ use radix_engine::{
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto_unit::{is_auth_error, TestRunner};
-use transaction::prelude::{ManifestBuilder, TransactionManifestV1};
+use transaction::prelude::*;
 
 #[test]
 fn multi_resource_pool_can_be_instantiated() {
@@ -394,7 +394,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_function(
             POOL_PACKAGE,
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -706,7 +706,7 @@ impl<const N: usize> TestEnvironment<N> {
         });
 
         let (pool_component, pool_unit_resource) = {
-            let manifest = ManifestBuilder::new()
+            let manifest = ManifestBuilderV2::new()
                 .call_function(
                     POOL_PACKAGE,
                     MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -750,8 +750,8 @@ impl<const N: usize> TestEnvironment<N> {
         value: MetadataValue,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_component_address, key, value)
+        let manifest = ManifestBuilderV2::new()
+            .set_metadata(self.pool_component_address, key.to_string(), value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -762,8 +762,8 @@ impl<const N: usize> TestEnvironment<N> {
         value: MetadataValue,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_unit_resource_address, key, value)
+        let manifest = ManifestBuilderV2::new()
+            .set_metadata(self.pool_unit_resource_address, key.to_string(), value)
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -773,7 +773,7 @@ impl<const N: usize> TestEnvironment<N> {
         resource_to_amount_mapping: BTreeMap<ResourceAddress, Decimal>,
         sign: bool,
     ) -> TransactionReceipt {
-        let mut manifest_builder = &mut ManifestBuilder::new();
+        let mut manifest_builder = ManifestBuilderV2::new();
         for (resource_address, amount) in resource_to_amount_mapping.iter() {
             manifest_builder = manifest_builder.mint_fungible(*resource_address, *amount)
         }
@@ -789,17 +789,18 @@ impl<const N: usize> TestEnvironment<N> {
     }
 
     fn redeem<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .withdraw_from_account(
                 self.account_component_address,
                 self.pool_unit_resource_address,
                 amount.into(),
             )
-            .take_all_from_worktop(self.pool_unit_resource_address, |builder, bucket| {
+            .take_all_from_worktop(self.pool_unit_resource_address, "pool_unit")
+            .with_namer(|builder, namer| {
                 builder.call_method(
                     self.pool_component_address,
                     MULTI_RESOURCE_POOL_REDEEM_IDENT,
-                    to_manifest_value_and_unwrap!(&MultiResourcePoolRedeemManifestInput { bucket }),
+                    to_manifest_value_and_unwrap!(&MultiResourcePoolRedeemManifestInput { bucket: namer.bucket("pool_unit") }),
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -813,9 +814,11 @@ impl<const N: usize> TestEnvironment<N> {
         amount: D,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .mint_fungible(resource_address, amount.into())
-            .take_all_from_worktop(resource_address, |builder, bucket| {
+            .take_all_from_worktop(resource_address, "to_deposit")
+            .with_namer(|builder, namer| {
+                let bucket = namer.bucket("to_deposit");
                 builder.call_method(
                     self.pool_component_address,
                     MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
@@ -834,7 +837,7 @@ impl<const N: usize> TestEnvironment<N> {
         amount: D,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_method(
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
@@ -870,7 +873,7 @@ impl<const N: usize> TestEnvironment<N> {
     }
 
     fn get_vault_amounts(&mut self, sign: bool) -> MultiResourcePoolGetVaultAmountsOutput {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_method(
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
@@ -886,7 +889,7 @@ impl<const N: usize> TestEnvironment<N> {
         amount_of_pool_units: D,
         sign: bool,
     ) -> MultiResourcePoolGetRedemptionValueOutput {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_method(
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,

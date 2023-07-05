@@ -211,22 +211,22 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                 .withdraw_from_account(
                                     config.main_account.address,
                                     state.integer_non_fungible_resource.unwrap(),
-                                    dec!("2"),
+                                    2,
                                 )
-                                .take_all_from_worktop(
+                                .burn_all_from_worktop(
                                     state.integer_non_fungible_resource.unwrap(),
-                                    |builder, bucket| builder.burn_resource(bucket),
                                 )
                                 .withdraw_non_fungibles_from_account(
                                     config.main_account.address,
                                     state.integer_non_fungible_resource.unwrap(),
-                                    &btreeset!(NonFungibleLocalId::integer(110)),
+                                    btreeset!(NonFungibleLocalId::integer(110)),
                                 )
                                 .take_non_fungibles_from_worktop(
                                     state.integer_non_fungible_resource.unwrap(),
-                                    &btreeset!(NonFungibleLocalId::integer(110)),
-                                    |builder, bucket| builder.burn_resource(bucket),
+                                    btreeset!(NonFungibleLocalId::integer(110)),
+                                    "non_fungibles_to_burn",
                                 )
+                                .burn_resource("non_fungibles_to_burn")
                         },
                         vec![&config.main_account.key],
                     )

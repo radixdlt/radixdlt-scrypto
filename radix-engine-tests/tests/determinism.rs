@@ -1,8 +1,7 @@
 use radix_engine::types::*;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::model::InstructionV1;
+use transaction::prelude::*;
 
 #[test]
 fn test_simple_deterministic_execution() {
@@ -46,17 +45,17 @@ fn create_and_pass_multiple_proofs() -> Hash {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let mut builder = ManifestBuilder::new();
-    builder.lock_fee(test_runner.faucet_component(), 500u32.into());
-    let proof_ids = (0..20)
-        .map(|_| {
-            builder
-                .create_proof_from_account_of_amount(account, resource_address, 1.into())
-                .add_instruction(InstructionV1::PopFromAuthZone)
-                .2
-                .unwrap()
-        })
-        .collect::<Vec<ManifestProof>>();
+    let (mut builder, namer) = ManifestBuilderV2::new_with_namer();
+    builder = builder.lock_fee_from_faucet();
+    let mut proof_ids: Vec<_> = vec![];
+    for _ in 0..20 {
+        let (proof_name, new_proof) = namer.new_collision_free_proof("proof");
+        builder = builder
+            .create_proof_from_account_of_amount(account, resource_address, 1)
+            .pop_from_auth_zone(new_proof);
+
+        proof_ids.push(namer.proof(proof_name));
+    }
     let manifest = builder
         .call_function(
             package_address,

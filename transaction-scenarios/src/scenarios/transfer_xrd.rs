@@ -39,11 +39,11 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
             .successful_transaction(|core, config, state| {
                 core.next_transaction_with_faucet_lock_fee_v2(
                     "transfer--try_deposit_or_abort",
-                    |builder, namer| {
+                    |builder| {
                         builder
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
-                            .take_from_worktop(XRD, dec!(1), namer.new_bucket("xrd"))
-                            .try_deposit_or_abort(config.to_account_1.address, namer.bucket("xrd"))
+                            .take_from_worktop(XRD, dec!(1), "xrd")
+                            .try_deposit_or_abort(config.to_account_1.address, "xrd")
                             .done()
                     },
                     vec![&config.from_account.key],
@@ -52,11 +52,11 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
             .successful_transaction(|core, config, state| {
                 core.next_transaction_with_faucet_lock_fee_v2(
                     "transfer--try_deposit_or_refund",
-                    |builder, namer| {
+                    |builder| {
                         builder
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
-                            .take_from_worktop(XRD, dec!(1), namer.new_bucket("xrd"))
-                            .try_deposit_or_refund(config.to_account_1.address, namer.bucket("xrd"))
+                            .take_from_worktop(XRD, dec!(1), "xrd")
+                            .try_deposit_or_refund(config.to_account_1.address, "xrd")
                             .done()
                     },
                     vec![&config.from_account.key],
@@ -65,7 +65,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
             .successful_transaction(|core, config, state| {
                 core.next_transaction_with_faucet_lock_fee_v2(
                     "transfer--try_deposit_batch_or_abort",
-                    |builder, namer| {
+                    |builder| {
                         builder
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
                             .try_deposit_batch_or_abort(config.to_account_1.address)
@@ -77,7 +77,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
             .successful_transaction(|core, config, state| {
                 core.next_transaction_with_faucet_lock_fee_v2(
                     "transfer--try_deposit_batch_or_refund",
-                    |builder, namer| {
+                    |builder| {
                         builder
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
                             .try_deposit_batch_or_refund(config.to_account_1.address)
@@ -89,7 +89,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
             .successful_transaction(|core, config, state| {
                 core.next_transaction_with_faucet_lock_fee_v2(
                     "self-transfer--deposit_batch",
-                    |builder, namer| {
+                    |builder| {
                         builder
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
                             .deposit_batch(config.from_account.address)
@@ -101,7 +101,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
             .successful_transaction(|core, config, state| {
                 core.next_transaction_with_faucet_lock_fee_v2(
                     "multi-transfer--deposit_batch",
-                    |builder, namer| {
+                    |builder| {
                         builder
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
                             .try_deposit_batch_or_abort(config.to_account_1.address)

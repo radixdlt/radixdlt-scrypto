@@ -271,7 +271,7 @@ impl ConsensusManagerBlueprint {
             };
             let validator_rewards = ValidatorRewardsSubstate {
                 proposer_rewards: index_map_new(),
-                rewards_vault: Vault::create(RADIX_TOKEN, api)?,
+                rewards_vault: Vault::create(XRD, api)?,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
                 validator_set: ActiveValidatorSet {
@@ -845,7 +845,7 @@ impl ConsensusManagerBlueprint {
             .sum::<Decimal>();
 
         let total_emission_xrd_bucket =
-            ResourceManager(RADIX_TOKEN).mint_fungible(effective_total_emission_xrd, api)?;
+            ResourceManager(XRD).mint_fungible(effective_total_emission_xrd, api)?;
 
         for validator_info in validator_infos.values() {
             let emission_xrd_bucket = total_emission_xrd_bucket.take(

@@ -385,7 +385,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_function(
             POOL_PACKAGE,
             ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -579,7 +579,7 @@ impl TestEnvironment {
         );
 
         let (pool_component, pool_unit_resource) = {
-            let manifest = ManifestBuilder::new()
+            let manifest = ManifestBuilderV2::new()
                 .call_function(
                     POOL_PACKAGE,
                     ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -617,39 +617,40 @@ impl TestEnvironment {
         }
     }
 
-    fn set_pool_metadata<S: ToString>(
+    fn set_pool_metadata<S: Into<String>>(
         &mut self,
         key: S,
         value: MetadataValue,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .set_metadata(self.pool_component_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
 
-    fn set_pool_unit_resource_metadata<S: ToString>(
+    fn set_pool_unit_resource_metadata<S: Into<String>>(
         &mut self,
         key: S,
         value: MetadataValue,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .set_metadata(self.pool_unit_resource_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
 
     fn contribute<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .mint_fungible(self.resource_address, amount.into())
-            .take_all_from_worktop(self.resource_address, |builder, bucket| {
+            .take_all_from_worktop(self.resource_address, "contribution")
+            .with_namer(|builder, namer| {
                 builder.call_method(
                     self.pool_component_address,
                     ONE_RESOURCE_POOL_CONTRIBUTE_IDENT,
                     to_manifest_value_and_unwrap!(&OneResourcePoolContributeManifestInput {
-                        bucket
+                        bucket: namer.bucket("contribution")
                     }),
                 )
             })
@@ -659,17 +660,18 @@ impl TestEnvironment {
     }
 
     fn redeem<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .withdraw_from_account(
                 self.account_component_address,
                 self.pool_unit_resource_address,
                 amount.into(),
             )
-            .take_all_from_worktop(self.pool_unit_resource_address, |builder, bucket| {
+            .take_all_from_worktop(self.pool_unit_resource_address, "pool_unit")
+            .with_namer(|builder, namer| {
                 builder.call_method(
                     self.pool_component_address,
                     ONE_RESOURCE_POOL_REDEEM_IDENT,
-                    to_manifest_value_and_unwrap!(&OneResourcePoolRedeemManifestInput { bucket }),
+                    to_manifest_value_and_unwrap!(&OneResourcePoolRedeemManifestInput { bucket: namer.bucket("pool_unit") }),
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -678,14 +680,15 @@ impl TestEnvironment {
     }
 
     fn protected_deposit<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .mint_fungible(self.resource_address, amount.into())
-            .take_all_from_worktop(self.resource_address, |builder, bucket| {
+            .take_all_from_worktop(self.resource_address, "to_deposit")
+            .with_namer(|builder, namer| {
                 builder.call_method(
                     self.pool_component_address,
                     ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
                     to_manifest_value_and_unwrap!(&OneResourcePoolProtectedDepositManifestInput {
-                        bucket
+                        bucket: namer.bucket("to_deposit")
                     }),
                 )
             })
@@ -698,7 +701,7 @@ impl TestEnvironment {
         amount: D,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
@@ -716,7 +719,7 @@ impl TestEnvironment {
         amount_of_pool_units: D,
         sign: bool,
     ) -> Decimal {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
@@ -730,7 +733,7 @@ impl TestEnvironment {
     }
 
     fn get_vault_amount(&mut self, sign: bool) -> Decimal {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,

@@ -197,6 +197,14 @@ impl From<u32> for DynamicPackageAddress {
     }
 }
 
+impl TryFrom<GlobalAddress> for DynamicPackageAddress {
+    type Error = ParsePackageAddressError;
+
+    fn try_from(value: GlobalAddress) -> Result<Self, Self::Error> {
+        Ok(Self::Static(PackageAddress::try_from(value.into_node_id())?))
+    }
+}
+
 impl TryFrom<ManifestAddress> for DynamicPackageAddress {
     type Error = ParsePackageAddressError;
 
@@ -226,6 +234,14 @@ impl From<u32> for DynamicComponentAddress {
     }
 }
 
+impl TryFrom<GlobalAddress> for DynamicComponentAddress {
+    type Error = ParseComponentAddressError;
+
+    fn try_from(value: GlobalAddress) -> Result<Self, Self::Error> {
+        Ok(Self::Static(ComponentAddress::try_from(value.into_node_id())?))
+    }
+}
+
 impl TryFrom<ManifestAddress> for DynamicComponentAddress {
     type Error = ParseComponentAddressError;
 
@@ -252,6 +268,14 @@ impl From<ResourceAddress> for DynamicResourceAddress {
 impl From<u32> for DynamicResourceAddress {
     fn from(value: u32) -> Self {
         Self::Named(value)
+    }
+}
+
+impl TryFrom<GlobalAddress> for DynamicResourceAddress {
+    type Error = ParseResourceAddressError;
+
+    fn try_from(value: GlobalAddress) -> Result<Self, Self::Error> {
+        Ok(Self::Static(ResourceAddress::try_from(value.into_node_id())?))
     }
 }
 

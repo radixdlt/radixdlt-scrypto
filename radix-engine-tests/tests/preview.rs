@@ -3,11 +3,7 @@ use radix_engine::transaction::FeeReserveConfig;
 use radix_engine::types::*;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::builder::TransactionBuilder;
-use transaction::builder::TransactionManifestV1;
-use transaction::model::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
+use transaction::prelude::*;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::{TransactionValidator, ValidationConfig};
 
@@ -16,8 +12,8 @@ fn test_transaction_preview_cost_estimate() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .clear_auth_zone()
         .build();
     let preview_flags = PreviewFlags {
@@ -69,14 +65,10 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     };
 
     // Check method authorization (withdrawal) without a proof in the auth zone
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .withdraw_from_account(account, RADIX_TOKEN, 1.into())
-        .call_method(
-            other_account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee(account, 500)
+        .withdraw_from_account(account, XRD, 1)
+        .try_deposit_batch_or_abort(other_account)
         .build();
 
     let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(

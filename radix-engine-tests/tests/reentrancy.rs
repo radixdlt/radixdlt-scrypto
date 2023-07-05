@@ -2,15 +2,15 @@ use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::types::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn mut_reentrancy_should_not_be_possible() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ReentrantComponent",
@@ -22,8 +22,8 @@ fn mut_reentrancy_should_not_be_possible() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "call_mut_self",
@@ -48,8 +48,8 @@ fn read_reentrancy_should_be_possible() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ReentrantComponent",
@@ -61,8 +61,8 @@ fn read_reentrancy_should_be_possible() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "call_self",
@@ -80,8 +80,8 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ReentrantComponent",
@@ -93,8 +93,8 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "call_mut_self_2",

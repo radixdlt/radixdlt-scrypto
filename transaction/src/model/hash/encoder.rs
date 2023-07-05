@@ -114,7 +114,7 @@ mod tests {
 
     fn transaction() -> NotarizedTransactionV1 {
         let pk = Secp256k1PrivateKey::from_u64(1).unwrap();
-        let manifest = ManifestBuilder::new().build();
+        let manifest = ManifestBuilderV2::new().build();
         let header = TransactionHeaderV1 {
             network_id: 0xf2,
             start_epoch_inclusive: Epoch::of(0),

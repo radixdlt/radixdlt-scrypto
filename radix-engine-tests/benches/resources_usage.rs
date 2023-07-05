@@ -142,8 +142,8 @@ fn transfer_test(c: &mut Criterion) {
     // Create two accounts
     let accounts = (0..2)
         .map(|_| {
-            let manifest = ManifestBuilder::new()
-                .lock_fee(test_runner.faucet_component(), 500u32.into())
+            let manifest = ManifestBuilderV2::new()
+                .lock_fee_from_faucet()
                 .new_account_advanced(rule!(require(NonFungibleGlobalId::from_public_key(
                     &public_key
                 ))))
@@ -161,14 +161,10 @@ fn transfer_test(c: &mut Criterion) {
             .expect_commit(true)
             .new_component_addresses()[0];
 
-            let manifest = ManifestBuilder::new()
-                .lock_fee(test_runner.faucet_component(), 500u32.into())
-                .call_method(test_runner.faucet_component(), "free", manifest_args!())
-                .call_method(
-                    account,
-                    "try_deposit_batch_or_abort",
-                    manifest_args!(ManifestExpression::EntireWorktop),
-                )
+            let manifest = ManifestBuilderV2::new()
+                .lock_fee_from_faucet()
+                .get_free_xrd_from_faucet()
+                .try_deposit_batch_or_abort(account)
                 .build();
             execute_and_commit_transaction(
                 &mut substate_db,
@@ -190,14 +186,10 @@ fn transfer_test(c: &mut Criterion) {
     let account2 = accounts[1];
 
     // Fill first account
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .call_method(test_runner.faucet_component(), "free", manifest_args!())
-        .call_method(
-            account1,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
+        .try_deposit_batch_or_abort(account1)
         .build();
 
     for nonce in 0..1000 {
@@ -215,14 +207,10 @@ fn transfer_test(c: &mut Criterion) {
     }
 
     // Create a transfer manifest
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
-        .call_method(
-            account2,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account1, XRD, dec!("0.000001"))
+        .try_deposit_batch_or_abort(account2)
         .build();
 
     // Loop

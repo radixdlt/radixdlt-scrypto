@@ -2,7 +2,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::prelude::{WORKTOP_BLUEPRINT, WORKTOP_DROP_IDENT};
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn mis_typed_own_passed_to_worktop_drop_function() {
@@ -12,14 +12,15 @@ fn mis_typed_own_passed_to_worktop_drop_function() {
 
     // Run manifest
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
-            .take_from_worktop(RADIX_TOKEN, Decimal::ZERO, |builder, bucket| {
+        ManifestBuilderV2::new()
+            .lock_fee(account, 500)
+            .take_from_worktop(XRD, Decimal::ZERO, "bucket")
+            .with_namer(|builder, namer| {
                 builder.call_function(
                     RESOURCE_PACKAGE,
                     WORKTOP_BLUEPRINT,
                     WORKTOP_DROP_IDENT,
-                    manifest_args!(bucket),
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build(),

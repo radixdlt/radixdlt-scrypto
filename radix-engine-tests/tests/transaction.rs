@@ -10,9 +10,7 @@ use radix_engine_queries::typed_substate_layout::PackagePublishWasmAdvancedManif
 use radix_engine_queries::typed_substate_layout::PACKAGE_BLUEPRINT;
 use radix_engine_queries::typed_substate_layout::PACKAGE_PUBLISH_WASM_ADVANCED_IDENT;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::model::InstructionV1;
-use utils::ContextualDisplay;
+use transaction::prelude::*;
 
 #[test]
 fn test_manifest_with_non_existent_resource() {
@@ -22,11 +20,10 @@ fn test_manifest_with_non_existent_resource() {
     let non_existent_resource = resource_address(EntityType::GlobalFungibleResourceManager, 222);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .take_all_from_worktop(non_existent_resource, |builder, bucket_id| {
-            builder.call_method(account, "try_deposit_or_abort", manifest_args!(bucket_id))
-        })
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
+        .take_all_from_worktop(non_existent_resource, "non_existent")
+        .try_deposit_or_abort(account, "non_existent")
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -51,33 +48,18 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .create_proof_from_account(account, RADIX_TOKEN)
-        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
-            builder.push_to_auth_zone(proof_id)
-        })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
-        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
-            builder.push_to_auth_zone(proof_id)
-        })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
-        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
-            builder.push_to_auth_zone(proof_id)
-        })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
+        .create_proof_from_account(account, XRD)
+        .create_proof_from_auth_zone(XRD, "proof1")
+        .push_to_auth_zone("proof1")
+        .try_deposit_batch_or_abort(account)
+        .create_proof_from_auth_zone(XRD, "proof2")
+        .push_to_auth_zone("proof2")
+        .try_deposit_batch_or_abort(account)
+        .create_proof_from_auth_zone(XRD, "proof3")
+        .push_to_auth_zone("proof3")
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -99,12 +81,12 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
-        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
-        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
-        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
+        .create_proof_from_account_of_amount(account, XRD, dec!("1"))
+        .create_proof_from_account_of_amount(account, XRD, dec!("1"))
+        .create_proof_from_account_of_amount(account, XRD, dec!("1"))
+        .create_proof_from_account_of_amount(account, XRD, dec!("1"))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -126,13 +108,13 @@ fn test_non_existent_blob_hash() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .add_instruction(InstructionV1::CallFunction {
-            package_address: PACKAGE_PACKAGE.into(),
-            blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-            function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee(account, 500)
+        .call_function(
+            PACKAGE_PACKAGE,
+            PACKAGE_BLUEPRINT,
+            PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+            to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef([0; 32]),
                 setup: PackageDefinition {
                     blueprints: btreemap!(),
@@ -141,8 +123,7 @@ fn test_non_existent_blob_hash() {
                 owner_role: OwnerRole::None,
                 package_address: None,
             }),
-        })
-        .0
+        )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -172,14 +153,14 @@ fn test_entire_auth_zone() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
+        .create_proof_from_account_of_amount(account, XRD, dec!("1"))
         .call_function(
             package_address,
             "Receiver",
             "assert_first_proof",
-            manifest_args!(ManifestExpression::EntireAuthZone, dec!("1"), RADIX_TOKEN),
+            manifest_args!(ManifestExpression::EntireAuthZone, dec!("1"), XRD),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -202,15 +183,11 @@ fn test_faucet_drain_attempt_should_fail() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .call_method(test_runner.faucet_component(), "free", manifest_args!())
-        .call_method(test_runner.faucet_component(), "free", manifest_args!())
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
+        .get_free_xrd_from_faucet()
+        .get_free_xrd_from_faucet()
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

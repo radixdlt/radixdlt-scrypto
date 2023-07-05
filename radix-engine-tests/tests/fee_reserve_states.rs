@@ -1,7 +1,7 @@
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn test_fee_states() {
@@ -14,8 +14,8 @@ fn test_fee_states() {
 
     // Run test case
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
+        ManifestBuilderV2::new()
+            .lock_standard_test_fee(account)
             .call_function(
                 package_address,
                 "FeeReserveChecker",

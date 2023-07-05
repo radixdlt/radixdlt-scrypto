@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::{metadata, metadata_init};
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 #[ignore]
@@ -15,10 +15,10 @@ fn cannot_get_total_supply_of_xrd() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
-            RADIX_TOKEN,
+            XRD,
             RESOURCE_MANAGER_GET_TOTAL_SUPPLY_IDENT,
             manifest_args!(),
         )
@@ -39,8 +39,8 @@ fn test_set_mintable_with_self_resource_address() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ResourceTest",
@@ -65,8 +65,8 @@ fn test_resource_manager() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ResourceTest",
@@ -81,11 +81,7 @@ fn test_resource_manager() {
             "update_resource_metadata",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -104,19 +100,15 @@ fn mint_with_bad_granularity_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",
             manifest_args!(0u8, dec!("0.1")),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -144,8 +136,8 @@ fn create_fungible_too_high_granularity_should_fail() {
     let _package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .create_fungible_resource(
             OwnerRole::None,
             false,
@@ -181,8 +173,8 @@ fn mint_too_much_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ResourceTest",
@@ -193,11 +185,7 @@ fn mint_too_much_should_fail() {
                 dec!("1461501637330902918203684832717")
             ),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -221,8 +209,8 @@ fn can_mint_with_proof_in_root() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -230,15 +218,11 @@ fn can_mint_with_proof_in_root() {
     let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account(account, admin_token)
-        .mint_fungible(resource, 1.into())
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .mint_fungible(resource, 1)
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -255,8 +239,8 @@ fn cannot_mint_in_component_with_proof_in_root() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -264,15 +248,11 @@ fn cannot_mint_in_component_with_proof_in_root() {
     let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account(account, admin_token)
         .call_method(component, "mint", manifest_args!(resource))
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -296,8 +276,8 @@ fn can_burn_with_proof_in_root() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -305,10 +285,10 @@ fn can_burn_with_proof_in_root() {
     let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account(account, admin_token)
-        .mint_fungible(resource, 1.into())
+        .mint_fungible(resource, 1)
         .burn_all_from_worktop(resource)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -326,8 +306,8 @@ fn cannot_burn_in_component_with_proof_in_root() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -335,12 +315,13 @@ fn cannot_burn_in_component_with_proof_in_root() {
     let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account(account, admin_token)
-        .mint_fungible(resource, 1.into())
-        .take_all_from_worktop(resource, |builder, bucket| {
-            builder.call_method(component, "burn", manifest_args!(bucket))
+        .mint_fungible(resource, 1)
+        .take_all_from_worktop(resource, "to_burn")
+        .with_namer(|builder, namer| {
+            builder.call_method(component, "burn", manifest_args!(namer.bucket("to_burn")))
         })
         .build();
     let receipt = test_runner.execute_manifest(

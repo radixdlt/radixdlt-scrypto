@@ -5,7 +5,7 @@ use radix_engine::{
     types::*,
 };
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 use utils::ContextualDisplay;
 
 fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: bool) {
@@ -15,14 +15,10 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
         .call_function(package_address, "BucketTest", method_name, args)
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -103,17 +99,13 @@ fn test_bucket_of_badges() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
         .call_function(package_address, "BadgeTest", "combine", manifest_args!())
         .call_function(package_address, "BadgeTest", "split", manifest_args!())
         .call_function(package_address, "BadgeTest", "borrow", manifest_args!())
         .call_function(package_address, "BadgeTest", "query", manifest_args!())
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -131,16 +123,16 @@ fn test_take_with_invalid_granularity() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .withdraw_from_account(account, resource_address, 100.into())
-        .take_all_from_worktop(resource_address, |builder, bucket_id| {
-            let bucket = bucket_id;
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
+        .withdraw_from_account(account, resource_address, 100)
+        .take_all_from_worktop(resource_address, "bucket")
+        .with_namer(|builder, namer| {
             builder.call_function(
                 package_address,
                 "BucketTest",
                 "take_from_bucket",
-                manifest_args!(bucket, dec!("1.123")),
+                manifest_args!(namer.bucket("bucket"), dec!("1.123")),
             )
         })
         .build();
@@ -169,11 +161,12 @@ fn test_take_with_negative_amount() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .withdraw_from_account(account, resource_address, 100.into())
-        .take_all_from_worktop(resource_address, |builder, bucket_id| {
-            let bucket = bucket_id;
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
+        .withdraw_from_account(account, resource_address, 100)
+        .take_all_from_worktop(resource_address, "bucket")
+        .with_namer(|builder, namer| {
+            let bucket = namer.bucket("bucket");
             builder.call_function(
                 package_address,
                 "BucketTest",
@@ -206,19 +199,18 @@ fn create_empty_bucket() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.return_to_worktop(bucket_id)
-        })
-        .take_from_worktop(RADIX_TOKEN, Decimal::zero(), |builder, bucket_id| {
-            builder.return_to_worktop(bucket_id)
-        })
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
+        .take_all_from_worktop(XRD, "bucket1")
+        .return_to_worktop("bucket1")
+        .take_from_worktop(XRD, Decimal::zero(), "bucket2")
+        .return_to_worktop("bucket2")
         .take_non_fungibles_from_worktop(
             non_fungible_resource,
-            &BTreeSet::new(),
-            |builder, bucket_id| builder.return_to_worktop(bucket_id),
+            BTreeSet::new(),
+            "bucket3",
         )
+        .return_to_worktop("bucket3")
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -241,19 +233,15 @@ fn test_drop_locked_fungible_bucket() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
         .call_function(
             package_address,
             "BucketTest",
             "drop_locked_fungible_bucket",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -280,19 +268,15 @@ fn test_drop_locked_non_fungible_bucket() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
         .call_function(
             package_address,
             "BucketTest",
             "drop_locked_non_fungible_bucket",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

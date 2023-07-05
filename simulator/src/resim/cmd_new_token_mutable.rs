@@ -3,7 +3,6 @@ use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use transaction::builder::ManifestBuilder;
 
 /// Create a fungible token with mutable supply
 #[derive(Parser, Debug)]
@@ -75,8 +74,8 @@ impl NewTokenMutable {
             roles: RolesInit::default(),
         };
 
-        let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 500u32.into())
+        let manifest = ManifestBuilderV2::new()
+            .lock_fee_from_faucet()
             .new_token_mutable(metadata, self.minter_badge.clone().into())
             .build();
         handle_manifest(

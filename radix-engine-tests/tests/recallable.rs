@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
 use std::ops::Sub;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn non_existing_vault_should_cause_error() {
@@ -15,14 +15,10 @@ fn non_existing_vault_should_cause_error() {
     let non_existing_address = local_address(EntityType::InternalFungibleVault, 5);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .recall(non_existing_address, Decimal::one())
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -47,17 +43,13 @@ fn cannot_take_on_non_recallable_vault() {
     let vault_id = vaults[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .recall(
             InternalAddress::new_or_panic(vault_id.into()),
             Decimal::one(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -84,17 +76,13 @@ fn can_take_on_recallable_vault() {
     let vault_id = vaults[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .recall(
             InternalAddress::new_or_panic(vault_id.into()),
             Decimal::one(),
         )
-        .call_method(
-            other_account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(other_account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -129,8 +117,8 @@ fn test_recall_on_internal_vault() {
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
+        ManifestBuilderV2::new()
+            .lock_standard_test_fee(account)
             .call_function(package_address, "RecallTest", "new", manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -139,18 +127,14 @@ fn test_recall_on_internal_vault() {
 
     // Recall
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
+        ManifestBuilderV2::new()
+            .lock_fee(account, 500u32)
             .call_method(
                 component_address,
                 "recall_on_internal_vault",
                 manifest_args!(),
             )
-            .call_method(
-                account,
-                "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
@@ -175,19 +159,15 @@ fn test_recall_on_received_direct_access_reference() {
     // Recall
     let vault_id = test_runner.get_component_vaults(account, recallable_token_address)[0];
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
+        ManifestBuilderV2::new()
+            .lock_standard_test_fee(account)
             .call_function(
                 package_address,
                 "RecallTest",
                 "recall_on_direct_access_ref",
                 manifest_args!(InternalAddress::new_or_panic(vault_id.into())),
             )
-            .call_method(
-                account,
-                "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(account)
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );

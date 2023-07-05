@@ -1,6 +1,5 @@
 use clap::Parser;
 use radix_engine::types::*;
-use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 use crate::utils::*;
@@ -45,27 +44,20 @@ impl Transfer {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut manifest_builder = ManifestBuilder::new();
-        manifest_builder.lock_fee(FAUCET, 5000u32.into());
+        let mut builder = ManifestBuilderV2::new()
+            .lock_fee_from_faucet();
         for resource_specifier in proofs {
-            manifest_builder.borrow_mut(|builder| {
-                create_proof_from_account(
-                    builder,
-                    &address_bech32_decoder,
-                    default_account,
-                    resource_specifier,
-                )
-                .map_err(Error::FailedToBuildArguments)?;
-                Ok(builder)
-            })?;
-        }
-        let manifest = manifest_builder
-            .withdraw_from_account(default_account, self.resource_address.0, self.amount)
-            .call_method(
-                self.recipient.0,
-                "try_deposit_batch_or_refund",
-                manifest_args!(ManifestExpression::EntireWorktop),
+            builder = create_proof_from_account(
+                builder,
+                &address_bech32_decoder,
+                default_account,
+                resource_specifier,
             )
+            .map_err(Error::FailedToBuildArguments)?
+        }
+        let manifest = builder
+            .withdraw_from_account(default_account, self.resource_address.0, self.amount)
+            .try_deposit_batch_or_refund(self.recipient.0)
             .build();
         handle_manifest(
             manifest,

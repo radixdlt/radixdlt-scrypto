@@ -3,7 +3,7 @@ use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn test_max_call_depth_success() {
@@ -19,8 +19,8 @@ fn test_max_call_depth_success() {
     // * 2-15: Caller::call x 14
     // ============================
     let num_calls = u32::try_from(DEFAULT_MAX_CALL_DEPTH).unwrap() - 1u32;
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "Caller",
@@ -41,8 +41,8 @@ fn test_max_call_depth_failure() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "Caller",

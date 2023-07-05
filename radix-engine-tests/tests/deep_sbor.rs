@@ -2,7 +2,7 @@ use radix_engine::errors::{RuntimeError, SystemUpstreamError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn deep_auth_rules_on_component_create_creation_fails() {
@@ -12,13 +12,13 @@ fn deep_auth_rules_on_component_create_creation_fails() {
 
     // Act 1 - Small Depth
     let depth = 10usize;
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "DeepAuthRulesOnCreate",
             "new",
-            manifest_args!(RADIX_TOKEN, depth),
+            manifest_args!(XRD, depth),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -26,13 +26,13 @@ fn deep_auth_rules_on_component_create_creation_fails() {
 
     // Act 2 - Very Large Depth - we get a panic at encoding time in the Scrypto WASM
     let depth = 100usize;
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "DeepAuthRulesOnCreate",
             "new",
-            manifest_args!(RADIX_TOKEN, depth),
+            manifest_args!(XRD, depth),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -50,8 +50,8 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/deep_sbor");
 
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "DeepStruct", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -59,12 +59,12 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
 
     // Act 1 - Small Depth - Succeeds
     let depth = 10usize;
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "set_depth",
-            manifest_args!(RADIX_TOKEN, depth),
+            manifest_args!(XRD, depth),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -72,12 +72,12 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
 
     // Act 2 - Very Large Depth - we get a panic at encoding time in the Scrypto WASM
     let depth = 100usize;
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "set_depth",
-            manifest_args!(RADIX_TOKEN, depth),
+            manifest_args!(XRD, depth),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -126,8 +126,8 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> Transact
     );
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     test_runner.execute_manifest(manifest, vec![])

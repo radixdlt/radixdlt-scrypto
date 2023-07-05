@@ -8,8 +8,7 @@ use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::builder::*;
+use transaction::prelude::*;
 use transaction::prelude::PreviewFlags;
 use utils::ContextualDisplay;
 
@@ -32,12 +31,17 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
     // Publish package and instantiate component
     let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
     let receipt1 = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
-            .withdraw_from_account(account, RADIX_TOKEN, 1000u32.into())
-            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_function(package_address, "Fee", "new", manifest_args!(bucket_id));
-                builder
+        ManifestBuilderV2::new()
+            .lock_standard_test_fee(account)
+            .withdraw_from_account(account, XRD, 1000)
+            .take_all_from_worktop(XRD, "bucket")
+            .with_namer(|builder, namer| {
+                builder.call_function(
+                    package_address,
+                    "Fee",
+                    "new",
+                    manifest_args!(namer.bucket("bucket"))
+                )
             })
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
@@ -52,9 +56,9 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
 fn should_be_aborted_when_loan_repaid() {
     let (mut test_runner, component_address) = setup_test_runner();
 
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         // First, lock the fee so that the loan will be repaid
-        .lock_fee(FAUCET, 500u32.into())
+        .lock_fee_from_faucet()
         // Now spin-loop to wait for the fee loan to burn through
         .call_method(component_address, "spin_loop", manifest_args!())
         .build();
@@ -73,8 +77,8 @@ fn should_be_aborted_when_loan_repaid() {
 #[test]
 fn should_succeed_when_fee_is_paid() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new()
-            .lock_fee(component_address, 500u32.into())
+        ManifestBuilderV2::new()
+            .lock_fee(component_address, 500u32)
             .build()
     });
 
@@ -83,7 +87,7 @@ fn should_succeed_when_fee_is_paid() {
 
 #[test]
 fn should_be_rejected_when_no_fee_is_paid() {
-    let receipt = run_manifest(|_| ManifestBuilder::new().build());
+    let receipt = run_manifest(|_| ManifestBuilderV2::new().build());
 
     receipt.expect_rejection();
 }
@@ -91,7 +95,7 @@ fn should_be_rejected_when_no_fee_is_paid() {
 #[test]
 fn should_be_rejected_when_insufficient_balance() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new()
+        ManifestBuilderV2::new()
             .call_method(
                 component_address,
                 "lock_fee_with_empty_vault",
@@ -106,7 +110,7 @@ fn should_be_rejected_when_insufficient_balance() {
 #[test]
 fn should_be_rejected_when_non_xrd() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new()
+        ManifestBuilderV2::new()
             .call_method(
                 component_address,
                 "lock_fee_with_doge",
@@ -121,7 +125,7 @@ fn should_be_rejected_when_non_xrd() {
 #[test]
 fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new()
+        ManifestBuilderV2::new()
             .call_method(
                 component_address,
                 "lock_fee",
@@ -136,7 +140,7 @@ fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
 #[test]
 fn should_be_rejected_when_lock_fee_with_temp_vault() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new()
+        ManifestBuilderV2::new()
             .call_method(
                 component_address,
                 "lock_fee_with_temp_vault",
@@ -158,7 +162,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
 #[test]
 fn should_be_success_when_query_vault_and_lock_fee() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new()
+        ManifestBuilderV2::new()
             .call_method(
                 component_address,
                 "query_vault_and_lock_fee",
@@ -173,7 +177,7 @@ fn should_be_success_when_query_vault_and_lock_fee() {
 #[test]
 fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new()
+        ManifestBuilderV2::new()
             .call_method(
                 component_address,
                 "update_vault_and_lock_fee",
@@ -201,7 +205,7 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
 #[test]
 fn should_succeed_when_lock_fee_and_query_vault() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilder::new()
+        ManifestBuilderV2::new()
             .call_method(
                 component_address,
                 "lock_fee_and_query_vault",
@@ -221,24 +225,20 @@ fn test_fee_accounting_success() {
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
         .get_component_resources(account1)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let account2_balance = test_runner
         .get_component_resources(account2)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 500u32.into())
-        .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
-        .call_method(
-            account2,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee(account1, 500)
+        .withdraw_from_account(account1, XRD, 66)
+        .try_deposit_batch_or_abort(account2)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -249,12 +249,12 @@ fn test_fee_accounting_success() {
     let commit_result = receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let account2_new_balance = test_runner
         .get_component_resources(account2)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let summary = &commit_result.fee_summary;
@@ -277,25 +277,21 @@ fn test_fee_accounting_failure() {
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
         .get_component_resources(account1)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let account2_balance = test_runner
         .get_component_resources(account2)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 500u32.into())
-        .withdraw_from_account(account1, RADIX_TOKEN, 66.into())
-        .call_method(
-            account2,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
-        .assert_worktop_contains(RADIX_TOKEN, 1.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee(account1, 500)
+        .withdraw_from_account(account1, XRD, 66)
+        .try_deposit_batch_or_abort(account2)
+        .assert_worktop_contains(XRD, 1)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -314,12 +310,12 @@ fn test_fee_accounting_failure() {
     let commit_result = receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let account2_new_balance = test_runner
         .get_component_resources(account2)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let summary = &commit_result.fee_summary;
@@ -339,12 +335,12 @@ fn test_fee_accounting_rejection() {
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let account1_balance = test_runner
         .get_component_resources(account1)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .lock_fee(account1, Decimal::from_str("0.000000000000000001").unwrap())
         .build();
     let receipt = test_runner.execute_manifest(
@@ -356,7 +352,7 @@ fn test_fee_accounting_rejection() {
     receipt.expect_rejection();
     let account1_new_balance = test_runner
         .get_component_resources(account1)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     assert_eq!(account1_new_balance, account1_balance);
@@ -370,18 +366,18 @@ fn test_contingent_fee_accounting_success() {
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
         .get_component_resources(account1)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let account2_balance = test_runner
         .get_component_resources(account2)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee(account1, 500)
         .lock_contingent_fee(account2, dec!("0.001"))
         .build();
     let receipt = test_runner.execute_manifest(
@@ -396,12 +392,12 @@ fn test_contingent_fee_accounting_success() {
     let commit_result = receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let account2_new_balance = test_runner
         .get_component_resources(account2)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let summary = &commit_result.fee_summary;
@@ -426,20 +422,20 @@ fn test_contingent_fee_accounting_failure() {
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
         .get_component_resources(account1)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let account2_balance = test_runner
         .get_component_resources(account2)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee(account1, 500)
         .lock_contingent_fee(account2, dec!("0.001"))
-        .assert_worktop_contains(RADIX_TOKEN, 1.into())
+        .assert_worktop_contains(XRD, 1)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -461,12 +457,12 @@ fn test_contingent_fee_accounting_failure() {
     let commit_result = receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let account2_new_balance = test_runner
         .get_component_resources(account2)
-        .get(&RADIX_TOKEN)
+        .get(&XRD)
         .cloned()
         .unwrap();
     let summary = &commit_result.fee_summary;
@@ -486,7 +482,7 @@ fn locked_fees_are_correct_in_execution_trace() {
     let (public_key, _, account) = test_runner.new_account(false);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .lock_fee(account, dec!("104.676"))
         .build();
     let receipt = test_runner.preview_manifest(
@@ -515,7 +511,7 @@ fn multiple_locked_fees_are_correct_in_execution_trace() {
     let (public_key2, _, account2) = test_runner.new_account(false);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .lock_fee(account1, dec!("104.676"))
         .lock_fee(account2, dec!("102.180"))
         .build();
@@ -545,7 +541,7 @@ fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
     let (public_key2, _, account2) = test_runner.new_account(false);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .lock_fee(account1, dec!("104.676"))
         .lock_contingent_fee(account2, dec!("102.180"))
         .build();

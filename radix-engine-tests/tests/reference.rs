@@ -5,7 +5,7 @@ use radix_engine::{
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn test_create_global_node_with_local_ref() {
@@ -18,8 +18,8 @@ fn test_create_global_node_with_local_ref() {
 
     // Call function
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
+        ManifestBuilderV2::new()
+            .lock_standard_test_fee(account)
             .call_function(
                 package_address,
                 "ReferenceTest",
@@ -52,10 +52,10 @@ fn test_add_local_ref_to_stored_substate() {
 
     // Instantiate component
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_function(
                 package_address,
-                "ReferenceTest".into(),
+                "ReferenceTest",
                 "new",
                 manifest_args!(),
             )
@@ -72,8 +72,8 @@ fn test_add_local_ref_to_stored_substate() {
 
     // Call method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
+        ManifestBuilderV2::new()
+            .lock_standard_test_fee(account)
             .call_method(
                 component_address,
                 "add_local_ref_to_stored_substate",

@@ -563,7 +563,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(RADIX_TOKEN),
+            GlobalAddress::from(XRD),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
@@ -1134,7 +1134,7 @@ pub fn create_system_bootstrap_transaction(
         let faucet_xrd_bucket = id_allocator.new_bucket_id();
         instructions.push(
             InstructionV1::CallMethod {
-                address: RADIX_TOKEN.clone().into(),
+                address: XRD.clone().into(),
                 method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
                 args: manifest_args!(faucet_supply),
             }
@@ -1142,7 +1142,7 @@ pub fn create_system_bootstrap_transaction(
         );
         instructions.push(
             InstructionV1::TakeFromWorktop {
-                resource_address: RADIX_TOKEN,
+                resource_address: XRD,
                 amount: faucet_supply,
             }
             .into(),

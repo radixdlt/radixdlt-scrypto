@@ -21,9 +21,9 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
     test_runner.initiate_recovery(
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
 
@@ -31,9 +31,9 @@ pub fn role_cant_quick_confirm_a_ruleset_it_proposed() {
     let receipt = test_runner.quick_confirm_recovery(
         Role::Recovery,
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
 
@@ -47,9 +47,9 @@ pub fn quick_confirm_non_existent_recovery_fails() {
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
     test_runner.initiate_recovery(
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
 
@@ -73,18 +73,18 @@ pub fn initiating_recovery_multiple_times_as_the_same_role_fails() {
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
     test_runner.initiate_recovery(
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
 
     // Act
     let receipt = test_runner.initiate_recovery(
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
 
@@ -98,9 +98,9 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
     test_runner.initiate_recovery(
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
     test_runner.set_current_minute(9);
@@ -108,9 +108,9 @@ pub fn timed_confirm_recovery_before_delay_passes_fails() {
     // Act
     let receipt = test_runner.timed_confirm_recovery(
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
 
@@ -124,9 +124,9 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
     test_runner.initiate_recovery(
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
     test_runner.set_current_minute(10);
@@ -134,9 +134,9 @@ pub fn timed_confirm_recovery_after_delay_passes_succeeds() {
     // Act
     let receipt = test_runner.timed_confirm_recovery(
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
 
@@ -150,9 +150,9 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
     let mut test_runner = AccessControllerTestRunner::new(None);
     test_runner.initiate_recovery(
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
     test_runner.set_current_minute(10);
@@ -160,9 +160,9 @@ pub fn timed_confirm_recovery_with_disabled_timed_recovery_fails() {
     // Act
     let receipt = test_runner.timed_confirm_recovery(
         Role::Recovery,
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
 
@@ -177,8 +177,8 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
     test_runner.initiate_recovery(
         Role::Recovery,
         rule!(require(test_runner.primary_role_badge)),
-        rule!(require(RADIX_TOKEN)),
-        rule!(require(RADIX_TOKEN)),
+        rule!(require(XRD)),
+        rule!(require(XRD)),
         Some(10),
     );
     test_runner
@@ -191,8 +191,8 @@ pub fn primary_is_unlocked_after_a_successful_recovery() {
         .timed_confirm_recovery(
             Role::Recovery,
             rule!(require(test_runner.primary_role_badge)),
-            rule!(require(RADIX_TOKEN)),
-            rule!(require(RADIX_TOKEN)),
+            rule!(require(XRD)),
+            rule!(require(XRD)),
             Some(10),
         )
         .expect_commit_success();
@@ -209,15 +209,15 @@ pub fn stop_timed_recovery_with_no_access_fails() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
 
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_method(
             test_runner.access_controller_address,
             "stop_timed_recovery",
             to_manifest_value_and_unwrap!(&AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
-                    primary_role: rule!(require(RADIX_TOKEN)),
-                    recovery_role: rule!(require(RADIX_TOKEN)),
-                    confirmation_role: rule!(require(RADIX_TOKEN)),
+                    primary_role: rule!(require(XRD)),
+                    recovery_role: rule!(require(XRD)),
+                    confirmation_role: rule!(require(XRD)),
                 },
                 timed_recovery_delay_in_minutes: Some(10),
             }),
@@ -277,9 +277,9 @@ pub fn quick_confirm_semantics_are_correct() {
         test_runner
             .initiate_recovery(
                 proposer.into(),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 Some(10),
             )
             .expect_commit_success();
@@ -288,9 +288,9 @@ pub fn quick_confirm_semantics_are_correct() {
         let receipt = test_runner.quick_confirm_recovery(
             role,
             proposer.into(),
-            rule!(require(RADIX_TOKEN)),
-            rule!(require(RADIX_TOKEN)),
-            rule!(require(RADIX_TOKEN)),
+            rule!(require(XRD)),
+            rule!(require(XRD)),
+            rule!(require(XRD)),
             Some(10),
         );
 
@@ -552,9 +552,9 @@ mod no_recovery_with_primary_unlocked {
             // Act
             let receipt = test_runner.initiate_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -646,9 +646,9 @@ mod no_recovery_with_primary_unlocked {
             let receipt = test_runner.quick_confirm_recovery(
                 role,
                 proposer,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -676,9 +676,9 @@ mod no_recovery_with_primary_unlocked {
             // Act
             let receipt = test_runner.timed_confirm_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -737,9 +737,9 @@ mod no_recovery_with_primary_unlocked {
             // Act
             let receipt = test_runner.stop_timed_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -807,9 +807,9 @@ mod no_recovery_with_primary_locked {
             // Act
             let receipt = test_runner.initiate_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -901,9 +901,9 @@ mod no_recovery_with_primary_locked {
             let receipt = test_runner.quick_confirm_recovery(
                 role,
                 proposer,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -931,9 +931,9 @@ mod no_recovery_with_primary_locked {
             // Act
             let receipt = test_runner.timed_confirm_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -992,9 +992,9 @@ mod no_recovery_with_primary_locked {
             // Act
             let receipt = test_runner.stop_timed_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1019,9 +1019,9 @@ mod recovery_mode_with_primary_unlocked {
         test_runner
             .initiate_recovery(
                 Role::Recovery,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             )
             .expect_commit_success();
@@ -1070,9 +1070,9 @@ mod recovery_mode_with_primary_unlocked {
             // Act
             let receipt = test_runner.initiate_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1164,9 +1164,9 @@ mod recovery_mode_with_primary_unlocked {
             let receipt = test_runner.quick_confirm_recovery(
                 role,
                 proposer,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1200,9 +1200,9 @@ mod recovery_mode_with_primary_unlocked {
             // Act
             let receipt = test_runner.timed_confirm_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1258,9 +1258,9 @@ mod recovery_mode_with_primary_unlocked {
             // Act
             let receipt = test_runner.stop_timed_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1288,9 +1288,9 @@ mod recovery_mode_with_primary_locked {
         test_runner
             .initiate_recovery(
                 Role::Recovery,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             )
             .expect_commit_success();
@@ -1342,9 +1342,9 @@ mod recovery_mode_with_primary_locked {
             // Act
             let receipt = test_runner.initiate_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1436,9 +1436,9 @@ mod recovery_mode_with_primary_locked {
             let receipt = test_runner.quick_confirm_recovery(
                 role,
                 proposer,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1472,9 +1472,9 @@ mod recovery_mode_with_primary_locked {
             // Act
             let receipt = test_runner.timed_confirm_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1530,9 +1530,9 @@ mod recovery_mode_with_primary_locked {
             // Act
             let receipt = test_runner.stop_timed_recovery(
                 role,
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
-                rule!(require(RADIX_TOKEN)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
+                rule!(require(XRD)),
                 TIMED_RECOVERY_DELAY_IN_MINUTES,
             );
 
@@ -1671,18 +1671,17 @@ impl AccessControllerTestRunner {
         let confirmation_role_badge = test_runner.create_fungible_resource(1.into(), 0, account);
 
         // Creating the access controller component
-        let manifest = ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
-            .withdraw_from_account(account, controlled_asset, 1.into())
-            .take_all_from_worktop(controlled_asset, |builder, bucket| {
-                builder.create_access_controller(
-                    bucket,
-                    rule!(require(primary_role_badge)),
-                    rule!(require(recovery_role_badge)),
-                    rule!(require(confirmation_role_badge)),
-                    timed_recovery_delay_in_minutes,
-                )
-            })
+        let manifest = ManifestBuilderV2::new()
+            .lock_standard_test_fee(account)
+            .withdraw_from_account(account, controlled_asset, 1)
+            .take_all_from_worktop(controlled_asset, "controlled_asset")
+            .create_access_controller(
+                "controlled_asset",
+                rule!(require(primary_role_badge)),
+                rule!(require(recovery_role_badge)),
+                rule!(require(confirmation_role_badge)),
+                timed_recovery_delay_in_minutes,
+            )
             .build();
         let receipt = test_runner.execute_manifest(
             manifest,
@@ -1713,7 +1712,7 @@ impl AccessControllerTestRunner {
                 "create_proof",
                 to_manifest_value_and_unwrap!(&AccessControllerCreateProofInput {}),
             )
-            .pop_from_auth_zone(|builder, _| builder)
+            .pop_from_auth_zone("ignored_proof")
             .build();
         self.execute_manifest(manifest)
     }
@@ -1761,10 +1760,10 @@ impl AccessControllerTestRunner {
             Role::Confirmation => panic!("Confirmation Role can't initiate recovery!"),
         };
 
-        let mut manifest_builder = if create_proof {
+        let manifest_builder = if create_proof {
             self.manifest_builder(as_role)
         } else {
-            ManifestBuilder::new()
+            ManifestBuilderV2::new()
         };
 
         let manifest = manifest_builder
@@ -1986,11 +1985,7 @@ impl AccessControllerTestRunner {
                     non_fungible_local_ids,
                 }),
             )
-            .call_method(
-                self.account.0,
-                "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(self.account.0)
             .build();
         self.execute_manifest(manifest)
     }
@@ -2002,15 +1997,14 @@ impl AccessControllerTestRunner {
         )
     }
 
-    fn manifest_builder(&self, role: Role) -> ManifestBuilder {
-        let mut manifest_builder = ManifestBuilder::new();
+    fn manifest_builder(&self, role: Role) -> ManifestBuilderV2 {
         let resource_address = match role {
             Role::Primary => self.primary_role_badge,
             Role::Recovery => self.recovery_role_badge,
             Role::Confirmation => self.confirmation_role_badge,
         };
-        manifest_builder.create_proof_from_account(self.account.0, resource_address);
-        manifest_builder
+        ManifestBuilderV2::new()
+            .create_proof_from_account(self.account.0, resource_address)
     }
 
     fn set_current_minute(&mut self, minutes: i64) {

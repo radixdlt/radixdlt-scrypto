@@ -4,7 +4,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
@@ -21,8 +21,8 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
     let expected_unix_time_rounded_to_minutes = 1669663680;
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             CONSENSUS_MANAGER,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
@@ -56,8 +56,8 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ClockTest",
@@ -84,8 +84,8 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             CONSENSUS_MANAGER,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
@@ -115,8 +115,8 @@ fn test_date_time_conversions() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ClockTest",

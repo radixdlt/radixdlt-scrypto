@@ -2,17 +2,17 @@ use std::collections::BTreeMap;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use radix_engine::types::{
-    ManifestExpression, NetworkDefinition, NonFungibleIdType, NonFungibleLocalId,
+    NetworkDefinition, NonFungibleIdType, NonFungibleLocalId,
 };
 use radix_engine_common::types::Epoch;
-use radix_engine_common::{manifest_args, ManifestSbor};
+use radix_engine_common::ManifestSbor;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::resource::RolesInit;
 use radix_engine_interface::blueprints::resource::{NonFungibleResourceRoles, OwnerRole};
 use radix_engine_interface::{metadata, metadata_init, ScryptoSbor};
 use scrypto::prelude::ComponentAddress;
 use scrypto::NonFungibleData;
-use transaction::builder::{ManifestBuilder, TransactionBuilder};
+use transaction::prelude::*;
 use transaction::manifest::{compile, decompile, BlobProvider};
 use transaction::model::{
     PreparedNotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
@@ -78,27 +78,23 @@ fn compiled_notarized_transaction() -> Vec<u8> {
     let component_address = ComponentAddress::virtual_account_from_public_key(&public_key);
 
     let manifest = {
-        let mut builder = ManifestBuilder::new();
-        builder.lock_fee(component_address, 500u32.into());
-        builder.create_non_fungible_resource(
-            OwnerRole::None,
-            NonFungibleIdType::Integer,
-            false,
-            NonFungibleResourceRoles::default(),
-            metadata! {},
-            Some(
-                (0u64..10_000u64)
-                    .into_iter()
-                    .map(|id| (NonFungibleLocalId::integer(id), EmptyStruct {}))
-                    .collect::<BTreeMap<NonFungibleLocalId, EmptyStruct>>(),
-            ),
-        );
-        builder.call_method(
-            component_address,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        );
-        builder.build()
+        ManifestBuilderV2::new()
+            .lock_fee(component_address, 500)
+            .create_non_fungible_resource(
+                OwnerRole::None,
+                NonFungibleIdType::Integer,
+                false,
+                NonFungibleResourceRoles::default(),
+                metadata! {},
+                Some(
+                    (0u64..10_000u64)
+                        .into_iter()
+                        .map(|id| (NonFungibleLocalId::integer(id), EmptyStruct {}))
+                        .collect::<BTreeMap<NonFungibleLocalId, EmptyStruct>>(),
+                ),
+            )
+            .try_deposit_batch_or_abort(component_address)
+            .build()
     };
     let header = TransactionHeaderV1 {
         network_id: 0xf2,

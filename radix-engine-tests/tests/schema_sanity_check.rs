@@ -10,8 +10,7 @@ use radix_engine_interface::schema::TypeRef;
 use radix_engine_queries::typed_substate_layout::TypePointer;
 use sbor::basic_well_known_types::*;
 use scrypto_unit::*;
-use transaction::prelude::ManifestBuilder;
-use utils::ContextualDisplay;
+use transaction::prelude::*;
 
 #[test]
 fn check_native_function_base_costs() {
@@ -380,15 +379,16 @@ pub fn test_fake_bucket() {
 
     // Test abusing vault put method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
-            .withdraw_from_account(account, RADIX_TOKEN, 100.into())
-            .take_from_worktop(RADIX_TOKEN, 100.into(), |builder, bucket| {
+        ManifestBuilderV2::new()
+            .lock_standard_test_fee(account)
+            .withdraw_from_account(account, XRD, 100)
+            .take_from_worktop(XRD, 100, "bucket")
+            .with_namer(|builder, namer| {
                 builder.call_function(
                     package_address,
                     "FakeBucket",
                     "free_1000_xrd",
-                    manifest_args!(bucket),
+                    manifest_args!(namer.bucket("bucket")),
                 )
             })
             .build(),

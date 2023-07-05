@@ -1172,8 +1172,8 @@ impl ValidatorCreator {
                 blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
             })?;
 
-        let stake_xrd_vault = Vault::create(RADIX_TOKEN, api)?;
-        let pending_xrd_withdraw_vault = Vault::create(RADIX_TOKEN, api)?;
+        let stake_xrd_vault = Vault::create(XRD, api)?;
+        let pending_xrd_withdraw_vault = Vault::create(XRD, api)?;
         let unstake_nft = Self::create_unstake_nft(validator_address, api)?;
         let stake_unit_resource = Self::create_stake_unit_resource(validator_address, api)?;
         let locked_owner_stake_unit_vault = Vault::create(stake_unit_resource, api)?;

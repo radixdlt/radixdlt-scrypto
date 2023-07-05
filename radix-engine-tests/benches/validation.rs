@@ -2,17 +2,8 @@ use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
-use transaction::builder::ManifestBuilder;
-use transaction::builder::TransactionBuilder;
-use transaction::model::TransactionHeaderV1;
-use transaction::model::TransactionPayload;
-use transaction::signing::ed25519::Ed25519PrivateKey;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
-use transaction::validation::verify_ed25519;
-use transaction::validation::verify_secp256k1;
-use transaction::validation::NotarizedTransactionValidator;
-use transaction::validation::ValidationConfig;
-use transaction::validation::{recover_secp256k1, TransactionValidator};
+use transaction::prelude::*;
+use transaction::validation::*;
 
 fn bench_secp256k1_validation(c: &mut Criterion) {
     let message_hash = hash("This is a long message".repeat(100));
@@ -67,13 +58,9 @@ fn bench_transaction_validation(c: &mut Criterion) {
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new()
-                .withdraw_from_account(account1, RADIX_TOKEN, 1u32.into())
-                .call_method(
-                    account2,
-                    "try_deposit_batch_or_abort",
-                    manifest_args!(ManifestExpression::EntireWorktop),
-                )
+            ManifestBuilderV2::new()
+                .withdraw_from_account(account1, XRD, 1)
+                .try_deposit_batch_or_abort(account2)
                 .build(),
         )
         .notarize(&signer)

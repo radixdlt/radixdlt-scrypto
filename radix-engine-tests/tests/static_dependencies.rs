@@ -3,7 +3,7 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::{metadata, metadata_init};
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 use transaction::model::InstructionV1;
 
 fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -40,8 +40,8 @@ fn test_static_package_address() {
     let package_address2 =
         test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address2,
             "Sample",
@@ -63,8 +63,8 @@ fn test_static_component_address() {
     let (key, _priv, account) = test_runner.new_account(false);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
         .call_function(
             package_address,
             "FaucetCall",
@@ -115,8 +115,8 @@ fn static_component_should_be_callable() {
         "./tests/blueprints/static_dependencies2",
         |blueprint, _| blueprint.eq("PreallocatedCall"),
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address2,
             "PreallocatedCall",
@@ -183,8 +183,8 @@ fn static_resource_should_be_callable() {
         "./tests/blueprints/static_dependencies2",
         |blueprint, _| blueprint.eq("SomeResource"),
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address2,
             "SomeResource",
@@ -214,8 +214,8 @@ fn static_package_should_be_callable() {
         "./tests/blueprints/static_dependencies2",
         |blueprint, _| blueprint.eq("SomePackage"),
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address2,
             "SomePackage",

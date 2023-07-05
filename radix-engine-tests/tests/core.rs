@@ -1,15 +1,15 @@
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn test_process_and_transaction() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
 
-    let manifest1 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest1 = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "CoreTest", "query", manifest_args![])
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
@@ -22,15 +22,11 @@ fn test_call() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
 
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "MoveTest", "move_bucket", manifest_args![])
         .call_function(package_address, "MoveTest", "move_proof", manifest_args![])
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

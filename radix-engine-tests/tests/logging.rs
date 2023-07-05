@@ -5,13 +5,13 @@ use radix_engine::{
 };
 use radix_engine_interface::types::Level;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/logger");
 
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_function(
             package_address,
             "Logger",

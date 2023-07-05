@@ -130,7 +130,7 @@ mod tests {
                 notary_is_signatory: true,
                 tip_percentage: 5,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .manifest(ManifestBuilderV2::new().clear_auth_zone().build())
             .notarize(&private_key)
             .build();
 

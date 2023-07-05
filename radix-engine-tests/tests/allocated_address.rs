@@ -3,7 +3,7 @@ use radix_engine::{
     types::*,
 };
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn test_create_and_return() {
@@ -12,8 +12,8 @@ fn test_create_and_return() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "AllocatedAddressTest",
@@ -36,8 +36,8 @@ fn test_create_and_drop() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "AllocatedAddressTest",
@@ -60,8 +60,8 @@ fn test_create_and_pass_address() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "AllocatedAddressTest",
@@ -82,8 +82,8 @@ fn test_create_and_call() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "AllocatedAddressTest",
@@ -106,8 +106,8 @@ fn test_create_and_consume_within_frame() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "AllocatedAddressTest",
@@ -128,8 +128,8 @@ fn test_create_and_consume_with_mismatching_blueprint() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "AllocatedAddressTest",
@@ -157,8 +157,8 @@ fn test_create_and_consume_in_another_frame() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "AllocatedAddressTest",
@@ -179,8 +179,8 @@ fn test_create_and_store_in_key_value_store() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "AllocatedAddressTest",
@@ -201,8 +201,8 @@ fn test_create_and_store_in_metadata() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "AllocatedAddressTest",

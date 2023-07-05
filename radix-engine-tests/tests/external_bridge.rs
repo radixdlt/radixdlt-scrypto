@@ -1,6 +1,6 @@
 use radix_engine::types::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 const TARGET_PACKAGE_ADDRESS: [u8; NodeId::LENGTH] = [
     13, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
@@ -24,8 +24,8 @@ fn test_external_bridges() {
         test_runner.compile_and_publish("./tests/blueprints/external_blueprint_caller");
 
     // Part 2 - Get a target component address
-    let manifest1 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest1 = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             target_package_address,
             "ExternalBlueprintTarget",
@@ -39,8 +39,8 @@ fn test_external_bridges() {
     let target_component_address = receipt1.expect_commit(true).new_component_addresses()[0];
 
     // Part 3 - Get the caller component address
-    let manifest2 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest2 = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             caller_package_address,
             "ExternalBlueprintCaller",
@@ -54,8 +54,8 @@ fn test_external_bridges() {
     let caller_component_address = receipt2.expect_commit(true).new_component_addresses()[0];
 
     // ACT
-    let manifest3 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest3 = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             caller_component_address,
             "run_tests_with_external_blueprint",
@@ -68,8 +68,8 @@ fn test_external_bridges() {
     receipt3.expect_commit_success();
 
     // ACT
-    let manifest4 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest4 = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             caller_component_address,
             "run_tests_with_external_component",

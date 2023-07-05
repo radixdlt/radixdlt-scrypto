@@ -18,7 +18,7 @@ use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 #[cfg(test)]
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use strum::EnumCount;
-use transaction::builder::{ManifestBuilder, TransactionManifestV1};
+use transaction::prelude::*;
 use transaction::manifest::ast;
 use transaction::model::InstructionV1;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
@@ -152,7 +152,7 @@ impl TxFuzzer {
         // TODO: to consider if this is ok to allow it.
         let mut unstructured = Unstructured::new(&data);
 
-        let mut builder = ManifestBuilder::new();
+        let mut builder = ManifestBuilderV2::new();
         let mut buckets: Vec<ManifestBucket> =
             vec![ManifestBucket::arbitrary(&mut unstructured).unwrap()];
         let mut proof_ids: Vec<ManifestProof> =
@@ -205,7 +205,7 @@ impl TxFuzzer {
             FAUCET
         };
 
-        builder.lock_fee(fee_address, fee);
+        builder = builder.lock_fee(fee_address, fee);
 
         let mut i = 0;
         let instruction_cnt = unstructured.int_in_range(1..=INSTRUCTION_MAX_CNT).unwrap();
@@ -876,11 +876,12 @@ impl TxFuzzer {
                 ),
             };
             if let Some(instruction) = instruction {
-                let (_, bucket_id, proof_id) = builder.add_instruction(instruction);
-                if let Some(bucket_id) = bucket_id {
+                let (updated_builder, NewSymbols { new_bucket, new_proof, .. }) = builder.add_instruction_advanced(instruction);
+                builder = updated_builder;
+                if let Some(bucket_id) = new_bucket {
                     buckets.push(bucket_id)
                 }
-                if let Some(proof_id) = proof_id {
+                if let Some(proof_id) = new_proof {
                     proof_ids.push(proof_id)
                 }
                 i += 1;

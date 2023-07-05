@@ -16,7 +16,6 @@ use radix_engine_store_interface::{
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
-use transaction::builder::ManifestBuilder;
 use utils::ContextualDisplay;
 
 use crate::resim::*;
@@ -260,8 +259,8 @@ impl Publish {
                 .map(|owner_badge| owner_badge.0)
                 .unwrap_or(get_default_owner_badge()?);
 
-            let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET, 5000u32.into())
+            let manifest = ManifestBuilderV2::new()
+                .lock_fee_from_faucet()
                 .publish_package_with_owner(
                     code,
                     package_definition,

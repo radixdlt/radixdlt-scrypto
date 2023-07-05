@@ -1,6 +1,4 @@
 use radix_engine::errors::RuntimeError;
-use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT;
-use radix_engine_interface::manifest_args;
 use transaction::errors::TransactionValidationError;
 use transaction::manifest::decompiler::ManifestObjectNames;
 use transaction::validation::{NotarizedTransactionValidator, TransactionValidator};
@@ -108,32 +106,26 @@ impl ScenarioCore {
     pub fn next_transaction_with_faucet_lock_fee(
         &mut self,
         logical_name: &str,
-        create_manifest: impl FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
+        create_manifest: impl FnOnce(ManifestBuilderV2) -> ManifestBuilderV2,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let mut manifest_builder = ManifestBuilder::new();
-        manifest_builder.lock_fee(FAUCET, dec!(5000));
-        create_manifest(&mut manifest_builder);
-        self.next_transaction(
-            logical_name,
-            manifest_builder.build(),
-            Default::default(),
-            signers,
-        )
+        let (builder, namer) = ManifestBuilderV2::new_with_namer();
+        let manifest = builder
+            .lock_fee_from_faucet()
+            .then(create_manifest)
+            .build();
+        self.next_transaction(logical_name, manifest, namer.object_names(), signers)
     }
 
     pub fn next_transaction_with_faucet_lock_fee_v2(
         &mut self,
         logical_name: &str,
-        create_manifest: impl FnOnce(
-            ManifestBuilderV2,
-            &ManifestNamer,
-        ) -> Result<ManifestBuilderV2, ScenarioError>,
+        create_manifest: impl FnOnce(ManifestBuilderV2) -> Result<ManifestBuilderV2, ScenarioError>,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let (mut builder, namer) = ManifestBuilderV2::new();
-        builder = builder.lock_fee(FAUCET, dec!(5000));
-        builder = create_manifest(builder, &namer)?;
+        let (mut builder, namer) = ManifestBuilderV2::new_with_namer();
+        builder = builder.lock_fee_from_faucet();
+        builder = create_manifest(builder)?;
         self.next_transaction(logical_name, builder.build(), namer.object_names(), signers)
     }
 
@@ -145,14 +137,9 @@ impl ScenarioCore {
             "faucet-top-up",
             |builder| {
                 builder
-                    .call_method(FAUCET, "free", manifest_args!())
-                    .take_all_from_worktop(XRD, |builder, bucket| {
-                        builder.call_method(
-                            to_account,
-                            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-                            manifest_args!(bucket),
-                        )
-                    })
+                    .get_free_xrd_from_faucet()
+                    .take_all_from_worktop(XRD, "free_xrd")
+                    .try_deposit_or_abort(to_account, "free_xrd")
             },
             vec![],
         )

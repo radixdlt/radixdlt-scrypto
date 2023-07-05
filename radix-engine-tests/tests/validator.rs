@@ -8,8 +8,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
+use transaction::prelude::*;
 
 fn signal_protocol_update_test<F>(as_owner: bool, name_len: usize, result_check: F)
 where
@@ -30,10 +29,10 @@ where
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
-    let mut builder = ManifestBuilder::new();
-    builder.lock_fee(test_runner.faucet_component(), 500u32.into());
+    let mut builder = ManifestBuilderV2::new()
+        .lock_fee_from_faucet();
     if as_owner {
-        builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE);
+        builder = builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE);
     }
     let manifest = builder
         .signal_protocol_update_readiness(validator_address, "a".repeat(name_len).as_str())
@@ -86,8 +85,8 @@ fn check_if_validator_accepts_delegated_stake() {
     let (pub_key, _, account) = test_runner.new_account(false);
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .register_validator(validator_address)
         .build();
@@ -98,8 +97,8 @@ fn check_if_validator_accepts_delegated_stake() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             validator_address,
             VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,

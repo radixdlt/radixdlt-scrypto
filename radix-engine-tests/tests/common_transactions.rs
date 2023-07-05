@@ -6,7 +6,7 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init, mint_roles};
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 use transaction::manifest::{compile, BlobProvider};
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use utils::ContextualDisplay;
@@ -46,7 +46,7 @@ fn transfer_of_funds_to_another_account_succeeds() {
 
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/account/resource_transfer.rtm"),
-            xrd_resource_address = RADIX_TOKEN.display(address_bech32_encoder),
+            xrd_resource_address = XRD.display(address_bech32_encoder),
             this_account_address = this_account_address.display(address_bech32_encoder),
             other_account_address = other_account_address.display(address_bech32_encoder)
         );
@@ -64,7 +64,7 @@ fn multi_account_fund_transfer_succeeds() {
                 include_str!(
                     "../../transaction/examples/account/multi_account_resource_transfer.rtm"
                 ),
-                xrd_resource_address = RADIX_TOKEN.display(address_bech32_encoder),
+                xrd_resource_address = XRD.display(address_bech32_encoder),
                 this_account_address = address_bech32_encoder
                     .encode(this_account_address.as_ref())
                     .unwrap(),
@@ -150,7 +150,7 @@ fn publish_package_succeeds() {
             include_str!("../../transaction/examples/package/publish.rtm"),
             code_blob_hash = hash(&code_blob),
             account_address = account_address.display(address_bech32_encoder),
-            auth_badge_resource_address = RADIX_TOKEN.display(address_bech32_encoder),
+            auth_badge_resource_address = XRD.display(address_bech32_encoder),
             auth_badge_non_fungible_local_id = "#1#"
         );
         (manifest, vec![code_blob])
@@ -283,7 +283,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
         test_runner.create_fungible_resource(dec!("1"), 0, component_address);
 
     let manifest = match resource_type {
-        ResourceType::Fungible { divisibility } => ManifestBuilder::new()
+        ResourceType::Fungible { divisibility } => ManifestBuilderV2::new()
             .create_fungible_resource(
                 OwnerRole::None,
                 false,
@@ -299,7 +299,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 None,
             )
             .build(),
-        ResourceType::NonFungible { id_type } => ManifestBuilder::new()
+        ResourceType::NonFungible { id_type } => ManifestBuilderV2::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 id_type,

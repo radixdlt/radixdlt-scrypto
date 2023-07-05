@@ -11,7 +11,7 @@ use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use transaction::builder::{ManifestBuilder, TransactionBuilder};
+use transaction::prelude::*;
 use transaction::model::{NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload};
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::{
@@ -64,22 +64,22 @@ impl TransactionFuzzer {
     }
 
     fn next_transaction(&mut self) -> NotarizedTransactionV1 {
-        let mut builder = ManifestBuilder::new();
+        let mut builder = ManifestBuilderV2::new();
         let instruction_count = self.rng.gen_range(0u32..20u32);
         for _ in 0..instruction_count {
             let next = self.rng.gen_range(0u32..4u32);
-            match next {
+            builder = match next {
                 0 => {
-                    builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll));
+                    builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll))
                 }
                 1 => {
-                    builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll));
+                    builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll))
                 }
                 2 => {
-                    builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll));
+                    builder.new_account_advanced(OwnerRole::Fixed(AccessRule::AllowAll))
                 }
                 3 => {
-                    builder.call_method(FAUCET, "lock_fee", manifest_args!(dec!("100")));
+                    builder.lock_fee(FAUCET, 100)
                 }
                 _ => panic!("Unexpected"),
             }

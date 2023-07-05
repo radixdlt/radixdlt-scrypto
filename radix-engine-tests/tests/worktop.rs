@@ -7,7 +7,7 @@ use radix_engine::system::system_modules::costing::FeeReserveError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn test_worktop_resource_leak() {
@@ -16,9 +16,9 @@ fn test_worktop_resource_leak() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, RADIX_TOKEN, 1.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, XRD, 1)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -47,8 +47,8 @@ fn test_many_current_auth_zone_call() {
     for _ in 0..5000 {
         expressions.push(ManifestExpression::EntireAuthZone);
     }
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
         .call_method(account, "no_such_method", manifest_args!(expressions))
         .build();
     let receipt = test_runner.execute_manifest(
@@ -78,8 +78,8 @@ fn test_many_worktop_call() {
     for _ in 0..5000 {
         expressions.push(ManifestExpression::EntireWorktop);
     }
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_standard_test_fee(account)
         .call_method(account, "no_such_method", manifest_args!(expressions))
         .build();
     let receipt = test_runner.execute_manifest(

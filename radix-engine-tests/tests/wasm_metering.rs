@@ -4,7 +4,7 @@ use radix_engine::{
     vm::wasm::{WasmRuntimeError, DEFAULT_MAX_MEMORY_SIZE_IN_PAGES},
 };
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn test_loop() {
@@ -19,8 +19,8 @@ fn test_loop() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 15_000_000);
@@ -42,8 +42,8 @@ fn test_finish_before_system_loan_limit() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -65,8 +65,8 @@ fn test_loop_out_of_cost_unit() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_with_cost_unit_limit(manifest, vec![], 15_000_000);
@@ -89,8 +89,8 @@ fn test_recursion() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -112,8 +112,8 @@ fn test_recursion_stack_overflow() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -139,8 +139,8 @@ fn test_grow_memory_within_limit() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -166,8 +166,8 @@ fn test_grow_memory_beyond_limit() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -199,8 +199,8 @@ fn test_grow_memory_by_more_than_65536() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

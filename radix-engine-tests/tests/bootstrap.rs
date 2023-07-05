@@ -15,7 +15,7 @@ use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::{CustomGenesis, TestRunner};
-use transaction::prelude::ManifestBuilder;
+use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
@@ -384,8 +384,8 @@ fn should_not_be_able_to_create_genesis_helper() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             GENESIS_HELPER_PACKAGE,
             GENESIS_HELPER_BLUEPRINT,
@@ -412,8 +412,8 @@ fn should_not_be_able_to_call_genesis_helper() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(GENESIS_HELPER, "wrap_up", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

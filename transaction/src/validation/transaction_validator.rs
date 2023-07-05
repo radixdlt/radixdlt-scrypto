@@ -439,7 +439,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        builder::ManifestBuilder, builder::TransactionBuilder,
+        builder::ManifestBuilderV2, builder::TransactionBuilder,
         signing::secp256k1::Secp256k1PrivateKey,
     };
 
@@ -740,7 +740,7 @@ mod tests {
                 notary_is_signatory: false,
                 tip_percentage: 5,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .manifest(ManifestBuilderV2::new().clear_auth_zone().build())
             .message(message);
 
         builder = builder.notarize(&sk_notary);
@@ -767,7 +767,7 @@ mod tests {
                 notary_is_signatory: false,
                 tip_percentage: 5,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build());
+            .manifest(ManifestBuilderV2::new().clear_auth_zone().build());
 
         for signer in signers {
             builder = builder.sign(&Secp256k1PrivateKey::from_u64(signer).unwrap());

@@ -145,7 +145,7 @@ mod bucket_test {
         }
 
         pub fn create_empty_bucket_fungible() -> Bucket {
-            Bucket::new(RADIX_TOKEN)
+            Bucket::new(XRD)
         }
 
         pub fn create_empty_bucket_non_fungible() -> Bucket {

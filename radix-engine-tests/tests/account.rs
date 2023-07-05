@@ -5,12 +5,11 @@ use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::account::{
-    AccountSecurifyInput, ACCOUNT_SECURIFY_IDENT, ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
+    AccountSecurifyInput, ACCOUNT_SECURIFY_IDENT,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::model::InstructionV1;
+use transaction::prelude::*;
 
 #[test]
 fn can_securify_virtual_account() {
@@ -35,18 +34,14 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
     let (_, _, storing_account) = test_runner.new_account(true);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             account,
             ACCOUNT_SECURIFY_IDENT,
             to_manifest_value_and_unwrap!(&AccountSecurifyInput {}),
         )
-        .call_method(
-            storing_account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_refund(storing_account)
         .build();
     let initial_proofs = if use_key {
         vec![NonFungibleGlobalId::from_public_key(&key)]
@@ -96,13 +91,9 @@ where
     let (_, _, other_account) = test_runner.new_account(true);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account, 500.into(), RADIX_TOKEN, 1.into())
-        .call_method(
-            other_account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_and_withdraw(account, 500, XRD, 1)
+        .try_deposit_batch_or_refund(other_account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -111,7 +102,7 @@ where
 
     // Assert
     let other_account_balance: Decimal = test_runner
-        .account_balance(other_account, RADIX_TOKEN)
+        .account_balance(other_account, XRD)
         .unwrap();
     let transfer_amount = other_account_balance - 10000 /* initial balance */;
 
@@ -122,7 +113,7 @@ where
             .balance_changes
             .get(&GlobalAddress::from(other_account))
             .unwrap()
-            .get(&RADIX_TOKEN)
+            .get(&XRD)
             .unwrap(),
         &BalanceChange::Fungible(transfer_amount)
     );
@@ -136,13 +127,9 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     let resource_address = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account, 500.into(), resource_address, 1.into())
-        .call_method(
-            other_account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_and_withdraw(account, 500, resource_address, 1)
+        .try_deposit_batch_or_refund(other_account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -168,14 +155,10 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_account(is_virtual);
     let (_, _, other_account) = test_runner.new_account(is_virtual);
-    let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .withdraw_from_account(other_account, RADIX_TOKEN, 1.into())
-        .call_method(
-            account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee(account, 500u32)
+        .withdraw_from_account(other_account, XRD, 1)
+        .try_deposit_batch_or_refund(account)
         .build();
 
     // Act
@@ -220,17 +203,10 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_account(use_virtual);
-    let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account, 500u32.into(), RADIX_TOKEN, 1.into())
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder
-                .add_instruction(InstructionV1::CallMethod {
-                    address: account.into(),
-                    method_name: "try_deposit_or_abort".to_string(),
-                    args: manifest_args!(bucket_id),
-                })
-                .0
-        })
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_and_withdraw(account, 500u32, XRD, 1)
+        .take_all_from_worktop(XRD, "xrd")
+        .try_deposit_or_abort(account, "xrd")
         .build();
 
     // Act
@@ -249,7 +225,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
             .balance_changes
             .get(&GlobalAddress::from(account))
             .unwrap()
-            .get(&RADIX_TOKEN)
+            .get(&XRD)
             .unwrap(),
         &BalanceChange::Fungible(-result.fee_summary.total_cost())
     );
@@ -268,7 +244,7 @@ fn account_to_bucket_to_virtual_account() {
 #[test]
 fn create_account_and_bucket_fail() {
     let mut test_runner = TestRunner::builder().build();
-    let manifest = ManifestBuilder::new().new_account().build();
+    let manifest = ManifestBuilderV2::new().new_account().build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -307,18 +283,14 @@ fn securified_account_is_owned_by_correct_owner_badge() {
     let (pk, _, account) = test_runner.new_account(true);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             account,
             ACCOUNT_SECURIFY_IDENT,
             to_manifest_value_and_unwrap!(&AccountSecurifyInput {}),
         )
-        .call_method(
-            account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_refund(account)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);

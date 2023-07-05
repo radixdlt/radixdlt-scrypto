@@ -14,7 +14,7 @@ fn test_hello() {
     let package_address = test_runner.compile_and_publish(this_package!());
 
     // Test the `instantiate_hello` function.
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_function(
             package_address,
             "Hello",
@@ -30,7 +30,7 @@ fn test_hello() {
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Test the `free_token` method.
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_method(component, "free_token", manifest_args!())
         .call_method(
             account,

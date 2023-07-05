@@ -3,7 +3,7 @@ use radix_engine::system::system_modules::limits::TransactionLimitsError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn local_component_should_return_correct_info() {
@@ -12,8 +12,8 @@ fn local_component_should_return_correct_info() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "Secret",
@@ -34,8 +34,8 @@ fn local_component_should_be_callable_read_only() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "Secret",
@@ -56,8 +56,8 @@ fn local_component_should_be_callable_with_write() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "Secret",
@@ -80,22 +80,19 @@ fn recursion_bomb() {
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(4u32))
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, XRD, Decimal::from(4u32))
+        .take_all_from_worktop(XRD, "xrd")
+        .with_namer(|builder, namer| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                manifest_args!(bucket_id),
+                manifest_args!(namer.bucket("xrd")),
             )
         })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -114,22 +111,19 @@ fn recursion_bomb_to_failure() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(100u32))
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, XRD, Decimal::from(100u32))
+        .take_all_from_worktop(XRD, "bucket")
+        .with_namer(|builder, namer| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                manifest_args!(bucket_id),
+                manifest_args!(namer.bucket("bucket")),
             )
         })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -156,22 +150,19 @@ fn recursion_bomb_2() {
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(4u32))
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, XRD, Decimal::from(4u32))
+        .take_all_from_worktop(XRD, "bucket")
+        .with_namer(|builder, namer| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                manifest_args!(bucket_id),
+                manifest_args!(namer.bucket("bucket")),
             )
         })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -190,22 +181,19 @@ fn recursion_bomb_2_to_failure() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, RADIX_TOKEN, Decimal::from(100u32))
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, XRD, Decimal::from(100u32))
+        .take_all_from_worktop(XRD, "bucket")
+        .with_namer(|builder, namer| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                manifest_args!(bucket_id),
+                manifest_args!(namer.bucket("bucket")),
             )
         })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

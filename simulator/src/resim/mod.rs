@@ -86,7 +86,7 @@ use radix_engine_stores::rocks_db::RocksdbSubstateStore;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use transaction::builder::{ManifestBuilder, TransactionManifestV1};
+use transaction::prelude::*;
 use transaction::manifest::decompile;
 use transaction::model::TestTransaction;
 use transaction::model::{BlobV1, BlobsV1, InstructionV1, InstructionsV1};

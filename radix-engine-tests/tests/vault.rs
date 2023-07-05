@@ -9,7 +9,7 @@ use radix_engine_interface::{metadata, metadata_init};
 use scrypto::prelude::FromPublicKey;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {
@@ -18,8 +18,8 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonExistentVault",
@@ -43,16 +43,16 @@ fn non_existent_vault_in_committed_component_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "NonExistentVault", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "create_non_existent_vault",
@@ -77,8 +77,8 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonExistentVault",
@@ -102,16 +102,16 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(package_address, "NonExistentVault", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "create_non_existent_vault_in_kv_store",
@@ -136,8 +136,8 @@ fn create_mutable_vault_into_map() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "VaultTest",
@@ -158,8 +158,8 @@ fn invalid_double_ownership_of_vault() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "VaultTest",
@@ -189,8 +189,8 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "VaultTest",
@@ -209,8 +209,8 @@ fn cannot_overwrite_vault_in_map() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "VaultTest",
@@ -222,8 +222,8 @@ fn cannot_overwrite_vault_in_map() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "overwrite_vault_in_map",
@@ -250,8 +250,8 @@ fn create_mutable_vault_into_vector() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "VaultTest",
@@ -270,8 +270,8 @@ fn cannot_remove_vaults() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "VaultTest",
@@ -283,8 +283,8 @@ fn cannot_remove_vaults() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(component_address, "clear_vector", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -305,8 +305,8 @@ fn can_push_vault_into_vector() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "VaultTest",
@@ -318,8 +318,8 @@ fn can_push_vault_into_vector() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "push_vault_into_vector",
@@ -339,8 +339,8 @@ fn create_fungible_vault_with_take() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "VaultTest",
@@ -361,8 +361,8 @@ fn create_non_fungible_vault_with_take() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleVault",
@@ -383,8 +383,8 @@ fn create_non_fungible_vault_with_take_twice() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleVault",
@@ -405,8 +405,8 @@ fn create_non_fungible_vault_with_take_non_fungible() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleVault",
@@ -427,8 +427,8 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleVault",
@@ -449,8 +449,8 @@ fn create_mutable_vault_with_get_nonfungible_id() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleVault",
@@ -471,8 +471,8 @@ fn create_mutable_vault_with_get_amount() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleVault",
@@ -493,8 +493,8 @@ fn create_mutable_vault_with_get_resource_manager() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleVault",
@@ -513,8 +513,8 @@ fn take_on_non_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleVault",
@@ -526,8 +526,8 @@ fn take_on_non_fungible_vault() {
     let address = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(address, "take", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -541,8 +541,8 @@ fn take_twice_on_non_fungible_vault() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleVault",
@@ -554,8 +554,8 @@ fn take_twice_on_non_fungible_vault() {
     let address = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .call_method(address, "take_twice", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -572,14 +572,10 @@ fn withdraw_with_over_specified_divisibility_should_result_in_error() {
     let resource_address = test_runner.create_fungible_resource(100u32.into(), 4, account);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, dec!("5.55555"))
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -601,8 +597,8 @@ fn create_proof_with_over_specified_divisibility_should_result_in_error() {
     let resource_address = test_runner.create_fungible_resource(100u32.into(), 4, account);
 
     // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+    let manifest = ManifestBuilderV2::new()
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, resource_address, dec!("5.55555"))
         .build();
     let receipt =
@@ -624,7 +620,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -644,7 +640,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     };
 
     let component_address = {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -652,8 +648,14 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 ),
             )
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_namer(|builder, namer| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(namer.bucket("bucket"))
+                )
             })
             .build();
         test_runner
@@ -667,7 +669,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_method(
             component_address,
             "take_ids",
@@ -686,7 +688,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
 }
 
 fn get_vault_id(test_runner: &mut TestRunner, component_address: ComponentAddress) -> NodeId {
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);

@@ -174,7 +174,7 @@ mod genesis_helper {
                     allocations.iter().map(|alloc| alloc.xrd_amount.clone())
                 })
                 .sum();
-            let mut xrd_bucket = ResourceManager(RADIX_TOKEN)
+            let mut xrd_bucket = ResourceManager(XRD)
                 .mint_fungible(xrd_needed, &mut ScryptoEnv)
                 .expect("XRD mint for genesis stake allocation failed");
 
@@ -304,7 +304,7 @@ mod genesis_helper {
 
         fn allocate_xrd(&mut self, allocations: Vec<(ComponentAddress, Decimal)>) {
             let xrd_needed = allocations.iter().map(|(_, amount)| amount.clone()).sum();
-            let mut xrd_bucket = ResourceManager(RADIX_TOKEN)
+            let mut xrd_bucket = ResourceManager(XRD)
                 .mint_fungible(xrd_needed, &mut ScryptoEnv)
                 .expect("XRD mint for genesis allocation failed");
 

@@ -6,9 +6,9 @@ use radix_engine_common::prelude::NetworkDefinition;
 use scrypto::prelude::*;
 use transaction::{
     manifest::{compile, MockBlobProvider},
-    prelude::ManifestBuilder,
     signing::secp256k1::Secp256k1PrivateKey,
 };
+use transaction::prelude::*;
 use walkdir::WalkDir;
 
 use transaction::manifest::e2e::apply_address_replacements;
@@ -16,8 +16,8 @@ use transaction::manifest::e2e::apply_address_replacements;
 #[test]
 fn validator_sees_valid_transfer_manifest_as_valid() {
     // Arrange
-    let manifest = ManifestBuilder::new()
-        .withdraw_from_account(account1(), RADIX_TOKEN, dec!("10"))
+    let manifest = ManifestBuilderV2::new()
+        .withdraw_from_account(account1(), XRD, dec!("10"))
         .try_deposit_batch_or_abort(account2())
         .build();
 
@@ -33,7 +33,7 @@ fn validator_sees_valid_transfer_manifest_as_valid() {
 #[test]
 fn validator_sees_invalid_transfer_manifest_as_invalid() {
     // Arrange
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_method(account1(), "withdraw", manifest_args!())
         .try_deposit_batch_or_abort(account2())
         .build();
@@ -48,7 +48,7 @@ fn validator_sees_invalid_transfer_manifest_as_invalid() {
 #[test]
 fn validator_invalidates_calls_to_unknown_methods_on_a_known_blueprint() {
     // Arrange
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilderV2::new()
         .call_method(account1(), "my_made_up_method", manifest_args!())
         .try_deposit_batch_or_abort(account2())
         .build();

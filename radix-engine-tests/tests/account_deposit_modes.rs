@@ -5,7 +5,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_queries::typed_substate_layout::AccountError;
 use scrypto_unit::TestRunner;
-use transaction::builder::{ManifestBuilder, TransactionManifestV1};
+use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 #[test]
@@ -248,7 +248,7 @@ fn allow_existing_disallows_deposit_of_resources_on_deny_list() {
             .transition_account_default_deposit_rule(AccountDefaultDepositRule::AllowExisting, true)
             .expect_commit_success();
         test_runner
-            .add_to_deny_list(RADIX_TOKEN, true)
+            .add_to_deny_list(XRD, true)
             .expect_commit_success();
 
         // Act
@@ -476,9 +476,11 @@ impl AccountDepositModesTestRunner {
             }
         };
 
-        let manifest = ManifestBuilder::new()
-            .mint_fungible(resource_address, 1.into())
-            .take_all_from_worktop(resource_address, |builder, bucket| {
+        let manifest = ManifestBuilderV2::new()
+            .mint_fungible(resource_address, 1)
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_namer(|builder, namer| {
+                let bucket = namer.bucket("bucket");
                 let args = if is_vec {
                     manifest_args!(vec![bucket])
                 } else {
@@ -508,16 +510,19 @@ impl AccountDepositModesTestRunner {
             }
         };
 
-        let manifest = ManifestBuilder::new()
-            .call_method(FAUCET, "free", manifest_args!())
-            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                let args = if is_vec {
-                    manifest_args!(vec![bucket])
+        let (builder, namer) = ManifestBuilderV2::new_with_namer();
+        let manifest = builder
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "free_tokens")
+            .call_method(
+                self.component_address,
+                method,
+                if is_vec {
+                    manifest_args!(vec![namer.bucket("free_tokens")])
                 } else {
-                    manifest_args!(bucket)
-                };
-                builder.call_method(self.component_address, method, args)
-            })
+                    manifest_args!(namer.bucket("free_tokens"))
+                }
+            )
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -527,7 +532,7 @@ impl AccountDepositModesTestRunner {
         default_deposit_rule: AccountDefaultDepositRule,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_method(
                 self.component_address,
                 ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -545,7 +550,7 @@ impl AccountDepositModesTestRunner {
         resource_deposit_configuration: ResourceDepositRule,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .call_method(
                 self.component_address,
                 ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT,
@@ -616,7 +621,7 @@ impl AccountDepositModesTestRunner {
         let balance = self
             .test_runner
             .account_balance(self.component_address, resource_address);
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilderV2::new()
             .withdraw_from_account(self.component_address, resource_address, balance.unwrap())
             .try_deposit_batch_or_refund(virtual_account)
             .build();

@@ -4,9 +4,8 @@
 //! builder that is being used.
 
 use radix_engine::types::*;
-use transaction::builder::ManifestBuilder;
 use transaction::data::{from_decimal, from_non_fungible_local_id, from_precise_decimal};
-use transaction::model::InstructionV1;
+use transaction::prelude::*;
 
 use super::{parse_resource_specifier, ResourceSpecifier};
 
@@ -73,11 +72,11 @@ impl From<RustToManifestValueError> for BuildCallArgumentsError {
 
 /// Creates resource proof from an account.
 pub fn create_proof_from_account<'a>(
-    builder: &'a mut ManifestBuilder,
+    builder: ManifestBuilderV2,
     address_bech32_decoder: &AddressBech32Decoder,
     account: ComponentAddress,
     resource_specifier: String,
-) -> Result<&'a mut ManifestBuilder, BuildCallArgumentError> {
+) -> Result<ManifestBuilderV2, BuildCallArgumentError> {
     let resource_specifier = parse_resource_specifier(&resource_specifier, address_bech32_decoder)
         .map_err(|_| BuildCallArgumentError::InvalidResourceSpecifier(resource_specifier))?;
     let builder = match resource_specifier {
@@ -88,20 +87,20 @@ pub fn create_proof_from_account<'a>(
             .create_proof_from_account_of_non_fungibles(
                 account,
                 resource_address,
-                &non_fungible_local_ids,
+                non_fungible_local_ids,
             ),
     };
     Ok(builder)
 }
 
 pub fn build_call_arguments<'a>(
-    mut builder: &'a mut ManifestBuilder,
+    mut builder: ManifestBuilderV2,
     address_bech32_decoder: &AddressBech32Decoder,
     schema: &ScryptoSchema,
     type_index: LocalTypeIndex,
     args: Vec<String>,
     account: Option<ComponentAddress>,
-) -> Result<(&'a mut ManifestBuilder, ManifestValue), BuildCallArgumentsError> {
+) -> Result<(ManifestBuilderV2, ManifestValue), BuildCallArgumentsError> {
     let mut built_args = Vec::<ManifestValue>::new();
     match schema.resolve_type_kind(type_index) {
         Some(TypeKind::Tuple { field_types }) => {
@@ -113,7 +112,7 @@ pub fn build_call_arguments<'a>(
             }
 
             for (i, f) in field_types.iter().enumerate() {
-                let tuple = build_call_argument(
+                let (returned_builder, value) = build_call_argument(
                     builder,
                     address_bech32_decoder,
                     schema.resolve_type_kind(*f).expect("Inconsistent schema"),
@@ -123,8 +122,8 @@ pub fn build_call_arguments<'a>(
                     args[i].clone(),
                     account,
                 )?;
-                builder = tuple.0;
-                built_args.push(tuple.1);
+                builder = returned_builder;
+                built_args.push(value);
             }
         }
         _ => panic!("Inconsistent schema"),
@@ -147,13 +146,13 @@ macro_rules! parse_basic_type {
 }
 
 fn build_call_argument<'a>(
-    builder: &'a mut ManifestBuilder,
+    mut builder: ManifestBuilderV2,
     address_bech32_decoder: &AddressBech32Decoder,
     type_kind: &ScryptoTypeKind<LocalTypeIndex>,
     type_validation: &TypeValidation<ScryptoCustomTypeValidation>,
     argument: String,
     account: Option<ComponentAddress>,
-) -> Result<(&'a mut ManifestBuilder, ManifestValue), BuildCallArgumentError> {
+) -> Result<(ManifestBuilderV2, ManifestValue), BuildCallArgumentError> {
     match type_kind {
         ScryptoTypeKind::Bool => parse_basic_type!(builder, argument, Bool),
         ScryptoTypeKind::I8 => parse_basic_type!(builder, argument, I8),
@@ -256,40 +255,31 @@ fn build_call_argument<'a>(
         {
             let resource_specifier = parse_resource_specifier(&argument, address_bech32_decoder)
                 .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
-            let bucket_id = match resource_specifier {
+
+            let namer = builder.namer();
+            let (bucket_name, new_bucket) = namer.new_collision_free_bucket("taken");
+            let builder = match resource_specifier {
                 ResourceSpecifier::Amount(amount, resource_address) => {
                     if let Some(account) = account {
-                        builder.withdraw_from_account(account, resource_address, amount);
+                        builder = builder.withdraw_from_account(account, resource_address, amount);
                     }
-                    builder
-                        .add_instruction(InstructionV1::TakeFromWorktop {
-                            amount,
-                            resource_address,
-                        })
-                        .1
-                        .unwrap()
+                    builder.take_from_worktop(resource_address, amount, new_bucket)
                 }
                 ResourceSpecifier::Ids(ids, resource_address) => {
                     if let Some(account) = account {
-                        builder.withdraw_non_fungibles_from_account(
+                        builder = builder.withdraw_non_fungibles_from_account(
                             account,
                             resource_address,
-                            &ids,
+                            ids.clone(),
                         );
                     }
-                    builder
-                        .add_instruction(InstructionV1::TakeNonFungiblesFromWorktop {
-                            ids: ids.into_iter().collect(),
-                            resource_address,
-                        })
-                        .1
-                        .unwrap()
+                    builder.take_non_fungibles_from_worktop(resource_address, ids, new_bucket)
                 }
             };
             Ok((
                 builder,
                 ManifestValue::Custom {
-                    value: ManifestCustomValue::Bucket(bucket_id),
+                    value: ManifestCustomValue::Bucket(namer.bucket(bucket_name)),
                 },
             ))
         }
@@ -300,19 +290,17 @@ fn build_call_argument<'a>(
             ) =>
         {
             let resource_specifier = parse_resource_specifier(&argument, address_bech32_decoder)
-                .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
-            let proof_id = match resource_specifier {
+                .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;            let namer = builder.namer();
+            let (proof_name, new_proof) = namer.new_collision_free_proof("proof");
+            let builder = match resource_specifier {
                 ResourceSpecifier::Amount(amount, resource_address) => {
                     if let Some(account) = account {
                         builder.create_proof_from_account_of_amount(
                             account,
                             resource_address,
                             amount,
-                        );
-                        builder
-                            .add_instruction(InstructionV1::PopFromAuthZone)
-                            .2
-                            .unwrap()
+                        )
+                        .pop_from_auth_zone(new_proof)
                     } else {
                         todo!("Take from worktop and create proof")
                     }
@@ -322,12 +310,9 @@ fn build_call_argument<'a>(
                         builder.create_proof_from_account_of_non_fungibles(
                             account,
                             resource_address,
-                            &ids,
-                        );
-                        builder
-                            .add_instruction(InstructionV1::PopFromAuthZone)
-                            .2
-                            .unwrap()
+                            ids,
+                        )
+                        .pop_from_auth_zone(new_proof)
                     } else {
                         todo!("Take from worktop and create proof")
                     }
@@ -336,7 +321,7 @@ fn build_call_argument<'a>(
             Ok((
                 builder,
                 ManifestValue::Custom {
-                    value: ManifestCustomValue::Proof(proof_id),
+                    value: ManifestCustomValue::Proof(namer.proof(proof_name)),
                 },
             ))
         }
@@ -347,7 +332,6 @@ fn build_call_argument<'a>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use transaction::builder::ManifestBuilder;
 
     #[test]
     pub fn parsing_of_u8_succeeds() {
@@ -662,8 +646,9 @@ mod test {
         type_kind: ScryptoTypeKind<LocalTypeIndex>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
     ) -> Result<T, BuildAndDecodeArgError> {
+        let builder = ManifestBuilderV2::new();
         let (_, built_arg) = build_call_argument(
-            &mut ManifestBuilder::new(),
+            builder,
             &AddressBech32Decoder::for_simulator(),
             &type_kind,
             &type_validation,
