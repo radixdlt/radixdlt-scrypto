@@ -478,6 +478,7 @@ impl MultiResourcePoolBlueprint {
     pub fn protected_withdraw<Y>(
         resource_address: ResourceAddress,
         amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
     ) -> Result<MultiResourcePoolProtectedWithdrawOutput, RuntimeError>
     where
@@ -487,14 +488,14 @@ impl MultiResourcePoolBlueprint {
         let vault = substate.vaults.get_mut(&resource_address);
 
         if let Some(vault) = vault {
-            let bucket = vault.take(amount, api)?;
-
+            let bucket = vault.take_advanced(amount, withdraw_strategy, api)?;
             api.field_lock_release(handle)?;
+            let withdrawn_amount = bucket.amount(api)?;
 
             Runtime::emit_event(
                 api,
                 WithdrawEvent {
-                    amount,
+                    amount: withdrawn_amount,
                     resource_address,
                 },
             )?;

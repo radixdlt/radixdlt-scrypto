@@ -60,12 +60,14 @@ define_invocation! {
     function_name: protected_withdraw,
     input: struct {
         resource_address: ResourceAddress,
-        amount: Decimal
+        amount: Decimal,
+        withdraw_strategy: WithdrawStrategy
     },
     output: type Bucket,
     manifest_input: struct {
         resource_address: ResourceAddress,
-        amount: Decimal
+        amount: Decimal,
+        withdraw_strategy: WithdrawStrategy
     }
 }
 

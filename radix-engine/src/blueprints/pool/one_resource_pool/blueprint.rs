@@ -266,6 +266,7 @@ impl OneResourcePoolBlueprint {
 
     pub fn protected_withdraw<Y>(
         amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
     ) -> Result<OneResourcePoolProtectedWithdrawOutput, RuntimeError>
     where
@@ -273,10 +274,18 @@ impl OneResourcePoolBlueprint {
     {
         let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
-        let bucket = substate.vault.take(amount, api)?;
+        let bucket = substate
+            .vault
+            .take_advanced(amount, withdraw_strategy, api)?;
         api.field_lock_release(handle)?;
+        let withdrawn_amount = bucket.amount(api)?;
 
-        Runtime::emit_event(api, WithdrawEvent { amount })?;
+        Runtime::emit_event(
+            api,
+            WithdrawEvent {
+                amount: withdrawn_amount,
+            },
+        )?;
 
         Ok(bucket)
     }

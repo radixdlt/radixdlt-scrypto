@@ -578,11 +578,14 @@ impl PoolNativePackage {
             }
 
             ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_EXPORT_NAME => {
-                let OneResourcePoolProtectedWithdrawInput { amount } =
-                    input.as_typed().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                    })?;
-                let rtn = OneResourcePoolBlueprint::protected_withdraw(amount, api)?;
+                let OneResourcePoolProtectedWithdrawInput {
+                    amount,
+                    withdraw_strategy,
+                } = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn =
+                    OneResourcePoolBlueprint::protected_withdraw(amount, withdraw_strategy, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
@@ -650,11 +653,16 @@ impl PoolNativePackage {
                 let TwoResourcePoolProtectedWithdrawInput {
                     amount,
                     resource_address,
+                    withdraw_strategy,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn =
-                    TwoResourcePoolBlueprint::protected_withdraw(resource_address, amount, api)?;
+                let rtn = TwoResourcePoolBlueprint::protected_withdraw(
+                    resource_address,
+                    amount,
+                    withdraw_strategy,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
@@ -723,11 +731,16 @@ impl PoolNativePackage {
                 let MultiResourcePoolProtectedWithdrawInput {
                     amount,
                     resource_address,
+                    withdraw_strategy,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
-                let rtn =
-                    MultiResourcePoolBlueprint::protected_withdraw(resource_address, amount, api)?;
+                let rtn = MultiResourcePoolBlueprint::protected_withdraw(
+                    resource_address,
+                    amount,
+                    withdraw_strategy,
+                    api,
+                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
