@@ -921,7 +921,7 @@ impl ManifestBuilder {
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
-                setup: definition,
+                definition: definition,
                 metadata: metadata.into(),
                 package_address: address,
                 owner_role,
@@ -941,7 +941,7 @@ impl ManifestBuilder {
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
-                setup: definition,
+                definition: definition,
                 metadata: metadata_init!(),
             }),
         });
@@ -965,7 +965,7 @@ impl ManifestBuilder {
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
-                setup: definition,
+                definition: definition,
                 metadata: metadata_init!(),
                 owner_role: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),

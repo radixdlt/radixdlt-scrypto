@@ -824,7 +824,7 @@ impl TestRunner {
                     function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
                     args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                         code: ManifestBlobRef(code_hash.0),
-                        setup: definition,
+                        definition: definition,
                         metadata: metadata_init!(),
                         package_address: Some(ManifestAddressReservation(0)),
                         owner_role: OwnerRole::Fixed(AccessRule::AllowAll),

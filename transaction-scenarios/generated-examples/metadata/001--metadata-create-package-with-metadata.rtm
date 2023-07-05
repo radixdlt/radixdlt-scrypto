@@ -15,9 +15,16 @@ CALL_METHOD
 ;
 PUBLISH_PACKAGE_ADVANCED
     Enum<1u8>(
-        AddressReservation("reservation1")
+        Enum<2u8>(
+            Enum<0u8>(
+                Enum<0u8>(
+                    Enum<0u8>(
+                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]")
+                    )
+                )
+            )
+        )
     )
-    Blob("ec9b12e84f3ac9f5594aca7432a42b77855517f93abbe27fa3ce341351d5ebed")
     Tuple(
         Map<String, Tuple>(
             "MetadataTest" => Tuple(
@@ -461,6 +468,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
+    Blob("57365c1d7843cada467d4a0e5892d3b5961dfd5c6980998004c44b8663f94448")
     Map<String, Tuple>(
         "" => Tuple(
             Enum<1u8>(
@@ -774,15 +782,7 @@ PUBLISH_PACKAGE_ADVANCED
         )
     )
     Enum<1u8>(
-        Enum<2u8>(
-            Enum<0u8>(
-                Enum<0u8>(
-                    Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxsecpsgxxxxxxxxx004638826440xxxxxxxxxwj8qq5:[4bacc54ffcf223a81aac5f9e4fa22fe33a266eb6b372f583daf7252b3e]")
-                    )
-                )
-            )
-        )
+        AddressReservation("reservation1")
     )
 ;
 CALL_METHOD
