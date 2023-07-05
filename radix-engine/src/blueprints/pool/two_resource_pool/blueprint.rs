@@ -256,12 +256,10 @@ impl TwoResourcePoolBlueprint {
                     };
 
                     if divisibility1 != 18 {
-                        amount1 = amount1
-                            .round(divisibility1 as u32, RoundingMode::TowardsNegativeInfinity)
+                        amount1 = amount1.round(divisibility1, RoundingMode::ToNegativeInfinity)
                     }
                     if divisibility2 != 18 {
-                        amount2 = amount2
-                            .round(divisibility2 as u32, RoundingMode::TowardsNegativeInfinity)
+                        amount2 = amount2.round(divisibility2, RoundingMode::ToNegativeInfinity)
                     }
 
                     let pool_units_to_mint = amount1 / reserves1 * pool_unit_total_supply;
@@ -414,6 +412,7 @@ impl TwoResourcePoolBlueprint {
     pub fn protected_withdraw<Y>(
         resource_address: ResourceAddress,
         amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
         api: &mut Y,
     ) -> Result<TwoResourcePoolProtectedWithdrawOutput, RuntimeError>
     where
@@ -423,14 +422,14 @@ impl TwoResourcePoolBlueprint {
         let vault = substate.vault(resource_address);
 
         if let Some(mut vault) = vault {
-            let bucket = vault.take(amount, api)?;
-
+            let bucket = vault.take_advanced(amount, withdraw_strategy, api)?;
             api.field_close(handle)?;
+            let withdrawn_amount = bucket.amount(api)?;
 
             Runtime::emit_event(
                 api,
                 WithdrawEvent {
-                    amount,
+                    amount: withdrawn_amount,
                     resource_address,
                 },
             )?;
@@ -542,8 +541,7 @@ impl TwoResourcePoolBlueprint {
                     let amount_owed = if divisibility == 18 {
                         amount_owed
                     } else {
-                        amount_owed
-                            .round(divisibility as u32, RoundingMode::TowardsNegativeInfinity)
+                        amount_owed.round(divisibility, RoundingMode::ToNegativeInfinity)
                     };
 
                     (resource_address, amount_owed)

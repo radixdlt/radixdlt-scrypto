@@ -44,6 +44,15 @@ pub trait NativeBucket {
     where
         Y: ClientApi<E>;
 
+    fn take_advanced<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>;
+
     fn burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, api: &mut Y) -> Result<(), E>
     where
         Y: ClientApi<E>;
@@ -204,6 +213,28 @@ impl NativeBucket for Bucket {
             self.0.as_node_id(),
             BUCKET_TAKE_IDENT,
             scrypto_encode(&BucketTakeInput { amount }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn take_advanced<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        &self,
+        amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            BUCKET_TAKE_ADVANCED_IDENT,
+            scrypto_encode(&BucketTakeAdvancedInput {
+                amount,
+                withdraw_strategy,
+            })
+            .unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

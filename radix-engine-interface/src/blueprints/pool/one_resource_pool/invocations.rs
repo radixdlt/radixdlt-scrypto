@@ -59,11 +59,13 @@ define_invocation! {
     blueprint_name: OneResourcePool,
     function_name: protected_withdraw,
     input: struct {
-        amount: Decimal
+        amount: Decimal,
+        withdraw_strategy: WithdrawStrategy
     },
     output: type Bucket,
     manifest_input: struct {
-        amount: Decimal
+        amount: Decimal,
+        withdraw_strategy: WithdrawStrategy
     }
 }
 

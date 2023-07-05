@@ -368,6 +368,25 @@ impl FungibleResourceManagerBlueprint {
         }
     }
 
+    pub(crate) fn amount_for_withdrawal<Y>(
+        api: &mut Y,
+        amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let divisibility_handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            FungibleResourceManagerField::Divisibility.into(),
+            LockFlags::read_only(),
+        )?;
+
+        let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
+
+        Ok(amount.for_withdrawal(divisibility, withdraw_strategy))
+    }
+
     fn assert_mintable<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,

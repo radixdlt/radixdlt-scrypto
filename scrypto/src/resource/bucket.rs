@@ -44,6 +44,12 @@ pub trait ScryptoBucket {
 
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self;
 
+    fn take_advanced<A: Into<Decimal>>(
+        &mut self,
+        amount: A,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Self;
+
     fn is_empty(&self) -> bool;
 
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
@@ -205,6 +211,26 @@ impl ScryptoBucket for Bucket {
         scrypto_decode(&rtn).unwrap()
     }
 
+    fn take_advanced<A: Into<Decimal>>(
+        &mut self,
+        amount: A,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Self {
+        let mut env = ScryptoEnv;
+        let rtn = env
+            .call_method(
+                self.0.as_node_id(),
+                BUCKET_TAKE_ADVANCED_IDENT,
+                scrypto_encode(&BucketTakeAdvancedInput {
+                    amount: amount.into(),
+                    withdraw_strategy,
+                })
+                .unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
     /// Uses resources in this bucket as authorization for an operation.
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         LocalAuthZone::push(self.create_proof());
@@ -285,6 +311,14 @@ impl ScryptoBucket for FungibleBucket {
         Self(self.0.take(amount))
     }
 
+    fn take_advanced<A: Into<Decimal>>(
+        &mut self,
+        amount: A,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Self {
+        Self(self.0.take_advanced(amount, withdraw_strategy))
+    }
+
     fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -352,6 +386,14 @@ impl ScryptoBucket for NonFungibleBucket {
 
     fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
         Self(self.0.take(amount))
+    }
+
+    fn take_advanced<A: Into<Decimal>>(
+        &mut self,
+        amount: A,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Self {
+        Self(self.0.take_advanced(amount, withdraw_strategy))
     }
 
     fn is_empty(&self) -> bool {

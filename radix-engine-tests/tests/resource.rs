@@ -358,3 +358,99 @@ fn cannot_burn_in_component_with_proof_in_root() {
         )
     });
 }
+
+#[test]
+fn test_fungible_resource_amount_for_withdrawal() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .call_function(
+            package_address,
+            "RoundingTest",
+            "fungible_resource_amount_for_withdrawal",
+            manifest_args!(),
+        )
+        .try_deposit_batch_or_abort(account)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_non_fungible_resource_amount_for_withdrawal() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .call_function(
+            package_address,
+            "RoundingTest",
+            "non_fungible_resource_amount_for_withdrawal",
+            manifest_args!(),
+        )
+        .try_deposit_batch_or_abort(account)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_fungible_resource_take_advanced() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .call_function(
+            package_address,
+            "RoundingTest",
+            "fungible_resource_take_advanced",
+            manifest_args!(),
+        )
+        .try_deposit_batch_or_abort(account)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_non_fungible_resource_take_advanced() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .call_function(
+            package_address,
+            "RoundingTest",
+            "non_fungible_resource_take_advanced",
+            manifest_args!(),
+        )
+        .try_deposit_batch_or_abort(account)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
