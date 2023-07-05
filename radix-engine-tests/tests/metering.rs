@@ -476,12 +476,11 @@ fn should_be_able_run_large_manifest() {
     let mut builder = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .withdraw_from_account(account, XRD, 100);
-    let namer = builder.namer();
     for _ in 0..40 {
-        let (bucket_name, new_bucket) = namer.new_collision_free_bucket("bucket");
+        let bucket = builder.generate_bucket_name("bucket");
         builder = builder
-            .take_from_worktop(XRD, 1, new_bucket)
-            .return_to_worktop(bucket_name);
+            .take_from_worktop(XRD, 1, &bucket)
+            .return_to_worktop(bucket);
     }
     let manifest = builder.try_deposit_batch_or_abort(account).build();
 

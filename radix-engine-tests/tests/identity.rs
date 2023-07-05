@@ -23,7 +23,7 @@ fn cannot_securify_in_advanced_mode() {
         .call_method(
             component_address,
             IDENTITY_SECURIFY_IDENT,
-            to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
+            IdentitySecurifyToSingleBadgeInput {},
         )
         .try_deposit_batch_or_abort(account)
         .build();
@@ -54,7 +54,7 @@ fn can_securify_from_virtual_identity() {
         .call_method(
             component_address,
             IDENTITY_SECURIFY_IDENT,
-            to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
+            IdentitySecurifyToSingleBadgeInput {},
         )
         .try_deposit_batch_or_abort(account)
         .build();
@@ -76,7 +76,7 @@ fn cannot_securify_twice() {
         .call_method(
             component_address,
             IDENTITY_SECURIFY_IDENT,
-            to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
+            IdentitySecurifyToSingleBadgeInput {},
         )
         .try_deposit_batch_or_abort(account)
         .build();
@@ -90,7 +90,7 @@ fn cannot_securify_twice() {
         .call_method(
             component_address,
             IDENTITY_SECURIFY_IDENT,
-            to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
+            IdentitySecurifyToSingleBadgeInput {},
         )
         .try_deposit_batch_or_abort(account)
         .build();
@@ -119,7 +119,7 @@ fn can_set_metadata_after_securify() {
         .call_method(
             identity_address,
             IDENTITY_SECURIFY_IDENT,
-            to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
+            IdentitySecurifyToSingleBadgeInput {},
         )
         .try_deposit_batch_or_abort(account)
         .build();
@@ -196,7 +196,7 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
         .call_method(
             identity,
             IDENTITY_SECURIFY_IDENT,
-            to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
+            IdentitySecurifyToSingleBadgeInput {},
         )
         .try_deposit_batch_or_refund(account)
         .build();
@@ -230,10 +230,9 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
                 IDENTITY_PACKAGE,
                 IDENTITY_BLUEPRINT,
                 IDENTITY_CREATE_ADVANCED_IDENT,
-                to_manifest_value(&IdentityCreateAdvancedInput {
+                IdentityCreateAdvancedInput {
                     owner_rule: OwnerRole::None,
-                })
-                .unwrap(),
+                },
             )
             .build();
         test_runner

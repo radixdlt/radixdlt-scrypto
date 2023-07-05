@@ -213,14 +213,14 @@ pub fn stop_timed_recovery_with_no_access_fails() {
         .call_method(
             test_runner.access_controller_address,
             "stop_timed_recovery",
-            to_manifest_value_and_unwrap!(&AccessControllerStopTimedRecoveryInput {
+            AccessControllerStopTimedRecoveryInput {
                 rule_set: RuleSet {
                     primary_role: rule!(require(XRD)),
                     recovery_role: rule!(require(XRD)),
                     confirmation_role: rule!(require(XRD)),
                 },
                 timed_recovery_delay_in_minutes: Some(10),
-            }),
+            },
         )
         .build();
 
@@ -347,9 +347,7 @@ pub fn confirmation_role_cant_initiate_a_badge_withdraw_attempt_as_primary_or_re
             .call_method(
                 test_runner.access_controller_address,
                 ident,
-                to_manifest_value_and_unwrap!(
-                    &AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput
-                ),
+                AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput,
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest);
@@ -1710,7 +1708,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 "create_proof",
-                to_manifest_value_and_unwrap!(&AccessControllerCreateProofInput {}),
+                AccessControllerCreateProofInput {},
             )
             .pop_from_auth_zone("ignored_proof")
             .build();
@@ -1736,14 +1734,14 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value_and_unwrap!(&AccessControllerInitiateRecoveryAsPrimaryInput {
+                AccessControllerInitiateRecoveryAsPrimaryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
                     timed_recovery_delay_in_minutes,
-                }),
+                },
             )
             .build();
         self.execute_manifest(manifest)
@@ -1770,9 +1768,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value_and_unwrap!(
-                    &AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput {}
-                ),
+                AccessControllerInitiateBadgeWithdrawAttemptAsPrimaryInput {},
             )
             .build();
         self.execute_manifest(manifest)
@@ -1807,16 +1803,14 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value_and_unwrap!(
-                    &AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
-                        rule_set: RuleSet {
-                            primary_role: proposed_primary_role,
-                            recovery_role: proposed_recovery_role,
-                            confirmation_role: proposed_confirmation_role,
-                        },
-                        timed_recovery_delay_in_minutes,
-                    }
-                ),
+                AccessControllerQuickConfirmPrimaryRoleRecoveryProposalInput {
+                    rule_set: RuleSet {
+                        primary_role: proposed_primary_role,
+                        recovery_role: proposed_recovery_role,
+                        confirmation_role: proposed_confirmation_role,
+                    },
+                    timed_recovery_delay_in_minutes,
+                },
             )
             .build();
         self.execute_manifest(manifest)
@@ -1847,9 +1841,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value_and_unwrap!(
-                    &AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput {}
-                ),
+                AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptInput {},
             )
             .build();
         self.execute_manifest(manifest)
@@ -1868,14 +1860,14 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 ACCESS_CONTROLLER_TIMED_CONFIRM_RECOVERY_IDENT,
-                to_manifest_value_and_unwrap!(&AccessControllerTimedConfirmRecoveryInput {
+                AccessControllerTimedConfirmRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
                     timed_recovery_delay_in_minutes,
-                }),
+                },
             )
             .build();
         self.execute_manifest(manifest)
@@ -1893,9 +1885,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value_and_unwrap!(
-                    &AccessControllerCancelPrimaryRoleRecoveryProposalInput
-                ),
+                AccessControllerCancelPrimaryRoleRecoveryProposalInput,
             )
             .build();
         self.execute_manifest(manifest)
@@ -1913,9 +1903,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 method_name,
-                to_manifest_value_and_unwrap!(
-                    &AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput
-                ),
+                AccessControllerCancelPrimaryRoleBadgeWithdrawAttemptInput,
             )
             .build();
         self.execute_manifest(manifest)
@@ -1927,7 +1915,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 "lock_primary_role",
-                to_manifest_value_and_unwrap!(&AccessControllerLockPrimaryRoleInput {}),
+                AccessControllerLockPrimaryRoleInput {},
             )
             .build();
         self.execute_manifest(manifest)
@@ -1939,7 +1927,7 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 "unlock_primary_role",
-                to_manifest_value_and_unwrap!(&AccessControllerUnlockPrimaryRoleInput {}),
+                AccessControllerUnlockPrimaryRoleInput {},
             )
             .build();
         self.execute_manifest(manifest)
@@ -1958,14 +1946,14 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 "stop_timed_recovery",
-                to_manifest_value_and_unwrap!(&AccessControllerStopTimedRecoveryInput {
+                AccessControllerStopTimedRecoveryInput {
                     rule_set: RuleSet {
                         primary_role: proposed_primary_role,
                         recovery_role: proposed_recovery_role,
                         confirmation_role: proposed_confirmation_role,
                     },
                     timed_recovery_delay_in_minutes,
-                }),
+                },
             )
             .build();
         self.execute_manifest(manifest)
@@ -1981,9 +1969,9 @@ impl AccessControllerTestRunner {
             .call_method(
                 self.access_controller_address,
                 ACCESS_CONTROLLER_MINT_RECOVERY_BADGES_IDENT,
-                to_manifest_value_and_unwrap!(&AccessControllerMintRecoveryBadgesInput {
+                AccessControllerMintRecoveryBadgesInput {
                     non_fungible_local_ids,
-                }),
+                },
             )
             .try_deposit_batch_or_abort(self.account.0)
             .build();

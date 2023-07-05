@@ -21,7 +21,7 @@ fn can_call_public_function() {
         package_address,
         "FunctionAccessRules",
         "public_function",
-        manifest_args!(),
+        (),
     );
 
     // Assert
@@ -39,7 +39,7 @@ fn cannot_call_protected_function_without_auth() {
         package_address,
         "FunctionAccessRules",
         "protected_function",
-        manifest_args!(),
+        (),
     );
 
     // Assert

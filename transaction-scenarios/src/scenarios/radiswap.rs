@@ -62,7 +62,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
         ScenarioBuilder::new(core, metadata, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee_v2(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-create-new-resources",
                         |builder| {
                             builder.create_fungible_resource(
@@ -156,19 +156,19 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                         "../../../assets/radiswap.schema"
                     ))
                     .unwrap();
-                    core.next_transaction_with_faucet_lock_fee_v2(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-publish-and-create-pools",
                         |builder| {
-                            let namer = builder.namer();
+                            let lookup = builder.name_lookup();
                             builder.allocate_global_address(
                                 PACKAGE_PACKAGE,
                                 PACKAGE_BLUEPRINT,
-                                namer.new_address_reservation("radiswap_package_reservation"),
-                                namer.new_named_address("radiswap_package")
+                                "radiswap_package_reservation",
+                                "radiswap_package"
                             )
                             .get_free_xrd_from_faucet()
                             .publish_package_advanced(
-                                Some(namer.address_reservation("radiswap_package_reservation")),
+                                Some("radiswap_package_reservation".to_string()),
                                 code.to_vec(),
                                 schema,
                                 metadata_init! {
@@ -182,13 +182,13 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                     )
                                 ))),
                             ).call_function(
-                                namer.named_address("radiswap_package"),
+                                lookup.named_address("radiswap_package"),
                                 "Radiswap", 
                                 "new", 
                                 manifest_args!(state.pool_1.resource_1.unwrap(), state.pool_1.resource_2.unwrap())
                             )
                             .call_function(
-                                namer.named_address("radiswap_package"),
+                                lookup.named_address("radiswap_package"),
                                 "Radiswap", 
                                 "new", 
                                 manifest_args!(state.pool_2.resource_1.unwrap(), state.pool_2.resource_2.unwrap())
@@ -218,10 +218,9 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee_v2(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-add-liquidity",
                         |builder| {
-                            let namer = builder.namer();
                             builder
                                 .get_free_xrd_from_faucet()
                                 .withdraw_from_account(
@@ -241,29 +240,35 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 )
                                 .take_all_from_worktop(
                                     state.pool_1.resource_1.get()?,
-                                    namer.new_bucket("pool_1_resource_1")
+                                    "pool_1_resource_1"
                                 )
                                 .take_all_from_worktop(
                                     state.pool_1.resource_2.get()?,
-                                    namer.new_bucket("pool_1_resource_2")
+                                    "pool_1_resource_2"
                                 )
-                                .call_method(
+                                .call_method_with_name_lookup(
                                     state.pool_1.radiswap.get()?,
                                     "add_liquidity",
-                                    manifest_args!(namer.bucket("pool_1_resource_1"), namer.bucket("pool_1_resource_2")),
+                                    |lookup| (
+                                        lookup.bucket("pool_1_resource_1"),
+                                        lookup.bucket("pool_1_resource_2"),
+                                    ),
                                 )
                                 .take_all_from_worktop(
                                     state.pool_2.resource_1.get()?,
-                                    namer.new_bucket("pool_2_resource_1"),
+                                    "pool_2_resource_1",
                                 )
                                 .take_all_from_worktop(
                                     state.pool_2.resource_2.get()?,
-                                    namer.new_bucket("pool_2_resource_2"),
+                                    "pool_2_resource_2",
                                 )
-                                .call_method(
+                                .call_method_with_name_lookup(
                                     state.pool_2.radiswap.get()?,
                                     "add_liquidity",
-                                    manifest_args!(namer.bucket("pool_2_resource_1"), namer.bucket("pool_2_resource_2")),
+                                    |lookup| (
+                                        lookup.bucket("pool_2_resource_1"),
+                                        lookup.bucket("pool_2_resource_2"),
+                                    ),
                                 )
                                 .try_deposit_batch_or_abort(config.storing_account.address)
                                 .done()
@@ -274,7 +279,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee_v2(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-distribute-tokens",
                         |mut builder| {
                             builder = builder.get_free_xrd_from_faucet();
@@ -304,10 +309,9 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee_v2(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-swap-tokens",
                         |builder| {
-                            let namer = builder.namer();
                             builder
                                 .withdraw_from_account(
                                     config.user_account_1.address,
@@ -316,11 +320,13 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 )
                                 .take_all_from_worktop(
                                     state.pool_1.resource_1.get()?,
-                                    namer.new_bucket("input"),
-                                ).call_method(
+                                    "input",
+                                ).call_method_with_name_lookup(
                                     state.pool_1.radiswap.unwrap(),
                                     "swap",
-                                    manifest_args!(namer.bucket("input")),
+                                    |lookup| (
+                                        lookup.bucket("input"),
+                                    )
                                 )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
                                 .done()
@@ -331,10 +337,9 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee_v2(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-remove-tokens",
                         |builder| {
-                            let namer = builder.namer();
                             builder
                                 .withdraw_from_account(
                                     config.user_account_1.address,
@@ -343,12 +348,16 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 )
                                 .take_all_from_worktop(
                                     state.pool_1.pool_unit.get()?,
-                                    namer.new_bucket("pool_units")
-                                ).call_method(
-                                    state.pool_1.radiswap.unwrap(),
-                                    "remove_liquidity",
-                                    manifest_args!(namer.bucket("pool_units")),
+                                    "pool_units",
                                 )
+                                .then(|builder| {
+                                    let bucket = builder.bucket("pool_units");
+                                    builder.call_method(
+                                        state.pool_1.radiswap.unwrap(),
+                                        "remove_liquidity",
+                                        manifest_args!(bucket),
+                                    )
+                                })
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
                                 .done()
                         },

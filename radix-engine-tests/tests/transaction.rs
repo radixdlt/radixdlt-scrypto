@@ -114,7 +114,7 @@ fn test_non_existent_blob_hash() {
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
-            to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
+            PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef([0; 32]),
                 setup: PackageDefinition {
                     blueprints: btreemap!(),
@@ -122,7 +122,7 @@ fn test_non_existent_blob_hash() {
                 metadata: metadata_init!(),
                 owner_role: OwnerRole::None,
                 package_address: None,
-            }),
+            },
         )
         .build();
     let receipt = test_runner.execute_manifest(

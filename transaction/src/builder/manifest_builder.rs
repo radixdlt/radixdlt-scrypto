@@ -1,4 +1,6 @@
 use crate::internal_prelude::*;
+use crate::manifest::decompiler::decompile_with_known_naming;
+use crate::manifest::decompiler::ManifestObjectNames;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::*;
@@ -11,7 +13,73 @@ use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 
-/// Utility for building transaction manifest.
+/// A manifest builder for use in tests.
+///
+/// Note - if you break invariants of the manifest builder (eg resolve a bucket
+/// before it's been created, or pass an invalid parameter), this builder will panic.
+/// As such, it's only designed for use in test code, or where the inputs are trusted.
+///
+/// Simple use case:
+/// ```
+/// # use transaction::prelude::*;
+/// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+/// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
+/// # );
+/// # let to_account_address = ComponentAddress::virtual_account_from_public_key(
+/// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
+/// # );
+/// let manifest = ManifestBuilder::new()
+///     .lock_fee_from_faucet()
+///     .withdraw_from_account(from_account_address, XRD, dec!(1))
+///     .take_from_worktop(XRD, dec!(1), "xrd")
+///     .try_deposit_or_abort(to_account_address, "xrd")
+///     .build();
+/// ```
+///
+/// Intermediate use case, where we need to pass a bucket into a component:
+/// ```no_run
+/// # use transaction::prelude::*;
+/// # let package_address = RESOURCE_PACKAGE;
+/// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+/// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
+/// # );
+/// # let to_account_address = ComponentAddress::virtual_account_from_public_key(
+/// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
+/// # );
+/// let manifest = ManifestBuilder::new()
+///     .lock_fee_from_faucet()
+///     .withdraw_from_account(from_account_address, XRD, dec!(1))
+///     .take_from_worktop(XRD, dec!(1), "xrd")
+///     .call_function_with_named_args(
+///         package_address,
+///         "SomeBlueprint",
+///         "some_function",
+///         |namer| (
+///             namer.bucket("xrd"),
+///         ),
+///     )
+///     .build();
+/// ```
+///
+/// Advanced use case, where we need to generate a collision-free bucket name:
+/// ```no_run
+/// # use transaction::prelude::*;
+/// # let to_account_address = ComponentAddress::virtual_account_from_public_key(
+/// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
+/// # );
+/// let mut builder = ManifestBuilder::new()
+///     .lock_fee_from_faucet()
+///     .get_free_xrd_from_faucet();
+/// for _ in 0..32 {
+///     // The generate_bucket_name method generates a new bucket name starting with
+///     // "transfer" that doesn't collide with any previously used bucket names
+///     let bucket_name = builder.generate_bucket_name("transfer");
+///     builder = builder
+///         .take_from_worktop(XRD, "0.001", &bucket_name)
+///         .try_deposit_or_abort(to_account_address, bucket_name);
+/// }
+/// let manifest = builder.build();
+/// ```
 pub struct ManifestBuilder {
     registrar: ManifestNameRegistrar,
     /// Instructions generated.
@@ -27,34 +95,8 @@ pub struct NewSymbols {
     pub new_address_id: Option<u32>,
 }
 
-/// A manifest builder - making use of a paired namer.
-/// The namer is for creating / using buckets, proofs, address reservations
-/// and named addresses. EG:
-/// ```
-/// # use transaction::prelude::*;
-/// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
-/// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
-/// # );
-/// # let to_account_address = ComponentAddress::virtual_account_from_public_key(
-/// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
-/// # );
-/// let (builder, namer) = ManifestBuilder::new_with_namer();
-/// let manifest = builder
-///     .withdraw_from_account(from_account_address, XRD, dec!(1))
-///     .take_from_worktop(XRD, dec!(1), namer.new_bucket("xrd"))
-///     .try_deposit_or_abort(to_account_address, namer.bucket("xrd"))
-///     .build();
-/// ```
 impl ManifestBuilder {
-    /// Starts a new transaction builder, with paired namer.`
-    pub fn new_with_namer() -> (Self, ManifestNamer) {
-        let builder = Self::new();
-        let namer = builder.namer();
-        (builder, namer)
-    }
-
-    /// Starts a new transaction builder. Returns a builder, but no namer.
-    /// You can later create a namer by calling `let namer = builder.namer();`
+    /// Starts a new transaction builder.
     pub fn new() -> Self {
         Self {
             registrar: ManifestNameRegistrar::new(),
@@ -63,16 +105,16 @@ impl ManifestBuilder {
         }
     }
 
-    pub fn namer(&self) -> ManifestNamer {
-        self.registrar.namer()
+    pub fn name_lookup(&self) -> ManifestNameLookup {
+        self.registrar.name_lookup()
     }
 
     pub fn then(self, next: impl FnOnce(Self) -> Self) -> Self {
         next(self)
     }
 
-    pub fn with_namer(self, next: impl FnOnce(Self, ManifestNamer) -> Self) -> Self {
-        let namer = self.namer();
+    pub fn with_namer(self, next: impl FnOnce(Self, ManifestNameLookup) -> Self) -> Self {
+        let namer = self.name_lookup();
         next(self, namer)
     }
 
@@ -83,6 +125,56 @@ impl ManifestBuilder {
     ) -> Self {
         let bucket = bucket.resolve(&self.registrar);
         next(self, bucket)
+    }
+
+    pub fn bucket(&self, name: impl AsRef<str>) -> ManifestBucket {
+        self.name_lookup().bucket(name)
+    }
+
+    pub fn proof(&self, name: impl AsRef<str>) -> ManifestProof {
+        self.name_lookup().proof(name)
+    }
+
+    pub fn named_address(&self, name: impl AsRef<str>) -> ManifestAddress {
+        self.name_lookup().named_address(name)
+    }
+
+    pub fn address_reservation(&self, name: impl AsRef<str>) -> ManifestAddressReservation {
+        self.name_lookup().address_reservation(name)
+    }
+
+    /// Generates an unused bucket name with the given prefix.
+    /// This should be used when you are programatically generating buckets,
+    /// and need to generate bucket names which do not clash.
+    pub fn generate_bucket_name(&self, prefix: impl Into<String>) -> String {
+        self.registrar.new_collision_free_bucket_name(prefix)
+    }
+
+    /// Generates an unused proof name with the given prefix.
+    /// This should be used when you are programatically generating proofs,
+    /// and need to generate names which do not clash.
+    pub fn generate_proof_name(&self, prefix: impl Into<String>) -> String {
+        self.registrar.new_collision_free_proof_name(prefix)
+    }
+
+    /// Generates an unused address reservation name with the given prefix.
+    /// This should be used when you are programatically generating address reservations,
+    /// and need to generate names which do not clash.
+    pub fn generate_address_reservation_name(&self, prefix: impl Into<String>) -> String {
+        self.registrar
+            .new_collision_free_address_reservation_name(prefix)
+    }
+
+    /// Generates an unused address name with the given prefix.
+    /// This should be used when you are programatically generating named addresses,
+    /// and need to generate names which do not clash.
+    pub fn generate_address_name(&self, prefix: impl Into<String>) -> String {
+        self.registrar
+            .new_collision_free_address_reservation_name(prefix)
+    }
+
+    pub fn object_names(&self) -> ManifestObjectNames {
+        self.registrar.object_names()
     }
 
     /// This is intended to be called at the start, before the builder
@@ -127,15 +219,16 @@ impl ManifestBuilder {
         let mut new_address_reservation = None;
         let mut new_address_id = None;
 
-        let namer = self.namer();
+        let registrar = &self.registrar;
+        let lookup = self.name_lookup();
 
         match &instruction {
             InstructionV1::TakeAllFromWorktop { .. }
             | InstructionV1::TakeFromWorktop { .. }
             | InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
-                let (bucket_name, named_bucket) = namer.new_collision_free_bucket("bucket");
-                self.registrar.register_bucket(named_bucket);
-                new_bucket = Some(namer.bucket(bucket_name));
+                let bucket_name = registrar.new_collision_free_bucket_name("bucket");
+                registrar.register_bucket(registrar.new_bucket(&bucket_name));
+                new_bucket = Some(lookup.bucket(bucket_name));
             }
             InstructionV1::PopFromAuthZone { .. }
             | InstructionV1::CreateProofFromAuthZone { .. }
@@ -147,21 +240,21 @@ impl ManifestBuilder {
             | InstructionV1::CreateProofFromBucketOfNonFungibles { .. }
             | InstructionV1::CreateProofFromBucketOfAll { .. }
             | InstructionV1::CloneProof { .. } => {
-                let (proof_name, named_proof) = namer.new_collision_free_proof("proof");
-                self.registrar.register_proof(named_proof);
-                new_proof = Some(namer.proof(proof_name));
+                let proof_name = registrar.new_collision_free_bucket_name("proof");
+                registrar.register_proof(registrar.new_proof(&proof_name));
+                new_proof = Some(lookup.proof(proof_name));
             }
             InstructionV1::AllocateGlobalAddress { .. } => {
-                let (reservation_name, named_reservation) =
-                    namer.new_collision_free_address_reservation("reservation");
-                self.registrar
-                    .register_address_reservation(named_reservation);
+                let reservation_name =
+                    registrar.new_collision_free_address_reservation_name("reservation");
+                registrar.register_address_reservation(
+                    registrar.new_address_reservation(&reservation_name),
+                );
 
-                let (address_name, named_address) =
-                    namer.new_collision_free_named_address("address");
-                self.registrar.register_named_address(named_address);
-                new_address_reservation = Some(namer.address_reservation(reservation_name));
-                new_address_id = Some(namer.named_address_id(address_name));
+                let address_name = registrar.new_collision_free_address_name("address");
+                registrar.register_named_address(registrar.new_named_address(&address_name));
+                new_address_reservation = Some(lookup.address_reservation(reservation_name));
+                new_address_id = Some(lookup.named_address_id(address_name));
             }
             _ => {}
         }
@@ -399,15 +492,19 @@ impl ManifestBuilder {
         self,
         package_address: impl ResolvablePackageAddress,
         blueprint_name: impl Into<String>,
-        new_address_reservation: NamedManifestAddressReservation,
-        new_address: NamedManifestAddress,
+        new_address_reservation_name: impl Into<String>,
+        new_address_name: impl Into<String>,
     ) -> Self {
         let package_address = package_address.resolve_static(&self.registrar);
         let blueprint_name = blueprint_name.into();
+        let new_address_reservation = self
+            .registrar
+            .new_address_reservation(new_address_reservation_name);
+        let new_named_address = self.registrar.new_named_address(new_address_name);
 
         self.registrar
             .register_address_reservation(new_address_reservation);
-        self.registrar.register_named_address(new_address);
+        self.registrar.register_named_address(new_named_address);
         self.add_instruction(InstructionV1::AllocateGlobalAddress {
             package_address,
             blueprint_name,
@@ -620,29 +717,21 @@ impl ManifestBuilder {
     ) -> Self {
         let fee_factor = fee_factor.resolve();
         let xrd_payment = xrd_payment.mark_consumed(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
-            address: CONSENSUS_MANAGER.into(),
-            method_name: CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT.to_string(),
-            args: manifest_args!(key, fee_factor, xrd_payment),
-        })
+        self.call_method(
+            CONSENSUS_MANAGER,
+            CONSENSUS_MANAGER_CREATE_VALIDATOR_IDENT,
+            (key, fee_factor, xrd_payment),
+        )
     }
 
     pub fn register_validator(self, validator_address: impl ResolvableComponentAddress) -> Self {
         let address = validator_address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
-            address: address.into(),
-            method_name: VALIDATOR_REGISTER_IDENT.to_string(),
-            args: manifest_args!(),
-        })
+        self.call_method(address, VALIDATOR_REGISTER_IDENT, ())
     }
 
     pub fn unregister_validator(self, validator_address: impl ResolvableComponentAddress) -> Self {
         let address = validator_address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
-            address: address.into(),
-            method_name: VALIDATOR_UNREGISTER_IDENT.to_string(),
-            args: manifest_args!(),
-        })
+        self.call_method(address, VALIDATOR_UNREGISTER_IDENT, ())
     }
 
     pub fn signal_protocol_update_readiness(
@@ -651,11 +740,11 @@ impl ManifestBuilder {
         protocol_version_name: &str,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
-            address: address.into(),
-            method_name: VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS.to_string(),
-            args: manifest_args!(protocol_version_name.to_string()),
-        })
+        self.call_method(
+            address,
+            VALIDATOR_SIGNAL_PROTOCOL_UPDATE_READINESS,
+            (protocol_version_name.to_string(),),
+        )
     }
 
     pub fn stake_validator_as_owner(
@@ -664,12 +753,8 @@ impl ManifestBuilder {
         bucket: impl ExistingManifestBucket,
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
-        let bucket = bucket.mark_consumed(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
-            address: address.into(),
-            method_name: VALIDATOR_STAKE_AS_OWNER_IDENT.to_string(),
-            args: manifest_args!(bucket),
-        })
+        let bucket: ManifestBucket = bucket.mark_consumed(&self.registrar);
+        self.call_method(address, VALIDATOR_STAKE_AS_OWNER_IDENT, (bucket,))
     }
 
     pub fn stake_validator(
@@ -679,11 +764,7 @@ impl ManifestBuilder {
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
         let bucket = bucket.mark_consumed(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
-            address: address.into(),
-            method_name: VALIDATOR_STAKE_IDENT.to_string(),
-            args: manifest_args!(bucket),
-        })
+        self.call_method(address, VALIDATOR_STAKE_IDENT, (bucket,))
     }
 
     pub fn unstake_validator(
@@ -693,11 +774,7 @@ impl ManifestBuilder {
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
         let bucket = bucket.mark_consumed(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
-            address: address.into(),
-            method_name: VALIDATOR_UNSTAKE_IDENT.to_string(),
-            args: manifest_args!(bucket),
-        })
+        self.call_method(address, VALIDATOR_UNSTAKE_IDENT, (bucket,))
     }
 
     pub fn claim_xrd(
@@ -707,38 +784,146 @@ impl ManifestBuilder {
     ) -> Self {
         let address = validator_address.resolve(&self.registrar);
         let bucket = bucket.mark_consumed(&self.registrar);
-        self.add_instruction(InstructionV1::CallMethod {
-            address: address.into(),
-            method_name: VALIDATOR_CLAIM_XRD_IDENT.to_string(),
-            args: manifest_args!(bucket),
-        })
+        self.call_method(address, VALIDATOR_CLAIM_XRD_IDENT, (bucket,))
     }
 
-    /// Calls a function where the arguments should be an array of encoded Scrypto value.
+    /// Calls a scrypto function where the arguments should be one of:
+    /// * A tuple, such as `()`, `(x,)` or `(x, y, z)`
+    ///   * IMPORTANT: If calling with a single argument, you must include a trailing comma
+    ///     in the tuple declaration. This ensures that the rust compiler knows it's a singleton tuple,
+    ///     rather than just some brackets around the inner value.
+    /// * A struct which implements `ManifestEncode` representing the arguments
+    /// * `manifest_args!(x, y, z)`
+    ///
+    /// NOTE: If you need access to named buckets/proofs etc, use `call_function_with_name_lookup`
+    /// instead.
     pub fn call_function(
         self,
         package_address: impl ResolvablePackageAddress,
         blueprint_name: impl Into<String>,
         function_name: impl Into<String>,
-        args: ManifestValue,
+        arguments: impl ResolvableArguments,
     ) -> Self {
         let package_address = package_address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallFunction {
             package_address,
             blueprint_name: blueprint_name.into(),
             function_name: function_name.into(),
-            args: to_manifest_value_and_unwrap!(&args),
+            args: arguments.resolve(),
         })
     }
 
-    /// Calls a scrypto method where the arguments should be an array of encoded Scrypto value.
+    /// Calls a scrypto function where the arguments are a raw ManifestValue.
+    /// The caller is required to ensure the ManifestValue is a Tuple.
+    ///
+    /// You should prefer `call_function` or `call_function_with_name_lookup` instead.
+    pub fn call_function_raw(
+        self,
+        package_address: impl ResolvablePackageAddress,
+        blueprint_name: impl Into<String>,
+        function_name: impl Into<String>,
+        arguments: ManifestValue,
+    ) -> Self {
+        let package_address = package_address.resolve(&self.registrar);
+        self.add_instruction(InstructionV1::CallFunction {
+            package_address,
+            blueprint_name: blueprint_name.into(),
+            function_name: function_name.into(),
+            args: arguments,
+        })
+    }
+
+    /// Calls a scrypto function where the arguments will be created using the given
+    /// callback, which takes a `lookup` (allowing for resolving named buckets, proofs, etc)
+    /// and returns resolvable arguments.
+    ///
+    /// The resolvable arguments should be one of:
+    /// * A tuple, such as `()`, `(x,)` or `(x, y, z)`
+    ///   * IMPORTANT: If calling with a single argument, you must include a trailing comma
+    ///     in the tuple declaration. This ensures that the rust compiler knows it's a singleton tuple,
+    ///     rather than just some brackets around the inner value.
+    /// * A struct which implements `ManifestEncode` representing the arguments
+    /// * `manifest_args!(x, y, z)`
+    pub fn call_function_with_name_lookup<T: ResolvableArguments>(
+        self,
+        package_address: impl ResolvablePackageAddress,
+        blueprint_name: impl Into<String>,
+        function_name: impl Into<String>,
+        arguments_creator: impl FnOnce(&ManifestNameLookup) -> T,
+    ) -> Self {
+        let package_address = package_address.resolve(&self.registrar);
+        let args = arguments_creator(&self.name_lookup()).resolve();
+
+        self.add_instruction(InstructionV1::CallFunction {
+            package_address,
+            blueprint_name: blueprint_name.into(),
+            function_name: function_name.into(),
+            args,
+        })
+    }
+
+    /// Calls a scrypto method where the arguments should be one of:
+    /// * A tuple, such as `()`, `(x,)` or `(x, y, z)`
+    ///   * IMPORTANT: If calling with a single argument, you must include a trailing comma
+    ///     in the tuple declaration. This ensures that the rust compiler knows it's a singleton tuple,
+    ///     rather than just some brackets around the inner value.
+    /// * A struct which implements `ManifestEncode` representing the arguments
+    /// * `manifest_args!(x, y, z)`
+    ///
+    /// NOTE: If you need access to named buckets/proofs etc, use `call_method_with_name_lookup`
+    /// instead.
     pub fn call_method(
         self,
         address: impl ResolvableGlobalAddress,
         method_name: impl Into<String>,
-        args: ManifestValue,
+        arguments: impl ResolvableArguments,
     ) -> Self {
         let address = address.resolve(&self.registrar);
+        self.add_instruction(InstructionV1::CallMethod {
+            address,
+            method_name: method_name.into(),
+            args: arguments.resolve(),
+        })
+    }
+
+    /// Calls a scrypto method where the arguments are a raw ManifestValue.
+    /// The caller is required to ensure the ManifestValue is a Tuple.
+    ///
+    /// You should prefer `call_function` or `call_function_with_name_lookup` instead.
+    pub fn call_method_raw(
+        self,
+        address: impl ResolvableGlobalAddress,
+        method_name: impl Into<String>,
+        arguments: ManifestValue,
+    ) -> Self {
+        let address = address.resolve(&self.registrar);
+        self.add_instruction(InstructionV1::CallMethod {
+            address,
+            method_name: method_name.into(),
+            args: arguments,
+        })
+    }
+
+    /// Calls a scrypto method where the arguments will be created using the given
+    /// callback, which takes a `lookup` (allowing for resolving named buckets, proofs, etc)
+    /// and returns resolvable arguments.
+    ///
+    /// The resolvable arguments should be one of:
+    /// * A tuple, such as `()`, `(x,)` or `(x, y, z)`
+    ///   * IMPORTANT: If calling with a single argument, you must include a trailing comma
+    ///     in the tuple declaration. This ensures that the rust compiler knows it's a singleton tuple,
+    ///     rather than just some brackets around the inner value.
+    /// * A struct which implements `ManifestEncode` representing the arguments
+    /// * `manifest_args!(x, y, z)`
+    pub fn call_method_with_name_lookup<T: ResolvableArguments>(
+        self,
+        address: impl ResolvableGlobalAddress,
+        method_name: impl Into<String>,
+        arguments_creator: impl FnOnce(&ManifestNameLookup) -> T,
+    ) -> Self {
+        let address = address.resolve(&self.registrar);
+        let args = arguments_creator(&self.name_lookup()).resolve();
+
         self.add_instruction(InstructionV1::CallMethod {
             address,
             method_name: method_name.into(),
@@ -911,15 +1096,19 @@ impl ManifestBuilder {
     /// Publishes a package.
     pub fn publish_package_advanced(
         mut self,
-        address_reservation: Option<ManifestAddressReservation>,
+        address_reservation: Option<String>,
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: impl Into<MetadataInit>,
         owner_role: OwnerRole,
     ) -> Self {
-        if let Some(consumed) = address_reservation.clone() {
-            self.registrar.consume_address_reservation(consumed);
-        }
+        let address_reservation = if let Some(reservation_name) = address_reservation {
+            let reservation = self.name_lookup().address_reservation(reservation_name);
+            self.registrar.consume_address_reservation(reservation);
+            Some(reservation)
+        } else {
+            None
+        };
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
@@ -1095,19 +1284,17 @@ impl ManifestBuilder {
         let amount = amount.resolve();
         let resource_address = resource_address.resolve(&self.registrar);
 
-        let namer = self.namer();
-        let (bucket_name, new_bucket) = namer.new_collision_free_bucket("to_burn");
-        self.take_from_worktop(resource_address, amount, new_bucket)
-            .burn_resource(namer.bucket(bucket_name))
+        let bucket = self.generate_bucket_name("to_burn");
+        self.take_from_worktop(resource_address, amount, &bucket)
+            .burn_resource(bucket)
     }
 
     pub fn burn_all_from_worktop(self, resource_address: impl ResolvableResourceAddress) -> Self {
         let resource_address = resource_address.resolve_static(&self.registrar);
 
-        let namer = self.namer();
-        let (bucket_name, new_bucket) = namer.new_collision_free_bucket("to_burn");
-        self.take_all_from_worktop(resource_address, new_bucket)
-            .burn_resource(namer.bucket(bucket_name))
+        let bucket = self.generate_bucket_name("to_burn");
+        self.take_all_from_worktop(resource_address, &bucket)
+            .burn_resource(bucket)
     }
 
     pub fn burn_non_fungible_from_worktop(
@@ -1116,11 +1303,10 @@ impl ManifestBuilder {
     ) -> Self {
         let ids = btreeset!(non_fungible_global_id.local_id().clone());
         let resource_address = non_fungible_global_id.resource_address().clone();
-        let namer = self.namer();
-        let (bucket_name, new_bucket) = namer.new_collision_free_bucket("to_burn");
+        let bucket = self.generate_bucket_name("to_burn");
 
-        self.take_non_fungibles_from_worktop(resource_address, ids, new_bucket)
-            .burn_resource(namer.bucket(bucket_name))
+        self.take_non_fungibles_from_worktop(resource_address, ids, &bucket)
+            .burn_resource(bucket)
     }
 
     pub fn mint_fungible(
@@ -1378,11 +1564,7 @@ impl ManifestBuilder {
 
     /// Locks a large fee from the faucet.
     pub fn get_free_xrd_from_faucet(self) -> Self {
-        self.add_instruction(InstructionV1::CallMethod {
-            address: FAUCET.into(),
-            method_name: "free".to_string(),
-            args: manifest_args!(),
-        })
+        self.call_method(FAUCET, "free", ())
     }
 
     /// Withdraws resource from an account.
@@ -1608,20 +1790,20 @@ impl ManifestBuilder {
         timed_recovery_delay_in_minutes: Option<u32>,
     ) -> Self {
         let controlled_asset = controlled_asset.mark_consumed(&self.registrar);
-        self.add_instruction(InstructionV1::CallFunction {
-            package_address: ACCESS_CONTROLLER_PACKAGE.into(),
-            blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
-            function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-            args: manifest_args!(
+        self.call_function(
+            ACCESS_CONTROLLER_PACKAGE,
+            ACCESS_CONTROLLER_BLUEPRINT,
+            ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT,
+            (
                 controlled_asset,
                 RuleSet {
                     primary_role,
                     recovery_role,
                     confirmation_role,
                 },
-                timed_recovery_delay_in_minutes
+                timed_recovery_delay_in_minutes,
             ),
-        })
+        )
     }
 
     /// Builds a transaction manifest.
@@ -1639,5 +1821,12 @@ impl ManifestBuilder {
             println!("manifest dumped to file {}", &path);
         }
         manifest
+    }
+
+    pub fn to_canonical_string(
+        &self,
+        network_definition: &NetworkDefinition,
+    ) -> Result<String, DecompileError> {
+        decompile_with_known_naming(&self.instructions, network_definition, self.object_names())
     }
 }

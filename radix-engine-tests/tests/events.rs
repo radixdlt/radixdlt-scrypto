@@ -1281,9 +1281,9 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         .call_method(
             validator_address,
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
-            to_manifest_value_and_unwrap!(&ValidatorUpdateAcceptDelegatedStakeInput {
+            ValidatorUpdateAcceptDelegatedStakeInput {
                 accept_delegated_stake: false,
-            }),
+            },
         )
         .build();
     let receipt = test_runner.execute_manifest(

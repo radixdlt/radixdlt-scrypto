@@ -45,16 +45,16 @@ fn create_and_pass_multiple_proofs() -> Hash {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let (mut builder, namer) = ManifestBuilder::new_with_namer();
+    let mut builder = ManifestBuilder::new();
     builder = builder.lock_fee_from_faucet();
     let mut proof_ids: Vec<_> = vec![];
     for _ in 0..20 {
-        let (proof_name, new_proof) = namer.new_collision_free_proof("proof");
+        let proof_name = builder.generate_proof_name("proof");
         builder = builder
             .create_proof_from_account_of_amount(account, resource_address, 1)
-            .pop_from_auth_zone(new_proof);
+            .pop_from_auth_zone(&proof_name);
 
-        proof_ids.push(namer.proof(proof_name));
+        proof_ids.push(builder.proof(proof_name));
     }
     let manifest = builder
         .call_function(

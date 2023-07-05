@@ -99,7 +99,7 @@ fn static_component_should_be_callable() {
             package_address: package_address.into(),
             blueprint_name: "Preallocated".to_string(),
             function_name: "new".to_string(),
-            args: manifest_args!(ManifestAddressReservation(0), "my_secret".to_string()),
+            args: manifest_args!(ManifestAddressReservation(0), "my_secret".to_string()).into(),
         }],
         vec![(
             BlueprintId::new(&package_address, "Preallocated"),
@@ -166,7 +166,7 @@ fn static_resource_should_be_callable() {
             InstructionV1::CallMethod {
                 address: account.into(),
                 method_name: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
-                args: manifest_args!(ManifestExpression::EntireWorktop),
+                args: manifest_args!(ManifestExpression::EntireWorktop).into(),
             },
         ],
         vec![(

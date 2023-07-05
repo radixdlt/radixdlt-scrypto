@@ -310,12 +310,12 @@ fn should_not_be_able_to_publish_native_packages() {
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             "publish_native",
-            to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+            PackagePublishNativeManifestInput {
                 package_address: None,
                 native_package_code_id: 0u64,
                 setup: PackageDefinition::default(),
                 metadata: metadata_init!(),
-            }),
+            },
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

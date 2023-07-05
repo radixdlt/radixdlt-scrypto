@@ -1083,7 +1083,8 @@ pub fn create_system_bootstrap_transaction(
                 id_allocator.new_address_reservation_id(),
                 CONSENSUS_MANAGER,
                 AuthAddresses::system_role()
-            ),
+            )
+            .into(),
         });
     }
 
@@ -1116,7 +1117,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: TRANSACTION_TRACKER_PACKAGE.into(),
             blueprint_name: TRANSACTION_TRACKER_BLUEPRINT.to_string(),
             function_name: TRANSACTION_TRACKER_CREATE_IDENT.to_string(),
-            args: manifest_args!(id_allocator.new_address_reservation_id()),
+            args: manifest_args!(id_allocator.new_address_reservation_id()).into(),
         });
     }
 
@@ -1136,7 +1137,7 @@ pub fn create_system_bootstrap_transaction(
             InstructionV1::CallMethod {
                 address: XRD.clone().into(),
                 method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                args: manifest_args!(faucet_supply),
+                args: manifest_args!(faucet_supply).into(),
             }
             .into(),
         );
@@ -1151,7 +1152,8 @@ pub fn create_system_bootstrap_transaction(
             package_address: FAUCET_PACKAGE.into(),
             blueprint_name: FAUCET_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
-            args: manifest_args!(id_allocator.new_address_reservation_id(), faucet_xrd_bucket),
+            args: manifest_args!(id_allocator.new_address_reservation_id(), faucet_xrd_bucket)
+                .into(),
         });
     }
 
@@ -1178,7 +1180,7 @@ pub fn create_genesis_data_ingestion_transaction(
     instructions.push(InstructionV1::CallMethod {
         address: genesis_helper.clone().into(),
         method_name: "ingest_data_chunk".to_string(),
-        args: manifest_args!(chunk),
+        args: manifest_args!(chunk).into(),
     });
 
     SystemTransactionV1 {
@@ -1250,7 +1252,7 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
     instructions.push(InstructionV1::CallMethod {
         address: GENESIS_HELPER.clone().into(),
         method_name: "wrap_up".to_string(),
-        args: manifest_args!(),
+        args: manifest_args!().into(),
     });
 
     SystemTransactionV1 {

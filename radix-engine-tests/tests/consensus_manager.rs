@@ -2478,7 +2478,8 @@ fn consensus_manager_create_should_fail_with_supervisor_privilege() {
                 1u64,
                 CustomGenesis::default_consensus_manager_config(),
                 120000i64
-            ),
+            )
+            .into(),
         }],
         // No validator proofs
         btreeset![],

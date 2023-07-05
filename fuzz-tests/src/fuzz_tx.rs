@@ -283,14 +283,14 @@ impl TxFuzzer {
                     Some(InstructionV1::CallRoyaltyMethod {
                         address: component_address.into(),
                         method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-                        args: manifest_args!(),
+                        args: manifest_args!().into(),
                     })
                 }
                 // ClaimComponentRoyalty
                 10 => Some(InstructionV1::CallRoyaltyMethod {
                     address: component_address.into(),
                     method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-                    args: manifest_args!(),
+                    args: manifest_args!().into(),
                 }),
                 // ClaimPackageRoyalty
                 11 => {
@@ -299,7 +299,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallMethod {
                         address: package_address.into(),
                         method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
-                        args: manifest_args!(),
+                        args: manifest_args!().into(),
                     })
                 }
                 // ClearAuthZone
@@ -325,7 +325,7 @@ impl TxFuzzer {
                         package_address: package_address.into(),
                         blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
                         function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-                        args: manifest_args!(bucket_id, rule_set, timed_recovery_delay_in_minutes),
+                        args: manifest_args!(bucket_id, rule_set, timed_recovery_delay_in_minutes).into(),
                     })
                 }
                 // CreateAccount
@@ -573,7 +573,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallRoyaltyMethod {
                         address: component_address.into(),
                         method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
-                        args: manifest_args!(method),
+                        args: manifest_args!(method).into(),
                     })
                 }
                 // LockMetadata
@@ -585,7 +585,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallMetadataMethod {
                         address: address.into(),
                         method_name: METADATA_LOCK_IDENT.to_string(),
-                        args: manifest_args!(key),
+                        args: manifest_args!(key).into(),
                     })
                 }
                 // LockOwnerRole
@@ -625,7 +625,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallMethod {
                         address: resource_address.into(),
                         method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                        args: manifest_args!(amount),
+                        args: manifest_args!(amount).into(),
                     })
                 }
                 // MintNonFungible
@@ -695,7 +695,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallDirectVaultMethod {
                         address: InternalAddress::new_or_panic(vault_id.into()),
                         method_name: VAULT_RECALL_IDENT.to_string(),
-                        args: manifest_args!(amount),
+                        args: manifest_args!(amount).into(),
                     })
                 }
                 // RecallNonFungiblesFromVault
@@ -722,7 +722,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallMetadataMethod {
                         address: address.into(),
                         method_name: METADATA_REMOVE_IDENT.to_string(),
-                        args: manifest_args!(key),
+                        args: manifest_args!(key).into(),
                     })
                 }
                 // ReturnToWorktop
@@ -769,7 +769,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallRoyaltyMethod {
                         address: component_address.into(),
                         method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-                        args: manifest_args!(method, amount),
+                        args: manifest_args!(method, amount).into(),
                     })
                 }
                 // SetMetadata
@@ -782,7 +782,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallMetadataMethod {
                         address: address.into(),
                         method_name: METADATA_SET_IDENT.to_string(),
-                        args: manifest_args!(key, value),
+                        args: manifest_args!(key, value).into(),
                     })
                 }
                 // SetOwnerRole

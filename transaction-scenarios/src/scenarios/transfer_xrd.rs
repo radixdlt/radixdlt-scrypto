@@ -37,7 +37,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                 core.next_transaction_free_xrd_from_faucet(config.from_account.address)
             })
             .successful_transaction(|core, config, state| {
-                core.next_transaction_with_faucet_lock_fee_v2(
+                core.next_transaction_with_faucet_lock_fee_fallible(
                     "transfer--try_deposit_or_abort",
                     |builder| {
                         builder
@@ -50,7 +50,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                 )
             })
             .successful_transaction(|core, config, state| {
-                core.next_transaction_with_faucet_lock_fee_v2(
+                core.next_transaction_with_faucet_lock_fee_fallible(
                     "transfer--try_deposit_or_refund",
                     |builder| {
                         builder
@@ -63,7 +63,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                 )
             })
             .successful_transaction(|core, config, state| {
-                core.next_transaction_with_faucet_lock_fee_v2(
+                core.next_transaction_with_faucet_lock_fee_fallible(
                     "transfer--try_deposit_batch_or_abort",
                     |builder| {
                         builder
@@ -75,7 +75,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                 )
             })
             .successful_transaction(|core, config, state| {
-                core.next_transaction_with_faucet_lock_fee_v2(
+                core.next_transaction_with_faucet_lock_fee_fallible(
                     "transfer--try_deposit_batch_or_refund",
                     |builder| {
                         builder
@@ -87,7 +87,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                 )
             })
             .successful_transaction(|core, config, state| {
-                core.next_transaction_with_faucet_lock_fee_v2(
+                core.next_transaction_with_faucet_lock_fee_fallible(
                     "self-transfer--deposit_batch",
                     |builder| {
                         builder
@@ -99,7 +99,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                 )
             })
             .successful_transaction(|core, config, state| {
-                core.next_transaction_with_faucet_lock_fee_v2(
+                core.next_transaction_with_faucet_lock_fee_fallible(
                     "multi-transfer--deposit_batch",
                     |builder| {
                         builder

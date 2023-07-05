@@ -134,6 +134,6 @@ impl CallFunction {
             ))
         })?;
 
-        Ok(builder.call_function(package_address, blueprint_name, function_name, built_args))
+        Ok(builder.call_function_raw(package_address, blueprint_name, function_name, built_args))
     }
 }

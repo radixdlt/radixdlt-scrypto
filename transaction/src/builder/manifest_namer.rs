@@ -1,12 +1,15 @@
 use crate::{internal_prelude::*, manifest::decompiler::ManifestObjectNames};
 
-/// This is used by a user to create buckets/proofs/address reservations/addresses
+/// This is used by a user to lookup buckets/proofs/reservations/addresses
 /// for working with a manifest builder.
-pub struct ManifestNamer {
+pub struct ManifestNameLookup {
     core: Rc<RefCell<ManifestNamerCore>>,
 }
 
-/// This is used by a manifest builder. It shares a core with a manifest namer.
+/// This is used by a manifest builder.
+///
+/// It shares a core with a ManifestNameLookup.
+///
 /// It offers more options than a ManifestNamer, to allow for the manifest instructions
 /// to control the association of names (eg `NewManifestBucket`) with the corresponding ids
 /// (eg `ManifestBucket`).
@@ -55,10 +58,7 @@ impl ManifestNamerCore {
         }
     }
 
-    pub fn new_named_bucket_collision_free(
-        &mut self,
-        prefix: &str,
-    ) -> (String, NamedManifestBucket) {
+    pub fn new_collision_free_bucket_name(&mut self, prefix: &str) -> String {
         for name_counter in 1..u32::MAX {
             let name = if name_counter == 1 {
                 prefix.to_string()
@@ -66,8 +66,7 @@ impl ManifestNamerCore {
                 format!("{prefix}_{name_counter}")
             };
             if !self.named_buckets.contains_key(&name) {
-                let new = self.new_named_bucket(&name);
-                return (name, new);
+                return name;
             }
         }
         panic!("Did not resolve a name");
@@ -135,7 +134,7 @@ impl ManifestNamerCore {
         }
     }
 
-    pub fn new_named_proof_collision_free(&mut self, prefix: &str) -> (String, NamedManifestProof) {
+    pub fn new_collision_free_proof_name(&mut self, prefix: &str) -> String {
         for name_counter in 1..u32::MAX {
             let name = if name_counter == 1 {
                 prefix.to_string()
@@ -143,8 +142,7 @@ impl ManifestNamerCore {
                 format!("{prefix}_{name_counter}")
             };
             if !self.named_proofs.contains_key(&name) {
-                let new = self.new_named_proof(&name);
-                return (name, new);
+                return name;
             }
         }
         panic!("Did not resolve a name");
@@ -215,10 +213,7 @@ impl ManifestNamerCore {
         }
     }
 
-    pub fn new_named_address_reservation_collision_free(
-        &mut self,
-        prefix: &str,
-    ) -> (String, NamedManifestAddressReservation) {
+    pub fn new_collision_free_address_reservation_name(&mut self, prefix: &str) -> String {
         for name_counter in 1..u32::MAX {
             let name = if name_counter == 1 {
                 prefix.to_string()
@@ -226,8 +221,7 @@ impl ManifestNamerCore {
                 format!("{prefix}_{name_counter}")
             };
             if !self.named_address_reservations.contains_key(&name) {
-                let new = self.new_named_address_reservation(&name);
-                return (name, new);
+                return name;
             }
         }
         panic!("Did not resolve a name");
@@ -290,10 +284,7 @@ impl ManifestNamerCore {
         }
     }
 
-    pub fn new_named_address_collision_free(
-        &mut self,
-        prefix: &str,
-    ) -> (String, NamedManifestAddress) {
+    pub fn new_collision_free_address_name(&mut self, prefix: &str) -> String {
         for name_counter in 1..u32::MAX {
             let name = if name_counter == 1 {
                 prefix.to_string()
@@ -301,8 +292,7 @@ impl ManifestNamerCore {
                 format!("{prefix}_{name_counter}")
             };
             if !self.named_addresses.contains_key(&name) {
-                let new = self.new_named_address(&name);
-                return (name, new);
+                return name;
             }
         }
         panic!("Did not resolve a name");
@@ -345,72 +335,17 @@ impl ManifestNamerCore {
     }
 }
 
-impl ManifestNamer {
-    pub fn new_bucket(&self, name: impl Into<String>) -> NamedManifestBucket {
-        self.core.borrow_mut().new_named_bucket(name)
-    }
-
-    pub fn new_collision_free_bucket(
-        &self,
-        prefix: impl Into<String>,
-    ) -> (String, NamedManifestBucket) {
-        self.core
-            .borrow_mut()
-            .new_named_bucket_collision_free(&prefix.into())
-    }
-
+impl ManifestNameLookup {
     pub fn bucket(&self, name: impl AsRef<str>) -> ManifestBucket {
         self.core.borrow().resolve_named_bucket(name)
-    }
-
-    pub fn new_proof(&self, name: impl Into<String>) -> NamedManifestProof {
-        self.core.borrow_mut().new_named_proof(name)
-    }
-
-    pub fn new_collision_free_proof(
-        &self,
-        prefix: impl Into<String>,
-    ) -> (String, NamedManifestProof) {
-        self.core
-            .borrow_mut()
-            .new_named_proof_collision_free(&prefix.into())
     }
 
     pub fn proof(&self, name: impl AsRef<str>) -> ManifestProof {
         self.core.borrow().resolve_named_proof(name)
     }
 
-    pub fn new_address_reservation(
-        &self,
-        name: impl Into<String>,
-    ) -> NamedManifestAddressReservation {
-        self.core.borrow_mut().new_named_address_reservation(name)
-    }
-
-    pub fn new_collision_free_address_reservation(
-        &self,
-        prefix: impl Into<String>,
-    ) -> (String, NamedManifestAddressReservation) {
-        self.core
-            .borrow_mut()
-            .new_named_address_reservation_collision_free(&prefix.into())
-    }
-
     pub fn address_reservation(&self, name: impl AsRef<str>) -> ManifestAddressReservation {
         self.core.borrow().resolve_named_address_reservation(name)
-    }
-
-    pub fn new_named_address(&self, name: impl Into<String>) -> NamedManifestAddress {
-        self.core.borrow_mut().new_named_address(name)
-    }
-
-    pub fn new_collision_free_named_address(
-        &self,
-        prefix: impl Into<String>,
-    ) -> (String, NamedManifestAddress) {
-        self.core
-            .borrow_mut()
-            .new_named_address_collision_free(&prefix.into())
     }
 
     pub fn named_address(&self, name: impl AsRef<str>) -> ManifestAddress {
@@ -422,10 +357,6 @@ impl ManifestNamer {
             ManifestAddress::Static(_) => panic!("Named manifest address can't be static"),
             ManifestAddress::Named(id) => id,
         }
-    }
-
-    pub fn object_names(&self) -> ManifestObjectNames {
-        self.core.borrow().object_names.clone()
     }
 }
 
@@ -439,10 +370,20 @@ impl ManifestNameRegistrar {
         }
     }
 
-    pub fn namer(&self) -> ManifestNamer {
-        ManifestNamer {
+    pub fn name_lookup(&self) -> ManifestNameLookup {
+        ManifestNameLookup {
             core: self.core.clone(),
         }
+    }
+
+    pub fn new_bucket(&self, name: impl Into<String>) -> NamedManifestBucket {
+        self.core.borrow_mut().new_named_bucket(name)
+    }
+
+    pub fn new_collision_free_bucket_name(&self, prefix: impl Into<String>) -> String {
+        self.core
+            .borrow_mut()
+            .new_collision_free_bucket_name(&prefix.into())
     }
 
     /// This is intended for registering a bucket name to an allocated identifier, as part of processing a manifest
@@ -459,6 +400,16 @@ impl ManifestNameRegistrar {
         self.core.borrow_mut().consume_all_buckets();
     }
 
+    pub fn new_proof(&self, name: impl Into<String>) -> NamedManifestProof {
+        self.core.borrow_mut().new_named_proof(name)
+    }
+
+    pub fn new_collision_free_proof_name(&self, prefix: impl Into<String>) -> String {
+        self.core
+            .borrow_mut()
+            .new_collision_free_proof_name(&prefix.into())
+    }
+
     /// This is intended for registering a proof name to an allocated identifier, as part of processing a manifest
     /// instruction which creates a proof.
     pub fn register_proof(&self, new: NamedManifestProof) {
@@ -473,6 +424,19 @@ impl ManifestNameRegistrar {
         self.core.borrow_mut().consume_all_proofs()
     }
 
+    pub fn new_address_reservation(
+        &self,
+        name: impl Into<String>,
+    ) -> NamedManifestAddressReservation {
+        self.core.borrow_mut().new_named_address_reservation(name)
+    }
+
+    pub fn new_collision_free_address_reservation_name(&self, prefix: impl Into<String>) -> String {
+        self.core
+            .borrow_mut()
+            .new_collision_free_address_reservation_name(&prefix.into())
+    }
+
     /// This is intended for registering an address reservation to an allocated identifier, as part of processing a manifest
     /// instruction which creates an address reservation.
     pub fn register_address_reservation(&self, new: NamedManifestAddressReservation) {
@@ -483,6 +447,16 @@ impl ManifestNameRegistrar {
         self.core.borrow_mut().consume_address_reservation(consumed);
     }
 
+    pub fn new_named_address(&self, name: impl Into<String>) -> NamedManifestAddress {
+        self.core.borrow_mut().new_named_address(name)
+    }
+
+    pub fn new_collision_free_address_name(&self, prefix: impl Into<String>) -> String {
+        self.core
+            .borrow_mut()
+            .new_collision_free_address_name(&prefix.into())
+    }
+
     /// This is intended for registering an address reservation to an allocated identifier, as part of processing a manifest
     /// instruction which creates a named address.
     pub fn register_named_address(&self, new: NamedManifestAddress) {
@@ -491,6 +465,10 @@ impl ManifestNameRegistrar {
 
     pub fn check_address_exists(&self, address: impl Into<DynamicGlobalAddress>) {
         self.core.borrow().check_address_exists(address)
+    }
+
+    pub fn object_names(&self) -> ManifestObjectNames {
+        self.core.borrow().object_names.clone()
     }
 }
 
@@ -513,13 +491,19 @@ pub trait NewManifestBucket {
 
 impl<'a> NewManifestBucket for &'a str {
     fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_bucket(registrar.namer().new_bucket(self));
+        registrar.register_bucket(registrar.new_bucket(self));
+    }
+}
+
+impl<'a> NewManifestBucket for &'a String {
+    fn register(self, registrar: &ManifestNameRegistrar) {
+        registrar.register_bucket(registrar.new_bucket(self));
     }
 }
 
 impl NewManifestBucket for String {
     fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_bucket(registrar.namer().new_bucket(self));
+        registrar.register_bucket(registrar.new_bucket(self));
     }
 }
 
@@ -542,13 +526,19 @@ pub trait ExistingManifestBucket: Sized {
 
 impl<'a> ExistingManifestBucket for &'a str {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestBucket {
-        registrar.namer().bucket(self)
+        registrar.name_lookup().bucket(self)
+    }
+}
+
+impl<'a> ExistingManifestBucket for &'a String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestBucket {
+        registrar.name_lookup().bucket(self)
     }
 }
 
 impl ExistingManifestBucket for String {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestBucket {
-        registrar.namer().bucket(self)
+        registrar.name_lookup().bucket(self)
     }
 }
 
@@ -571,13 +561,19 @@ pub trait NewManifestProof {
 
 impl<'a> NewManifestProof for &'a str {
     fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_proof(registrar.namer().new_proof(self));
+        registrar.register_proof(registrar.new_proof(self));
+    }
+}
+
+impl<'a> NewManifestProof for &'a String {
+    fn register(self, registrar: &ManifestNameRegistrar) {
+        registrar.register_proof(registrar.new_proof(self));
     }
 }
 
 impl NewManifestProof for String {
     fn register(self, registrar: &ManifestNameRegistrar) {
-        registrar.register_proof(registrar.namer().new_proof(self));
+        registrar.register_proof(registrar.new_proof(self));
     }
 }
 
@@ -600,13 +596,19 @@ pub trait ExistingManifestProof: Sized {
 
 impl<'a> ExistingManifestProof for &'a str {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestProof {
-        registrar.namer().proof(self)
+        registrar.name_lookup().proof(self)
+    }
+}
+
+impl<'a> ExistingManifestProof for &'a String {
+    fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestProof {
+        registrar.name_lookup().proof(self)
     }
 }
 
 impl ExistingManifestProof for String {
     fn resolve(self, registrar: &ManifestNameRegistrar) -> ManifestProof {
-        registrar.namer().proof(self)
+        registrar.name_lookup().proof(self)
     }
 }
 
@@ -729,5 +731,15 @@ pub trait ResolvableDecimal {
 impl<A: TryInto<Decimal, Error = E>, E: Debug> ResolvableDecimal for A {
     fn resolve(self) -> Decimal {
         self.try_into().expect("Decimal was not valid")
+    }
+}
+
+pub trait ResolvableArguments {
+    fn resolve(self) -> ManifestValue;
+}
+
+impl<T: ManifestEncode + ManifestSborTuple> ResolvableArguments for T {
+    fn resolve(self) -> ManifestValue {
+        manifest_decode(&manifest_encode(&self).unwrap()).unwrap()
     }
 }

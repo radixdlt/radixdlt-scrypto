@@ -30,12 +30,12 @@ fn should_not_be_able_to_call_tx_processor_in_tx_processor() {
             TRANSACTION_PROCESSOR_PACKAGE,
             TRANSACTION_PROCESSOR_BLUEPRINT,
             TRANSACTION_PROCESSOR_RUN_IDENT,
-            to_manifest_value_and_unwrap!(&ManifestTransactionProcessorRunInput {
+            ManifestTransactionProcessorRunInput {
                 manifest_encoded_instructions,
                 global_address_reservations: vec![],
                 references: vec![],
                 blobs: index_map_new(),
-            }),
+            },
         )
         .build();
     let result = test_runner.execute_manifest(manifest, vec![]);

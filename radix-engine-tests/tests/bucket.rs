@@ -17,7 +17,7 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .call_function(package_address, "BucketTest", method_name, args)
+        .call_function_raw(package_address, "BucketTest", method_name, args)
         .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -35,62 +35,70 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
 
 #[test]
 fn test_drop_bucket() {
-    test_bucket_internal("drop_bucket", manifest_args!(), false);
+    test_bucket_internal("drop_bucket", manifest_args!().into(), false);
 }
 
 #[test]
 fn test_bucket_drop_empty() {
-    test_bucket_internal("drop_empty", manifest_args!(0u32), true);
+    test_bucket_internal("drop_empty", manifest_args!(0u32).into(), true);
 }
 
 #[test]
 fn test_bucket_drop_not_empty() {
-    test_bucket_internal("drop_empty", manifest_args!(1u32), false);
+    test_bucket_internal("drop_empty", manifest_args!(1u32).into(), false);
 }
 
 #[test]
 fn test_bucket_combine() {
-    test_bucket_internal("combine", manifest_args!(), true);
+    test_bucket_internal("combine", manifest_args!().into(), true);
 }
 
 #[test]
 fn test_bucket_split() {
-    test_bucket_internal("split", manifest_args!(), true);
+    test_bucket_internal("split", manifest_args!().into(), true);
 }
 
 #[test]
 fn test_bucket_borrow() {
-    test_bucket_internal("borrow", manifest_args!(), true);
+    test_bucket_internal("borrow", manifest_args!().into(), true);
 }
 
 #[test]
 fn test_bucket_query() {
-    test_bucket_internal("query", manifest_args!(), true);
+    test_bucket_internal("query", manifest_args!().into(), true);
 }
 
 #[test]
 fn test_bucket_restricted_transfer() {
-    test_bucket_internal("test_restricted_transfer", manifest_args!(), true);
+    test_bucket_internal("test_restricted_transfer", manifest_args!().into(), true);
 }
 
 #[test]
 fn test_bucket_burn() {
-    test_bucket_internal("test_burn", manifest_args!(), true);
+    test_bucket_internal("test_burn", manifest_args!().into(), true);
 }
 
 #[test]
 fn test_bucket_burn_freely() {
-    test_bucket_internal("test_burn_freely", manifest_args!(), true);
+    test_bucket_internal("test_burn_freely", manifest_args!().into(), true);
 }
 
 #[test]
 fn test_bucket_empty_fungible() {
-    test_bucket_internal("create_empty_bucket_fungible", manifest_args!(), true);
+    test_bucket_internal(
+        "create_empty_bucket_fungible",
+        manifest_args!().into(),
+        true,
+    );
 }
 
 #[test]
 fn test_bucket_empty_non_fungible() {
-    test_bucket_internal("create_empty_bucket_non_fungible", manifest_args!(), true);
+    test_bucket_internal(
+        "create_empty_bucket_non_fungible",
+        manifest_args!().into(),
+        true,
+    );
 }
 
 #[test]

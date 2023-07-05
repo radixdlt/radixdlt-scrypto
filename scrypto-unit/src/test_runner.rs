@@ -905,7 +905,7 @@ impl TestRunner {
             transaction::model::InstructionV1::CallMethod {
                 address: self.faucet_component().into(),
                 method_name: "lock_fee".to_string(),
-                args: manifest_args!(dec!("500")),
+                args: manifest_args!(dec!("500")).into(),
             },
         );
         self.execute_manifest(manifest, initial_proofs)
@@ -1045,19 +1045,27 @@ impl TestRunner {
 
     /// Calls a package blueprint function with the given arguments, paying the fee from the faucet.
     ///
+    /// The arguments should be one of:
+    /// * A tuple, such as `()`, `(x,)` or `(x, y, z)`
+    ///   * IMPORTANT: If calling with a single argument, you must include a trailing comma
+    ///     in the tuple declaration. This ensures that the rust compiler knows it's a singleton tuple,
+    ///     rather than just some brackets around the inner value.
+    /// * A struct which implements `ManifestEncode` representing the arguments
+    /// * `manifest_args!(x, y, z)`
+    ///
     /// Notes:
     /// * Buckets and signatures are not supported - instead use `execute_manifest_ignoring_fee` and `ManifestBuilder` directly.
     /// * Call `.expect_commit_success()` on the receipt to get access to receipt details.
     pub fn call_function(
         &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: ManifestValue,
+        package_address: impl ResolvablePackageAddress,
+        blueprint_name: impl Into<String>,
+        function_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
     ) -> TransactionReceipt {
         self.execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .call_function(package_address, blueprint_name, function_name, args)
+                .call_function(package_address, blueprint_name, function_name, arguments)
                 .build(),
             vec![],
         )
@@ -1066,30 +1074,46 @@ impl TestRunner {
     /// Calls a package blueprint function with the given arguments, and assumes it constructs a single component successfully.
     /// It returns the address of the first created component.
     ///
+    /// The arguments should be one of:
+    /// * A tuple, such as `()`, `(x,)` or `(x, y, z)`
+    ///   * IMPORTANT: If calling with a single argument, you must include a trailing comma
+    ///     in the tuple declaration. This ensures that the rust compiler knows it's a singleton tuple,
+    ///     rather than just some brackets around the inner value.
+    /// * A struct which implements `ManifestEncode` representing the arguments
+    /// * `manifest_args!(x, y, z)`
+    ///
     /// Notes:
     /// * Buckets and signatures are not supported - instead use `execute_manifest_ignoring_fee` and `ManifestBuilder` directly.
     pub fn construct_new(
         &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: ManifestValue,
+        package_address: impl ResolvablePackageAddress,
+        blueprint_name: impl Into<String>,
+        function_name: impl Into<String>,
+        arguments: impl ResolvableArguments,
     ) -> ComponentAddress {
-        self.call_function(package_address, blueprint_name, function_name, args)
+        self.call_function(package_address, blueprint_name, function_name, arguments)
             .expect_commit_success()
             .new_component_addresses()[0]
     }
 
     /// Calls a component method with the given arguments, paying the fee from the faucet.
     ///
+    /// The arguments should be one of:
+    /// * A tuple, such as `()`, `(x,)` or `(x, y, z)`
+    ///   * IMPORTANT: If calling with a single argument, you must include a trailing comma
+    ///     in the tuple declaration. This ensures that the rust compiler knows it's a singleton tuple,
+    ///     rather than just some brackets around the inner value.
+    /// * A struct which implements `ManifestEncode` representing the arguments
+    /// * `manifest_args!(x, y, z)`
+    ///
     /// Notes:
     /// * Buckets and signatures are not supported - instead use `execute_manifest_ignoring_fee` and `ManifestBuilder` directly.
     /// * Call `.expect_commit_success()` on the receipt to get access to receipt details.
     pub fn call_method(
         &mut self,
-        component_address: ComponentAddress,
-        method_name: &str,
-        args: ManifestValue,
+        component_address: impl ResolvableGlobalAddress,
+        method_name: impl Into<String>,
+        args: impl ResolvableArguments,
     ) -> TransactionReceipt {
         self.execute_manifest_ignoring_fee(
             ManifestBuilder::new()

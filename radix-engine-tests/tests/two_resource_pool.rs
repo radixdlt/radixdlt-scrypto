@@ -441,10 +441,10 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             POOL_PACKAGE,
             TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
             TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
-            to_manifest_value_and_unwrap!(&TwoResourcePoolInstantiateManifestInput {
+            TwoResourcePoolInstantiateManifestInput {
                 resource_addresses: (non_fungible_resource, XRD),
                 pool_manager_rule: rule!(allow_all),
-            }),
+            },
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -870,10 +870,10 @@ impl TestEnvironment {
                     POOL_PACKAGE,
                     TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                     TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    to_manifest_value_and_unwrap!(&TwoResourcePoolInstantiateManifestInput {
+                    TwoResourcePoolInstantiateManifestInput {
                         resource_addresses: (pool_resource1, pool_resource2),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
-                    }),
+                    },
                 )
                 .build();
             let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -925,9 +925,9 @@ impl TestEnvironment {
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-                    to_manifest_value_and_unwrap!(&TwoResourcePoolContributeManifestInput {
+                    TwoResourcePoolContributeManifestInput {
                         buckets: (bucket1, bucket2),
-                    }),
+                    },
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -948,7 +948,7 @@ impl TestEnvironment {
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_REDEEM_IDENT,
-                    to_manifest_value_and_unwrap!(&TwoResourcePoolRedeemManifestInput { bucket }),
+                    TwoResourcePoolRedeemManifestInput { bucket },
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -993,9 +993,9 @@ impl TestEnvironment {
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-                    to_manifest_value_and_unwrap!(&TwoResourcePoolProtectedDepositManifestInput {
-                        bucket: namer.bucket("deposit")
-                    }),
+                    TwoResourcePoolProtectedDepositManifestInput {
+                        bucket: namer.bucket("deposit"),
+                    },
                 )
             })
             .build();
@@ -1012,10 +1012,10 @@ impl TestEnvironment {
             .call_method(
                 self.pool_component_address,
                 TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                to_manifest_value_and_unwrap!(&TwoResourcePoolProtectedWithdrawManifestInput {
+                TwoResourcePoolProtectedWithdrawManifestInput {
                     resource_address,
                     amount: amount.into(),
-                }),
+                },
             )
             .try_deposit_batch_or_abort(self.account_component_address)
             .build();
@@ -1052,9 +1052,9 @@ impl TestEnvironment {
             .call_method(
                 self.pool_component_address,
                 TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
-                to_manifest_value_and_unwrap!(&TwoResourcePoolGetRedemptionValueManifestInput {
+                TwoResourcePoolGetRedemptionValueManifestInput {
                     amount_of_pool_units: amount_of_pool_units.into(),
-                }),
+                },
             )
             .build();
         let receipt = self.execute_manifest(manifest, sign);

@@ -102,7 +102,7 @@ fn check_if_validator_accepts_delegated_stake() {
         .call_method(
             validator_address,
             VALIDATOR_ACCEPTS_DELEGATED_STAKE_IDENT,
-            to_manifest_value_and_unwrap!(&ValidatorAcceptsDelegatedStakeInput {}),
+            ValidatorAcceptsDelegatedStakeInput {},
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

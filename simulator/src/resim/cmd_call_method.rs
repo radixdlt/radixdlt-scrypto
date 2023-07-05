@@ -144,6 +144,6 @@ impl CallMethod {
             ))
         })?;
 
-        Ok(builder.call_method(component_address, method_name, built_args))
+        Ok(builder.call_method_raw(component_address, method_name, built_args))
     }
 }

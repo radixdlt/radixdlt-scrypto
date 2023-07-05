@@ -86,23 +86,16 @@ impl ScenarioInstance for MetadataScenario {
                 core.next_transaction_with_faucet_lock_fee(
                     "metadata-create-package-with-metadata",
                     |builder| {
-                        let namer = builder.namer();
                         builder
                             .allocate_global_address(
                                 PACKAGE_PACKAGE,
                                 PACKAGE_BLUEPRINT,
-                                namer.new_address_reservation(
-                                    "metadata_package_address_reservation",
-                                ),
-                                namer.new_named_address("metadata_package_address"),
+                                "metadata_package_address_reservation",
+                                "metadata_package_address",
                             )
                             .get_free_xrd_from_faucet()
                             .publish_package_advanced(
-                                Some(
-                                    namer.address_reservation(
-                                        "metadata_package_address_reservation",
-                                    ),
-                                ),
+                                Some("metadata_package_address_reservation".to_string()),
                                 code.to_vec(),
                                 schema,
                                 create_metadata(),
@@ -124,30 +117,27 @@ impl ScenarioInstance for MetadataScenario {
                 core.next_transaction_with_faucet_lock_fee(
                     "metadata-create-component-with-metadata",
                     |builder| {
-                        let namer = builder.namer();
                         let mut builder = builder
                             .allocate_global_address(
                                 package_with_metadata.unwrap(),
                                 "MetadataTest",
-                                namer.new_address_reservation(
-                                    "metadata_component_address_reservation",
-                                ),
-                                namer.new_named_address("metadata_component_address"),
+                                "metadata_component_address_reservation",
+                                "metadata_component_address",
                             )
                             .get_free_xrd_from_faucet()
-                            .call_function(
+                            .call_function_with_name_lookup(
                                 package_with_metadata.unwrap(),
                                 "MetadataTest",
                                 "new_with_address",
-                                manifest_args!(namer
-                                    .address_reservation("metadata_component_address_reservation")),
+                                |lookup| {
+                                    (lookup.address_reservation(
+                                        "metadata_component_address_reservation",
+                                    ),)
+                                },
                             );
+                        let address = builder.named_address("metadata_component_address");
                         for (k, v) in create_metadata() {
-                            builder = builder.set_metadata(
-                                namer.named_address("metadata_component_address"),
-                                k,
-                                v,
-                            );
+                            builder = builder.set_metadata(address, k, v);
                         }
                         builder.try_deposit_batch_or_abort(user_account_1.address)
                     },

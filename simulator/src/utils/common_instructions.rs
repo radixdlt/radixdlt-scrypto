@@ -256,14 +256,13 @@ fn build_call_argument<'a>(
             let resource_specifier = parse_resource_specifier(&argument, address_bech32_decoder)
                 .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
 
-            let namer = builder.namer();
-            let (bucket_name, new_bucket) = namer.new_collision_free_bucket("taken");
+            let bucket_name = builder.generate_bucket_name("taken");
             let builder = match resource_specifier {
                 ResourceSpecifier::Amount(amount, resource_address) => {
                     if let Some(account) = account {
                         builder = builder.withdraw_from_account(account, resource_address, amount);
                     }
-                    builder.take_from_worktop(resource_address, amount, new_bucket)
+                    builder.take_from_worktop(resource_address, amount, &bucket_name)
                 }
                 ResourceSpecifier::Ids(ids, resource_address) => {
                     if let Some(account) = account {
@@ -273,13 +272,14 @@ fn build_call_argument<'a>(
                             ids.clone(),
                         );
                     }
-                    builder.take_non_fungibles_from_worktop(resource_address, ids, new_bucket)
+                    builder.take_non_fungibles_from_worktop(resource_address, ids, &bucket_name)
                 }
             };
+            let bucket = builder.bucket(bucket_name);
             Ok((
                 builder,
                 ManifestValue::Custom {
-                    value: ManifestCustomValue::Bucket(namer.bucket(bucket_name)),
+                    value: ManifestCustomValue::Bucket(bucket),
                 },
             ))
         }
@@ -291,14 +291,13 @@ fn build_call_argument<'a>(
         {
             let resource_specifier = parse_resource_specifier(&argument, address_bech32_decoder)
                 .map_err(|_| BuildCallArgumentError::FailedToParse(argument))?;
-            let namer = builder.namer();
-            let (proof_name, new_proof) = namer.new_collision_free_proof("proof");
+            let proof_name = builder.generate_proof_name("proof");
             let builder = match resource_specifier {
                 ResourceSpecifier::Amount(amount, resource_address) => {
                     if let Some(account) = account {
                         builder
                             .create_proof_from_account_of_amount(account, resource_address, amount)
-                            .pop_from_auth_zone(new_proof)
+                            .pop_from_auth_zone(&proof_name)
                     } else {
                         todo!("Take from worktop and create proof")
                     }
@@ -311,16 +310,17 @@ fn build_call_argument<'a>(
                                 resource_address,
                                 ids,
                             )
-                            .pop_from_auth_zone(new_proof)
+                            .pop_from_auth_zone(&proof_name)
                     } else {
                         todo!("Take from worktop and create proof")
                     }
                 }
             };
+            let proof = builder.proof(proof_name);
             Ok((
                 builder,
                 ManifestValue::Custom {
-                    value: ManifestCustomValue::Proof(namer.proof(proof_name)),
+                    value: ManifestCustomValue::Proof(proof),
                 },
             ))
         }

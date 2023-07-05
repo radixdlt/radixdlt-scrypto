@@ -34,11 +34,7 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_method(
-            account,
-            ACCOUNT_SECURIFY_IDENT,
-            to_manifest_value_and_unwrap!(&AccountSecurifyInput {}),
-        )
+        .call_method(account, ACCOUNT_SECURIFY_IDENT, AccountSecurifyInput {})
         .try_deposit_batch_or_refund(storing_account)
         .build();
     let initial_proofs = if use_key {
@@ -281,11 +277,7 @@ fn securified_account_is_owned_by_correct_owner_badge() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_method(
-            account,
-            ACCOUNT_SECURIFY_IDENT,
-            to_manifest_value_and_unwrap!(&AccountSecurifyInput {}),
-        )
+        .call_method(account, ACCOUNT_SECURIFY_IDENT, AccountSecurifyInput {})
         .try_deposit_batch_or_refund(account)
         .build();
     let receipt =

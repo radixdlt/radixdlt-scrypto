@@ -510,19 +510,21 @@ impl AccountDepositModesTestRunner {
             }
         };
 
-        let (builder, namer) = ManifestBuilder::new_with_namer();
-        let manifest = builder
+        let manifest = ManifestBuilder::new()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "free_tokens")
-            .call_method(
-                self.component_address,
-                method,
-                if is_vec {
-                    manifest_args!(vec![namer.bucket("free_tokens")])
-                } else {
-                    manifest_args!(namer.bucket("free_tokens"))
-                },
-            )
+            .then(|builder| {
+                let bucket = builder.bucket("free_tokens");
+                builder.call_method(
+                    self.component_address,
+                    method,
+                    if is_vec {
+                        manifest_args!(vec![bucket])
+                    } else {
+                        manifest_args!(bucket)
+                    },
+                )
+            })
             .build();
         self.execute_manifest(manifest, sign)
     }
@@ -536,9 +538,9 @@ impl AccountDepositModesTestRunner {
             .call_method(
                 self.component_address,
                 ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
-                to_manifest_value_and_unwrap!(&AccountChangeDefaultDepositRuleInput {
+                AccountChangeDefaultDepositRuleInput {
                     default_deposit_rule,
-                }),
+                },
             )
             .build();
         self.execute_manifest(manifest, sign)
@@ -554,10 +556,10 @@ impl AccountDepositModesTestRunner {
             .call_method(
                 self.component_address,
                 ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT,
-                to_manifest_value_and_unwrap!(&AccountConfigureResourceDepositRuleInput {
+                AccountConfigureResourceDepositRuleInput {
                     resource_address,
                     resource_deposit_configuration,
-                }),
+                },
             )
             .build();
         self.execute_manifest(manifest, sign)

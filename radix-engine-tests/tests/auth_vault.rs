@@ -52,6 +52,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .withdraw_from_account(account, token_resource_address, 1)
         .pop_from_auth_zone("proof2")
         .drop_proof("proof2")
+        .return_to_worktop("bucket")
         .try_deposit_batch_or_abort(other_account)
         .build();
     let receipt = test_runner.execute_manifest(

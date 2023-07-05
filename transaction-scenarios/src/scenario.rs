@@ -109,21 +109,23 @@ impl ScenarioCore {
         create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let (builder, namer) = ManifestBuilder::new_with_namer();
-        let manifest = builder.lock_fee_from_faucet().then(create_manifest).build();
-        self.next_transaction(logical_name, manifest, namer.object_names(), signers)
+        let builder = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .then(create_manifest);
+        let object_names = builder.object_names();
+        self.next_transaction(logical_name, builder.build(), object_names, signers)
     }
 
-    pub fn next_transaction_with_faucet_lock_fee_v2(
+    pub fn next_transaction_with_faucet_lock_fee_fallible(
         &mut self,
         logical_name: &str,
         create_manifest: impl FnOnce(ManifestBuilder) -> Result<ManifestBuilder, ScenarioError>,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let (mut builder, namer) = ManifestBuilder::new_with_namer();
-        builder = builder.lock_fee_from_faucet();
+        let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
         builder = create_manifest(builder)?;
-        self.next_transaction(logical_name, builder.build(), namer.object_names(), signers)
+        let object_names = builder.object_names();
+        self.next_transaction(logical_name, builder.build(), object_names, signers)
     }
 
     pub fn next_transaction_free_xrd_from_faucet(

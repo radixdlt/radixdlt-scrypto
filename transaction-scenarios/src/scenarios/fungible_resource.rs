@@ -104,25 +104,20 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                 core.next_transaction_with_faucet_lock_fee(
                     "fungible-max-div-transfer-32-times",
                     |builder| {
-                        let namer = builder.namer();
                         let mut builder = builder.withdraw_from_account(
                             config.user_account_1.address,
                             state.max_divisibility_fungible_resource.unwrap(),
                             dec!("10"),
                         );
                         for _ in 0..32 {
-                            let (bucket_name, new_bucket) =
-                                namer.new_collision_free_bucket("transfer");
+                            let bucket = builder.generate_bucket_name("transfer");
                             builder = builder
                                 .take_from_worktop(
                                     state.max_divisibility_fungible_resource.unwrap(),
                                     dec!("0.001"),
-                                    new_bucket,
+                                    &bucket,
                                 )
-                                .try_deposit_or_abort(
-                                    config.user_account_2.address,
-                                    namer.bucket(bucket_name),
-                                );
+                                .try_deposit_or_abort(config.user_account_2.address, bucket);
                         }
                         builder.try_deposit_batch_or_abort(config.user_account_1.address)
                     },
