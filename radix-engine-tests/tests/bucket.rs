@@ -135,12 +135,12 @@ fn test_take_with_invalid_granularity() {
         .lock_standard_test_fee(account)
         .withdraw_from_account(account, resource_address, 100)
         .take_all_from_worktop(resource_address, "bucket")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "BucketTest",
                 "take_from_bucket",
-                manifest_args!(namer.bucket("bucket"), dec!("1.123")),
+                manifest_args!(lookup.bucket("bucket"), dec!("1.123")),
             )
         })
         .build();
@@ -173,8 +173,8 @@ fn test_take_with_negative_amount() {
         .lock_standard_test_fee(account)
         .withdraw_from_account(account, resource_address, 100)
         .take_all_from_worktop(resource_address, "bucket")
-        .with_namer(|builder, namer| {
-            let bucket = namer.bucket("bucket");
+        .with_name_lookup(|builder, lookup| {
+            let bucket = lookup.bucket("bucket");
             builder.call_function(
                 package_address,
                 "BucketTest",

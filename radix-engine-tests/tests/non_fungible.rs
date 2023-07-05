@@ -484,9 +484,9 @@ fn test_mint_update_and_withdraw() {
         .create_proof_from_account_of_amount(account, nft_resource_address, 1)
         .take_all_from_worktop(badge_resource_address, "badge")
         .pop_from_auth_zone("proof")
-        .with_namer(|builder, namer| {
-            let bucket = namer.proof("badge");
-            let proof = namer.proof("proof");
+        .with_name_lookup(|builder, lookup| {
+            let bucket = lookup.proof("badge");
+            let proof = lookup.proof("proof");
             builder.call_function(
                 package_address,
                 "NonFungibleTest",

@@ -84,12 +84,12 @@ fn recursion_bomb() {
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, Decimal::from(4u32))
         .take_all_from_worktop(XRD, "xrd")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                manifest_args!(namer.bucket("xrd")),
+                manifest_args!(lookup.bucket("xrd")),
             )
         })
         .try_deposit_batch_or_abort(account)
@@ -115,12 +115,12 @@ fn recursion_bomb_to_failure() {
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, Decimal::from(100u32))
         .take_all_from_worktop(XRD, "bucket")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                manifest_args!(namer.bucket("bucket")),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
         .try_deposit_batch_or_abort(account)
@@ -154,12 +154,12 @@ fn recursion_bomb_2() {
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, Decimal::from(4u32))
         .take_all_from_worktop(XRD, "bucket")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                manifest_args!(namer.bucket("bucket")),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
         .try_deposit_batch_or_abort(account)
@@ -185,12 +185,12 @@ fn recursion_bomb_2_to_failure() {
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, Decimal::from(100u32))
         .take_all_from_worktop(XRD, "bucket")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                manifest_args!(namer.bucket("bucket")),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
         .try_deposit_batch_or_abort(account)

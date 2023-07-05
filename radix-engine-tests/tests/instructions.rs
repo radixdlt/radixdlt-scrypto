@@ -48,10 +48,10 @@ fn drop_all_proofs_should_drop_named_proofs() {
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
         .create_proof_from_auth_zone(XRD, "proof")
-        .with_namer(|builder, namer| {
-            // We capture the proof before the namer knows that the proof has been cleared,
-            // which causes a panic in the namer and would void the test too early!
-            let proof = namer.proof("proof");
+        .with_name_lookup(|builder, lookup| {
+            // We capture the proof before the lookup knows that the proof has been cleared,
+            // which causes a panic in the lookup and would void the test too early!
+            let proof = lookup.proof("proof");
             builder.drop_all_proofs().drop_proof(proof) // Proof should fail after CLEAR_AUTH_ZONE
         })
         .build();

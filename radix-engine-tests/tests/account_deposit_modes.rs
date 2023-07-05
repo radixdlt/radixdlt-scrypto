@@ -479,8 +479,8 @@ impl AccountDepositModesTestRunner {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 1)
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
-                let bucket = namer.bucket("bucket");
+            .with_name_lookup(|builder, lookup| {
+                let bucket = lookup.bucket("bucket");
                 let args = if is_vec {
                     manifest_args!(vec![bucket])
                 } else {

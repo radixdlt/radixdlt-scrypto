@@ -43,11 +43,11 @@ fn test_balance_changes_when_success() {
             .lock_fee_from_faucet()
             .withdraw_from_account(account, XRD, Decimal::ONE)
             .take_all_from_worktop(XRD, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     component_address,
                     "put",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build(),
@@ -119,11 +119,11 @@ fn test_balance_changes_when_failure() {
             .lock_fee_from_faucet()
             .withdraw_from_account(account, XRD, Decimal::ONE)
             .take_all_from_worktop(XRD, "bucket")
-            .with_namer(|builder: ManifestBuilder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     component_address,
                     "boom",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build(),

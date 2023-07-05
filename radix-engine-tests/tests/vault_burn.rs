@@ -35,11 +35,11 @@ fn package_burn_is_only_callable_within_resource_package() {
     let manifest = ManifestBuilder::new()
         .mint_fungible(resource_address, 10)
         .take_all_from_worktop(resource_address, "bucket")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 resource_address,
                 RESOURCE_MANAGER_PACKAGE_BURN_IDENT,
-                manifest_args!(namer.bucket("bucket")),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
         .build();
@@ -78,12 +78,12 @@ fn can_burn_by_amount_from_fungible_vault() {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 100)
             .take_all_from_worktop(resource_address, "to_burn")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("to_burn")),
+                    manifest_args!(lookup.bucket("to_burn")),
                 )
             })
             .build();
@@ -146,12 +146,12 @@ fn can_burn_by_amount_from_non_fungible_vault() {
                 ),
             )
             .take_all_from_worktop(resource_address, "to_burn")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("to_burn")),
+                    manifest_args!(lookup.bucket("to_burn")),
                 )
             })
             .build();
@@ -214,12 +214,12 @@ fn can_burn_by_ids_from_non_fungible_vault() {
                 ),
             )
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();
@@ -283,12 +283,12 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 100)
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();
@@ -355,12 +355,12 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
                 ),
             )
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();
@@ -427,12 +427,12 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
                 ),
             )
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();
@@ -497,12 +497,12 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 100)
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();
@@ -568,12 +568,12 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
                 ),
             )
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();
@@ -639,12 +639,12 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
                 ),
             )
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();
@@ -705,12 +705,12 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 100)
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();
@@ -773,12 +773,12 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
                 ),
             )
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();
@@ -841,12 +841,12 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
                 ),
             )
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();

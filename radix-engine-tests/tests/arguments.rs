@@ -13,12 +13,12 @@ fn vector_of_buckets_argument_should_succeed() {
         .lock_fee_from_faucet()
         .take_all_from_worktop(XRD, "bucket1")
         .take_all_from_worktop(XRD, "bucket2")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "Arguments",
                 "vector_argument",
-                manifest_args!(vec![namer.bucket("bucket1"), namer.bucket("bucket2"),]),
+                manifest_args!(vec![lookup.bucket("bucket1"), lookup.bucket("bucket2"),]),
             )
         })
         .build();
@@ -39,12 +39,12 @@ fn tuple_of_buckets_argument_should_succeed() {
         .lock_fee_from_faucet()
         .take_all_from_worktop(XRD, "bucket1")
         .take_all_from_worktop(XRD, "bucket2")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "Arguments",
                 "tuple_argument",
-                manifest_args!((namer.bucket("bucket1"), namer.bucket("bucket2"))),
+                manifest_args!((lookup.bucket("bucket1"), lookup.bucket("bucket2"))),
             )
         })
         .build();
@@ -65,10 +65,10 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
         .lock_fee_from_faucet()
         .take_all_from_worktop(XRD, "bucket1")
         .take_all_from_worktop(XRD, "bucket2")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             let mut map = BTreeMap::new();
-            map.insert("first".to_string(), namer.bucket("bucket1"));
-            map.insert("second".to_string(), namer.bucket("bucket2"));
+            map.insert("first".to_string(), lookup.bucket("bucket1"));
+            map.insert("second".to_string(), lookup.bucket("bucket2"));
             builder.call_function(
                 package_address,
                 "Arguments",
@@ -94,10 +94,10 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
         .lock_fee_from_faucet()
         .take_all_from_worktop(XRD, "bucket1")
         .take_all_from_worktop(XRD, "bucket2")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             let mut map = BTreeMap::new();
-            map.insert("first".to_string(), namer.bucket("bucket1"));
-            map.insert("second".to_string(), namer.bucket("bucket2"));
+            map.insert("first".to_string(), lookup.bucket("bucket1"));
+            map.insert("second".to_string(), lookup.bucket("bucket2"));
             builder.call_function(
                 package_address,
                 "Arguments",
@@ -122,12 +122,12 @@ fn some_optional_bucket_argument_should_succeed() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .take_all_from_worktop(XRD, "bucket1")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "Arguments",
                 "option_argument",
-                manifest_args!(Some(namer.bucket("bucket1"))),
+                manifest_args!(Some(lookup.bucket("bucket1"))),
             )
         })
         .build();

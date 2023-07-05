@@ -796,12 +796,12 @@ impl<const N: usize> TestEnvironment<N> {
                 amount.into(),
             )
             .take_all_from_worktop(self.pool_unit_resource_address, "pool_unit")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     self.pool_component_address,
                     MULTI_RESOURCE_POOL_REDEEM_IDENT,
                     MultiResourcePoolRedeemManifestInput {
-                        bucket: namer.bucket("pool_unit"),
+                        bucket: lookup.bucket("pool_unit"),
                     },
                 )
             })
@@ -819,8 +819,8 @@ impl<const N: usize> TestEnvironment<N> {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, amount.into())
             .take_all_from_worktop(resource_address, "to_deposit")
-            .with_namer(|builder, namer| {
-                let bucket = namer.bucket("to_deposit");
+            .with_name_lookup(|builder, lookup| {
+                let bucket = lookup.bucket("to_deposit");
                 builder.call_method(
                     self.pool_component_address,
                     MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,

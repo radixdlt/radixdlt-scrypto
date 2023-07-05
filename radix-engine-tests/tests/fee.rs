@@ -35,12 +35,12 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, XRD, 1000)
             .take_all_from_worktop(XRD, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "Fee",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build(),

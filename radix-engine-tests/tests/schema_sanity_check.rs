@@ -383,12 +383,12 @@ pub fn test_fake_bucket() {
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, XRD, 100)
             .take_from_worktop(XRD, 100, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "FakeBucket",
                     "free_1000_xrd",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build(),

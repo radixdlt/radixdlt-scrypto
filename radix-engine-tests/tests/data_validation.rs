@@ -32,13 +32,13 @@ fn create_manifest_with_middle(
         .take_from_worktop(XRD, dec!("0"), "empty_bucket")
         .take_from_worktop(XRD, dec!("1"), "proof_bucket")
         .create_proof_from_bucket("proof_bucket", "proof")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             constructor(
                 builder,
                 component_address,
-                namer.bucket("empty_bucket"),
-                namer.bucket("bucket"),
-                namer.proof("proof"),
+                lookup.bucket("empty_bucket"),
+                lookup.bucket("bucket"),
+                lookup.proof("proof"),
             )
         })
         .return_to_worktop("proof_bucket")

@@ -301,11 +301,11 @@ fn run_radiswap(mode: Mode) {
                 .withdraw_from_account(account2, eth, eth_init_amount)
                 .take_all_from_worktop(btc, "btc")
                 .take_all_from_worktop(eth, "eth")
-                .with_namer(|builder, namer| {
+                .with_name_lookup(|builder, lookup| {
                     builder.call_method(
                         component_address,
                         "add_liquidity",
-                        manifest_args!(namer.bucket("btc"), namer.bucket("eth")),
+                        manifest_args!(lookup.bucket("btc"), lookup.bucket("eth")),
                     )
                 })
                 .try_deposit_batch_or_abort(account2)
@@ -335,8 +335,8 @@ fn run_radiswap(mode: Mode) {
             .lock_fee(account3, 500)
             .withdraw_from_account(account3, btc, btc_to_swap)
             .take_all_from_worktop(btc, "to_trade")
-            .with_namer(|builder, namer| {
-                let bucket = namer.bucket("to_trade");
+            .with_name_lookup(|builder, lookup| {
+                let bucket = lookup.bucket("to_trade");
                 builder.call_method(component_address, "swap", manifest_args!(bucket))
             })
             .try_deposit_batch_or_abort(account3)
@@ -378,12 +378,12 @@ fn run_flash_loan(mode: Mode) {
                 .lock_standard_test_fee(account2)
                 .withdraw_from_account(account2, XRD, xrd_init_amount)
                 .take_all_from_worktop(XRD, "bucket")
-                .with_namer(|builder, namer| {
+                .with_name_lookup(|builder, lookup| {
                     builder.call_function(
                         package_address,
                         "BasicFlashLoan",
                         "instantiate_default",
-                        manifest_args!(namer.bucket("bucket")),
+                        manifest_args!(lookup.bucket("bucket")),
                     )
                 })
                 .try_deposit_batch_or_abort(account2)
@@ -404,11 +404,11 @@ fn run_flash_loan(mode: Mode) {
             .withdraw_from_account(account3, XRD, dec!(10))
             .take_from_worktop(XRD, repay_amount, "repayment")
             .take_all_from_worktop(promise_token_address, "promise")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     component_address,
                     "repay_loan",
-                    manifest_args!(namer.bucket("repayment"), namer.bucket("promise")),
+                    manifest_args!(lookup.bucket("repayment"), lookup.bucket("promise")),
                 )
             })
             .try_deposit_batch_or_abort(account3)
@@ -530,12 +530,12 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, XRD, 10)
             .take_all_from_worktop(XRD, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "Fee",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build(),

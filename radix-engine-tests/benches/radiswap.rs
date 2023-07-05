@@ -78,9 +78,9 @@ fn bench_radiswap(c: &mut Criterion) {
                 .withdraw_from_account(account2, eth, eth_init_amount)
                 .take_all_from_worktop(btc, "liquidity_part_1")
                 .take_all_from_worktop(eth, "liquidity_part_2")
-                .with_namer(|builder, namer| {
-                    let bucket1 = namer.bucket("liquidity_part_1");
-                    let bucket2 = namer.bucket("liquidity_part_2");
+                .with_name_lookup(|builder, lookup| {
+                    let bucket1 = lookup.bucket("liquidity_part_1");
+                    let bucket2 = lookup.bucket("liquidity_part_2");
                     builder.call_method(
                         component_address,
                         "add_liquidity",
@@ -112,8 +112,8 @@ fn bench_radiswap(c: &mut Criterion) {
         .lock_standard_test_fee(account3)
         .withdraw_from_account(account3, btc, btc_to_swap)
         .take_all_from_worktop(btc, "to_trade")
-        .with_namer(|builder, namer| {
-            let to_trade_bucket = namer.bucket("to_trade");
+        .with_name_lookup(|builder, lookup| {
+            let to_trade_bucket = lookup.bucket("to_trade");
             builder.call_method(component_address, "swap", manifest_args!(to_trade_bucket))
         })
         .try_deposit_batch_or_abort(account3)

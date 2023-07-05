@@ -20,12 +20,12 @@ fn can_create_clone_and_drop_bucket_proof() {
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 1)
         .take_all_from_worktop(resource_address, "bucket")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "BucketProof",
                 "create_clone_drop_bucket_proof",
-                manifest_args!(namer.bucket("bucket"), dec!("1")),
+                manifest_args!(lookup.bucket("bucket"), dec!("1")),
             )
         })
         .try_deposit_batch_or_abort(account)
@@ -56,8 +56,8 @@ fn can_create_clone_and_drop_vault_proof() {
             builder
                 .withdraw_from_account(account, resource_address, 1)
                 .take_all_from_worktop(resource_address, "bucket")
-                .with_namer(|builder, namer| {
-                    let bucket = namer.bucket("bucket");
+                .with_name_lookup(|builder, lookup| {
+                    let bucket = lookup.bucket("bucket");
                     builder.call_function(
                         package_address,
                         "VaultProof",
@@ -101,8 +101,8 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
             builder
                 .withdraw_from_account(account, resource_address, 3)
                 .take_all_from_worktop(resource_address, "bucket")
-                .with_namer(|builder, namer| {
-                    let bucket = namer.bucket("bucket");
+                .with_name_lookup(|builder, lookup| {
+                    let bucket = lookup.bucket("bucket");
                     builder.call_function(
                         package_address,
                         "VaultProof",
@@ -145,8 +145,8 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
             builder
                 .withdraw_from_account(account, resource_address, 3)
                 .take_all_from_worktop(resource_address, "bucket")
-                .with_namer(|builder, namer| {
-                    let bucket = namer.bucket("bucket");
+                .with_name_lookup(|builder, lookup| {
+                    let bucket = lookup.bucket("bucket");
                     builder.call_function(
                         package_address,
                         "VaultProof",
@@ -194,9 +194,9 @@ fn can_use_bucket_for_authorization() {
         .withdraw_from_account(account, burnable_resource_address, 1)
         .take_all_from_worktop(auth_resource_address, "auth_bucket")
         .take_all_from_worktop(burnable_resource_address, "burnable_bucket")
-        .with_namer(|builder, namer| {
-            let auth_bucket = namer.bucket("auth_bucket");
-            let burnable_bucket = namer.bucket("burnable_bucket");
+        .with_name_lookup(|builder, lookup| {
+            let auth_bucket = lookup.bucket("auth_bucket");
+            let burnable_bucket = lookup.bucket("burnable_bucket");
             builder.call_function(
                 package_address,
                 "BucketProof",
@@ -229,8 +229,8 @@ fn can_use_vault_for_authorization() {
             builder
                 .withdraw_from_account(account, auth_resource_address, 1)
                 .take_all_from_worktop(auth_resource_address, "bucket")
-                .with_namer(|builder, namer| {
-                    let bucket = namer.bucket("bucket");
+                .with_name_lookup(|builder, lookup| {
+                    let bucket = lookup.bucket("bucket");
                     builder.call_function(
                         package_address,
                         "VaultProof",
@@ -246,11 +246,11 @@ fn can_use_vault_for_authorization() {
         .lock_fee_from_faucet()
         .withdraw_from_account(account, burnable_resource_address, 1)
         .take_all_from_worktop(burnable_resource_address, "bucket")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 component_address,
                 "use_vault_proof_for_auth",
-                manifest_args!(namer.bucket("bucket")),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
         .build();
@@ -277,8 +277,8 @@ fn can_create_proof_from_account_and_pass_on() {
         .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, resource_address, 1)
         .pop_from_auth_zone("proof")
-        .with_namer(|builder, namer| {
-            let proof = namer.bucket("proof");
+        .with_name_lookup(|builder, lookup| {
+            let proof = lookup.bucket("proof");
             builder.call_function(
                 package_address,
                 "VaultProof",
@@ -310,12 +310,12 @@ fn cant_move_restricted_proof() {
         .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, resource_address, 1)
         .pop_from_auth_zone("proof")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "VaultProof",
                 "receive_proof_and_push_to_auth_zone",
-                manifest_args!(namer.proof("proof")),
+                manifest_args!(lookup.proof("proof")),
             )
         })
         .build();
@@ -353,11 +353,11 @@ fn can_move_restricted_proofs_internally() {
     let manifest = ManifestBuilder::new()
         .create_proof_from_account(account, XRD)
         .create_proof_from_auth_zone(XRD, "proof")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 component_address,
                 "pass_fungible_proof",
-                manifest_args!(namer.proof("proof")),
+                manifest_args!(lookup.proof("proof")),
             )
         })
         .build();
@@ -384,12 +384,12 @@ fn can_move_locked_bucket() {
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 1)
         .take_all_from_worktop(resource_address, "bucket")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "BucketProof",
                 "return_bucket_while_locked",
-                manifest_args!(namer.bucket("bucket")),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
         .try_deposit_batch_or_abort(account)
@@ -417,12 +417,12 @@ fn can_compose_bucket_and_vault_proof() {
             builder
                 .withdraw_from_account(account, resource_address, 1)
                 .take_all_from_worktop(resource_address, "bucket")
-                .with_namer(|builder, namer| {
+                .with_name_lookup(|builder, lookup| {
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(namer.bucket("bucket")),
+                        manifest_args!(lookup.bucket("bucket")),
                     )
                 })
         },
@@ -433,11 +433,11 @@ fn can_compose_bucket_and_vault_proof() {
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 99)
         .take_from_worktop(resource_address, 99, "bucket")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof",
-                manifest_args!(namer.bucket("bucket")),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
         .build();
@@ -464,12 +464,12 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             builder
                 .withdraw_from_account(account, resource_address, 1)
                 .take_all_from_worktop(resource_address, "bucket")
-                .with_namer(|builder, namer| {
+                .with_name_lookup(|builder, lookup| {
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(namer.bucket("bucket")),
+                        manifest_args!(lookup.bucket("bucket")),
                     )
                 })
         },
@@ -480,11 +480,11 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 99)
         .take_from_worktop(resource_address, 99, "bucket")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof_by_amount",
-                manifest_args!(namer.bucket("bucket"), Decimal::from(2u32)),
+                manifest_args!(lookup.bucket("bucket"), Decimal::from(2u32)),
             )
         })
         .build();
@@ -514,12 +514,12 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                     btreeset!(NonFungibleLocalId::integer(1)),
                 )
                 .take_all_from_worktop(resource_address, "bucket")
-                .with_namer(|builder, namer| {
+                .with_name_lookup(|builder, lookup| {
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(namer.bucket("bucket")),
+                        manifest_args!(lookup.bucket("bucket")),
                     )
                 })
         },
@@ -544,12 +544,12 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             ]),
             "bucket",
         )
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof_by_ids",
                 manifest_args!(
-                    namer.bucket("bucket"),
+                    lookup.bucket("bucket"),
                     BTreeSet::from([
                         NonFungibleLocalId::integer(1),
                         NonFungibleLocalId::integer(2),
@@ -580,12 +580,12 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
             builder
                 .withdraw_from_account(account, resource_address, 3)
                 .take_all_from_worktop(resource_address, "bucket")
-                .with_namer(|builder, namer| {
+                .with_name_lookup(|builder, lookup| {
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(namer.bucket("bucket")),
+                        manifest_args!(lookup.bucket("bucket")),
                     )
                 })
         },
@@ -638,13 +638,13 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
             ]),
             "proof",
         )
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "Receiver",
                 "assert_ids",
                 manifest_args!(
-                    namer.proof("proof"),
+                    lookup.proof("proof"),
                     BTreeSet::from([
                         NonFungibleLocalId::integer(2),
                         NonFungibleLocalId::integer(3)

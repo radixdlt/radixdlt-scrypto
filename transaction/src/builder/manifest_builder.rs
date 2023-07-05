@@ -54,8 +54,8 @@ use radix_engine_interface::blueprints::resource::*;
 ///         package_address,
 ///         "SomeBlueprint",
 ///         "some_function",
-///         |namer| (
-///             namer.bucket("xrd"),
+///         |lookup| (
+///             lookup.bucket("xrd"),
 ///         ),
 ///     )
 ///     .build();
@@ -113,9 +113,9 @@ impl ManifestBuilder {
         next(self)
     }
 
-    pub fn with_namer(self, next: impl FnOnce(Self, ManifestNameLookup) -> Self) -> Self {
-        let namer = self.name_lookup();
-        next(self, namer)
+    pub fn with_name_lookup(self, next: impl FnOnce(Self, ManifestNameLookup) -> Self) -> Self {
+        let lookup = self.name_lookup();
+        next(self, lookup)
     }
 
     pub fn with_bucket(
@@ -177,25 +177,27 @@ impl ManifestBuilder {
         self.registrar.object_names()
     }
 
-    /// This is intended to be called at the start, before the builder
-    /// is used in a chained fashion, eg:
+    /// Example usage:
     /// ```
     /// # use transaction::prelude::*;
     /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
     /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
     /// # );
     /// # let package_address = FAUCET_PACKAGE; // Just so it compiles
-    /// let (mut builder, namer) = ManifestBuilder::new();
-    /// let code_blob_ref = builder.add_blob(vec![]);
-    /// let manifest = builder
+    ///
+    /// let manifest = ManifestBuilder::new()
     ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
     ///     // ...
-    ///     .call_function(
-    ///         package_address,
-    ///         "my_blueprint",
-    ///         "func_name",
-    ///         manifest_args!(code_blob_ref),
-    ///     )
+    ///     .then(|builder| {
+    ///         let code_blob_ref = builder.add_blob(vec![]);
+    ///         builder
+    ///             .call_function(
+    ///                 package_address,
+    ///                 "my_blueprint",
+    ///                 "func_name",
+    ///                 manifest_args!(code_blob_ref),
+    ///             )
+    ///     })
     ///     .build();
     /// ```
     pub fn add_blob(&mut self, blob: Vec<u8>) -> ManifestBlobRef {

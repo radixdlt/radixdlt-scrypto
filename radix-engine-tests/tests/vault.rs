@@ -649,12 +649,12 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
                 ),
             )
             .take_all_from_worktop(resource_address, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     package_address,
                     "VaultBurn",
                     "new",
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build();

@@ -320,8 +320,8 @@ fn cannot_burn_in_component_with_proof_in_root() {
         .create_proof_from_account(account, admin_token)
         .mint_fungible(resource, 1)
         .take_all_from_worktop(resource, "to_burn")
-        .with_namer(|builder, namer| {
-            builder.call_method(component, "burn", manifest_args!(namer.bucket("to_burn")))
+        .with_name_lookup(|builder, lookup| {
+            builder.call_method(component, "burn", manifest_args!(lookup.bucket("to_burn")))
         })
         .build();
     let receipt = test_runner.execute_manifest(

@@ -919,9 +919,9 @@ impl TestEnvironment {
             .mint_fungible(resource_address2, amount2.into())
             .take_all_from_worktop(resource_address1, "resource_1")
             .take_all_from_worktop(resource_address2, "resource_2")
-            .with_namer(|builder, namer| {
-                let bucket1 = namer.bucket("resource_1");
-                let bucket2 = namer.bucket("resource_2");
+            .with_name_lookup(|builder, lookup| {
+                let bucket1 = lookup.bucket("resource_1");
+                let bucket2 = lookup.bucket("resource_2");
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
@@ -943,8 +943,8 @@ impl TestEnvironment {
                 amount.into(),
             )
             .take_all_from_worktop(self.pool_unit_resource_address, "pool_units")
-            .with_namer(|builder, namer| {
-                let bucket = namer.bucket("pool_units");
+            .with_name_lookup(|builder, lookup| {
+                let bucket = lookup.bucket("pool_units");
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_REDEEM_IDENT,
@@ -989,12 +989,12 @@ impl TestEnvironment {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, amount.into())
             .take_all_from_worktop(resource_address, "deposit")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
                     TwoResourcePoolProtectedDepositManifestInput {
-                        bucket: namer.bucket("deposit"),
+                        bucket: lookup.bucket("deposit"),
                     },
                 )
             })

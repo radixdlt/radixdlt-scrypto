@@ -15,12 +15,12 @@ fn mis_typed_own_passed_to_worktop_drop_function() {
         ManifestBuilder::new()
             .lock_fee(account, 500)
             .take_from_worktop(XRD, Decimal::ZERO, "bucket")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_function(
                     RESOURCE_PACKAGE,
                     WORKTOP_BLUEPRINT,
                     WORKTOP_DROP_IDENT,
-                    manifest_args!(namer.bucket("bucket")),
+                    manifest_args!(lookup.bucket("bucket")),
                 )
             })
             .build(),

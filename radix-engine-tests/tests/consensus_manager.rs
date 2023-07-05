@@ -657,8 +657,8 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     let manifest = builder
         .get_free_xrd_from_faucet()
         .take_all_from_worktop(XRD, "stake")
-        .with_namer(|builder, namer| {
-            let bucket = namer.bucket("stake");
+        .with_name_lookup(|builder, lookup| {
+            let bucket = lookup.bucket("stake");
             if owner {
                 builder.call_method(validator_address, "stake_as_owner", manifest_args!(bucket))
             } else {
@@ -1873,11 +1873,11 @@ fn owner_can_lock_stake_units() {
             stake_units_to_lock_amount,
         )
         .take_all_from_worktop(validator_substate.stake_unit_resource, "stake_units")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 validator_address,
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
-                manifest_args!(namer.bucket("stake_units")),
+                manifest_args!(lookup.bucket("stake_units")),
             )
         })
         .build();
@@ -1933,11 +1933,11 @@ fn owner_can_start_unlocking_stake_units() {
             stake_units_to_lock_amount,
         )
         .take_all_from_worktop(stake_unit_resource, "stake_units")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 validator_address,
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
-                manifest_args!(namer.bucket("stake_units")),
+                manifest_args!(lookup.bucket("stake_units")),
             )
         })
         .build();
@@ -2019,11 +2019,11 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
             stake_units_to_lock_amount,
         )
         .take_all_from_worktop(stake_unit_resource, "stake_units")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 validator_address,
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
-                manifest_args!(namer.bucket("stake_units")),
+                manifest_args!(lookup.bucket("stake_units")),
             )
         })
         .build();
@@ -2111,11 +2111,11 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
             stake_units_to_lock_amount,
         )
         .take_all_from_worktop(stake_unit_resource, "stake_units")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 validator_address,
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
-                manifest_args!(namer.bucket("stake_units")),
+                manifest_args!(lookup.bucket("stake_units")),
             )
         })
         .build();
@@ -2215,11 +2215,11 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
             stake_units_to_lock_amount,
         )
         .take_all_from_worktop(stake_unit_resource, "stake_units")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 validator_address,
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
-                manifest_args!(namer.bucket("stake_units")),
+                manifest_args!(lookup.bucket("stake_units")),
             )
         })
         .build();
@@ -2320,11 +2320,11 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
             stake_units_to_lock_amount,
         )
         .take_all_from_worktop(stake_unit_resource, "stake_units")
-        .with_namer(|builder, namer| {
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 validator_address,
                 VALIDATOR_LOCK_OWNER_STAKE_UNITS_IDENT,
-                manifest_args!(namer.bucket("stake_units")),
+                manifest_args!(lookup.bucket("stake_units")),
             )
         })
         .build();

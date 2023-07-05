@@ -645,12 +645,12 @@ impl TestEnvironment {
         let manifest = ManifestBuilder::new()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "contribution")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     self.pool_component_address,
                     ONE_RESOURCE_POOL_CONTRIBUTE_IDENT,
                     OneResourcePoolContributeManifestInput {
-                        bucket: namer.bucket("contribution"),
+                        bucket: lookup.bucket("contribution"),
                     },
                 )
             })
@@ -667,12 +667,12 @@ impl TestEnvironment {
                 amount.into(),
             )
             .take_all_from_worktop(self.pool_unit_resource_address, "pool_unit")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     self.pool_component_address,
                     ONE_RESOURCE_POOL_REDEEM_IDENT,
                     OneResourcePoolRedeemManifestInput {
-                        bucket: namer.bucket("pool_unit"),
+                        bucket: lookup.bucket("pool_unit"),
                     },
                 )
             })
@@ -685,12 +685,12 @@ impl TestEnvironment {
         let manifest = ManifestBuilder::new()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "to_deposit")
-            .with_namer(|builder, namer| {
+            .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     self.pool_component_address,
                     ONE_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
                     OneResourcePoolProtectedDepositManifestInput {
-                        bucket: namer.bucket("to_deposit"),
+                        bucket: lookup.bucket("to_deposit"),
                     },
                 )
             })
