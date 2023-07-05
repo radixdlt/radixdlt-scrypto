@@ -10,19 +10,19 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1thmyyyzwxemrs00svlj0a527s9002rlyfswesa4fteqgs8sn39226p")
+    Address("resource_sim1t5rlyu80z4l96erda8pqknxj4w3qs6aknfyhrjck6a0e68v47l5mhp")
     Decimal("7000")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1t53d4wxznvprkdfustjv9ymyxym8uwfnpjh8nn9265pnrmllxt3f9x")
+    Address("resource_sim1tkfsqu5mczc5fdrwp57danwaashcryr7y57wsdrmwy3jem8m0r9rjx")
     Decimal("5000")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
-    Address("resource_sim1t5d47m5s5x95k2tmqr0jrnfc5ey3tntc30le68fqhwuau6l4kat7mx")
+    Address("resource_sim1t456jlrlzp7ls45z6ap4l8g5jtcs7ujcpjh2ye0use0kwc346052un")
     Decimal("8000")
 ;
 TAKE_ALL_FROM_WORKTOP
@@ -30,25 +30,25 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("bucket1")
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("resource_sim1thmyyyzwxemrs00svlj0a527s9002rlyfswesa4fteqgs8sn39226p")
+    Address("resource_sim1t5rlyu80z4l96erda8pqknxj4w3qs6aknfyhrjck6a0e68v47l5mhp")
     Bucket("bucket2")
 ;
 CALL_METHOD
-    Address("component_sim1cp5w45q75ehvjqqgy9he75sc5r42q9kletfu4vkxspk4az83qnwlth")
+    Address("component_sim1czfqv7xdpsvqmr4n8kx8cxstgyf7skscvdmx9ktwf3u2x26jl7e68s")
     "add_liquidity"
     Bucket("bucket1")
     Bucket("bucket2")
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("resource_sim1t53d4wxznvprkdfustjv9ymyxym8uwfnpjh8nn9265pnrmllxt3f9x")
+    Address("resource_sim1tkfsqu5mczc5fdrwp57danwaashcryr7y57wsdrmwy3jem8m0r9rjx")
     Bucket("bucket3")
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("resource_sim1t5d47m5s5x95k2tmqr0jrnfc5ey3tntc30le68fqhwuau6l4kat7mx")
+    Address("resource_sim1t456jlrlzp7ls45z6ap4l8g5jtcs7ujcpjh2ye0use0kwc346052un")
     Bucket("bucket4")
 ;
 CALL_METHOD
-    Address("component_sim1cz74skc8ksdkthgjcne7j6zha9l5v7an2qm87nl8nzzr0mj8cyjdvr")
+    Address("component_sim1cp4lakmkhz0rqfar4caydk35q7ah4p3vz7m5xqj42guezwdnzt2ur2")
     "add_liquidity"
     Bucket("bucket3")
     Bucket("bucket4")

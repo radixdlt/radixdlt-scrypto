@@ -26,8 +26,14 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     Tuple(
         Enum<Option::Some>(                                                     # Specify Mint Roles
             Tuple(
-                Tuple(Enum<Option::Some>(Enum<AccessRule::AllowAll>()), true),  # Minter Role
-                Tuple(Enum<Option::Some>(Enum<AccessRule::DenyAll>()), true)    # Minter Updater Role
+                Tuple(                                                          # Minter Role
+                    Enum<Option::Some>(Enum<AccessRule::AllowAll>()),           # Minter Role Rule
+                    true                                                        # Temporary boolean, ignore as this will be removed soon
+                ),
+                Tuple(                                                          # Minter Updater Role
+                    Enum<Option::Some>(Enum<AccessRule::DenyAll>()),            # Mintoer Updater Role Rule
+                    true                                                        # Temporary boolean, ignore as this will be removed soon
+                )
             )
         ),
         Enum<0u8>(),                                                            # Use Default Burn Roles

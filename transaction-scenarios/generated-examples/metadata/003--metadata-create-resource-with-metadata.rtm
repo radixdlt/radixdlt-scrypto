@@ -19,13 +19,13 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                     Enum<1u8>(
                         Enum<1u8>()
                     ),
-                    true
+                    false
                 ),
                 Tuple(
                     Enum<1u8>(
                         Enum<1u8>()
                     ),
-                    true
+                    false
                 )
             )
         ),
@@ -35,13 +35,13 @@ CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
                     Enum<1u8>(
                         Enum<0u8>()
                     ),
-                    true
+                    false
                 ),
                 Tuple(
                     Enum<1u8>(
                         Enum<1u8>()
                     ),
-                    true
+                    false
                 )
             )
         ),

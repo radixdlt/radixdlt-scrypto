@@ -1002,12 +1002,12 @@ impl ManifestBuilder {
             18,
             FungibleResourceRoles {
                 mint_roles: mint_roles! {
-                    minter => OWNER, locked;
-                    minter_updater => OWNER, locked;
+                    minter => OWNER;
+                    minter_updater => OWNER;
                 },
                 burn_roles: burn_roles! {
-                    burner => OWNER, locked;
-                    burner_updater => OWNER, locked;
+                    burner => OWNER;
+                    burner_updater => OWNER;
                 },
                 ..Default::default()
             },
@@ -1045,12 +1045,12 @@ impl ManifestBuilder {
             0,
             FungibleResourceRoles {
                 mint_roles: mint_roles! {
-                    minter => OWNER, locked;
-                    minter_updater => OWNER, locked;
+                    minter => OWNER;
+                    minter_updater => OWNER;
                 },
                 burn_roles: burn_roles! {
-                    burner => OWNER, locked;
-                    burner_updater => OWNER, locked;
+                    burner => OWNER;
+                    burner_updater => OWNER;
                 },
                 ..Default::default()
             },

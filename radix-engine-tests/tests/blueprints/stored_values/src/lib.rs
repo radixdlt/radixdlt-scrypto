@@ -11,8 +11,8 @@ mod invalid_init_stored_bucket {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .withdraw_roles(withdraw_roles! {
-                    withdrawer => rule!(allow_all), locked;
-                    withdrawer_updater => rule!(deny_all), locked;
+                    withdrawer => rule!(allow_all);
+                    withdrawer_updater => rule!(deny_all);
                 })
                 .mint_initial_supply(Decimal::from(5));
 
@@ -37,8 +37,8 @@ mod invalid_stored_bucket_in_owned_component {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .withdraw_roles(withdraw_roles! {
-                    withdrawer => rule!(allow_all), locked;
-                    withdrawer_updater => rule!(deny_all), locked;
+                    withdrawer => rule!(allow_all);
+                    withdrawer_updater => rule!(deny_all);
                 })
                 .mint_initial_supply(Decimal::from(5));
 
