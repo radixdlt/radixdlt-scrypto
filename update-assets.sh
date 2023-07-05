@@ -18,8 +18,8 @@ npx wasm-opt@1.3 \
   -o ../faucet.wasm \
   ./target/wasm32-unknown-unknown/release/faucet.wasm
 cp \
-  ./target/wasm32-unknown-unknown/release/faucet.schema \
-  ../faucet.schema
+  ./target/wasm32-unknown-unknown/release/faucet.rpd \
+  ../faucet.rpd
 
 echo "Building radiswap..."
 (cd radiswap; $scrypto build)
@@ -29,8 +29,8 @@ npx wasm-opt@1.3 \
   -o ../radiswap.wasm \
   ./target/wasm32-unknown-unknown/release/radiswap.wasm
 cp \
-  ./target/wasm32-unknown-unknown/release/radiswap.schema \
-  ../radiswap.schema
+  ./target/wasm32-unknown-unknown/release/radiswap.rpd \
+  ../radiswap.rpd
 
 echo "Building flash_loan..."
 (cd flash_loan; $scrypto build)
@@ -40,8 +40,8 @@ npx wasm-opt@1.3 \
   -o ../flash_loan.wasm \
   ./target/wasm32-unknown-unknown/release/flash_loan.wasm
 cp \
-  ./target/wasm32-unknown-unknown/release/flash_loan.schema \
-  ../flash_loan.schema
+  ./target/wasm32-unknown-unknown/release/flash_loan.rpd \
+  ../flash_loan.rpd
 
 echo "Building genesis_helper..."
 (cd genesis_helper; $scrypto build)
@@ -51,8 +51,8 @@ npx wasm-opt@1.3 \
   -o ../genesis_helper.wasm \
   ./target/wasm32-unknown-unknown/release/genesis_helper.wasm
 cp \
-  ./target/wasm32-unknown-unknown/release/genesis_helper.schema \
-  ../genesis_helper.schema
+  ./target/wasm32-unknown-unknown/release/genesis_helper.rpd \
+  ../genesis_helper.rpd
 
 echo "Done!"
 
@@ -64,7 +64,7 @@ npx wasm-opt@1.3 \
   -o ../metadata.wasm \
   ./target/wasm32-unknown-unknown/release/metadata.wasm
 cp \
-  ./target/wasm32-unknown-unknown/release/metadata.schema \
-  ../metadata.schema
+  ./target/wasm32-unknown-unknown/release/metadata.rpd \
+  ../metadata.rpd
 
 echo "Done!"

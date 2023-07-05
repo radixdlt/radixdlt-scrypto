@@ -17,7 +17,7 @@ use transaction::{
 use wabt::wat2wasm;
 
 fn bench_decode_sbor(c: &mut Criterion) {
-    let payload = include_bytes!("../../assets/radiswap.schema");
+    let payload = include_bytes!("../../assets/radiswap.rpd");
     println!("Payload size: {}", payload.len());
     c.bench_function("costing::decode_sbor", |b| {
         b.iter(|| manifest_decode::<ManifestValue>(payload))
@@ -26,8 +26,7 @@ fn bench_decode_sbor(c: &mut Criterion) {
 
 fn bench_validate_sbor_payload(c: &mut Criterion) {
     let package_definition =
-        manifest_decode::<PackageDefinition>(include_bytes!("../../assets/radiswap.schema"))
-            .unwrap();
+        manifest_decode::<PackageDefinition>(include_bytes!("../../assets/radiswap.rpd")).unwrap();
     let payload = scrypto_encode(&package_definition).unwrap();
     println!("Payload size: {}", payload.len());
     let (index, schema) =
@@ -122,7 +121,7 @@ fn bench_instantiate_radiswap(c: &mut Criterion) {
 fn bench_validate_wasm(c: &mut Criterion) {
     let code = include_bytes!("../../assets/radiswap.wasm");
     let definition: PackageDefinition =
-        manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap();
+        manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
 
     c.bench_function("WASM::validate_wasm", |b| {
         b.iter(|| {

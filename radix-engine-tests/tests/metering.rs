@@ -302,7 +302,7 @@ fn run_radiswap(mode: Mode) {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
-        manifest_decode(include_bytes!("../../assets/radiswap.schema")).unwrap(),
+        manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap(),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );
@@ -411,7 +411,7 @@ fn run_flash_loan(mode: Mode) {
     // Publish package
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/flash_loan.wasm").to_vec(),
-        manifest_decode(include_bytes!("../../assets/flash_loan.schema")).unwrap(),
+        manifest_decode(include_bytes!("../../assets/flash_loan.rpd")).unwrap(),
         btreemap!(),
         OwnerRole::Fixed(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
     );

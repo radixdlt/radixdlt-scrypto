@@ -3,9 +3,9 @@ use radix_engine::types::*;
 
 use crate::resim::*;
 
-/// Export the schema of a package
+/// Export the definition of a package
 #[derive(Parser, Debug)]
-pub struct ExportSchema {
+pub struct ExportPackageDefinition {
     /// The package ID
     pub package_address: SimulatorPackageAddress,
 
@@ -17,7 +17,7 @@ pub struct ExportSchema {
     pub trace: bool,
 }
 
-impl ExportSchema {
+impl ExportPackageDefinition {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         match export_package_schema(self.package_address.0) {
             Ok(schema) => {
