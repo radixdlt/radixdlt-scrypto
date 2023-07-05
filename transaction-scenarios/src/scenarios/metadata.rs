@@ -79,7 +79,7 @@ impl ScenarioInstance for MetadataScenario {
 
                 let code = include_bytes!("../../../assets/metadata.wasm");
                 let schema = manifest_decode::<PackageDefinition>(include_bytes!(
-                    "../../../assets/metadata.schema"
+                    "../../../assets/metadata.rpd"
                 ))
                 .unwrap();
 

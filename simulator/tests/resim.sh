@@ -71,8 +71,8 @@ package=`$resim publish ../examples/hello-world --owner-badge $owner_badge | awk
 component=`$resim call-function $package Hello instantiate_hello | awk '/Component:/ {print $NF}'`
 $resim call-method $component free_token
 
-# Test - export schema
-$resim export-schema $package target/temp.schema
+# Test - export package definition
+$resim export-package-definition $package target/temp.rpd
 
 # Test - dump component state
 $resim show $package

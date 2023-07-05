@@ -1949,3 +1949,34 @@ pub fn single_function_package_definition(
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]
 struct EmptyNonFungibleData {}
+
+pub struct TransactionParams {
+    pub start_epoch_inclusive: Epoch,
+    pub end_epoch_exclusive: Epoch,
+}
+
+pub fn create_notarized_transaction(
+    params: TransactionParams,
+    manifest: TransactionManifestV1,
+) -> NotarizedTransactionV1 {
+    // create key pairs
+    let sk1 = Secp256k1PrivateKey::from_u64(1).unwrap();
+    let sk2 = Secp256k1PrivateKey::from_u64(2).unwrap();
+    let sk_notary = Secp256k1PrivateKey::from_u64(3).unwrap();
+
+    TransactionBuilder::new()
+        .header(TransactionHeaderV1 {
+            network_id: NetworkDefinition::simulator().id,
+            start_epoch_inclusive: params.start_epoch_inclusive,
+            end_epoch_exclusive: params.end_epoch_exclusive,
+            nonce: 5,
+            notary_public_key: sk_notary.public_key().into(),
+            notary_is_signatory: false,
+            tip_percentage: 5,
+        })
+        .manifest(manifest)
+        .sign(&sk1)
+        .sign(&sk2)
+        .notarize(&sk_notary)
+        .build()
+}
