@@ -1343,7 +1343,7 @@ mod tests {
         let root_neg_4_42 = dec!("-42").nth_root(4);
         let root_neg_5_42 = dec!("-42").nth_root(5);
         let root_0 = dec!(42).nth_root(0);
-        assert_eq!(root_4_42.unwrap(), dec!("2.5457298950218218"));
+        assert_eq!(root_4_42.unwrap(), dec!("2.545729895021830518"));
         assert_eq!(root_5_42.unwrap(), dec!("2.111785764966753912"));
         assert_eq!(root_42_42.unwrap(), dec!("1.093072057934823618"));
         assert_eq!(root_neg_4_42, None);
