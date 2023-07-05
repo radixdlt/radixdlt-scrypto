@@ -152,7 +152,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                 |core, config, state| {
                     let code = include_bytes!("../../../assets/radiswap.wasm");
                     let schema = manifest_decode::<PackageDefinition>(include_bytes!(
-                        "../../../assets/radiswap.schema"
+                        "../../../assets/radiswap.rpd"
                     ))
                     .unwrap();
                     core.next_transaction_with_faucet_lock_fee(
