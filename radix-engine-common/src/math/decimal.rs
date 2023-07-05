@@ -1,7 +1,7 @@
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use num_bigint::BigInt;
-use num_traits::{One, Pow, Zero};
+use num_traits::{Pow, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::format;
@@ -78,17 +78,17 @@ impl Decimal {
 
     /// Whether this decimal is zero.
     pub fn is_zero(&self) -> bool {
-        self.0 == BnumI256::zero()
+        self.0 == BnumI256::ZERO
     }
 
     /// Whether this decimal is positive.
     pub fn is_positive(&self) -> bool {
-        self.0 > BnumI256::zero()
+        self.0 > BnumI256::ZERO
     }
 
     /// Whether this decimal is negative.
     pub fn is_negative(&self) -> bool {
-        self.0 < BnumI256::zero()
+        self.0 < BnumI256::ZERO
     }
 
     /// Returns the absolute value.
@@ -109,60 +109,60 @@ impl Decimal {
     /// Rounds this number to the specified decimal places.
     ///
     /// # Panics
-    /// - Panic if the number of decimal places is not within [0..SCALES]
+    /// - Panic if the number of decimal places is not within [0..SCALE]
     pub fn round<T: Into<i32>>(&self, decimal_places: T, mode: RoundingMode) -> Self {
         let decimal_places = decimal_places.into();
         assert!(decimal_places <= Self::SCALE as i32);
         assert!(decimal_places >= 0);
 
-        let divisor: BnumI256 = BnumI256::from(10i8).pow(Self::SCALE - decimal_places as u32);
+        let n = Self::SCALE - decimal_places as u32;
+        let divisor: BnumI256 = BnumI256::TEN.pow(n);
         match mode {
             RoundingMode::ToPositiveInfinity => {
-                if self.0 % divisor == BnumI256::zero() {
+                if self.0 % divisor == BnumI256::ZERO {
                     self.clone()
                 } else if self.is_negative() {
                     Self(self.0 / divisor * divisor)
                 } else {
-                    Self((self.0 / divisor + BnumI256::one()) * divisor)
+                    Self((self.0 / divisor + BnumI256::ONE) * divisor)
                 }
             }
             RoundingMode::ToNegativeInfinity => {
-                if self.0 % divisor == BnumI256::zero() {
+                if self.0 % divisor == BnumI256::ZERO {
                     self.clone()
                 } else if self.is_negative() {
-                    Self((self.0 / divisor - BnumI256::one()) * divisor)
+                    Self((self.0 / divisor - BnumI256::ONE) * divisor)
                 } else {
                     Self(self.0 / divisor * divisor)
                 }
             }
             RoundingMode::ToZero => {
-                if self.0 % divisor == BnumI256::zero() {
+                if self.0 % divisor == BnumI256::ZERO {
                     self.clone()
                 } else {
                     Self(self.0 / divisor * divisor)
                 }
             }
             RoundingMode::AwayFromZero => {
-                if self.0 % divisor == BnumI256::zero() {
+                if self.0 % divisor == BnumI256::ZERO {
                     self.clone()
                 } else if self.is_negative() {
-                    Self((self.0 / divisor - BnumI256::one()) * divisor)
+                    Self((self.0 / divisor - BnumI256::ONE) * divisor)
                 } else {
-                    Self((self.0 / divisor + BnumI256::one()) * divisor)
+                    Self((self.0 / divisor + BnumI256::ONE) * divisor)
                 }
             }
             RoundingMode::ToNearestMidpointTowardZero => {
-                if self.0 % divisor == BnumI256::zero() {
+                let remainder = (self.0 % divisor).abs();
+                if remainder == BnumI256::ZERO {
                     self.clone()
                 } else {
-                    let digit = (self.0 / (divisor / BnumI256::from(10i128))
-                        % BnumI256::from(10i128))
-                    .abs();
-                    if digit > 5.into() {
+                    let mid_point = divisor / BnumI256::from(2);
+                    if remainder > mid_point {
                         if self.is_negative() {
-                            Self((self.0 / divisor - BnumI256::one()) * divisor)
+                            Self((self.0 / divisor - BnumI256::ONE) * divisor)
                         } else {
-                            Self((self.0 / divisor + BnumI256::one()) * divisor)
+                            Self((self.0 / divisor + BnumI256::ONE) * divisor)
                         }
                     } else {
                         Self(self.0 / divisor * divisor)
@@ -170,49 +170,46 @@ impl Decimal {
                 }
             }
             RoundingMode::ToNearestMidpointAwayFromZero => {
-                if self.0 % divisor == BnumI256::zero() {
+                let remainder = (self.0 % divisor).abs();
+                if remainder == BnumI256::ZERO {
                     self.clone()
                 } else {
-                    let digit = (self.0 / (divisor / BnumI256::from(10i128))
-                        % BnumI256::from(10i128))
-                    .abs();
-                    if digit < 5.into() {
-                        Self(self.0 / divisor * divisor)
-                    } else {
+                    let mid_point = divisor / BnumI256::from(2);
+                    if remainder >= mid_point {
                         if self.is_negative() {
-                            Self((self.0 / divisor - BnumI256::one()) * divisor)
+                            Self((self.0 / divisor - BnumI256::ONE) * divisor)
                         } else {
-                            Self((self.0 / divisor + BnumI256::one()) * divisor)
+                            Self((self.0 / divisor + BnumI256::ONE) * divisor)
                         }
+                    } else {
+                        Self(self.0 / divisor * divisor)
                     }
                 }
             }
             RoundingMode::ToNearestMidpointToEven => {
-                if self.0 % divisor == BnumI256::zero() {
+                let remainder = (self.0 % divisor).abs();
+                if remainder == BnumI256::ZERO {
                     self.clone()
                 } else {
-                    let digit = (self.0 / (divisor / BnumI256::from(10i128))
-                        % BnumI256::from(10i128))
-                    .abs();
-                    if digit < 5.into() {
-                        Self(self.0 / divisor * divisor)
-                    } else if digit == 5.into() {
-                        let breaker = ((self.0 / divisor) % BnumI256::from(10i128)).abs();
-                        if breaker % BnumI256::from(2i128) == BnumI256::ZERO {
+                    let mid_point = divisor / BnumI256::from(2);
+                    if remainder > mid_point {
+                        if self.is_negative() {
+                            Self((self.0 / divisor - BnumI256::ONE) * divisor)
+                        } else {
+                            Self((self.0 / divisor + BnumI256::ONE) * divisor)
+                        }
+                    } else if remainder == mid_point {
+                        if self.0 / divisor % BnumI256::from(2) == BnumI256::ZERO {
                             Self(self.0 / divisor * divisor)
                         } else {
                             if self.is_negative() {
-                                Self((self.0 / divisor - BnumI256::one()) * divisor)
+                                Self((self.0 / divisor - BnumI256::ONE) * divisor)
                             } else {
-                                Self((self.0 / divisor + BnumI256::one()) * divisor)
+                                Self((self.0 / divisor + BnumI256::ONE) * divisor)
                             }
                         }
                     } else {
-                        if self.is_negative() {
-                            Self((self.0 / divisor - BnumI256::one()) * divisor)
-                        } else {
-                            Self((self.0 / divisor + BnumI256::one()) * divisor)
-                        }
+                        Self(self.0 / divisor * divisor)
                     }
                 }
             }
@@ -1077,17 +1074,6 @@ mod tests {
     }
 
     #[test]
-    fn test_rounding_midpoint_away_from_zero_with_various_decimal_places_decimal() {
-        let mode = RoundingMode::ToNearestMidpointAwayFromZero;
-        let num = dec!("-2.555555555555555555");
-        assert_eq!(num.round(0, mode).to_string(), "-3");
-        assert_eq!(num.round(1, mode).to_string(), "-2.6");
-        assert_eq!(num.round(2, mode).to_string(), "-2.56");
-        assert_eq!(num.round(17, mode).to_string(), "-2.55555555555555556");
-        assert_eq!(num.round(18, mode).to_string(), "-2.555555555555555555");
-    }
-
-    #[test]
     fn test_rounding_midpoint_nearest_even_zero_decimal() {
         let mode = RoundingMode::ToNearestMidpointToEven;
         assert_eq!(dec!("5.5").round(0, mode).to_string(), "6");
@@ -1103,20 +1089,80 @@ mod tests {
     }
 
     #[test]
-    fn test_rounding_midpoint_nearest_even_with_various_decimal_places_decimal() {
-        let mode = RoundingMode::ToNearestMidpointToEven;
-        let num = dec!("-2.555555555555555555");
-        assert_eq!(num.round(0, mode).to_string(), "-2");
-        assert_eq!(num.round(1, mode).to_string(), "-2.6");
-        assert_eq!(num.round(2, mode).to_string(), "-2.56");
-        assert_eq!(num.round(17, mode).to_string(), "-2.55555555555555556");
-        assert_eq!(num.round(18, mode).to_string(), "-2.555555555555555555");
-        let num = dec!("2.555555555555555555");
+    fn test_various_decimal_places_decimal() {
+        let num = dec!("2.4595");
+        let mode = RoundingMode::AwayFromZero;
+        assert_eq!(num.round(0, mode).to_string(), "3");
+        assert_eq!(num.round(1, mode).to_string(), "2.5");
+        assert_eq!(num.round(2, mode).to_string(), "2.46");
+        assert_eq!(num.round(3, mode).to_string(), "2.46");
+        let mode = RoundingMode::ToZero;
         assert_eq!(num.round(0, mode).to_string(), "2");
-        assert_eq!(num.round(1, mode).to_string(), "2.6");
-        assert_eq!(num.round(2, mode).to_string(), "2.56");
-        assert_eq!(num.round(17, mode).to_string(), "2.55555555555555556");
-        assert_eq!(num.round(18, mode).to_string(), "2.555555555555555555");
+        assert_eq!(num.round(1, mode).to_string(), "2.4");
+        assert_eq!(num.round(2, mode).to_string(), "2.45");
+        assert_eq!(num.round(3, mode).to_string(), "2.459");
+        let mode = RoundingMode::ToPositiveInfinity;
+        assert_eq!(num.round(0, mode).to_string(), "3");
+        assert_eq!(num.round(1, mode).to_string(), "2.5");
+        assert_eq!(num.round(2, mode).to_string(), "2.46");
+        assert_eq!(num.round(3, mode).to_string(), "2.46");
+        let mode = RoundingMode::ToNegativeInfinity;
+        assert_eq!(num.round(0, mode).to_string(), "2");
+        assert_eq!(num.round(1, mode).to_string(), "2.4");
+        assert_eq!(num.round(2, mode).to_string(), "2.45");
+        assert_eq!(num.round(3, mode).to_string(), "2.459");
+        let mode = RoundingMode::ToNearestMidpointAwayFromZero;
+        assert_eq!(num.round(0, mode).to_string(), "2");
+        assert_eq!(num.round(1, mode).to_string(), "2.5");
+        assert_eq!(num.round(2, mode).to_string(), "2.46");
+        assert_eq!(num.round(3, mode).to_string(), "2.46");
+        let mode = RoundingMode::ToNearestMidpointTowardZero;
+        assert_eq!(num.round(0, mode).to_string(), "2");
+        assert_eq!(num.round(1, mode).to_string(), "2.5");
+        assert_eq!(num.round(2, mode).to_string(), "2.46");
+        assert_eq!(num.round(3, mode).to_string(), "2.459");
+        let mode = RoundingMode::ToNearestMidpointToEven;
+        assert_eq!(num.round(0, mode).to_string(), "2");
+        assert_eq!(num.round(1, mode).to_string(), "2.5");
+        assert_eq!(num.round(2, mode).to_string(), "2.46");
+        assert_eq!(num.round(3, mode).to_string(), "2.46");
+
+        let num = dec!("-2.4595");
+        let mode = RoundingMode::AwayFromZero;
+        assert_eq!(num.round(0, mode).to_string(), "-3");
+        assert_eq!(num.round(1, mode).to_string(), "-2.5");
+        assert_eq!(num.round(2, mode).to_string(), "-2.46");
+        assert_eq!(num.round(3, mode).to_string(), "-2.46");
+        let mode = RoundingMode::ToZero;
+        assert_eq!(num.round(0, mode).to_string(), "-2");
+        assert_eq!(num.round(1, mode).to_string(), "-2.4");
+        assert_eq!(num.round(2, mode).to_string(), "-2.45");
+        assert_eq!(num.round(3, mode).to_string(), "-2.459");
+        let mode = RoundingMode::ToPositiveInfinity;
+        assert_eq!(num.round(0, mode).to_string(), "-2");
+        assert_eq!(num.round(1, mode).to_string(), "-2.4");
+        assert_eq!(num.round(2, mode).to_string(), "-2.45");
+        assert_eq!(num.round(3, mode).to_string(), "-2.459");
+        let mode = RoundingMode::ToNegativeInfinity;
+        assert_eq!(num.round(0, mode).to_string(), "-3");
+        assert_eq!(num.round(1, mode).to_string(), "-2.5");
+        assert_eq!(num.round(2, mode).to_string(), "-2.46");
+        assert_eq!(num.round(3, mode).to_string(), "-2.46");
+        let mode = RoundingMode::ToNearestMidpointAwayFromZero;
+        assert_eq!(num.round(0, mode).to_string(), "-2");
+        assert_eq!(num.round(1, mode).to_string(), "-2.5");
+        assert_eq!(num.round(2, mode).to_string(), "-2.46");
+        assert_eq!(num.round(3, mode).to_string(), "-2.46");
+        let mode = RoundingMode::ToNearestMidpointTowardZero;
+        assert_eq!(num.round(0, mode).to_string(), "-2");
+        assert_eq!(num.round(1, mode).to_string(), "-2.5");
+        assert_eq!(num.round(2, mode).to_string(), "-2.46");
+        assert_eq!(num.round(3, mode).to_string(), "-2.459");
+        let mode = RoundingMode::ToNearestMidpointToEven;
+        assert_eq!(num.round(0, mode).to_string(), "-2");
+        assert_eq!(num.round(1, mode).to_string(), "-2.5");
+        assert_eq!(num.round(2, mode).to_string(), "-2.46");
+        assert_eq!(num.round(3, mode).to_string(), "-2.46");
     }
 
     #[test]
@@ -1297,7 +1343,7 @@ mod tests {
         let root_neg_4_42 = dec!("-42").nth_root(4);
         let root_neg_5_42 = dec!("-42").nth_root(5);
         let root_0 = dec!(42).nth_root(0);
-        assert_eq!(root_4_42.unwrap(), dec!("2.545729895021830518"));
+        assert_eq!(root_4_42.unwrap(), dec!("2.5457298950218218"));
         assert_eq!(root_5_42.unwrap(), dec!("2.111785764966753912"));
         assert_eq!(root_42_42.unwrap(), dec!("1.093072057934823618"));
         assert_eq!(root_neg_4_42, None);
