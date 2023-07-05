@@ -1,7 +1,7 @@
 mod addressing;
 mod cmd_call_function;
 mod cmd_call_method;
-mod cmd_export_schema;
+mod cmd_export_package_definition;
 mod cmd_generate_key_pair;
 mod cmd_mint;
 mod cmd_new_account;
@@ -26,7 +26,7 @@ mod error;
 pub use addressing::*;
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
-pub use cmd_export_schema::*;
+pub use cmd_export_package_definition::*;
 pub use cmd_generate_key_pair::*;
 pub use cmd_mint::*;
 pub use cmd_new_account::*;
@@ -112,7 +112,7 @@ impl ResimCli {
 pub enum Command {
     CallFunction(CallFunction),
     CallMethod(CallMethod),
-    ExportSchema(ExportSchema),
+    ExportPackageDefinition(ExportPackageDefinition),
     GenerateKeyPair(GenerateKeyPair),
     Mint(crate::resim::cmd_mint::Mint),
     NewAccount(NewAccount),
@@ -141,7 +141,7 @@ pub fn run() -> Result<(), Error> {
     match cli.command {
         Command::CallFunction(cmd) => cmd.run(&mut out),
         Command::CallMethod(cmd) => cmd.run(&mut out),
-        Command::ExportSchema(cmd) => cmd.run(&mut out),
+        Command::ExportPackageDefinition(cmd) => cmd.run(&mut out),
         Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
         Command::Mint(cmd) => cmd.run(&mut out),
         Command::NewAccount(cmd) => cmd.run(&mut out),

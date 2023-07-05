@@ -76,7 +76,7 @@ scrypto test
 | Action                             | Command                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Create an account                  | ``` resim new-account ```                                                                            |
-| Change the default account         | ``` resim set-default-account <account_address> <account_public_key> ```                   |
+| Change the default account         | ``` resim set-default-account <account_address> <account_public_key> ```                             |
 | Create a token with fixed supply   | ``` resim new-token-fixed <amount> ```                                                               |
 | Create a token with mutable supply | ``` resim new-token-mutable <minter_resource_address> ```                                            |
 | Create a badge with fixed supply   | ``` resim new-badge-fixed <amount> ```                                                               |
@@ -86,7 +86,7 @@ scrypto test
 | Publish a package                  | ``` resim publish <path_to_package_dir> ```                                                          |
 | Call a function                    | ``` resim call-function <package_address> <blueprint_name> <function> <args> ```                     |
 | Call a method                      | ``` resim call-method <component_address> <method> <args> ```                                        |
-| Export the ABI of a blueprint      | ``` resim export-abi <package_address> <blueprint_name> ```                                          |
+| Export the definition of a package | ``` resim export-package-definition <package_address> <output>```                                    |
 | Show info about an entity          | ``` resim show <id> ```                                                                              |
 | List all entities in simulator     | ``` resim show-ledger  ```                                                                           |
 | Reset simulator state              | ``` resim reset ```                                                                                  |
