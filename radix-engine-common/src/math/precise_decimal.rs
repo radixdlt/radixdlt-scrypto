@@ -118,10 +118,16 @@ impl PreciseDecimal {
         self.round(0, RoundingMode::ToPositiveInfinity)
     }
 
-    pub fn round(&self, decimal_places: u32, mode: RoundingMode) -> Self {
-        assert!(decimal_places <= Self::SCALE);
+    /// Rounds this number to the specified decimal places.
+    ///
+    /// # Panics
+    /// - Panic if the number of decimal places is not within [0..SCALES]
+    pub fn round<T: Into<i32>>(&self, decimal_places: T, mode: RoundingMode) -> Self {
+        let decimal_places = decimal_places.into();
+        assert!(decimal_places <= Self::SCALE as i32);
+        assert!(decimal_places >= 0);
 
-        let divisor: BnumI512 = BnumI512::from(10i8).pow(Self::SCALE - decimal_places);
+        let divisor: BnumI512 = BnumI512::from(10i8).pow(Self::SCALE - decimal_places as u32);
         match mode {
             RoundingMode::ToPositiveInfinity => {
                 if self.0 % divisor == BnumI512::zero() {

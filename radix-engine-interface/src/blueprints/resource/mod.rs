@@ -211,7 +211,7 @@ impl ForWithdrawal for Decimal {
     fn for_withdrawal(&self, divisibility: u8, withdraw_strategy: WithdrawStrategy) -> Decimal {
         match withdraw_strategy {
             WithdrawStrategy::Exact => self.clone(),
-            WithdrawStrategy::Rounded(mode) => self.round(divisibility as u32, mode),
+            WithdrawStrategy::Rounded(mode) => self.round(divisibility, mode),
         }
     }
 }

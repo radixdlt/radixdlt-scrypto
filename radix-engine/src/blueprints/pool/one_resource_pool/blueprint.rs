@@ -362,10 +362,7 @@ impl OneResourcePoolBlueprint {
         if pool_resource_divisibility == 18 {
             amount_owed
         } else {
-            amount_owed.round(
-                pool_resource_divisibility as u32,
-                RoundingMode::ToNegativeInfinity,
-            )
+            amount_owed.round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
         }
     }
 

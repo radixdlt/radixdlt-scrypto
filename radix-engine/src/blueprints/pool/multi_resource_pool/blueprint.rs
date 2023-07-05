@@ -345,8 +345,7 @@ impl MultiResourcePoolBlueprint {
                     if divisibility == 18 {
                         amount_to_contribute
                     } else {
-                        amount_to_contribute
-                            .round(divisibility as u32, RoundingMode::ToNegativeInfinity)
+                        amount_to_contribute.round(divisibility, RoundingMode::ToNegativeInfinity)
                     }
                 };
 
@@ -607,7 +606,7 @@ impl MultiResourcePoolBlueprint {
                     let amount_owed = if divisibility == 18 {
                         amount_owed
                     } else {
-                        amount_owed.round(divisibility as u32, RoundingMode::ToNegativeInfinity)
+                        amount_owed.round(divisibility, RoundingMode::ToNegativeInfinity)
                     };
 
                     (resource_address, amount_owed)
