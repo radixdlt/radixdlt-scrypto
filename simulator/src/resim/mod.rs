@@ -112,7 +112,7 @@ impl ResimCli {
 pub enum Command {
     CallFunction(CallFunction),
     CallMethod(CallMethod),
-    ExportSchema(ExportPackageDefinition),
+    ExportPackageDefinition(ExportPackageDefinition),
     GenerateKeyPair(GenerateKeyPair),
     Mint(crate::resim::cmd_mint::Mint),
     NewAccount(NewAccount),
@@ -141,7 +141,7 @@ pub fn run() -> Result<(), Error> {
     match cli.command {
         Command::CallFunction(cmd) => cmd.run(&mut out),
         Command::CallMethod(cmd) => cmd.run(&mut out),
-        Command::ExportSchema(cmd) => cmd.run(&mut out),
+        Command::ExportPackageDefinition(cmd) => cmd.run(&mut out),
         Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
         Command::Mint(cmd) => cmd.run(&mut out),
         Command::NewAccount(cmd) => cmd.run(&mut out),

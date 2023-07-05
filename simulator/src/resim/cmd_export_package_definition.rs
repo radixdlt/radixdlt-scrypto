@@ -28,7 +28,7 @@ impl ExportPackageDefinition {
                 .map_err(Error::IOError)?;
                 writeln!(
                     out,
-                    "Blueprint schema exported to {}",
+                    "Package definition exported to {}",
                     self.output.to_str().unwrap()
                 )
                 .map_err(Error::IOError)?;
