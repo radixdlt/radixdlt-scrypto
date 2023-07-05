@@ -232,7 +232,11 @@ fn can_mint_with_proof_in_root() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, admin_token)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            admin_token,
+            &btreeset!(NonFungibleLocalId::integer(1)),
+        )
         .mint_fungible(resource, 1.into())
         .call_method(
             account,
@@ -266,7 +270,11 @@ fn cannot_mint_in_component_with_proof_in_root() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, admin_token)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            admin_token,
+            &btreeset!(NonFungibleLocalId::integer(1)),
+        )
         .call_method(component, "mint", manifest_args!(resource))
         .call_method(
             account,
@@ -307,7 +315,11 @@ fn can_burn_with_proof_in_root() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, admin_token)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            admin_token,
+            &btreeset!(NonFungibleLocalId::integer(1)),
+        )
         .mint_fungible(resource, 1.into())
         .burn_all_from_worktop(resource)
         .build();
@@ -337,7 +349,11 @@ fn cannot_burn_in_component_with_proof_in_root() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, admin_token)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            admin_token,
+            &btreeset!(NonFungibleLocalId::integer(1)),
+        )
         .mint_fungible(resource, 1.into())
         .take_all_from_worktop(resource, |builder, bucket| {
             builder.call_method(component, "burn", manifest_args!(bucket))

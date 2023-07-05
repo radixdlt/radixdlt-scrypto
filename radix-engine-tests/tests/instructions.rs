@@ -20,7 +20,7 @@ fn clear_auth_zone_should_not_drop_named_proofs() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 500u32.into())
         .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(5))
-        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
+        .create_proof_from_auth_zone_of_all(RADIX_TOKEN, |builder, proof_id| {
             builder.clear_auth_zone().drop_proof(proof_id) // Proof should continue to work after CLEAR_AUTH_ZONE
         })
         .build();
@@ -47,7 +47,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, 500u32.into())
         .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(5))
-        .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
+        .create_proof_from_auth_zone_of_all(RADIX_TOKEN, |builder, proof_id| {
             builder.drop_all_proofs().drop_proof(proof_id) // Proof should continue to work after CLEAR_AUTH_ZONE
         })
         .build();

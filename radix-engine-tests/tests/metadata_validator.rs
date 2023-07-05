@@ -15,7 +15,7 @@ fn can_set_validator_metadata_with_owner() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account, VALIDATOR_OWNER_BADGE, dec!("1"))
         .set_metadata(
             validator,
             "name".to_string(),

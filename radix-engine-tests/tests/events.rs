@@ -796,7 +796,7 @@ fn validator_registration_emits_correct_event() {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account, VALIDATOR_OWNER_BADGE, dec!("1"))
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -845,7 +845,7 @@ fn validator_unregistration_emits_correct_event() {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account, VALIDATOR_OWNER_BADGE, dec!("1"))
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -857,7 +857,7 @@ fn validator_unregistration_emits_correct_event() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account, VALIDATOR_OWNER_BADGE, dec!("1"))
         .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -906,7 +906,7 @@ fn validator_staking_emits_correct_event() {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account, VALIDATOR_OWNER_BADGE, dec!("1"))
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -918,7 +918,7 @@ fn validator_staking_emits_correct_event() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account, VALIDATOR_OWNER_BADGE, dec!("1"))
         .withdraw_from_account(account, RADIX_TOKEN, 100.into())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
             builder.stake_validator_as_owner(validator_address, bucket)
@@ -1323,7 +1323,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account, VALIDATOR_OWNER_BADGE, dec!("1"))
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -1335,7 +1335,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account, VALIDATOR_OWNER_BADGE, dec!("1"))
         .call_method(
             validator_address,
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,

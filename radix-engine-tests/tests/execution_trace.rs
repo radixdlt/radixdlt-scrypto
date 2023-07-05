@@ -179,7 +179,7 @@ fn test_instruction_traces() {
         .call_method(test_runner.faucet_component(), "free", manifest_args!())
         .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
-                .create_proof_from_bucket(&bucket_id, |builder, proof_id| {
+                .create_proof_from_bucket_of_all(&bucket_id, |builder, proof_id| {
                     builder.drop_proof(proof_id)
                 })
                 .return_to_worktop(bucket_id)
@@ -293,7 +293,7 @@ fn test_instruction_traces() {
             Origin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_BUCKET_BLUEPRINT.to_string(),
-                ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
+                ident: BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
             }),
             trace.origin
         );

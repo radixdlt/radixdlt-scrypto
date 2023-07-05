@@ -189,7 +189,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
         .create_proof_from_account_of_non_fungibles(
             account,
             auth_id.resource_address(),
-            &btreeset!(auth_id.local_id()),
+            &btreeset!(auth_id.local_id().clone()),
         )
         .call_method(
             my_component,

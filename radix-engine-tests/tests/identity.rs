@@ -160,7 +160,7 @@ fn can_set_metadata_after_securify() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, IDENTITY_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account, IDENTITY_OWNER_BADGE, dec!("1"))
         .set_metadata(
             identity_address,
             "name".to_string(),
@@ -191,7 +191,7 @@ fn can_set_metadata_on_securified_identity() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, IDENTITY_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account, IDENTITY_OWNER_BADGE, dec!("1"))
         .set_metadata(
             identity_address,
             "name".to_string(),

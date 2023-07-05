@@ -520,7 +520,11 @@ fn register_validator_with_auth_succeeds() {
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(
+            validator_account_address,
+            VALIDATOR_OWNER_BADGE,
+            dec!("1"),
+        )
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -583,7 +587,11 @@ fn unregister_validator_with_auth_succeeds() {
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(
+            validator_account_address,
+            VALIDATOR_OWNER_BADGE,
+            dec!("1"),
+        )
         .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -643,7 +651,11 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(
+            validator_account_address,
+            VALIDATOR_OWNER_BADGE,
+            dec!("1"),
+        )
         .call_method(
             validator_address,
             "update_accept_delegated_stake",
@@ -661,7 +673,11 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     builder.lock_fee(test_runner.faucet_component(), 500u32.into());
 
     if owner {
-        builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE);
+        builder.create_proof_from_account_of_amount(
+            validator_account_address,
+            VALIDATOR_OWNER_BADGE,
+            dec!("1"),
+        );
     }
 
     let manifest = builder
@@ -730,7 +746,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(account_address, VALIDATOR_OWNER_BADGE, dec!(1))
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -1083,7 +1099,7 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     // Act: request the fee decrease
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .call_method(
             validator_address,
             VALIDATOR_UPDATE_FEE_IDENT,
@@ -1212,7 +1228,11 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(test_runner.faucet_component(), 500u32.into())
-                .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+                .create_proof_from_account_of_amount(
+                    validator_account,
+                    VALIDATOR_OWNER_BADGE,
+                    dec!(1),
+                )
                 .call_method(
                     validator_address,
                     VALIDATOR_UPDATE_FEE_IDENT,
@@ -1240,7 +1260,11 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(test_runner.faucet_component(), 500u32.into())
-                .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+                .create_proof_from_account_of_amount(
+                    validator_account,
+                    VALIDATOR_OWNER_BADGE,
+                    dec!(1),
+                )
                 .call_method(
                     validator_address,
                     VALIDATOR_UPDATE_FEE_IDENT,
@@ -1407,7 +1431,11 @@ impl RegisterAndStakeTransactionType {
             RegisterAndStakeTransactionType::SingleManifestRegisterFirst => {
                 let manifest = ManifestBuilder::new()
                     .lock_fee(faucet, 500u32.into())
-                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .create_proof_from_account_of_amount(
+                        account_address,
+                        VALIDATOR_OWNER_BADGE,
+                        dec!(1),
+                    )
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .register_validator(validator_address)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -1424,7 +1452,11 @@ impl RegisterAndStakeTransactionType {
             RegisterAndStakeTransactionType::SingleManifestStakeFirst => {
                 let manifest = ManifestBuilder::new()
                     .lock_fee(faucet, 500u32.into())
-                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .create_proof_from_account_of_amount(
+                        account_address,
+                        VALIDATOR_OWNER_BADGE,
+                        dec!(1),
+                    )
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.stake_validator_as_owner(validator_address, bucket_id)
@@ -1441,13 +1473,21 @@ impl RegisterAndStakeTransactionType {
             RegisterAndStakeTransactionType::RegisterFirst => {
                 let register_manifest = ManifestBuilder::new()
                     .lock_fee(faucet, 500u32.into())
-                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .create_proof_from_account_of_amount(
+                        account_address,
+                        VALIDATOR_OWNER_BADGE,
+                        dec!(1),
+                    )
                     .register_validator(validator_address)
                     .build();
 
                 let stake_manifest = ManifestBuilder::new()
                     .lock_fee(faucet, 500u32.into())
-                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .create_proof_from_account_of_amount(
+                        account_address,
+                        VALIDATOR_OWNER_BADGE,
+                        dec!(1),
+                    )
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.stake_validator_as_owner(validator_address, bucket_id)
@@ -1464,13 +1504,21 @@ impl RegisterAndStakeTransactionType {
             RegisterAndStakeTransactionType::StakeFirst => {
                 let register_manifest = ManifestBuilder::new()
                     .lock_fee(faucet, 500u32.into())
-                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .create_proof_from_account_of_amount(
+                        account_address,
+                        VALIDATOR_OWNER_BADGE,
+                        dec!(1),
+                    )
                     .register_validator(validator_address)
                     .build();
 
                 let stake_manifest = ManifestBuilder::new()
                     .lock_fee(faucet, 500u32.into())
-                    .create_proof_from_account(account_address, VALIDATOR_OWNER_BADGE)
+                    .create_proof_from_account_of_amount(
+                        account_address,
+                        VALIDATOR_OWNER_BADGE,
+                        dec!(1),
+                    )
                     .withdraw_from_account(account_address, RADIX_TOKEN, stake_amount)
                     .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.stake_validator_as_owner(validator_address, bucket_id)
@@ -1703,7 +1751,11 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(
+            validator_account_address,
+            VALIDATOR_OWNER_BADGE,
+            dec!("1"),
+        )
         .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -1752,7 +1804,11 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let next_validator_pub_key = Secp256k1PrivateKey::from_u64(3u64).unwrap().public_key();
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(
+            validator_account_address,
+            VALIDATOR_OWNER_BADGE,
+            dec!("1"),
+        )
         .call_method(
             validator_address,
             "update_key",
@@ -1922,7 +1978,7 @@ fn owner_can_lock_stake_units() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .withdraw_from_account(
             validator_account,
             validator_substate.stake_unit_resource,
@@ -1981,7 +2037,7 @@ fn owner_can_start_unlocking_stake_units() {
     // Lock
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .withdraw_from_account(
             validator_account,
             stake_unit_resource,
@@ -2005,7 +2061,7 @@ fn owner_can_start_unlocking_stake_units() {
     // Act (start unlock)
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .call_method(
             validator_address,
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2066,7 +2122,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     // Lock
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .withdraw_from_account(
             validator_account,
             stake_unit_resource,
@@ -2092,7 +2148,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     for stake_units_to_unlock_amount in stake_units_to_unlock_amounts {
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 500u32.into())
-            .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+            .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
             .call_method(
                 validator_address,
                 VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2157,7 +2213,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     // Lock
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .withdraw_from_account(
             validator_account,
             stake_unit_resource,
@@ -2181,7 +2237,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     // Start unlock
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .call_method(
             validator_address,
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2199,7 +2255,7 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay));
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .call_method(
             validator_address,
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2260,7 +2316,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     // Lock
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .withdraw_from_account(
             validator_account,
             stake_unit_resource,
@@ -2284,7 +2340,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     // Start unlock
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .call_method(
             validator_address,
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2302,7 +2358,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay));
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .call_method(
             validator_address,
             VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2364,7 +2420,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     // Lock
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .withdraw_from_account(
             validator_account,
             stake_unit_resource,
@@ -2388,7 +2444,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     // Start unlock
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .call_method(
             validator_address,
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2406,7 +2462,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay / 2));
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(validator_account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
         .call_method(
             validator_address,
             VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,

@@ -102,7 +102,11 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .create_proof_from_account(account, admin_auth)
+                .create_proof_from_account_of_non_fungibles(
+                    account,
+                    admin_auth,
+                    &btreeset!(NonFungibleLocalId::integer(1)),
+                )
                 .update_role(
                     token_address.into(),
                     ObjectModuleId::Main,
@@ -126,7 +130,11 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
         test_runner
             .execute_manifest_ignoring_fee(
                 ManifestBuilder::new()
-                    .create_proof_from_account(account, admin_auth)
+                    .create_proof_from_account_of_non_fungibles(
+                        account,
+                        admin_auth,
+                        &btreeset!(NonFungibleLocalId::integer(1)),
+                    )
                     .update_role(
                         token_address.into(),
                         ObjectModuleId::Main,
@@ -144,7 +152,11 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .create_proof_from_account(account, admin_auth)
+                .create_proof_from_account_of_non_fungibles(
+                    account,
+                    admin_auth,
+                    &btreeset!(NonFungibleLocalId::integer(1)),
+                )
                 .update_role(
                     token_address.into(),
                     ObjectModuleId::Main,
@@ -160,7 +172,11 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     test_runner
         .execute_manifest_ignoring_fee(
             ManifestBuilder::new()
-                .create_proof_from_account(account, admin_auth)
+                .create_proof_from_account_of_non_fungibles(
+                    account,
+                    admin_auth,
+                    &btreeset!(NonFungibleLocalId::integer(1)),
+                )
                 .update_role(
                     token_address.into(),
                     ObjectModuleId::Main,

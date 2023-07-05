@@ -48,7 +48,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         let (module, role_key) = action.get_role();
         let manifest = ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 500u32.into())
-            .create_proof_from_account(account, admin_auth)
+            .create_proof_from_account_of_non_fungibles(
+                account,
+                admin_auth,
+                &btreeset!(NonFungibleLocalId::integer(1)),
+            )
             .update_role(
                 token_address.into(),
                 module,
@@ -91,7 +95,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Burn => builder
-            .create_proof_from_account(account, withdraw_auth)
+            .create_proof_from_account_of_non_fungibles(
+                account,
+                withdraw_auth,
+                &btreeset!(NonFungibleLocalId::integer(1)),
+            )
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .burn_from_worktop(dec!("1.0"), token_address)
             .call_method(
@@ -107,7 +115,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 manifest_args!(ManifestExpression::EntireWorktop),
             ),
         Action::Deposit => builder
-            .create_proof_from_account(account, withdraw_auth)
+            .create_proof_from_account_of_non_fungibles(
+                account,
+                withdraw_auth,
+                &btreeset!(NonFungibleLocalId::integer(1)),
+            )
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .take_all_from_worktop(token_address, |builder, bucket_id| {
                 builder.call_method(account, "try_deposit_or_abort", manifest_args!(bucket_id))
