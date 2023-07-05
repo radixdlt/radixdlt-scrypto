@@ -7,7 +7,9 @@ use radix_engine_interface::api::node_modules::auth::{
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::resource::{AccessRule, OwnerRole, RoleKey, RolesInit};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, OwnerRoleEntry, RoleKey, RolesInit,
+};
 use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
@@ -18,8 +20,8 @@ use sbor::rust::prelude::*;
 pub struct AccessRules(pub Own);
 
 impl AccessRules {
-    pub fn create<Y, E: Debug + ScryptoDecode>(
-        owner_role: OwnerRole,
+    pub fn create<Y, R: Into<OwnerRoleEntry>, E: Debug + ScryptoDecode>(
+        owner_role: R,
         roles: BTreeMap<ObjectModuleId, RolesInit>,
         api: &mut Y,
     ) -> Result<Self, E>
@@ -30,7 +32,11 @@ impl AccessRules {
             ACCESS_RULES_MODULE_PACKAGE,
             ACCESS_RULES_BLUEPRINT,
             ACCESS_RULES_CREATE_IDENT,
-            scrypto_encode(&AccessRulesCreateInput { owner_role, roles }).unwrap(),
+            scrypto_encode(&AccessRulesCreateInput {
+                owner_role: owner_role.into(),
+                roles,
+            })
+            .unwrap(),
         )?;
 
         let access_rules: Own = scrypto_decode(&rtn).unwrap();

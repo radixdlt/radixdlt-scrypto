@@ -78,8 +78,14 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
             ObjectModuleId::Main => roles,
         );
 
-        let access_rules =
-            AccessRules::create(OwnerRole::UpdatableByObject(owner_rule), roles, api)?;
+        let access_rules = AccessRules::create(
+            OwnerRoleEntry {
+                rule: owner_rule,
+                updater: OwnerRoleUpdater::Object,
+            },
+            roles,
+            api,
+        )?;
         Ok(access_rules)
     }
 
