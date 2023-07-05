@@ -43,8 +43,8 @@ mod recall {
                 &ScryptoEnv
                     .call_method_advanced(
                         self.vault.0.as_node_id(),
-                        true,
                         ObjectModuleId::Main,
+                        true,
                         VAULT_RECALL_IDENT,
                         scrypto_args!(Decimal::ONE),
                     )
@@ -58,8 +58,8 @@ mod recall {
                 &ScryptoEnv
                     .call_method_advanced(
                         reference.as_node_id(),
-                        true,
                         ObjectModuleId::Main,
+                        true,
                         VAULT_RECALL_IDENT,
                         scrypto_args!(Decimal::ONE),
                     )

@@ -9,7 +9,7 @@ use crate::errors::{
 };
 use crate::errors::{EventError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
-use crate::kernel::call_frame::{NodeVisibility, Visibility};
+use crate::kernel::call_frame::{NodeVisibility, StableReferenceType, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
@@ -1392,8 +1392,8 @@ where
     fn call_method_advanced(
         &mut self,
         receiver: &NodeId,
-        direct_access: bool,
         object_module_id: ObjectModuleId,
+        direct_access: bool,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
@@ -1401,42 +1401,42 @@ where
 
         let (module_object_info, global_address) = match object_module_id {
             ObjectModuleId::Main => {
-                let global_address = if node_object_info.global {
-                    Some(GlobalAddress::new_or_panic(receiver.clone().into()))
-                } else {
-                    // FIXME: Have a correct implementation of tracking global address
-                    // See if we have a parent
-                    // Cleanup, this is a rather crude way of trying to figure out
-                    // whether the node reference is a child of the current parent
-                    // this should be cleaned up once call_frame is refactored
-                    let node_visibility = self.api.kernel_get_node_visibility(receiver);
-                    if node_visibility.0.iter().any(|v| v.is_normal())
-                        && !node_visibility
-                            .0
-                            .iter()
-                            .any(|v| matches!(v, Visibility::FrameOwned))
-                    {
-                        match self.api.kernel_get_system_state().current {
-                            Actor::Method(MethodActor { global_address, .. }) => {
-                                global_address.clone()
-                            }
-                            _ => None,
+                let node_visibility = self.api.kernel_get_node_visibility(receiver);
+
+                // Retrieve the global address of the receiver node
+                let mut get_global_address = |node_visibility: NodeVisibility| {
+                    for visibility in node_visibility.0 {
+                        match visibility {
+                            Visibility::StableReference(StableReferenceType::Global) => {
+                                return Some(GlobalAddress::new_or_panic(receiver.clone().into()))
+                            },
+
+                            // Direct access references dont provide any info regarding global address so continue
+                            Visibility::StableReference(StableReferenceType::DirectAccess) => {
+                                continue;
+                            },
+
+                            // Anything frame owned does not have a global address
+                            Visibility::FrameOwned => return None,
+
+                            // If borrowed or actor then we just use the current actor's global address
+                            Visibility::Borrowed | Visibility::Actor => {
+                                return self.api.kernel_get_system_state().current.global_address();
+                            },
                         }
-                    } else {
-                        None
                     }
+                    None
                 };
 
+                let global_address = get_global_address(node_visibility);
                 (node_object_info.clone(), global_address)
             }
             // FIXME: verify whether we need to check the modules or not
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
                 ObjectInfo {
                     global: node_object_info.global,
-
                     blueprint_id: object_module_id.static_blueprint().unwrap(),
                     version: BlueprintVersion::default(),
-
                     blueprint_info: ObjectBlueprintInfo::default(),
                     features: btreeset!(),
                     instance_schema: None,
@@ -2328,7 +2328,7 @@ where
             },
         };
 
-        self.call_method_advanced(&node_id, false, module_id, method_name, args)
+        self.call_method_advanced(&node_id, module_id, false, method_name, args)
     }
 
     #[trace_resources]

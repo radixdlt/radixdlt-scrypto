@@ -152,8 +152,8 @@ mod genesis_helper {
                 ScryptoEnv
                     .call_method_advanced(
                         &validator_address.into_node_id(),
-                        false,
                         ObjectModuleId::Metadata,
+                        false,
                         METADATA_SET_IDENT,
                         scrypto_encode(&MetadataSetInput { key, value }).unwrap(),
                     )
