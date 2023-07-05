@@ -18,9 +18,9 @@ impl FungibleBucket {
             FungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
+        let substate_ref: LiquidFungibleResource = api.field_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -33,9 +33,9 @@ impl FungibleBucket {
             FungibleBucketField::Locked.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LockedFungibleResource = api.field_lock_read_typed(handle)?;
+        let substate_ref: LockedFungibleResource = api.field_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -48,14 +48,14 @@ impl FungibleBucket {
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut substate: LiquidFungibleResource = api.field_read_typed(handle)?;
         let taken = substate.take_by_amount(amount).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
             ))
         })?;
-        api.field_lock_write_typed(handle, &substate)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &substate)?;
+        api.field_close(handle)?;
         Ok(taken)
     }
 
@@ -72,10 +72,10 @@ impl FungibleBucket {
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: LiquidFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut substate: LiquidFungibleResource = api.field_read_typed(handle)?;
         substate.put(resource);
-        api.field_lock_write_typed(handle, &substate)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &substate)?;
+        api.field_close(handle)?;
         Ok(())
     }
 
@@ -93,7 +93,7 @@ impl FungibleBucket {
             FungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut locked: LockedFungibleResource = api.field_read_typed(handle)?;
         let max_locked = locked.amount();
 
         // Take from liquid if needed
@@ -105,7 +105,7 @@ impl FungibleBucket {
         // Increase lock count
         locked.amounts.entry(amount).or_default().add_assign(1);
 
-        api.field_lock_write_typed(handle, &locked)?;
+        api.field_write_typed(handle, &locked)?;
 
         // Issue proof
         Ok(FungibleProofSubstate::new(
@@ -131,7 +131,7 @@ impl FungibleBucket {
             FungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut locked: LockedFungibleResource = api.field_read_typed(handle)?;
 
         let max_locked = locked.amount();
         let cnt = locked
@@ -142,7 +142,7 @@ impl FungibleBucket {
             locked.amounts.insert(amount, cnt - 1);
         }
 
-        api.field_lock_write_typed(handle, &locked)?;
+        api.field_write_typed(handle, &locked)?;
 
         let delta = max_locked - locked.amount();
         FungibleBucket::put(LiquidFungibleResource::new(delta), api)
@@ -161,8 +161,8 @@ impl FungibleBucketBlueprint {
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
         )?;
-        let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
-        api.field_lock_release(divisibility_handle)?;
+        let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
+        api.field_close(divisibility_handle)?;
         Ok(divisibility)
     }
 

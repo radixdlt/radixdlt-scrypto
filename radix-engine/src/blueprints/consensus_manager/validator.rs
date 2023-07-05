@@ -193,8 +193,8 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
-        let substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
-        api.field_lock_release(handle)?;
+        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        api.field_close(handle)?;
         if !substate.accepts_delegated_stake {
             // TODO: Should this be an Option returned instead similar to Account?
             return Err(RuntimeError::ApplicationError(
@@ -219,7 +219,7 @@ impl ValidatorBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut validator: ValidatorSubstate = api.field_read_typed(handle)?;
 
         // Stake
         let (stake_unit_bucket, new_stake_amount) = {
@@ -242,7 +242,7 @@ impl ValidatorBlueprint {
             Self::index_update(&validator, validator.is_registered, new_stake_amount, api)?;
 
         validator.sorted_key = new_index_key;
-        api.field_lock_write_typed(handle, &validator)?;
+        api.field_write_typed(handle, &validator)?;
 
         Runtime::emit_event(
             api,
@@ -265,7 +265,7 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator_substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut validator_substate: ValidatorSubstate = api.field_read_typed(handle)?;
 
         // Unstake
         let (unstake_bucket, new_stake_amount) = {
@@ -290,9 +290,9 @@ impl ValidatorBlueprint {
                 LockFlags::read_only(),
             )?;
             let manager_substate: ConsensusManagerSubstate =
-                api.field_lock_read_typed(manager_handle)?;
+                api.field_read_typed(manager_handle)?;
             let current_epoch = manager_substate.epoch;
-            api.field_lock_release(manager_handle)?;
+            api.field_close(manager_handle)?;
 
             let config_handle = api.actor_open_field(
                 OBJECT_HANDLE_OUTER_OBJECT,
@@ -300,8 +300,8 @@ impl ValidatorBlueprint {
                 LockFlags::read_only(),
             )?;
             let config_substate: ConsensusManagerConfigSubstate =
-                api.field_lock_read_typed(config_handle)?;
-            api.field_lock_release(config_handle)?;
+                api.field_read_typed(config_handle)?;
+            api.field_close(config_handle)?;
 
             let claim_epoch = current_epoch.after(config_substate.config.num_unstake_epochs);
             let data = UnstakeData {
@@ -328,7 +328,7 @@ impl ValidatorBlueprint {
         )?;
 
         validator_substate.sorted_key = new_index_key;
-        api.field_lock_write_typed(handle, &validator_substate)?;
+        api.field_write_typed(handle, &validator_substate)?;
 
         Runtime::emit_event(
             api,
@@ -364,10 +364,10 @@ impl ValidatorBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut signal: ValidatorProtocolUpdateReadinessSignalSubstate =
-            api.field_lock_read_typed(handle)?;
+            api.field_read_typed(handle)?;
         signal.protocol_version_name = Some(protocol_version_name.clone());
-        api.field_lock_write_typed(handle, signal)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, signal)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(
             api,
@@ -386,7 +386,7 @@ impl ValidatorBlueprint {
         let substate_key = ValidatorField::Validator.into();
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
 
-        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut validator: ValidatorSubstate = api.field_read_typed(handle)?;
         // No update
         if validator.is_registered == new_registered {
             return Ok(());
@@ -401,7 +401,7 @@ impl ValidatorBlueprint {
 
         validator.is_registered = new_registered;
         validator.sorted_key = index_key;
-        api.field_lock_write_typed(handle, &validator)?;
+        api.field_write_typed(handle, &validator)?;
 
         if new_registered {
             Runtime::emit_event(api, RegisterValidatorEvent)?;
@@ -467,7 +467,7 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
-        let validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let validator: ValidatorSubstate = api.field_read_typed(handle)?;
         let mut nft_resman = ResourceManager(validator.unstake_nft);
         let resource_address = validator.unstake_nft;
         let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
@@ -484,9 +484,9 @@ impl ValidatorBlueprint {
                 ConsensusManagerField::ConsensusManager.into(),
                 LockFlags::read_only(),
             )?;
-            let mgr_substate: ConsensusManagerSubstate = api.field_lock_read_typed(mgr_handle)?;
+            let mgr_substate: ConsensusManagerSubstate = api.field_read_typed(mgr_handle)?;
             let epoch = mgr_substate.epoch;
-            api.field_lock_release(mgr_handle)?;
+            api.field_close(mgr_handle)?;
             epoch
         };
 
@@ -525,7 +525,7 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut validator: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut validator: ValidatorSubstate = api.field_read_typed(handle)?;
 
         // Update Consensus Manager
         {
@@ -540,7 +540,7 @@ impl ValidatorBlueprint {
         }
 
         validator.key = key;
-        api.field_lock_write_typed(handle, &validator)?;
+        api.field_write_typed(handle, &validator)?;
 
         Ok(())
     }
@@ -559,9 +559,9 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
         let consensus_manager: ConsensusManagerSubstate =
-            api.field_lock_read_typed(consensus_manager_handle)?;
+            api.field_read_typed(consensus_manager_handle)?;
         let current_epoch = consensus_manager.epoch;
-        api.field_lock_release(consensus_manager_handle)?;
+        api.field_close(consensus_manager_handle)?;
 
         // read the configured fee increase epochs delay
         let config_handle = api.actor_open_field(
@@ -570,8 +570,8 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
         let config_substate: ConsensusManagerConfigSubstate =
-            api.field_lock_read_typed(config_handle)?;
-        api.field_lock_release(config_handle)?;
+            api.field_read_typed(config_handle)?;
+        api.field_close(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
@@ -579,7 +579,7 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
 
         // - promote any currently pending change if it became effective already
         if let Some(previous_request) = substate.validator_fee_change_request {
@@ -600,8 +600,8 @@ impl ValidatorBlueprint {
             epoch_effective,
             new_fee_factor,
         });
-        api.field_lock_write_typed(handle, &substate)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &substate)?;
+        api.field_close(handle)?;
 
         Ok(())
     }
@@ -616,8 +616,8 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
-        api.field_lock_release(handle)?;
+        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
+        api.field_close(handle)?;
 
         Ok(substate.accepts_delegated_stake)
     }
@@ -634,10 +634,10 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
         substate.accepts_delegated_stake = accept_delegated_stake;
-        api.field_lock_write_typed(handle, substate)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, substate)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(
             api,
@@ -664,11 +664,11 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::read_only(),
         )?;
-        let substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let substate: ValidatorSubstate = api.field_read_typed(handle)?;
 
         Vault(substate.locked_owner_stake_unit_vault_id).put(stake_unit_bucket, api)?;
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(())
     }
 
@@ -690,9 +690,9 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
         let consensus_manager: ConsensusManagerSubstate =
-            api.field_lock_read_typed(consensus_manager_handle)?;
+            api.field_read_typed(consensus_manager_handle)?;
         let current_epoch = consensus_manager.epoch;
-        api.field_lock_release(consensus_manager_handle)?;
+        api.field_close(consensus_manager_handle)?;
 
         // read the configured unlock epochs delay
         let config_handle = api.actor_open_field(
@@ -701,8 +701,8 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
         let config_substate: ConsensusManagerConfigSubstate =
-            api.field_lock_read_typed(config_handle)?;
-        api.field_lock_release(config_handle)?;
+            api.field_read_typed(config_handle)?;
+        api.field_close(config_handle)?;
 
         // begin the read+modify+write of the validator substate...
         let handle = api.actor_open_field(
@@ -710,7 +710,7 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
 
         // - move the already-available withdrawals to a dedicated field
         Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
@@ -726,14 +726,14 @@ impl ValidatorBlueprint {
         let mut locked_owner_stake_unit_vault = Vault(substate.locked_owner_stake_unit_vault_id);
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
-        api.field_lock_write_typed(handle, substate)?;
+        api.field_write_typed(handle, substate)?;
 
         // move the requested stake units from the "locked vault" to the "pending withdrawal vault"
         let pending_unlock_stake_unit_bucket =
             locked_owner_stake_unit_vault.take(requested_stake_unit_amount, api)?;
         pending_owner_stake_unit_unlock_vault.put(pending_unlock_stake_unit_bucket, api)?;
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(())
     }
 
@@ -751,9 +751,9 @@ impl ValidatorBlueprint {
             LockFlags::read_only(),
         )?;
         let consensus_manager: ConsensusManagerSubstate =
-            api.field_lock_read_typed(consensus_manager_handle)?;
+            api.field_read_typed(consensus_manager_handle)?;
         let current_epoch = consensus_manager.epoch;
-        api.field_lock_release(consensus_manager_handle)?;
+        api.field_close(consensus_manager_handle)?;
 
         // drain the already-available withdrawals
         let handle = api.actor_open_field(
@@ -761,7 +761,7 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
 
         Self::normalize_available_owner_stake_unit_withdrawals(&mut substate, current_epoch);
         let total_already_available_amount = mem::replace(
@@ -771,13 +771,13 @@ impl ValidatorBlueprint {
 
         let mut pending_owner_stake_unit_unlock_vault =
             Vault(substate.pending_owner_stake_unit_unlock_vault_id);
-        api.field_lock_write_typed(handle, substate)?;
+        api.field_write_typed(handle, substate)?;
 
         // return the already-available withdrawals
         let already_available_stake_unit_bucket =
             pending_owner_stake_unit_unlock_vault.take(total_already_available_amount, api)?;
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(already_available_stake_unit_bucket)
     }
 
@@ -824,7 +824,7 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
 
         // - resolve the effective validator fee factor
         let effective_validator_fee_factor = match &substate.validator_fee_change_request {
@@ -865,8 +865,8 @@ impl ValidatorBlueprint {
 
         // ...end the read+modify+write of the validator substate (event can be emitted afterwards)
         substate.sorted_key = new_index_key;
-        api.field_lock_write_typed(handle, &substate)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &substate)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(
             api,
@@ -898,7 +898,7 @@ impl ValidatorBlueprint {
             ValidatorField::Validator.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: ValidatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut substate: ValidatorSubstate = api.field_read_typed(handle)?;
 
         // Get the total reward amount
         let total_reward_xrd = xrd_bucket.amount(api)?;
@@ -926,8 +926,8 @@ impl ValidatorBlueprint {
 
         // Flush validator substate changes
         substate.sorted_key = new_index_key;
-        api.field_lock_write_typed(handle, &substate)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &substate)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(
             api,

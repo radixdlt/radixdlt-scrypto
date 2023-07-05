@@ -297,7 +297,7 @@ where
         &mut self,
         handle: LockHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let substate = self.api.field_lock_read(handle)?;
+        let substate = self.api.field_read(handle)?;
 
         self.allocate_buffer(substate)
     }
@@ -307,7 +307,7 @@ where
         handle: LockHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.field_lock_write(handle, data)?;
+        self.api.field_write(handle, data)?;
 
         Ok(())
     }
@@ -316,7 +316,7 @@ where
         &mut self,
         handle: LockHandle,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.field_lock_release(handle)?;
+        self.api.field_close(handle)?;
 
         Ok(())
     }

@@ -31,12 +31,12 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
+        let mut auth_zone: AuthZone = api.field_read_typed(auth_zone_handle)?;
         let proof = auth_zone.pop().ok_or(RuntimeError::ApplicationError(
             ApplicationError::AuthZoneError(AuthZoneError::EmptyAuthZone),
         ))?;
 
-        api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
+        api.field_write_typed(auth_zone_handle, &auth_zone)?;
 
         Ok(proof)
     }
@@ -51,11 +51,11 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
+        let mut auth_zone: AuthZone = api.field_read_typed(auth_zone_handle)?;
         auth_zone.push(proof);
 
-        api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
-        api.field_lock_release(auth_zone_handle)?;
+        api.field_write_typed(auth_zone_handle, &auth_zone)?;
+        api.field_close(auth_zone_handle)?;
 
         Ok(())
     }
@@ -85,7 +85,7 @@ impl AuthZoneBlueprint {
         )?;
 
         let composed_proof = {
-            let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
+            let auth_zone: AuthZone = api.field_read_typed(auth_zone_handle)?;
             let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
             compose_proof_by_amount(&proofs, resource_address, Some(amount), api)?
         };
@@ -151,7 +151,7 @@ impl AuthZoneBlueprint {
         )?;
 
         let composed_proof = {
-            let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
+            let auth_zone: AuthZone = api.field_read_typed(auth_zone_handle)?;
             let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
             compose_proof_by_ids(&proofs, resource_address, Some(ids), api)?
         };
@@ -192,7 +192,7 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
+        let auth_zone: AuthZone = api.field_read_typed(auth_zone_handle)?;
         let proofs: Vec<Proof> = auth_zone.proofs.iter().map(|p| Proof(p.0)).collect();
         let composed_proof = compose_proof_by_amount(&proofs, resource_address, None, api)?;
 
@@ -200,7 +200,7 @@ impl AuthZoneBlueprint {
             ComposedProof::Fungible(..) => FUNGIBLE_PROOF_BLUEPRINT,
             ComposedProof::NonFungible(..) => NON_FUNGIBLE_PROOF_BLUEPRINT,
         };
-        api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
+        api.field_write_typed(auth_zone_handle, &auth_zone)?;
 
         let node_id = api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
         api.kernel_create_node(
@@ -234,11 +234,11 @@ impl AuthZoneBlueprint {
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut auth_zone: AuthZone = api.field_lock_read_typed(handle)?;
+        let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
         auth_zone.clear_signature_proofs();
         let proofs = auth_zone.drain();
-        api.field_lock_write_typed(handle, &auth_zone)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &auth_zone)?;
+        api.field_close(handle)?;
 
         for proof in proofs {
             proof.drop(api)?;
@@ -256,10 +256,10 @@ impl AuthZoneBlueprint {
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut auth_zone: AuthZone = api.field_lock_read_typed(handle)?;
+        let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
         auth_zone.clear_signature_proofs();
-        api.field_lock_write_typed(handle, &auth_zone)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &auth_zone)?;
+        api.field_close(handle)?;
 
         Ok(())
     }
@@ -274,10 +274,10 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut auth_zone: AuthZone = api.field_lock_read_typed(auth_zone_handle)?;
+        let mut auth_zone: AuthZone = api.field_read_typed(auth_zone_handle)?;
         let proofs = auth_zone.drain();
 
-        api.field_lock_write_typed(auth_zone_handle, &auth_zone)?;
+        api.field_write_typed(auth_zone_handle, &auth_zone)?;
 
         Ok(proofs)
     }

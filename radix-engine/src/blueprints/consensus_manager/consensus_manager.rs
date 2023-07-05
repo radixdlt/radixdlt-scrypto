@@ -342,7 +342,7 @@ impl ConsensusManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let consensus_manager: ConsensusManagerSubstate = api.field_lock_read_typed(handle)?;
+        let consensus_manager: ConsensusManagerSubstate = api.field_read_typed(handle)?;
 
         Ok(consensus_manager.epoch)
     }
@@ -358,8 +358,8 @@ impl ConsensusManagerBlueprint {
                 LockFlags::read_only(),
             )?;
             let config_substate: ConsensusManagerConfigSubstate =
-                api.field_lock_read_typed(config_handle)?;
-            api.field_lock_release(config_handle)?;
+                api.field_read_typed(config_handle)?;
+            api.field_close(config_handle)?;
             config_substate
         };
 
@@ -369,7 +369,7 @@ impl ConsensusManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut manager_substate: ConsensusManagerSubstate =
-            api.field_lock_read_typed(manager_handle)?;
+            api.field_read_typed(manager_handle)?;
 
         if manager_substate.started {
             return Err(RuntimeError::ApplicationError(
@@ -383,8 +383,8 @@ impl ConsensusManagerBlueprint {
         manager_substate.epoch = post_genesis_epoch;
         manager_substate.round = Round::zero();
 
-        api.field_lock_write_typed(manager_handle, manager_substate)?;
-        api.field_lock_release(manager_handle)?;
+        api.field_write_typed(manager_handle, manager_substate)?;
+        api.field_close(manager_handle)?;
 
         Ok(())
     }
@@ -404,8 +404,8 @@ impl ConsensusManagerBlueprint {
                     LockFlags::read_only(),
                 )?;
                 let proposer_minute_timestamp: ProposerMinuteTimestampSubstate =
-                    api.field_lock_read_typed(handle)?;
-                api.field_lock_release(handle)?;
+                    api.field_read_typed(handle)?;
+                api.field_close(handle)?;
 
                 Ok(Self::epoch_minute_to_instant(
                     proposer_minute_timestamp.epoch_minute,
@@ -435,8 +435,8 @@ impl ConsensusManagerBlueprint {
                     LockFlags::read_only(),
                 )?;
                 let proposer_minute_timestamp: ProposerMinuteTimestampSubstate =
-                    api.field_lock_read_typed(handle)?;
-                api.field_lock_release(handle)?;
+                    api.field_read_typed(handle)?;
+                api.field_close(handle)?;
 
                 // convert back to Instant only for comparison operation
                 let proposer_instant =
@@ -473,8 +473,8 @@ impl ConsensusManagerBlueprint {
             LockFlags::read_only(),
         )?;
         let config_substate: ConsensusManagerConfigSubstate =
-            api.field_lock_read_typed(config_handle)?;
-        api.field_lock_release(config_handle)?;
+            api.field_read_typed(config_handle)?;
+        api.field_close(config_handle)?;
 
         let manager_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
@@ -482,7 +482,7 @@ impl ConsensusManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut manager_substate: ConsensusManagerSubstate =
-            api.field_lock_read_typed(manager_handle)?;
+            api.field_read_typed(manager_handle)?;
 
         let progressed_rounds = Round::calculate_progress(manager_substate.round, round)
             .ok_or_else(|| {
@@ -521,8 +521,8 @@ impl ConsensusManagerBlueprint {
         }
         manager_substate.current_leader = Some(current_leader);
 
-        api.field_lock_write_typed(manager_handle, &manager_substate)?;
-        api.field_lock_release(manager_handle)?;
+        api.field_write_typed(manager_handle, &manager_substate)?;
+        api.field_close(manager_handle)?;
 
         Ok(())
     }
@@ -537,7 +537,7 @@ impl ConsensusManagerBlueprint {
             LockFlags::read_only(),
         )?;
         let manager_substate: ConsensusManagerSubstate =
-            api.field_lock_read_typed(manager_handle)?;
+            api.field_read_typed(manager_handle)?;
 
         let validator_creation_xrd_cost = if manager_substate.started {
             let config_handle = api.actor_open_field(
@@ -546,8 +546,8 @@ impl ConsensusManagerBlueprint {
                 LockFlags::read_only(),
             )?;
             let manager_config: ConsensusManagerConfigSubstate =
-                api.field_lock_read_typed(config_handle)?;
-            api.field_lock_release(config_handle)?;
+                api.field_read_typed(config_handle)?;
+            api.field_close(config_handle)?;
 
             let validator_creation_xrd_cost =
                 manager_config.config.validator_creation_usd_cost * api.usd_price()?;
@@ -556,7 +556,7 @@ impl ConsensusManagerBlueprint {
             None
         };
 
-        api.field_lock_release(manager_handle)?;
+        api.field_close(manager_handle)?;
 
         Ok(validator_creation_xrd_cost)
     }
@@ -601,7 +601,7 @@ impl ConsensusManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut exact_time_substate: ProposerMilliTimestampSubstate =
-            api.field_lock_read_typed(handle)?;
+            api.field_read_typed(handle)?;
         let previous_timestamp = exact_time_substate.epoch_milli;
         if current_time_ms < previous_timestamp {
             return Err(RuntimeError::ApplicationError(
@@ -614,9 +614,9 @@ impl ConsensusManagerBlueprint {
             ));
         } else if current_time_ms > previous_timestamp {
             exact_time_substate.epoch_milli = current_time_ms;
-            api.field_lock_write_typed(handle, &exact_time_substate)?;
+            api.field_write_typed(handle, &exact_time_substate)?;
         }
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         let new_rounded_value = Self::milli_to_minute(current_time_ms);
         let handle = api.actor_open_field(
@@ -625,13 +625,13 @@ impl ConsensusManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut rounded_timestamp_substate: ProposerMinuteTimestampSubstate =
-            api.field_lock_read_typed(handle)?;
+            api.field_read_typed(handle)?;
         let previous_rounded_value = rounded_timestamp_substate.epoch_minute;
         if new_rounded_value > previous_rounded_value {
             rounded_timestamp_substate.epoch_minute = new_rounded_value;
-            api.field_lock_write_typed(handle, &rounded_timestamp_substate)?;
+            api.field_write_typed(handle, &rounded_timestamp_substate)?;
         }
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(())
     }
@@ -661,7 +661,7 @@ impl ConsensusManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut statistic: CurrentProposalStatisticSubstate =
-            api.field_lock_read_typed(statistic_handle)?;
+            api.field_read_typed(statistic_handle)?;
         for gap_round_leader in proposal_history.gap_round_leaders {
             let mut gap_round_statistic = statistic.get_mut_proposal_statistic(gap_round_leader)?;
             gap_round_statistic.missed += 1;
@@ -673,8 +673,8 @@ impl ConsensusManagerBlueprint {
         } else {
             current_round_statistic.made += 1;
         }
-        api.field_lock_write_typed(statistic_handle, statistic)?;
-        api.field_lock_release(statistic_handle)?;
+        api.field_write_typed(statistic_handle, statistic)?;
+        api.field_close(statistic_handle)?;
 
         Ok(())
     }
@@ -694,7 +694,7 @@ impl ConsensusManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut validator_set_substate: CurrentValidatorSetSubstate =
-            api.field_lock_read_typed(validator_set_handle)?;
+            api.field_read_typed(validator_set_handle)?;
         let previous_validator_set = validator_set_substate.validator_set;
 
         // Read previous validator statistics
@@ -704,7 +704,7 @@ impl ConsensusManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut statistic_substate: CurrentProposalStatisticSubstate =
-            api.field_lock_read_typed(statistic_handle)?;
+            api.field_read_typed(statistic_handle)?;
         let previous_statistics = statistic_substate.validator_statistics;
 
         // Read & write validator rewards
@@ -714,7 +714,7 @@ impl ConsensusManagerBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut rewards_substate: ValidatorRewardsSubstate =
-            api.field_lock_read_typed(rewards_handle)?;
+            api.field_read_typed(rewards_handle)?;
 
         // Apply emissions
         Self::apply_validator_emissions_and_rewards(
@@ -773,20 +773,20 @@ impl ConsensusManagerBlueprint {
         )?;
 
         // Write updated validator rewards
-        api.field_lock_write_typed(rewards_handle, rewards_substate)?;
-        api.field_lock_release(rewards_handle)?;
+        api.field_write_typed(rewards_handle, rewards_substate)?;
+        api.field_close(rewards_handle)?;
 
         // Write zeroed statistics of next validators
         statistic_substate.validator_statistics = (0..next_active_validator_set.validator_count())
             .map(|_index| ProposalStatistic::default())
             .collect();
-        api.field_lock_write_typed(statistic_handle, statistic_substate)?;
-        api.field_lock_release(statistic_handle)?;
+        api.field_write_typed(statistic_handle, statistic_substate)?;
+        api.field_close(statistic_handle)?;
 
         // Write next validator set
         validator_set_substate.validator_set = next_active_validator_set;
-        api.field_lock_write_typed(validator_set_handle, validator_set_substate)?;
-        api.field_lock_release(validator_set_handle)?;
+        api.field_write_typed(validator_set_handle, validator_set_substate)?;
+        api.field_close(validator_set_handle)?;
 
         Ok(())
     }

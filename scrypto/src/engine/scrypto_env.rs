@@ -17,6 +17,7 @@ use radix_engine_interface::types::{BlueprintId, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
+use radix_engine_interface::api::field_lock_api::FieldLockHandle;
 use sbor::rust::prelude::*;
 use sbor::*;
 use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
@@ -329,13 +330,13 @@ impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientFieldLockApi<ClientApiError> for ScryptoEnv {
-    fn field_lock_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
+    fn field_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
         let substate = copy_buffer(unsafe { field_lock_read(lock_handle) });
 
         Ok(substate)
     }
 
-    fn field_lock_write(
+    fn field_write(
         &mut self,
         lock_handle: LockHandle,
         buffer: Vec<u8>,
@@ -345,7 +346,11 @@ impl ClientFieldLockApi<ClientApiError> for ScryptoEnv {
         Ok(())
     }
 
-    fn field_lock_release(&mut self, lock_handle: LockHandle) -> Result<(), ClientApiError> {
+    fn field_lock(&mut self, _handle: FieldLockHandle) -> Result<(), ClientApiError> {
+        unimplemented!("Not available for Scrypto")
+    }
+
+    fn field_close(&mut self, lock_handle: LockHandle) -> Result<(), ClientApiError> {
         unsafe { field_lock_release(lock_handle) };
 
         Ok(())

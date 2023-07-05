@@ -42,7 +42,7 @@ impl<V: ScryptoEncode> Deref for DataRef<V> {
 impl<V: ScryptoEncode> Drop for DataRef<V> {
     fn drop(&mut self) {
         let mut env = ScryptoEnv;
-        env.field_lock_release(self.lock_handle).unwrap();
+        env.field_close(self.lock_handle).unwrap();
     }
 }
 
@@ -80,8 +80,8 @@ impl<V: ScryptoEncode> Drop for DataRefMut<V> {
             OriginalData::KeyValueStoreEntry(_) => scrypto_encode(&Some(&self.value)).unwrap(),
             OriginalData::ComponentAppState(_) => scrypto_encode(&self.value).unwrap(),
         };
-        env.field_lock_write(self.lock_handle, substate).unwrap();
-        env.field_lock_release(self.lock_handle).unwrap();
+        env.field_write(self.lock_handle, substate).unwrap();
+        env.field_close(self.lock_handle).unwrap();
     }
 }
 
@@ -119,7 +119,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
                 LockFlags::read_only(),
             )
             .unwrap();
-        let raw_substate = env.field_lock_read(lock_handle).unwrap();
+        let raw_substate = env.field_read(lock_handle).unwrap();
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRef { lock_handle, value }
     }
@@ -133,7 +133,7 @@ impl<V: 'static + ScryptoEncode + ScryptoDecode> ComponentStatePointer<V> {
                 LockFlags::MUTABLE,
             )
             .unwrap();
-        let raw_substate = env.field_lock_read(lock_handle).unwrap();
+        let raw_substate = env.field_read(lock_handle).unwrap();
         let value: V = scrypto_decode(&raw_substate).unwrap();
         DataRefMut {
             lock_handle,

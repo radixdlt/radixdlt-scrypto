@@ -1165,7 +1165,7 @@ impl AccessControllerNativePackage {
 
             let access_controller = {
                 let access_controller: AccessControllerSubstate =
-                    api.field_lock_read_typed(handle)?;
+                    api.field_read_typed(handle)?;
                 access_controller
             };
             access_controller.recovery_badge
@@ -1227,13 +1227,13 @@ where
     let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
 
     let access_controller = {
-        let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;
+        let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
         access_controller
     };
 
     let rtn = access_controller.transition(api, input)?;
 
-    api.field_lock_release(handle)?;
+    api.field_close(handle)?;
 
     Ok(rtn)
 }
@@ -1250,17 +1250,17 @@ where
     let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
 
     let mut access_controller = {
-        let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;
+        let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
         access_controller
     };
 
     let rtn = access_controller.transition_mut(api, input)?;
 
     {
-        api.field_lock_write_typed(handle, &access_controller)?;
+        api.field_write_typed(handle, &access_controller)?;
     }
 
-    api.field_lock_release(handle)?;
+    api.field_close(handle)?;
 
     Ok(rtn)
 }

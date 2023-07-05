@@ -365,8 +365,8 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::read_only(),
             )?;
-            let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
-            api.field_lock_release(handle)?;
+            let id_type: NonFungibleIdType = api.field_read_typed(handle)?;
+            api.field_close(handle)?;
             if id_type == NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
@@ -385,10 +385,10 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             let amount: Decimal = entries.len().into();
             total_supply += amount;
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
         let ids = {
@@ -424,8 +424,8 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::read_only(),
             )?;
-            let id_type: NonFungibleIdType = api.field_lock_read_typed(id_type_handle)?;
-            api.field_lock_release(id_type_handle)?;
+            let id_type: NonFungibleIdType = api.field_read_typed(id_type_handle)?;
+            api.field_close(id_type_handle)?;
 
             if id_type != NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
@@ -446,9 +446,9 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             total_supply += 1;
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
         let id = {
@@ -486,8 +486,8 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::read_only(),
             )?;
-            let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
-            api.field_lock_release(handle)?;
+            let id_type: NonFungibleIdType = api.field_read_typed(handle)?;
+            api.field_close(handle)?;
 
             if id_type != NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
@@ -507,10 +507,10 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             let amount: Decimal = entries.len().into();
             total_supply += amount;
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
         // Update data
@@ -550,7 +550,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
         let mutable_fields: NonFungibleResourceManagerMutableFieldsSubstate =
-            api.field_lock_read_typed(data_schema_handle)?;
+            api.field_read_typed(data_schema_handle)?;
 
         let mut instance_schema = api.actor_get_info()?.instance_schema.unwrap();
         let kv_schema = instance_schema.schema;
@@ -727,9 +727,9 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             total_supply -= other_bucket.liquid.amount();
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
         // Update
@@ -801,7 +801,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
+        let id_type: NonFungibleIdType = api.field_read_typed(handle)?;
         let resource_type = ResourceType::NonFungible { id_type };
 
         Ok(resource_type)
@@ -817,7 +817,7 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::read_only(),
             )?;
-            let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             Ok(Some(total_supply))
         } else {
             Ok(None)

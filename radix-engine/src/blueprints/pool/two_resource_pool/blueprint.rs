@@ -308,7 +308,7 @@ impl TwoResourcePoolBlueprint {
             None
         };
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(api, event)?;
 
@@ -380,7 +380,7 @@ impl TwoResourcePoolBlueprint {
         };
 
         bucket.burn(api)?;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(api, event)?;
 
@@ -403,7 +403,7 @@ impl TwoResourcePoolBlueprint {
                 resource_address,
             };
             vault.put(bucket, api)?;
-            api.field_lock_release(handle)?;
+            api.field_close(handle)?;
             Runtime::emit_event(api, event)?;
             Ok(())
         } else {
@@ -425,7 +425,7 @@ impl TwoResourcePoolBlueprint {
         if let Some(mut vault) = vault {
             let bucket = vault.take(amount, api)?;
 
-            api.field_lock_release(handle)?;
+            api.field_close(handle)?;
 
             Runtime::emit_event(
                 api,
@@ -479,7 +479,7 @@ impl TwoResourcePoolBlueprint {
         let amounts_owed =
             Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(amounts_owed)
     }
@@ -500,7 +500,7 @@ impl TwoResourcePoolBlueprint {
             })
             .collect::<Result<BTreeMap<_, _>, _>>()?;
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amounts)
     }
 
@@ -518,7 +518,7 @@ impl TwoResourcePoolBlueprint {
         let substate_key = TwoResourcePoolField::TwoResourcePool.into();
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
         let two_resource_pool_substate =
-            api.field_lock_read_typed::<TwoResourcePoolSubstate>(handle)?;
+            api.field_read_typed::<TwoResourcePoolSubstate>(handle)?;
 
         Ok((two_resource_pool_substate, handle))
     }

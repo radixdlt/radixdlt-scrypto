@@ -162,7 +162,7 @@ impl OneResourcePoolBlueprint {
         vault.put(bucket, api)?;
         let pool_units = pool_unit_resource_manager.mint_fungible(pool_units_to_mint, api)?;
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(
             api,
@@ -230,7 +230,7 @@ impl OneResourcePoolBlueprint {
         bucket.burn(api)?;
         let owed_resources = vault.take(amount_owed, api)?;
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(
             api,
@@ -257,7 +257,7 @@ impl OneResourcePoolBlueprint {
         };
 
         substate.vault.put(bucket, api)?;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(api, event)?;
 
@@ -274,7 +274,7 @@ impl OneResourcePoolBlueprint {
         let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let bucket = substate.vault.take(amount, api)?;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(api, WithdrawEvent { amount })?;
 
@@ -321,7 +321,7 @@ impl OneResourcePoolBlueprint {
             pool_resource_divisibility,
         );
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(amount_owed)
     }
@@ -334,7 +334,7 @@ impl OneResourcePoolBlueprint {
     {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
         let amount = substate.vault.amount(api)?;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -369,7 +369,7 @@ impl OneResourcePoolBlueprint {
     {
         let substate_key = OneResourcePoolField::OneResourcePool.into();
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
-        let substate = api.field_lock_read_typed::<OneResourcePoolSubstate>(handle)?;
+        let substate = api.field_read_typed::<OneResourcePoolSubstate>(handle)?;
 
         Ok((substate, handle))
     }

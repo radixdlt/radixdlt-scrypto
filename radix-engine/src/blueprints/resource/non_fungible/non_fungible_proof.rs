@@ -87,9 +87,9 @@ impl NonFungibleProofBlueprint {
                 NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: ProofMoveableSubstate = api.field_lock_read_typed(handle)?;
+            let substate_ref: ProofMoveableSubstate = api.field_read_typed(handle)?;
             let moveable = substate_ref.clone();
-            api.field_lock_release(handle)?;
+            api.field_close(handle)?;
             moveable
         };
         let handle = api.actor_open_field(
@@ -97,7 +97,7 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
 
@@ -110,7 +110,7 @@ impl NonFungibleProofBlueprint {
         )?;
 
         // Drop after object creation to keep the reference alive
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(Proof(Own(proof_id)))
     }
@@ -124,9 +124,9 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -141,9 +141,9 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
         let ids = substate_ref.non_fungible_local_ids().clone();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(ids)
     }
 

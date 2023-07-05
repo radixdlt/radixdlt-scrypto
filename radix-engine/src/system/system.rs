@@ -1225,12 +1225,12 @@ where
 {
     // Costing through kernel
     #[trace_resources]
-    fn field_lock_read(&mut self, lock_handle: FieldLockHandle) -> Result<Vec<u8>, RuntimeError> {
+    fn field_read(&mut self, lock_handle: FieldLockHandle) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
+                return Err(RuntimeError::SystemError(SystemError::NotAFieldHandle));
             }
         }
 
@@ -1244,7 +1244,7 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn field_lock_write(
+    fn field_write(
         &mut self,
         lock_handle: FieldLockHandle,
         buffer: Vec<u8>,
@@ -1264,7 +1264,7 @@ where
                 )?;
             }
             _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteLock));
+                return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
             }
         }
 
@@ -1280,12 +1280,33 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn field_lock_release(&mut self, handle: FieldLockHandle) -> Result<(), RuntimeError> {
+    fn field_lock(&mut self, handle: FieldLockHandle) -> Result<(), RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
+
+        match data {
+            SystemLockData::Field(FieldLockData::Write { .. }) => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
+            }
+        }
+
+        let v = self.api.kernel_read_substate(handle)?;
+        let mut substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+        substate.lock();
+        let indexed = IndexedScryptoValue::from_typed(&substate);
+        self.api.kernel_write_substate(handle, indexed)?;
+
+        Ok(())
+    }
+
+    // Costing through kernel
+    #[trace_resources]
+    fn field_close(&mut self, handle: FieldLockHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
+                return Err(RuntimeError::SystemError(SystemError::NotAFieldHandle));
             }
         }
 

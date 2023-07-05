@@ -82,9 +82,9 @@ impl FungibleProofBlueprint {
                 FungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: ProofMoveableSubstate = api.field_lock_read_typed(handle)?;
+            let substate_ref: ProofMoveableSubstate = api.field_read_typed(handle)?;
             let moveable = substate_ref.clone();
-            api.field_lock_release(handle)?;
+            api.field_close(handle)?;
             moveable
         };
 
@@ -93,7 +93,7 @@ impl FungibleProofBlueprint {
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: FungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: FungibleProofSubstate = api.field_read_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
 
@@ -106,7 +106,7 @@ impl FungibleProofBlueprint {
         )?;
 
         // Drop after object creation to keep the reference alive
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(Proof(Own(proof_id)))
     }
@@ -120,9 +120,9 @@ impl FungibleProofBlueprint {
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: FungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: FungibleProofSubstate = api.field_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 

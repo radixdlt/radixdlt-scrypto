@@ -205,7 +205,7 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerField::Divisibility.into(),
                 LockFlags::read_only(),
             )?;
-            let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
+            let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
             divisibility
         };
 
@@ -224,10 +224,10 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             total_supply += amount;
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
-            api.field_lock_release(total_supply_handle)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
+            api.field_close(total_supply_handle)?;
         }
 
         Ok(bucket)
@@ -273,10 +273,10 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             total_supply -= other_bucket.liquid.amount();
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
-            api.field_lock_release(total_supply_handle)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
+            api.field_close(total_supply_handle)?;
         }
 
         Ok(())
@@ -349,7 +349,7 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
+        let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
         let resource_type = ResourceType::Fungible { divisibility };
 
         Ok(resource_type)
@@ -365,7 +365,7 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::read_only(),
             )?;
-            let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             Ok(Some(total_supply))
         } else {
             Ok(None)

@@ -563,12 +563,12 @@ impl AccountBlueprint {
     {
         let substate_key = AccountField::Account.into();
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
-        let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
+        let mut account = api.field_read_typed::<AccountSubstate>(handle)?;
 
         account.default_deposit_rule = default_deposit_rule;
 
-        api.field_lock_write_typed(handle, account)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, account)?;
+        api.field_close(handle)?;
 
         Ok(())
     }
@@ -619,9 +619,9 @@ impl AccountBlueprint {
         let substate_key = AccountField::Account.into();
         let handle =
             api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
-        let account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
+        let account = api.field_read_typed::<AccountSubstate>(handle)?;
         let default_deposit_rule = account.default_deposit_rule;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(default_deposit_rule)
     }

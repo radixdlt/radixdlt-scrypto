@@ -31,10 +31,10 @@ pub type FieldLockHandle = u32;
 
 /// A high level api to read/write fields
 pub trait ClientFieldLockApi<E: Debug> {
-    fn field_lock_read(&mut self, handle: FieldLockHandle) -> Result<Vec<u8>, E>;
+    fn field_read(&mut self, handle: FieldLockHandle) -> Result<Vec<u8>, E>;
 
-    fn field_lock_read_typed<S: ScryptoDecode>(&mut self, handle: FieldLockHandle) -> Result<S, E> {
-        let buf = self.field_lock_read(handle)?;
+    fn field_read_typed<S: ScryptoDecode>(&mut self, handle: FieldLockHandle) -> Result<S, E> {
+        let buf = self.field_read(handle)?;
         let typed_substate: S = scrypto_decode(&buf)
             .map_err(|e| {
                 e
@@ -43,16 +43,18 @@ pub trait ClientFieldLockApi<E: Debug> {
         Ok(typed_substate)
     }
 
-    fn field_lock_write(&mut self, handle: FieldLockHandle, buffer: Vec<u8>) -> Result<(), E>;
+    fn field_write(&mut self, handle: FieldLockHandle, buffer: Vec<u8>) -> Result<(), E>;
 
-    fn field_lock_write_typed<S: ScryptoEncode>(
+    fn field_write_typed<S: ScryptoEncode>(
         &mut self,
         handle: FieldLockHandle,
         substate: S,
     ) -> Result<(), E> {
         let buf = scrypto_encode(&substate).unwrap();
-        self.field_lock_write(handle, buf)
+        self.field_write(handle, buf)
     }
 
-    fn field_lock_release(&mut self, handle: FieldLockHandle) -> Result<(), E>;
+    fn field_lock(&mut self, handle: FieldLockHandle) -> Result<(), E>;
+
+    fn field_close(&mut self, handle: FieldLockHandle) -> Result<(), E>;
 }
