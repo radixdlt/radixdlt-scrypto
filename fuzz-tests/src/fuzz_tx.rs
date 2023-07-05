@@ -152,7 +152,7 @@ impl TxFuzzer {
         // TODO: to consider if this is ok to allow it.
         let mut unstructured = Unstructured::new(&data);
 
-        let mut builder = ManifestBuilderV2::new();
+        let mut builder = ManifestBuilder::new();
         let mut buckets: Vec<ManifestBucket> =
             vec![ManifestBucket::arbitrary(&mut unstructured).unwrap()];
         let mut proof_ids: Vec<ManifestProof> =

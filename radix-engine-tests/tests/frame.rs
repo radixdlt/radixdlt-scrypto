@@ -19,7 +19,7 @@ fn test_max_call_depth_success() {
     // * 2-15: Caller::call x 14
     // ============================
     let num_calls = u32::try_from(DEFAULT_MAX_CALL_DEPTH).unwrap() - 1u32;
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -41,7 +41,7 @@ fn test_max_call_depth_failure() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recursion");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,

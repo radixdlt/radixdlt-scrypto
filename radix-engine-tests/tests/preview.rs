@@ -12,7 +12,7 @@ fn test_transaction_preview_cost_estimate() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .clear_auth_zone()
         .build();
@@ -65,7 +65,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     };
 
     // Check method authorization (withdrawal) without a proof in the auth zone
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 500)
         .withdraw_from_account(account, XRD, 1)
         .try_deposit_batch_or_abort(other_account)

@@ -38,7 +38,7 @@ macro_rules! assert_sign_extensions {
                     BTreeMap::new(),
                     OwnerRole::None,
                 );
-                let manifest = ManifestBuilderV2::new()
+                let manifest = ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .call_function(package_address, "Test", "f", manifest_args!())
                     .build();
@@ -65,7 +65,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
 
     // Act
     let mut test_runner = TestRunner::builder().build();
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
@@ -99,7 +99,7 @@ fn test_wasm_non_mvp_mutable_globals_export() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();

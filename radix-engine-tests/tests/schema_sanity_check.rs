@@ -379,7 +379,7 @@ pub fn test_fake_bucket() {
 
     // Test abusing vault put method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, XRD, 100)
             .take_from_worktop(XRD, 100, "bucket")

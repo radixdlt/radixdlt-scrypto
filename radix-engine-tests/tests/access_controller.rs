@@ -8,7 +8,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::access_controller::*;
 use scrypto_unit::{CustomGenesis, TestRunner};
-use transaction::builder::*;
+use transaction::prelude::*;
 
 #[test]
 pub fn creating_an_access_controller_succeeds() {
@@ -209,7 +209,7 @@ pub fn stop_timed_recovery_with_no_access_fails() {
     // Arrange
     let mut test_runner = AccessControllerTestRunner::new(Some(10));
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(
             test_runner.access_controller_address,
             "stop_timed_recovery",
@@ -1671,7 +1671,7 @@ impl AccessControllerTestRunner {
         let confirmation_role_badge = test_runner.create_fungible_resource(1.into(), 0, account);
 
         // Creating the access controller component
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, controlled_asset, 1)
             .take_all_from_worktop(controlled_asset, "controlled_asset")
@@ -1763,7 +1763,7 @@ impl AccessControllerTestRunner {
         let manifest_builder = if create_proof {
             self.manifest_builder(as_role)
         } else {
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
         };
 
         let manifest = manifest_builder
@@ -1997,13 +1997,13 @@ impl AccessControllerTestRunner {
         )
     }
 
-    fn manifest_builder(&self, role: Role) -> ManifestBuilderV2 {
+    fn manifest_builder(&self, role: Role) -> ManifestBuilder {
         let resource_address = match role {
             Role::Primary => self.primary_role_badge,
             Role::Recovery => self.recovery_role_badge,
             Role::Confirmation => self.confirmation_role_badge,
         };
-        ManifestBuilderV2::new().create_proof_from_account(self.account.0, resource_address)
+        ManifestBuilder::new().create_proof_from_account(self.account.0, resource_address)
     }
 
     fn set_current_minute(&mut self, minutes: i64) {

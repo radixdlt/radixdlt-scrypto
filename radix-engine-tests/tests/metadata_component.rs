@@ -11,7 +11,7 @@ fn can_globalize_with_component_metadata() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -37,7 +37,7 @@ fn can_set_metadata_after_globalized() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -62,7 +62,7 @@ fn can_remove_metadata() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -75,7 +75,7 @@ fn can_remove_metadata() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -96,7 +96,7 @@ fn can_set_metadata_through_manifest(entry: MetadataValue) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -109,7 +109,7 @@ fn can_set_metadata_through_manifest(entry: MetadataValue) {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .set_metadata(component_address, "key".to_string(), entry.clone())
         .build();
@@ -171,7 +171,7 @@ fn can_set_address_metadata_through_manifest() {
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = test_runner
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -185,7 +185,7 @@ fn can_set_address_metadata_through_manifest() {
 
     // Act
     let entry = MetadataValue::GlobalAddress(address.into());
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .set_metadata(component_address, "key".to_string(), entry.clone())
         .build();
@@ -209,7 +209,7 @@ fn cannot_set_address_metadata_after_freezing() {
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = test_runner
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -220,7 +220,7 @@ fn cannot_set_address_metadata_after_freezing() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .lock_metadata(component_address, "other_key")
         .build();
@@ -229,7 +229,7 @@ fn cannot_set_address_metadata_after_freezing() {
 
     // Act
     let entry = MetadataValue::GlobalAddress(address.into());
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .set_metadata(component_address, "other_key", entry.clone())
         .build();

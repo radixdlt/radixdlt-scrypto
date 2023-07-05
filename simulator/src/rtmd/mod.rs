@@ -5,8 +5,8 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::manifest::manifest_decode;
 use std::path::PathBuf;
 use std::str::FromStr;
-use transaction::builder::TransactionManifestV1;
 use transaction::manifest::decompile;
+use transaction::prelude::*;
 
 /// Radix transaction manifest decompiler
 #[derive(Parser, Debug)]

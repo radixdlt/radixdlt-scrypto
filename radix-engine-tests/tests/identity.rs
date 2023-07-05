@@ -18,7 +18,7 @@ fn cannot_securify_in_advanced_mode() {
     let component_address = test_runner.new_identity(pk.clone(), false);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -49,7 +49,7 @@ fn can_securify_from_virtual_identity() {
     let component_address = test_runner.new_identity(pk.clone(), true);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -71,7 +71,7 @@ fn cannot_securify_twice() {
     let mut test_runner = TestRunner::builder().build();
     let (pk, _, account) = test_runner.new_account(false);
     let component_address = test_runner.new_identity(pk.clone(), true);
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -85,7 +85,7 @@ fn cannot_securify_twice() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -114,7 +114,7 @@ fn can_set_metadata_after_securify() {
     let mut test_runner = TestRunner::builder().build();
     let (pk, _, account) = test_runner.new_account(false);
     let identity_address = test_runner.new_identity(pk.clone(), true);
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             identity_address,
@@ -128,7 +128,7 @@ fn can_set_metadata_after_securify() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account(account, IDENTITY_OWNER_BADGE)
         .set_metadata(
@@ -159,7 +159,7 @@ fn can_set_metadata_on_securified_identity() {
     let identity_address = test_runner.new_securified_identity(account);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account(account, IDENTITY_OWNER_BADGE)
         .set_metadata(
@@ -191,7 +191,7 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
     let (_, _, account) = test_runner.new_account(true);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             identity,
@@ -225,7 +225,7 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let identity = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_function(
                 IDENTITY_PACKAGE,
                 IDENTITY_BLUEPRINT,

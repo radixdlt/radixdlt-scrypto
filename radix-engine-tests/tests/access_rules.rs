@@ -61,7 +61,7 @@ fn can_call_protected_function_with_auth() {
     let (key, _priv, account) = test_runner.new_account(true);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .create_proof_from_account(account, XRD)
         .call_function(
             package_address,
@@ -244,7 +244,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     let mut test_runner = TestRunner::builder().without_trace().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
@@ -255,7 +255,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     };
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(
             component_address,
             "assert_access_rule",
@@ -282,7 +282,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
@@ -295,7 +295,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
         receipt.expect_commit(true).new_component_addresses()[0]
     };
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .create_proof_from_account(account, XRD)
         .call_method(
             component_address,
@@ -390,7 +390,7 @@ impl MutableAccessRulesTestRunner {
     pub fn create_component(roles: RolesInit, test_runner: &mut TestRunner) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_function(
                 package_address,
                 Self::BLUEPRINT_NAME,
@@ -407,7 +407,7 @@ impl MutableAccessRulesTestRunner {
     ) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_function(
                 package_address,
                 Self::BLUEPRINT_NAME,
@@ -512,8 +512,8 @@ impl MutableAccessRulesTestRunner {
         self.execute_manifest(manifest)
     }
 
-    pub fn manifest_builder() -> ManifestBuilderV2 {
-        ManifestBuilderV2::new()
+    pub fn manifest_builder() -> ManifestBuilder {
+        ManifestBuilder::new()
     }
 
     pub fn execute_manifest(&mut self, manifest: TransactionManifestV1) -> TransactionReceipt {

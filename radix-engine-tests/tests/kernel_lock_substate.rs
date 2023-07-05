@@ -24,7 +24,7 @@ use transaction::prelude::*;
 pub fn test_open_substate_of_invisible_package_address() {
     // Create dummy transaction
     let transaction =
-        TestTransaction::new_from_nonce(ManifestBuilderV2::new().lock_fee_from_faucet().build(), 1)
+        TestTransaction::new_from_nonce(ManifestBuilder::new().lock_fee_from_faucet().build(), 1)
             .prepare()
             .unwrap();
     let executable = transaction.get_executable(btreeset![]);

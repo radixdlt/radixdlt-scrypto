@@ -11,7 +11,7 @@ fn test_component() {
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Create component
-    let manifest1 = ManifestBuilderV2::new()
+    let manifest1 = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -27,7 +27,7 @@ fn test_component() {
     let component = receipt1.expect_commit(true).new_component_addresses()[0];
 
     // Call functions & methods
-    let manifest2 = ManifestBuilderV2::new()
+    let manifest2 = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -53,7 +53,7 @@ fn invalid_blueprint_name_should_cause_error() {
     let package_addr = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_addr,

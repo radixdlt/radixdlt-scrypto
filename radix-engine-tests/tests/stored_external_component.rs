@@ -10,7 +10,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -30,7 +30,7 @@ fn stored_component_addresses_are_invokable() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
-    let manifest1 = ManifestBuilderV2::new()
+    let manifest1 = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "ExternalComponent", "create", manifest_args!())
         .build();
@@ -40,7 +40,7 @@ fn stored_component_addresses_are_invokable() {
     let component1 = receipt1.expect_commit(true).new_component_addresses()[1];
 
     // Act
-    let manifest2 = ManifestBuilderV2::new()
+    let manifest2 = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component0, "func", manifest_args!())
         .build();
@@ -53,7 +53,7 @@ fn stored_component_addresses_are_invokable() {
     receipt2.expect_commit_success();
 
     // Act
-    let manifest2 = ManifestBuilderV2::new()
+    let manifest2 = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component1, "func", manifest_args!())
         .build();

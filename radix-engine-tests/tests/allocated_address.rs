@@ -12,7 +12,7 @@ fn test_create_and_return() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -36,7 +36,7 @@ fn test_create_and_drop() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -60,7 +60,7 @@ fn test_create_and_pass_address() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -82,7 +82,7 @@ fn test_create_and_call() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -106,7 +106,7 @@ fn test_create_and_consume_within_frame() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -128,7 +128,7 @@ fn test_create_and_consume_with_mismatching_blueprint() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -157,7 +157,7 @@ fn test_create_and_consume_in_another_frame() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -179,7 +179,7 @@ fn test_create_and_store_in_key_value_store() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -201,7 +201,7 @@ fn test_create_and_store_in_metadata() {
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,

@@ -1,6 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
-use transaction::builder::ManifestBuilderV2;
+use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 use crate::utils::*;
@@ -48,7 +48,7 @@ impl CallFunction {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut builder = ManifestBuilderV2::new();
+        let mut builder = ManifestBuilder::new();
         builder = builder.lock_fee_from_faucet();
         for resource_specifier in proofs {
             builder = create_proof_from_account(
@@ -92,14 +92,14 @@ impl CallFunction {
     /// otherwise, they will be taken from transaction worktop.
     pub fn add_call_function_instruction_with_schema<'a>(
         &self,
-        builder: ManifestBuilderV2,
+        builder: ManifestBuilder,
         address_bech32_decoder: &AddressBech32Decoder,
         package_address: PackageAddress,
         blueprint_name: String,
         function_name: String,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-    ) -> Result<ManifestBuilderV2, Error> {
+    ) -> Result<ManifestBuilder, Error> {
         let bp_interface = export_blueprint_interface(package_address, &blueprint_name)?;
 
         let function_schema = bp_interface

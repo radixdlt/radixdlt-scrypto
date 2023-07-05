@@ -76,7 +76,7 @@ impl NewBadgeFixed {
             roles: RolesInit::default(),
         };
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .new_badge_fixed(OwnerRole::None, metadata, self.total_supply)
             .try_deposit_batch_or_refund(default_account)

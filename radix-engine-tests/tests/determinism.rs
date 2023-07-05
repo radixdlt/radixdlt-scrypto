@@ -45,7 +45,7 @@ fn create_and_pass_multiple_proofs() -> Hash {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let (mut builder, namer) = ManifestBuilderV2::new_with_namer();
+    let (mut builder, namer) = ManifestBuilder::new_with_namer();
     builder = builder.lock_fee_from_faucet();
     let mut proof_ids: Vec<_> = vec![];
     for _ in 0..20 {

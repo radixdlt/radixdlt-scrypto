@@ -21,7 +21,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
     let expected_unix_time_rounded_to_minutes = 1669663680;
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             CONSENSUS_MANAGER,
@@ -56,7 +56,7 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -84,7 +84,7 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             CONSENSUS_MANAGER,
@@ -115,7 +115,7 @@ fn test_date_time_conversions() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,

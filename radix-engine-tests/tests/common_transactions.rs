@@ -283,7 +283,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
         test_runner.create_fungible_resource(dec!("1"), 0, component_address);
 
     let manifest = match resource_type {
-        ResourceType::Fungible { divisibility } => ManifestBuilderV2::new()
+        ResourceType::Fungible { divisibility } => ManifestBuilder::new()
             .create_fungible_resource(
                 OwnerRole::None,
                 false,
@@ -299,7 +299,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
                 None,
             )
             .build(),
-        ResourceType::NonFungible { id_type } => ManifestBuilderV2::new()
+        ResourceType::NonFungible { id_type } => ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 id_type,

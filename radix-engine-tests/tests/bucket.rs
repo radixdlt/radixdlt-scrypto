@@ -15,7 +15,7 @@ fn test_bucket_internal(method_name: &str, args: ManifestValue, expect_success: 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .call_function(package_address, "BucketTest", method_name, args)
         .try_deposit_batch_or_abort(account)
@@ -99,7 +99,7 @@ fn test_bucket_of_badges() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .call_function(package_address, "BadgeTest", "combine", manifest_args!())
         .call_function(package_address, "BadgeTest", "split", manifest_args!())
@@ -123,7 +123,7 @@ fn test_take_with_invalid_granularity() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .withdraw_from_account(account, resource_address, 100)
         .take_all_from_worktop(resource_address, "bucket")
@@ -161,7 +161,7 @@ fn test_take_with_negative_amount() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .withdraw_from_account(account, resource_address, 100)
         .take_all_from_worktop(resource_address, "bucket")
@@ -199,7 +199,7 @@ fn create_empty_bucket() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .take_all_from_worktop(XRD, "bucket1")
         .return_to_worktop("bucket1")
@@ -229,7 +229,7 @@ fn test_drop_locked_fungible_bucket() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .call_function(
             package_address,
@@ -264,7 +264,7 @@ fn test_drop_locked_non_fungible_bucket() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .call_function(
             package_address,

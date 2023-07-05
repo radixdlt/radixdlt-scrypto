@@ -17,8 +17,8 @@ use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
 use scrypto::prelude::LOCKED;
 use std::path::{Path, PathBuf};
-use transaction::prelude::*;
 use transaction::model::{Executable, TestTransaction};
+use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 use crate::Compile;
@@ -90,7 +90,7 @@ impl BasicRocksdbTestRunner {
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "free_xrd")
@@ -102,7 +102,7 @@ impl BasicRocksdbTestRunner {
     }
 
     pub fn new_account_advanced(&mut self, owner_rule: OwnerRole) -> ComponentAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .new_account_advanced(owner_rule)
             .build();
@@ -111,7 +111,7 @@ impl BasicRocksdbTestRunner {
 
         let account = receipt.expect_commit(true).new_component_addresses()[0];
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .try_deposit_batch_or_abort(account)
@@ -160,7 +160,7 @@ impl BasicRocksdbTestRunner {
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .publish_package_advanced(None, code, definition, metadata, owner_rule)
             .build();
@@ -175,7 +175,7 @@ impl BasicRocksdbTestRunner {
         definition: PackageDefinition,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .publish_package_with_owner(code, definition, owner_badge)
             .build();
@@ -253,7 +253,7 @@ impl BasicRocksdbTestRunner {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_fungible_resource(
                 OwnerRole::None,

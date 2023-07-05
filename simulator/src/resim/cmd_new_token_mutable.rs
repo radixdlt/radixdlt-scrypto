@@ -74,7 +74,7 @@ impl NewTokenMutable {
             roles: RolesInit::default(),
         };
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .new_token_mutable(metadata, self.minter_badge.clone().into())
             .build();

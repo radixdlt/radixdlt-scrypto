@@ -13,7 +13,7 @@ fn cannot_burn_frozen_burn_vault() {
     let token_address = test_runner.create_freezeable_token(account);
     let vaults = test_runner.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_burn(InternalAddress::new_or_panic(vault_id.into()))
         .build();
@@ -21,7 +21,7 @@ fn cannot_burn_frozen_burn_vault() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .burn_in_account(account, token_address, 1)
         .build();
@@ -45,7 +45,7 @@ fn cannot_deposit_into_frozen_deposit_vault() {
     let token_address = test_runner.create_freezeable_token(account);
     let vaults = test_runner.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_deposit(InternalAddress::new_or_panic(vault_id.into()))
         .build();
@@ -53,7 +53,7 @@ fn cannot_deposit_into_frozen_deposit_vault() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, token_address, 1)
         .deposit_batch(account)
@@ -78,7 +78,7 @@ fn cannot_withdraw_from_frozen_vault() {
     let token_address = test_runner.create_freezeable_token(account);
     let vaults = test_runner.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
@@ -86,7 +86,7 @@ fn cannot_withdraw_from_frozen_vault() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, token_address, 1)
         .deposit_batch(account)
@@ -112,7 +112,7 @@ fn cannot_recall_from_frozen_vault() {
     let vaults = test_runner.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
     let vault_address = InternalAddress::new_or_panic(vault_id.into());
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_withdraw(vault_address)
         .build();
@@ -120,7 +120,7 @@ fn cannot_recall_from_frozen_vault() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .recall(vault_address, 1)
         .deposit_batch(account)
@@ -140,13 +140,13 @@ fn can_withdraw_from_unfrozen_vault() {
     let token_address = test_runner.create_freezeable_token(account);
     let vaults = test_runner.get_component_vaults(account, token_address);
     let vault_id = vaults[0];
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .unfreeze_withdraw(InternalAddress::new_or_panic(vault_id.into()))
         .build();
@@ -155,7 +155,7 @@ fn can_withdraw_from_unfrozen_vault() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, token_address, 1)
         .deposit_batch(account)
@@ -181,7 +181,7 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
     ids.insert(NonFungibleLocalId::integer(2));
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .freeze_withdraw(internal_address)
         .build();
@@ -191,7 +191,7 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .assert_worktop_contains_non_fungibles(resource_address, &BTreeSet::new())
         .recall_non_fungibles(internal_address, ids.clone())
@@ -210,7 +210,7 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
     });
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .unfreeze_withdraw(internal_address)
         .build();

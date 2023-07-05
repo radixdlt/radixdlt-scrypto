@@ -13,7 +13,7 @@ fn can_insert_in_child_nodes() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -35,7 +35,7 @@ fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -57,7 +57,7 @@ fn cyclic_map_fails_execution() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "CyclicMap", "new", manifest_args!())
         .build();
@@ -81,7 +81,7 @@ fn self_cyclic_map_fails_execution() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -110,7 +110,7 @@ fn cannot_remove_kv_stores() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -123,7 +123,7 @@ fn cannot_remove_kv_stores() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "clear_vector", manifest_args!())
         .build();
@@ -145,7 +145,7 @@ fn cannot_overwrite_kv_stores() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -158,7 +158,7 @@ fn cannot_overwrite_kv_stores() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "overwrite_kv_store", manifest_args!())
         .build();
@@ -182,7 +182,7 @@ fn create_kv_store_and_get() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -204,7 +204,7 @@ fn create_kv_store_and_put() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -226,7 +226,7 @@ fn can_reference_in_memory_vault() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -248,7 +248,7 @@ fn can_reference_deep_in_memory_value() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -270,7 +270,7 @@ fn can_reference_deep_in_memory_vault() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -292,7 +292,7 @@ fn cannot_directly_reference_inserted_vault() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -321,7 +321,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -350,7 +350,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -379,7 +379,7 @@ fn multiple_reads_should_work() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Basic", "multiple_reads", manifest_args!())
         .build();
@@ -396,7 +396,7 @@ fn remove_from_local_map_should_work() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -416,7 +416,7 @@ fn remove_from_stored_map_when_empty_should_work() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Basic", "new", manifest_args!())
         .build();
@@ -424,7 +424,7 @@ fn remove_from_stored_map_when_empty_should_work() {
     let component = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component,
@@ -446,7 +446,7 @@ fn remove_from_stored_map_when_not_empty_should_work() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -459,7 +459,7 @@ fn remove_from_stored_map_when_not_empty_should_work() {
     let component = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component, "remove", manifest_args!("key".to_string()))
         .build();
@@ -477,7 +477,7 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "KVVault", "new", manifest_args!())
         .build();
@@ -485,7 +485,7 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
     let component = receipt.expect_commit_success().new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component, "remove", manifest_args!("key".to_string()))
         .build();
@@ -509,7 +509,7 @@ fn nested_kv_stores_works() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,

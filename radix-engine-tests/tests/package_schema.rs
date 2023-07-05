@@ -16,7 +16,7 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
     let package_address = test_runner.compile_and_publish("./tests/blueprints/package_schema");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "SchemaComponent2", method_name, args)
         .build();

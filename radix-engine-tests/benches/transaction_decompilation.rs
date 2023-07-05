@@ -76,7 +76,7 @@ fn compiled_notarized_transaction() -> Vec<u8> {
     let component_address = ComponentAddress::virtual_account_from_public_key(&public_key);
 
     let manifest = {
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee(component_address, 500)
             .create_non_fungible_resource(
                 OwnerRole::None,

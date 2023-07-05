@@ -12,7 +12,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500, token_resource_address, 1)
         .try_deposit_batch_or_abort(other_account)
         .build();
@@ -35,7 +35,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         test_runner.create_restricted_transfer_token(account);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw_non_fungibles(
             account,
             500,

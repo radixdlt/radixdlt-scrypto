@@ -15,7 +15,7 @@ fn test_trace_resource_transfers() {
     let transfer_amount = 10u8;
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 500)
         .call_function(
             package_address,
@@ -118,7 +118,7 @@ fn test_trace_fee_payments() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     // Prepare the component that will pay the fee
-    let manifest_prepare = ManifestBuilderV2::new()
+    let manifest_prepare = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
         .call_function(
@@ -140,7 +140,7 @@ fn test_trace_fee_payments() {
         .clone();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             funded_component.clone(),
@@ -173,7 +173,7 @@ fn test_instruction_traces() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
         .take_all_from_worktop(XRD, "bucket")
@@ -393,7 +393,7 @@ fn test_worktop_changes() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .withdraw_from_account(account, fungible_resource, 100)
         .withdraw_non_fungibles_from_account(

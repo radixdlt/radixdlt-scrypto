@@ -9,7 +9,7 @@ fn vector_of_buckets_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .take_all_from_worktop(XRD, "bucket1")
         .take_all_from_worktop(XRD, "bucket2")
@@ -35,7 +35,7 @@ fn tuple_of_buckets_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .take_all_from_worktop(XRD, "bucket1")
         .take_all_from_worktop(XRD, "bucket2")
@@ -61,7 +61,7 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .take_all_from_worktop(XRD, "bucket1")
         .take_all_from_worktop(XRD, "bucket2")
@@ -90,7 +90,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .take_all_from_worktop(XRD, "bucket1")
         .take_all_from_worktop(XRD, "bucket2")
@@ -119,7 +119,7 @@ fn some_optional_bucket_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .take_all_from_worktop(XRD, "bucket1")
         .with_namer(|builder, namer| {
@@ -144,7 +144,7 @@ fn none_optional_bucket_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,

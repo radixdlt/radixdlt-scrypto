@@ -57,7 +57,7 @@ fn bench_radiswap(c: &mut Criterion) {
     let eth = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
     let component_address: ComponentAddress = test_runner
         .execute_manifest(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
                 .call_function(package_address, "Radiswap", "new", manifest_args!(btc, eth))
                 .try_deposit_batch_or_abort(account2)
@@ -72,7 +72,7 @@ fn bench_radiswap(c: &mut Criterion) {
     let eth_init_amount = Decimal::from(300_000);
     test_runner
         .execute_manifest(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
                 .withdraw_from_account(account2, btc, btc_init_amount)
                 .withdraw_from_account(account2, eth, eth_init_amount)
@@ -97,7 +97,7 @@ fn bench_radiswap(c: &mut Criterion) {
     let btc_amount = Decimal::from(10_000);
     test_runner
         .execute_manifest(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
                 .withdraw_from_account(account2, btc, btc_amount)
                 .try_deposit_batch_or_abort(account3)
@@ -108,7 +108,7 @@ fn bench_radiswap(c: &mut Criterion) {
 
     // Swap 1 BTC into ETH
     let btc_to_swap = Decimal::from(1);
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account3)
         .withdraw_from_account(account3, btc, btc_to_swap)
         .take_all_from_worktop(btc, "to_trade")
@@ -126,7 +126,7 @@ fn bench_radiswap(c: &mut Criterion) {
     for _ in 0..100 {
         test_runner
             .execute_manifest(
-                ManifestBuilderV2::new()
+                ManifestBuilder::new()
                     .lock_fee_from_faucet()
                     .get_free_xrd_from_faucet()
                     .try_deposit_batch_or_abort(account3)

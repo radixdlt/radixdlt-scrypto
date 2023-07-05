@@ -14,7 +14,7 @@ fn can_set_identity_metadata_with_owner(is_virtual: bool) {
     let component_address = test_runner.new_identity(pk.clone(), is_virtual);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .set_metadata(
             component_address,
@@ -52,7 +52,7 @@ fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
     let component_address = test_runner.new_identity(pk.clone(), is_virtual);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .set_metadata(
             component_address,

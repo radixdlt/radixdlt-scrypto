@@ -32,7 +32,7 @@ fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
     let (_, _, storing_account) = test_runner.new_account(true);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             account,
@@ -89,7 +89,7 @@ where
     let (_, _, other_account) = test_runner.new_account(true);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500, XRD, 1)
         .try_deposit_batch_or_refund(other_account)
         .build();
@@ -123,7 +123,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     let resource_address = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500, resource_address, 1)
         .try_deposit_batch_or_refund(other_account)
         .build();
@@ -151,7 +151,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_account(is_virtual);
     let (_, _, other_account) = test_runner.new_account(is_virtual);
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 500u32)
         .withdraw_from_account(other_account, XRD, 1)
         .try_deposit_batch_or_refund(account)
@@ -199,7 +199,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_account(use_virtual);
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500u32, XRD, 1)
         .take_all_from_worktop(XRD, "xrd")
         .try_deposit_or_abort(account, "xrd")
@@ -240,7 +240,7 @@ fn account_to_bucket_to_virtual_account() {
 #[test]
 fn create_account_and_bucket_fail() {
     let mut test_runner = TestRunner::builder().build();
-    let manifest = ManifestBuilderV2::new().new_account().build();
+    let manifest = ManifestBuilder::new().new_account().build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
     receipt.expect_specific_failure(|e| {
         matches!(
@@ -279,7 +279,7 @@ fn securified_account_is_owned_by_correct_owner_badge() {
     let (pk, _, account) = test_runner.new_account(true);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             account,

@@ -7,7 +7,7 @@ fn stored_resource_is_invokeable() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_resource");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "StoredResource", "create", manifest_args!())
         .build();
@@ -15,7 +15,7 @@ fn stored_resource_is_invokeable() {
     let component = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest2 = ManifestBuilderV2::new()
+    let manifest2 = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component, "total_supply", manifest_args!())
         .build();

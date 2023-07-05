@@ -12,7 +12,7 @@ fn local_component_should_return_correct_info() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -34,7 +34,7 @@ fn local_component_should_be_callable_read_only() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -56,7 +56,7 @@ fn local_component_should_be_callable_with_write() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -80,7 +80,7 @@ fn recursion_bomb() {
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, Decimal::from(4u32))
         .take_all_from_worktop(XRD, "xrd")
@@ -111,7 +111,7 @@ fn recursion_bomb_to_failure() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, Decimal::from(100u32))
         .take_all_from_worktop(XRD, "bucket")
@@ -150,7 +150,7 @@ fn recursion_bomb_2() {
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, Decimal::from(4u32))
         .take_all_from_worktop(XRD, "bucket")
@@ -181,7 +181,7 @@ fn recursion_bomb_2_to_failure() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, Decimal::from(100u32))
         .take_all_from_worktop(XRD, "bucket")

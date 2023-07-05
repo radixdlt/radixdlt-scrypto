@@ -17,7 +17,7 @@ fn test_auth_rule(
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, 1)
         .try_deposit_batch_or_abort(other_account)
@@ -221,7 +221,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
         .take_all_from_worktop(XRD, "free_xrd")
@@ -248,7 +248,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
         .take_all_from_worktop(XRD, "free_xrd")
@@ -275,7 +275,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
         .take_from_worktop(XRD, dec!("1"), "bucket")
@@ -301,7 +301,7 @@ fn can_update_updatable_owner_role_account() {
     let account = test_runner.new_account_advanced(OwnerRole::Updatable(xrd_auth));
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
         .take_all_from_worktop(XRD, "bucket")
@@ -325,7 +325,7 @@ fn cannot_set_royalty_on_accounts() {
     let mut test_runner = TestRunner::builder().build();
     let account = test_runner.new_account_advanced(OwnerRole::Updatable(AccessRule::AllowAll));
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .set_component_royalty(account, "deposit", RoyaltyAmount::Free)
         .build();

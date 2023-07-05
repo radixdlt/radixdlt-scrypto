@@ -19,7 +19,7 @@ fn test_loop() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
@@ -42,7 +42,7 @@ fn test_finish_before_system_loan_limit() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
@@ -65,7 +65,7 @@ fn test_loop_out_of_cost_unit() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
@@ -89,7 +89,7 @@ fn test_recursion() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
@@ -112,7 +112,7 @@ fn test_recursion_stack_overflow() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
@@ -139,7 +139,7 @@ fn test_grow_memory_within_limit() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
@@ -166,7 +166,7 @@ fn test_grow_memory_beyond_limit() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
@@ -199,7 +199,7 @@ fn test_grow_memory_by_more_than_65536() {
         BTreeMap::new(),
         OwnerRole::None,
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();

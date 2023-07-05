@@ -11,7 +11,7 @@ fn stored_bucket_in_committed_component_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/stored_values");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -42,7 +42,7 @@ fn stored_bucket_in_owned_component_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/stored_values");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,

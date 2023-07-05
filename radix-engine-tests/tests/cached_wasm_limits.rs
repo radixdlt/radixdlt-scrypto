@@ -39,7 +39,7 @@ fn publishing_many_packages_should_not_cause_system_failure() {
 
     // Act
     for _ in 0..(DEFAULT_WASM_ENGINE_CACHE_SIZE + 200) {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .publish_package_advanced(
                 None,
@@ -53,7 +53,7 @@ fn publishing_many_packages_should_not_cause_system_failure() {
         let result = receipt.expect_commit_success();
         let package_address = result.new_package_addresses()[0];
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .call_function(package_address, "Test", "f", manifest_args!())
             .build();

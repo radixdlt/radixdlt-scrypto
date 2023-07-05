@@ -15,7 +15,7 @@ fn can_mint_non_fungible_with_global() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -42,7 +42,7 @@ fn create_non_fungible_mutable() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -67,7 +67,7 @@ fn can_burn_non_fungible() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -85,7 +85,7 @@ fn can_burn_non_fungible() {
     let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, first_id.unwrap());
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 1)
         .burn_non_fungible_from_worktop(non_fungible_global_id.clone())
@@ -115,7 +115,7 @@ fn test_take_non_fungible() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -139,7 +139,7 @@ fn test_take_non_fungibles() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -160,7 +160,7 @@ fn can_update_non_fungible_when_mutable() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -182,7 +182,7 @@ fn cannot_update_non_fungible_when_not_mutable() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -211,7 +211,7 @@ fn cannot_update_non_fungible_when_does_not_exist() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -247,7 +247,7 @@ fn can_call_non_fungible_data_reference() {
         NonFungibleGlobalId::from_public_key(&public_key),
     );
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -264,7 +264,7 @@ fn can_call_non_fungible_data_reference() {
     let resource_address = receipt.expect_commit_success().new_resource_addresses()[1];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -286,7 +286,7 @@ fn cannot_have_non_fungible_data_ownership() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -313,7 +313,7 @@ fn can_update_and_get_non_fungible() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -335,7 +335,7 @@ fn can_update_and_get_non_fungible_reference() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -358,7 +358,7 @@ fn test_non_fungible_part_1() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -399,7 +399,7 @@ fn test_non_fungible_part_2() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -434,7 +434,7 @@ fn test_singleton_non_fungible() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -460,7 +460,7 @@ fn test_mint_update_and_withdraw() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // create non-fungible
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -478,7 +478,7 @@ fn test_mint_update_and_withdraw() {
     let nft_resource_address = receipt.expect_commit(true).new_resource_addresses()[1];
 
     // update data (the NFT is referenced within a Proof)
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, badge_resource_address, 1)
         .create_proof_from_account_of_amount(account, nft_resource_address, 1)
@@ -506,7 +506,7 @@ fn test_mint_update_and_withdraw() {
     nfid_list.insert(NonFungibleLocalId::integer(0)); // ID from NonFungibleTest::create_non_fungible_mutable
 
     // transfer
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, nft_resource_address, 1)
         .assert_worktop_contains_any(nft_resource_address)
@@ -529,7 +529,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -556,7 +556,7 @@ fn create_bytes_non_fungible() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -580,7 +580,7 @@ fn create_string_non_fungible() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -604,7 +604,7 @@ fn create_ruid_non_fungible() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -630,7 +630,7 @@ fn can_get_total_supply() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -654,7 +654,7 @@ fn can_mint_ruid_non_fungible_in_scrypto() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -691,7 +691,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -704,7 +704,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
     let resource_address = receipt.expect_commit_success().new_resource_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .mint_ruid_non_fungible(
             resource_address,
@@ -731,7 +731,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -744,7 +744,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .mint_ruid_non_fungible(
             resource_address,
@@ -771,7 +771,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     let mut test_runner = TestRunner::builder().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -787,7 +787,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
         NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::ruid([0x11; 32]));
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 1)
         .burn_non_fungible_from_worktop(non_fungible_global_id.clone())

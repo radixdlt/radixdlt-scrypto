@@ -384,7 +384,7 @@ fn should_not_be_able_to_create_genesis_helper() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             GENESIS_HELPER_PACKAGE,
@@ -412,7 +412,7 @@ fn should_not_be_able_to_call_genesis_helper() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(GENESIS_HELPER, "wrap_up", manifest_args!())
         .build();

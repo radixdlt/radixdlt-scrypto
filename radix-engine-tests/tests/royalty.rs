@@ -18,7 +18,7 @@ fn test_component_royalty() {
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,
@@ -35,7 +35,7 @@ fn test_component_royalty() {
     // Call the paid method
     let account_pre_balance = test_runner.account_balance(account, XRD).unwrap();
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
@@ -68,7 +68,7 @@ fn test_component_royalty_in_usd() {
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,
@@ -84,7 +84,7 @@ fn test_component_royalty_in_usd() {
     // Call the paid method
     let account_pre_balance = test_runner.account_balance(account, XRD).unwrap();
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method_usd", manifest_args!())
             .build(),
@@ -121,7 +121,7 @@ fn test_package_royalty() {
 
     let account_pre_balance = test_runner.account_balance(account, XRD).unwrap();
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
@@ -158,7 +158,7 @@ fn test_royalty_accumulation_when_success() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
@@ -188,7 +188,7 @@ fn test_royalty_accumulation_when_failure() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method_panic", manifest_args!())
             .build(),
@@ -218,7 +218,7 @@ fn test_claim_royalty() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_method(component_address, "paid_method", manifest_args!())
             .build(),
@@ -237,7 +237,7 @@ fn test_claim_royalty() {
 
     // Claim package royalty
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
                 account,
@@ -253,7 +253,7 @@ fn test_claim_royalty() {
 
     // Claim component royalty
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .claim_component_royalties(component_address)
             .try_deposit_batch_or_abort(account)
@@ -292,7 +292,7 @@ fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: Roy
         }
         PackageRoyaltyConfig::Disabled => {}
     }
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_with_owner(code, definition, owner_badge_addr)
         .build();
@@ -341,7 +341,7 @@ fn cannot_initialize_component_royalty_if_greater_than_allowed() {
     // Act
     let max_royalty_allowed = Decimal::try_from(DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD).unwrap();
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,
@@ -379,7 +379,7 @@ fn cannot_set_component_royalty_if_greater_than_allowed() {
 
     // Act
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
                 account,
@@ -418,7 +418,7 @@ fn cannot_set_royalty_after_locking() {
         owner_badge_resource,
     ) = set_up_package_and_component();
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
                 account,
@@ -433,7 +433,7 @@ fn cannot_set_royalty_after_locking() {
 
     // Act
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
                 account,
@@ -479,7 +479,7 @@ fn set_up_package_and_component() -> (
 
     // Enable package royalty
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
                 account,
@@ -493,7 +493,7 @@ fn set_up_package_and_component() -> (
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,

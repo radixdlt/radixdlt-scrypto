@@ -17,7 +17,7 @@ fn package_owner_can_claim_royalty() {
 
     // Act
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
                 account,
@@ -48,7 +48,7 @@ fn non_package_owner_cannot_claim_royalty() {
 
     // Act
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee(account, 5000)
             .claim_package_royalties(package_address)
             .try_deposit_batch_or_abort(account)
@@ -74,7 +74,7 @@ fn component_owner_can_set_royalty() {
 
     // Act
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
                 account,
@@ -102,7 +102,7 @@ fn non_component_owner_cannot_set_royalty() {
 
     // Negative case
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .set_component_royalty(
                 component_address,
@@ -131,7 +131,7 @@ fn component_owner_can_claim_royalty() {
 
     // Act
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
                 account,
@@ -156,7 +156,7 @@ fn non_component_owner_cannot_claim_royalty() {
 
     // Act
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee(account, 5000)
             .claim_component_royalties(component_address)
             .try_deposit_batch_or_abort(account)
@@ -186,7 +186,7 @@ fn set_up_package_and_component() -> (
     // Publish package
     let (code, definition) = Compile::compile("./tests/blueprints/royalty-auth");
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .publish_package_with_owner(code, definition, owner_badge_addr.clone())
             .build(),
@@ -196,7 +196,7 @@ fn set_up_package_and_component() -> (
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .create_proof_from_account_of_non_fungibles(
                 account,

@@ -12,7 +12,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
 
     // Act 1 - Small Depth
     let depth = 10usize;
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -26,7 +26,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
 
     // Act 2 - Very Large Depth - we get a panic at encoding time in the Scrypto WASM
     let depth = 100usize;
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -50,7 +50,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/deep_sbor");
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "DeepStruct", "new", manifest_args!())
         .build();
@@ -59,7 +59,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
 
     // Act 1 - Small Depth - Succeeds
     let depth = 10usize;
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "set_depth", manifest_args!(XRD, depth))
         .build();
@@ -68,7 +68,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
 
     // Act 2 - Very Large Depth - we get a panic at encoding time in the Scrypto WASM
     let depth = 100usize;
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(component_address, "set_depth", manifest_args!(XRD, depth))
         .build();
@@ -118,7 +118,7 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> Transact
     );
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();

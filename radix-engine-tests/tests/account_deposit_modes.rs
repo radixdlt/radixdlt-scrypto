@@ -476,7 +476,7 @@ impl AccountDepositModesTestRunner {
             }
         };
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 1)
             .take_all_from_worktop(resource_address, "bucket")
             .with_namer(|builder, namer| {
@@ -510,7 +510,7 @@ impl AccountDepositModesTestRunner {
             }
         };
 
-        let (builder, namer) = ManifestBuilderV2::new_with_namer();
+        let (builder, namer) = ManifestBuilder::new_with_namer();
         let manifest = builder
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "free_tokens")
@@ -532,7 +532,7 @@ impl AccountDepositModesTestRunner {
         default_deposit_rule: AccountDefaultDepositRule,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_method(
                 self.component_address,
                 ACCOUNT_CHANGE_DEFAULT_DEPOSIT_RULE_IDENT,
@@ -550,7 +550,7 @@ impl AccountDepositModesTestRunner {
         resource_deposit_configuration: ResourceDepositRule,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_method(
                 self.component_address,
                 ACCOUNT_CONFIGURE_RESOURCE_DEPOSIT_RULE_IDENT,
@@ -621,7 +621,7 @@ impl AccountDepositModesTestRunner {
         let balance = self
             .test_runner
             .account_balance(self.component_address, resource_address);
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .withdraw_from_account(self.component_address, resource_address, balance.unwrap())
             .try_deposit_batch_or_refund(virtual_account)
             .build();

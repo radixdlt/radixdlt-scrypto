@@ -17,7 +17,7 @@ fn clear_auth_zone_should_not_drop_named_proofs() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
         .create_proof_from_auth_zone(XRD, "proof")
@@ -44,7 +44,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
         .create_proof_from_auth_zone(XRD, "proof")
@@ -80,7 +80,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
     let other_account = test_runner.new_account_advanced(OwnerRole::Updatable(rule));
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
         .clear_signature_proofs()
@@ -111,7 +111,7 @@ fn clear_signature_proofs_should_not_invalid_physical_proof() {
     let other_account = test_runner.new_account_advanced(OwnerRole::Updatable(rule));
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
         .clear_signature_proofs()

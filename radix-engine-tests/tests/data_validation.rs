@@ -4,12 +4,12 @@ use radix_engine::{
     types::*,
 };
 use scrypto_unit::*;
-use transaction::builder::*;
+use transaction::prelude::*;
 
 fn setup_component(test_runner: &mut TestRunner) -> ComponentAddress {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
 
-    let setup_manifest = ManifestBuilderV2::new()
+    let setup_manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "DataValidation", "new", manifest_args!())
         .build();
@@ -25,7 +25,7 @@ fn create_manifest_with_middle(
     component_address: ComponentAddress,
     constructor: ManifestConstructor,
 ) -> TransactionManifestV1 {
-    ManifestBuilderV2::new()
+    ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
         .take_from_worktop(XRD, dec!("1"), "bucket")
@@ -47,12 +47,12 @@ fn create_manifest_with_middle(
 }
 
 type ManifestConstructor = fn(
-    builder: ManifestBuilderV2,
+    builder: ManifestBuilder,
     component: ComponentAddress,
     empty_bucket: ManifestBucket,
     full_bucket: ManifestBucket,
     proof: ManifestProof,
-) -> ManifestBuilderV2;
+) -> ManifestBuilder;
 
 /// This test just checks that the manifest constructor and DataValidation components work right -
 /// to ensure the other tests in this file are valid tests.
@@ -169,7 +169,7 @@ fn cannot_return_proof_for_bucket() {
     let component_address = setup_component(&mut test_runner);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -195,7 +195,7 @@ fn cannot_return_bucket_for_proof() {
     let component_address = setup_component(&mut test_runner);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -221,7 +221,7 @@ fn cannot_create_object_with_mismatching_data() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -248,7 +248,7 @@ fn cannot_update_substate_with_mismatching_data() {
     let component_address = setup_component(&mut test_runner);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -275,7 +275,7 @@ fn pass_own_as_reference_trigger_move_error_rather_than_payload_validation_error
     let component_address = setup_component(&mut test_runner);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -303,7 +303,7 @@ fn test_receive_reference_of_specific_blueprint() {
     let component_address = setup_component(&mut test_runner);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -324,7 +324,7 @@ fn test_receive_reference_not_of_specific_blueprint() {
     let component_address = setup_component(&mut test_runner);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,

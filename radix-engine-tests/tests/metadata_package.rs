@@ -10,7 +10,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
@@ -24,7 +24,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let package_address = receipt.expect_commit(true).new_package_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .set_metadata(
             package_address,
@@ -53,7 +53,7 @@ fn can_set_package_metadata_with_owner() {
     let mut test_runner = TestRunner::builder().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package(code, single_function_package_definition("Test", "f"))
         .try_deposit_batch_or_abort(account)
@@ -62,7 +62,7 @@ fn can_set_package_metadata_with_owner() {
     let package_address = receipt.expect_commit(true).new_package_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account(account, PACKAGE_OWNER_BADGE)
         .set_metadata(

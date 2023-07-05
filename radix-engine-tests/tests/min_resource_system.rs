@@ -19,7 +19,7 @@ fn test_mini_resource_system(test_case: &str, expected: ExpectedBehavior) {
 
     // Run test case
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(package_address, "MiniUser", test_case, manifest_args!())
             .build(),

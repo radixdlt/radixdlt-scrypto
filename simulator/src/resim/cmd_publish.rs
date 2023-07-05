@@ -259,7 +259,7 @@ impl Publish {
                 .map(|owner_badge| owner_badge.0)
                 .unwrap_or(get_default_owner_badge()?);
 
-            let manifest = ManifestBuilderV2::new()
+            let manifest = ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .publish_package_with_owner(
                     code,

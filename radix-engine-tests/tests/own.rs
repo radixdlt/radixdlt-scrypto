@@ -12,7 +12,7 @@ fn mis_typed_own_passed_to_worktop_drop_function() {
 
     // Run manifest
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee(account, 500)
             .take_from_worktop(XRD, Decimal::ZERO, "bucket")
             .with_namer(|builder, namer| {

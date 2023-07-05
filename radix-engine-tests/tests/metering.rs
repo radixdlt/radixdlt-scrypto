@@ -216,7 +216,7 @@ fn run_basic_transfer(mode: Mode) {
     let (_, _, account2) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
         .withdraw_from_account(account1, XRD, 100)
         .try_deposit_batch_or_abort(account2)
@@ -241,7 +241,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
     ));
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
         .withdraw_from_account(account1, XRD, 100)
         .try_deposit_batch_or_abort(account2)
@@ -280,7 +280,7 @@ fn run_radiswap(mode: Mode) {
     let eth = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
     let component_address: ComponentAddress = test_runner
         .execute_manifest(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
                 .call_function(package_address, "Radiswap", "new", manifest_args!(btc, eth))
                 .try_deposit_batch_or_abort(account2)
@@ -295,7 +295,7 @@ fn run_radiswap(mode: Mode) {
     let eth_init_amount = Decimal::from(300_000);
     test_runner
         .execute_manifest(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
                 .withdraw_from_account(account2, btc, btc_init_amount)
                 .withdraw_from_account(account2, eth, eth_init_amount)
@@ -318,7 +318,7 @@ fn run_radiswap(mode: Mode) {
     let btc_amount = Decimal::from(10_000);
     test_runner
         .execute_manifest(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .lock_fee(account2, 500)
                 .withdraw_from_account(account2, btc, btc_amount)
                 .try_deposit_batch_or_abort(account3)
@@ -331,7 +331,7 @@ fn run_radiswap(mode: Mode) {
     // Swap 2,000 BTC into ETH
     let btc_to_swap = Decimal::from(2000);
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee(account3, 500)
             .withdraw_from_account(account3, btc, btc_to_swap)
             .take_all_from_worktop(btc, "to_trade")
@@ -374,7 +374,7 @@ fn run_flash_loan(mode: Mode) {
     let xrd_init_amount = Decimal::from(100);
     let (component_address, promise_token_address) = test_runner
         .execute_manifest(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
                 .withdraw_from_account(account2, XRD, xrd_init_amount)
                 .take_all_from_worktop(XRD, "bucket")
@@ -398,7 +398,7 @@ fn run_flash_loan(mode: Mode) {
     let repay_amount = loan_amount * dec!("1.001");
     let old_balance = test_runner.account_balance(account3, XRD).unwrap();
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee(account3, 500)
             .call_method(component_address, "take_loan", manifest_args!(loan_amount))
             .withdraw_from_account(account3, XRD, dec!(10))
@@ -446,7 +446,7 @@ fn run_publish_large_package(mode: Mode) {
             "#,
         "i".repeat(1024 * 1024 - 1024)
     ));
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
@@ -473,7 +473,7 @@ fn should_be_able_run_large_manifest() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let mut builder = ManifestBuilderV2::new()
+    let mut builder = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .withdraw_from_account(account, XRD, 100);
     let namer = builder.namer();
@@ -503,7 +503,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
 
     // Act
-    let mut builder = ManifestBuilderV2::new();
+    let mut builder = ManifestBuilder::new();
     for _ in 0..5 {
         builder = builder.create_proof_from_account_of_amount(account, resource_address, 1);
     }
@@ -527,7 +527,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
     // Publish package and instantiate component
     let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
     let receipt1 = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, XRD, 10)
             .take_all_from_worktop(XRD, "bucket")
@@ -552,7 +552,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAdd
 fn spin_loop_should_end_in_reasonable_amount_of_time() {
     let (mut test_runner, component_address) = setup_test_runner_with_fee_blueprint_component();
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         // First, lock the fee so that the loan will be repaid
         .lock_fee_from_faucet()
         // Now spin-loop to wait for the fee loan to burn through

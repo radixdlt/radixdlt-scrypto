@@ -11,7 +11,7 @@ fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/logger");
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
             "Logger",

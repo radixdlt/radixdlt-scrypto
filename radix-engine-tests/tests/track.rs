@@ -13,7 +13,7 @@ fn test_lock_fee_and_then_withdraw_failure() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .withdraw_from_account(account, XRD, dec!("1000000"))
         .build();

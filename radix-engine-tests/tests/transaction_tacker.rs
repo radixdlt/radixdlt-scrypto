@@ -104,7 +104,7 @@ fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransacti
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .clear_auth_zone()
                 .build(),

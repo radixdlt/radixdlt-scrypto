@@ -72,11 +72,11 @@ impl From<RustToManifestValueError> for BuildCallArgumentsError {
 
 /// Creates resource proof from an account.
 pub fn create_proof_from_account<'a>(
-    builder: ManifestBuilderV2,
+    builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
     account: ComponentAddress,
     resource_specifier: String,
-) -> Result<ManifestBuilderV2, BuildCallArgumentError> {
+) -> Result<ManifestBuilder, BuildCallArgumentError> {
     let resource_specifier = parse_resource_specifier(&resource_specifier, address_bech32_decoder)
         .map_err(|_| BuildCallArgumentError::InvalidResourceSpecifier(resource_specifier))?;
     let builder = match resource_specifier {
@@ -94,13 +94,13 @@ pub fn create_proof_from_account<'a>(
 }
 
 pub fn build_call_arguments<'a>(
-    mut builder: ManifestBuilderV2,
+    mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
     schema: &ScryptoSchema,
     type_index: LocalTypeIndex,
     args: Vec<String>,
     account: Option<ComponentAddress>,
-) -> Result<(ManifestBuilderV2, ManifestValue), BuildCallArgumentsError> {
+) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentsError> {
     let mut built_args = Vec::<ManifestValue>::new();
     match schema.resolve_type_kind(type_index) {
         Some(TypeKind::Tuple { field_types }) => {
@@ -146,13 +146,13 @@ macro_rules! parse_basic_type {
 }
 
 fn build_call_argument<'a>(
-    mut builder: ManifestBuilderV2,
+    mut builder: ManifestBuilder,
     address_bech32_decoder: &AddressBech32Decoder,
     type_kind: &ScryptoTypeKind<LocalTypeIndex>,
     type_validation: &TypeValidation<ScryptoCustomTypeValidation>,
     argument: String,
     account: Option<ComponentAddress>,
-) -> Result<(ManifestBuilderV2, ManifestValue), BuildCallArgumentError> {
+) -> Result<(ManifestBuilder, ManifestValue), BuildCallArgumentError> {
     match type_kind {
         ScryptoTypeKind::Bool => parse_basic_type!(builder, argument, Bool),
         ScryptoTypeKind::I8 => parse_basic_type!(builder, argument, I8),
@@ -645,7 +645,7 @@ mod test {
         type_kind: ScryptoTypeKind<LocalTypeIndex>,
         type_validation: TypeValidation<ScryptoCustomTypeValidation>,
     ) -> Result<T, BuildAndDecodeArgError> {
-        let builder = ManifestBuilderV2::new();
+        let builder = ManifestBuilder::new();
         let (_, built_arg) = build_call_argument(
             builder,
             &AddressBech32Decoder::for_simulator(),

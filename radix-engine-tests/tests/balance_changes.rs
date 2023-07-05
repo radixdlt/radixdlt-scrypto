@@ -21,7 +21,7 @@ fn test_balance_changes_when_success() {
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,
@@ -39,7 +39,7 @@ fn test_balance_changes_when_success() {
 
     // Call the put method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(account, XRD, Decimal::ONE)
             .take_all_from_worktop(XRD, "bucket")
@@ -97,7 +97,7 @@ fn test_balance_changes_when_failure() {
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,
@@ -115,11 +115,11 @@ fn test_balance_changes_when_failure() {
 
     // Call the put method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee_from_faucet()
             .withdraw_from_account(account, XRD, Decimal::ONE)
             .take_all_from_worktop(XRD, "bucket")
-            .with_namer(|builder: ManifestBuilderV2, namer| {
+            .with_namer(|builder: ManifestBuilder, namer| {
                 builder.call_method(
                     component_address,
                     "boom",
@@ -157,7 +157,7 @@ fn test_balance_changes_when_recall() {
     let vault_id = vaults[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .recall(
             InternalAddress::new_or_panic(vault_id.into()),
@@ -203,7 +203,7 @@ fn test_balance_changes_when_transferring_non_fungibles() {
     let resource_address = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, dec!("1.0"))
         .try_deposit_batch_or_abort(other_account)

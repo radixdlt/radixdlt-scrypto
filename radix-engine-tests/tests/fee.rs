@@ -31,7 +31,7 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
     // Publish package and instantiate component
     let package_address = test_runner.compile_and_publish("./tests/blueprints/fee");
     let receipt1 = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .withdraw_from_account(account, XRD, 1000)
             .take_all_from_worktop(XRD, "bucket")
@@ -56,7 +56,7 @@ fn setup_test_runner() -> (TestRunner, ComponentAddress) {
 fn should_be_aborted_when_loan_repaid() {
     let (mut test_runner, component_address) = setup_test_runner();
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         // First, lock the fee so that the loan will be repaid
         .lock_fee_from_faucet()
         // Now spin-loop to wait for the fee loan to burn through
@@ -77,7 +77,7 @@ fn should_be_aborted_when_loan_repaid() {
 #[test]
 fn should_succeed_when_fee_is_paid() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee(component_address, 500u32)
             .build()
     });
@@ -87,7 +87,7 @@ fn should_succeed_when_fee_is_paid() {
 
 #[test]
 fn should_be_rejected_when_no_fee_is_paid() {
-    let receipt = run_manifest(|_| ManifestBuilderV2::new().build());
+    let receipt = run_manifest(|_| ManifestBuilder::new().build());
 
     receipt.expect_rejection();
 }
@@ -95,7 +95,7 @@ fn should_be_rejected_when_no_fee_is_paid() {
 #[test]
 fn should_be_rejected_when_insufficient_balance() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "lock_fee_with_empty_vault",
@@ -110,7 +110,7 @@ fn should_be_rejected_when_insufficient_balance() {
 #[test]
 fn should_be_rejected_when_non_xrd() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "lock_fee_with_doge",
@@ -125,7 +125,7 @@ fn should_be_rejected_when_non_xrd() {
 #[test]
 fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "lock_fee",
@@ -140,7 +140,7 @@ fn should_be_rejected_when_system_loan_is_not_fully_repaid() {
 #[test]
 fn should_be_rejected_when_lock_fee_with_temp_vault() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "lock_fee_with_temp_vault",
@@ -162,7 +162,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
 #[test]
 fn should_be_success_when_query_vault_and_lock_fee() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "query_vault_and_lock_fee",
@@ -177,7 +177,7 @@ fn should_be_success_when_query_vault_and_lock_fee() {
 #[test]
 fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "update_vault_and_lock_fee",
@@ -205,7 +205,7 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
 #[test]
 fn should_succeed_when_lock_fee_and_query_vault() {
     let receipt = run_manifest(|component_address| {
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .call_method(
                 component_address,
                 "lock_fee_and_query_vault",
@@ -235,7 +235,7 @@ fn test_fee_accounting_success() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
         .withdraw_from_account(account1, XRD, 66)
         .try_deposit_batch_or_abort(account2)
@@ -287,7 +287,7 @@ fn test_fee_accounting_failure() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
         .withdraw_from_account(account1, XRD, 66)
         .try_deposit_batch_or_abort(account2)
@@ -340,7 +340,7 @@ fn test_fee_accounting_rejection() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, Decimal::from_str("0.000000000000000001").unwrap())
         .build();
     let receipt = test_runner.execute_manifest(
@@ -376,7 +376,7 @@ fn test_contingent_fee_accounting_success() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
         .lock_contingent_fee(account2, dec!("0.001"))
         .build();
@@ -432,7 +432,7 @@ fn test_contingent_fee_accounting_failure() {
         .unwrap();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, 500)
         .lock_contingent_fee(account2, dec!("0.001"))
         .assert_worktop_contains(XRD, 1)
@@ -482,7 +482,7 @@ fn locked_fees_are_correct_in_execution_trace() {
     let (public_key, _, account) = test_runner.new_account(false);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("104.676"))
         .build();
     let receipt = test_runner.preview_manifest(
@@ -511,7 +511,7 @@ fn multiple_locked_fees_are_correct_in_execution_trace() {
     let (public_key2, _, account2) = test_runner.new_account(false);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, dec!("104.676"))
         .lock_fee(account2, dec!("102.180"))
         .build();
@@ -541,7 +541,7 @@ fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
     let (public_key2, _, account2) = test_runner.new_account(false);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, dec!("104.676"))
         .lock_contingent_fee(account2, dec!("102.180"))
         .build();

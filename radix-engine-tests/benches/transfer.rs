@@ -33,7 +33,7 @@ fn bench_transfer(c: &mut Criterion) {
             let owner_rule = OwnerRole::Updatable(rule!(require(
                 NonFungibleGlobalId::from_public_key(&public_key)
             )));
-            let manifest = ManifestBuilderV2::new()
+            let manifest = ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .new_account_advanced(owner_rule)
                 .build();
@@ -58,7 +58,7 @@ fn bench_transfer(c: &mut Criterion) {
     let account2 = accounts[1];
 
     // Fill first account
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
         .try_deposit_batch_or_abort(account1)
@@ -78,7 +78,7 @@ fn bench_transfer(c: &mut Criterion) {
     }
 
     // Create a transfer manifest
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account1)
         .withdraw_from_account(account1, XRD, dec!("0.000001"))
         .try_deposit_batch_or_abort(account2)

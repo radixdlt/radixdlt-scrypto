@@ -46,7 +46,7 @@ impl CallMethod {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut builder = ManifestBuilderV2::new().lock_fee_from_faucet();
+        let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
         for resource_specifier in proofs {
             builder = create_proof_from_account(
                 builder,
@@ -89,13 +89,13 @@ impl CallMethod {
     /// otherwise, they will be taken from transaction worktop.
     pub fn add_call_method_instruction_with_schema<'a>(
         &self,
-        builder: ManifestBuilderV2,
+        builder: ManifestBuilder,
         address_bech32_decoder: &AddressBech32Decoder,
         component_address: ComponentAddress,
         method_name: String,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-    ) -> Result<ManifestBuilderV2, Error> {
+    ) -> Result<ManifestBuilder, Error> {
         let bp_id = get_blueprint_id(component_address)?;
         let bp_def = export_blueprint_interface(bp_id.package_address, &bp_id.blueprint_name)?;
 

@@ -12,7 +12,7 @@ fn package_burn_is_only_callable_within_resource_package() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -32,7 +32,7 @@ fn package_burn_is_only_callable_within_resource_package() {
     };
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .mint_fungible(resource_address, 10)
         .take_all_from_worktop(resource_address, "bucket")
         .with_namer(|builder, namer| {
@@ -55,7 +55,7 @@ fn can_burn_by_amount_from_fungible_vault() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -75,7 +75,7 @@ fn can_burn_by_amount_from_fungible_vault() {
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 100)
             .take_all_from_worktop(resource_address, "to_burn")
             .with_namer(|builder, namer| {
@@ -98,7 +98,7 @@ fn can_burn_by_amount_from_fungible_vault() {
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("50")))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -117,7 +117,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -137,7 +137,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -166,7 +166,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -185,7 +185,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -205,7 +205,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -234,7 +234,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(
             component_address,
             "burn_ids",
@@ -260,7 +260,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -280,7 +280,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 100)
             .take_all_from_worktop(resource_address, "bucket")
             .with_namer(|builder, namer| {
@@ -303,7 +303,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("50")))
         .build();
     let receipt =
@@ -326,7 +326,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -346,7 +346,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -375,7 +375,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
         .build();
     let receipt =
@@ -398,7 +398,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -418,7 +418,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -447,7 +447,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(
             component_address,
             "burn_ids",
@@ -474,7 +474,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -494,7 +494,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 100)
             .take_all_from_worktop(resource_address, "bucket")
             .with_namer(|builder, namer| {
@@ -517,7 +517,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("50")))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -539,7 +539,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -559,7 +559,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -588,7 +588,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -610,7 +610,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -630,7 +630,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -659,7 +659,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(
             component_address,
             "burn_ids",
@@ -682,7 +682,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -702,7 +702,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, 100)
             .take_all_from_worktop(resource_address, "bucket")
             .with_namer(|builder, namer| {
@@ -725,7 +725,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("50")))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -744,7 +744,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -764,7 +764,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -793,7 +793,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -812,7 +812,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -832,7 +832,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     };
 
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_non_fungible(
                 resource_address,
                 btreemap!(
@@ -861,7 +861,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     let vault_id = get_vault_id(&mut test_runner, component_address);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(
             component_address,
             "burn_ids",
@@ -886,7 +886,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -907,7 +907,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
     };
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(
             account,
             "burn",
@@ -935,7 +935,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -959,7 +959,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
     };
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(account, "burn", manifest_args!(resource_address, dec!("1")))
         .build();
     let receipt =
@@ -983,7 +983,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
     let resource_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,
@@ -1007,7 +1007,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
     };
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(
             account,
             "burn_non_fungibles",
@@ -1028,7 +1028,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
 }
 
 fn get_vault_id(test_runner: &mut TestRunner, component_address: ComponentAddress) -> NodeId {
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);

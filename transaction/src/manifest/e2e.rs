@@ -1564,7 +1564,7 @@ CALL_METHOD
     #[test]
     pub fn decompilation_of_create_non_fungible_resource_with_initial_supply_is_invertible() {
         // Arrange
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .create_non_fungible_resource(
                 OwnerRole::None,
                 NonFungibleIdType::Integer,

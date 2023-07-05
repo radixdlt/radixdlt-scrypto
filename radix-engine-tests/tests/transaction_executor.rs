@@ -27,7 +27,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
             start_epoch_inclusive: valid_from_epoch,
             end_epoch_exclusive: valid_until_epoch.next(),
         },
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee_from_faucet()
             .clear_auth_zone()
             .build(),
@@ -67,7 +67,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
             start_epoch_inclusive: valid_from_epoch,
             end_epoch_exclusive: valid_until_epoch.next(),
         },
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee_from_faucet()
             .clear_auth_zone()
             .build(),
@@ -111,7 +111,7 @@ fn test_normal_transaction_flow() {
             end_epoch_exclusive: Epoch::of(100),
         },
         {
-            let mut builder = ManifestBuilderV2::new();
+            let mut builder = ManifestBuilder::new();
             builder.add_blob([123u8; 1023 * 1024].to_vec());
             builder.lock_fee_from_faucet().clear_auth_zone().build()
         },

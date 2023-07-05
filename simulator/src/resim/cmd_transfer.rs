@@ -44,7 +44,7 @@ impl Transfer {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut builder = ManifestBuilderV2::new().lock_fee_from_faucet();
+        let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
         for resource_specifier in proofs {
             builder = create_proof_from_account(
                 builder,

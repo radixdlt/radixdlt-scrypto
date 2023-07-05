@@ -73,7 +73,7 @@ impl NewSimpleBadge {
             metadata.set_and_lock("icon_url", MetadataValue::Url(Url(icon_url)));
         };
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_non_fungible_resource(
                 OwnerRole::None,

@@ -5,7 +5,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto_unit::*;
-use transaction::builder::*;
+use transaction::prelude::*;
 
 #[test]
 fn one_resource_pool_can_be_instantiated() {
@@ -385,7 +385,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .call_function(
             POOL_PACKAGE,
             ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -579,7 +579,7 @@ impl TestEnvironment {
         );
 
         let (pool_component, pool_unit_resource) = {
-            let manifest = ManifestBuilderV2::new()
+            let manifest = ManifestBuilder::new()
                 .call_function(
                     POOL_PACKAGE,
                     ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
@@ -623,7 +623,7 @@ impl TestEnvironment {
         value: MetadataValue,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .set_metadata(self.pool_component_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
@@ -635,14 +635,14 @@ impl TestEnvironment {
         value: MetadataValue,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .set_metadata(self.pool_unit_resource_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }
 
     fn contribute<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "contribution")
             .with_namer(|builder, namer| {
@@ -660,7 +660,7 @@ impl TestEnvironment {
     }
 
     fn redeem<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .withdraw_from_account(
                 self.account_component_address,
                 self.pool_unit_resource_address,
@@ -682,7 +682,7 @@ impl TestEnvironment {
     }
 
     fn protected_deposit<D: Into<Decimal>>(&mut self, amount: D, sign: bool) -> TransactionReceipt {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .mint_fungible(self.resource_address, amount.into())
             .take_all_from_worktop(self.resource_address, "to_deposit")
             .with_namer(|builder, namer| {
@@ -703,7 +703,7 @@ impl TestEnvironment {
         amount: D,
         sign: bool,
     ) -> TransactionReceipt {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
@@ -721,7 +721,7 @@ impl TestEnvironment {
         amount_of_pool_units: D,
         sign: bool,
     ) -> Decimal {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
@@ -735,7 +735,7 @@ impl TestEnvironment {
     }
 
     fn get_vault_amount(&mut self, sign: bool) -> Decimal {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_method(
                 self.pool_component_address,
                 ONE_RESOURCE_POOL_GET_VAULT_AMOUNT_IDENT,

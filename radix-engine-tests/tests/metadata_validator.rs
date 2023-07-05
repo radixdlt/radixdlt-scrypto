@@ -13,7 +13,7 @@ fn can_set_validator_metadata_with_owner() {
     let validator = test_runner.new_validator_with_pub_key(pub_key, account);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .set_metadata(
@@ -46,7 +46,7 @@ fn cannot_set_validator_metadata_without_owner() {
     let validator = test_runner.new_validator_with_pub_key(pub_key, account);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .set_metadata(
             validator,

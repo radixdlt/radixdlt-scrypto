@@ -53,11 +53,6 @@ use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto::prelude::*;
-use transaction::builder::TransactionManifestV1;
-use transaction::model::{
-    BlobV1, Executable, InstructionV1, IntentV1, MessageV1, PreviewFlags, PreviewIntentV1,
-    SystemTransactionV1, TestTransaction, TransactionHeaderV1, TransactionPayload,
-};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction::validation::{
@@ -407,7 +402,7 @@ impl TestRunner {
         value: &str,
         proof: NonFungibleGlobalId,
     ) {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .set_metadata(
                 address,
@@ -643,7 +638,7 @@ impl TestRunner {
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .take_all_from_worktop(XRD, "free_xrd")
@@ -655,7 +650,7 @@ impl TestRunner {
     }
 
     pub fn new_account_advanced(&mut self, owner_rule: OwnerRole) -> ComponentAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .new_account_advanced(owner_rule)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -663,7 +658,7 @@ impl TestRunner {
 
         let account = receipt.expect_commit(true).new_component_addresses()[0];
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .get_free_xrd_from_faucet()
             .try_deposit_batch_or_abort(account)
             .build();
@@ -742,7 +737,7 @@ impl TestRunner {
             ComponentAddress::virtual_identity_from_public_key(&pk)
         } else {
             let owner_id = NonFungibleGlobalId::from_public_key(&pk);
-            let manifest = ManifestBuilderV2::new()
+            let manifest = ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .create_identity_advanced(OwnerRole::Fixed(rule!(require(owner_id))))
                 .build();
@@ -755,7 +750,7 @@ impl TestRunner {
     }
 
     pub fn new_securified_identity(&mut self, account: ComponentAddress) -> ComponentAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_identity()
             .try_deposit_batch_or_abort(account)
@@ -772,7 +767,7 @@ impl TestRunner {
         pub_key: Secp256k1PublicKey,
         account: ComponentAddress,
     ) -> ComponentAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .get_free_xrd_from_faucet()
             .take_from_worktop(XRD, *DEFAULT_VALIDATOR_XRD_COST, "xrd_creation_fee")
@@ -833,7 +828,7 @@ impl TestRunner {
         metadata: BTreeMap<String, MetadataValue>,
         owner_rule: OwnerRole,
     ) -> PackageAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .publish_package_advanced(None, code, definition, metadata, owner_rule)
             .build();
@@ -848,7 +843,7 @@ impl TestRunner {
         definition: PackageDefinition,
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .publish_package_with_owner(code, definition, owner_badge)
             .build();
@@ -1061,7 +1056,7 @@ impl TestRunner {
         args: ManifestValue,
     ) -> TransactionReceipt {
         self.execute_manifest_ignoring_fee(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .call_function(package_address, blueprint_name, function_name, args)
                 .build(),
             vec![],
@@ -1097,7 +1092,7 @@ impl TestRunner {
         args: ManifestValue,
     ) -> TransactionReceipt {
         self.execute_manifest_ignoring_fee(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .call_method(component_address, method_name, args)
                 .build(),
             vec![],
@@ -1110,7 +1105,7 @@ impl TestRunner {
         resource_roles: FungibleResourceRoles,
         to: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_fungible_resource(
                 owner_role,
@@ -1195,7 +1190,7 @@ impl TestRunner {
         owner_role: OwnerRole,
     ) -> ResourceAddress {
         let receipt = self.execute_manifest_ignoring_fee(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .create_non_fungible_resource::<Vec<_>, ()>(
                     owner_role,
                     NonFungibleIdType::Integer,
@@ -1355,7 +1350,7 @@ impl TestRunner {
         entries.insert(NonFungibleLocalId::integer(2), EmptyNonFungibleData {});
         entries.insert(NonFungibleLocalId::integer(3), EmptyNonFungibleData {});
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_non_fungible_resource(
                 OwnerRole::None,
@@ -1377,7 +1372,7 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_fungible_resource(
                 OwnerRole::None,
@@ -1399,7 +1394,7 @@ impl TestRunner {
     ) -> (ResourceAddress, ResourceAddress) {
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_fungible_resource(
                 OwnerRole::None,
@@ -1433,7 +1428,7 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_fungible_resource(
                 owner_role,
@@ -1462,7 +1457,7 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_fungible_resource(
                 owner_role,
@@ -1494,9 +1489,9 @@ impl TestRunner {
         handler: F,
     ) -> ComponentAddress
     where
-        F: FnOnce(ManifestBuilderV2) -> ManifestBuilderV2,
+        F: FnOnce(ManifestBuilder) -> ManifestBuilder,
     {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .then(handler)
             .build();

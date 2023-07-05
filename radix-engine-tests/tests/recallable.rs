@@ -15,7 +15,7 @@ fn non_existing_vault_should_cause_error() {
     let non_existing_address = local_address(EntityType::InternalFungibleVault, 5);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .recall(non_existing_address, Decimal::one())
         .try_deposit_batch_or_abort(account)
@@ -43,7 +43,7 @@ fn cannot_take_on_non_recallable_vault() {
     let vault_id = vaults[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .recall(
             InternalAddress::new_or_panic(vault_id.into()),
@@ -76,7 +76,7 @@ fn can_take_on_recallable_vault() {
     let vault_id = vaults[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .recall(
             InternalAddress::new_or_panic(vault_id.into()),
@@ -117,7 +117,7 @@ fn test_recall_on_internal_vault() {
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(package_address, "RecallTest", "new", manifest_args!())
             .build(),
@@ -127,7 +127,7 @@ fn test_recall_on_internal_vault() {
 
     // Recall
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_fee(account, 500u32)
             .call_method(
                 component_address,
@@ -159,7 +159,7 @@ fn test_recall_on_received_direct_access_reference() {
     // Recall
     let vault_id = test_runner.get_component_vaults(account, recallable_token_address)[0];
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,

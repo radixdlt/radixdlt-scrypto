@@ -73,7 +73,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     let updater_role_key = action.updater_role_key();
     test_runner
         .execute_manifest_ignoring_fee(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
                     token_address,
@@ -97,7 +97,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     let updater_role_key = action.updater_role_key();
     test_runner
         .execute_manifest_ignoring_fee(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
                     token_address,
@@ -121,7 +121,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
         let role_key = action.updater_role_key();
         test_runner
             .execute_manifest_ignoring_fee(
-                ManifestBuilderV2::new()
+                ManifestBuilder::new()
                     .create_proof_from_account(account, admin_auth)
                     .update_role(
                         token_address,
@@ -139,7 +139,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     let role_key = action.action_role_key();
     test_runner
         .execute_manifest_ignoring_fee(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
                     token_address,
@@ -155,7 +155,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
     let role_key = action.updater_role_key();
     test_runner
         .execute_manifest_ignoring_fee(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
                     token_address,

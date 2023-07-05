@@ -1,8 +1,6 @@
 use crate::model::*;
 use crate::signing::Signer;
 
-use super::manifest_builder::TransactionManifestV1;
-
 pub struct TransactionBuilder {
     manifest: Option<TransactionManifestV1>,
     header: Option<TransactionHeaderV1>,
@@ -130,7 +128,7 @@ mod tests {
                 notary_is_signatory: true,
                 tip_percentage: 5,
             })
-            .manifest(ManifestBuilderV2::new().clear_auth_zone().build())
+            .manifest(ManifestBuilder::new().clear_auth_zone().build())
             .notarize(&private_key)
             .build();
 

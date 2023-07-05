@@ -16,7 +16,7 @@ fn test_worktop_resource_leak() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, XRD, 1)
         .build();
@@ -47,7 +47,7 @@ fn test_many_current_auth_zone_call() {
     for _ in 0..5000 {
         expressions.push(ManifestExpression::EntireAuthZone);
     }
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .call_method(account, "no_such_method", manifest_args!(expressions))
         .build();
@@ -78,7 +78,7 @@ fn test_many_worktop_call() {
     for _ in 0..5000 {
         expressions.push(ManifestExpression::EntireWorktop);
     }
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .call_method(account, "no_such_method", manifest_args!(expressions))
         .build();

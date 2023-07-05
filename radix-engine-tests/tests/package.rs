@@ -34,7 +34,7 @@ fn missing_memory_should_cause_error() {
             )
             "#,
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
@@ -66,7 +66,7 @@ fn large_return_len_should_cause_memory_access_error() {
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "LargeReturnSize", "f", manifest_args!())
         .build();
@@ -89,7 +89,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "MaxReturnSize", "f", manifest_args!())
         .build();
@@ -112,7 +112,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "ZeroReturnSize", "f", manifest_args!())
         .build();
@@ -130,7 +130,7 @@ fn test_basic_package() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
@@ -191,7 +191,7 @@ fn test_basic_package_missing_export() {
     );
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
@@ -222,7 +222,7 @@ fn bad_function_schema_should_fail() {
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package, "BadFunctionSchema", "f", manifest_args!())
         .build();
@@ -245,7 +245,7 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
     let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -275,7 +275,7 @@ fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_pr
     let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,
@@ -304,7 +304,7 @@ fn should_not_be_able_to_publish_native_packages() {
     let mut test_runner = TestRunner::builder().build();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             PACKAGE_PACKAGE,
@@ -338,7 +338,7 @@ fn should_not_be_able_to_publish_native_packages_in_scrypto() {
     let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package,

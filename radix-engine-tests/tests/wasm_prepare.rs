@@ -18,7 +18,7 @@ fn test_too_many_locals() {
     let definition = PackageDefinition::default();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .publish_package(code, definition)
             .build(),

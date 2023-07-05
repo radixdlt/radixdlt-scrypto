@@ -70,7 +70,7 @@ pub(crate) trait Completeable: Sized {
     fn done<E>(self) -> Result<Self, E>;
 }
 
-impl Completeable for ManifestBuilderV2 {
+impl Completeable for ManifestBuilder {
     fn done<E>(self) -> Result<Self, E> {
         Ok(self)
     }
@@ -106,10 +106,10 @@ impl ScenarioCore {
     pub fn next_transaction_with_faucet_lock_fee(
         &mut self,
         logical_name: &str,
-        create_manifest: impl FnOnce(ManifestBuilderV2) -> ManifestBuilderV2,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let (builder, namer) = ManifestBuilderV2::new_with_namer();
+        let (builder, namer) = ManifestBuilder::new_with_namer();
         let manifest = builder.lock_fee_from_faucet().then(create_manifest).build();
         self.next_transaction(logical_name, manifest, namer.object_names(), signers)
     }
@@ -117,10 +117,10 @@ impl ScenarioCore {
     pub fn next_transaction_with_faucet_lock_fee_v2(
         &mut self,
         logical_name: &str,
-        create_manifest: impl FnOnce(ManifestBuilderV2) -> Result<ManifestBuilderV2, ScenarioError>,
+        create_manifest: impl FnOnce(ManifestBuilder) -> Result<ManifestBuilder, ScenarioError>,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let (mut builder, namer) = ManifestBuilderV2::new_with_namer();
+        let (mut builder, namer) = ManifestBuilder::new_with_namer();
         builder = builder.lock_fee_from_faucet();
         builder = create_manifest(builder)?;
         self.next_transaction(logical_name, builder.build(), namer.object_names(), signers)

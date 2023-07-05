@@ -16,7 +16,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 1)
         .take_all_from_worktop(resource_address, "bucket")
@@ -69,7 +69,7 @@ fn can_create_clone_and_drop_vault_proof() {
     );
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -114,7 +114,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     );
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -164,7 +164,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         NonFungibleLocalId::integer(3),
     ]);
     let proof_non_fungible_local_ids = BTreeSet::from([NonFungibleLocalId::integer(2)]);
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -188,7 +188,7 @@ fn can_use_bucket_for_authorization() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, auth_resource_address, 1)
         .withdraw_from_account(account, burnable_resource_address, 1)
@@ -242,7 +242,7 @@ fn can_use_vault_for_authorization() {
     );
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, burnable_resource_address, 1)
         .take_all_from_worktop(burnable_resource_address, "bucket")
@@ -273,7 +273,7 @@ fn can_create_proof_from_account_and_pass_on() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, resource_address, 1)
         .pop_from_auth_zone("proof")
@@ -306,7 +306,7 @@ fn cant_move_restricted_proof() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, resource_address, 1)
         .pop_from_auth_zone("proof")
@@ -342,7 +342,7 @@ fn can_move_restricted_proofs_internally() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
     let (public_key, _, account) = test_runner.new_allocated_account();
     let component_address = {
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .call_function(package_address, "Outer", "instantiate", manifest_args!())
             .build();
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -350,7 +350,7 @@ fn can_move_restricted_proofs_internally() {
     };
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .create_proof_from_account(account, XRD)
         .create_proof_from_auth_zone(XRD, "proof")
         .with_namer(|builder, namer| {
@@ -380,7 +380,7 @@ fn can_move_locked_bucket() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 1)
         .take_all_from_worktop(resource_address, "bucket")
@@ -429,7 +429,7 @@ fn can_compose_bucket_and_vault_proof() {
     );
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 99)
         .take_from_worktop(resource_address, 99, "bucket")
@@ -476,7 +476,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     );
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, resource_address, 99)
         .take_from_worktop(resource_address, 99, "bucket")
@@ -526,7 +526,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     );
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_non_fungibles_from_account(
             account,
@@ -592,7 +592,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     );
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -615,7 +615,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
             account,
@@ -678,7 +678,7 @@ fn can_not_call_vault_lock_fungible_amount_directly() {
     });
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -712,7 +712,7 @@ fn can_not_call_vault_unlock_fungible_amount_directly() {
     });
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -746,7 +746,7 @@ fn can_not_call_vault_lock_non_fungibles_directly() {
     });
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -780,7 +780,7 @@ fn can_not_call_vault_unlock_non_fungibles_directly() {
     });
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,
@@ -806,7 +806,7 @@ fn can_not_call_bucket_lock_fungible_amount_directly() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -833,7 +833,7 @@ fn can_not_call_bucket_unlock_fungible_amount_directly() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -860,7 +860,7 @@ fn can_not_call_bucket_lock_non_fungibles_directly() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -887,7 +887,7 @@ fn can_not_call_bucket_unlock_non_fungibles_directly() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,

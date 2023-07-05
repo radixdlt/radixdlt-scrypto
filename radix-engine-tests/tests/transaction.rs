@@ -20,7 +20,7 @@ fn test_manifest_with_non_existent_resource() {
     let non_existent_resource = resource_address(EntityType::GlobalFungibleResourceManager, 222);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .take_all_from_worktop(non_existent_resource, "non_existent")
         .try_deposit_or_abort(account, "non_existent")
@@ -48,7 +48,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account(account, XRD)
         .create_proof_from_auth_zone(XRD, "proof1")
@@ -81,7 +81,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!("1"))
         .create_proof_from_account_of_amount(account, XRD, dec!("1"))
@@ -108,7 +108,7 @@ fn test_non_existent_blob_hash() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 500)
         .call_function(
             PACKAGE_PACKAGE,
@@ -153,7 +153,7 @@ fn test_entire_auth_zone() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!("1"))
         .call_function(
@@ -183,7 +183,7 @@ fn test_faucet_drain_attempt_should_fail() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .get_free_xrd_from_faucet()
         .get_free_xrd_from_faucet()

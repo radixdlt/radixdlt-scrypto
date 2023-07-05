@@ -37,7 +37,7 @@ impl NewAccount {
         let public_key = private_key.public_key();
         let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_global_id));
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .new_account_advanced(OwnerRole::Fixed(withdraw_auth))
             .build();
@@ -61,7 +61,7 @@ impl NewAccount {
                 .success_or_else(|err| TransactionFailed(err.clone()))?;
 
             let account = commit_result.new_component_addresses()[0];
-            let manifest = ManifestBuilderV2::new()
+            let manifest = ManifestBuilder::new()
                 .lock_fee_from_faucet()
                 .get_free_xrd_from_faucet()
                 .create_non_fungible_resource(

@@ -46,7 +46,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     if update_auth {
         let (module, role_key) = action.get_role();
-        let manifest = ManifestBuilderV2::new()
+        let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_proof_from_account(account, admin_auth)
             .update_role(
@@ -78,7 +78,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     };
 
     // Act
-    let mut builder = ManifestBuilderV2::new()
+    let mut builder = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, auth_to_use, Decimal::one());
 

@@ -40,7 +40,7 @@ fn test_static_package_address() {
     let package_address2 =
         test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address2,
@@ -63,7 +63,7 @@ fn test_static_component_address() {
     let (key, _priv, account) = test_runner.new_account(false);
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .call_function(
             package_address,
@@ -115,7 +115,7 @@ fn static_component_should_be_callable() {
         "./tests/blueprints/static_dependencies2",
         |blueprint, _| blueprint.eq("PreallocatedCall"),
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address2,
@@ -183,7 +183,7 @@ fn static_resource_should_be_callable() {
         "./tests/blueprints/static_dependencies2",
         |blueprint, _| blueprint.eq("SomeResource"),
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address2,
@@ -214,7 +214,7 @@ fn static_package_should_be_callable() {
         "./tests/blueprints/static_dependencies2",
         |blueprint, _| blueprint.eq("SomePackage"),
     );
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address2,

@@ -11,7 +11,7 @@ fn test_get_transaction_hash() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_runtime");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,

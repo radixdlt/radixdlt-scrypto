@@ -14,7 +14,7 @@ fn test_fee_states() {
 
     // Run test case
     let receipt = test_runner.execute_manifest(
-        ManifestBuilderV2::new()
+        ManifestBuilder::new()
             .lock_standard_test_fee(account)
             .call_function(
                 package_address,

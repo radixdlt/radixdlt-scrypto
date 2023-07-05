@@ -11,7 +11,7 @@ fn can_call_self_with_package_token() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/package_token");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Factory", "create", manifest_args!())
         .build();
@@ -26,7 +26,7 @@ fn cannot_call_package_protected_function_without_package_token() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/package_token");
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Factory", "create_raw", manifest_args!())
         .build();
@@ -34,7 +34,7 @@ fn cannot_call_package_protected_function_without_package_token() {
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             component_address,

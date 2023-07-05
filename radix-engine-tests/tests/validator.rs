@@ -29,7 +29,7 @@ where
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
-    let mut builder = ManifestBuilderV2::new().lock_fee_from_faucet();
+    let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
     if as_owner {
         builder =
             builder.create_proof_from_account(validator_account_address, VALIDATOR_OWNER_BADGE);
@@ -85,7 +85,7 @@ fn check_if_validator_accepts_delegated_stake() {
     let (pub_key, _, account) = test_runner.new_account(false);
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
         .register_validator(validator_address)
@@ -97,7 +97,7 @@ fn check_if_validator_accepts_delegated_stake() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
             validator_address,

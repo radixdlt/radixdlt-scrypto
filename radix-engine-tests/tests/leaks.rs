@@ -11,7 +11,7 @@ fn dangling_component_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -35,7 +35,7 @@ fn dangling_bucket_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -59,7 +59,7 @@ fn dangling_vault_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Leaks", "dangling_vault", manifest_args!())
         .build();
@@ -78,7 +78,7 @@ fn dangling_worktop_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(package_address, "Leaks", "get_bucket", manifest_args!())
         .build();
@@ -102,7 +102,7 @@ fn dangling_kv_store_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,
@@ -126,7 +126,7 @@ fn dangling_bucket_with_proof_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilderV2::new()
+    let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
             package_address,

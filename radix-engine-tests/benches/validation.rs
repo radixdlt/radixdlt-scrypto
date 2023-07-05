@@ -58,7 +58,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilderV2::new()
+            ManifestBuilder::new()
                 .withdraw_from_account(account1, XRD, 1)
                 .try_deposit_batch_or_abort(account2)
                 .build(),
