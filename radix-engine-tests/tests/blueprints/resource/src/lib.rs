@@ -209,7 +209,9 @@ mod auth_resource {
 
 #[blueprint]
 mod rounding {
-    struct RoundingTest;
+    struct RoundingTest {
+        vault: Vault,
+    }
 
     impl RoundingTest {
         pub fn fungible_resource_amount_for_withdrawal() -> Bucket {
@@ -269,7 +271,7 @@ mod rounding {
             bucket
         }
 
-        pub fn fungible_resource_take_advanced() -> Bucket {
+        pub fn fungible_resource_take_advanced() {
             let mut bucket = Self::fungible_resource_amount_for_withdrawal();
             let bucket2 = bucket.take_advanced(
                 dec!("1.231"),
@@ -277,10 +279,22 @@ mod rounding {
             );
             assert_eq!(bucket2.amount(), dec!("1.23"));
             bucket.put(bucket2);
-            bucket
+
+            let mut vault = Vault::with_bucket(bucket);
+            let bucket2 = vault.take_advanced(
+                dec!("1.231"),
+                WithdrawStrategy::Rounded(RoundingMode::ToZero),
+            );
+            assert_eq!(bucket2.amount(), dec!("1.23"));
+            vault.put(bucket2);
+
+            Self { vault }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
         }
 
-        pub fn non_fungible_resource_take_advanced() -> Bucket {
+        pub fn non_fungible_resource_take_advanced() {
             let mut bucket = Self::non_fungible_resource_amount_for_withdrawal();
             let bucket2 = bucket.take_advanced(
                 dec!("1.231"),
@@ -288,7 +302,19 @@ mod rounding {
             );
             assert_eq!(bucket2.amount(), dec!("1"));
             bucket.put(bucket2);
-            bucket
+
+            let mut vault = Vault::with_bucket(bucket);
+            let bucket2 = vault.take_advanced(
+                dec!("1.231"),
+                WithdrawStrategy::Rounded(RoundingMode::ToZero),
+            );
+            assert_eq!(bucket2.amount(), dec!("1"));
+            vault.put(bucket2);
+
+            Self { vault }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
         }
     }
 }
