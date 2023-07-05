@@ -490,11 +490,12 @@ impl<'a> ContextualDisplay<TransactionReceiptDisplayContext<'a>> for Transaction
         if let TransactionResult::Commit(c) = &result {
             write!(
                 f,
-                "\n{} {} XRD used for execution, {} XRD used for royalty, {} XRD in bad debt",
-                "Transaction Fee:".bold().green(),
+                "\n{} Execution => {} XRD, Tipping => {} XRD, State Expansion => {} XRD, Royalty => {} XRD",
+                "Transaction Cost:".bold().green(),
                 c.fee_summary.total_execution_cost_xrd,
+                c.fee_summary.total_tipping_cost_xrd,
+                c.fee_summary.total_state_expansion_cost_xrd,
                 c.fee_summary.total_royalty_cost_xrd,
-                c.fee_summary.total_bad_debt_xrd,
             )?;
 
             write!(
