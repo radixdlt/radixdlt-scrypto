@@ -14,7 +14,7 @@ use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadOutput;
-use radix_engine_interface::api::CollectionIndex;
+use radix_engine_interface::api::{CollectionIndex, FieldValue};
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
@@ -235,10 +235,9 @@ impl AccountBlueprint {
             ACCOUNT_BLUEPRINT,
             vec![],
             None,
-            vec![scrypto_encode(&AccountSubstate {
+            vec![FieldValue::new(&AccountSubstate {
                 default_deposit_rule: AccountDefaultDepositRule::Accept,
-            })
-            .unwrap()],
+            })],
             btreemap!(),
         )?;
 

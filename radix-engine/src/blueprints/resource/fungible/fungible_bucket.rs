@@ -3,9 +3,7 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use radix_engine_interface::api::{
-    ClientApi, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 pub struct FungibleBucket;
@@ -269,8 +267,8 @@ impl FungibleBucketBlueprint {
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
             vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
+                FieldValue::new(&proof_info),
+                FieldValue::new(&proof),
             ],
         )?;
 

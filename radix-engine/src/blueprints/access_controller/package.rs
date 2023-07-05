@@ -652,7 +652,7 @@ impl AccessControllerNativePackage {
         );
         let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
-            vec![scrypto_encode(&substate).unwrap()],
+            vec![FieldValue::new(&substate)],
         )?;
 
         let roles = init_roles_from_rule_set(input.rule_set);

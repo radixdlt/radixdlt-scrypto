@@ -7,7 +7,7 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, KVEntry, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, KVEntry, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
@@ -139,9 +139,9 @@ impl NonFungibleResourceManagerBlueprint {
             features,
             Some(instance_schema),
             vec![
-                scrypto_encode(&id_type).unwrap(),
-                scrypto_encode(&mutable_fields).unwrap(),
-                scrypto_encode(&Decimal::zero()).unwrap(),
+                FieldValue::new(&id_type),
+                FieldValue::new(&mutable_fields),
+                FieldValue::new(&Decimal::zero()),
             ],
             btreemap!(),
         )?;
@@ -234,9 +234,9 @@ impl NonFungibleResourceManagerBlueprint {
             features,
             Some(instance_schema),
             vec![
-                scrypto_encode(&id_type).unwrap(),
-                scrypto_encode(&mutable_fields).unwrap(),
-                scrypto_encode(&supply).unwrap(),
+                FieldValue::new(&id_type),
+                FieldValue::new(&mutable_fields),
+                FieldValue::new(&supply),
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
@@ -310,9 +310,9 @@ impl NonFungibleResourceManagerBlueprint {
             features,
             Some(instance_schema),
             vec![
-                scrypto_encode(&NonFungibleIdType::RUID).unwrap(),
-                scrypto_encode(&mutable_fields).unwrap(),
-                scrypto_encode(&supply).unwrap(),
+                FieldValue::new(&NonFungibleIdType::RUID),
+                FieldValue::new(&mutable_fields),
+                FieldValue::new(&supply),
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
@@ -660,8 +660,8 @@ impl NonFungibleResourceManagerBlueprint {
         let bucket_id = api.new_simple_object(
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
-                scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+                FieldValue::new(&LiquidNonFungibleResource::new(ids)),
+                FieldValue::new(&LockedNonFungibleResource::default()),
             ],
         )?;
 
@@ -761,9 +761,9 @@ impl NonFungibleResourceManagerBlueprint {
         let vault_id = api.new_simple_object(
             NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
-                scrypto_encode(&vault).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&VaultFrozenFlag::default()).unwrap(),
+                FieldValue::new(&vault),
+                FieldValue::new(&LockedNonFungibleResource::default()),
+                FieldValue::new(&VaultFrozenFlag::default()),
             ],
         )?;
 

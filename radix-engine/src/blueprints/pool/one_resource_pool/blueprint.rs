@@ -89,7 +89,7 @@ impl OneResourcePoolBlueprint {
             };
             api.new_simple_object(
                 ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![scrypto_encode(&substate).unwrap()],
+                vec![FieldValue::new(&substate)],
             )?
         };
 

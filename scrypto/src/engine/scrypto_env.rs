@@ -7,9 +7,7 @@ use radix_engine_interface::api::key_value_entry_api::{
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::{
-    ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
-};
+use radix_engine_interface::api::{ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, FieldValue, ObjectHandle};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{KVEntry, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -80,7 +78,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
-        object_states: Vec<Vec<u8>>,
+        object_states: Vec<FieldValue>,
     ) -> Result<NodeId, ClientApiError> {
         let object_states = scrypto_encode(&object_states).unwrap();
 
@@ -100,7 +98,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _blueprint_ident: &str,
         _features: Vec<&str>,
         _schema: Option<InstanceSchema>,
-        _fields: Vec<Vec<u8>>,
+        _fields: Vec<FieldValue>,
         _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, ClientApiError> {
         unimplemented!("Not available for Scrypto")
@@ -141,7 +139,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _modules: BTreeMap<ObjectModuleId, NodeId>,
         _address_reservation: GlobalAddressReservation,
         _inner_object_blueprint: &str,
-        _inner_object_fields: Vec<Vec<u8>>,
+        _inner_object_fields: Vec<FieldValue>,
     ) -> Result<(GlobalAddress, NodeId), ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }

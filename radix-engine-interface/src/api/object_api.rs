@@ -6,6 +6,7 @@ use crate::constants::{
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
@@ -75,6 +76,29 @@ impl ObjectModuleId {
     }
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(
+Debug,
+Clone,
+PartialEq,
+Eq,
+Hash,
+PartialOrd,
+Ord,
+ScryptoSbor
+)]
+pub struct FieldValue {
+    pub value: Vec<u8>,
+}
+
+impl FieldValue {
+    pub fn new<E: ScryptoEncode>(value: E) -> Self {
+        Self {
+            value: scrypto_encode(&value).unwrap()
+        }
+    }
+}
+
 pub struct KVEntry {
     pub value: Option<Vec<u8>>,
     pub locked: bool,
@@ -86,7 +110,7 @@ pub trait ClientObjectApi<E> {
     fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
-        fields: Vec<Vec<u8>>,
+        fields: Vec<FieldValue>,
     ) -> Result<NodeId, E> {
         self.new_object(blueprint_ident, vec![], None, fields, btreemap![])
     }
@@ -97,7 +121,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         features: Vec<&str>,
         schema: Option<InstanceSchema>,
-        fields: Vec<Vec<u8>>,
+        fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;
 
@@ -134,7 +158,7 @@ pub trait ClientObjectApi<E> {
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
-        inner_object_fields: Vec<Vec<u8>>,
+        inner_object_fields: Vec<FieldValue>,
     ) -> Result<(GlobalAddress, NodeId), E>;
 
     /// Calls a method on an object

@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 pub struct NonFungibleBucket;
@@ -412,8 +412,8 @@ impl NonFungibleBucketBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
+                FieldValue::new(&proof_info),
+                FieldValue::new(&proof),
             ],
         )?;
 
@@ -433,8 +433,8 @@ impl NonFungibleBucketBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
+                FieldValue::new(&proof_info),
+                FieldValue::new(&proof),
             ],
         )?;
         Ok(Proof(Own(proof_id)))

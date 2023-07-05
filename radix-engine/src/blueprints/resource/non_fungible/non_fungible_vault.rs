@@ -5,9 +5,7 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
-};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
@@ -199,8 +197,8 @@ impl NonFungibleVaultBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
+                FieldValue::new(&proof_info),
+                FieldValue::new(&proof),
             ],
         )?;
 
@@ -220,8 +218,8 @@ impl NonFungibleVaultBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof).unwrap(),
+                FieldValue::new(&proof_info),
+                FieldValue::new(&proof),
             ],
         )?;
         Ok(Proof(Own(proof_id)))

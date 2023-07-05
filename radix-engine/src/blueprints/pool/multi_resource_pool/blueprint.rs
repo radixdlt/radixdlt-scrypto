@@ -106,7 +106,7 @@ impl MultiResourcePoolBlueprint {
             };
             api.new_simple_object(
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![scrypto_encode(&substate).unwrap()],
+                vec![FieldValue::new(&substate)],
             )?
         };
 

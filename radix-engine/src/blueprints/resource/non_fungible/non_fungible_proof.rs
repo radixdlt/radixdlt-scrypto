@@ -4,7 +4,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use crate::system::system::{FieldSubstate};
 
@@ -104,8 +104,8 @@ impl NonFungibleProofBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
-                scrypto_encode(&moveable).unwrap(),
-                scrypto_encode(&clone).unwrap(),
+                FieldValue::new(&moveable),
+                FieldValue::new(&clone),
             ],
         )?;
 

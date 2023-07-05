@@ -11,7 +11,7 @@ mod node_create {
             ScryptoEnv
                 .new_simple_object(
                     "invalid_blueprint",
-                    vec![scrypto_encode(&NodeCreate {}).unwrap()],
+                    vec![FieldValue::new(&NodeCreate {})],
                 )
                 .unwrap();
         }

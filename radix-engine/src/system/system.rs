@@ -259,7 +259,7 @@ where
         blueprint_features: &BTreeSet<String>,
         outer_blueprint_features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
-        fields: Vec<Vec<u8>>,
+        fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError>
     {
@@ -325,7 +325,7 @@ where
                             )
                         })?;
 
-                    fields_to_check.push((field, pointer));
+                    fields_to_check.push((&field.value, pointer));
                 }
 
                 self.validate_payload_against_blueprint_schema(
@@ -351,7 +351,7 @@ where
                     }
 
 
-                    let value: ScryptoValue = scrypto_decode(&field)
+                    let value: ScryptoValue = scrypto_decode(&field.value)
                         .expect("Checked by payload-schema validation");
 
                     partition.insert(
@@ -665,7 +665,7 @@ where
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
-        fields: Vec<Vec<u8>>,
+        fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let blueprint_interface = self.get_blueprint_default_interface(
@@ -1296,7 +1296,7 @@ where
         blueprint_ident: &str,
         features: Vec<&str>,
         schema: Option<InstanceSchema>,
-        fields: Vec<Vec<u8>>,
+        fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
@@ -1383,7 +1383,7 @@ where
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
-        inner_object_fields: Vec<Vec<u8>>,
+        inner_object_fields: Vec<FieldValue>,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
 
@@ -2256,13 +2256,28 @@ where
             FieldLockData::Read
         };
 
-        self.api.kernel_open_substate(
+        let handle = self.api.kernel_open_substate(
             &node_id,
             partition_num,
             &SubstateKey::Field(field_index),
             flags,
             SystemLockData::Field(lock_data),
-        )
+        )?;
+
+        if flags.contains(LockFlags::MUTABLE) {
+            let mutability = self.api.kernel_read_substate(handle).map(|v| {
+                let field: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+                field.mutability
+            })?;
+
+            if let SubstateMutability::Immutable = mutability {
+                return Err(RuntimeError::SystemError(
+                    SystemError::MutatingImmutableSubstate,
+                ));
+            }
+        }
+
+        Ok(handle)
     }
 
     #[trace_resources]

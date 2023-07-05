@@ -9,7 +9,7 @@ use num_traits::pow::Pow;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::FungibleResourceManagerField;
@@ -106,8 +106,8 @@ impl FungibleResourceManagerBlueprint {
             features,
             None,
             vec![
-                scrypto_encode(&divisibility).unwrap(),
-                scrypto_encode(&Decimal::zero()).unwrap(),
+                FieldValue::new(&divisibility),
+                FieldValue::new(&Decimal::zero()),
             ],
             btreemap!(),
         )?;
@@ -160,8 +160,8 @@ impl FungibleResourceManagerBlueprint {
             features,
             None,
             vec![
-                scrypto_encode(&divisibility).unwrap(),
-                scrypto_encode(&initial_supply).unwrap(),
+                FieldValue::new(&divisibility),
+                FieldValue::new(&initial_supply),
             ],
             btreemap!(),
         )?;
@@ -301,8 +301,8 @@ impl FungibleResourceManagerBlueprint {
         let bucket_id = api.new_simple_object(
             FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
-                scrypto_encode(&LiquidFungibleResource::new(amount)).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                FieldValue::new(&LiquidFungibleResource::new(amount)),
+                FieldValue::new(&LockedFungibleResource::default()),
             ],
         )?;
 
@@ -316,9 +316,9 @@ impl FungibleResourceManagerBlueprint {
         let vault_id = api.new_simple_object(
             FUNGIBLE_VAULT_BLUEPRINT,
             vec![
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&VaultFrozenFlag::default()).unwrap(),
+                FieldValue::new(&LiquidFungibleResource::default()),
+                FieldValue::new(&LockedFungibleResource::default()),
+                FieldValue::new(&VaultFrozenFlag::default()),
             ],
         )?;
 

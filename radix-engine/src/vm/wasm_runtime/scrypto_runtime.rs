@@ -4,7 +4,7 @@ use crate::types::*;
 use crate::vm::wasm::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, FieldValue};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
 use radix_engine_interface::types::ClientCostingEntry;
@@ -157,7 +157,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
-        let object_states = scrypto_decode::<Vec<Vec<u8>>>(&object_states)
+        let object_states = scrypto_decode::<Vec<FieldValue>>(&object_states)
             .map_err(WasmRuntimeError::InvalidObjectStates)?;
 
         let component_id = self

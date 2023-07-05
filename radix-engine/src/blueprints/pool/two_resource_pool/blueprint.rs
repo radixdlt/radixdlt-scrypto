@@ -106,7 +106,7 @@ impl TwoResourcePoolBlueprint {
             };
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![scrypto_encode(&substate).unwrap()],
+                vec![FieldValue::new(&substate)],
             )?
         };
 

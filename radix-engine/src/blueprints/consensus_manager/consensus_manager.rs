@@ -16,7 +16,7 @@ use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{
@@ -293,13 +293,13 @@ impl ConsensusManagerBlueprint {
             api.new_simple_object(
                 CONSENSUS_MANAGER_BLUEPRINT,
                 vec![
-                    scrypto_encode(&config).unwrap(),
-                    scrypto_encode(&consensus_manager).unwrap(),
-                    scrypto_encode(&validator_rewards).unwrap(),
-                    scrypto_encode(&current_validator_set).unwrap(),
-                    scrypto_encode(&current_proposal_statistic).unwrap(),
-                    scrypto_encode(&minute_timestamp).unwrap(),
-                    scrypto_encode(&milli_timestamp).unwrap(),
+                    FieldValue::new(&config),
+                    FieldValue::new(&consensus_manager),
+                    FieldValue::new(&validator_rewards),
+                    FieldValue::new(&current_validator_set),
+                    FieldValue::new(&current_proposal_statistic),
+                    FieldValue::new(&minute_timestamp),
+                    FieldValue::new(&milli_timestamp),
                 ],
             )?
         };

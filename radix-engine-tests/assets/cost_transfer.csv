@@ -1,34 +1,34 @@
-Total Cost (XRD)                                                           ,   0.0537907695,   100.00%
-+ Execution Cost (XRD)                                                     ,     0.05114359,    95.08%
-+ Tipping Cost (XRD)                                                       ,   0.0025571795,     4.75%
+Total Cost (XRD)                                                           ,   0.0538214505,   100.00%
++ Execution Cost (XRD)                                                     ,     0.05117281,    95.08%
++ Tipping Cost (XRD)                                                       ,   0.0025586405,     4.75%
 + State Expansion Cost (XRD)                                               ,        0.00009,     0.17%
 + Royalty Cost (XRD)                                                       ,              0,     0.00%
-Total Cost Units Consumed                                                  ,        5114359,   100.00%
+Total Cost Units Consumed                                                  ,        5117281,   100.00%
 AfterInvoke                                                                ,            300,     0.01%
 AllocateNodeId                                                             ,           6500,     0.13%
 BeforeInvoke                                                               ,           6462,     0.13%
 CloseSubstate                                                              ,          81000,     1.58%
-Commit::GlobalAccount                                                      ,         100002,     1.96%
+Commit::GlobalAccount                                                      ,         100002,     1.95%
 Commit::InternalFungibleVault                                              ,         200020,     3.91%
 CreateNode                                                                 ,          12666,     0.25%
 DropNode                                                                   ,          12680,     0.25%
 EmitEvent                                                                  ,           1940,     0.04%
 LockFee                                                                    ,            500,     0.01%
-OpenSubstate::GlobalAccount                                                ,         888946,    17.38%
-OpenSubstate::GlobalFungibleResourceManager                                ,         329678,     6.45%
-OpenSubstate::GlobalPackage                                                ,        2482176,    48.53%
-OpenSubstate::InternalFungibleVault                                        ,         326162,     6.38%
+OpenSubstate::GlobalAccount                                                ,         888946,    17.37%
+OpenSubstate::GlobalFungibleResourceManager                                ,         329678,     6.44%
+OpenSubstate::GlobalPackage                                                ,        2482176,    48.51%
+OpenSubstate::InternalFungibleVault                                        ,         326162,     6.37%
 OpenSubstate::InternalGenericComponent                                     ,          43476,     0.85%
 QueryActor                                                                 ,           4000,     0.08%
-ReadSubstate                                                               ,         145896,     2.85%
+ReadSubstate                                                               ,         148818,     2.91%
 RunNativeCode::Worktop_drain                                               ,          22525,     0.44%
 RunNativeCode::Worktop_drop                                                ,          16371,     0.32%
 RunNativeCode::Worktop_put                                                 ,          24411,     0.48%
 RunNativeCode::get_amount_FungibleBucket                                   ,           7453,     0.15%
-RunNativeCode::lock_fee                                                    ,         131708,     2.58%
+RunNativeCode::lock_fee                                                    ,         131708,     2.57%
 RunNativeCode::put_FungibleVault                                           ,          21358,     0.42%
 RunNativeCode::take_FungibleVault                                          ,          53491,     1.05%
-RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,     1.25%
+RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,     1.24%
 RunNativeCode::withdraw                                                    ,          47564,     0.93%
 TxBaseCost                                                                 ,          50000,     0.98%
 TxPayloadCost                                                              ,          13450,     0.26%
