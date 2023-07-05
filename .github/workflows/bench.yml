@@ -1,14 +1,6 @@
 name: Benchmark PR
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - docs
-      - alphanet
-      - betanet
-      - release\/*
   pull_request:
     # Run on PR against any branch
 
