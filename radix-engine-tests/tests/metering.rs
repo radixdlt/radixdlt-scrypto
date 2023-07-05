@@ -143,7 +143,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     let mut buffer = String::new();
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.2}%\n",
+            "{:<75},{:>15}, {:8.1}%\n",
             "Total Cost (XRD)",
             fee_summary.total_cost().to_string(),
             100.0
@@ -152,7 +152,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.2}%\n",
+            "{:<75},{:>15}, {:8.1}%\n",
             "+ Execution Cost (XRD)",
             fee_summary.total_execution_cost_xrd.to_string(),
             decimal_to_float(fee_summary.total_execution_cost_xrd / fee_summary.total_cost() * 100)
@@ -161,7 +161,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.2}%\n",
+            "{:<75},{:>15}, {:8.1}%\n",
             "+ Tipping Cost (XRD)",
             fee_summary.total_tipping_cost_xrd.to_string(),
             decimal_to_float(fee_summary.total_tipping_cost_xrd / fee_summary.total_cost() * 100)
@@ -170,7 +170,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.2}%\n",
+            "{:<75},{:>15}, {:8.1}%\n",
             "+ State Expansion Cost (XRD)",
             fee_summary.total_state_expansion_cost_xrd.to_string(),
             decimal_to_float(
@@ -181,7 +181,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.2}%\n",
+            "{:<75},{:>15}, {:8.1}%\n",
             "+ Royalty Cost (XRD)",
             fee_summary.total_royalty_cost_xrd.to_string(),
             decimal_to_float(fee_summary.total_royalty_cost_xrd / fee_summary.total_cost() * 100)
@@ -190,7 +190,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     );
     buffer.push_str(
         format!(
-            "{:<75},{:>15}, {:8.2}%\n",
+            "{:<75},{:>15}, {:8.1}%\n",
             "Total Cost Units Consumed",
             fee_summary.execution_cost_breakdown.values().sum::<u32>(),
             100.0
@@ -200,7 +200,7 @@ pub fn write_cost_breakdown(fee_summary: &FeeSummary, file: &str) {
     for (k, v) in &fee_summary.execution_cost_breakdown {
         buffer.push_str(
             format!(
-                "{:<75},{:>15}, {:8.2}%\n",
+                "{:<75},{:>15}, {:8.1}%\n",
                 k,
                 v,
                 decimal_to_float(

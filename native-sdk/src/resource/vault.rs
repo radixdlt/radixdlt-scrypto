@@ -29,6 +29,15 @@ pub trait NativeVault {
     where
         Y: ClientApi<E>;
 
+    fn take_advanced<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>;
+
     fn take_all<Y, E: Debug + ScryptoDecode>(&mut self, api: &mut Y) -> Result<Bucket, E>
     where
         Y: ClientApi<E>;
@@ -148,6 +157,28 @@ impl NativeVault for Vault {
             self.0.as_node_id(),
             VAULT_TAKE_IDENT,
             scrypto_encode(&VaultTakeInput { amount }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn take_advanced<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            VAULT_TAKE_ADVANCED_IDENT,
+            scrypto_encode(&VaultTakeAdvancedInput {
+                amount,
+                withdraw_strategy,
+            })
+            .unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

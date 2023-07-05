@@ -164,7 +164,7 @@ mod bucket_test {
                     }
                 })
                 .mint_initial_supply(1u32);
-            bucket.create_proof();
+            let _ = bucket.create_proof();
 
             Self {
                 vault: Vault::with_bucket(bucket),
@@ -177,7 +177,7 @@ mod bucket_test {
         pub fn drop_locked_non_fungible_bucket() {
             let bucket = ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
                 .mint_initial_supply([MyData {}]);
-            bucket.create_proof();
+            let _ = bucket.create_proof();
 
             Self {
                 vault: Vault::with_bucket(bucket),

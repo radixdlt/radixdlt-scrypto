@@ -78,8 +78,11 @@ mod radiswap {
         }
 
         fn withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket {
-            self.pool_component
-                .protected_withdraw(resource_address, amount)
+            self.pool_component.protected_withdraw(
+                resource_address,
+                amount,
+                WithdrawStrategy::Rounded(RoundingMode::ToZero),
+            )
         }
     }
 }

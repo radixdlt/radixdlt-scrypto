@@ -834,4 +834,15 @@ impl NonFungibleResourceManagerBlueprint {
 
         return Ok(());
     }
+
+    pub(crate) fn amount_for_withdrawal<Y>(
+        _api: &mut Y,
+        amount: Decimal,
+        withdraw_strategy: WithdrawStrategy,
+    ) -> Result<Decimal, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Ok(amount.for_withdrawal(0, withdraw_strategy))
+    }
 }
