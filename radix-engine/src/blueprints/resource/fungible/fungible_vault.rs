@@ -6,7 +6,9 @@ use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, FieldValue, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
@@ -220,10 +222,7 @@ impl FungibleVaultBlueprint {
         let proof = FungibleVault::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof),
-            ],
+            vec![FieldValue::new(&proof_info), FieldValue::new(&proof)],
         )?;
 
         Ok(Proof(Own(proof_id)))

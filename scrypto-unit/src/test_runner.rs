@@ -448,14 +448,19 @@ impl TestRunner {
                 ROYALTY_FIELDS_PARTITION,
                 &RoyaltyField::RoyaltyAccumulator.into(),
             )
-            .unwrap().value.0;
+            .unwrap()
+            .value
+            .0;
         self.substate_db
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                 accumulator.royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &FungibleVaultField::LiquidFungible.into(),
             )
-            .unwrap().value.0.amount()
+            .unwrap()
+            .value
+            .0
+            .amount()
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
@@ -465,7 +470,9 @@ impl TestRunner {
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &PackageField::Royalty.into(),
-            )?.value.0;
+            )?
+            .value
+            .0;
 
         self.substate_db
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
@@ -708,7 +715,9 @@ impl TestRunner {
                 MAIN_BASE_PARTITION,
                 &ValidatorField::Validator.into(),
             )
-            .unwrap().value.0
+            .unwrap()
+            .value
+            .0
     }
 
     pub fn get_active_validator_with_key(&self, key: &Secp256k1PublicKey) -> ComponentAddress {
@@ -719,7 +728,9 @@ impl TestRunner {
                 MAIN_BASE_PARTITION,
                 &ConsensusManagerField::CurrentValidatorSet.into(),
             )
-            .unwrap().value.0;
+            .unwrap()
+            .value
+            .0;
 
         substate
             .validator_set
@@ -1713,7 +1724,8 @@ impl TestRunner {
                 &ConsensusManagerField::CurrentTime.into(),
             )
             .unwrap()
-            .value.0
+            .value
+            .0
             .epoch_milli
     }
 
@@ -1725,7 +1737,8 @@ impl TestRunner {
                 &ConsensusManagerField::ConsensusManager.into(),
             )
             .unwrap()
-            .value.0
+            .value
+            .0
     }
 
     pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {

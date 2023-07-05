@@ -1,12 +1,12 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::system::FieldSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
-use crate::system::system::{FieldSubstate};
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct FungibleProofSubstate {
@@ -99,10 +99,7 @@ impl FungibleProofBlueprint {
 
         let proof_id = api.new_simple_object(
             FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&moveable),
-                FieldValue::new(&clone),
-            ],
+            vec![FieldValue::new(&moveable), FieldValue::new(&clone)],
         )?;
 
         // Drop after object creation to keep the reference alive

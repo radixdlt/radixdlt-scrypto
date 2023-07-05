@@ -14,7 +14,9 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
-use radix_engine_interface::api::{ClientApi, ClientObjectApi, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF, FieldValue};
+use radix_engine_interface::api::{
+    ClientApi, ClientObjectApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
+};
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
@@ -28,7 +30,9 @@ use sbor::LocalTypeIndex;
 use crate::roles_template;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::royalty::RoyaltyUtil;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService};
+use crate::system::system::{
+    FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
+};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};

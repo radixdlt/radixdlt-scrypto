@@ -15,7 +15,9 @@ use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::Url;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, FieldValue, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{

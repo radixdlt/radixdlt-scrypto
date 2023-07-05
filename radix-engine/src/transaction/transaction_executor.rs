@@ -375,7 +375,8 @@ where
                 return None;
             }
         };
-        let substate: FieldSubstate<ConsensusManagerSubstate> = track.read_substate(handle).0.as_typed().unwrap();
+        let substate: FieldSubstate<ConsensusManagerSubstate> =
+            track.read_substate(handle).0.as_typed().unwrap();
         track.close_substate(handle);
         Some(substate.value.0.epoch)
     }
@@ -420,7 +421,8 @@ where
         track.close_substate(handle);
 
         let partition_number = substate
-            .value.0
+            .value
+            .0
             .partition_for_expiry_epoch(expiry_epoch)
             .expect("Transaction tracker should cover all valid epoch ranges");
 
@@ -616,7 +618,8 @@ where
                 )
                 .unwrap();
             let (substate_value, _store_access) = track.read_substate(handle);
-            let mut substate: FieldSubstate<LiquidFungibleResource> = substate_value.as_typed().unwrap();
+            let mut substate: FieldSubstate<LiquidFungibleResource> =
+                substate_value.as_typed().unwrap();
             substate.value.0.put(LiquidFungibleResource::new(amount));
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
@@ -655,7 +658,8 @@ where
                 )
                 .unwrap();
             let (substate_value, _store_access) = track.read_substate(handle);
-            let mut substate: FieldSubstate<LiquidFungibleResource> = substate_value.as_typed().unwrap();
+            let mut substate: FieldSubstate<LiquidFungibleResource> =
+                substate_value.as_typed().unwrap();
             substate.value.0.put(locked);
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
@@ -708,7 +712,8 @@ where
                 let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
                     + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
                 substate
-                    .value.0
+                    .value
+                    .0
                     .proposer_rewards
                     .entry(current_leader)
                     .or_default()
@@ -774,8 +779,10 @@ where
             intent_hash,
         } = intent_hash
         {
-            if let Some(partition_number) =
-                transaction_tracker.value.0.partition_for_expiry_epoch(*expiry_epoch)
+            if let Some(partition_number) = transaction_tracker
+                .value
+                .0
+                .partition_for_expiry_epoch(*expiry_epoch)
             {
                 let handle = track
                     .acquire_lock_virtualize(
@@ -818,7 +825,8 @@ where
         //
         // Also, we need to make sure epoch doesn't jump by a large distance.
         if next_epoch.number()
-            >= transaction_tracker.value.0.start_epoch + transaction_tracker.value.0.epochs_per_partition
+            >= transaction_tracker.value.0.start_epoch
+                + transaction_tracker.value.0.epochs_per_partition
         {
             let discarded_partition = transaction_tracker.value.0.advance();
             track.delete_partition(
@@ -829,7 +837,6 @@ where
         track.update_substate(
             handle,
             IndexedScryptoValue::from_typed(&FieldSubstate::new_field(transaction_tracker.value.0)),
-
         );
         track.close_substate(handle);
     }

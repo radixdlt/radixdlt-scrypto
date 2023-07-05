@@ -12,7 +12,7 @@ use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::{FieldSubstate};
+use crate::system::system::FieldSubstate;
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
 

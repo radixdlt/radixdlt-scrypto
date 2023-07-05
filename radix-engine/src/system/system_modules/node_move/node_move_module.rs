@@ -6,13 +6,13 @@ use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::system::FieldSubstate;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
-use crate::system::system::{FieldSubstate};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum NodeMoveError {

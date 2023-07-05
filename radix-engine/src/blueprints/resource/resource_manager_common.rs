@@ -102,7 +102,6 @@ where
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
-
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
         btreemap!(
             ObjectModuleId::Main => object_id,

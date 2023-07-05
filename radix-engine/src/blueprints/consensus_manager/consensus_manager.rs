@@ -536,8 +536,7 @@ impl ConsensusManagerBlueprint {
             ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
         )?;
-        let manager_substate: ConsensusManagerSubstate =
-            api.field_read_typed(manager_handle)?;
+        let manager_substate: ConsensusManagerSubstate = api.field_read_typed(manager_handle)?;
 
         let validator_creation_xrd_cost = if manager_substate.started {
             let config_handle = api.actor_open_field(

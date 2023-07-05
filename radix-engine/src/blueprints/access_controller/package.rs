@@ -1164,8 +1164,7 @@ impl AccessControllerNativePackage {
                 api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
 
             let access_controller = {
-                let access_controller: AccessControllerSubstate =
-                    api.field_read_typed(handle)?;
+                let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
                 access_controller
             };
             access_controller.recovery_badge

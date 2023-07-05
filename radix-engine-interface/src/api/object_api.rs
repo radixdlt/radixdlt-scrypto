@@ -77,16 +77,7 @@ impl ObjectModuleId {
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(
-Debug,
-Clone,
-PartialEq,
-Eq,
-Hash,
-PartialOrd,
-Ord,
-ScryptoSbor
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
 pub struct FieldValue {
     pub value: Vec<u8>,
     pub locked: bool,

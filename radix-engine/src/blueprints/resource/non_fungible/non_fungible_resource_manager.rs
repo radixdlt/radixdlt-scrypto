@@ -7,7 +7,9 @@ use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, KVEntry, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, CollectionIndex, FieldValue, KVEntry, OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
@@ -134,11 +136,12 @@ impl NonFungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
-        let total_supply_field = if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
-            FieldValue::new(&Decimal::zero())
-        } else {
-            FieldValue::immutable(&Decimal::zero())
-        };
+        let total_supply_field =
+            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+                FieldValue::new(&Decimal::zero())
+            } else {
+                FieldValue::immutable(&Decimal::zero())
+            };
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -235,11 +238,12 @@ impl NonFungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
-        let total_supply_field = if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
-            FieldValue::new(&supply)
-        } else {
-            FieldValue::immutable(&supply)
-        };
+        let total_supply_field =
+            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+                FieldValue::new(&supply)
+            } else {
+                FieldValue::immutable(&supply)
+            };
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
@@ -317,12 +321,12 @@ impl NonFungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
-        let total_supply_field = if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
-            FieldValue::new(&supply)
-        } else {
-            FieldValue::immutable(&supply)
-        };
-
+        let total_supply_field =
+            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+                FieldValue::new(&supply)
+            } else {
+                FieldValue::immutable(&supply)
+            };
 
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,

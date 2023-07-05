@@ -373,7 +373,9 @@ fn test_genesis_time() {
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
         )
-        .unwrap().value.0;
+        .unwrap()
+        .value
+        .0;
 
     assert_eq!(proposer_minute_timestamp.epoch_minute, 123);
 }

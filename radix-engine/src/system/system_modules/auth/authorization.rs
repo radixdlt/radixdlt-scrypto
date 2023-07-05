@@ -80,7 +80,8 @@ impl Authorization {
                 LockFlags::read_only(),
                 SystemLockData::default(),
             )?;
-            let auth_zone: FieldSubstate<AuthZone> = api.kernel_read_substate(handle)?.as_typed().unwrap();
+            let auth_zone: FieldSubstate<AuthZone> =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
             let auth_zone = auth_zone.value.0.clone();
             handles.push(handle);
 

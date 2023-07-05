@@ -1,13 +1,13 @@
 use crate::blueprints::resource::*;
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::system::FieldSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::*;
-use crate::system::system::{FieldSubstate};
 
 use super::AuthZoneError;
 
@@ -268,7 +268,8 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
             LockFlags::read_only(),
             SystemLockData::default(),
         )?;
-        let substate: FieldSubstate<FungibleProofSubstate> = api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let substate: FieldSubstate<FungibleProofSubstate> =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
         let proof = substate.value.0.clone();
         for (container, _) in &proof.evidence {
             if remaining.is_zero() {

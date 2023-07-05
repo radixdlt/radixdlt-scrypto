@@ -411,10 +411,7 @@ impl NonFungibleBucketBlueprint {
         let proof = NonFungibleBucket::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof),
-            ],
+            vec![FieldValue::new(&proof_info), FieldValue::new(&proof)],
         )?;
 
         Ok(Proof(Own(proof_id)))
@@ -432,10 +429,7 @@ impl NonFungibleBucketBlueprint {
         let proof = NonFungibleBucket::lock_non_fungibles(receiver, ids, api)?;
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof),
-            ],
+            vec![FieldValue::new(&proof_info), FieldValue::new(&proof)],
         )?;
         Ok(Proof(Own(proof_id)))
     }

@@ -350,9 +350,8 @@ where
                         Condition::Always => {}
                     }
 
-
-                    let value: ScryptoValue = scrypto_decode(&field.value)
-                        .expect("Checked by payload-schema validation");
+                    let value: ScryptoValue =
+                        scrypto_decode(&field.value).expect("Checked by payload-schema validation");
 
                     let substate = FieldSubstate {
                         value: (value,),
@@ -365,7 +364,7 @@ where
 
                     partition.insert(
                         SubstateKey::Field(i as u8),
-                        IndexedScryptoValue::from_typed(&substate)
+                        IndexedScryptoValue::from_typed(&substate),
                     );
                 }
 
@@ -1225,8 +1224,8 @@ where
 {
     // Costing through kernel
     #[trace_resources]
-    fn field_read(&mut self, lock_handle: FieldLockHandle) -> Result<Vec<u8>, RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
+    fn field_read(&mut self, handle: FieldLockHandle) -> Result<Vec<u8>, RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
@@ -1234,22 +1233,20 @@ where
             }
         }
 
-        self.api
-            .kernel_read_substate(lock_handle)
-            .map(|v| {
-                let wrapper: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
-                scrypto_encode(&wrapper.value.0).unwrap()
-            })
+        self.api.kernel_read_substate(handle).map(|v| {
+            let wrapper: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+            scrypto_encode(&wrapper.value.0).unwrap()
+        })
     }
 
     // Costing through kernel
     #[trace_resources]
     fn field_write(
         &mut self,
-        lock_handle: FieldLockHandle,
+        handle: FieldLockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
 
         match data {
             SystemLockData::Field(FieldLockData::Write {
@@ -1268,12 +1265,11 @@ where
             }
         }
 
-        let value: ScryptoValue = scrypto_decode(&buffer)
-            .expect("Should be valid due to payload check");
+        let value: ScryptoValue =
+            scrypto_decode(&buffer).expect("Should be valid due to payload check");
 
-        let substate =
-            IndexedScryptoValue::from_typed(&FieldSubstate::new_field(value));
-        self.api.kernel_write_substate(lock_handle, substate)?;
+        let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_field(value));
+        self.api.kernel_write_substate(handle, substate)?;
 
         Ok(())
     }
@@ -1281,7 +1277,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_lock(&mut self, handle: FieldLockHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
 
         match data {
             SystemLockData::Field(FieldLockData::Write { .. }) => {}

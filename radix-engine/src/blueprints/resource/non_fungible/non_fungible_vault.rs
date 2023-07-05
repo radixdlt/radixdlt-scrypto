@@ -5,7 +5,10 @@ use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, CollectionIndex, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT,
+    OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 
@@ -196,10 +199,7 @@ impl NonFungibleVaultBlueprint {
         let proof = NonFungibleVault::lock_amount(receiver, amount, api)?;
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof),
-            ],
+            vec![FieldValue::new(&proof_info), FieldValue::new(&proof)],
         )?;
 
         Ok(Proof(Own(proof_id)))
@@ -217,10 +217,7 @@ impl NonFungibleVaultBlueprint {
         let proof = NonFungibleVault::lock_non_fungibles(receiver, ids, api)?;
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                FieldValue::new(&proof_info),
-                FieldValue::new(&proof),
-            ],
+            vec![FieldValue::new(&proof_info), FieldValue::new(&proof)],
         )?;
         Ok(Proof(Own(proof_id)))
     }

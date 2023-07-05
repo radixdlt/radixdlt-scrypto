@@ -6,6 +6,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system::FieldSubstate;
 use crate::types::*;
 use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
@@ -20,7 +21,6 @@ use transaction::data::transform;
 use transaction::data::TransformHandler;
 use transaction::model::*;
 use transaction::validation::*;
-use crate::system::system::{FieldSubstate};
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct TransactionProcessorRunInput {

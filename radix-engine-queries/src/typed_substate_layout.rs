@@ -14,7 +14,7 @@ pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
-use radix_engine::system::system::{FieldSubstate};
+use radix_engine::system::system::FieldSubstate;
 pub use radix_engine::system::system::KeyValueEntrySubstate;
 pub use radix_engine_interface::api::node_modules::royalty::*;
 use transaction::prelude::IntentHash;

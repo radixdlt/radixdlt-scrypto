@@ -1,13 +1,16 @@
 use crate::engine::wasm_api::*;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
+use radix_engine_interface::api::field_lock_api::FieldLockHandle;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
 use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
-use radix_engine_interface::api::{ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, FieldValue, ObjectHandle};
+use radix_engine_interface::api::{
+    ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, FieldValue, ObjectHandle,
+};
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{KVEntry, LockFlags};
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -17,7 +20,6 @@ use radix_engine_interface::types::{BlueprintId, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId};
 use radix_engine_interface::types::{ObjectInfo, PackageAddress};
 use radix_engine_interface::*;
-use radix_engine_interface::api::field_lock_api::FieldLockHandle;
 use sbor::rust::prelude::*;
 use sbor::*;
 use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
@@ -228,10 +230,7 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn key_value_entry_lock(
-        &mut self,
-        _handle: KeyValueEntryHandle,
-    ) -> Result<(), ClientApiError> {
+    fn key_value_entry_lock(&mut self, _handle: KeyValueEntryHandle) -> Result<(), ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
 
