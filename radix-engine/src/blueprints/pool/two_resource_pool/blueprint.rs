@@ -106,7 +106,7 @@ impl TwoResourcePoolBlueprint {
             };
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![FieldValue::new(&substate)],
+                vec![FieldValue::immutable(&substate)],
             )?
         };
 
@@ -130,7 +130,7 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::MUTABLE)?;
+        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let (resource_address1, resource_address2, mut vault1, mut vault2, bucket1, bucket2) = {
             // Getting the vaults of the two resource pool - before getting them we sort them according

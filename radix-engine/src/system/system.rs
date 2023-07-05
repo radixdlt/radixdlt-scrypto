@@ -354,9 +354,18 @@ where
                     let value: ScryptoValue = scrypto_decode(&field.value)
                         .expect("Checked by payload-schema validation");
 
+                    let substate = FieldSubstate {
+                        value: (value,),
+                        mutability: if field.locked {
+                            SubstateMutability::Immutable
+                        } else {
+                            SubstateMutability::Mutable
+                        },
+                    };
+
                     partition.insert(
                         SubstateKey::Field(i as u8),
-                        IndexedScryptoValue::from_typed(&FieldSubstate::new_field(value))
+                        IndexedScryptoValue::from_typed(&substate)
                     );
                 }
 
@@ -2272,7 +2281,7 @@ where
 
             if let SubstateMutability::Immutable = mutability {
                 return Err(RuntimeError::SystemError(
-                    SystemError::MutatingImmutableSubstate,
+                    SystemError::MutatingImmutableFieldSubstate(object_handle, field_index),
                 ));
             }
         }

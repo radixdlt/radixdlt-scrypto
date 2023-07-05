@@ -293,7 +293,7 @@ impl ConsensusManagerBlueprint {
             api.new_simple_object(
                 CONSENSUS_MANAGER_BLUEPRINT,
                 vec![
-                    FieldValue::new(&config),
+                    FieldValue::immutable(&config),
                     FieldValue::new(&consensus_manager),
                     FieldValue::new(&validator_rewards),
                     FieldValue::new(&current_validator_set),

@@ -106,7 +106,7 @@ impl MultiResourcePoolBlueprint {
             };
             api.new_simple_object(
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![FieldValue::new(&substate)],
+                vec![FieldValue::immutable(&substate)],
             )?
         };
 

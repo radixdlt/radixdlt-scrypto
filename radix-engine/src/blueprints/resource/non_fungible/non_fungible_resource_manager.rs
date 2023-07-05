@@ -134,14 +134,20 @@ impl NonFungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
+        let total_supply_field = if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+            FieldValue::new(&Decimal::zero())
+        } else {
+            FieldValue::immutable(&Decimal::zero())
+        };
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             Some(instance_schema),
             vec![
-                FieldValue::new(&id_type),
-                FieldValue::new(&mutable_fields),
-                FieldValue::new(&Decimal::zero()),
+                FieldValue::immutable(&id_type),
+                FieldValue::immutable(&mutable_fields),
+                total_supply_field,
             ],
             btreemap!(),
         )?;
@@ -229,14 +235,20 @@ impl NonFungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
+        let total_supply_field = if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+            FieldValue::new(&supply)
+        } else {
+            FieldValue::immutable(&supply)
+        };
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             Some(instance_schema),
             vec![
-                FieldValue::new(&id_type),
-                FieldValue::new(&mutable_fields),
-                FieldValue::new(&supply),
+                FieldValue::immutable(&id_type),
+                FieldValue::immutable(&mutable_fields),
+                total_supply_field,
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
@@ -305,14 +317,21 @@ impl NonFungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
+        let total_supply_field = if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+            FieldValue::new(&supply)
+        } else {
+            FieldValue::immutable(&supply)
+        };
+
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             Some(instance_schema),
             vec![
-                FieldValue::new(&NonFungibleIdType::RUID),
-                FieldValue::new(&mutable_fields),
-                FieldValue::new(&supply),
+                FieldValue::immutable(&NonFungibleIdType::RUID),
+                FieldValue::immutable(&mutable_fields),
+                total_supply_field,
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
@@ -403,7 +422,7 @@ impl NonFungibleResourceManagerBlueprint {
             let id_type_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::IdType.into(),
-                LockFlags::MUTABLE,
+                LockFlags::read_only(),
             )?;
             let id_type: NonFungibleIdType = api.field_lock_read_typed(id_type_handle)?;
             api.field_lock_release(id_type_handle)?;
@@ -465,7 +484,7 @@ impl NonFungibleResourceManagerBlueprint {
             let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::IdType.into(),
-                LockFlags::MUTABLE,
+                LockFlags::read_only(),
             )?;
             let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
             api.field_lock_release(handle)?;

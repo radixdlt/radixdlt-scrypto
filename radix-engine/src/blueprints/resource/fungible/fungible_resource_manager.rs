@@ -101,13 +101,19 @@ impl FungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
+        let total_supply_field = if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+            FieldValue::new(&Decimal::zero())
+        } else {
+            FieldValue::immutable(&Decimal::zero())
+        };
+
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             None,
             vec![
-                FieldValue::new(&divisibility),
-                FieldValue::new(&Decimal::zero()),
+                FieldValue::immutable(&divisibility),
+                total_supply_field,
             ],
             btreemap!(),
         )?;
@@ -155,13 +161,19 @@ impl FungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
+        let total_supply_field = if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+            FieldValue::new(&initial_supply)
+        } else {
+            FieldValue::immutable(&initial_supply)
+        };
+
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             None,
             vec![
-                FieldValue::new(&divisibility),
-                FieldValue::new(&initial_supply),
+                FieldValue::immutable(&divisibility),
+                total_supply_field,
             ],
             btreemap!(),
         )?;

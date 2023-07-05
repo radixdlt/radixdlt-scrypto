@@ -743,7 +743,7 @@ where
         PACKAGE_BLUEPRINT,
         vec![PACKAGE_ROYALTY_FEATURE],
         None,
-        vec![FieldValue::new(&royalty)],
+        vec![FieldValue::immutable(&royalty)],
         kv_entries,
     )?;
 

@@ -89,12 +89,21 @@ ScryptoSbor
 )]
 pub struct FieldValue {
     pub value: Vec<u8>,
+    pub locked: bool,
 }
 
 impl FieldValue {
     pub fn new<E: ScryptoEncode>(value: E) -> Self {
         Self {
-            value: scrypto_encode(&value).unwrap()
+            value: scrypto_encode(&value).unwrap(),
+            locked: false,
+        }
+    }
+
+    pub fn immutable<E: ScryptoEncode>(value: E) -> Self {
+        Self {
+            value: scrypto_encode(&value).unwrap(),
+            locked: true,
         }
     }
 }
