@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,   21.684597397,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.69264514,      3.2%
-+ Tipping Cost (XRD)                                                       ,    0.034632257,      0.2%
+Total Cost (XRD)                                                           ,  21.6844706935,    100.0%
++ Execution Cost (XRD)                                                     ,     0.69252447,      3.2%
++ Tipping Cost (XRD)                                                       ,   0.0346262235,      0.2%
 + State Expansion Cost (XRD)                                               ,       20.95732,     96.6%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       69264514,    100.0%
+Total Cost Units Consumed                                                  ,       69252447,    100.0%
 AfterInvoke                                                                ,            402,      0.0%
 AllocateNodeId                                                             ,           9500,      0.0%
 BeforeInvoke                                                               ,        2100874,      3.0%
@@ -18,21 +18,21 @@ LockFee                                                                    ,    
 MoveModules                                                                ,           7000,      0.0%
 OpenSubstate::GlobalFungibleResourceManager                                ,         245980,      0.4%
 OpenSubstate::GlobalGenericComponent                                       ,         161870,      0.2%
-OpenSubstate::GlobalPackage                                                ,        5461048,      7.9%
+OpenSubstate::GlobalPackage                                                ,        5456648,      7.9%
 OpenSubstate::InternalFungibleVault                                        ,         165678,      0.2%
 OpenSubstate::InternalGenericComponent                                     ,          28414,      0.0%
 OpenSubstate::InternalKeyValueStore                                        ,          80726,      0.1%
-PrepareWasmCode                                                            ,         697846,      1.0%
+PrepareWasmCode                                                            ,         693846,      1.0%
 QueryActor                                                                 ,           2000,      0.0%
-ReadSubstate                                                               ,         864982,      1.2%
+ReadSubstate                                                               ,         860982,      1.2%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.0%
 RunNativeCode::create                                                      ,          54027,      0.1%
 RunNativeCode::create_empty_vault_FungibleResourceManager                  ,          46810,      0.1%
 RunNativeCode::create_with_data                                            ,          26638,      0.0%
 RunNativeCode::lock_fee                                                    ,          61733,      0.1%
 RunNativeCode::publish_wasm_advanced                                       ,         451573,      0.7%
-RunWasmCode::Faucet_lock_fee                                               ,          17654,      0.0%
+RunWasmCode::Faucet_lock_fee                                               ,          17987,      0.0%
 TxBaseCost                                                                 ,          50000,      0.1%
-TxPayloadCost                                                              ,       52389750,     75.6%
+TxPayloadCost                                                              ,       52389750,     75.7%
 TxSignatureVerification                                                    ,              0,      0.0%
 WriteSubstate                                                              ,          10410,      0.0%
