@@ -206,3 +206,89 @@ mod auth_resource {
         }
     }
 }
+
+#[blueprint]
+mod rounding {
+    struct RoundingTest;
+
+    impl RoundingTest {
+        pub fn fungible_resource_amount_for_withdrawal() -> Bucket {
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .divisibility(2)
+                .mint_initial_supply(100);
+            let manager = bucket.resource_manager();
+            assert_eq!(
+                manager.amount_for_withdrawal(dec!("1.515"), WithdrawStrategy::Exact),
+                dec!("1.515")
+            );
+            assert_eq!(
+                manager.amount_for_withdrawal(
+                    dec!("1.515"),
+                    WithdrawStrategy::Rounded(RoundingMode::ToZero)
+                ),
+                dec!("1.51")
+            );
+            assert_eq!(
+                manager.amount_for_withdrawal(
+                    dec!("1.515"),
+                    WithdrawStrategy::Rounded(RoundingMode::MidpointNearestEven)
+                ),
+                dec!("1.52")
+            );
+            bucket
+        }
+
+        pub fn non_fungible_resource_amount_for_withdrawal() -> Bucket {
+            let bucket = ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                .mint_initial_supply(vec![(
+                    0u64.into(),
+                    TestNFData {
+                        name: "name".to_string(),
+                        available: false,
+                    },
+                )]);
+            let manager = bucket.resource_manager();
+            assert_eq!(
+                manager.amount_for_withdrawal(dec!("1.515"), WithdrawStrategy::Exact),
+                dec!("1.515")
+            );
+            assert_eq!(
+                manager.amount_for_withdrawal(
+                    dec!("1.515"),
+                    WithdrawStrategy::Rounded(RoundingMode::ToZero)
+                ),
+                dec!("1")
+            );
+            assert_eq!(
+                manager.amount_for_withdrawal(
+                    dec!("1.515"),
+                    WithdrawStrategy::Rounded(RoundingMode::MidpointNearestEven)
+                ),
+                dec!("2")
+            );
+            bucket
+        }
+
+        pub fn fungible_resource_take_advanced() -> Bucket {
+            let mut bucket = Self::fungible_resource_amount_for_withdrawal();
+            let bucket2 = bucket.take_advanced(
+                dec!("1.231"),
+                WithdrawStrategy::Rounded(RoundingMode::ToZero),
+            );
+            assert_eq!(bucket2.amount(), dec!("1.23"));
+            bucket.put(bucket2);
+            bucket
+        }
+
+        pub fn non_fungible_resource_take_advanced() -> Bucket {
+            let mut bucket = Self::non_fungible_resource_amount_for_withdrawal();
+            let bucket2 = bucket.take_advanced(
+                dec!("1.231"),
+                WithdrawStrategy::Rounded(RoundingMode::ToZero),
+            );
+            assert_eq!(bucket2.amount(), dec!("1"));
+            bucket.put(bucket2);
+            bucket
+        }
+    }
+}

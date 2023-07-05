@@ -260,7 +260,7 @@ impl ResourceManagerStub {
         &self,
         request_amount: Decimal,
         withdraw_strategy: WithdrawStrategy,
-    ) {
+    ) -> Decimal {
         self.call(
             RESOURCE_MANAGER_GET_AMOUNT_FOR_WITHDRAWAL_IDENT,
             &ResourceManagerGetAmountForWithdrawalInput {
