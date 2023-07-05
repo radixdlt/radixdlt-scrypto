@@ -64,12 +64,12 @@ impl TwoResourcePoolBlueprint {
                 18,
                 FungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(require(component_caller_badge.clone())), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(require(component_caller_badge.clone()));
+                        minter_updater => rule!(deny_all);
                     },
                     burn_roles: burn_roles! {
-                        burner => rule!(require(component_caller_badge.clone())), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => rule!(require(component_caller_badge.clone()));
+                        burner_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },

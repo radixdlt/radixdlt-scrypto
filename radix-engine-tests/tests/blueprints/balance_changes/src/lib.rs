@@ -21,12 +21,12 @@ mod balance_changes_test {
             .prepare_to_globalize(OwnerRole::Fixed(rule!(allow_all)))
             .enable_component_royalties(component_royalties! {
                 roles {
-                    royalty_setter => rule!(allow_all), locked;
-                    royalty_setter_updater => rule!(deny_all), locked;
-                    royalty_locker => rule!(allow_all), locked;
-                    royalty_locker_updater => rule!(deny_all), locked;
-                    royalty_claimer => rule!(allow_all), locked;
-                    royalty_claimer_updater => rule!(deny_all), locked;
+                    royalty_setter => rule!(allow_all);
+                    royalty_setter_updater => rule!(deny_all);
+                    royalty_locker => rule!(allow_all);
+                    royalty_locker_updater => rule!(deny_all);
+                    royalty_claimer => rule!(allow_all);
+                    royalty_claimer_updater => rule!(deny_all);
                 },
                 init {
                     put => Xrd(1.into()), locked;

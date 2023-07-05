@@ -412,10 +412,6 @@ impl<O: HasStub> HasAccessRules for Global<O> {
         self.access_rules().lock_owner_role()
     }
 
-    fn set_and_lock_owner_role<A: Into<AccessRule>>(&self, rule: A) {
-        self.access_rules().set_and_lock_owner_role(rule);
-    }
-
     fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.access_rules().set_role(name, rule);
     }
@@ -424,37 +420,12 @@ impl<O: HasStub> HasAccessRules for Global<O> {
         self.access_rules().get_role(name)
     }
 
-    fn lock_role(&self, name: &str) {
-        self.access_rules().lock_role(name);
-    }
-
-    fn set_and_lock_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules().set_and_lock_role(name, rule);
-    }
-
     fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.access_rules().set_metadata_role(name, rule);
     }
 
-    fn lock_metadata_role(&self, name: &str) {
-        self.access_rules().lock_role(name);
-    }
-
-    fn set_and_lock_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules().set_and_lock_metadata_role(name, rule);
-    }
-
     fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
         self.access_rules().set_component_royalties_role(name, rule);
-    }
-
-    fn lock_component_royalties_role(&self, name: &str) {
-        self.access_rules().lock_component_royalties_role(name);
-    }
-
-    fn set_and_lock_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules()
-            .set_and_lock_component_royalties_role(name, rule);
     }
 }
 

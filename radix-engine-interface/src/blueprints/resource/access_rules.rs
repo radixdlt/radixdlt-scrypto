@@ -1,8 +1,9 @@
+use crate::api::node_modules::auth::ToRoleEntry;
 use crate::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::types::KeyValueStoreInit;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -191,51 +192,33 @@ pub enum OwnerRole {
     Fixed(AccessRule),
     /// Rule protected Owner role which may only be updated by the owner themself
     Updatable(AccessRule),
-    /// Rule protected Owner role which may only be updated by the object
-    /// containing the access rules.
-    /// This is currently primarily used for Presecurified objects
-    UpdatableByObject(AccessRule),
 }
 
-impl OwnerRole {
-    pub fn to_entry(self) -> OwnerRoleEntry {
+impl Into<OwnerRoleEntry> for OwnerRole {
+    fn into(self) -> OwnerRoleEntry {
         match self {
             OwnerRole::None => OwnerRoleEntry::new(AccessRule::DenyAll, OwnerRoleUpdater::None),
             OwnerRole::Fixed(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::None),
             OwnerRole::Updatable(rule) => OwnerRoleEntry::new(rule, OwnerRoleUpdater::Owner),
-            OwnerRole::UpdatableByObject(rule) => {
-                OwnerRoleEntry::new(rule, OwnerRoleUpdater::Object)
-            }
         }
     }
 }
 
-pub type RolesInit = KeyValueStoreInit<RoleKey, AccessRule>;
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
+pub struct RolesInit {
+    pub data: BTreeMap<RoleKey, Option<AccessRule>>,
+}
 
 impl RolesInit {
-    pub fn define_immutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
-        self.set_and_lock(role.into(), access_rule);
+    pub fn new() -> Self {
+        RolesInit {
+            data: BTreeMap::new(),
+        }
     }
 
-    pub fn define_mutable_role<K: Into<RoleKey>>(&mut self, role: K, access_rule: AccessRule) {
-        self.set(role.into(), access_rule);
-    }
-
-    pub fn define_role<K: Into<RoleKey>>(
-        &mut self,
-        role: K,
-        access_rule: AccessRule,
-        locked: bool,
-    ) {
-        self.set_raw(role.into(), Some(access_rule), locked);
-    }
-
-    pub fn define_role_raw<K: Into<RoleKey>>(
-        &mut self,
-        role: K,
-        access_rule: Option<AccessRule>,
-        locked: bool,
-    ) {
-        self.set_raw(role.into(), access_rule, locked);
+    pub fn define_role<K: Into<RoleKey>, R: ToRoleEntry>(&mut self, role: K, access_rule: R) {
+        self.data.insert(role.into(), access_rule.to_role_entry());
     }
 }

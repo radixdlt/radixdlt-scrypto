@@ -578,12 +578,12 @@ pub fn create_system_bootstrap_transaction(
                     divisibility: 18,
                     resource_roles: FungibleResourceRoles {
                         mint_roles: mint_roles! {
-                            minter => rule!(require(global_caller(CONSENSUS_MANAGER))), locked;
-                            minter_updater => rule!(deny_all), locked;
+                            minter => rule!(require(global_caller(CONSENSUS_MANAGER)));
+                            minter_updater => rule!(deny_all);
                         },
                         burn_roles: burn_roles! {
-                            burner => rule!(require(global_caller(CONSENSUS_MANAGER))), locked;
-                            burner_updater => rule!(deny_all), locked;
+                            burner => rule!(require(global_caller(CONSENSUS_MANAGER)));
+                            burner_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -622,8 +622,8 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     resource_roles: NonFungibleResourceRoles {
                         withdraw_roles: withdraw_roles! {
-                            withdrawer => rule!(deny_all), locked;
-                            withdrawer_updater => rule!(deny_all), locked;
+                            withdrawer => rule!(deny_all);
+                            withdrawer_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -659,8 +659,8 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
                     resource_roles: NonFungibleResourceRoles {
                         withdraw_roles: withdraw_roles! {
-                            withdrawer => rule!(deny_all), locked;
-                            withdrawer_updater => rule!(deny_all), locked;
+                            withdrawer => rule!(deny_all);
+                            withdrawer_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -696,8 +696,8 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<PackageOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
-                            minter => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE))), locked;
-                            minter_updater => rule!(deny_all), locked;
+                            minter => rule!(require(package_of_direct_caller(PACKAGE_PACKAGE)));
+                            minter_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -733,8 +733,8 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<IdentityOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
-                            minter => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE))), locked;
-                            minter_updater => rule!(deny_all), locked;
+                            minter => rule!(require(package_of_direct_caller(IDENTITY_PACKAGE)));
+                            minter_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -761,7 +761,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: IdentityNativePackage::definition(),
+                definition: IdentityNativePackage::definition(),
                 native_package_code_id: IDENTITY_CODE_ID,
                 metadata: metadata_init! {
                     "name" => "Identity Package".to_owned(), locked;
@@ -783,7 +783,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: ConsensusManagerNativePackage::definition(),
+                definition: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
                 metadata: metadata_init! {
                     "name" => "Consensus Manager Package".to_owned(), locked;
@@ -811,8 +811,8 @@ pub fn create_system_bootstrap_transaction(
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<AccountOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {
                         mint_roles: mint_roles! {
-                            minter => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE))), locked;
-                            minter_updater => rule!(deny_all), locked;
+                            minter => rule!(require(package_of_direct_caller(ACCOUNT_PACKAGE)));
+                            minter_updater => rule!(deny_all);
                         },
                         ..Default::default()
                     },
@@ -842,7 +842,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: AccountNativePackage::definition(),
+                definition: AccountNativePackage::definition(),
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: metadata_init! {
                     "name" => "Account Package".to_owned(), locked;
@@ -864,7 +864,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: AccessControllerNativePackage::definition(),
+                definition: AccessControllerNativePackage::definition(),
                 metadata: metadata_init! {
                     "name" => "Access Controller Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of access controller components.".to_owned(), locked;
@@ -886,7 +886,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: PoolNativePackage::definition(),
+                definition: PoolNativePackage::definition(),
                 metadata: metadata_init! {
                     "name" => "Pool Package".to_owned(), locked;
                     "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
@@ -1006,7 +1006,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 code: ManifestBlobRef(faucet_code_hash.0),
-                setup: manifest_decode(&faucet_abi).unwrap(),
+                definition: manifest_decode(&faucet_abi).unwrap(),
                 metadata: metadata_init!{
                     "name" => "Faucet Package".to_owned(), locked;
                     "description" => "A package that defines the logic of a simple faucet component for testing purposes.".to_owned(), locked;
@@ -1035,7 +1035,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 code: ManifestBlobRef(genesis_helper_code_hash.0),
-                setup: manifest_decode(&genesis_helper_abi).unwrap(),
+                definition: manifest_decode(&genesis_helper_abi).unwrap(),
                 metadata: metadata_init! {
                     "name" => "Genesis Helper Package".to_owned(), locked;
                     "description" => "A package that defines the logic of the genesis helper which includes various utility and helper functions used in the creation of the Babylon Genesis.".to_owned(), locked;
@@ -1101,7 +1101,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: TRANSACTION_TRACKER_CODE_ID,
-                setup: TransactionTrackerNativePackage::definition(),
+                definition: TransactionTrackerNativePackage::definition(),
                 metadata: metadata_init!(),
             }),
         });
