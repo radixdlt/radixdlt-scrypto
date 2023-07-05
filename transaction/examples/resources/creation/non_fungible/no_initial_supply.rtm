@@ -15,42 +15,38 @@ CALL_METHOD
 
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE
-    Enum<0u8>()
-    Enum<NonFungibleIdType::Integer>()
-    false # Track Total Supply
-    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())
-    # This tuple of enums defines the modifiable behaviors of the resource. Each element in
-    # the tuple defines a different resource behavior. As an example, the first element in this tuple
-    # defines that the resource is mintable.
+    # Owner role - This gets metadata permissions, and is the default for other permissions
+    # Can set as Enum<OwnerRole::Fixed>(access_rule)  or Enum<OwnerRole::Updatable>(access_rule)
+    Enum<OwnerRole::None>()
+    Enum<NonFungibleIdType::Integer>()                                                                  # The type of NonFungible Id
+    true                                                                                                # Whether the engine should track supply (avoid for massively parallelizable tokens)
+    Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(64u8), Array<String>())        # Non Fungible Data Schema
     Tuple(
-        Enum<Option::Some>(                                                # Specify Mint Roles
+        Some(         # Mint Roles (if None: defaults to DenyAll, DenyAll)
             Tuple(
-                Enum<Option::Some>(Enum<AccessRule::AllowAll>()),          # Minter Role Rule
-                Enum<Option::Some>(Enum<AccessRule::DenyAll>())            # Minter Updater Role Rule
+                Some(Enum<AccessRule::AllowAll>()),  # Minter (if None: defaults to Owner)
+                Some(Enum<AccessRule::DenyAll>())    # Minter Updater (if None: defaults to Owner)
             )
         ),
-        Enum<Option::None>(),                                              # Use Default Burn Roles
-        Enum<Option::None>(),                                              # Use Default Freeze Roles
-        Enum<Option::None>(),                                              # Use Default Recall Roles
-        Enum<Option::None>(),                                              # Use Default Withdraw Roles
-        Enum<Option::None>(),                                              # Use Default Deposit Roles
-        Enum<Option::None>()                                               # Use Default Non Fungible Data Update Roles
+        None,        # Burn Roles (if None: defaults to DenyAll, DenyAll)
+        None,        # Freeze Roles (if None: defaults to DenyAll, DenyAll)
+        None,        # Recall Roles (if None: defaults to DenyAll, DenyAll)
+        None,        # Withdraw Roles (if None: defaults to AllowAll, DenyAll)
+        None,        # Deposit Roles (if None: defaults to AllowAll, DenyAll)
+        None         # Non Fungible Data Update Roles (if None: defaults to DenyAll, DenyAll)
     )
-    Tuple(
-        Map<String, Tuple>(
+    Tuple(                                                                   # Metadata initialization
+        Map<String, Tuple>(                                                  # Initial metadata values
             "name" => Tuple(
-                Enum<Option::Some>(
-                    Enum<Metadata::String>("MyResource")                               # Resource Name
-                ),
-                true                                                                   # Locked Resource Name
-            ),
-            "description" => Tuple(
-                Enum<Option::Some>(
-                    Enum<Metadata::String>("A very innovative and important resource")    # Resource Description
-                ),
-                false
+                Some(Enum<Metadata::String>("MyResource")),    # Resource Name
+                true                                                         # Locked
             )
         ),
-        Map<String, Enum>()
+        Map<String, Enum>(                                                   # Metadata roles
+            "metadata_setter" => Some(Enum<AccessRule::AllowAll>()),         # Metadata setter role
+            "metadata_setter_updater" => None,                               # Metadata setter updater role as None defaults to OWNER
+            "metadata_locker" => Some(Enum<AccessRule::DenyAll>()),          # Metadata locker role
+            "metadata_locker_updater" => None                                # Metadata locker updater role as None defaults to OWNER
+        )
     )
-    Enum<Option::None>();
+    None;             # No Address Reservation
