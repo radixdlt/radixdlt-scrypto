@@ -64,12 +64,12 @@ impl TwoResourcePoolBlueprint {
                 18,
                 FungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(require(component_caller_badge.clone())), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(require(component_caller_badge.clone()));
+                        minter_updater => rule!(deny_all);
                     },
                     burn_roles: burn_roles! {
-                        burner => rule!(require(component_caller_badge.clone())), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => rule!(require(component_caller_badge.clone()));
+                        burner_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },
@@ -256,12 +256,10 @@ impl TwoResourcePoolBlueprint {
                     };
 
                     if divisibility1 != 18 {
-                        amount1 =
-                            amount1.round(divisibility1 as u32, RoundingMode::ToNegativeInfinity)
+                        amount1 = amount1.round(divisibility1, RoundingMode::ToNegativeInfinity)
                     }
                     if divisibility2 != 18 {
-                        amount2 =
-                            amount2.round(divisibility2 as u32, RoundingMode::ToNegativeInfinity)
+                        amount2 = amount2.round(divisibility2, RoundingMode::ToNegativeInfinity)
                     }
 
                     let pool_units_to_mint = amount1 / reserves1 * pool_unit_total_supply;
@@ -544,7 +542,7 @@ impl TwoResourcePoolBlueprint {
                     let amount_owed = if divisibility == 18 {
                         amount_owed
                     } else {
-                        amount_owed.round(divisibility as u32, RoundingMode::ToNegativeInfinity)
+                        amount_owed.round(divisibility, RoundingMode::ToNegativeInfinity)
                     };
 
                     (resource_address, amount_owed)

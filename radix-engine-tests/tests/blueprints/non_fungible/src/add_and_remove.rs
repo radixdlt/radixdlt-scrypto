@@ -17,12 +17,12 @@ mod add_and_remove {
             let resource_manager =
                 ResourceBuilder::new_integer_non_fungible::<Sandwich>(OwnerRole::None)
                     .mint_roles(mint_roles! {
-                        minter => rule!(allow_all), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(allow_all);
+                        minter_updater => rule!(deny_all);
                     })
                     .burn_roles(burn_roles! {
-                        burner => rule!(allow_all), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => rule!(allow_all);
+                        burner_updater => rule!(deny_all);
                     })
                     .create_with_no_initial_supply();
 

@@ -66,12 +66,12 @@ impl MultiResourcePoolBlueprint {
                 18,
                 FungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(require(component_caller_badge.clone())), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(require(component_caller_badge.clone()));
+                        minter_updater => rule!(deny_all);
                     },
                     burn_roles: burn_roles! {
-                        burner => rule!(require(component_caller_badge.clone())), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => rule!(require(component_caller_badge.clone()));
+                        burner_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },
@@ -345,8 +345,7 @@ impl MultiResourcePoolBlueprint {
                     if divisibility == 18 {
                         amount_to_contribute
                     } else {
-                        amount_to_contribute
-                            .round(divisibility as u32, RoundingMode::ToNegativeInfinity)
+                        amount_to_contribute.round(divisibility, RoundingMode::ToNegativeInfinity)
                     }
                 };
 
@@ -607,7 +606,7 @@ impl MultiResourcePoolBlueprint {
                     let amount_owed = if divisibility == 18 {
                         amount_owed
                     } else {
-                        amount_owed.round(divisibility as u32, RoundingMode::ToNegativeInfinity)
+                        amount_owed.round(divisibility, RoundingMode::ToNegativeInfinity)
                     };
 
                     (resource_address, amount_owed)

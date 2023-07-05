@@ -813,20 +813,6 @@ impl ManifestBuilder {
         .0
     }
 
-    pub fn lock_role(
-        &mut self,
-        address: GlobalAddress,
-        module: ObjectModuleId,
-        role_key: RoleKey,
-    ) -> &mut Self {
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
-            address: address.into(),
-            method_name: ACCESS_RULES_LOCK_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesLockRoleInput { module, role_key }),
-        })
-        .0
-    }
-
     pub fn lock_owner_role(&mut self, address: GlobalAddress) -> &mut Self {
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
@@ -894,7 +880,7 @@ impl ManifestBuilder {
             function_name: PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 code: ManifestBlobRef(code_hash.0),
-                setup: definition,
+                definition: definition,
                 metadata: metadata.into(),
                 package_address: address,
                 owner_role,
@@ -914,7 +900,7 @@ impl ManifestBuilder {
             function_name: PACKAGE_PUBLISH_WASM_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmManifestInput {
                 code: ManifestBlobRef(code_hash.0),
-                setup: definition,
+                definition: definition,
                 metadata: metadata_init!(),
             }),
         });
@@ -938,7 +924,7 @@ impl ManifestBuilder {
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: None,
                 code: ManifestBlobRef(code_hash.0),
-                setup: definition,
+                definition: definition,
                 metadata: metadata_init!(),
                 owner_role: OwnerRole::Fixed(rule!(require(owner_badge.clone()))),
             }),
@@ -975,12 +961,12 @@ impl ManifestBuilder {
             18,
             FungibleResourceRoles {
                 mint_roles: mint_roles! {
-                    minter => OWNER, locked;
-                    minter_updater => OWNER, locked;
+                    minter => OWNER;
+                    minter_updater => OWNER;
                 },
                 burn_roles: burn_roles! {
-                    burner => OWNER, locked;
-                    burner_updater => OWNER, locked;
+                    burner => OWNER;
+                    burner_updater => OWNER;
                 },
                 ..Default::default()
             },
@@ -1018,12 +1004,12 @@ impl ManifestBuilder {
             0,
             FungibleResourceRoles {
                 mint_roles: mint_roles! {
-                    minter => OWNER, locked;
-                    minter_updater => OWNER, locked;
+                    minter => OWNER;
+                    minter_updater => OWNER;
                 },
                 burn_roles: burn_roles! {
-                    burner => OWNER, locked;
-                    burner_updater => OWNER, locked;
+                    burner => OWNER;
+                    burner_updater => OWNER;
                 },
                 ..Default::default()
             },

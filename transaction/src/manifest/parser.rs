@@ -94,10 +94,7 @@ pub enum InstructionIdent {
     ClaimComponentRoyalties,
     SetOwnerRole,
     LockOwnerRole,
-    SetAndLockOwnerRole,
     SetRole,
-    LockRole,
-    SetAndLockRole,
 
     // ==============
     // Call main-method aliases
@@ -194,10 +191,7 @@ impl InstructionIdent {
             "CLAIM_COMPONENT_ROYALTIES" => InstructionIdent::ClaimComponentRoyalties,
             "SET_OWNER_ROLE" => InstructionIdent::SetOwnerRole,
             "LOCK_OWNER_ROLE" => InstructionIdent::LockOwnerRole,
-            "SET_AND_LOCK_OWNER_ROLE" => InstructionIdent::SetAndLockOwnerRole,
             "SET_ROLE" => InstructionIdent::SetRole,
-            "LOCK_ROLE" => InstructionIdent::LockRole,
-            "SET_AND_LOCK_ROLE" => InstructionIdent::SetAndLockRole,
 
             // ==============
             // Call main-method aliases
@@ -704,19 +698,7 @@ impl Parser {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::SetAndLockOwnerRole => Instruction::SetAndLockOwnerRole {
-                address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
-            },
             InstructionIdent::SetRole => Instruction::SetRole {
-                address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
-            },
-            InstructionIdent::LockRole => Instruction::LockRole {
-                address: self.parse_value()?,
-                args: self.parse_values_till_semicolon()?,
-            },
-            InstructionIdent::SetAndLockRole => Instruction::SetAndLockRole {
                 address: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },

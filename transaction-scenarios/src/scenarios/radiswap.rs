@@ -71,8 +71,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 18,
                                 FungibleResourceRoles {
                                     burn_roles: burn_roles! {
-                                    burner => rule!(allow_all), locked;
-                                    burner_updater => rule!(deny_all), locked;
+                                    burner => rule!(allow_all);
+                                    burner_updater => rule!(deny_all);
                                 },
                                     ..Default::default()
                                 },
@@ -94,8 +94,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 18,
                                 FungibleResourceRoles {
                                     burn_roles: burn_roles! {
-                                    burner => rule!(allow_all), locked;
-                                    burner_updater => rule!(deny_all), locked;
+                                    burner => rule!(allow_all);
+                                    burner_updater => rule!(deny_all);
                                 },
                                     ..Default::default()
                                 },
@@ -117,8 +117,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 18,
                                 FungibleResourceRoles {
                                     burn_roles: burn_roles! {
-                                    burner => rule!(allow_all), locked;
-                                    burner_updater => rule!(deny_all), locked;
+                                    burner => rule!(allow_all);
+                                    burner_updater => rule!(deny_all);
                                 },
                                     ..Default::default()
                                 },

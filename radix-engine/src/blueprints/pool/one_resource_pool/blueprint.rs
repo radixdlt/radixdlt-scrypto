@@ -54,12 +54,12 @@ impl OneResourcePoolBlueprint {
                 18,
                 FungibleResourceRoles {
                     mint_roles: mint_roles! {
-                        minter => rule!(require(component_caller_badge.clone())), locked;
-                        minter_updater => rule!(deny_all), locked;
+                        minter => rule!(require(component_caller_badge.clone()));
+                        minter_updater => rule!(deny_all);
                     },
                     burn_roles: burn_roles! {
-                        burner => rule!(require(component_caller_badge.clone())), locked;
-                        burner_updater => rule!(deny_all), locked;
+                        burner => rule!(require(component_caller_badge.clone()));
+                        burner_updater => rule!(deny_all);
                     },
                     ..Default::default()
                 },
@@ -362,10 +362,7 @@ impl OneResourcePoolBlueprint {
         if pool_resource_divisibility == 18 {
             amount_owed
         } else {
-            amount_owed.round(
-                pool_resource_divisibility as u32,
-                RoundingMode::ToNegativeInfinity,
-            )
+            amount_owed.round(pool_resource_divisibility, RoundingMode::ToNegativeInfinity)
         }
     }
 

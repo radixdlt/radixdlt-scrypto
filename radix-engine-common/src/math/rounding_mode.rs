@@ -15,9 +15,9 @@ pub enum RoundingMode {
     AwayFromZero,
 
     /// The number is rounded to the nearest, and when it is halfway between two others, it's rounded toward zero, e.g. `3.5 -> 3`, `-3.5 -> -3`.
-    MidpointTowardZero,
+    ToNearestMidpointTowardZero,
     /// The number is rounded to the nearest, and when it is halfway between two others, it's rounded away from zero, e.g. `3.5 -> 4`, `-3.5 -> -4`.
-    MidpointAwayFromZero,
+    ToNearestMidpointAwayFromZero,
     /// The number is rounded to the nearest, and when it is halfway between two others, it's rounded toward the nearest even number. Also known as "Bankers Rounding".
-    MidpointNearestEven,
+    ToNearestMidpointToEven,
 }
