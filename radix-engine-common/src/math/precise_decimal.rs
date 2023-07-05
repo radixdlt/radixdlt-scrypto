@@ -1161,7 +1161,7 @@ mod tests {
 
     #[test]
     fn test_rounding_midpoint_nearest_even_precise_decimal() {
-        let mode = RoundingMode::MidpointAwayFromZero;
+        let mode = RoundingMode::MidpointNearestEven;
         assert_eq!(pdec!("5.5").round(0, mode).to_string(), "6");
         assert_eq!(pdec!("2.5").round(0, mode).to_string(), "2");
         assert_eq!(pdec!("1.6").round(0, mode).to_string(), "2");

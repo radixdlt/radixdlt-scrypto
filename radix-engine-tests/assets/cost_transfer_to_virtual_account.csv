@@ -1,30 +1,30 @@
-Total Cost (XRD)                                                           ,    0.101691435,   100.00%
-+ Execution Cost (XRD)                                                     ,      0.0897347,    88.24%
-+ Tipping Cost (XRD)                                                       ,    0.004486735,     4.41%
-+ State Expansion Cost (XRD)                                               ,        0.00747,     7.35%
+Total Cost (XRD)                                                           ,     0.10177848,   100.00%
++ Execution Cost (XRD)                                                     ,      0.0898176,    88.25%
++ Tipping Cost (XRD)                                                       ,     0.00449088,     4.41%
++ State Expansion Cost (XRD)                                               ,        0.00747,     7.34%
 + Royalty Cost (XRD)                                                       ,              0,     0.00%
-Total Cost Units Consumed                                                  ,        8973470,   100.00%
+Total Cost Units Consumed                                                  ,        8981760,   100.00%
 AfterInvoke                                                                ,            886,     0.01%
 AllocateNodeId                                                             ,          13000,     0.14%
 BeforeInvoke                                                               ,          10734,     0.12%
 CloseSubstate                                                              ,         113500,     1.26%
 Commit::GlobalAccount                                                      ,         100002,     1.11%
-Commit::GlobalVirtualSecp256k1Account                                      ,         900105,    10.03%
-Commit::InternalFungibleVault                                              ,         700082,     7.80%
+Commit::GlobalVirtualSecp256k1Account                                      ,         900105,    10.02%
+Commit::InternalFungibleVault                                              ,         700082,     7.79%
 CreateNode                                                                 ,          25062,     0.28%
 DropNode                                                                   ,          21588,     0.24%
 EmitEvent                                                                  ,           3228,     0.04%
 LockFee                                                                    ,            500,     0.01%
 MoveModules                                                                ,           4000,     0.04%
-OpenSubstate::GlobalAccount                                                ,         566006,     6.31%
+OpenSubstate::GlobalAccount                                                ,         566006,     6.30%
 OpenSubstate::GlobalFungibleResourceManager                                ,         332464,     3.70%
-OpenSubstate::GlobalPackage                                                ,        4457908,    49.68%
-OpenSubstate::GlobalVirtualSecp256k1Account                                ,         643368,     7.17%
+OpenSubstate::GlobalPackage                                                ,        4462252,    49.68%
+OpenSubstate::GlobalVirtualSecp256k1Account                                ,         643368,     7.16%
 OpenSubstate::InternalAccount                                              ,            652,     0.01%
-OpenSubstate::InternalFungibleVault                                        ,         168266,     1.88%
+OpenSubstate::InternalFungibleVault                                        ,         168266,     1.87%
 OpenSubstate::InternalGenericComponent                                     ,          58614,     0.65%
 QueryActor                                                                 ,           4000,     0.04%
-ReadSubstate                                                               ,         219882,     2.45%
+ReadSubstate                                                               ,         223828,     2.49%
 RunNativeCode::Worktop_drain                                               ,          22525,     0.25%
 RunNativeCode::Worktop_drop                                                ,          16371,     0.18%
 RunNativeCode::Worktop_put                                                 ,          24411,     0.27%
