@@ -233,7 +233,7 @@ mod rounding {
             assert_eq!(
                 manager.amount_for_withdrawal(
                     dec!("1.515"),
-                    WithdrawStrategy::Rounded(RoundingMode::MidpointNearestEven)
+                    WithdrawStrategy::Rounded(RoundingMode::ToNearestMidpointToEven)
                 ),
                 dec!("1.52")
             );
@@ -264,7 +264,7 @@ mod rounding {
             assert_eq!(
                 manager.amount_for_withdrawal(
                     dec!("1.515"),
-                    WithdrawStrategy::Rounded(RoundingMode::MidpointNearestEven)
+                    WithdrawStrategy::Rounded(RoundingMode::ToNearestMidpointToEven)
                 ),
                 dec!("2")
             );
