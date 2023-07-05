@@ -89,8 +89,6 @@ const NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME: &str = "freeze_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME: &str = "unfreeze_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleVault";
-const NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
-    "create_proof_of_amount_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str = "unlock_fungibles_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
     "unlock_non_fungibles_NonFungibleVault";
@@ -118,8 +116,6 @@ const NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungible
 const NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleBucket";
-const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
-    "create_proof_of_amount_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME: &str =
     "create_proof_of_non_fungibles_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str =
@@ -1134,21 +1130,6 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
-                    ),
-                    export: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
                 NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -1548,21 +1529,6 @@ impl ResourceNativePackage {
                             .add_child_type_and_descendents::<BucketGetResourceAddressOutput>(),
                     ),
                     export: NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
-                BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
-                    ),
-                    export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -2676,18 +2642,6 @@ impl ResourceNativePackage {
                 let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
-                let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleVaultBlueprint::create_proof_of_amount(
-                    &receiver,
-                    input.amount,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
                 let receiver = Runtime::get_node_id(api)?;
                 let input: NonFungibleVaultCreateProofOfNonFungiblesInput =
@@ -2920,18 +2874,6 @@ impl ResourceNativePackage {
                 })?;
                 let address = NonFungibleBucketBlueprint::get_resource_address(api)?;
                 Ok(IndexedScryptoValue::from_typed(&address))
-            }
-            NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
-                let input: BucketCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleBucketBlueprint::create_proof_of_amount(
-                    &receiver,
-                    input.amount,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
                 let receiver = Runtime::get_node_id(api)?;
