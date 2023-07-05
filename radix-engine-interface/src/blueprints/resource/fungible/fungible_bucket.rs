@@ -27,11 +27,11 @@ pub struct FungibleBucketUnlockAmountInput {
 
 pub type FungibleBucketUnlockAmountOutput = ();
 
-pub const BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
+pub const FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct BucketCreateProofOfAmountInput {
+pub struct FungibleBucketCreateProofOfAmountInput {
     pub amount: Decimal,
 }
 
-pub type BucketCreateProofOfAmountOutput = Proof;
+pub type FungibleBucketCreateProofOfAmountOutput = Proof;

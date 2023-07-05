@@ -303,8 +303,8 @@ impl NativeFungibleBucket for Bucket {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
-            scrypto_encode(&BucketCreateProofOfAmountInput { amount }).unwrap(),
+            FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT,
+            scrypto_encode(&FungibleBucketCreateProofOfAmountInput { amount }).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }

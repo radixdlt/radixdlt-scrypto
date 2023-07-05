@@ -291,8 +291,8 @@ impl NativeFungibleVault for Vault {
     {
         let rtn = api.call_method(
             self.0.as_node_id(),
-            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
-            scrypto_encode(&VaultCreateProofOfAmountInput { amount }).unwrap(),
+            FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
+            scrypto_encode(&FungibleVaultCreateProofOfAmountInput { amount }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
