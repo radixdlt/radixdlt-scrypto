@@ -761,7 +761,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: IdentityNativePackage::definition(),
+                definition: IdentityNativePackage::definition(),
                 native_package_code_id: IDENTITY_CODE_ID,
                 metadata: metadata_init! {
                     "name" => "Identity Package".to_owned(), locked;
@@ -783,7 +783,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: ConsensusManagerNativePackage::definition(),
+                definition: ConsensusManagerNativePackage::definition(),
                 native_package_code_id: CONSENSUS_MANAGER_CODE_ID,
                 metadata: metadata_init! {
                     "name" => "Consensus Manager Package".to_owned(), locked;
@@ -842,7 +842,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: AccountNativePackage::definition(),
+                definition: AccountNativePackage::definition(),
                 native_package_code_id: ACCOUNT_CODE_ID,
                 metadata: metadata_init! {
                     "name" => "Account Package".to_owned(), locked;
@@ -864,7 +864,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: AccessControllerNativePackage::definition(),
+                definition: AccessControllerNativePackage::definition(),
                 metadata: metadata_init! {
                     "name" => "Access Controller Package".to_owned(), locked;
                     "description" => "A native package that defines the logic of access controller components.".to_owned(), locked;
@@ -886,7 +886,7 @@ pub fn create_system_bootstrap_transaction(
             function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
-                setup: PoolNativePackage::definition(),
+                definition: PoolNativePackage::definition(),
                 metadata: metadata_init! {
                     "name" => "Pool Package".to_owned(), locked;
                     "description" => "A native package that defines the logic for a selection of pool components.".to_owned(), locked;
@@ -992,7 +992,7 @@ pub fn create_system_bootstrap_transaction(
     // Faucet Package
     {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
-        let faucet_abi = include_bytes!("../../../assets/faucet.schema").to_vec();
+        let faucet_abi = include_bytes!("../../../assets/faucet.rpd").to_vec();
         let faucet_code_hash = hash(&faucet_code);
         blobs.push(BlobV1(faucet_code));
         pre_allocated_addresses.push((
@@ -1006,7 +1006,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 code: ManifestBlobRef(faucet_code_hash.0),
-                setup: manifest_decode(&faucet_abi).unwrap(),
+                definition: manifest_decode(&faucet_abi).unwrap(),
                 metadata: metadata_init!{
                     "name" => "Faucet Package".to_owned(), locked;
                     "description" => "A package that defines the logic of a simple faucet component for testing purposes.".to_owned(), locked;
@@ -1021,7 +1021,7 @@ pub fn create_system_bootstrap_transaction(
         // FIXME: Add authorization rules around preventing anyone else from
         // calling genesis helper code
         let genesis_helper_code = include_bytes!("../../../assets/genesis_helper.wasm").to_vec();
-        let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.schema").to_vec();
+        let genesis_helper_abi = include_bytes!("../../../assets/genesis_helper.rpd").to_vec();
         let genesis_helper_code_hash = hash(&genesis_helper_code);
         blobs.push(BlobV1(genesis_helper_code));
         pre_allocated_addresses.push((
@@ -1035,7 +1035,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishWasmAdvancedManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 code: ManifestBlobRef(genesis_helper_code_hash.0),
-                setup: manifest_decode(&genesis_helper_abi).unwrap(),
+                definition: manifest_decode(&genesis_helper_abi).unwrap(),
                 metadata: metadata_init! {
                     "name" => "Genesis Helper Package".to_owned(), locked;
                     "description" => "A package that defines the logic of the genesis helper which includes various utility and helper functions used in the creation of the Babylon Genesis.".to_owned(), locked;
@@ -1101,7 +1101,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
                 package_address: Some(id_allocator.new_address_reservation_id()),
                 native_package_code_id: TRANSACTION_TRACKER_CODE_ID,
-                setup: TransactionTrackerNativePackage::definition(),
+                definition: TransactionTrackerNativePackage::definition(),
                 metadata: metadata_init!(),
             }),
         });

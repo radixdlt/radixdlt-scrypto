@@ -25,15 +25,15 @@ pub const PACKAGE_PUBLISH_WASM_IDENT: &str = "publish_wasm";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct PackagePublishWasmInput {
+    pub definition: PackageDefinition,
     pub code: Vec<u8>,
-    pub setup: PackageDefinition,
     pub metadata: MetadataInit,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmManifestInput {
+    pub definition: PackageDefinition,
     pub code: ManifestBlobRef,
-    pub setup: PackageDefinition,
     pub metadata: MetadataInit,
 }
 
@@ -43,20 +43,20 @@ pub const PACKAGE_PUBLISH_WASM_ADVANCED_IDENT: &str = "publish_wasm_advanced";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct PackagePublishWasmAdvancedInput {
-    pub package_address: Option<GlobalAddressReservation>,
-    pub code: Vec<u8>,
-    pub setup: PackageDefinition,
-    pub metadata: MetadataInit,
     pub owner_role: OwnerRole,
+    pub definition: PackageDefinition,
+    pub code: Vec<u8>,
+    pub metadata: MetadataInit,
+    pub package_address: Option<GlobalAddressReservation>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishWasmAdvancedManifestInput {
-    pub package_address: Option<ManifestAddressReservation>,
-    pub code: ManifestBlobRef,
-    pub setup: PackageDefinition,
-    pub metadata: MetadataInit,
     pub owner_role: OwnerRole,
+    pub definition: PackageDefinition,
+    pub code: ManifestBlobRef,
+    pub metadata: MetadataInit,
+    pub package_address: Option<ManifestAddressReservation>,
 }
 
 pub type PackagePublishWasmAdvancedOutput = PackageAddress;
@@ -65,18 +65,18 @@ pub const PACKAGE_PUBLISH_NATIVE_IDENT: &str = "publish_native";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct PackagePublishNativeInput {
-    pub package_address: Option<GlobalAddressReservation>,
+    pub definition: PackageDefinition,
     pub native_package_code_id: u64,
-    pub setup: PackageDefinition,
     pub metadata: MetadataInit,
+    pub package_address: Option<GlobalAddressReservation>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
 pub struct PackagePublishNativeManifestInput {
-    pub package_address: Option<ManifestAddressReservation>,
+    pub definition: PackageDefinition,
     pub native_package_code_id: u64,
-    pub setup: PackageDefinition,
     pub metadata: MetadataInit,
+    pub package_address: Option<ManifestAddressReservation>,
 }
 
 pub type PackagePublishNativeOutput = PackageAddress;

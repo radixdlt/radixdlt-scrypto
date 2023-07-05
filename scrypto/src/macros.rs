@@ -139,7 +139,7 @@ macro_rules! include_schema {
             env!("CARGO_MANIFEST_DIR"),
             "/target/wasm32-unknown-unknown/release/",
             $bin_name,
-            ".schema"
+            ".rpd"
         ))
     };
     ($package_dir: expr, $bin_name: expr) => {
@@ -147,7 +147,7 @@ macro_rules! include_schema {
             $package_dir,
             "/target/wasm32-unknown-unknown/release/",
             $bin_name,
-            ".schema"
+            ".rpd"
         ))
     };
 }

@@ -164,22 +164,22 @@ pub fn build_package<P: AsRef<Path>>(
     bin_path.push(wasm_name.ok_or(BuildError::InvalidManifestFile(manifest_path.clone()))?);
 
     let wasm_path = bin_path.with_extension("wasm");
-    let schema_path = bin_path.with_extension("schema");
+    let definition_path = bin_path.with_extension("rpd");
 
     // Extract SCHEMA
     let wasm =
         fs::read(&wasm_path).map_err(|err| BuildError::IOErrorAtPath(err, wasm_path.clone()))?;
     let definition = extract_definition(&wasm).map_err(BuildError::SchemaExtractionError)?;
     fs::write(
-        &schema_path,
+        &definition_path,
         manifest_encode(&definition).map_err(BuildError::SchemaEncodeError)?,
     )
-    .map_err(|err| BuildError::IOErrorAtPath(err, schema_path.clone()))?;
+    .map_err(|err| BuildError::IOErrorAtPath(err, definition_path.clone()))?;
 
     // Build without SCHEMA
     run_cargo_build(&manifest_path, &target_path, trace, true)?;
 
-    Ok((wasm_path, schema_path))
+    Ok((wasm_path, definition_path))
 }
 
 /// Runs tests within a package.
