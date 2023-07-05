@@ -50,7 +50,7 @@ use radix_engine_interface::blueprints::resource::*;
 ///     .lock_fee_from_faucet()
 ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
 ///     .take_from_worktop(XRD, dec!(1), "xrd")
-///     .call_function_with_named_args(
+///     .call_function_with_name_lookup(
 ///         package_address,
 ///         "SomeBlueprint",
 ///         "some_function",
@@ -188,7 +188,7 @@ impl ManifestBuilder {
     /// let manifest = ManifestBuilder::new()
     ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
     ///     // ...
-    ///     .then(|builder| {
+    ///     .then(|mut builder| {
     ///         let code_blob_ref = builder.add_blob(vec![]);
     ///         builder
     ///             .call_function(
