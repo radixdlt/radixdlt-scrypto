@@ -2,8 +2,12 @@ use radix_engine::system::system_modules::costing::FeeSummary;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
+use scrypto::api::node_modules::ModuleConfig;
+use scrypto::prelude::metadata;
+use scrypto::prelude::metadata_init;
 use scrypto_unit::*;
 use transaction::builder::*;
+use transaction::prelude::TransactionPayload;
 use utils::ContextualDisplay;
 
 // For WASM-specific metering tests, see `wasm_metering.rs`.
@@ -27,6 +31,12 @@ fn update_expected_costs() {
     run_publish_large_package(Mode::OutputCosting(
         "./assets/cost_publish_large_package.csv".to_string(),
     ));
+    run_mint_mid_size_nfts_from_manifest(Mode::OutputCosting(
+        "./assets/cost_mint_mid_size_nfts_from_manifest.csv".to_string(),
+    ));
+    run_mint_small_size_nfts_from_manifest(Mode::OutputCosting(
+        "./assets/cost_mint_small_size_nfts_from_manifest.csv".to_string(),
+    ));
 }
 
 #[test]
@@ -35,7 +45,6 @@ fn test_basic_transfer() {
         "../assets/cost_transfer.csv"
     ))));
 }
-
 #[test]
 fn test_transfer_to_virtual_account() {
     run_basic_transfer_to_virtual_account(Mode::AssertCosting(load_cost_breakdown(include_str!(
@@ -61,6 +70,20 @@ fn test_flash_loan() {
 fn test_publish_large_package() {
     run_publish_large_package(Mode::AssertCosting(load_cost_breakdown(include_str!(
         "../assets/cost_publish_large_package.csv"
+    ))));
+}
+
+#[test]
+fn test_mint_mid_size_nfts_from_manifest() {
+    run_mint_mid_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_mint_mid_size_nfts_from_manifest.csv"
+    ))));
+}
+
+#[test]
+fn test_mint_small_size_nfts_from_manifest() {
+    run_mint_small_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_mint_small_size_nfts_from_manifest.csv"
     ))));
 }
 
@@ -494,8 +517,97 @@ fn run_publish_large_package(mode: Mode) {
     mode.run(&commit_result.fee_summary);
 }
 
+fn run_mint_small_size_nfts_from_manifest(mode: Mode) {
+    run_mint_nfts_from_manifest(
+        mode,
+        TestNonFungibleData {
+            metadata: btreemap!(),
+        },
+    )
+}
+
+fn run_mint_mid_size_nfts_from_manifest(mode: Mode) {
+    run_mint_nfts_from_manifest(
+        mode,
+        TestNonFungibleData {
+            metadata: btreemap!(
+                "Name".to_string() => "Type".to_string(),
+                "Abilities".to_string() => "Lightning Rod".to_string(),
+                "Egg Groups".to_string() => "Field and Fairy or No Eggs Discovered".to_string(),
+                "Hatch time".to_string() => "10 cycles".to_string(),
+                "Height".to_string() => "0.4 m".to_string(),
+                "Weight".to_string() => "6.0 kg".to_string(),
+                "Base experience yield".to_string() => "82".to_string(),
+                "Leveling rate".to_string() => "Medium Fast".to_string(),
+            ),
+        },
+    )
+}
+
+fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (_, _, account) = test_runner.new_allocated_account();
+
+    // Act
+    let mut low = 16;
+    let mut high = 16 * 1024;
+    let mut last_success_receipt = None;
+    while low <= high {
+        let mid = low + (high - low) / 2;
+        let mut entries = BTreeMap::new();
+        for i in 0..mid {
+            entries.insert(NonFungibleLocalId::integer(i), nft_data.clone());
+        }
+        let manifest = ManifestBuilder::new()
+            .lock_fee(FAUCET, 1_000_000.into())
+            .create_non_fungible_resource(
+                OwnerRole::None,
+                NonFungibleIdType::Integer,
+                false,
+                NonFungibleResourceRoles::single_locked_rule(rule!(allow_all)),
+                metadata! {},
+                Some(entries),
+            )
+            .try_deposit_batch_or_abort(account)
+            .build();
+        let transaction = create_notarized_transaction(
+            TransactionParams {
+                start_epoch_inclusive: Epoch::of(0),
+                end_epoch_exclusive: Epoch::of(100),
+            },
+            manifest.clone(),
+        );
+        let raw_transaction = transaction.to_raw().unwrap();
+        if raw_transaction.0.len() > DEFAULT_MAX_TRANSACTION_SIZE {
+            high = mid - 1;
+        } else {
+            let receipt = test_runner.execute_manifest(manifest, vec![]);
+            if receipt.is_commit_success() {
+                last_success_receipt = Some((mid, receipt, raw_transaction));
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+    }
+
+    // Assert
+    let (n, receipt, raw_transaction) = last_success_receipt.unwrap();
+    println!(
+        "Transaction payload size: {} bytes",
+        raw_transaction.0.len()
+    );
+    println!(
+        "Average NFT size: {} bytes",
+        scrypto_encode(&nft_data).unwrap().len()
+    );
+    println!("Managed to mint {} NFTs", n);
+    mode.run(&receipt.expect_commit_success().fee_summary);
+}
+
 #[test]
-fn should_be_able_run_large_manifest() {
+fn can_run_large_manifest() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
 
@@ -596,4 +708,13 @@ fn spin_loop_should_end_in_reasonable_amount_of_time() {
         receipt.display(&AddressBech32Encoder::for_simulator())
     );
     receipt.expect_commit_failure();
+}
+
+#[derive(Clone, ScryptoSbor, ManifestSbor)]
+struct TestNonFungibleData {
+    metadata: BTreeMap<String, String>,
+}
+
+impl NonFungibleData for TestNonFungibleData {
+    const MUTABLE_FIELDS: &'static [&'static str] = &["metadata"];
 }
