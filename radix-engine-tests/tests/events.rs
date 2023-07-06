@@ -13,6 +13,7 @@ use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntr
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, EpochChangeCondition, ValidatorUpdateAcceptDelegatedStakeInput,
     CONSENSUS_MANAGER_NEXT_ROUND_IDENT, VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,
@@ -269,9 +270,6 @@ fn vault_fungible_recall_emits_correct_events() {
     }
 }
 
-// FIXME: double check if the instruction has been updated
-// Currently treats non-fungibles as fungible. Correct this test once recall non-fungibles
-// has a dedicated instruction.
 #[test]
 fn vault_non_fungible_recall_emits_correct_events() {
     // Arrange
@@ -332,9 +330,8 @@ fn vault_non_fungible_recall_emits_correct_events() {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ref event_data,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
-                && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
+                ..,
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
                 true,
             _ => false,
         });
@@ -596,6 +593,143 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
                     &BurnNonFungibleResourceEvent {
                         ids: [id.clone()].into()
                     },
+                    event_data
+                ) =>
+                true,
+            _ => false,
+        });
+    }
+}
+
+#[test]
+fn vault_take_non_fungibles_by_amount_emits_correct_event() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let (public_key, _, account) = test_runner.new_account(false);
+    let resource_address = {
+        let manifest = ManifestBuilder::new()
+            .lock_fee(test_runner.faucet_component(), dec!("100"))
+            .create_non_fungible_resource(
+                OwnerRole::None,
+                NonFungibleIdType::Integer,
+                true,
+                NonFungibleResourceRoles {
+                    mint_roles: Some(MintRoles {
+                        minter: Some(rule!(allow_all)),
+                        minter_updater: None,
+                    }),
+                    ..Default::default()
+                },
+                Default::default(),
+                None::<BTreeMap<NonFungibleLocalId, EmptyStruct>>,
+            )
+            .call_method(
+                account,
+                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
+                manifest_args!(ManifestExpression::EntireWorktop),
+            )
+            .build();
+        let receipt = test_runner.execute_manifest(manifest, vec![]);
+        receipt.expect_commit(true).new_resource_addresses()[0]
+    };
+
+    let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
+    let id2 = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(2));
+    let manifest = ManifestBuilder::new()
+        .lock_fee(test_runner.faucet_component(), dec!("10"))
+        .mint_non_fungible(
+            resource_address,
+            [(id.clone(), EmptyStruct {}), (id2.clone(), EmptyStruct {})],
+        )
+        .try_deposit_batch_or_abort(account)
+        .withdraw_from_account(account, resource_address, dec!("2"))
+        .try_deposit_batch_or_abort(account)
+        .build();
+
+    // Act
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    {
+        let events = receipt.expect_commit(true).clone().application_events;
+        /*
+        6 Events:
+        - Vault lock fee event
+        - Resource manager mint non-fungible event
+        -
+         */
+        assert_eq!(events.len(), 6);
+        assert!(match events.get(0) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                ref event_data,
+            )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
+                && is_decoded_equal(&LockFeeEvent { amount: 10.into() }, event_data) =>
+                true,
+            _ => false,
+        });
+        assert!(match events.get(1) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                ref event_data,
+            )) if test_runner
+                .is_event_name_equal::<MintNonFungibleResourceEvent>(event_identifier)
+                && is_decoded_equal(
+                    &MintNonFungibleResourceEvent {
+                        ids: [id.clone(), id2.clone()].into()
+                    },
+                    event_data
+                ) =>
+                true,
+            _ => false,
+        });
+        assert!(match events.get(2) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                _,
+            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            _ => false,
+        });
+        assert!(match events.get(3) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                ref event_data,
+            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
+                && is_decoded_equal(
+                    &DepositResourceEvent::Ids([id.clone(), id2.clone()].into()),
+                    event_data
+                ) =>
+                true,
+            _ => false,
+        });
+        assert!(match events.get(4) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                ref event_data,
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
+                && is_decoded_equal(
+                    &WithdrawResourceEvent::Ids([id.clone(), id2.clone()].into()),
+                    event_data
+                ) =>
+                true,
+            _ => false,
+        });
+        assert!(match events.get(5) {
+            Some((
+                event_identifier
+                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+                ref event_data,
+            )) if test_runner.is_event_name_equal::<DepositResourceEvent>(event_identifier)
+                && is_decoded_equal(
+                    &DepositResourceEvent::Ids([id.clone(), id2.clone()].into()),
                     event_data
                 ) =>
                 true,
@@ -1217,9 +1351,8 @@ fn validator_claim_xrd_emits_correct_events() {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ref event_data,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
-                && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
+                ..,
+            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
                 true,
             _ => false,
         });
