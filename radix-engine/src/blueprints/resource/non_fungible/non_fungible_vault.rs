@@ -473,7 +473,7 @@ impl NonFungibleVaultBlueprint {
         api.field_lock_write_typed(handle, &substate_ref)?;
         api.field_lock_release(handle)?;
 
-        Runtime::emit_event(api, WithdrawResourceEvent::Amount(amount))?;
+        Runtime::emit_event(api, WithdrawResourceEvent::Ids(taken.ids.clone()))?;
 
         Ok(taken)
     }
