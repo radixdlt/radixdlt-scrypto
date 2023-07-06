@@ -51,6 +51,8 @@ pub trait ScryptoBucket {
     fn as_fungible(&self) -> FungibleBucket;
 
     fn as_non_fungible(&self) -> NonFungibleBucket;
+
+    fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O;
 }
 
 pub trait ScryptoFungibleBucket {
@@ -231,6 +233,13 @@ impl ScryptoBucket for Bucket {
             .is_global_non_fungible_resource_manager());
         NonFungibleBucket(Bucket(self.0))
     }
+
+    fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        LocalAuthZone::push(self.create_proof_of_all());
+        let output = f();
+        LocalAuthZone::pop().drop();
+        output
+    }
 }
 
 //=================
@@ -293,6 +302,10 @@ impl ScryptoBucket for FungibleBucket {
 
     fn as_non_fungible(&self) -> NonFungibleBucket {
         self.0.as_non_fungible()
+    }
+
+    fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        self.0.authorize_with_all(f)
     }
 }
 
@@ -380,6 +393,10 @@ impl ScryptoBucket for NonFungibleBucket {
 
     fn as_non_fungible(&self) -> NonFungibleBucket {
         self.0.as_non_fungible()
+    }
+
+    fn authorize_with_all<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        self.0.authorize_with_all(f)
     }
 }
 
