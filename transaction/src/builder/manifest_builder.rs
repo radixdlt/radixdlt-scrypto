@@ -1088,17 +1088,24 @@ impl ManifestBuilder {
         self,
         address: impl ResolvableGlobalAddress,
         key: impl Into<String>,
-        value: MetadataValue,
+        value: impl ToMetadataEntry,
     ) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallMetadataMethod {
-            address: address.into(),
-            method_name: METADATA_SET_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&MetadataSetInput {
-                key: key.into(),
-                value
+        match value.to_metadata_entry() {
+            Some(value) => self.add_instruction(InstructionV1::CallMetadataMethod {
+                address: address.into(),
+                method_name: METADATA_SET_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(&MetadataSetInput {
+                    key: key.into(),
+                    value
+                }),
             }),
-        })
+            None => self.add_instruction(InstructionV1::CallMetadataMethod {
+                address: address.into(),
+                method_name: METADATA_REMOVE_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(&MetadataRemoveInput { key: key.into() }),
+            }),
+        }
     }
 
     pub fn lock_metadata(
@@ -1272,24 +1279,6 @@ impl ManifestBuilder {
 
     /// Creates a badge resource with fixed supply.
     pub fn new_badge_fixed(
-        self,
-        owner_role: OwnerRole,
-        metadata: ModuleConfig<MetadataInit>,
-        initial_supply: impl ResolvableDecimal,
-    ) -> Self {
-        let initial_supply = initial_supply.resolve();
-        self.create_fungible_resource(
-            owner_role,
-            false,
-            0,
-            FungibleResourceRoles::default(),
-            metadata,
-            Some(initial_supply),
-        )
-    }
-
-    /// Creates a badge resource with fixed supply.
-    pub fn new_non_fungible_badge_fixed(
         self,
         owner_role: OwnerRole,
         metadata: ModuleConfig<MetadataInit>,
