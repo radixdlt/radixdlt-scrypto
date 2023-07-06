@@ -166,9 +166,9 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                     NonFungibleResourceRoles::default(),
                                     metadata! {
                                         init {
-                                            "name" => "Radiswap dApp Owner Badge", updatable;
-                                            "description" => "The owner badge for the Radiswap dApp", updatable;
-                                            "tags" => vec!["badge", "dex", "pool", "radiswap"], updatable;
+                                            "name" => "Radiswap - dApp Owner Badge", updatable;
+                                            "description" => "[EXAMPLE] The owner badge for the Radiswap dApp and associated entities", updatable;
+                                            "tags" => ["badge", "dex", "pool", "radiswap"], updatable;
                                             "info_url" => Url::of("https://radiswap.radixdlt.com/"), updatable;
                                         }
                                     },
@@ -177,23 +177,18 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                     ]),
                                 )
                                 .try_deposit_batch_or_abort(definition_account)
-                                .set_metadata(
-                                    definition_account,
-                                    "account_type",
-                                    "dapp definition"
-                                )
-                                .set_metadata(
-                                    definition_account,
-                                    "name",
-                                    "Radiswap dApp Definition"
-                                )
+                                .set_metadata(definition_account, "account_type", "dapp definition")
+                                .set_metadata(definition_account, "name", "Radiswap dApp Definition")
+                                .set_metadata(definition_account, "description", "[EXAMPLE] The Radiswap dApp definition account")
+                                .set_metadata(definition_account, "tags", ["dex", "pool", "radiswap"])
+                                .set_metadata(definition_account, "info_url", Url::of("https://radiswap.radixdlt.com/"))
                                 .set_metadata(
                                     definition_account,
                                     "claimed_websites",
-                                    vec![Origin::of("https://radiswap.radixdlt.com")]
+                                    [Origin::of("https://radiswap.radixdlt.com")]
                                 )
                         },
-                        vec![]
+                        vec![&config.radiswap_dapp_definition_account.key]
                     )
                 },
                 |core, config, state, result| {
@@ -232,9 +227,9 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 code.to_vec(),
                                 schema,
                                 metadata_init! {
-                                    "name" => "Radiswap Package".to_owned(), locked;
-                                    "description" => "A package of the logic of a Uniswap v2 style DEX.".to_owned(), locked;
-                                    "tags" => vec!["dex".to_owned(), "pool".to_owned(), "radiswap".to_owned()], locked;
+                                    "name" => "Radiswap Package", locked;
+                                    "description" => "[EXAMPLE] A package of the logic of a Uniswap v2 style DEX.".to_owned(), locked;
+                                    "tags" => ["dex", "pool", "radiswap"], locked;
                                 },
                                 owner_role.clone(),
                             ).call_function(
@@ -346,7 +341,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-distribute-tokens",
                         |mut builder| {
-                            builder = builder.get_free_xrd_from_faucet();
+                            builder = builder.get_free_xrd_from_faucet()
+                                .try_deposit_batch_or_abort(config.storing_account.address);
                             for destination_account in [&config.user_account_1, &config.user_account_2, &config.user_account_3]
                             {
                                 for resource_address in [
@@ -457,7 +453,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 .create_proof_from_account_of_non_fungibles(
                                     config.radiswap_dapp_definition_account.address,
                                     state.owner_badge.get()?.resource_address(),
-                                    btreeset!(
+                                    &btreeset!(
                                         state.owner_badge.get()?.local_id().clone()
                                     ),
                                 )
@@ -526,7 +522,8 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                        .add("radiswap_owner", &config.radiswap_dapp_definition_account)
+                        .add("radiswap_dapp_definition_account", &config.radiswap_dapp_definition_account)
+                        .add("radiswap_dapp_owner_badge", state.owner_badge.get()?)
                         .add("storing_account", &config.storing_account)
                         .add("user_account_1", &config.user_account_1)
                         .add("user_account_2", &config.user_account_2)
