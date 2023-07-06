@@ -448,7 +448,7 @@ fn create_validator_with_low_payment_amount_should_fail(amount: Decimal, expect_
 #[test]
 fn create_validator_with_not_enough_payment_should_fail() {
     create_validator_with_low_payment_amount_should_fail(
-        *DEFAULT_VALIDATOR_XRD_COST - dec!("1"),
+        *DEFAULT_VALIDATOR_XRD_COST - dec!(1),
         false,
     )
 }
@@ -456,7 +456,7 @@ fn create_validator_with_not_enough_payment_should_fail() {
 #[test]
 fn create_validator_with_too_much_payment_should_succeed() {
     create_validator_with_low_payment_amount_should_fail(
-        *DEFAULT_VALIDATOR_XRD_COST + dec!("1"),
+        *DEFAULT_VALIDATOR_XRD_COST + dec!(1),
         true,
     )
 }

@@ -25,7 +25,7 @@ fn can_create_clone_and_drop_bucket_proof() {
                 package_address,
                 "BucketProof",
                 "create_clone_drop_bucket_proof",
-                manifest_args!(lookup.bucket("bucket"), dec!("1")),
+                manifest_args!(lookup.bucket("bucket"), dec!(1)),
             )
         })
         .try_deposit_batch_or_abort(account)
@@ -119,7 +119,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
-            manifest_args!(dec!("3"), dec!("1")),
+            manifest_args!(dec!("3"), dec!(1)),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -351,7 +351,7 @@ fn can_move_restricted_proofs_internally() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(1))
         .create_proof_from_auth_zone_of_all(XRD, "proof")
         .with_name_lookup(|builder, lookup| {
             builder.call_method(

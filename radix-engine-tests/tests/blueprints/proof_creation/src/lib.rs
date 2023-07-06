@@ -93,7 +93,7 @@ mod pc {
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize();
         }
-        
+
         pub fn create_proof_from_fungible_vault_of_non_fungibles() {
             let vault = Self::create_fungible_vault();
             let proof = vault

@@ -261,7 +261,7 @@ mod rounding {
                     dec!("1.515"),
                     WithdrawStrategy::Rounded(RoundingMode::ToZero)
                 ),
-                dec!("1")
+                dec!(1)
             );
             assert_eq!(
                 manager.amount_for_withdrawal(
@@ -302,7 +302,7 @@ mod rounding {
                 dec!("1.231"),
                 WithdrawStrategy::Rounded(RoundingMode::ToZero),
             );
-            assert_eq!(bucket2.amount(), dec!("1"));
+            assert_eq!(bucket2.amount(), dec!(1));
             bucket.put(bucket2);
 
             let mut vault = Vault::with_bucket(bucket);
@@ -310,7 +310,7 @@ mod rounding {
                 dec!("1.231"),
                 WithdrawStrategy::Rounded(RoundingMode::ToZero),
             );
-            assert_eq!(bucket2.amount(), dec!("1"));
+            assert_eq!(bucket2.amount(), dec!(1));
             vault.put(bucket2);
 
             Self { vault }

@@ -240,7 +240,7 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                                 .withdraw_from_account(
                                     config.main_account.address,
                                     state.integer_non_fungible_resource.unwrap(),
-                                    dec!("1"),
+                                    dec!(1),
                                 )
                                 .try_deposit_batch_or_abort(
                                     config.occasional_recipient_account.address,

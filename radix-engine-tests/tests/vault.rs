@@ -683,7 +683,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     );
 }
 

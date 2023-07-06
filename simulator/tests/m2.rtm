@@ -14,7 +14,6 @@ RETURN_TO_WORKTOP Bucket("bucket2");
 
 # Test - auth zone
 CALL_METHOD Address("${account}") "create_proof_of_amount" Address("${xrd}") Decimal("5.0");
-CREATE_PROOF_FROM_AUTH_ZONE Address("${xrd}") Proof("proof1");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT Address("${xrd}") Decimal("2.0") Proof("proof2");
 CLONE_PROOF Proof("proof2") Proof("proof3");
 DROP_PROOF Proof("proof1");
@@ -25,7 +24,6 @@ DROP_PROOF Proof("proof3");
 CALL_METHOD Address("${account}") "withdraw" Address("${xrd}") Decimal("5.0");
 CLEAR_AUTH_ZONE;
 TAKE_ALL_FROM_WORKTOP Address("${xrd}") Bucket("xrd");
-CREATE_PROOF_FROM_BUCKET Bucket("xrd") Proof("proof4");
 CLONE_PROOF Proof("proof4") Proof("proof5");
 DROP_PROOF Proof("proof4");
 DROP_PROOF Proof("proof5");

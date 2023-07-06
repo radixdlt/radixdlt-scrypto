@@ -1157,13 +1157,13 @@ impl TestRunner {
         ResourceAddress,
         ResourceAddress,
     ) {
-        let mint_auth = self.create_non_fungible_resource(account);
-        let burn_auth = self.create_non_fungible_resource(account);
-        let withdraw_auth = self.create_non_fungible_resource(account);
-        let recall_auth = self.create_non_fungible_resource(account);
-        let update_metadata_auth = self.create_non_fungible_resource(account);
-        let freeze_auth = self.create_non_fungible_resource(account);
-        let admin_auth = self.create_non_fungible_resource(account);
+        let mint_auth = self.create_fungible_resource(dec!(1), 0, account);
+        let burn_auth = self.create_fungible_resource(dec!(1), 0, account);
+        let withdraw_auth = self.create_fungible_resource(dec!(1), 0, account);
+        let recall_auth = self.create_fungible_resource(dec!(1), 0, account);
+        let update_metadata_auth = self.create_fungible_resource(dec!(1), 0, account);
+        let freeze_auth = self.create_fungible_resource(dec!(1), 0, account);
+        let admin_auth = self.create_fungible_resource(dec!(1), 0, account);
 
         let token_address = self.create_fungible_resource_and_deposit(
             OwnerRole::None,

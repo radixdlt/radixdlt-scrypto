@@ -20,7 +20,7 @@ mod bucket_proof {
         }
 
         pub fn use_bucket_proof_for_auth(bucket: Bucket, to_burn: Bucket) -> Bucket {
-            bucket.as_fungible().authorize_with_amount(dec!(1), || {
+            bucket.authorize_with_all(|| {
                 to_burn.burn();
             });
 

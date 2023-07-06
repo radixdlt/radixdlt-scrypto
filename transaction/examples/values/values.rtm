@@ -1,7 +1,7 @@
 TAKE_ALL_FROM_WORKTOP
     Address("${resource_address}")
     Bucket("temp1");
-CREATE_PROOF_FROM_AUTH_ZONE
+CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
     Address("${resource_address}")
     Proof("temp2");
 
