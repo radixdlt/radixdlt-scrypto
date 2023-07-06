@@ -37,9 +37,9 @@ use radix_engine_interface::blueprints::resource::*;
 /// ```
 ///
 /// Intermediate use case, where we need to pass a bucket into a component:
-/// ```no_run
+/// ```
 /// # use transaction::prelude::*;
-/// # let package_address = RESOURCE_PACKAGE;
+/// # let package_address = RESOURCE_PACKAGE; // Just some address to get it to compile
 /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
 /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
 /// # );
@@ -62,7 +62,7 @@ use radix_engine_interface::blueprints::resource::*;
 /// ```
 ///
 /// Advanced use case, where we need to generate a collision-free bucket name:
-/// ```no_run
+/// ```
 /// # use transaction::prelude::*;
 /// # let to_account_address = ComponentAddress::virtual_account_from_public_key(
 /// #   &Ed25519PublicKey([1; Ed25519PublicKey::LENGTH])
@@ -846,6 +846,30 @@ impl ManifestBuilder {
     ///     rather than just some brackets around the inner value.
     /// * A struct which implements `ManifestEncode` representing the arguments
     /// * `manifest_args!(x, y, z)`
+    /// 
+    /// Example:
+    /// ```
+    /// # use transaction::prelude::*;
+    /// # let package_address = RESOURCE_PACKAGE; // Just some address to get it to compile
+    /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+    /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
+    /// # );
+    /// let manifest = ManifestBuilder::new()
+    ///     .lock_fee_from_faucet()
+    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
+    ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
+    ///     .call_function_with_name_lookup(
+    ///         package_address,
+    ///         "SomeBlueprint",
+    ///         "some_function",
+    ///         |lookup| (
+    ///             "argument1",
+    ///             lookup.bucket("xrd_bucket"),
+    ///             dec!("1.3")
+    ///         ),
+    ///     )
+    ///     .build();
+    /// ```
     pub fn call_function_with_name_lookup<T: ResolvableArguments>(
         self,
         package_address: impl ResolvablePackageAddress,
@@ -917,6 +941,29 @@ impl ManifestBuilder {
     ///     rather than just some brackets around the inner value.
     /// * A struct which implements `ManifestEncode` representing the arguments
     /// * `manifest_args!(x, y, z)`
+    /// 
+    /// Example:
+    /// ```
+    /// # use transaction::prelude::*;
+    /// # let component_address = GENESIS_HELPER; // Just some address to get it to compile
+    /// # let from_account_address = ComponentAddress::virtual_account_from_public_key(
+    /// #   &Ed25519PublicKey([0; Ed25519PublicKey::LENGTH])
+    /// # );
+    /// let manifest = ManifestBuilder::new()
+    ///     .lock_fee_from_faucet()
+    ///     .withdraw_from_account(from_account_address, XRD, dec!(1))
+    ///     .take_from_worktop(XRD, dec!(1), "xrd_bucket")
+    ///     .call_method_with_name_lookup(
+    ///         component_address,
+    ///         "some_function",
+    ///         |lookup| (
+    ///             "argument1",
+    ///             lookup.bucket("xrd_bucket"),
+    ///             dec!("1.3")
+    ///         ),
+    ///     )
+    ///     .build();
+    /// ```
     pub fn call_method_with_name_lookup<T: ResolvableArguments>(
         self,
         address: impl ResolvableGlobalAddress,
