@@ -8,7 +8,7 @@ use radix_engine_interface::*;
 use crate::internal_prelude::*;
 
 pub struct RadiswapScenarioConfig {
-    pub radiswap_owner: VirtualAccount,
+    pub radiswap_dapp_definition_account: VirtualAccount,
     pub storing_account: VirtualAccount,
     pub user_account_1: VirtualAccount,
     pub user_account_2: VirtualAccount,
@@ -18,7 +18,7 @@ pub struct RadiswapScenarioConfig {
 impl Default for RadiswapScenarioConfig {
     fn default() -> Self {
         Self {
-            radiswap_owner: secp256k1_account_1(),
+            radiswap_dapp_definition_account: ed25519_account_for_private_key(891231),
             storing_account: secp256k1_account_2(),
             user_account_1: secp256k1_account_3(),
             user_account_2: ed25519_account_1(),
@@ -29,6 +29,7 @@ impl Default for RadiswapScenarioConfig {
 
 #[derive(Default)]
 pub struct RadiswapScenarioState {
+    owner_badge: State<NonFungibleGlobalId>,
     radiswap_package: State<PackageAddress>,
     pool_1: PoolData,
     pool_2: PoolData,
@@ -151,6 +152,62 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction_with_result_handler(
                 |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "radiswap-create-owner-badge-and-dapp-definition-account",
+                        |builder| {
+                            let definition_account = config.radiswap_dapp_definition_account.address;
+                            builder
+                                .create_non_fungible_resource(
+                                    // TODO: Once we can use address reservation with resource creation,
+                                    // we can set the owner badge to be its own owner
+                                    OwnerRole::None,
+                                    NonFungibleIdType::Integer,
+                                    true,
+                                    NonFungibleResourceRoles::default(),
+                                    metadata! {
+                                        init {
+                                            "name" => "Radiswap dApp Owner Badge", updatable;
+                                            "description" => "The owner badge for the Radiswap dApp", updatable;
+                                            "tags" => vec!["badge", "dex", "pool", "radiswap"], updatable;
+                                            "info_url" => Url::of("https://www.radixdlt.com/"), updatable;
+                                        }
+                                    },
+                                    Some([
+                                        (NonFungibleLocalId::integer(1), ())
+                                    ]),
+                                )
+                                .try_deposit_batch_or_abort(definition_account)
+                                .set_metadata(
+                                    definition_account,
+                                    "account_type",
+                                    "dapp definition"
+                                )
+                                .set_metadata(
+                                    definition_account,
+                                    "name",
+                                    "Radiswap dApp Definition"
+                                )
+                                .set_metadata(
+                                    definition_account,
+                                    "claimed_websites",
+                                    vec![Origin::of("https://radiswap.radixdlt.com/")]
+                                )
+                        },
+                        vec![]
+                    )
+                },
+                |core, config, state, result| {
+                    let new_resources = result.new_resource_addresses();
+                    state.owner_badge.set(NonFungibleGlobalId::new(
+                        new_resources[0],
+                        NonFungibleLocalId::integer(1)
+                    ));
+
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
                     let code = include_bytes!("../../../assets/radiswap.wasm");
                     let schema = manifest_decode::<PackageDefinition>(include_bytes!(
                         "../../../assets/radiswap.rpd"
@@ -177,9 +234,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                     "tags" => vec!["dex".to_owned(), "pool".to_owned(), "radiswap".to_owned()], locked;
                                 },
                                 radix_engine::types::OwnerRole::Fixed(rule!(require(
-                                    NonFungibleGlobalId::from_public_key(
-                                        &config.radiswap_owner.public_key
-                                    )
+                                    state.owner_badge.get()?
                                 ))),
                             ).call_function(
                                 lookup.named_address("radiswap_package"),
@@ -368,7 +423,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                        .add("radiswap_owner", &config.radiswap_owner)
+                        .add("radiswap_owner", &config.radiswap_dapp_definition_account)
                         .add("storing_account", &config.storing_account)
                         .add("user_account_1", &config.user_account_1)
                         .add("user_account_2", &config.user_account_2)
