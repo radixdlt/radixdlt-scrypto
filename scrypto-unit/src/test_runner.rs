@@ -1318,7 +1318,7 @@ impl TestRunner {
         &mut self,
         account: ComponentAddress,
     ) -> (ResourceAddress, ResourceAddress) {
-        let auth_resource_address = self.create_non_fungible_resource(account);
+        let auth_resource_address = self.create_fungible_resource(dec!(1), 0, account);
 
         let resource_address = self.create_fungible_resource_and_deposit(
             OwnerRole::None,

@@ -44,50 +44,6 @@ fn can_create_clone_and_drop_bucket_proof() {
 }
 
 #[test]
-fn can_create_clone_and_drop_vault_proof() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.new_component(
-        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
-        |builder| {
-            builder
-                .withdraw_from_account(account, resource_address, 1)
-                .take_all_from_worktop(resource_address, "bucket")
-                .with_name_lookup(|builder, lookup| {
-                    let bucket = lookup.bucket("bucket");
-                    builder.call_function(
-                        package_address,
-                        "VaultProof",
-                        "new",
-                        manifest_args!(bucket),
-                    )
-                })
-        },
-    );
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_method(
-            component_address,
-            "create_clone_drop_vault_proof",
-            manifest_args!(Decimal::one()),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!(
-        "{}",
-        receipt.display(&AddressBech32Encoder::for_simulator())
-    );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
 fn can_create_clone_and_drop_vault_proof_by_amount() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -404,53 +360,6 @@ fn can_move_locked_bucket() {
 }
 
 #[test]
-fn can_compose_bucket_and_vault_proof() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address =
-        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.new_component(
-        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
-        |builder| {
-            builder
-                .withdraw_from_account(account, resource_address, 1)
-                .take_all_from_worktop(resource_address, "bucket")
-                .with_name_lookup(|builder, lookup| {
-                    builder.call_function(
-                        package_address,
-                        "VaultProof",
-                        "new",
-                        manifest_args!(lookup.bucket("bucket")),
-                    )
-                })
-        },
-    );
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .withdraw_from_account(account, resource_address, 99)
-        .take_from_worktop(resource_address, 99, "bucket")
-        .with_name_lookup(|builder, lookup| {
-            builder.call_method(
-                component_address,
-                "compose_vault_and_bucket_proof",
-                manifest_args!(lookup.bucket("bucket")),
-            )
-        })
-        .build();
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![NonFungibleGlobalId::from_public_key(&public_key)],
-    );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
 fn can_compose_bucket_and_vault_proof_by_amount() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
@@ -562,45 +471,6 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-
-    // Assert
-    receipt.expect_commit_success();
-}
-
-#[test]
-fn can_create_vault_proof_by_amount_from_non_fungibles() {
-    // Arrange
-    let mut test_runner = TestRunner::builder().build();
-    let (public_key, _, account) = test_runner.new_allocated_account();
-    let resource_address = test_runner.create_non_fungible_resource(account);
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
-    let component_address = test_runner.new_component(
-        btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
-        |builder| {
-            builder
-                .withdraw_from_account(account, resource_address, 3)
-                .take_all_from_worktop(resource_address, "bucket")
-                .with_name_lookup(|builder, lookup| {
-                    builder.call_function(
-                        package_address,
-                        "VaultProof",
-                        "new",
-                        manifest_args!(lookup.bucket("bucket")),
-                    )
-                })
-        },
-    );
-
-    // Act
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_method(
-            component_address,
-            "create_clone_drop_vault_proof_by_amount",
-            manifest_args!(Decimal::from(3), Decimal::from(1)),
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();

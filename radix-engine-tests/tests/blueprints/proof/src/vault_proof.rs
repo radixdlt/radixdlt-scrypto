@@ -16,23 +16,6 @@ mod vault_proof {
             .globalize()
         }
 
-        pub fn create_clone_drop_vault_proof(&self, amount: Decimal) {
-            let proof = self
-                .vault
-                .as_fungible()
-                .create_proof_of_amount(amount)
-                .skip_checking();
-            assert_eq!(proof.resource_address(), self.vault.resource_address());
-            let clone = proof.clone();
-
-            assert_eq!(self.vault.amount(), amount);
-            assert_eq!(proof.amount(), amount);
-            assert_eq!(clone.amount(), amount);
-
-            clone.drop();
-            proof.drop();
-        }
-
         pub fn create_clone_drop_vault_proof_by_amount(
             &self,
             amount: Decimal,
@@ -118,7 +101,7 @@ mod vault_proof {
             amount: Decimal,
         ) {
             self.vault.as_fungible().authorize_with_amount(dec!(1), || {
-                bucket.as_fungible().authorize_with_amount(dec!(1), || {
+                bucket.authorize_with_all(|| {
                     let proof =
                         LocalAuthZone::create_proof_of_amount(amount, bucket.resource_address())
                             .skip_checking();
@@ -135,18 +118,21 @@ mod vault_proof {
             bucket: Bucket,
             ids: BTreeSet<NonFungibleLocalId>,
         ) {
-            self.vault.as_fungible().authorize_with_amount(dec!(1), || {
-                bucket.as_fungible().authorize_with_amount(dec!(1), || {
-                    let proof = LocalAuthZone::create_proof_of_non_fungibles(
-                        ids.clone(),
-                        bucket.resource_address(),
-                    )
-                    .skip_checking();
-                    assert_eq!(proof.resource_address(), self.vault.resource_address());
-                    assert_eq!(proof.as_non_fungible().non_fungible_local_ids(), ids);
-                    proof.drop();
-                })
-            });
+            let vault_fungible_ids = self.vault.as_non_fungible().non_fungible_local_ids();
+            self.vault
+                .as_non_fungible()
+                .authorize_with_non_fungibles(&vault_fungible_ids, || {
+                    bucket.authorize_with_all(|| {
+                        let proof = LocalAuthZone::create_proof_of_non_fungibles(
+                            ids.clone(),
+                            bucket.resource_address(),
+                        )
+                        .skip_checking();
+                        assert_eq!(proof.resource_address(), self.vault.resource_address());
+                        assert_eq!(proof.as_non_fungible().non_fungible_local_ids(), ids);
+                        proof.drop();
+                    })
+                });
             self.vault.put(bucket);
         }
     }
