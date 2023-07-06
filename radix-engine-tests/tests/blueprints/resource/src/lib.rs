@@ -175,7 +175,7 @@ mod resource_test {
                     })
                     .create_with_no_initial_supply();
 
-            badge.as_fungible().authorize_with_amount(dec!(1), || {
+            badge.authorize_with_all(|| {
                 token_resource_manager.set_metadata("a".to_owned(), "b".to_owned());
                 let string: String = token_resource_manager.get_metadata("a".to_owned()).unwrap();
                 assert_eq!(string, "b".to_owned());
