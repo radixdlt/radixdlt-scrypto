@@ -510,10 +510,10 @@ fn register_validator_with_auth_succeeds() {
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(
+        .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            dec!("1"),
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
         )
         .register_validator(validator_address)
         .build();
@@ -577,10 +577,10 @@ fn unregister_validator_with_auth_succeeds() {
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(
+        .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            dec!("1"),
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
         )
         .unregister_validator(validator_address)
         .build();
@@ -641,10 +641,10 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(
+        .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            dec!("1"),
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
         )
         .call_method(
             validator_address,
@@ -662,10 +662,10 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
     let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
 
     if owner {
-        builder = builder.create_proof_from_account_of_amount(
+        builder = builder.create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            dec!("1"),
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
         );
     }
 
@@ -733,7 +733,11 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account_address, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            account_address,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -1086,7 +1090,11 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
     // Act: request the fee decrease
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .call_method(
             validator_address,
             VALIDATOR_UPDATE_FEE_IDENT,
@@ -1211,26 +1219,29 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     let mut total_rewards = Decimal::ZERO;
     let mut last_reward;
 
-    last_reward = test_runner
-        .execute_manifest(
-            ManifestBuilder::new()
-                .lock_fee_from_faucet()
-                .create_proof_from_account_of_amount(
-                    validator_account,
-                    VALIDATOR_OWNER_BADGE,
-                    dec!(1),
-                )
-                .call_method(
-                    validator_address,
-                    VALIDATOR_UPDATE_FEE_IDENT,
-                    manifest_args!(Decimal::zero()),
-                )
-                .build(),
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
-        )
-        .expect_commit_success()
-        .fee_summary
-        .expected_reward_if_single_validator();
+    last_reward =
+        test_runner
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .create_proof_from_account_of_non_fungibles(
+                        validator_account,
+                        VALIDATOR_OWNER_BADGE,
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
+                    )
+                    .call_method(
+                        validator_address,
+                        VALIDATOR_UPDATE_FEE_IDENT,
+                        manifest_args!(Decimal::zero()),
+                    )
+                    .build(),
+                vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            )
+            .expect_commit_success()
+            .fee_summary
+            .expected_reward_if_single_validator();
     total_rewards += last_reward;
 
     // ... and wait 1 epoch to make it effective
@@ -1243,26 +1254,29 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
     let current_epoch = initial_epoch.next();
 
     // Act: request the fee increase
-    last_reward = test_runner
-        .execute_manifest(
-            ManifestBuilder::new()
-                .lock_fee_from_faucet()
-                .create_proof_from_account_of_amount(
-                    validator_account,
-                    VALIDATOR_OWNER_BADGE,
-                    dec!(1),
-                )
-                .call_method(
-                    validator_address,
-                    VALIDATOR_UPDATE_FEE_IDENT,
-                    manifest_args!(increased_fee_factor),
-                )
-                .build(),
-            vec![NonFungibleGlobalId::from_public_key(&validator_key)],
-        )
-        .expect_commit_success()
-        .fee_summary
-        .expected_reward_if_single_validator();
+    last_reward =
+        test_runner
+            .execute_manifest(
+                ManifestBuilder::new()
+                    .lock_fee_from_faucet()
+                    .create_proof_from_account_of_non_fungibles(
+                        validator_account,
+                        VALIDATOR_OWNER_BADGE,
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
+                    )
+                    .call_method(
+                        validator_address,
+                        VALIDATOR_UPDATE_FEE_IDENT,
+                        manifest_args!(increased_fee_factor),
+                    )
+                    .build(),
+                vec![NonFungibleGlobalId::from_public_key(&validator_key)],
+            )
+            .expect_commit_success()
+            .fee_summary
+            .expected_reward_if_single_validator();
     total_rewards += last_reward;
     let increase_effective_at_epoch = current_epoch.after(fee_increase_delay_epochs);
 
@@ -1418,10 +1432,12 @@ impl RegisterAndStakeTransactionType {
             RegisterAndStakeTransactionType::SingleManifestRegisterFirst => {
                 let manifest = ManifestBuilder::new()
                     .lock_fee_from_faucet()
-                    .create_proof_from_account_of_amount(
+                    .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        dec!(1),
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .register_validator(validator_address)
@@ -1434,10 +1450,12 @@ impl RegisterAndStakeTransactionType {
             RegisterAndStakeTransactionType::SingleManifestStakeFirst => {
                 let manifest = ManifestBuilder::new()
                     .lock_fee_from_faucet()
-                    .create_proof_from_account_of_amount(
+                    .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        dec!(1),
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
@@ -1450,20 +1468,24 @@ impl RegisterAndStakeTransactionType {
             RegisterAndStakeTransactionType::RegisterFirst => {
                 let register_manifest = ManifestBuilder::new()
                     .lock_fee_from_faucet()
-                    .create_proof_from_account_of_amount(
+                    .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        dec!(1),
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
                     )
                     .register_validator(validator_address)
                     .build();
 
                 let stake_manifest = ManifestBuilder::new()
                     .lock_fee_from_faucet()
-                    .create_proof_from_account_of_amount(
+                    .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        dec!(1),
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
@@ -1476,20 +1498,24 @@ impl RegisterAndStakeTransactionType {
             RegisterAndStakeTransactionType::StakeFirst => {
                 let register_manifest = ManifestBuilder::new()
                     .lock_fee_from_faucet()
-                    .create_proof_from_account_of_amount(
+                    .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        dec!(1),
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
                     )
                     .register_validator(validator_address)
                     .build();
 
                 let stake_manifest = ManifestBuilder::new()
                     .lock_fee(faucet, 500)
-                    .create_proof_from_account_of_amount(
+                    .create_proof_from_account_of_non_fungibles(
                         account_address,
                         VALIDATOR_OWNER_BADGE,
-                        dec!(1),
+                        &btreeset!(
+                            NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()
+                        ),
                     )
                     .withdraw_from_account(account_address, XRD, stake_amount)
                     .take_all_from_worktop(XRD, "stake")
@@ -1702,7 +1728,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let validator_account_address =
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
-        validator_pub_key,
+        validator_pub_key.clone(),
         Decimal::one(),
         validator_account_address,
         genesis_epoch,
@@ -1718,10 +1744,10 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(
+        .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            dec!("1"),
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
         )
         .unregister_validator(validator_address)
         .build();
@@ -1754,7 +1780,7 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let validator_account_address =
         ComponentAddress::virtual_account_from_public_key(&validator_pub_key);
     let genesis = CustomGenesis::single_validator_and_staker(
-        validator_pub_key,
+        validator_pub_key.clone(),
         Decimal::one(),
         validator_account_address,
         genesis_epoch,
@@ -1771,10 +1797,10 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
     let next_validator_pub_key = Secp256k1PrivateKey::from_u64(3u64).unwrap().public_key();
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(
+        .create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            dec!("1"),
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
         )
         .call_method(
             validator_address,
@@ -1921,7 +1947,11 @@ fn owner_can_lock_stake_units() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .withdraw_from_account(
             validator_account,
             validator_substate.stake_unit_resource,
@@ -1981,7 +2011,11 @@ fn owner_can_start_unlocking_stake_units() {
     // Lock
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .withdraw_from_account(
             validator_account,
             stake_unit_resource,
@@ -2006,7 +2040,11 @@ fn owner_can_start_unlocking_stake_units() {
     // Act (start unlock)
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .call_method(
             validator_address,
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2067,7 +2105,11 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     // Lock
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .withdraw_from_account(
             validator_account,
             stake_unit_resource,
@@ -2094,7 +2136,11 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     for stake_units_to_unlock_amount in stake_units_to_unlock_amounts {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+            .create_proof_from_account_of_non_fungibles(
+                validator_account,
+                VALIDATOR_OWNER_BADGE,
+                &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+            )
             .call_method(
                 validator_address,
                 VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2159,7 +2205,11 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     // Lock
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .withdraw_from_account(
             validator_account,
             stake_unit_resource,
@@ -2184,7 +2234,11 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     // Start unlock
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .call_method(
             validator_address,
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2202,7 +2256,11 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
     test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .call_method(
             validator_address,
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2263,7 +2321,11 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     // Lock
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .withdraw_from_account(
             validator_account,
             stake_unit_resource,
@@ -2288,7 +2350,11 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     // Start unlock
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .call_method(
             validator_address,
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2306,7 +2372,11 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .call_method(
             validator_address,
             VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2368,7 +2438,11 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     // Lock
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .withdraw_from_account(
             validator_account,
             stake_unit_resource,
@@ -2393,7 +2467,11 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     // Start unlock
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .call_method(
             validator_address,
             VALIDATOR_START_UNLOCK_OWNER_STAKE_UNITS_IDENT,
@@ -2411,7 +2489,11 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     test_runner.set_current_epoch(initial_epoch.after(unlock_epochs_delay / 2));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(validator_account, VALIDATOR_OWNER_BADGE, dec!(1))
+        .create_proof_from_account_of_non_fungibles(
+            validator_account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .call_method(
             validator_address,
             VALIDATOR_FINISH_UNLOCK_OWNER_STAKE_UNITS_IDENT,
