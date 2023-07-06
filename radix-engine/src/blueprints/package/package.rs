@@ -1256,7 +1256,7 @@ impl PackageNativePackage {
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata_init: MetadataInit,
-        owner_rule: OwnerRole,
+        owner_role: OwnerRole,
         api: &mut Y,
     ) -> Result<PackageAddress, RuntimeError>
     where
@@ -1266,7 +1266,7 @@ impl PackageNativePackage {
         let package_structure =
             Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
-        let access_rules = SecurifiedPackage::create_advanced(owner_rule, api)?;
+        let access_rules = SecurifiedPackage::create_advanced(owner_role, api)?;
 
         globalize_package(
             package_address,

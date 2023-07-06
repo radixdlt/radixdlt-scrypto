@@ -239,7 +239,7 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
                 IDENTITY_BLUEPRINT,
                 IDENTITY_CREATE_ADVANCED_IDENT,
                 IdentityCreateAdvancedInput {
-                    owner_rule: OwnerRole::None,
+                    owner_role: OwnerRole::None,
                 },
             )
             .build();
