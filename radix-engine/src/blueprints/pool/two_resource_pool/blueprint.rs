@@ -1,4 +1,5 @@
 use crate::blueprints::pool::two_resource_pool::*;
+use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
 use crate::kernel::kernel_api::*;
 use native_sdk::modules::access_rules::*;
@@ -22,6 +23,7 @@ pub struct TwoResourcePoolBlueprint;
 impl TwoResourcePoolBlueprint {
     pub fn instantiate<Y>(
         (resource_address1, resource_address2): (ResourceAddress, ResourceAddress),
+        owner_role: OwnerRole,
         pool_manager_rule: AccessRule,
         api: &mut Y,
     ) -> Result<TwoResourcePoolInstantiateOutput, RuntimeError>
@@ -52,9 +54,6 @@ impl TwoResourcePoolBlueprint {
             blueprint_name: TWO_RESOURCE_POOL_BLUEPRINT_IDENT.to_string(),
         })?;
 
-        // Create owner role of both the pool component and pool unit resource
-        let owner_role = OwnerRole::Updatable(pool_manager_rule);
-
         // Creating the pool unit resource
         let pool_unit_resource_manager = {
             let component_caller_badge = NonFungibleGlobalId::global_caller_badge(address);
@@ -82,7 +81,16 @@ impl TwoResourcePoolBlueprint {
         };
 
         // Creating the pool nodes
-        let access_rules = AccessRules::create(owner_role, btreemap!(), api)?.0;
+        let access_rules = AccessRules::create(
+            owner_role,
+            btreemap! {
+                ObjectModuleId::Main => roles_init! {
+                    RoleKey { key: POOL_MANAGER_ROLE.to_owned() } => pool_manager_rule;
+                }
+            },
+            api,
+        )?
+        .0;
 
         let metadata = Metadata::create_with_data(
             metadata_init! {

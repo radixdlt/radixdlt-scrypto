@@ -6,6 +6,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto_unit::*;
 use transaction::builder::*;
+use transaction::prelude::Secp256k1PrivateKey;
 
 #[test]
 pub fn two_resource_pool_can_be_instantiated() {
@@ -19,14 +20,32 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
     result: F,
 ) {
     // Arrange
-    let mut test_runner = TestEnvironment::new((18, 18));
+    let (owner_rule, virtual_signature_badge) = {
+        let public_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
+        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+        let rule = rule!(require(virtual_signature_badge.clone()));
+        (OwnerRole::Fixed(rule), virtual_signature_badge)
+    };
+    let mut test_runner = TestEnvironment::new_with_owner((18, 18), owner_rule);
+
+    let global_address = if pool {
+        GlobalAddress::from(test_runner.pool_component_address)
+    } else {
+        GlobalAddress::from(test_runner.pool_unit_resource_address)
+    };
 
     // Act
-    let receipt = if pool {
-        test_runner.set_pool_metadata(key, MetadataValue::U8(2u8), sign)
+    let initial_proofs = if sign {
+        vec![virtual_signature_badge]
     } else {
-        test_runner.set_pool_unit_resource_metadata(key, MetadataValue::U8(2u8), sign)
+        vec![]
     };
+    let manifest = ManifestBuilder::new()
+        .set_metadata(global_address, key, MetadataValue::Bool(false))
+        .build();
+    let receipt = test_runner
+        .test_runner
+        .execute_manifest_ignoring_fee(manifest, initial_proofs);
 
     // Assert
     result(receipt);
@@ -444,6 +463,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             to_manifest_value_and_unwrap!(&TwoResourcePoolInstantiateManifestInput {
                 resource_addresses: (non_fungible_resource, RADIX_TOKEN),
                 pool_manager_rule: rule!(allow_all),
+                owner_rule: OwnerRole::None
             }),
         )
         .build();
@@ -893,6 +913,10 @@ struct TestEnvironment {
 
 impl TestEnvironment {
     pub fn new((divisibility1, divisibility2): (u8, u8)) -> Self {
+        Self::new_with_owner((divisibility1, divisibility2), OwnerRole::None)
+    }
+
+    pub fn new_with_owner((divisibility1, divisibility2): (u8, u8), owner_rule: OwnerRole) -> Self {
         let mut test_runner = TestRunner::builder().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -919,6 +943,7 @@ impl TestEnvironment {
                     to_manifest_value_and_unwrap!(&TwoResourcePoolInstantiateManifestInput {
                         resource_addresses: (pool_resource1, pool_resource2),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
+                        owner_rule
                     }),
                 )
                 .build();
@@ -994,30 +1019,6 @@ impl TestEnvironment {
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
-            .build();
-        self.execute_manifest(manifest, sign)
-    }
-
-    fn set_pool_metadata<S: ToString>(
-        &mut self,
-        key: S,
-        value: MetadataValue,
-        sign: bool,
-    ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_component_address, key, value)
-            .build();
-        self.execute_manifest(manifest, sign)
-    }
-
-    fn set_pool_unit_resource_metadata<S: ToString>(
-        &mut self,
-        key: S,
-        value: MetadataValue,
-        sign: bool,
-    ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_unit_resource_address, key, value)
             .build();
         self.execute_manifest(manifest, sign)
     }

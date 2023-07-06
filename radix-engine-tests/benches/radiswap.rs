@@ -60,7 +60,12 @@ fn bench_radiswap(c: &mut Criterion) {
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_fee(account2, 500u32.into())
-                .call_function(package_address, "Radiswap", "new", manifest_args!(btc, eth))
+                .call_function(
+                    package_address,
+                    "Radiswap",
+                    "new",
+                    manifest_args!(OwnerRole::None, btc, eth),
+                )
                 .call_method(
                     account2,
                     "try_deposit_batch_or_abort",

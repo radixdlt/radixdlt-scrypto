@@ -8,6 +8,7 @@ mod radiswap {
 
     impl Radiswap {
         pub fn new(
+            owner_role: OwnerRole,
             resource_address1: ResourceAddress,
             resource_address2: ResourceAddress,
         ) -> Global<Radiswap> {
@@ -21,6 +22,7 @@ mod radiswap {
             // 2. That none of the resources are non-fungible
             let pool_component = Blueprint::<TwoResourcePool>::instantiate(
                 (resource_address1, resource_address2),
+                owner_role,
                 rule!(require(global_component_caller_badge)),
             );
 

@@ -10,11 +10,13 @@ define_invocation! {
     function_name: instantiate,
     input: struct {
         resource_address: ResourceAddress,
+        owner_rule: OwnerRole,
         pool_manager_rule: AccessRule
     },
     output: type ComponentAddress,
     manifest_input: struct {
         resource_address: ResourceAddress,
+        owner_rule: OwnerRole,
         pool_manager_rule: AccessRule
     }
 }

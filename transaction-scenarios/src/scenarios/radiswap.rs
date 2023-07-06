@@ -184,13 +184,13 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                             DynamicPackageAddress::Named(named_address),
                                             "Radiswap", 
                                             "new", 
-                                            manifest_args!(state.pool_1.resource_1.unwrap(), state.pool_1.resource_2.unwrap())
+                                            manifest_args!(OwnerRole::None, state.pool_1.resource_1.unwrap(), state.pool_1.resource_2.unwrap())
                                         )
                                         .call_function(
                                             DynamicPackageAddress::Named(named_address),
                                             "Radiswap", 
                                             "new", 
-                                            manifest_args!(state.pool_2.resource_1.unwrap(), state.pool_2.resource_2.unwrap())
+                                            manifest_args!(OwnerRole::None, state.pool_2.resource_1.unwrap(), state.pool_2.resource_2.unwrap())
                                         )
                                         .try_deposit_batch_or_abort(config.storing_account.address)
                                 },

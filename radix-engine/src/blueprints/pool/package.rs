@@ -540,11 +540,13 @@ impl PoolNativePackage {
                 let OneResourcePoolInstantiateInput {
                     resource_address,
                     pool_manager_rule,
+                    owner_rule,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = OneResourcePoolBlueprint::instantiate(
                     resource_address,
+                    owner_rule,
                     pool_manager_rule,
                     api,
                 )?;
@@ -612,11 +614,13 @@ impl PoolNativePackage {
                 let TwoResourcePoolInstantiateInput {
                     resource_addresses,
                     pool_manager_rule,
+                    owner_rule,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = TwoResourcePoolBlueprint::instantiate(
                     resource_addresses,
+                    owner_rule,
                     pool_manager_rule,
                     api,
                 )?;
@@ -688,12 +692,14 @@ impl PoolNativePackage {
             MULTI_RESOURCE_POOL_INSTANTIATE_EXPORT_NAME => {
                 let MultiResourcePoolInstantiateInput {
                     resource_addresses,
+                    owner_rule,
                     pool_manager_rule,
                 } = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = MultiResourcePoolBlueprint::instantiate(
                     resource_addresses,
+                    owner_rule,
                     pool_manager_rule,
                     api,
                 )?;
