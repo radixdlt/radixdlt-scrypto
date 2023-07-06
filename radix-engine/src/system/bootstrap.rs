@@ -22,8 +22,6 @@ use crate::transaction::{
     TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use crate::types::*;
-use crate::vm::wasm::WasmEngine;
-use crate::vm::ScryptoVm;
 use lazy_static::lazy_static;
 use radix_engine_common::crypto::Secp256k1PublicKey;
 use radix_engine_common::types::ComponentAddress;

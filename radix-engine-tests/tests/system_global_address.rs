@@ -12,38 +12,30 @@ use radix_engine_interface::blueprints::package::{
     PackagePublishNativeInput, PackagePublishNativeManifestInput, PACKAGE_BLUEPRINT,
     RESOURCE_CODE_ID,
 };
+use sbor::basic_well_known_types::ANY_ID;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::InstructionV1;
 use transaction::prelude::DynamicPackageAddress;
 use transaction::validation::ManifestIdAllocator;
 
-fn def() -> PackageDefinition {
-    let mut aggregator = TypeAggregator::<ScryptoCustomTypeKind>::new();
-    let input = TypeRef::Static(
-        aggregator.add_child_type_and_descendents::<()>(),
-    );
-    let output = TypeRef::Static(
-        aggregator.add_child_type_and_descendents::<()>(),
-    );
-    let schema = generate_full_schema(aggregator);
+fn package_definition() -> PackageDefinition {
     PackageDefinition {
         blueprints: btreemap! {
             "my_blueprint".to_string() => BlueprintDefinitionInit {
                 schema: BlueprintSchemaInit {
-                    schema,
                     functions: BlueprintFunctionsSchemaInit {
                         functions: btreemap! {
                             "test".to_string() => FunctionSchemaInit {
                                 receiver: None,
-                                input: input.clone(),
-                                output: output.clone(),
+                                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                                output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
                                 export: "test".to_string(),
                             },
                             "get_global_address".to_string() => FunctionSchemaInit {
                                 receiver: Some(ReceiverInfo::normal_ref()),
-                                input: input.clone(),
-                                output: output.clone(),
+                                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                                output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
                                 export: "get_global_address".to_string(),
                             }
                         },
@@ -57,7 +49,6 @@ fn def() -> PackageDefinition {
     }
 }
 
-/// Native VM which adds global address invariant checking on direct access methods
 #[derive(Clone)]
 pub struct TestNativeVm {
     vm: NativeVmV1,
@@ -153,7 +144,7 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
             blueprint_name: "Package".to_string(),
             function_name: "publish_native".to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                definition: def(),
+                definition: package_definition(),
                 native_package_code_id: 1024u64,
                 metadata: MetadataInit::default(),
                 package_address: Some(id_allocator.new_address_reservation_id()),

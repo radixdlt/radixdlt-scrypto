@@ -9,7 +9,6 @@ use sbor::basic_well_known_types::ANY_ID;
 use sbor::basic_well_known_types::UNIT_ID;
 use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
-use scrypto_schema::BlueprintEventSchemaInit;
 use scrypto_schema::BlueprintFunctionsSchemaInit;
 use scrypto_schema::BlueprintSchemaInit;
 use scrypto_schema::BlueprintStateSchemaInit;
@@ -17,7 +16,6 @@ use scrypto_schema::FieldSchema;
 use scrypto_schema::FunctionSchemaInit;
 use scrypto_schema::TypeRef;
 use utils::btreemap;
-use utils::btreeset;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -199,28 +197,12 @@ impl PackageDefinition {
         blueprints.insert(
             blueprint_name.to_string(),
             BlueprintDefinitionInit {
-                blueprint_type: BlueprintType::default(),
-                feature_set: btreeset!(),
-                dependencies: btreeset!(),
-
                 schema: BlueprintSchemaInit {
-                    generics: vec![],
-                    schema: ScryptoSchema {
-                        type_kinds: vec![],
-                        type_metadata: vec![],
-                        type_validations: vec![],
-                    },
-                    state: BlueprintStateSchemaInit {
-                        fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(
-                            UNIT_ID,
-                        ))],
-                        collections: vec![],
-                    },
-                    events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
                         virtual_lazy_load_functions: btreemap!(),
                         functions: btreemap!(
-                        function_name.to_string() => FunctionSchemaInit {
+                        function_name.to_string() =>
+                            FunctionSchemaInit {
                                 receiver: Option::None,
                                 input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
                                 output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
@@ -228,13 +210,9 @@ impl PackageDefinition {
                             }
                         ),
                     },
+                    ..Default::default()
                 },
-
-                royalty_config: PackageRoyaltyConfig::default(),
-                auth_config: AuthConfig {
-                    function_auth: FunctionAuth::AllowAll,
-                    method_auth: MethodAuthTemplate::AllowAll,
-                },
+                ..Default::default()
             },
         );
         PackageDefinition { blueprints }
