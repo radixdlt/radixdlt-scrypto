@@ -31,10 +31,10 @@ where
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
     if as_owner {
-        builder = builder.create_proof_from_account_of_amount(
+        builder = builder.create_proof_from_account_of_non_fungibles(
             validator_account_address,
             VALIDATOR_OWNER_BADGE,
-            dec!("1"),
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
         );
     }
     let manifest = builder
@@ -90,7 +90,11 @@ fn check_if_validator_accepts_delegated_stake() {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account, VALIDATOR_OWNER_BADGE, dec!("1"))
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
