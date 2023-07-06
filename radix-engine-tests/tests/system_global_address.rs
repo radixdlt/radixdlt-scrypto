@@ -1,5 +1,5 @@
 use radix_engine::blueprints::resource::ResourceNativePackage;
-use radix_engine::errors::RuntimeError;
+use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
@@ -35,8 +35,7 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
                     Ok(IndexedScryptoValue::from_typed(&()))
                 }
                 "get_global_address" => {
-                    api.actor_get_global_address()
-                        .expect_err("Should not have global address");
+                    let _ = api.actor_get_global_address()?;
                     Ok(IndexedScryptoValue::from_typed(&()))
                 }
                 _ => Ok(IndexedScryptoValue::from_typed(&())),
@@ -49,7 +48,10 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_test_definition(
             BLUEPRINT_NAME,
-            vec![("test", false), ("get_global_address", true)],
+            vec![
+                ("test", "test", false),
+                ("get_global_address", "get_global_address", true),
+            ],
         ),
     );
 
@@ -63,7 +65,12 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
     );
 
     // Assert
-    receipt.expect_commit_success();
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::GlobalAddressDoesNotExist,)
+        )
+    });
 }
 
 #[test]

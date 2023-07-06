@@ -192,13 +192,20 @@ impl PackageDefinition {
         blueprint_name: &str,
         function_name: &str,
     ) -> PackageDefinition {
-        Self::new_test_definition(blueprint_name, vec![(function_name, false)])
+        Self::new_test_definition(
+            blueprint_name,
+            vec![(
+                function_name,
+                format!("{}_{}", blueprint_name, function_name).as_str(),
+                false,
+            )],
+        )
     }
 
     // For testing only
     pub fn new_test_definition(
         blueprint_name: &str,
-        functions: Vec<(&str, bool)>,
+        functions: Vec<(&str, &str, bool)>,
     ) -> PackageDefinition {
         let mut blueprints = BTreeMap::new();
         blueprints.insert(
@@ -209,7 +216,7 @@ impl PackageDefinition {
                         virtual_lazy_load_functions: btreemap!(),
                         functions: functions
                             .into_iter()
-                            .map(|(function_name, has_receiver)| {
+                            .map(|(function_name, export_name, has_receiver)| {
                                 let schema = FunctionSchemaInit {
                                     receiver: if has_receiver {
                                         Some(ReceiverInfo::normal_ref())
@@ -218,7 +225,7 @@ impl PackageDefinition {
                                     },
                                     input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
                                     output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                                    export: format!("{}_{}", blueprint_name, function_name),
+                                    export: export_name.to_string(),
                                 };
                                 (function_name.to_string(), schema)
                             })
