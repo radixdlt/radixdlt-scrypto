@@ -22,7 +22,7 @@ fn package_owner_can_claim_royalty() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                btreeset!(NonFungibleLocalId::integer(1)),
+                &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .claim_package_royalties(package_address)
             .try_deposit_batch_or_abort(account)
@@ -79,7 +79,7 @@ fn component_owner_can_set_royalty() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                btreeset!(NonFungibleLocalId::integer(1)),
+                &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .set_component_royalty(
                 component_address,
@@ -136,7 +136,7 @@ fn component_owner_can_claim_royalty() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                btreeset!(NonFungibleLocalId::integer(1)),
+                &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .claim_component_royalties(component_address)
             .try_deposit_batch_or_abort(account)
@@ -201,7 +201,7 @@ fn set_up_package_and_component() -> (
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                btreeset!(NonFungibleLocalId::integer(1)),
+                &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .call_function(
                 package_address,

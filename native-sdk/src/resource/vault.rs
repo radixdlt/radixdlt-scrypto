@@ -46,18 +46,6 @@ pub trait NativeVault {
     where
         Y: ClientApi<E>;
 
-    fn create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
-    where
-        Y: ClientApi<E>;
-
-    fn create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
-        &self,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: ClientApi<E>;
-
     fn resource_address<Y, E: Debug + ScryptoDecode>(
         &self,
         api: &mut Y,
@@ -86,9 +74,24 @@ pub trait NativeFungibleVault {
     ) -> Result<(), E>
     where
         Y: ClientApi<E>;
+
+    fn create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
+        &self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>;
 }
 
 pub trait NativeNonFungibleVault {
+    fn non_fungible_local_ids<Y, E: Debug + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    where
+        Y: ClientApi<E>;
+
     fn take_non_fungibles<Y, E: Debug + ScryptoDecode>(
         &mut self,
         non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
@@ -212,36 +215,6 @@ impl NativeVault for Vault {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    fn create_proof<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Proof, E>
-    where
-        Y: ClientApi<E>,
-    {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            VAULT_CREATE_PROOF_IDENT,
-            scrypto_encode(&VaultCreateProofInput {}).unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
-    fn create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
-        &self,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: ClientApi<E>,
-    {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
-            scrypto_encode(&VaultCreateProofOfAmountInput { amount }).unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
     fn resource_address<Y, E: Debug + ScryptoDecode>(
         &self,
         api: &mut Y,
@@ -307,6 +280,23 @@ impl NativeFungibleVault for Vault {
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
+
+    fn create_proof_of_amount<Y, E: Debug + ScryptoDecode>(
+        &self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Proof, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT,
+            scrypto_encode(&FungibleVaultCreateProofOfAmountInput { amount }).unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
 }
 
 impl NativeNonFungibleVault for Vault {
@@ -362,6 +352,22 @@ impl NativeNonFungibleVault for Vault {
                 non_fungible_local_ids,
             })
             .unwrap(),
+        )?;
+
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    fn non_fungible_local_ids<Y, E: Debug + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<BTreeSet<NonFungibleLocalId>, E>
+    where
+        Y: ClientApi<E>,
+    {
+        let rtn = api.call_method(
+            self.0.as_node_id(),
+            NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
+            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput {}).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

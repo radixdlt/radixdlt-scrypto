@@ -20,7 +20,7 @@ fn clear_auth_zone_should_not_drop_named_proofs() {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
-        .create_proof_from_auth_zone(XRD, "proof")
+        .create_proof_from_auth_zone_of_all(XRD, "proof")
         .clear_auth_zone()
         .drop_proof("proof") // Proof should continue to work after CLEAR_AUTH_ZONE
         .build();
@@ -47,7 +47,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
-        .create_proof_from_auth_zone(XRD, "proof")
+        .create_proof_from_auth_zone_of_all(XRD, "proof")
         .with_name_lookup(|builder, lookup| {
             // We capture the proof before the lookup knows that the proof has been cleared,
             // which causes a panic in the lookup and would void the test too early!

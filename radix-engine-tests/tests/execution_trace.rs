@@ -177,7 +177,7 @@ fn test_instruction_traces() {
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
         .take_all_from_worktop(XRD, "bucket")
-        .create_proof_from_bucket("bucket", "proof")
+        .create_proof_from_bucket_of_all("bucket", "proof")
         .drop_proof("proof")
         .return_to_worktop("bucket")
         .call_function(
@@ -289,7 +289,7 @@ fn test_instruction_traces() {
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_BUCKET_BLUEPRINT.to_string(),
-                ident: BUCKET_CREATE_PROOF_IDENT.to_string(),
+                ident: BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
             }),
             trace.origin
         );
@@ -300,7 +300,7 @@ fn test_instruction_traces() {
 
         let output_proof = trace.output.proofs.values().nth(0).unwrap();
         assert_eq!(XRD, output_proof.resource_address());
-        assert_eq!(dec!("1"), output_proof.amount());
+        assert_eq!(dec!(10000), output_proof.amount());
     }
 
     {
@@ -323,7 +323,7 @@ fn test_instruction_traces() {
 
         let input_proof = trace.input.proofs.values().nth(0).unwrap();
         assert_eq!(XRD, input_proof.resource_address());
-        assert_eq!(dec!("1"), input_proof.amount());
+        assert_eq!(dec!(10000), input_proof.amount());
     }
 
     {
@@ -399,7 +399,7 @@ fn test_worktop_changes() {
         .withdraw_non_fungibles_from_account(
             account,
             non_fungible_resource,
-            [
+            &[
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
@@ -416,7 +416,7 @@ fn test_worktop_changes() {
         .return_to_worktop("bucket4")
         .take_non_fungibles_from_worktop(
             non_fungible_resource,
-            [
+            &[
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(3),
             ]

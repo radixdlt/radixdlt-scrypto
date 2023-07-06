@@ -766,7 +766,11 @@ fn validator_registration_emits_correct_event() {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -815,7 +819,11 @@ fn validator_unregistration_emits_correct_event() {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -827,7 +835,11 @@ fn validator_unregistration_emits_correct_event() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -876,7 +888,11 @@ fn validator_staking_emits_correct_event() {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -888,7 +904,11 @@ fn validator_staking_emits_correct_event() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .withdraw_from_account(account, XRD, 100)
         .take_all_from_worktop(XRD, "stake")
         .stake_validator_as_owner(validator_address, "stake")
@@ -1265,7 +1285,11 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
@@ -1277,7 +1301,11 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET, 500)
-        .create_proof_from_account(account, VALIDATOR_OWNER_BADGE)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            VALIDATOR_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(validator_address.as_node_id().0).unwrap()),
+        )
         .call_method(
             validator_address,
             VALIDATOR_UPDATE_ACCEPT_DELEGATED_STAKE_IDENT,

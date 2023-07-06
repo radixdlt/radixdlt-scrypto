@@ -22,7 +22,7 @@ mod bucket_test {
                     }
                 })
                 .mint_initial_supply(amount);
-            let proof1 = bucket.create_proof();
+            let proof1 = bucket.create_proof_of_all();
             let proof2 = proof1.clone();
             proof1.drop();
             proof2.drop();
@@ -71,7 +71,7 @@ mod bucket_test {
 
         pub fn borrow() -> Bucket {
             let bucket = Self::create_test_token(100);
-            let proof = bucket.create_proof();
+            let proof = bucket.create_proof_of_all();
             proof.drop();
             bucket
         }
@@ -96,7 +96,9 @@ mod bucket_test {
             .mint_initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);
 
-            let token_bucket = auth_bucket.authorize(|| vault.take(1));
+            let token_bucket = auth_bucket
+                .as_fungible()
+                .authorize_with_amount(dec!(1), || vault.take(1));
 
             BucketTest { vault }
                 .instantiate()
@@ -118,7 +120,9 @@ mod bucket_test {
                 burner_updater => rule!(deny_all);
             })
             .mint_initial_supply(5);
-            badge.authorize(|| bucket.burn());
+            badge
+                .as_fungible()
+                .authorize_with_amount(dec!(1), || bucket.burn());
             vec![badge]
         }
 
@@ -134,7 +138,9 @@ mod bucket_test {
                 })
                 .mint_initial_supply(5);
             let bucket2 = bucket1.take(2);
-            badge.authorize(|| bucket1.burn());
+            badge
+                .as_fungible()
+                .authorize_with_amount(dec!(1), || bucket1.burn());
             bucket2.burn();
             vec![badge]
         }
@@ -164,7 +170,7 @@ mod bucket_test {
                     }
                 })
                 .mint_initial_supply(1u32);
-            let _ = bucket.create_proof();
+            let _ = bucket.create_proof_of_all();
 
             Self {
                 vault: Vault::with_bucket(bucket),
@@ -177,7 +183,7 @@ mod bucket_test {
         pub fn drop_locked_non_fungible_bucket() {
             let bucket = ResourceBuilder::new_ruid_non_fungible::<MyData>(OwnerRole::None)
                 .mint_initial_supply([MyData {}]);
-            let _ = bucket.create_proof();
+            let _ = bucket.create_proof_of_all();
 
             Self {
                 vault: Vault::with_bucket(bucket),

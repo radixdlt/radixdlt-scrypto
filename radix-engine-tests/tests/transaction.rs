@@ -50,14 +50,14 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account(account, XRD)
-        .create_proof_from_auth_zone(XRD, "proof1")
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(1))
+        .create_proof_from_auth_zone_of_all(XRD, "proof1")
         .push_to_auth_zone("proof1")
         .try_deposit_batch_or_abort(account)
-        .create_proof_from_auth_zone(XRD, "proof2")
+        .create_proof_from_auth_zone_of_all(XRD, "proof2")
         .push_to_auth_zone("proof2")
         .try_deposit_batch_or_abort(account)
-        .create_proof_from_auth_zone(XRD, "proof3")
+        .create_proof_from_auth_zone_of_all(XRD, "proof3")
         .push_to_auth_zone("proof3")
         .try_deposit_batch_or_abort(account)
         .build();
@@ -83,10 +83,10 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, XRD, dec!("1"))
-        .create_proof_from_account_of_amount(account, XRD, dec!("1"))
-        .create_proof_from_account_of_amount(account, XRD, dec!("1"))
-        .create_proof_from_account_of_amount(account, XRD, dec!("1"))
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -155,12 +155,12 @@ fn test_entire_auth_zone() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, XRD, dec!("1"))
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .call_function(
             package_address,
             "Receiver",
             "assert_first_proof",
-            manifest_args!(ManifestExpression::EntireAuthZone, dec!("1"), XRD),
+            manifest_args!(ManifestExpression::EntireAuthZone, dec!(1), XRD),
         )
         .build();
     let receipt = test_runner.execute_manifest(

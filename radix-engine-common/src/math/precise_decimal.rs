@@ -889,19 +889,19 @@ mod tests {
 
     #[test]
     fn test_1_powi_0_precise_decimal() {
-        let a = pdec!("1");
+        let a = pdec!(1);
         assert_eq!((a.powi(0)).to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_1_precise_decimal() {
-        let a = pdec!("1");
+        let a = pdec!(1);
         assert_eq!((a.powi(1)).to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_10_precise_decimal() {
-        let a = pdec!("1");
+        let a = pdec!(1);
         assert_eq!((a.powi(10)).to_string(), "1");
     }
 
@@ -1009,7 +1009,7 @@ mod tests {
 
     #[test]
     fn test_dec_string_precise_decimal() {
-        assert_eq!(pdec!("1").to_string(), "1");
+        assert_eq!(pdec!(1).to_string(), "1");
         assert_eq!(pdec!("0").to_string(), "0");
     }
 
@@ -1233,7 +1233,7 @@ mod tests {
 
     #[test]
     fn test_sum_precise_decimal() {
-        let decimals = vec![pdec!("1"), pdec!("2"), pdec!("3")];
+        let decimals = vec![pdec!(1), pdec!("2"), pdec!("3")];
         // two syntax
         let sum1: PreciseDecimal = decimals.iter().copied().sum();
         let sum2: PreciseDecimal = decimals.into_iter().sum();
@@ -1378,7 +1378,7 @@ mod tests {
 
     #[test]
     fn test_truncate_1_precise_decimal() {
-        let pdec = pdec!("1");
+        let pdec = pdec!(1);
         assert_eq!(pdec.truncate().to_string(), "1");
     }
 
