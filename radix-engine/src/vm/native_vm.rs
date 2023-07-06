@@ -26,7 +26,7 @@ pub trait NativeVm: Clone {
         &self,
         package_address: &PackageAddress,
         code: &[u8],
-    ) -> Result<NativeVmV1Instance, RuntimeError>;
+    ) -> Result<Self::Instance, RuntimeError>;
 }
 
 #[derive(Clone)]
@@ -64,7 +64,7 @@ pub struct NativeVmV1Instance {
     // Used by profiling
     #[allow(dead_code)]
     package_address: PackageAddress,
-    native_package_code_id: u64,
+    pub native_package_code_id: u64,
 }
 
 impl VmInvoke for NativeVmV1Instance {

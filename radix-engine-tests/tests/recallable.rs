@@ -4,6 +4,12 @@ use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
 use std::ops::Sub;
+use radix_engine::blueprints::resource::ResourceNativePackage;
+use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
+use radix_engine::system::system_callback::SystemLockData;
+use radix_engine::vm::{NativeVm, NativeVmV1, NativeVmV1Instance, VmInvoke};
+use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::blueprints::package::RESOURCE_CODE_ID;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -194,10 +200,57 @@ fn test_recall_on_received_direct_access_reference() {
     receipt.expect_commit_success();
 }
 
+#[derive(Clone)]
+pub struct CheckInvariantsNativeVm {
+    vm: NativeVmV1,
+}
+
+impl NativeVm for CheckInvariantsNativeVm {
+    type Instance = CheckInvariantsNativeVmInstance;
+
+    fn create_instance(&self, package_address: &PackageAddress, code: &[u8]) -> Result<CheckInvariantsNativeVmInstance, RuntimeError> {
+        let instance = self.vm.create_instance(package_address, code)?;
+        Ok(CheckInvariantsNativeVmInstance {
+            instance
+        })
+    }
+}
+
+pub struct CheckInvariantsNativeVmInstance {
+    instance: NativeVmV1Instance,
+}
+
+impl VmInvoke for CheckInvariantsNativeVmInstance {
+    fn invoke<Y>(&mut self, export_name: &str, input: &IndexedScryptoValue, api: &mut Y) -> Result<IndexedScryptoValue, RuntimeError> where Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData> {
+        match self.instance.native_package_code_id {
+            RESOURCE_CODE_ID => {
+                let direct_access: BTreeSet<String> = ResourceNativePackage::definition().blueprints.into_iter()
+                    .flat_map(|(_, def)| def.schema.functions.functions.into_iter())
+                    .filter_map(|(_, def)| {
+                        def.receiver.and_then(|i| {
+                            if matches!(i.ref_types, RefTypes::DIRECT_ACCESS) {
+                                Some(def.export)
+                            } else {
+                                None
+                            }
+                        })
+                    }).collect();
+
+                if direct_access.contains(export_name) {
+                    api.actor_get_global_address().expect_err("Direct method calls should never have global address");
+                }
+            }
+            _ => {}
+        }
+        self.instance.invoke(export_name, input, api)
+    }
+}
+
 #[test]
 fn test_recall_on_received_direct_access_reference_which_is_same_as_self() {
     // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .build_with_native_vm(CheckInvariantsNativeVm { vm: NativeVmV1 });
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recall");
