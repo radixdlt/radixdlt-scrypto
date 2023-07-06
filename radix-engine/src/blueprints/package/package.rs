@@ -13,11 +13,11 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{
     ClientApi, ClientObjectApi, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
 };
-use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{

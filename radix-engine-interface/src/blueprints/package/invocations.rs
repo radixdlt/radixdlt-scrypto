@@ -9,12 +9,12 @@ use sbor::basic_well_known_types::ANY_ID;
 use sbor::basic_well_known_types::UNIT_ID;
 use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
-use scrypto_schema::{BlueprintFunctionsSchemaInit, ReceiverInfo};
 use scrypto_schema::BlueprintSchemaInit;
 use scrypto_schema::BlueprintStateSchemaInit;
 use scrypto_schema::FieldSchema;
 use scrypto_schema::FunctionSchemaInit;
 use scrypto_schema::TypeRef;
+use scrypto_schema::{BlueprintFunctionsSchemaInit, ReceiverInfo};
 use utils::btreemap;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
@@ -192,12 +192,18 @@ impl Default for StaticRoles {
 
 impl PackageDefinition {
     // For testing only
-    pub fn new_single_test_function(blueprint_name: &str, function_name: &str) -> PackageDefinition {
+    pub fn new_single_test_function(
+        blueprint_name: &str,
+        function_name: &str,
+    ) -> PackageDefinition {
         Self::new_test_definition(blueprint_name, vec![(function_name, false)])
     }
 
     // For testing only
-    pub fn new_test_definition(blueprint_name: &str, functions: Vec<(&str, bool)>) -> PackageDefinition {
+    pub fn new_test_definition(
+        blueprint_name: &str,
+        functions: Vec<(&str, bool)>,
+    ) -> PackageDefinition {
         let mut blueprints = BTreeMap::new();
         blueprints.insert(
             blueprint_name.to_string(),
@@ -205,7 +211,8 @@ impl PackageDefinition {
                 schema: BlueprintSchemaInit {
                     functions: BlueprintFunctionsSchemaInit {
                         virtual_lazy_load_functions: btreemap!(),
-                        functions: functions.into_iter()
+                        functions: functions
+                            .into_iter()
                             .map(|(function_name, has_receiver)| {
                                 let schema = FunctionSchemaInit {
                                     receiver: if has_receiver {
@@ -219,7 +226,7 @@ impl PackageDefinition {
                                 };
                                 (function_name.to_string(), schema)
                             })
-                            .collect()
+                            .collect(),
                     },
                     ..Default::default()
                 },
