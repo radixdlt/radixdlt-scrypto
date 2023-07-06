@@ -239,20 +239,6 @@ impl AccountNativePackage {
         );
 
         functions.insert(
-            ACCOUNT_CREATE_PROOF_IDENT.to_string(),
-            FunctionSchemaInit {
-                receiver: Some(ReceiverInfo::normal_ref()),
-                input: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<AccountCreateProofInput>(),
-                ),
-                output: TypeRef::Static(
-                    aggregator.add_child_type_and_descendents::<AccountCreateProofOutput>(),
-                ),
-                export: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
-            },
-        );
-
-        functions.insert(
             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
             FunctionSchemaInit {
                 receiver: Some(ReceiverInfo::normal_ref()),
@@ -419,7 +405,6 @@ impl AccountNativePackage {
                             ACCOUNT_LOCK_CONTINGENT_FEE_IDENT => [OWNER_ROLE];
                             ACCOUNT_LOCK_FEE_AND_WITHDRAW_IDENT => [OWNER_ROLE];
                             ACCOUNT_LOCK_FEE_AND_WITHDRAW_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
-                            ACCOUNT_CREATE_PROOF_IDENT => [OWNER_ROLE];
                             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => [OWNER_ROLE];
                             ACCOUNT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
                             ACCOUNT_DEPOSIT_IDENT => [OWNER_ROLE];
@@ -614,13 +599,6 @@ impl AccountNativePackage {
                     input.ids,
                     api,
                 )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_CREATE_PROOF_IDENT => {
-                let input: AccountCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = AccountBlueprint::create_proof(input.resource_address, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             ACCOUNT_CREATE_PROOF_OF_AMOUNT_IDENT => {

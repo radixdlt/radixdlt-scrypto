@@ -19,7 +19,7 @@ lazy_static! {
     pub static ref ALWAYS_VISIBLE_GLOBAL_NODES: BTreeSet<NodeId> = {
         btreeset![
             // resource managers
-            RADIX_TOKEN.into(),
+            XRD.into(),
             SECP256K1_SIGNATURE_VIRTUAL_BADGE.into(),
             ED25519_SIGNATURE_VIRTUAL_BADGE.into(),
             SYSTEM_TRANSACTION_BADGE.into(),

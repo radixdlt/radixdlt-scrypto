@@ -4,6 +4,7 @@ use radix_engine::errors::{
 };
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
+use radix_engine::vm::wasm::PrepareError;
 use radix_engine::vm::wasm::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, PackageDefinition,
@@ -16,7 +17,7 @@ use radix_engine_interface::schema::{
 };
 use sbor::basic_well_known_types::{ANY_ID, UNIT_ID};
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn missing_memory_should_cause_error() {
@@ -34,7 +35,7 @@ fn missing_memory_should_cause_error() {
             "#,
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
             code,
@@ -66,7 +67,7 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package, "LargeReturnSize", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -89,7 +90,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package, "MaxReturnSize", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -112,7 +113,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package, "ZeroReturnSize", "f", manifest_args!())
         .build();
 
@@ -130,7 +131,7 @@ fn test_basic_package() {
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
             code,
@@ -191,7 +192,7 @@ fn test_basic_package_missing_export() {
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
             code,
@@ -222,7 +223,7 @@ fn bad_function_schema_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package, "BadFunctionSchema", "f", manifest_args!())
         .build();
 
@@ -245,7 +246,7 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "PublishPackage",
@@ -275,7 +276,7 @@ fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_pr
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "PublishPackage",
@@ -304,17 +305,17 @@ fn should_not_be_able_to_publish_native_packages() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             PACKAGE_PACKAGE,
             PACKAGE_BLUEPRINT,
             "publish_native",
-            to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+            PackagePublishNativeManifestInput {
                 package_address: None,
                 native_package_code_id: 0u64,
                 definition: PackageDefinition::default(),
                 metadata: metadata_init!(),
-            }),
+            },
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -338,7 +339,7 @@ fn should_not_be_able_to_publish_native_packages_in_scrypto() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "PublishPackage",

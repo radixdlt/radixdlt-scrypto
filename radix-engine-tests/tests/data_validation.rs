@@ -5,13 +5,13 @@ use radix_engine::{
     types::*,
 };
 use scrypto_unit::*;
-use transaction::builder::*;
+use transaction::prelude::*;
 
 fn setup_component(test_runner: &mut TestRunner<NativeVmV1>) -> ComponentAddress {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
 
     let setup_manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package_address, "DataValidation", "new", manifest_args!())
         .build();
     let setup_receipt = test_runner.execute_manifest(setup_manifest, vec![]);
@@ -23,38 +23,37 @@ fn sink_account() -> ComponentAddress {
 }
 
 fn create_manifest_with_middle(
-    test_runner: &mut TestRunner<NativeVmV1>,
     component_address: ComponentAddress,
     constructor: ManifestConstructor,
 ) -> TransactionManifestV1 {
     ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .call_method(test_runner.faucet_component(), "free", manifest_args!())
-        .take_from_worktop(RADIX_TOKEN, dec!("1"), |builder, bucket| {
-            builder.take_from_worktop(RADIX_TOKEN, dec!("0"), |builder, empty_bucket| {
-                builder.take_from_worktop(RADIX_TOKEN, dec!("1"), |builder, proof_bucket| {
-                    builder.create_proof_from_bucket(&proof_bucket, |builder, proof| {
-                        constructor(builder, component_address, empty_bucket, bucket, proof);
-                        builder.return_to_worktop(proof_bucket)
-                    })
-                })
-            })
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
+        .take_from_worktop(XRD, dec!(1), "bucket")
+        .take_from_worktop(XRD, dec!("0"), "empty_bucket")
+        .take_from_worktop(XRD, dec!(1), "proof_bucket")
+        .create_proof_from_bucket_of_all("proof_bucket", "proof")
+        .with_name_lookup(|builder, lookup| {
+            constructor(
+                builder,
+                component_address,
+                lookup.bucket("empty_bucket"),
+                lookup.bucket("bucket"),
+                lookup.proof("proof"),
+            )
         })
-        .call_method(
-            sink_account(),
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .return_to_worktop("proof_bucket")
+        .try_deposit_batch_or_abort(sink_account())
         .build()
 }
 
 type ManifestConstructor = fn(
-    builder: &mut ManifestBuilder,
+    builder: ManifestBuilder,
     component: ComponentAddress,
     empty_bucket: ManifestBucket,
     full_bucket: ManifestBucket,
     proof: ManifestProof,
-);
+) -> ManifestBuilder;
 
 /// This test just checks that the manifest constructor and DataValidation components work right -
 /// to ensure the other tests in this file are valid tests.
@@ -66,18 +65,16 @@ fn valid_transactions_can_be_committed() {
 
     // Act
     let manifest_with_default_handling = create_manifest_with_middle(
-        &mut test_runner,
         component_address,
         |builder, _, empty_bucket, full_bucket, proof| {
             builder
                 .return_to_worktop(empty_bucket)
                 .return_to_worktop(full_bucket)
-                .drop_proof(proof);
+                .drop_proof(proof)
         },
     );
 
     let manifest_using_component = create_manifest_with_middle(
-        &mut test_runner,
         component_address,
         |builder, component_address, empty_bucket, full_bucket, proof| {
             builder
@@ -91,7 +88,7 @@ fn valid_transactions_can_be_committed() {
                     "accept_non_empty_bucket",
                     manifest_args!(full_bucket),
                 )
-                .call_method(component_address, "accept_proof", manifest_args!(proof));
+                .call_method(component_address, "accept_proof", manifest_args!(proof))
         },
     );
 
@@ -112,7 +109,6 @@ fn cannot_pass_bucket_for_proof_argument() {
 
     // Act
     let manifest = create_manifest_with_middle(
-        &mut test_runner,
         component_address,
         |builder, component_address, empty_bucket, full_bucket, proof| {
             builder
@@ -122,7 +118,7 @@ fn cannot_pass_bucket_for_proof_argument() {
                     "accept_proof",
                     manifest_args!(full_bucket),
                 )
-                .drop_proof(proof);
+                .drop_proof(proof)
         },
     );
 
@@ -144,7 +140,6 @@ fn cannot_pass_proof_for_bucket_argument() {
 
     // Act
     let manifest = create_manifest_with_middle(
-        &mut test_runner,
         component_address,
         |builder, component_address, empty_bucket, full_bucket, proof| {
             builder
@@ -154,7 +149,7 @@ fn cannot_pass_proof_for_bucket_argument() {
                     component_address,
                     "accept_empty_bucket",
                     manifest_args!(proof),
-                );
+                )
         },
     );
 
@@ -176,7 +171,7 @@ fn cannot_return_proof_for_bucket() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "return_proof_for_bucket",
@@ -202,7 +197,7 @@ fn cannot_return_bucket_for_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "return_bucket_for_proof",
@@ -228,7 +223,7 @@ fn cannot_create_object_with_mismatching_data() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "DataValidation",
@@ -255,7 +250,7 @@ fn cannot_update_substate_with_mismatching_data() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "update_state_with_illegal_data",
@@ -282,7 +277,7 @@ fn pass_own_as_reference_trigger_move_error_rather_than_payload_validation_error
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "can_pass_own_as_reference",
@@ -310,11 +305,11 @@ fn test_receive_reference_of_specific_blueprint() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "accept_custom_reference",
-            manifest_args!(RADIX_TOKEN),
+            manifest_args!(XRD),
         )
         .build();
 
@@ -331,7 +326,7 @@ fn test_receive_reference_not_of_specific_blueprint() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), dec!("100"))
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "accept_custom_reference",

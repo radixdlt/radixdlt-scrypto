@@ -1,14 +1,11 @@
 use radix_engine::blueprints::resource::ResourceNativePackage;
-use radix_engine::errors::{RuntimeError};
+use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
 use radix_engine::vm::{NativeVm, NativeVmV1, NativeVmV1Instance, VmInvoke};
 use radix_engine_interface::api::ClientApi;
-use radix_engine_interface::blueprints::package::{
-    PackageDefinition,
-    RESOURCE_CODE_ID,
-};
+use radix_engine_interface::blueprints::package::{PackageDefinition, RESOURCE_CODE_ID};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -46,8 +43,8 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
             }
         }
     }
-    let mut test_runner =
-        TestRunnerBuilder::new().build_with_native_vm(TestNativeVm::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke));
+    let mut test_runner = TestRunnerBuilder::new()
+        .build_with_native_vm(TestNativeVm::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke));
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_test_definition(
@@ -59,7 +56,7 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
     // Act
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32.into())
+            .lock_fee(test_runner.faucet_component(), 500u32)
             .call_function(package_address, BLUEPRINT_NAME, "test", manifest_args!())
             .build(),
         vec![],
@@ -79,7 +76,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recall");
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32.into())
+            .lock_fee(test_runner.faucet_component(), 500u32)
             .call_function(package_address, "RecallTest", "new", manifest_args!())
             .build(),
         vec![],
@@ -91,7 +88,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
     // Act
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32.into())
+            .lock_fee(test_runner.faucet_component(), 500u32)
             .call_method(
                 component_address,
                 "recall_on_direct_access_ref_method",

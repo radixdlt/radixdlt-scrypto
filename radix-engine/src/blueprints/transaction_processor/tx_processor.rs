@@ -7,6 +7,7 @@ use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::types::*;
+use native_sdk::resource::NativeFungibleBucket;
 use native_sdk::resource::NativeNonFungibleBucket;
 use native_sdk::resource::{NativeBucket, NativeProof, Worktop};
 use native_sdk::runtime::LocalAuthZone;
@@ -201,11 +202,6 @@ impl TransactionProcessorBlueprint {
                     LocalAuthZone::push(proof, api)?;
                     InstructionOutput::None
                 }
-                InstructionV1::CreateProofFromAuthZone { resource_address } => {
-                    let proof = LocalAuthZone::create_proof(resource_address, api)?;
-                    processor.create_manifest_proof(proof)?;
-                    InstructionOutput::None
-                }
                 InstructionV1::CreateProofFromAuthZoneOfAmount {
                     amount,
                     resource_address,
@@ -229,12 +225,6 @@ impl TransactionProcessorBlueprint {
                 }
                 InstructionV1::CreateProofFromAuthZoneOfAll { resource_address } => {
                     let proof = LocalAuthZone::create_proof_of_all(resource_address, api)?;
-                    processor.create_manifest_proof(proof)?;
-                    InstructionOutput::None
-                }
-                InstructionV1::CreateProofFromBucket { bucket_id } => {
-                    let bucket = processor.get_bucket(&bucket_id)?;
-                    let proof = bucket.create_proof(api)?;
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
@@ -540,32 +530,32 @@ impl TransactionProcessor {
         Ok(GlobalAddressReservation(Own(real_id)))
     }
 
-    fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<ManifestBucket, RuntimeError> {
+    fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<(), RuntimeError> {
         let new_id = self.id_allocator.new_bucket_id();
         self.bucket_mapping.insert(new_id.clone(), bucket.0.into());
-        Ok(new_id)
+        Ok(())
     }
 
-    fn create_manifest_proof(&mut self, proof: Proof) -> Result<ManifestProof, RuntimeError> {
+    fn create_manifest_proof(&mut self, proof: Proof) -> Result<(), RuntimeError> {
         let new_id = self.id_allocator.new_proof_id();
         self.proof_mapping.insert(new_id.clone(), proof.0.into());
-        Ok(new_id)
+        Ok(())
     }
 
     fn create_manifest_address_reservation(
         &mut self,
         address_reservation: GlobalAddressReservation,
-    ) -> Result<ManifestAddressReservation, RuntimeError> {
+    ) -> Result<(), RuntimeError> {
         let new_id = self.id_allocator.new_address_reservation_id();
         self.address_reservation_mapping
             .insert(new_id, address_reservation.0.into());
-        Ok(new_id)
+        Ok(())
     }
 
-    fn create_manifest_address(&mut self, address: GlobalAddress) -> Result<u32, RuntimeError> {
+    fn create_manifest_address(&mut self, address: GlobalAddress) -> Result<(), RuntimeError> {
         let new_id = self.id_allocator.new_address_id();
         self.address_mapping.insert(new_id, address.into());
-        Ok(new_id)
+        Ok(())
     }
 
     fn resolve_package_address(

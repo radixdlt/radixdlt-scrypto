@@ -4,7 +4,7 @@ use radix_engine::{
 };
 use radix_engine_queries::typed_substate_layout::{AuthZoneError, ComposeProofError};
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 fn create_proof_internal(function_name: &str, error: Option<&str>) {
     // Arrange
@@ -13,7 +13,7 @@ fn create_proof_internal(function_name: &str, error: Option<&str>) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ProofCreation",
@@ -38,7 +38,6 @@ fn create_proof_internal(function_name: &str, error: Option<&str>) {
 
 #[test]
 fn can_create_proof_from_fungible_bucket() {
-    create_proof_internal("create_proof_from_fungible_bucket", None);
     create_proof_internal("create_proof_from_fungible_bucket_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_bucket_of_non_fungibles",
@@ -49,8 +48,6 @@ fn can_create_proof_from_fungible_bucket() {
 
 #[test]
 fn can_create_proof_from_non_fungible_bucket() {
-    create_proof_internal("create_proof_from_non_fungible_bucket", None);
-    create_proof_internal("create_proof_from_non_fungible_bucket_of_amount", None);
     create_proof_internal(
         "create_proof_from_non_fungible_bucket_of_non_fungibles",
         None,
@@ -60,7 +57,6 @@ fn can_create_proof_from_non_fungible_bucket() {
 
 #[test]
 fn can_create_proof_from_fungible_vault() {
-    create_proof_internal("create_proof_from_fungible_vault", None);
     create_proof_internal("create_proof_from_fungible_vault_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_vault_of_non_fungibles",
@@ -71,7 +67,6 @@ fn can_create_proof_from_fungible_vault() {
 #[test]
 fn can_create_proof_from_non_fungible_vault() {
     create_proof_internal("create_proof_from_non_fungible_vault", None);
-    create_proof_internal("create_proof_from_non_fungible_vault_of_amount", None);
     create_proof_internal(
         "create_proof_from_non_fungible_vault_of_non_fungibles",
         None,
@@ -80,7 +75,6 @@ fn can_create_proof_from_non_fungible_vault() {
 
 #[test]
 fn can_create_proof_from_fungible_auth_zone() {
-    create_proof_internal("create_proof_from_fungible_auth_zone", None);
     create_proof_internal("create_proof_from_fungible_auth_zone_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_auth_zone_of_non_fungibles",
@@ -91,7 +85,6 @@ fn can_create_proof_from_fungible_auth_zone() {
 
 #[test]
 fn can_create_proof_from_non_fungible_auth_zone() {
-    create_proof_internal("create_proof_from_non_fungible_auth_zone", None);
     create_proof_internal("create_proof_from_non_fungible_auth_zone_of_amount", None);
     create_proof_internal(
         "create_proof_from_non_fungible_auth_zone_of_non_fungibles",
@@ -109,12 +102,13 @@ fn test_create_non_fungible_proof_with_large_amount() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+        .lock_standard_test_fee(account)
         .create_proof_from_auth_zone_of_amount(
             resource_address,
             dec!("100000000000000000000000000000000000000000000"),
-            |builder, proof| builder.drop_proof(proof),
+            "proof",
         )
+        .drop_proof("proof")
         .drop_all_proofs()
         .build();
     let receipt =

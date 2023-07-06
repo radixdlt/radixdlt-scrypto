@@ -7,14 +7,9 @@ use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
 use radix_engine::vm::{NativeVmV1, ScryptoVm, Vm};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
 use transaction::errors::TransactionValidationError;
-use transaction::model::{
-    NotarizedTransactionV1, TransactionPayload, ValidatedNotarizedTransactionV1,
-};
-use transaction::validation::{
-    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
-};
+use transaction::prelude::*;
+use transaction::validation::*;
 
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {
@@ -33,7 +28,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
             end_epoch_exclusive: valid_until_epoch.next(),
         },
         ManifestBuilder::new()
-            .lock_fee(FAUCET, 500u32.into())
+            .lock_fee_from_faucet()
             .clear_auth_zone()
             .build(),
     );
@@ -73,7 +68,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
             end_epoch_exclusive: valid_until_epoch.next(),
         },
         ManifestBuilder::new()
-            .lock_fee(FAUCET, 500u32.into())
+            .lock_fee_from_faucet()
             .clear_auth_zone()
             .build(),
     );
@@ -117,11 +112,11 @@ fn test_normal_transaction_flow() {
             start_epoch_inclusive: Epoch::zero(),
             end_epoch_exclusive: Epoch::of(100),
         },
-        ManifestBuilder::new()
-            .lock_fee(FAUCET, 500u32.into())
-            .add_blob([123u8; 1023 * 1024].to_vec())
-            .clear_auth_zone()
-            .build(),
+        {
+            let mut builder = ManifestBuilder::new();
+            builder.add_blob([123u8; 1023 * 1024].to_vec());
+            builder.lock_fee_from_faucet().clear_auth_zone().build()
+        },
     )
     .to_raw()
     .unwrap();

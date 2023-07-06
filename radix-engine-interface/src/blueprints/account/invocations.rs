@@ -187,19 +187,6 @@ pub struct AccountLockFeeAndWithdrawNonFungiblesInput {
 
 pub type AccountLockFeeAndWithdrawNonFungiblesOutput = Bucket;
 
-//======================
-// Account Create Proof
-//======================
-
-pub const ACCOUNT_CREATE_PROOF_IDENT: &str = "create_proof";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct AccountCreateProofInput {
-    pub resource_address: ResourceAddress,
-}
-
-pub type AccountCreateProofOutput = Proof;
-
 //================================
 // Account Create Proof By Amount
 //================================

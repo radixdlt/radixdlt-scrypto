@@ -5,7 +5,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_hello() {
     // Setup the environment
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Create an account
     let (public_key, _private_key, account) = test_runner.new_allocated_account();
@@ -32,11 +32,7 @@ fn test_hello() {
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new()
         .call_method(component, "free_token", manifest_args!())
-        .call_method(
-            account,
-            "deposit_batch",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .deposit_batch(account)
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,

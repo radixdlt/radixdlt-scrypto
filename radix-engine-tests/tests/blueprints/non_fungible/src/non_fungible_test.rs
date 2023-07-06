@@ -51,7 +51,7 @@ mod non_fungible_test {
             .create_with_no_initial_supply();
 
             // Mint a non-fungible
-            let non_fungible = mint_badge.authorize(|| {
+            let non_fungible = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 resource_manager.mint_non_fungible(
                     &NonFungibleLocalId::integer(0),
                     Sandwich {
@@ -69,7 +69,7 @@ mod non_fungible_test {
 
         pub fn update_nft(mint_badge: Bucket, proof: Proof) -> Bucket {
             let proof = proof.skip_checking();
-            mint_badge.authorize(|| {
+            mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 let resource_manager = proof.resource_manager();
                 resource_manager.update_non_fungible_data(
                     &proof.as_non_fungible().non_fungible_local_id(),
@@ -162,7 +162,7 @@ mod non_fungible_test {
         pub fn create_non_fungible_reference(address: ComponentAddress) -> (Bucket, Bucket) {
             let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
 
-            mint_badge.authorize(|| {
+            mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 resource_manager.update_non_fungible_data(
                     &NonFungibleLocalId::integer(0),
                     "reference",
@@ -187,7 +187,7 @@ mod non_fungible_test {
 
             let vault = Vault::with_bucket(bucket);
 
-            mint_badge.authorize(|| {
+            mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 resource_manager.update_non_fungible_data(
                     &NonFungibleLocalId::integer(0),
                     "own",
@@ -201,7 +201,7 @@ mod non_fungible_test {
         pub fn update_non_fungible(field: String, value: bool) -> (Bucket, Bucket) {
             let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
 
-            mint_badge.authorize(|| {
+            mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 resource_manager.update_non_fungible_data(
                     &NonFungibleLocalId::integer(0),
                     &field,
@@ -217,7 +217,7 @@ mod non_fungible_test {
         ) -> (Bucket, Bucket) {
             let (mint_badge, resource_manager, bucket) = Self::create_non_fungible_mutable();
 
-            mint_badge.authorize(|| {
+            mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 resource_manager.update_non_fungible_data(
                     &NonFungibleLocalId::integer(0),
                     "reference",
@@ -237,7 +237,7 @@ mod non_fungible_test {
                 resource_manager.get_non_fungible_data(&NonFungibleLocalId::integer(0));
             assert_eq!(data.available, false);
 
-            mint_badge.authorize(|| {
+            mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 resource_manager.update_non_fungible_data(
                     &NonFungibleLocalId::integer(0),
                     "available",
@@ -427,7 +427,10 @@ mod non_fungible_test {
             let _: Sandwich = vault.as_non_fungible().non_fungible().data();
 
             // read singleton proof
-            let proof = vault.create_proof().skip_checking();
+            let proof = vault
+                .as_non_fungible()
+                .create_proof_of_non_fungibles(&btreeset!(NonFungibleLocalId::integer(1)))
+                .skip_checking();
             assert_eq!(proof.resource_address(), vault.resource_address());
             let _: Sandwich = proof.as_non_fungible().non_fungible().data();
             proof.drop();

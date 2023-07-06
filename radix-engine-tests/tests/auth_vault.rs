@@ -1,7 +1,7 @@
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
@@ -13,12 +13,8 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee_and_withdraw(account, 500.into(), token_resource_address, Decimal::one())
-        .call_method(
-            other_account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .lock_fee_and_withdraw(account, 500, token_resource_address, 1)
+        .try_deposit_batch_or_abort(other_account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -42,28 +38,22 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw_non_fungibles(
             account,
-            500u32.into(),
+            500,
             auth_resource_address,
-            BTreeSet::from([NonFungibleLocalId::integer(1)]),
+            &BTreeSet::from([NonFungibleLocalId::integer(1)]),
         )
         .take_non_fungibles_from_worktop(
             auth_resource_address,
             &BTreeSet::from([NonFungibleLocalId::integer(1)]),
-            |builder, bucket_id| {
-                builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
-                    builder
-                        .push_to_auth_zone(proof_id)
-                        .withdraw_from_account(account, token_resource_address, Decimal::one())
-                        .pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
-                });
-                builder.return_to_worktop(bucket_id)
-            },
+            "bucket",
         )
-        .call_method(
-            other_account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .create_proof_from_bucket_of_all("bucket", "proof")
+        .push_to_auth_zone("proof")
+        .withdraw_from_account(account, token_resource_address, 1)
+        .pop_from_auth_zone("proof2")
+        .drop_proof("proof2")
+        .return_to_worktop("bucket")
+        .try_deposit_batch_or_abort(other_account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

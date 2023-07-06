@@ -1,7 +1,6 @@
 use radix_engine::errors::RuntimeError;
-use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT;
-use radix_engine_interface::manifest_args;
 use transaction::errors::TransactionValidationError;
+use transaction::manifest::decompiler::ManifestObjectNames;
 use transaction::validation::{NotarizedTransactionValidator, TransactionValidator};
 
 use crate::internal_prelude::*;
@@ -11,10 +10,8 @@ use crate::accounts::ed25519_account_1;
 pub struct NextTransaction {
     pub logical_name: String,
     pub stage_counter: usize,
-    /// When we have a ManifestBuilderV2 which includes named proofs/buckets and
-    /// comments, this should be a model which includes those, and can be used for
-    /// dumping out a "nicer" manifest.
     pub manifest: TransactionManifestV1,
+    pub naming: ManifestObjectNames,
     pub raw_transaction: RawNotarizedTransaction,
 }
 
@@ -22,6 +19,7 @@ impl NextTransaction {
     pub fn of(
         logical_name: String,
         stage_counter: usize,
+        naming: ManifestObjectNames,
         transaction: NotarizedTransactionV1,
     ) -> Self {
         let manifest = TransactionManifestV1::from_intent(&transaction.signed_intent.intent);
@@ -29,6 +27,7 @@ impl NextTransaction {
             logical_name,
             stage_counter,
             manifest,
+            naming,
             raw_transaction: transaction.to_raw().expect("Transaction could be encoded"),
         }
     }
@@ -56,8 +55,24 @@ impl NextTransaction {
             return;
         };
         let file_name = format!("{:03}--{}", self.stage_counter, self.logical_name);
-        dump_manifest_to_file_system(&self.manifest, directory_path, Some(&file_name), &network)
-            .unwrap()
+        dump_manifest_to_file_system(
+            &self.manifest,
+            self.naming.clone(),
+            directory_path,
+            Some(&file_name),
+            &network,
+        )
+        .unwrap()
+    }
+}
+
+pub(crate) trait Completeable: Sized {
+    fn done<E>(self) -> Result<Self, E>;
+}
+
+impl Completeable for ManifestBuilder {
+    fn done<E>(self) -> Result<Self, E> {
+        Ok(self)
     }
 }
 
@@ -91,13 +106,26 @@ impl ScenarioCore {
     pub fn next_transaction_with_faucet_lock_fee(
         &mut self,
         logical_name: &str,
-        create_manifest: impl FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
+        create_manifest: impl FnOnce(ManifestBuilder) -> ManifestBuilder,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
-        let mut manifest_builder = ManifestBuilder::new();
-        manifest_builder.lock_fee(FAUCET, dec!(5000));
-        create_manifest(&mut manifest_builder);
-        self.next_transaction(logical_name, manifest_builder, signers)
+        let builder = ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .then(create_manifest);
+        let object_names = builder.object_names();
+        self.next_transaction(logical_name, builder.build(), object_names, signers)
+    }
+
+    pub fn next_transaction_with_faucet_lock_fee_fallible(
+        &mut self,
+        logical_name: &str,
+        create_manifest: impl FnOnce(ManifestBuilder) -> Result<ManifestBuilder, ScenarioError>,
+        signers: Vec<&PrivateKey>,
+    ) -> Result<NextTransaction, ScenarioError> {
+        let mut builder = ManifestBuilder::new().lock_fee_from_faucet();
+        builder = create_manifest(builder)?;
+        let object_names = builder.object_names();
+        self.next_transaction(logical_name, builder.build(), object_names, signers)
     }
 
     pub fn next_transaction_free_xrd_from_faucet(
@@ -108,14 +136,9 @@ impl ScenarioCore {
             "faucet-top-up",
             |builder| {
                 builder
-                    .call_method(FAUCET, "free", manifest_args!())
-                    .take_all_from_worktop(XRD, |builder, bucket| {
-                        builder.call_method(
-                            to_account,
-                            ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-                            manifest_args!(bucket),
-                        )
-                    })
+                    .get_free_xrd_from_faucet()
+                    .take_all_from_worktop(XRD, "free_xrd")
+                    .try_deposit_or_abort(to_account, "free_xrd")
             },
             vec![],
         )
@@ -128,12 +151,12 @@ impl ScenarioCore {
     pub fn next_transaction(
         &mut self,
         logical_name: &str,
-        manifest_builder: ManifestBuilder,
+        manifest: TransactionManifestV1,
+        naming: ManifestObjectNames,
         signers: Vec<&PrivateKey>,
     ) -> Result<NextTransaction, ScenarioError> {
         let nonce = self.nonce;
         self.nonce += 1;
-        let manifest = manifest_builder.build();
         let mut builder = TransactionBuilder::new()
             .header(TransactionHeaderV1 {
                 network_id: self.network.id,
@@ -153,6 +176,7 @@ impl ScenarioCore {
         Ok(NextTransaction::of(
             logical_name.to_owned(),
             self.stage_counter,
+            naming,
             builder.build(),
         ))
     }

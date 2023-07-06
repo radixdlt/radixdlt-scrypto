@@ -1,7 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::DynamicPackageAddress;
 
 use crate::resim::*;
 use crate::utils::*;
@@ -49,38 +48,28 @@ impl CallFunction {
         let default_account = get_default_account()?;
         let proofs = self.proofs.clone().unwrap_or_default();
 
-        let mut manifest_builder = ManifestBuilder::new();
-        manifest_builder.lock_fee(FAUCET, 5000u32.into());
+        let mut builder = ManifestBuilder::new();
+        builder = builder.lock_fee_from_faucet();
         for resource_specifier in proofs {
-            manifest_builder.borrow_mut(|builder| {
-                create_proof_from_account(
-                    builder,
-                    &address_bech32_decoder,
-                    default_account,
-                    resource_specifier,
-                )
-                .map_err(Error::FailedToBuildArguments)?;
-                Ok(builder)
-            })?;
-        }
-        let manifest = manifest_builder
-            .borrow_mut(|builder| {
-                self.add_call_function_instruction_with_schema(
-                    builder,
-                    &address_bech32_decoder,
-                    self.package_address.0,
-                    self.blueprint_name.clone(),
-                    self.function_name.clone(),
-                    self.arguments.clone(),
-                    Some(default_account),
-                )?;
-                Ok(builder)
-            })?
-            .call_method(
+            builder = create_proof_from_account(
+                builder,
+                &address_bech32_decoder,
                 default_account,
-                "try_deposit_batch_or_refund",
-                manifest_args!(ManifestExpression::EntireWorktop),
+                resource_specifier,
             )
+            .map_err(Error::FailedToBuildArguments)?;
+        }
+        let manifest = self
+            .add_call_function_instruction_with_schema(
+                builder,
+                &address_bech32_decoder,
+                self.package_address.0,
+                self.blueprint_name.clone(),
+                self.function_name.clone(),
+                self.arguments.clone(),
+                Some(default_account),
+            )?
+            .try_deposit_batch_or_refund(default_account)
             .build();
         handle_manifest(
             manifest,
@@ -103,14 +92,14 @@ impl CallFunction {
     /// otherwise, they will be taken from transaction worktop.
     pub fn add_call_function_instruction_with_schema<'a>(
         &self,
-        builder: &'a mut ManifestBuilder,
+        builder: ManifestBuilder,
         address_bech32_decoder: &AddressBech32Decoder,
         package_address: PackageAddress,
         blueprint_name: String,
         function_name: String,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-    ) -> Result<&'a mut ManifestBuilder, Error> {
+    ) -> Result<ManifestBuilder, Error> {
         let bp_interface = export_blueprint_interface(package_address, &blueprint_name)?;
 
         let function_schema = bp_interface
@@ -145,12 +134,6 @@ impl CallFunction {
             ))
         })?;
 
-        builder.add_instruction(InstructionV1::CallFunction {
-            package_address: DynamicPackageAddress::Static(package_address),
-            blueprint_name,
-            function_name,
-            args: built_args,
-        });
-        Ok(builder)
+        Ok(builder.call_function_raw(package_address, blueprint_name, function_name, built_args))
     }
 }

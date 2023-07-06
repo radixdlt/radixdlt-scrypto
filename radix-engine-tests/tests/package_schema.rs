@@ -1,7 +1,7 @@
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 use ExpectedResult::{InvalidInput, InvalidOutput, Success};
 
 enum ExpectedResult {
@@ -17,8 +17,8 @@ fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedRes
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .call_function(package_address, "SchemaComponent2", method_name, args)
+        .lock_fee_from_faucet()
+        .call_function_raw(package_address, "SchemaComponent2", method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

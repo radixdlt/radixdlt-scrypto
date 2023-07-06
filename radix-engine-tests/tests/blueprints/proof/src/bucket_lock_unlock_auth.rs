@@ -31,7 +31,7 @@ mod bucket_lock_unlock_auth {
         pub fn call_unlock_fungible_amount_directly() {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
 
-            let _proof = bucket.create_proof();
+            let _proof = bucket.create_proof_of_all();
 
             ScryptoEnv
                 .call_method(
@@ -71,7 +71,7 @@ mod bucket_lock_unlock_auth {
                     },
                 )]);
 
-            let _proof = bucket.create_proof();
+            let _proof = bucket.create_proof_of_all();
 
             ScryptoEnv
                 .call_method(

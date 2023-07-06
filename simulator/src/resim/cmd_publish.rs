@@ -16,7 +16,6 @@ use radix_engine_store_interface::{
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
-use transaction::builder::ManifestBuilder;
 use utils::ContextualDisplay;
 
 use crate::resim::*;
@@ -68,10 +67,10 @@ impl Publish {
         .map_err(Error::SborDecodeError)?;
 
         if let Some(package_address) = self.package_address.clone() {
-            let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+            let vm = Vm::new(&scrypto_vm, NativeVmV1);
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
-                .bootstrap_test_default();
+            Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
 
@@ -261,7 +260,7 @@ impl Publish {
                 .unwrap_or(get_default_owner_badge()?);
 
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET, 5000u32.into())
+                .lock_fee_from_faucet()
                 .publish_package_with_owner(
                     code,
                     package_definition,

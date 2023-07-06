@@ -1,6 +1,6 @@
 use radix_engine::types::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn vector_of_buckets_argument_should_succeed() {
@@ -10,16 +10,16 @@ fn vector_of_buckets_argument_should_succeed() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
-            builder.take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
-                builder.call_function(
-                    package_address,
-                    "Arguments",
-                    "vector_argument",
-                    manifest_args!(vec![bucket_id1, bucket_id2,]),
-                )
-            })
+        .lock_fee_from_faucet()
+        .take_all_from_worktop(XRD, "bucket1")
+        .take_all_from_worktop(XRD, "bucket2")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "Arguments",
+                "vector_argument",
+                manifest_args!(vec![lookup.bucket("bucket1"), lookup.bucket("bucket2"),]),
+            )
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -36,16 +36,16 @@ fn tuple_of_buckets_argument_should_succeed() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
-            builder.take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
-                builder.call_function(
-                    package_address,
-                    "Arguments",
-                    "tuple_argument",
-                    manifest_args!((bucket_id1, bucket_id2,)),
-                )
-            })
+        .lock_fee_from_faucet()
+        .take_all_from_worktop(XRD, "bucket1")
+        .take_all_from_worktop(XRD, "bucket2")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "Arguments",
+                "tuple_argument",
+                manifest_args!((lookup.bucket("bucket1"), lookup.bucket("bucket2"))),
+            )
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -62,20 +62,19 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
-            builder.take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
-                let mut map = BTreeMap::new();
-                map.insert("first".to_string(), bucket_id1);
-                map.insert("second".to_string(), bucket_id2);
-
-                builder.call_function(
-                    package_address,
-                    "Arguments",
-                    "treemap_argument",
-                    manifest_args!(map),
-                )
-            })
+        .lock_fee_from_faucet()
+        .take_all_from_worktop(XRD, "bucket1")
+        .take_all_from_worktop(XRD, "bucket2")
+        .with_name_lookup(|builder, lookup| {
+            let mut map = BTreeMap::new();
+            map.insert("first".to_string(), lookup.bucket("bucket1"));
+            map.insert("second".to_string(), lookup.bucket("bucket2"));
+            builder.call_function(
+                package_address,
+                "Arguments",
+                "treemap_argument",
+                manifest_args!(map),
+            )
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -92,20 +91,19 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
-            builder.take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
-                let mut map = hash_map_new();
-                map.insert("first".to_string(), bucket_id1);
-                map.insert("second".to_string(), bucket_id2);
-
-                builder.call_function(
-                    package_address,
-                    "Arguments",
-                    "hashmap_argument",
-                    manifest_args!(map),
-                )
-            })
+        .lock_fee_from_faucet()
+        .take_all_from_worktop(XRD, "bucket1")
+        .take_all_from_worktop(XRD, "bucket2")
+        .with_name_lookup(|builder, lookup| {
+            let mut map = BTreeMap::new();
+            map.insert("first".to_string(), lookup.bucket("bucket1"));
+            map.insert("second".to_string(), lookup.bucket("bucket2"));
+            builder.call_function(
+                package_address,
+                "Arguments",
+                "hashmap_argument",
+                manifest_args!(map),
+            )
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -122,13 +120,14 @@ fn some_optional_bucket_argument_should_succeed() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+        .lock_fee_from_faucet()
+        .take_all_from_worktop(XRD, "bucket1")
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "Arguments",
                 "option_argument",
-                manifest_args!(Some(bucket_id)),
+                manifest_args!(Some(lookup.bucket("bucket1"))),
             )
         })
         .build();
@@ -146,7 +145,7 @@ fn none_optional_bucket_argument_should_succeed() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "Arguments",

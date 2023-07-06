@@ -1,9 +1,7 @@
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
-use radix_engine_interface::api::node_modules::metadata::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
+use transaction::prelude::*;
 
 #[test]
 fn can_globalize_with_component_metadata() {
@@ -13,7 +11,7 @@ fn can_globalize_with_component_metadata() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MetadataComponent",
@@ -39,7 +37,7 @@ fn can_set_metadata_after_globalized() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MetadataComponent",
@@ -64,7 +62,7 @@ fn can_remove_metadata() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MetadataComponent",
@@ -77,7 +75,7 @@ fn can_remove_metadata() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MetadataComponent",
@@ -98,7 +96,7 @@ fn can_set_metadata_through_manifest(entry: MetadataValue) {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MetadataComponent",
@@ -111,7 +109,7 @@ fn can_set_metadata_through_manifest(entry: MetadataValue) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .set_metadata(component_address, "key".to_string(), entry.clone())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -173,7 +171,7 @@ fn can_set_address_metadata_through_manifest() {
     let address = test_runner
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MetadataComponent",
@@ -187,7 +185,7 @@ fn can_set_address_metadata_through_manifest() {
     // Act
     let entry = MetadataValue::GlobalAddress(address.into());
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .set_metadata(component_address, "key".to_string(), entry.clone())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -199,7 +197,7 @@ fn can_set_address_metadata_through_manifest() {
         .expect("Should exist");
     assert_eq!(stored_entry, entry);
 
-    can_set_metadata_through_manifest(MetadataValue::GlobalAddress(RADIX_TOKEN.into()));
+    can_set_metadata_through_manifest(MetadataValue::GlobalAddress(XRD.into()));
 }
 
 #[test]
@@ -211,7 +209,7 @@ fn cannot_set_address_metadata_after_freezing() {
     let address = test_runner
         .create_non_fungible_resource(ComponentAddress::virtual_account_from_public_key(&key));
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MetadataComponent",
@@ -222,8 +220,8 @@ fn cannot_set_address_metadata_after_freezing() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .lock_metadata(component_address.into(), "other_key".to_string())
+        .lock_fee_from_faucet()
+        .lock_metadata(component_address, "other_key")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -231,8 +229,8 @@ fn cannot_set_address_metadata_after_freezing() {
     // Act
     let entry = MetadataValue::GlobalAddress(address.into());
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .set_metadata(component_address, "other_key".to_string(), entry.clone())
+        .lock_fee_from_faucet()
+        .set_metadata(component_address, "other_key", entry.clone())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

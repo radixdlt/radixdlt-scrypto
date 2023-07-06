@@ -101,7 +101,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! mint_roles {
     {$($role:ident => $rule:expr;)*} => ({
-        Some(internal_roles_struct!(MintRoles, $($role => $rule;)*))
+        Some($crate::internal_roles_struct!(MintRoles, $($role => $rule;)*))
     });
 }
 
@@ -116,7 +116,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! burn_roles {
     {$($role:ident => $rule:expr;)*} => ({
-        Some(internal_roles_struct!(BurnRoles, $($role => $rule;)*))
+        Some($crate::internal_roles_struct!(BurnRoles, $($role => $rule;)*))
     });
 }
 
@@ -131,7 +131,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! recall_roles {
     {$($role:ident => $rule:expr;)*} => ({
-        Some(internal_roles_struct!(RecallRoles, $($role => $rule;)*))
+        Some($crate::internal_roles_struct!(RecallRoles, $($role => $rule;)*))
     });
 }
 
@@ -146,7 +146,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! freeze_roles {
     {$($role:ident => $rule:expr;)*} => ({
-        Some(internal_roles_struct!(FreezeRoles, $($role => $rule;)*))
+        Some($crate::internal_roles_struct!(FreezeRoles, $($role => $rule;)*))
     });
 }
 
@@ -161,7 +161,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! withdraw_roles {
     {$($role:ident => $rule:expr;)*} => ({
-        Some(internal_roles_struct!(WithdrawRoles, $($role => $rule;)*))
+        Some($crate::internal_roles_struct!(WithdrawRoles, $($role => $rule;)*))
     });
 }
 
@@ -176,7 +176,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! deposit_roles {
     {$($role:ident => $rule:expr;)*} => ({
-        Some(internal_roles_struct!(DepositRoles, $($role => $rule;)*))
+        Some($crate::internal_roles_struct!(DepositRoles, $($role => $rule;)*))
     });
 }
 
@@ -191,7 +191,7 @@ resource_roles!(
 #[macro_export]
 macro_rules! non_fungible_data_update_roles {
     {$($role:ident => $rule:expr;)*} => ({
-        Some(internal_roles_struct!(NonFungibleDataUpdateRoles, $($role => $rule;)*))
+        Some($crate::internal_roles_struct!(NonFungibleDataUpdateRoles, $($role => $rule;)*))
     });
 }
 

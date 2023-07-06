@@ -391,6 +391,7 @@ version = "2.0.0-pre"
 source = "git+https://github.com/bluss/indexmap?rev=eedabaca9f84e520eab01325b305c08f3773e66c#eedabaca9f84e520eab01325b305c08f3773e66c"
 dependencies = [
  "hashbrown",
+ "serde",
 ]
 
 [[package]]

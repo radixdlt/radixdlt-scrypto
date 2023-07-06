@@ -18,9 +18,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{
-    burn_roles, internal_roles_struct, metadata_init, mint_roles, role_definition_entry, rule,
-};
+use radix_engine_interface::{burn_roles, metadata_init, mint_roles, rule};
 use sbor::rust::mem;
 
 use super::{
@@ -1174,8 +1172,8 @@ impl ValidatorCreator {
                 blueprint_name: VALIDATOR_BLUEPRINT.to_string(),
             })?;
 
-        let stake_xrd_vault = Vault::create(RADIX_TOKEN, api)?;
-        let pending_xrd_withdraw_vault = Vault::create(RADIX_TOKEN, api)?;
+        let stake_xrd_vault = Vault::create(XRD, api)?;
+        let pending_xrd_withdraw_vault = Vault::create(XRD, api)?;
         let unstake_nft = Self::create_unstake_nft(validator_address, api)?;
         let stake_unit_resource = Self::create_stake_unit_resource(validator_address, api)?;
         let locked_owner_stake_unit_vault = Vault::create(stake_unit_resource, api)?;

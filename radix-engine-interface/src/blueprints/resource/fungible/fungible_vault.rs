@@ -1,3 +1,4 @@
+use crate::blueprints::resource::Proof;
 use crate::math::*;
 use crate::*;
 use sbor::rust::prelude::*;
@@ -14,9 +15,7 @@ pub struct FungibleVaultLockFeeInput {
 
 pub type FungibleVaultLockFeeOutput = ();
 
-// Protected
-
-pub const FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT: &str = "lock_fungible_amount";
+pub const FUNGIBLE_VAULT_LOCK_FUNGIBLE_AMOUNT_IDENT: &str = "lock_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleVaultLockFungibleAmountInput {
@@ -25,9 +24,7 @@ pub struct FungibleVaultLockFungibleAmountInput {
 
 pub type FungibleVaultLockFungibleAmountOutput = ();
 
-// Protected
-
-pub const FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT: &str = "unlock_fungible_amount";
+pub const FUNGIBLE_VAULT_UNLOCK_FUNGIBLE_AMOUNT_IDENT: &str = "unlock_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct FungibleVaultUnlockFungibleAmountInput {
@@ -35,3 +32,12 @@ pub struct FungibleVaultUnlockFungibleAmountInput {
 }
 
 pub type FungibleVaultUnlockFungibleAmountOutput = ();
+
+pub const FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct FungibleVaultCreateProofOfAmountInput {
+    pub amount: Decimal,
+}
+
+pub type FungibleVaultCreateProofOfAmountOutput = Proof;

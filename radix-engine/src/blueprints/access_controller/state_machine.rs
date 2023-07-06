@@ -1,5 +1,7 @@
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
+use native_sdk::resource::NativeFungibleVault;
+use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::*;
@@ -65,7 +67,13 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
         // recovery or withdraw attempts.
         match self.state {
             (PrimaryRoleLockingState::Unlocked, _, _, _, _) => {
-                Vault(self.controlled_asset).create_proof(api)
+                if self.controlled_asset.0.is_internal_fungible_vault() {
+                    let vault = Vault(self.controlled_asset);
+                    vault.create_proof_of_amount(vault.amount(api)?, api)
+                } else {
+                    let vault = Vault(self.controlled_asset);
+                    vault.create_proof_of_non_fungibles(vault.non_fungible_local_ids(api)?, api)
+                }
             }
             _ => access_controller_runtime_error!(OperationRequiresUnlockedPrimaryRole),
         }

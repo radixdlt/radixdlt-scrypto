@@ -46,7 +46,7 @@ mod nf_data_with_global {
                     .mint_initial_supply([(1u64.into(), NFDataWithGlobal { global })]);
 
             // Mint a non-fungible
-            let bucket2 = mint_badge.authorize(|| {
+            let bucket2 = mint_badge.as_fungible().authorize_with_amount(dec!(1), || {
                 bucket1
                     .resource_manager()
                     .mint_non_fungible(&NonFungibleLocalId::integer(2), NFDataWithGlobal { global })

@@ -19,9 +19,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, CollectionIndex, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::{
-    internal_roles_struct, metadata_init, mint_roles, role_definition_entry, rule,
-};
+use radix_engine_interface::{metadata_init, mint_roles, rule};
 
 const MILLIS_IN_SECOND: i64 = 1000;
 const SECONDS_IN_MINUTE: i64 = 60;
@@ -273,7 +271,7 @@ impl ConsensusManagerBlueprint {
             };
             let validator_rewards = ValidatorRewardsSubstate {
                 proposer_rewards: index_map_new(),
-                rewards_vault: Vault::create(RADIX_TOKEN, api)?,
+                rewards_vault: Vault::create(XRD, api)?,
             };
             let current_validator_set = CurrentValidatorSetSubstate {
                 validator_set: ActiveValidatorSet {
@@ -847,7 +845,7 @@ impl ConsensusManagerBlueprint {
             .sum::<Decimal>();
 
         let total_emission_xrd_bucket =
-            ResourceManager(RADIX_TOKEN).mint_fungible(effective_total_emission_xrd, api)?;
+            ResourceManager(XRD).mint_fungible(effective_total_emission_xrd, api)?;
 
         for validator_info in validator_infos.values() {
             let emission_xrd_bucket = total_emission_xrd_bucket.take(

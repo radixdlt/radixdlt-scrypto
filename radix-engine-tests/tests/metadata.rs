@@ -3,7 +3,7 @@ use radix_engine::system::node_modules::metadata::MetadataPanicError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn can_get_from_scrypto() {
@@ -13,17 +13,17 @@ fn can_get_from_scrypto() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "set_array",
-            manifest_args!("key", vec![GlobalAddress::from(RADIX_TOKEN)]),
+            manifest_args!("key", vec![GlobalAddress::from(XRD)]),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -31,12 +31,12 @@ fn can_get_from_scrypto() {
 
     // Assert
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(component_address, "get_array", manifest_args!("key"))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let x: Vec<GlobalAddress> = receipt.expect_commit_success().output(1);
-    assert_eq!(x, vec![GlobalAddress::from(RADIX_TOKEN)])
+    assert_eq!(x, vec![GlobalAddress::from(XRD)])
 }
 
 #[test]
@@ -45,7 +45,7 @@ fn can_set_from_scrypto() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -53,11 +53,11 @@ fn can_set_from_scrypto() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "set_array",
-            manifest_args!("key", vec![GlobalAddress::from(RADIX_TOKEN)]),
+            manifest_args!("key", vec![GlobalAddress::from(XRD)]),
         )
         .build();
 
@@ -75,7 +75,7 @@ fn cannot_initialize_metadata_if_key_too_long() {
     // Act
     let key = "a".repeat(DEFAULT_MAX_METADATA_KEY_STRING_LEN + 1);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MetadataTest",
@@ -102,7 +102,7 @@ fn cannot_set_metadata_if_key_too_long() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -110,7 +110,7 @@ fn cannot_set_metadata_if_key_too_long() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .set_metadata(
             component_address,
             "a".repeat(DEFAULT_MAX_METADATA_KEY_STRING_LEN + 1),
@@ -139,7 +139,7 @@ fn cannot_initialize_metadata_if_value_too_long() {
     // Act
     let value = "a".repeat(DEFAULT_MAX_METADATA_VALUE_SBOR_LEN + 1);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MetadataTest",
@@ -166,7 +166,7 @@ fn cannot_set_metadata_if_value_too_long() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -174,7 +174,7 @@ fn cannot_set_metadata_if_value_too_long() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .set_metadata(
             component_address,
             "a",
@@ -200,7 +200,7 @@ fn cannot_set_metadata_if_initialized_empty_locked() {
     let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("../assets/blueprints/metadata");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -208,7 +208,7 @@ fn cannot_set_metadata_if_initialized_empty_locked() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .set_metadata(component_address, "empty_locked", MetadataValue::Bool(true))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

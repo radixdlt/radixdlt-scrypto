@@ -5,7 +5,7 @@ use radix_engine::{
 };
 use radix_engine_interface::types::Level;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
     let mut test_runner = TestRunnerBuilder::new().build();

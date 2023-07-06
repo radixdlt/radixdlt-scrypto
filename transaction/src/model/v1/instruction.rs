@@ -42,7 +42,7 @@ TAKE_FROM_WORKTOP
 ```
 */
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor)]
 pub enum DynamicGlobalAddress {
     Static(GlobalAddress),
     Named(u32),
@@ -99,9 +99,27 @@ impl From<PackageAddress> for DynamicGlobalAddress {
     }
 }
 
+impl From<DynamicPackageAddress> for DynamicGlobalAddress {
+    fn from(value: DynamicPackageAddress) -> Self {
+        match value {
+            DynamicPackageAddress::Static(value) => Self::Static(value.into()),
+            DynamicPackageAddress::Named(value) => Self::Named(value),
+        }
+    }
+}
+
 impl From<ResourceAddress> for DynamicGlobalAddress {
     fn from(value: ResourceAddress) -> Self {
         Self::Static(value.into())
+    }
+}
+
+impl From<DynamicResourceAddress> for DynamicGlobalAddress {
+    fn from(value: DynamicResourceAddress) -> Self {
+        match value {
+            DynamicResourceAddress::Static(value) => Self::Static(value.into()),
+            DynamicResourceAddress::Named(value) => Self::Named(value),
+        }
     }
 }
 
@@ -111,13 +129,33 @@ impl From<ComponentAddress> for DynamicGlobalAddress {
     }
 }
 
+impl From<DynamicComponentAddress> for DynamicGlobalAddress {
+    fn from(value: DynamicComponentAddress) -> Self {
+        match value {
+            DynamicComponentAddress::Static(value) => Self::Static(value.into()),
+            DynamicComponentAddress::Named(value) => Self::Named(value),
+        }
+    }
+}
+
 impl From<u32> for DynamicGlobalAddress {
     fn from(value: u32) -> Self {
         Self::Named(value)
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ManifestSbor)]
+impl TryFrom<ManifestAddress> for DynamicGlobalAddress {
+    type Error = ParseGlobalAddressError;
+
+    fn try_from(value: ManifestAddress) -> Result<Self, Self::Error> {
+        Ok(match value {
+            ManifestAddress::Static(value) => Self::Static(value.try_into()?),
+            ManifestAddress::Named(value) => Self::Named(value),
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor)]
 pub enum DynamicPackageAddress {
     Static(PackageAddress),
     Named(u32),
@@ -156,6 +194,105 @@ impl From<PackageAddress> for DynamicPackageAddress {
 impl From<u32> for DynamicPackageAddress {
     fn from(value: u32) -> Self {
         Self::Named(value)
+    }
+}
+
+impl TryFrom<GlobalAddress> for DynamicPackageAddress {
+    type Error = ParsePackageAddressError;
+
+    fn try_from(value: GlobalAddress) -> Result<Self, Self::Error> {
+        Ok(Self::Static(PackageAddress::try_from(
+            value.into_node_id(),
+        )?))
+    }
+}
+
+impl TryFrom<ManifestAddress> for DynamicPackageAddress {
+    type Error = ParsePackageAddressError;
+
+    fn try_from(value: ManifestAddress) -> Result<Self, Self::Error> {
+        Ok(match value {
+            ManifestAddress::Static(value) => Self::Static(value.try_into()?),
+            ManifestAddress::Named(value) => Self::Named(value),
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor)]
+pub enum DynamicComponentAddress {
+    Static(ComponentAddress),
+    Named(u32),
+}
+
+impl From<ComponentAddress> for DynamicComponentAddress {
+    fn from(value: ComponentAddress) -> Self {
+        Self::Static(value)
+    }
+}
+
+impl From<u32> for DynamicComponentAddress {
+    fn from(value: u32) -> Self {
+        Self::Named(value)
+    }
+}
+
+impl TryFrom<GlobalAddress> for DynamicComponentAddress {
+    type Error = ParseComponentAddressError;
+
+    fn try_from(value: GlobalAddress) -> Result<Self, Self::Error> {
+        Ok(Self::Static(ComponentAddress::try_from(
+            value.into_node_id(),
+        )?))
+    }
+}
+
+impl TryFrom<ManifestAddress> for DynamicComponentAddress {
+    type Error = ParseComponentAddressError;
+
+    fn try_from(value: ManifestAddress) -> Result<Self, Self::Error> {
+        Ok(match value {
+            ManifestAddress::Static(value) => Self::Static(value.try_into()?),
+            ManifestAddress::Named(value) => Self::Named(value),
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ManifestSbor)]
+pub enum DynamicResourceAddress {
+    Static(ResourceAddress),
+    Named(u32),
+}
+
+impl From<ResourceAddress> for DynamicResourceAddress {
+    fn from(value: ResourceAddress) -> Self {
+        Self::Static(value)
+    }
+}
+
+impl From<u32> for DynamicResourceAddress {
+    fn from(value: u32) -> Self {
+        Self::Named(value)
+    }
+}
+
+impl TryFrom<GlobalAddress> for DynamicResourceAddress {
+    type Error = ParseResourceAddressError;
+
+    fn try_from(value: GlobalAddress) -> Result<Self, Self::Error> {
+        Ok(Self::Static(ResourceAddress::try_from(
+            value.into_node_id(),
+        )?))
+    }
+}
+
+impl TryFrom<ManifestAddress> for DynamicResourceAddress {
+    type Error = ParseResourceAddressError;
+
+    fn try_from(value: ManifestAddress) -> Result<Self, Self::Error> {
+        Ok(match value {
+            ManifestAddress::Static(value) => Self::Static(value.try_into()?),
+            ManifestAddress::Named(value) => Self::Named(value),
+        })
     }
 }
 
@@ -219,10 +356,6 @@ pub enum InstructionV1 {
     #[sbor(discriminator(INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR))]
     ClearAuthZone,
 
-    /// Creates a proof from the auth zone
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_DISCRIMINATOR))]
-    CreateProofFromAuthZone { resource_address: ResourceAddress },
-
     /// Creates a proof from the auth zone, by the given amount
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR))]
     CreateProofFromAuthZoneOfAmount {
@@ -247,10 +380,6 @@ pub enum InstructionV1 {
     //==============
     // Named bucket
     //==============
-    /// Creates a proof from a bucket.
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_DISCRIMINATOR))]
-    CreateProofFromBucket { bucket_id: ManifestBucket },
-
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR))]
     CreateProofFromBucketOfAmount {
         bucket_id: ManifestBucket,
@@ -370,7 +499,6 @@ pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
 pub const INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 0x10;
 pub const INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR: u8 = 0x11;
 pub const INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR: u8 = 0x12;
-pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 0x13;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR: u8 = 0x14;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x15;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR: u8 = 0x16;
@@ -379,7 +507,6 @@ pub const INSTRUCTION_CLEAR_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
 //==============
 // Named bucket
 //==============
-pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_DISCRIMINATOR: u8 = 0x20;
 pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR: u8 = 0x21;
 pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x22;
 pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR: u8 = 0x23;

@@ -2,12 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::blueprints::resource::{
-    require, FromPublicKey, NonFungibleDataSchema,
-    NonFungibleResourceManagerCreateWithInitialSupplyManifestInput,
-    NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-    NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT,
-};
+use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_interface::{metadata, metadata_init, rule};
 use rand::Rng;
@@ -43,7 +38,7 @@ impl NewAccount {
         let auth_global_id = NonFungibleGlobalId::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_global_id));
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 5000u32.into())
+            .lock_fee_from_faucet()
             .new_account_advanced(OwnerRole::Fixed(withdraw_auth))
             .build();
 
@@ -67,36 +62,23 @@ impl NewAccount {
 
             let account = commit_result.new_component_addresses()[0];
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET, 5000u32.into())
-                .call_method(FAUCET, "free", manifest_args!())
-                .add_instruction(InstructionV1::CallFunction {
-                    package_address: RESOURCE_PACKAGE.into(),
-                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                    function_name: NON_FUNGIBLE_RESOURCE_MANAGER_CREATE_WITH_INITIAL_SUPPLY_IDENT
-                        .to_string(),
-                    args: to_manifest_value_and_unwrap!(&NonFungibleResourceManagerCreateWithInitialSupplyManifestInput {
-                        owner_role: OwnerRole::None,
-                        id_type: NonFungibleIdType::Integer,
-                        track_total_supply: false,
-                        non_fungible_schema: NonFungibleDataSchema::new_schema::<()>(),
-                        resource_roles: NonFungibleResourceRoles::default(),
-                        metadata: metadata!(
-                            init {
-                                "name" => "Owner Badge".to_owned(), locked;
-                            }
-                        ),
-                        entries: btreemap!(
-                            NonFungibleLocalId::integer(1) => (to_manifest_value_and_unwrap!(&EmptyStruct {}) ,),
-                        ),
-                        address_reservation: None,
-                    }),
-                })
-                .0
-                .call_method(
-                    account,
-                    "try_deposit_batch_or_refund",
-                    manifest_args!(ManifestExpression::EntireWorktop),
+                .lock_fee_from_faucet()
+                .get_free_xrd_from_faucet()
+                .create_non_fungible_resource(
+                    OwnerRole::None,
+                    NonFungibleIdType::Integer,
+                    false,
+                    NonFungibleResourceRoles::default(),
+                    metadata!(
+                        init {
+                            "name" => "Owner Badge".to_owned(), locked;
+                        }
+                    ),
+                    Some(btreemap!(
+                        NonFungibleLocalId::integer(1) => (),
+                    )),
                 )
+                .try_deposit_batch_or_refund(account)
                 .build();
             let receipt = handle_manifest(
                 manifest,

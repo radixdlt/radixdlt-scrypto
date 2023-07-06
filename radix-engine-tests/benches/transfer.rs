@@ -4,22 +4,23 @@ use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{NativeVmV1, ScryptoVm, Vm};
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
+use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
-    let mut scrypto_interpreter = ScryptoVm {
+    let scrypto_vm = ScryptoVm {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_validator_config: WasmValidatorConfigV1::new(),
     };
+    let vm = Vm::new(&scrypto_vm, NativeVmV1);
     let mut substate_db = InMemorySubstateDatabase::standard();
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
+    Bootstrapper::new(&mut substate_db, vm.clone(), false)
         .bootstrap_test_default()
         .unwrap();
 
@@ -30,16 +31,16 @@ fn bench_transfer(c: &mut Criterion) {
     // Create two accounts
     let accounts = (0..2)
         .map(|_| {
-            let owner_rule = OwnerRole::Updatable(rule!(require(
+            let owner_role = OwnerRole::Updatable(rule!(require(
                 NonFungibleGlobalId::from_public_key(&public_key)
             )));
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET, 500u32.into())
-                .new_account_advanced(owner_rule)
+                .lock_fee_from_faucet()
+                .new_account_advanced(owner_role)
                 .build();
             let account = execute_and_commit_transaction(
                 &mut substate_db,
-                &mut scrypto_interpreter,
+                vm.clone(),
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), 1)
@@ -59,18 +60,14 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Fill first account
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET, 500u32.into())
-        .call_method(FAUCET, "free", manifest_args!())
-        .call_method(
-            account1,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
+        .try_deposit_batch_or_abort(account1)
         .build();
     for nonce in 0..1000 {
         execute_and_commit_transaction(
             &mut substate_db,
-            &mut scrypto_interpreter,
+            vm.clone(),
             &FeeReserveConfig::default(),
             &ExecutionConfig::for_notarized_transaction(),
             &TestTransaction::new_from_nonce(manifest.clone(), nonce)
@@ -83,13 +80,9 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 500u32.into())
-        .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
-        .call_method(
-            account2,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .lock_standard_test_fee(account1)
+        .withdraw_from_account(account1, XRD, dec!("0.000001"))
+        .try_deposit_batch_or_abort(account2)
         .build();
 
     // Loop
@@ -98,7 +91,7 @@ fn bench_transfer(c: &mut Criterion) {
         b.iter(|| {
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
-                &mut scrypto_interpreter,
+                vm.clone(),
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::for_notarized_transaction(),
                 &TestTransaction::new_from_nonce(manifest.clone(), nonce)
