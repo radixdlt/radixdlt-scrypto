@@ -130,7 +130,11 @@ fn can_set_metadata_after_securify() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account, IDENTITY_OWNER_BADGE, dec!("1"))
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            IDENTITY_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(identity_address.as_node_id().0).unwrap()),
+        )
         .set_metadata(
             identity_address,
             "name".to_string(),
@@ -161,7 +165,11 @@ fn can_set_metadata_on_securified_identity() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account_of_amount(account, IDENTITY_OWNER_BADGE, dec!("1"))
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            IDENTITY_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(identity_address.as_node_id().0).unwrap()),
+        )
         .set_metadata(
             identity_address,
             "name".to_string(),
