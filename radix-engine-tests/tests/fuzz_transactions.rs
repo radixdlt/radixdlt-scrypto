@@ -4,7 +4,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{NativeVm, ScryptoVm, Vm};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::Rng;
@@ -20,7 +20,7 @@ use transaction::validation::{
 
 struct TransactionFuzzer {
     rng: ChaCha8Rng,
-    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
+    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
     substate_db: InMemorySubstateDatabase,
 }
 
@@ -28,18 +28,20 @@ impl TransactionFuzzer {
     fn new() -> Self {
         let rng = ChaCha8Rng::seed_from_u64(1234);
 
-        let scrypto_interpreter = ScryptoVm {
+        let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
+        let vm = Vm::new_default(&scrypto_vm);
+
         let mut substate_db = InMemorySubstateDatabase::standard();
-        Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
+        Bootstrapper::new(&mut substate_db, vm, false)
             .bootstrap_test_default()
             .unwrap();
 
         Self {
             rng,
-            scrypto_interpreter,
+            scrypto_vm,
             substate_db,
         }
     }
@@ -54,9 +56,11 @@ impl TransactionFuzzer {
         let execution_config = ExecutionConfig::for_test_transaction();
         let fee_reserve_config = FeeReserveConfig::default();
 
+        let vm = Vm::new_default(&self.scrypto_vm);
+
         execute_and_commit_transaction(
             &mut self.substate_db,
-            &self.scrypto_interpreter,
+            vm,
             &fee_reserve_config,
             &execution_config,
             &validated.get_executable(),

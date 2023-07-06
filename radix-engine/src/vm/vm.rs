@@ -16,6 +16,24 @@ pub struct Vm<'g, W: WasmEngine> {
     pub native_vm: NativeVm,
 }
 
+impl<'g, W: WasmEngine> Vm<'g, W> {
+    pub fn new_default(scrypto_vm: &'g ScryptoVm<W>) -> Self {
+        Self {
+            scrypto_vm,
+            native_vm: NativeVm,
+        }
+    }
+}
+
+impl<'g, W: WasmEngine> Clone for Vm<'g, W> {
+    fn clone(&self) -> Self {
+        Self {
+            scrypto_vm: self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        }
+    }
+}
+
 impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
     fn invoke<Y>(
         address: &PackageAddress,

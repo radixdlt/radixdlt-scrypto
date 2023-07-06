@@ -1401,34 +1401,40 @@ where
 
         let (module_object_info, global_address) = match object_module_id {
             ObjectModuleId::Main => {
-                let node_visibility = self.api.kernel_get_node_visibility(receiver);
+                // Direct access methods should never have access to a global address
+                let global_address = if !direct_access {
+                    let node_visibility = self.api.kernel_get_node_visibility(receiver);
 
-                // Retrieve the global address of the receiver node
-                let mut get_global_address = |node_visibility: NodeVisibility| {
-                    for visibility in node_visibility.0 {
-                        match visibility {
-                            Visibility::StableReference(StableReferenceType::Global) => {
-                                return Some(GlobalAddress::new_or_panic(receiver.clone().into()))
-                            },
+                    // Retrieve the global address of the receiver node
+                    let mut get_global_address = |node_visibility: NodeVisibility| {
+                        for visibility in node_visibility.0 {
+                            match visibility {
+                                Visibility::StableReference(StableReferenceType::Global) => {
+                                    return Some(GlobalAddress::new_or_panic(receiver.clone().into()))
+                                },
 
-                            // Direct access references dont provide any info regarding global address so continue
-                            Visibility::StableReference(StableReferenceType::DirectAccess) => {
-                                continue;
-                            },
+                                // Direct access references dont provide any info regarding global address so continue
+                                Visibility::StableReference(StableReferenceType::DirectAccess) => {
+                                    continue;
+                                },
 
-                            // Anything frame owned does not have a global address
-                            Visibility::FrameOwned => return None,
+                                // Anything frame owned does not have a global address
+                                Visibility::FrameOwned => return None,
 
-                            // If borrowed or actor then we just use the current actor's global address
-                            Visibility::Borrowed | Visibility::Actor => {
-                                return self.api.kernel_get_system_state().current.global_address();
-                            },
+                                // If borrowed or actor then we just use the current actor's global address
+                                Visibility::Borrowed | Visibility::Actor => {
+                                    return self.api.kernel_get_system_state().current.global_address();
+                                },
+                            }
                         }
-                    }
+                        None
+                    };
+
+                    get_global_address(node_visibility)
+                } else {
                     None
                 };
 
-                let global_address = get_global_address(node_visibility);
                 (node_object_info.clone(), global_address)
             }
             // FIXME: verify whether we need to check the modules or not

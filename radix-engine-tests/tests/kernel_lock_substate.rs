@@ -38,7 +38,11 @@ pub fn test_open_substate_of_invisible_package_address() {
     // Create database and bootstrap
     let mut database = InMemorySubstateDatabase::standard();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    Bootstrapper::new(&mut database, &scrypto_vm, false);
+    let vm = Vm {
+        scrypto_vm: &scrypto_vm,
+        native_vm: NativeVm,
+    };
+    Bootstrapper::new(&mut database, vm, false);
 
     // Create kernel
     let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());

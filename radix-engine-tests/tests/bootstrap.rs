@@ -21,6 +21,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let vm = Vm::new_default(&scrypto_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
@@ -39,7 +40,7 @@ fn test_bootstrap_receipt_should_match_constants() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,
@@ -91,6 +92,7 @@ fn test_bootstrap_receipt_should_match_constants() {
 
 fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let vm = Vm::new_default(&scrypto_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let token_holder = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
@@ -130,7 +132,7 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, true);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -223,6 +225,7 @@ fn test_genesis_resource_with_initial_unowned_allocation() {
 #[test]
 fn test_genesis_stake_allocation() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let vm = Vm::new_default(&scrypto_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
     // There are two genesis validators
@@ -264,7 +267,7 @@ fn test_genesis_stake_allocation() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, true);
 
     let GenesisReceipts {
         mut data_ingestion_receipts,
@@ -352,9 +355,10 @@ fn test_genesis_stake_allocation() {
 #[test]
 fn test_genesis_time() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let vm = Vm::new_default(&scrypto_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, false);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
 
     let _ = bootstrapper
         .bootstrap_with_genesis_data(

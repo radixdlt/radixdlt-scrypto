@@ -52,6 +52,7 @@ use transaction::model::{
 };
 use transaction::prelude::{BlobV1, PreAllocatedAddress};
 use transaction::validation::ManifestIdAllocator;
+use crate::system::system_callback_api::SystemCallbackObject;
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
@@ -229,29 +230,29 @@ impl FlashReceipt {
     }
 }
 
-pub struct Bootstrapper<'s, 'i, S, W>
+pub struct Bootstrapper<'s, S, V>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 {
     substate_db: &'s mut S,
-    scrypto_vm: &'i ScryptoVm<W>,
+    vm: V,
     trace: bool,
 }
 
-impl<'s, 'i, S, W> Bootstrapper<'s, 'i, S, W>
+impl<'s, S, V> Bootstrapper<'s, S, V>
 where
     S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 {
     pub fn new(
         substate_db: &'s mut S,
-        scrypto_vm: &'i ScryptoVm<W>,
+        vm: V,
         trace: bool,
-    ) -> Bootstrapper<'s, 'i, S, W> {
+    ) -> Bootstrapper<'s, S, V> {
         Bootstrapper {
             substate_db,
-            scrypto_vm,
+            vm,
             trace,
         }
     }
@@ -349,7 +350,7 @@ where
 
         let receipt = execute_transaction(
             self.substate_db,
-            self.scrypto_vm,
+            self.vm.clone(),
             &FeeReserveConfig::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
@@ -375,7 +376,7 @@ where
             create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, chunk_number);
         let receipt = execute_transaction(
             self.substate_db,
-            self.scrypto_vm,
+            self.vm.clone(),
             &FeeReserveConfig::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction
@@ -396,7 +397,7 @@ where
 
         let receipt = execute_transaction(
             self.substate_db,
-            self.scrypto_vm,
+            self.vm.clone(),
             &FeeReserveConfig::default(),
             &ExecutionConfig::for_genesis_transaction().with_kernel_trace(self.trace),
             &transaction

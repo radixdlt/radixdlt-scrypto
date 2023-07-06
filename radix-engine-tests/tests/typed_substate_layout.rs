@@ -16,6 +16,7 @@ use transaction_scenarios::scenarios::get_builder_for_every_scenario;
 #[test]
 fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let vm = Vm::new_default(&scrypto_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
     let staker_address = ComponentAddress::virtual_account_from_public_key(
@@ -33,7 +34,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         },
     ];
 
-    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, true);
 
     let GenesisReceipts {
         system_bootstrap_receipt,

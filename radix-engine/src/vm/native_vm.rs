@@ -19,6 +19,7 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 use resources_tracker_macro::trace_resources;
 
+#[derive(Clone)]
 pub struct NativeVm;
 
 impl NativeVm {

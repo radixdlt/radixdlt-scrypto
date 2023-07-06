@@ -16,7 +16,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{NativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -267,13 +267,18 @@ impl TestRunnerBuilder {
     }
 
     pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
-        let scrypto_interpreter = ScryptoVm {
+        let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
+        let vm = Vm {
+            scrypto_vm: &scrypto_vm,
+            native_vm: NativeVm,
+        };
+
         let mut substate_db = InMemorySubstateDatabase::standard();
 
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false);
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
         let GenesisReceipts {
             wrap_up_receipt, ..
         } = match self.custom_genesis {
@@ -297,7 +302,7 @@ impl TestRunnerBuilder {
         let next_transaction_nonce = 100;
 
         let runner = TestRunner {
-            scrypto_interpreter,
+            scrypto_vm: scrypto_vm,
             substate_db,
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
@@ -320,7 +325,7 @@ impl TestRunnerBuilder {
 }
 
 pub struct TestRunner {
-    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
+    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
     substate_db: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
@@ -1003,9 +1008,14 @@ impl TestRunner {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.trace);
 
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: NativeVm,
+        };
+
         let transaction_receipt = execute_transaction(
             &mut self.substate_db,
-            &self.scrypto_interpreter,
+            vm,
             &fee_reserve_config,
             &execution_config,
             &executable,
@@ -1027,7 +1037,7 @@ impl TestRunner {
     ) -> Result<TransactionReceipt, PreviewError> {
         execute_preview(
             &self.substate_db,
-            &mut self.scrypto_interpreter,
+            &mut self.scrypto_vm,
             network,
             preview_intent,
             self.trace,
@@ -1044,7 +1054,7 @@ impl TestRunner {
         let epoch = self.get_current_epoch();
         execute_preview(
             &mut self.substate_db,
-            &self.scrypto_interpreter,
+            &self.scrypto_vm,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
                 intent: IntentV1 {

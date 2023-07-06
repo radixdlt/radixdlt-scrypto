@@ -1,7 +1,7 @@
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
 use crate::vm::wasm::WasmEngine;
-use crate::vm::ScryptoVm;
+use crate::vm::{NativeVm, ScryptoVm, Vm};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_store_interface::interface::*;
 use transaction::errors::TransactionValidationError;
@@ -16,7 +16,7 @@ pub enum PreviewError {
 
 pub fn execute_preview<S: SubstateDatabase, W: WasmEngine>(
     substate_db: &S,
-    scrypto_interpreter: &ScryptoVm<W>,
+    scrypto_vm: &ScryptoVm<W>,
     network: &NetworkDefinition,
     preview_intent: PreviewIntentV1,
     with_kernel_trace: bool,
@@ -29,9 +29,14 @@ pub fn execute_preview<S: SubstateDatabase, W: WasmEngine>(
         .validate_preview_intent_v1(preview_intent)
         .map_err(PreviewError::TransactionValidationError)?;
 
+    let vm = Vm {
+        scrypto_vm,
+        native_vm: NativeVm,
+    };
+
     Ok(execute_transaction(
         substate_db,
-        scrypto_interpreter,
+        vm,
         &FeeReserveConfig::default(),
         &ExecutionConfig::for_preview().with_kernel_trace(with_kernel_trace),
         &validated.get_executable(),
