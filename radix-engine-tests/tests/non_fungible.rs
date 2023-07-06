@@ -484,16 +484,12 @@ fn test_mint_update_and_withdraw() {
         .create_proof_from_account_of_amount(account, nft_resource_address, 1)
         .take_all_from_worktop(badge_resource_address, "badge")
         .pop_from_auth_zone("proof")
-        .with_name_lookup(|builder, lookup| {
-            let bucket = lookup.proof("badge");
-            let proof = lookup.proof("proof");
-            builder.call_function(
-                package_address,
-                "NonFungibleTest",
-                "update_nft",
-                manifest_args!(bucket, proof),
-            )
-        })
+        .call_function_with_name_lookup(
+            package_address,
+            "NonFungibleTest",
+            "update_nft",
+            |lookup| (lookup.bucket("badge"), lookup.proof("proof")),
+        )
         .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
