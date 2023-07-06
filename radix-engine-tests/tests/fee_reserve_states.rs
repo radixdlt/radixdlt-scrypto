@@ -13,9 +13,10 @@ fn test_fee_states() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/fee_reserve_states");
 
     // Run test case
+    let fee_locked = dec!(500);
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_standard_test_fee(account)
+            .lock_fee(account, fee_locked)
             .call_function(
                 package_address,
                 "FeeReserveChecker",
@@ -26,22 +27,21 @@ fn test_fee_states() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let output: (u32, Decimal, u32, Decimal) = receipt.expect_commit_success().output(1);
-    assert_eq!(output.0, DEFAULT_COST_UNIT_LIMIT);
+    let (cost_unit_limit, cost_unit_price, tip_percentage, remaining_fee_balance) = receipt
+        .expect_commit_success()
+        .output::<(u32, Decimal, u32, Decimal)>(1);
+    assert_eq!(cost_unit_limit, DEFAULT_COST_UNIT_LIMIT);
     assert_eq!(
-        output.1,
+        cost_unit_price,
         Decimal::try_from(DEFAULT_COST_UNIT_PRICE_IN_XRD).unwrap()
     );
-    assert_eq!(output.2, DEFAULT_TIP_PERCENTAGE as u32);
+    assert_eq!(tip_percentage, DEFAULT_TIP_PERCENTAGE as u32);
     // At the time checking fee balance, it should be still using system loan. This is because
     // loan is designed to be slightly more than what it takes to `lock_fee` from a component.
-    // Therefore, the balance should be between `500` and `500 + loan_in_xrd`.
-    assert!(
-        output.3 > dec!(500)
-            && output.3
-                < dec!(500)
-                    + Decimal::from(DEFAULT_SYSTEM_LOAN)
-                        * (Decimal::try_from(DEFAULT_COST_UNIT_PRICE_IN_XRD).unwrap()
-                            * (dec!(1) + Decimal::from(DEFAULT_TIP_PERCENTAGE) / dec!(100)))
-    );
+    // Therefore, the balance should be between `fee_locked` and `fee_locked + loan_in_xrd`.
+    let loan_in_xrd = Decimal::from(DEFAULT_SYSTEM_LOAN)
+        * (Decimal::try_from(DEFAULT_COST_UNIT_PRICE_IN_XRD).unwrap()
+            * (dec!(1) + Decimal::from(DEFAULT_TIP_PERCENTAGE) / dec!(100)));
+    assert!(fee_locked < remaining_fee_balance);
+    assert!(remaining_fee_balance < fee_locked + loan_in_xrd);
 }
