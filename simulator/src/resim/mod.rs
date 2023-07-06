@@ -58,7 +58,7 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -514,21 +514,21 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
 
     let mut consensus_manager_substate = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
             &CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
         )
-        .unwrap_or_else(|| ConsensusManagerSubstate {
+        .unwrap_or_else(|| FieldSubstate::new_field(ConsensusManagerSubstate {
             epoch: Epoch::zero(),
             effective_epoch_start_milli: 0,
             actual_epoch_start_milli: 0,
             round: Round::zero(),
             current_leader: Some(0),
             started: true,
-        });
+        }));
 
-    consensus_manager_substate.epoch = epoch;
+    consensus_manager_substate.value.0.epoch = epoch;
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),

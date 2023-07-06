@@ -188,14 +188,16 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 
         if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
             let total_supply = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, Decimal>(
+                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<Decimal>>(
                     resource_address.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &NonFungibleResourceManagerField::TotalSupply.into(),
                 )
                 .ok_or(EntityDumpError::InvalidStore(
                     "Missing Total Supply".to_string(),
-                ))?;
+                ))?
+                .value
+                .0;
             writeln!(
                 output,
                 "{}: {}",
