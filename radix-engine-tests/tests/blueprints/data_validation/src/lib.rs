@@ -35,8 +35,8 @@ mod data_validation {
         }
 
         pub fn return_proof_for_bucket(&self) -> Bucket {
-            let proof = self.vault.create_proof();
-            Bucket(proof.0)
+            let proof = self.vault.as_fungible().create_proof_of_amount(dec!(1));
+            Bucket(proof.0 .0)
         }
 
         pub fn return_bucket_for_proof(&mut self) -> Proof {
@@ -62,8 +62,8 @@ mod data_validation {
         }
 
         pub fn can_pass_own_as_reference(&mut self) -> Reference {
-            let proof = self.vault.create_proof();
-            Reference(proof.0.into())
+            let proof = self.vault.as_fungible().create_proof_of_amount(dec!(1));
+            Reference(proof.0 .0.into())
         }
 
         pub fn accept_custom_reference(&self, _: CustomReference) {}

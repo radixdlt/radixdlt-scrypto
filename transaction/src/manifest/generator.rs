@@ -353,19 +353,6 @@ where
         }
         ast::Instruction::ClearAuthZone => InstructionV1::ClearAuthZone,
 
-        ast::Instruction::CreateProofFromAuthZone {
-            resource_address,
-            new_proof,
-        } => {
-            let resource_address =
-                generate_resource_address(resource_address, address_bech32_decoder)?;
-            let proof_id = id_validator
-                .new_proof(ProofKind::AuthZoneProof)
-                .map_err(GeneratorError::IdValidationError)?;
-            declare_proof(new_proof, resolver, proof_id)?;
-
-            InstructionV1::CreateProofFromAuthZone { resource_address }
-        }
         ast::Instruction::CreateProofFromAuthZoneOfAmount {
             resource_address,
             amount,
@@ -422,15 +409,6 @@ where
             InstructionV1::ClearSignatureProofs
         }
 
-        ast::Instruction::CreateProofFromBucket { bucket, new_proof } => {
-            let bucket_id = generate_bucket(bucket, resolver)?;
-            let proof_id = id_validator
-                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(GeneratorError::IdValidationError)?;
-            declare_proof(new_proof, resolver, proof_id)?;
-
-            InstructionV1::CreateProofFromBucket { bucket_id }
-        }
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator

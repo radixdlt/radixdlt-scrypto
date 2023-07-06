@@ -248,7 +248,7 @@ fn test_genesis_stake_allocation() {
     ];
     let validator_1_allocations = vec![GenesisStakeAllocation {
         account_index: 1,
-        xrd_amount: dec!("1"),
+        xrd_amount: dec!(1),
     }];
     let genesis_data_chunks = vec![
         GenesisDataChunk::Validators(vec![
@@ -309,7 +309,7 @@ fn test_genesis_stake_allocation() {
         assert_eq!(balances.len(), 2);
         assert!(balances
             .values()
-            .any(|bal| *bal == BalanceChange::Fungible(dec!("1"))));
+            .any(|bal| *bal == BalanceChange::Fungible(dec!(1))));
         assert!(balances
             .values()
             .any(|bal| *bal == BalanceChange::Fungible(dec!("50000"))));

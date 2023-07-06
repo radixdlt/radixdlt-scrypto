@@ -182,45 +182,6 @@ impl NonFungibleVaultBlueprint {
         Ok(bucket)
     }
 
-    pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        Self::create_proof_of_amount(receiver, Decimal::ONE, api)
-    }
-
-    pub fn create_proof_of_amount<Y>(
-        receiver: &NodeId,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        let n = check_non_fungible_amount(&amount).map_err(|_| {
-            RuntimeError::ApplicationError(ApplicationError::BucketError(
-                BucketError::InvalidAmount,
-            ))
-        })?;
-
-        let locked_local_ids = Self::locked_non_fungible_local_ids(api)?;
-        let liquid_local_ids = Self::liquid_non_fungible_local_ids(api)?;
-        if n as usize > locked_local_ids.len() + liquid_local_ids.len() {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::ResourceError(
-                    ResourceError::InsufficientBalance,
-                )),
-            ));
-        }
-        let ids = locked_local_ids
-            .into_iter()
-            .chain(liquid_local_ids.into_iter())
-            .take(n as usize)
-            .collect();
-
-        Self::create_proof_of_non_fungibles(receiver, ids, api)
-    }
-
     pub fn create_proof_of_non_fungibles<Y>(
         receiver: &NodeId,
         ids: BTreeSet<NonFungibleLocalId>,

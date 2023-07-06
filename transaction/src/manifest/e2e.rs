@@ -152,89 +152,81 @@ CALL_METHOD
             apply_address_replacements(
                 r##"
 CALL_METHOD
-    Address("${account_address}")
+    Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
     "withdraw"
-    Address("${xrd_resource_address}")
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
     Decimal("5")
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("${xrd_resource_address}")
+    Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
     Bucket("bucket1")
-;
-CREATE_PROOF_FROM_BUCKET
-    Bucket("bucket1")
-    Proof("proof1")
 ;
 CREATE_PROOF_FROM_BUCKET_OF_AMOUNT
     Bucket("bucket1")
     Decimal("1")
-    Proof("proof2")
+    Proof("proof1")
 ;
 CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES
     Bucket("bucket1")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#123#")
     )
-    Proof("proof3")
+    Proof("proof2")
 ;
 CREATE_PROOF_FROM_BUCKET_OF_ALL
     Bucket("bucket1")
-    Proof("proof4")
+    Proof("proof3")
 ;
 CLONE_PROOF
-    Proof("proof1")
-    Proof("proof5")
+    Proof("proof3")
+    Proof("proof4")
 ;
 DROP_PROOF
-    Proof("proof1")
+    Proof("proof4")
 ;
 DROP_PROOF
-    Proof("proof5")
+    Proof("proof3")
 ;
 CLEAR_AUTH_ZONE;
 CALL_METHOD
-    Address("${account_address}")
+    Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
     "create_proof_of_amount"
-    Address("${resource_address}")
+    Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
     Decimal("5")
 ;
 POP_FROM_AUTH_ZONE
-    Proof("proof6")
+    Proof("proof5")
 ;
 DROP_PROOF
-    Proof("proof6")
+    Proof("proof5")
 ;
 CALL_METHOD
-    Address("${account_address}")
+    Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
     "create_proof_of_amount"
-    Address("${resource_address}")
+    Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
     Decimal("5")
 ;
-CREATE_PROOF_FROM_AUTH_ZONE
-    Address("${resource_address}")
-    Proof("proof7")
-;
 CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT
-    Address("${resource_address}")
+    Address("resource_sim1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxuemugnez")
     Decimal("1")
-    Proof("proof8")
+    Proof("proof6")
 ;
 CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES
-    Address("${non_fungible_resource_address}")
+    Address("resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#123#")
     )
-    Proof("proof9")
+    Proof("proof7")
 ;
 CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
-    Address("${non_fungible_resource_address}")
-    Proof("proof10")
+    Address("resource_sim1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt5366ha")
+    Proof("proof8")
 ;
 CLEAR_AUTH_ZONE;
 CLEAR_SIGNATURE_PROOFS;
 DROP_ALL_PROOFS;
 CALL_METHOD
-    Address("${account_address}")
+    Address("account_sim1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve475w0q")
     "deposit_batch"
     Expression("ENTIRE_WORKTOP")
 ;
@@ -415,7 +407,7 @@ TAKE_ALL_FROM_WORKTOP
     Address("${resource_address}")
     Bucket("bucket1")
 ;
-CREATE_PROOF_FROM_AUTH_ZONE
+CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL
     Address("${resource_address}")
     Proof("proof1")
 ;

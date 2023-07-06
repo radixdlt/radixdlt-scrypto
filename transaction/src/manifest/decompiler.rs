@@ -267,13 +267,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             ("PUSH_TO_AUTH_ZONE", to_manifest_value(&(proof_id,))?)
         }
         InstructionV1::ClearAuthZone => ("CLEAR_AUTH_ZONE", to_manifest_value_and_unwrap!(&())),
-        InstructionV1::CreateProofFromAuthZone { resource_address } => {
-            let proof = context.new_proof();
-            (
-                "CREATE_PROOF_FROM_AUTH_ZONE",
-                to_manifest_value(&(resource_address, proof))?,
-            )
-        }
         InstructionV1::CreateProofFromAuthZoneOfAmount {
             resource_address,
             amount,
@@ -304,14 +297,6 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
 
         InstructionV1::ClearSignatureProofs => ("CLEAR_SIGNATURE_PROOFS", to_manifest_value(&())?),
-
-        InstructionV1::CreateProofFromBucket { bucket_id } => {
-            let proof = context.new_proof();
-            (
-                "CREATE_PROOF_FROM_BUCKET",
-                to_manifest_value(&(bucket_id, proof))?,
-            )
-        }
 
         InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
             let proof = context.new_proof();

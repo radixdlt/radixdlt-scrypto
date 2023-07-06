@@ -356,10 +356,6 @@ pub enum InstructionV1 {
     #[sbor(discriminator(INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR))]
     ClearAuthZone,
 
-    /// Creates a proof from the auth zone
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_DISCRIMINATOR))]
-    CreateProofFromAuthZone { resource_address: ResourceAddress },
-
     /// Creates a proof from the auth zone, by the given amount
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR))]
     CreateProofFromAuthZoneOfAmount {
@@ -384,10 +380,6 @@ pub enum InstructionV1 {
     //==============
     // Named bucket
     //==============
-    /// Creates a proof from a bucket.
-    #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_DISCRIMINATOR))]
-    CreateProofFromBucket { bucket_id: ManifestBucket },
-
     #[sbor(discriminator(INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR))]
     CreateProofFromBucketOfAmount {
         bucket_id: ManifestBucket,
@@ -507,7 +499,6 @@ pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
 pub const INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 0x10;
 pub const INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR: u8 = 0x11;
 pub const INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR: u8 = 0x12;
-pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 0x13;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR: u8 = 0x14;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x15;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR: u8 = 0x16;
@@ -516,7 +507,6 @@ pub const INSTRUCTION_CLEAR_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
 //==============
 // Named bucket
 //==============
-pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_DISCRIMINATOR: u8 = 0x20;
 pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR: u8 = 0x21;
 pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x22;
 pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR: u8 = 0x23;

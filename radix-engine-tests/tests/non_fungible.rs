@@ -481,7 +481,11 @@ fn test_mint_update_and_withdraw() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .withdraw_from_account(account, badge_resource_address, 1)
-        .create_proof_from_account_of_amount(account, nft_resource_address, 1)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            nft_resource_address,
+            &btreeset!(NonFungibleLocalId::integer(0)),
+        )
         .take_all_from_worktop(badge_resource_address, "badge")
         .pop_from_auth_zone("proof")
         .call_function_with_name_lookup(

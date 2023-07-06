@@ -70,23 +70,6 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
-        resource_address: ResourceAddress,
-        api: &mut Y,
-    ) -> Result<Proof, E>
-    where
-        Y: ClientApi<E>,
-    {
-        let auth_zone = api.get_auth_zone()?;
-        let rtn = api.call_method(
-            &auth_zone,
-            AUTH_ZONE_CREATE_PROOF_IDENT,
-            scrypto_encode(&AuthZoneCreateProofInput { resource_address }).unwrap(),
-        )?;
-
-        Ok(scrypto_decode(&rtn).unwrap())
-    }
-
     pub fn create_proof_of_amount<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         amount: Decimal,
         resource_address: ResourceAddress,

@@ -48,7 +48,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         let (module, role_key) = action.get_role();
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .create_proof_from_account(account, admin_auth)
+            .create_proof_from_account_of_amount(account, admin_auth, dec!(1))
             .update_role(
                 token_address,
                 module,
@@ -87,7 +87,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .mint_fungible(token_address, dec!("1.0"))
             .try_deposit_batch_or_abort(account),
         Action::Burn => builder
-            .create_proof_from_account(account, withdraw_auth)
+            .create_proof_from_account_of_amount(account, withdraw_auth, dec!(1))
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .burn_from_worktop(dec!("1.0"), token_address)
             .try_deposit_batch_or_abort(account),
@@ -95,7 +95,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .try_deposit_batch_or_abort(account),
         Action::Deposit => builder
-            .create_proof_from_account(account, withdraw_auth)
+            .create_proof_from_account_of_amount(account, withdraw_auth, dec!(1))
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .take_all_from_worktop(token_address, "withdrawn")
             .try_deposit_or_abort(account, "withdrawn")
