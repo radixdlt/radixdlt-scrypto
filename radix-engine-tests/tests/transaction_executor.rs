@@ -99,7 +99,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
 #[test]
 fn test_normal_transaction_flow() {
     // Arrange
-    let mut scrypto_vm = ScryptoVm {
+    let scrypto_vm = ScryptoVm {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_validator_config: WasmValidatorConfigV1::new(),
     };

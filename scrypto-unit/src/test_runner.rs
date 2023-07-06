@@ -6,9 +6,11 @@ use std::process::Command;
 
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::errors::*;
+use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
     PreviewError, TransactionReceipt, TransactionResult,
@@ -16,12 +18,12 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{NativeVm, NativeVmV1, ScryptoVm, Vm};
+use radix_engine::vm::{NativeVm, NativeVmV1, NativeVmV1Instance, ScryptoVm, Vm, VmInvoke};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
@@ -29,11 +31,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     LeaderProposalHistory, TimePrecision, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
-use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
-    PackageRoyaltyAccumulatorSubstate, TypePointer, PACKAGE_BLUEPRINT,
-    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
-};
+use radix_engine_interface::blueprints::package::{BlueprintDefinitionInit, PackageDefinition, PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer, PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET, PackagePublishNativeManifestInput};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::math::Decimal;
@@ -818,6 +816,29 @@ impl<N: NativeVm> TestRunner<N> {
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt.expect_commit(true).new_component_addresses()[0];
         address
+    }
+
+    pub fn publish_native_package(
+        &mut self,
+        native_package_code_id: u64,
+        definition: PackageDefinition,
+    ) -> PackageAddress {
+        let receipt = self.execute_system_transaction(
+            vec![InstructionV1::CallFunction {
+                package_address: DynamicPackageAddress::Static(PACKAGE_PACKAGE),
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+                    definition,
+                    native_package_code_id,
+                    metadata: MetadataInit::default(),
+                    package_address: None,
+                }),
+            }],
+            btreeset!(AuthAddresses::system_role()),
+        );
+        let package_address: PackageAddress = receipt.expect_commit(true).output(0);
+        package_address
     }
 
     pub fn publish_package_at_address(
@@ -2000,4 +2021,72 @@ pub fn create_notarized_transaction(
         .sign(&sk2)
         .notarize(&sk_notary)
         .build()
+}
+
+#[derive(Clone)]
+pub struct TestNativeVm<C: VmInvoke + Clone> {
+    custom_package_code_id: u64,
+    custom_invoke: C,
+}
+
+impl<C: VmInvoke + Clone> TestNativeVm<C> {
+    pub fn new(custom_package_code_id: u64, custom_invoke: C) -> Self {
+        Self {
+            custom_package_code_id,
+            custom_invoke,
+        }
+    }
+}
+
+impl<C: VmInvoke + Clone> NativeVm for TestNativeVm<C> {
+    type Instance = TestNativeVmInstance<C>;
+
+    fn create_instance(
+        &self,
+        package_address: &PackageAddress,
+        code: &[u8],
+    ) -> Result<TestNativeVmInstance<C>, RuntimeError> {
+        let native_package_code_id = {
+            let code: [u8; 8] = match code.clone().try_into() {
+                Ok(code) => code,
+                Err(..) => {
+                    return Err(RuntimeError::VmError(VmError::Native(
+                        NativeRuntimeError::InvalidCodeId,
+                    )));
+                }
+            };
+            u64::from_be_bytes(code)
+        };
+
+        if native_package_code_id == self.custom_package_code_id {
+            Ok(TestNativeVmInstance::Other(self.custom_invoke.clone()))
+        } else {
+            let instance = NativeVmV1.create_instance(package_address, code)?;
+            Ok(TestNativeVmInstance::Normal(instance))
+        }
+    }
+}
+
+pub enum TestNativeVmInstance<C: VmInvoke> {
+    Normal(NativeVmV1Instance),
+    Other(C),
+}
+
+impl<C: VmInvoke + Clone> VmInvoke for TestNativeVmInstance<C> {
+    fn invoke<Y>(
+        &mut self,
+        export_name: &str,
+        input: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+    {
+        match self {
+            TestNativeVmInstance::Normal(instance) => instance.invoke(export_name, input, api),
+            TestNativeVmInstance::Other(custom_invoke) => {
+                custom_invoke.invoke(export_name, input, api)
+            }
+        }
+    }
 }

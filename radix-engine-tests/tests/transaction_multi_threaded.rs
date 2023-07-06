@@ -21,7 +21,7 @@ mod multi_threaded_test {
     #[test]
     fn test_multithread_transfer() {
         // Set up environment.
-        let mut scrypto_vm = ScryptoVm {
+        let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
