@@ -2,7 +2,6 @@ use arbitrary::{Arbitrary, Unstructured};
 use radix_engine_interface::blueprints::package::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::auth::*;
-use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::node_modules::royalty::{
     COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT, COMPONENT_ROYALTY_SET_ROYALTY_IDENT, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT
 };
@@ -18,7 +17,7 @@ use scrypto_unit::{TestRunner, TestRunnerSnapshot};
 #[cfg(test)]
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use strum::EnumCount;
-use transaction::builder::{ManifestBuilder, TransactionManifestV1};
+use transaction::prelude::*;
 use transaction::manifest::ast;
 use transaction::model::InstructionV1;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
@@ -205,7 +204,7 @@ impl TxFuzzer {
             FAUCET
         };
 
-        builder.lock_fee(fee_address, fee);
+        builder = builder.lock_fee(fee_address, fee);
 
         let mut i = 0;
         let instruction_cnt = unstructured.int_in_range(1..=INSTRUCTION_MAX_CNT).unwrap();
@@ -283,14 +282,14 @@ impl TxFuzzer {
                     Some(InstructionV1::CallRoyaltyMethod {
                         address: component_address.into(),
                         method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-                        args: manifest_args!(),
+                        args: manifest_args!().into(),
                     })
                 }
                 // ClaimComponentRoyalty
                 10 => Some(InstructionV1::CallRoyaltyMethod {
                     address: component_address.into(),
                     method_name: COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT.to_string(),
-                    args: manifest_args!(),
+                    args: manifest_args!().into(),
                 }),
                 // ClaimPackageRoyalty
                 11 => {
@@ -299,7 +298,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallMethod {
                         address: package_address.into(),
                         method_name: PACKAGE_CLAIM_ROYALTIES_IDENT.to_string(),
-                        args: manifest_args!(),
+                        args: manifest_args!().into(),
                     })
                 }
                 // ClearAuthZone
@@ -325,7 +324,7 @@ impl TxFuzzer {
                         package_address: package_address.into(),
                         blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
                         function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-                        args: manifest_args!(bucket_id, rule_set, timed_recovery_delay_in_minutes),
+                        args: manifest_args!(bucket_id, rule_set, timed_recovery_delay_in_minutes).into(),
                     })
                 }
                 // CreateAccount
@@ -573,7 +572,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallRoyaltyMethod {
                         address: component_address.into(),
                         method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
-                        args: manifest_args!(method),
+                        args: manifest_args!(method).into(),
                     })
                 }
                 // LockMetadata
@@ -585,7 +584,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallMetadataMethod {
                         address: address.into(),
                         method_name: METADATA_LOCK_IDENT.to_string(),
-                        args: manifest_args!(key),
+                        args: manifest_args!(key).into(),
                     })
                 }
                 // LockOwnerRole
@@ -610,7 +609,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallMethod {
                         address: resource_address.into(),
                         method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                        args: manifest_args!(amount),
+                        args: manifest_args!(amount).into(),
                     })
                 }
                 // MintNonFungible
@@ -680,7 +679,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallDirectVaultMethod {
                         address: InternalAddress::new_or_panic(vault_id.into()),
                         method_name: VAULT_RECALL_IDENT.to_string(),
-                        args: manifest_args!(amount),
+                        args: manifest_args!(amount).into(),
                     })
                 }
                 // RecallNonFungiblesFromVault
@@ -707,7 +706,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallMetadataMethod {
                         address: address.into(),
                         method_name: METADATA_REMOVE_IDENT.to_string(),
-                        args: manifest_args!(key),
+                        args: manifest_args!(key).into(),
                     })
                 }
                 // ReturnToWorktop
@@ -724,7 +723,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallRoyaltyMethod {
                         address: component_address.into(),
                         method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-                        args: manifest_args!(method, amount),
+                        args: manifest_args!(method, amount).into(),
                     })
                 }
                 // SetMetadata
@@ -737,7 +736,7 @@ impl TxFuzzer {
                     Some(InstructionV1::CallMetadataMethod {
                         address: address.into(),
                         method_name: METADATA_SET_IDENT.to_string(),
-                        args: manifest_args!(key, value),
+                        args: manifest_args!(key, value).into(),
                     })
                 }
                 // SetOwnerRole
@@ -831,11 +830,12 @@ impl TxFuzzer {
                 ),
             };
             if let Some(instruction) = instruction {
-                let (_, bucket_id, proof_id) = builder.add_instruction(instruction);
-                if let Some(bucket_id) = bucket_id {
+                let (updated_builder, NewSymbols { new_bucket, new_proof, .. }) = builder.add_instruction_advanced(instruction);
+                builder = updated_builder;
+                if let Some(bucket_id) = new_bucket {
                     buckets.push(bucket_id)
                 }
-                if let Some(proof_id) = proof_id {
+                if let Some(proof_id) = new_proof {
                     proof_ids.push(proof_id)
                 }
                 i += 1;

@@ -8,8 +8,8 @@ use radix_engine::vm::ScryptoVm;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
+use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
@@ -34,7 +34,7 @@ fn bench_transfer(c: &mut Criterion) {
                 NonFungibleGlobalId::from_public_key(&public_key)
             )));
             let manifest = ManifestBuilder::new()
-                .lock_fee(FAUCET, 500u32.into())
+                .lock_fee_from_faucet()
                 .new_account_advanced(owner_role)
                 .build();
             let account = execute_and_commit_transaction(
@@ -59,13 +59,9 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Fill first account
     let manifest = ManifestBuilder::new()
-        .lock_fee(FAUCET, 500u32.into())
-        .call_method(FAUCET, "free", manifest_args!())
-        .call_method(
-            account1,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
+        .try_deposit_batch_or_abort(account1)
         .build();
     for nonce in 0..1000 {
         execute_and_commit_transaction(
@@ -83,13 +79,9 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Create a transfer manifest
     let manifest = ManifestBuilder::new()
-        .lock_fee(account1, 500u32.into())
-        .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
-        .call_method(
-            account2,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .lock_standard_test_fee(account1)
+        .withdraw_from_account(account1, XRD, dec!("0.000001"))
+        .try_deposit_batch_or_abort(account2)
         .build();
 
     // Loop

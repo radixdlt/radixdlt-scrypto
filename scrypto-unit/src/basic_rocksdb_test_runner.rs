@@ -17,9 +17,8 @@ use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
 use scrypto::prelude::LOCKED;
 use std::path::{Path, PathBuf};
-use transaction::builder::ManifestBuilder;
-use transaction::builder::TransactionManifestV1;
 use transaction::model::{Executable, TestTransaction};
+use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 use crate::Compile;
@@ -92,15 +91,10 @@ impl BasicRocksdbTestRunner {
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
-            .call_method(self.faucet_component(), "free", manifest_args!())
-            .take_all_from_worktop(RADIX_TOKEN, |builder, bucket| {
-                builder.call_method(
-                    account_address,
-                    ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-                    manifest_args!(bucket),
-                )
-            })
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .take_all_from_worktop(XRD, "free_xrd")
+            .try_deposit_or_abort(account_address, "free_xrd")
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -109,7 +103,7 @@ impl BasicRocksdbTestRunner {
 
     pub fn new_account_advanced(&mut self, owner_role: OwnerRole) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+            .lock_fee_from_faucet()
             .new_account_advanced(owner_role)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -118,13 +112,9 @@ impl BasicRocksdbTestRunner {
         let account = receipt.expect_commit(true).new_component_addresses()[0];
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
-            .call_method(self.faucet_component(), "free", manifest_args!())
-            .call_method(
-                account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -171,7 +161,7 @@ impl BasicRocksdbTestRunner {
         owner_role: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 5000u32.into())
+            .lock_fee_from_faucet()
             .publish_package_advanced(None, code, definition, metadata, owner_role)
             .build();
 
@@ -186,7 +176,7 @@ impl BasicRocksdbTestRunner {
         owner_badge: NonFungibleGlobalId,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 5000u32.into())
+            .lock_fee_from_faucet()
             .publish_package_with_owner(code, definition, owner_badge)
             .build();
 
@@ -264,7 +254,7 @@ impl BasicRocksdbTestRunner {
         access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
-            .lock_fee(self.faucet_component(), 500u32.into())
+            .lock_fee_from_faucet()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
@@ -273,11 +263,7 @@ impl BasicRocksdbTestRunner {
                 access_rules,
                 Some(amount),
             )
-            .call_method(
-                account,
-                ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit(true).new_resource_addresses()[0]

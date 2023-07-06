@@ -86,28 +86,26 @@ impl ScenarioInstance for MetadataScenario {
                 core.next_transaction_with_faucet_lock_fee(
                     "metadata-create-package-with-metadata",
                     |builder| {
-                        builder.allocate_global_address(
-                            BlueprintId {
-                                package_address: PACKAGE_PACKAGE,
-                                blueprint_name: PACKAGE_BLUEPRINT.to_owned(),
-                            },
-                            |builder, reservation, _named_address| {
-                                builder
-                                    .call_method(FAUCET_COMPONENT, "free", manifest_args!())
-                                    .publish_package_advanced(
-                                        Some(reservation),
-                                        code.to_vec(),
-                                        schema,
-                                        create_metadata(),
-                                        radix_engine::types::OwnerRole::Fixed(rule!(require(
-                                            NonFungibleGlobalId::from_public_key(
-                                                &user_account_1.public_key
-                                            )
-                                        ))),
+                        builder
+                            .allocate_global_address(
+                                PACKAGE_PACKAGE,
+                                PACKAGE_BLUEPRINT,
+                                "metadata_package_address_reservation",
+                                "metadata_package_address",
+                            )
+                            .get_free_xrd_from_faucet()
+                            .publish_package_advanced(
+                                Some("metadata_package_address_reservation".to_string()),
+                                code.to_vec(),
+                                schema,
+                                create_metadata(),
+                                radix_engine::types::OwnerRole::Fixed(rule!(require(
+                                    NonFungibleGlobalId::from_public_key(
+                                        &user_account_1.public_key
                                     )
-                                    .try_deposit_batch_or_abort(user_account_1.address)
-                            },
-                        )
+                                ))),
+                            )
+                            .try_deposit_batch_or_abort(user_account_1.address)
                     },
                     vec![],
                 )
@@ -119,26 +117,29 @@ impl ScenarioInstance for MetadataScenario {
                 core.next_transaction_with_faucet_lock_fee(
                     "metadata-create-component-with-metadata",
                     |builder| {
-                        builder.allocate_global_address(
-                            BlueprintId {
-                                package_address: package_with_metadata.unwrap(),
-                                blueprint_name: "MetadataTest".to_owned(),
-                            },
-                            |builder, reservation, named_address| {
-                                let mut builder = builder
-                                    .call_method(FAUCET_COMPONENT, "free", manifest_args!())
-                                    .call_function(
-                                        package_with_metadata.unwrap(),
-                                        "MetadataTest",
-                                        "new_with_address",
-                                        manifest_args!(reservation),
-                                    );
-                                for (k, v) in create_metadata() {
-                                    builder = builder.set_metadata(named_address, k, v);
-                                }
-                                builder.try_deposit_batch_or_abort(user_account_1.address)
-                            },
-                        )
+                        let mut builder = builder
+                            .allocate_global_address(
+                                package_with_metadata.unwrap(),
+                                "MetadataTest",
+                                "metadata_component_address_reservation",
+                                "metadata_component_address",
+                            )
+                            .get_free_xrd_from_faucet()
+                            .call_function_with_name_lookup(
+                                package_with_metadata.unwrap(),
+                                "MetadataTest",
+                                "new_with_address",
+                                |lookup| {
+                                    (lookup.address_reservation(
+                                        "metadata_component_address_reservation",
+                                    ),)
+                                },
+                            );
+                        let address = builder.named_address("metadata_component_address");
+                        for (k, v) in create_metadata() {
+                            builder = builder.set_metadata(address, k, v);
+                        }
+                        builder.try_deposit_batch_or_abort(user_account_1.address)
                     },
                     vec![],
                 )
@@ -151,7 +152,7 @@ impl ScenarioInstance for MetadataScenario {
                     "metadata-create-resource-with-metadata",
                     |builder| {
                         builder
-                            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+                            .get_free_xrd_from_faucet()
                             .create_fungible_resource(
                                 OwnerRole::None,
                                 false,
@@ -186,7 +187,7 @@ impl ScenarioInstance for MetadataScenario {
                     "metadata-create-resource-with-metadata-partially-locked",
                     |builder| {
                         builder
-                            .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+                            .get_free_xrd_from_faucet()
                             .create_fungible_resource(
                                 radix_engine::types::OwnerRole::Fixed(rule!(require(
                                     NonFungibleGlobalId::from_public_key(
@@ -256,10 +257,7 @@ impl ScenarioInstance for MetadataScenario {
                 core.next_transaction_with_faucet_lock_fee(
                     "metadata-lock-metadata",
                     |builder| {
-                        builder.lock_metadata(
-                            resource_with_metadata2.unwrap().into(),
-                            "locked_later".to_string(),
-                        )
+                        builder.lock_metadata(resource_with_metadata2.unwrap(), "locked_later")
                     },
                     vec![&user_account_1.key],
                 )

@@ -4,30 +4,30 @@ CALL_METHOD
     Decimal("5000")
 ;
 ALLOCATE_GLOBAL_ADDRESS
-    Address("package_sim1pkcv3g94xl8f3ejkjrhugknnzktzmcasqtg8kyan5gc68m9xz7k2cq")
+    Address("package_sim1p4nymzqeuwqxlakeqtura6xpmm9gvh0ad70vdjp09sf6gpp462034k")
     "MetadataTest"
-    AddressReservation("reservation1")
-    NamedAddress("address1")
+    AddressReservation("metadata_component_address_reservation")
+    NamedAddress("metadata_component_address")
 ;
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
     "free"
 ;
 CALL_FUNCTION
-    Address("package_sim1pkcv3g94xl8f3ejkjrhugknnzktzmcasqtg8kyan5gc68m9xz7k2cq")
+    Address("package_sim1p4nymzqeuwqxlakeqtura6xpmm9gvh0ad70vdjp09sf6gpp462034k")
     "MetadataTest"
     "new_with_address"
-    AddressReservation("reservation1")
+    AddressReservation("metadata_component_address_reservation")
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     ""
     Enum<14u8>(
         "www.radixdlt.com"
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "_array"
     Enum<142u8>(
         Array<String>(
@@ -36,14 +36,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "address"
     Enum<8u8>(
         Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "address_array"
     Enum<136u8>(
         Array<Address>(
@@ -52,14 +52,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "bool"
     Enum<1u8>(
         true
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "bool_array"
     Enum<129u8>(
         Array<Bool>(
@@ -69,14 +69,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "decimal"
     Enum<7u8>(
         Decimal("1")
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "decimal_array"
     Enum<135u8>(
         Array<Decimal>(
@@ -86,14 +86,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "i32"
     Enum<5u8>(
         4i32
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "i32_array"
     Enum<133u8>(
         Array<I32>(
@@ -103,14 +103,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "i64"
     Enum<6u8>(
         5i64
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "i64_array"
     Enum<134u8>(
         Array<I64>(
@@ -120,14 +120,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "instant"
     Enum<12u8>(
         1687446137i64
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "instant_array"
     Enum<140u8>(
         Array<I64>(
@@ -136,14 +136,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "non_fungible_global_id"
     Enum<10u8>(
         NonFungibleGlobalId("resource_sim1nfxxxxxxxxxxpkcllrxxxxxxxxx003652646977xxxxxxxxxla870l:[43633bb90fe8ed9c006d718d57e51b644519f36fa9cf033bb83d72d77247a5ec]")
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "non_fungible_global_id_array"
     Enum<138u8>(
         Array<Tuple>(
@@ -152,14 +152,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "non_fungible_local_id"
     Enum<11u8>(
         NonFungibleLocalId("<Hello_world>")
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "non_fungible_local_id_array"
     Enum<139u8>(
         Array<NonFungibleLocalId>(
@@ -171,7 +171,7 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "public_key"
     Enum<9u8>(
         Enum<1u8>(
@@ -180,7 +180,7 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "public_key_array"
     Enum<137u8>(
         Array<Enum>(
@@ -194,7 +194,7 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "public_key_hash"
     Enum<15u8>(
         Enum<1u8>(
@@ -203,7 +203,7 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "public_key_hash_array"
     Enum<143u8>(
         Array<Enum>(
@@ -217,14 +217,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "string"
     Enum<0u8>(
         "Hello"
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "string_array"
     Enum<128u8>(
         Array<String>(
@@ -234,14 +234,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "u32"
     Enum<3u8>(
         2u32
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "u32_array"
     Enum<131u8>(
         Array<U32>(
@@ -251,14 +251,14 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "u64"
     Enum<4u8>(
         3u64
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "u64_array"
     Enum<132u8>(
         Array<U64>(
@@ -268,28 +268,28 @@ SET_METADATA
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "u8"
     Enum<2u8>(
         1u8
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "u8_array"
     Enum<130u8>(
         Bytes("0102")
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "url"
     Enum<13u8>(
         "https://www.radixdlt.com"
     )
 ;
 SET_METADATA
-    NamedAddress("address1")
+    NamedAddress("metadata_component_address")
     "url_array"
     Enum<141u8>(
         Array<String>(

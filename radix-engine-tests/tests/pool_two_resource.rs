@@ -5,8 +5,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto_unit::*;
-use transaction::builder::*;
-use transaction::prelude::Secp256k1PrivateKey;
+use transaction::prelude::*;
 
 #[test]
 pub fn two_resource_pool_can_be_instantiated() {
@@ -460,11 +459,11 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             POOL_PACKAGE,
             TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
             TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
-            to_manifest_value_and_unwrap!(&TwoResourcePoolInstantiateManifestInput {
-                resource_addresses: (non_fungible_resource, RADIX_TOKEN),
+            TwoResourcePoolInstantiateManifestInput {
+                resource_addresses: (non_fungible_resource, XRD),
                 pool_manager_rule: rule!(allow_all),
-                owner_role: OwnerRole::None
-            }),
+                owner_role: OwnerRole::None,
+            },
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -940,11 +939,11 @@ impl TestEnvironment {
                     POOL_PACKAGE,
                     TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
                     TWO_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    to_manifest_value_and_unwrap!(&TwoResourcePoolInstantiateManifestInput {
+                    TwoResourcePoolInstantiateManifestInput {
                         resource_addresses: (pool_resource1, pool_resource2),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
-                        owner_role
-                    }),
+                        owner_role,
+                    },
                 )
                 .build();
             let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -988,16 +987,18 @@ impl TestEnvironment {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address1, amount1.into())
             .mint_fungible(resource_address2, amount2.into())
-            .take_all_from_worktop(resource_address1, |builder, bucket1| {
-                builder.take_all_from_worktop(resource_address2, |builder, bucket2| {
-                    builder.call_method(
-                        self.pool_component_address,
-                        TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
-                        to_manifest_value_and_unwrap!(&TwoResourcePoolContributeManifestInput {
-                            buckets: (bucket1, bucket2),
-                        }),
-                    )
-                })
+            .take_all_from_worktop(resource_address1, "resource_1")
+            .take_all_from_worktop(resource_address2, "resource_2")
+            .with_name_lookup(|builder, lookup| {
+                let bucket1 = lookup.bucket("resource_1");
+                let bucket2 = lookup.bucket("resource_2");
+                builder.call_method(
+                    self.pool_component_address,
+                    TWO_RESOURCE_POOL_CONTRIBUTE_IDENT,
+                    TwoResourcePoolContributeManifestInput {
+                        buckets: (bucket1, bucket2),
+                    },
+                )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
             .build();
@@ -1011,11 +1012,13 @@ impl TestEnvironment {
                 self.pool_unit_resource_address,
                 amount.into(),
             )
-            .take_all_from_worktop(self.pool_unit_resource_address, |builder, bucket| {
+            .take_all_from_worktop(self.pool_unit_resource_address, "pool_units")
+            .with_name_lookup(|builder, lookup| {
+                let bucket = lookup.bucket("pool_units");
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_REDEEM_IDENT,
-                    to_manifest_value_and_unwrap!(&TwoResourcePoolRedeemManifestInput { bucket }),
+                    TwoResourcePoolRedeemManifestInput { bucket },
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -1031,13 +1034,14 @@ impl TestEnvironment {
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, amount.into())
-            .take_all_from_worktop(resource_address, |builder, bucket| {
+            .take_all_from_worktop(resource_address, "deposit")
+            .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     self.pool_component_address,
                     TWO_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-                    to_manifest_value_and_unwrap!(&TwoResourcePoolProtectedDepositManifestInput {
-                        bucket
-                    }),
+                    TwoResourcePoolProtectedDepositManifestInput {
+                        bucket: lookup.bucket("deposit"),
+                    },
                 )
             })
             .build();
@@ -1055,11 +1059,11 @@ impl TestEnvironment {
             .call_method(
                 self.pool_component_address,
                 TWO_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                to_manifest_value_and_unwrap!(&TwoResourcePoolProtectedWithdrawManifestInput {
+                TwoResourcePoolProtectedWithdrawManifestInput {
                     resource_address,
                     amount: amount.into(),
-                    withdraw_strategy
-                }),
+                    withdraw_strategy,
+                },
             )
             .try_deposit_batch_or_abort(self.account_component_address)
             .build();
@@ -1096,9 +1100,9 @@ impl TestEnvironment {
             .call_method(
                 self.pool_component_address,
                 TWO_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
-                to_manifest_value_and_unwrap!(&TwoResourcePoolGetRedemptionValueManifestInput {
+                TwoResourcePoolGetRedemptionValueManifestInput {
                     amount_of_pool_units: amount_of_pool_units.into(),
-                }),
+                },
             )
             .build();
         let receipt = self.execute_manifest(manifest, sign);

@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_queries::typed_substate_layout::VaultError;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn test_lock_fee_and_then_withdraw_failure() {
@@ -14,8 +14,8 @@ fn test_lock_fee_and_then_withdraw_failure() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .withdraw_from_account(account, RADIX_TOKEN, dec!("1000000"))
+        .lock_standard_test_fee(account)
+        .withdraw_from_account(account, XRD, dec!("1000000"))
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

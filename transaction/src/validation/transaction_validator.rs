@@ -173,13 +173,13 @@ impl NotarizedTransactionValidator {
         for inst in instructions {
             match inst {
                 InstructionV1::TakeAllFromWorktop { .. } => {
-                    id_validator.new_bucket();
+                    let _ = id_validator.new_bucket();
                 }
                 InstructionV1::TakeFromWorktop { .. } => {
-                    id_validator.new_bucket();
+                    let _ = id_validator.new_bucket();
                 }
                 InstructionV1::TakeNonFungiblesFromWorktop { .. } => {
-                    id_validator.new_bucket();
+                    let _ = id_validator.new_bucket();
                 }
                 InstructionV1::ReturnToWorktop { bucket_id } => {
                     id_validator
@@ -190,7 +190,7 @@ impl NotarizedTransactionValidator {
                 InstructionV1::AssertWorktopContains { .. } => {}
                 InstructionV1::AssertWorktopContainsNonFungibles { .. } => {}
                 InstructionV1::PopFromAuthZone => {
-                    id_validator
+                    let _ = id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
@@ -201,47 +201,47 @@ impl NotarizedTransactionValidator {
                 }
                 InstructionV1::ClearAuthZone => {}
                 InstructionV1::CreateProofFromAuthZone { .. } => {
-                    id_validator
+                    let _ = id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CreateProofFromAuthZoneOfAmount { .. } => {
-                    id_validator
+                    let _ = id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CreateProofFromAuthZoneOfNonFungibles { .. } => {
-                    id_validator
+                    let _ = id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CreateProofFromAuthZoneOfAll { .. } => {
-                    id_validator
+                    let _ = id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CreateProofFromBucket { bucket_id } => {
-                    id_validator
+                    let _ = id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CreateProofFromBucketOfAmount { bucket_id, .. } => {
-                    id_validator
+                    let _ = id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CreateProofFromBucketOfNonFungibles { bucket_id, .. } => {
-                    id_validator
+                    let _ = id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CreateProofFromBucketOfAll { bucket_id, .. } => {
-                    id_validator
+                    let _ = id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CloneProof { proof_id } => {
-                    id_validator
+                    let _ = id_validator
                         .clone_proof(&proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
@@ -271,7 +271,7 @@ impl NotarizedTransactionValidator {
                 }
                 InstructionV1::CallDirectVaultMethod { .. } => {}
                 InstructionV1::AllocateGlobalAddress { .. } => {
-                    id_validator.new_address_reservation();
+                    let _ = id_validator.new_address_reservation();
                     id_validator.new_named_address();
                 }
             }

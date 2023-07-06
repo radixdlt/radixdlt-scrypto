@@ -1706,7 +1706,7 @@ mod tests {
                 package_address: package_address.into(),
                 blueprint_name: "Airdrop".into(),
                 function_name: "new".to_string(),
-                args: manifest_args!(500u32, pdec!("120"))
+                args: manifest_args!(500u32, pdec!("120")).into()
             },
         );
         generate_instruction_ok!(
@@ -1714,7 +1714,7 @@ mod tests {
             InstructionV1::CallMethod {
                 address: component.into(),
                 method_name: "refill".to_string(),
-                args: manifest_args!()
+                args: manifest_args!().into()
             },
         );
         generate_instruction_ok!(
@@ -1722,7 +1722,7 @@ mod tests {
             InstructionV1::CallMethod {
                 address: resource_address.into(),
                 method_name: "mint".to_string(),
-                args: manifest_args!(dec!("100"))
+                args: manifest_args!(dec!("100")).into()
             },
         );
     }
@@ -1748,7 +1748,8 @@ mod tests {
                     BTreeMap::<String, PackageRoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
                     RolesInit::new()
-                ),
+                )
+                .into(),
             },
         );
     }
@@ -1847,7 +1848,7 @@ mod tests {
                         }
                     ),
                 }],
-                &NetworkDefinition::simulator()
+                &NetworkDefinition::simulator(),
             )
             .unwrap()
         );

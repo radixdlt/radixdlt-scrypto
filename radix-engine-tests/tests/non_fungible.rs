@@ -5,7 +5,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn can_mint_non_fungible_with_global() {
@@ -16,18 +16,14 @@ fn can_mint_non_fungible_with_global() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleWithGlobalTest",
             "create_non_fungible_with_global",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -47,18 +43,14 @@ fn create_non_fungible_mutable() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
             "create_non_fungible_mutable",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -76,18 +68,14 @@ fn can_burn_non_fungible() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
             "create_burnable_non_fungible",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
@@ -98,21 +86,17 @@ fn can_burn_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, resource_address, 1.into())
-        .burn_non_fungible(non_fungible_global_id.clone())
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, 1)
+        .burn_non_fungible_from_worktop(non_fungible_global_id.clone())
         .call_function(
             package,
             "NonFungibleTest",
             "verify_does_not_exist",
             manifest_args!(non_fungible_global_id),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
-        .assert_worktop_contains(resource_address, 0.into())
+        .try_deposit_batch_or_abort(account)
+        .assert_worktop_contains(resource_address, 0)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -132,18 +116,14 @@ fn test_take_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "take_non_fungible_and_put_bucket",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -160,18 +140,14 @@ fn test_take_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "take_non_fungibles_and_put_bucket",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -185,18 +161,14 @@ fn can_update_non_fungible_when_mutable() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "update_non_fungible",
             manifest_args!("available".to_string(), true),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -211,18 +183,14 @@ fn cannot_update_non_fungible_when_not_mutable() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "update_non_fungible",
             manifest_args!("tastes_great".to_string(), false),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -244,18 +212,14 @@ fn cannot_update_non_fungible_when_does_not_exist() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "update_non_fungible",
             manifest_args!("does_not_exist".to_string(), false),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -284,18 +248,14 @@ fn can_call_non_fungible_data_reference() {
     );
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "create_non_fungible_reference",
             manifest_args!(account),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -305,7 +265,7 @@ fn can_call_non_fungible_data_reference() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -327,18 +287,14 @@ fn cannot_have_non_fungible_data_ownership() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "update_non_fungible_with_ownership",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -358,18 +314,14 @@ fn can_update_and_get_non_fungible() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "update_and_get_non_fungible",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -384,18 +336,14 @@ fn can_update_and_get_non_fungible_reference() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "update_and_get_non_fungible_reference",
             manifest_args!(account),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -411,7 +359,7 @@ fn test_non_fungible_part_1() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -436,11 +384,7 @@ fn test_non_fungible_part_1() {
             "take_and_put_bucket",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -456,7 +400,7 @@ fn test_non_fungible_part_2() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
@@ -475,11 +419,7 @@ fn test_non_fungible_part_2() {
             "get_non_fungible_local_ids_vault",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -495,18 +435,14 @@ fn test_singleton_non_fungible() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "singleton_non_fungible",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -525,18 +461,14 @@ fn test_mint_update_and_withdraw() {
 
     // create non-fungible
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "NonFungibleTest",
             "create_non_fungible_mutable",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -547,24 +479,18 @@ fn test_mint_update_and_withdraw() {
 
     // update data (the NFT is referenced within a Proof)
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, badge_resource_address, 1.into())
-        .create_proof_from_account_of_amount(account, nft_resource_address, 1.into())
-        .take_all_from_worktop(badge_resource_address, |builder, bucket_id| {
-            builder.pop_from_auth_zone(|builder, proof_id| {
-                builder.call_function(
-                    package_address,
-                    "NonFungibleTest",
-                    "update_nft",
-                    manifest_args!(bucket_id, proof_id),
-                )
-            })
-        })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, badge_resource_address, 1)
+        .create_proof_from_account_of_amount(account, nft_resource_address, 1)
+        .take_all_from_worktop(badge_resource_address, "badge")
+        .pop_from_auth_zone("proof")
+        .call_function_with_name_lookup(
+            package_address,
+            "NonFungibleTest",
+            "update_nft",
+            |lookup| (lookup.bucket("badge"), lookup.proof("proof")),
         )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -577,16 +503,12 @@ fn test_mint_update_and_withdraw() {
 
     // transfer
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, nft_resource_address, 1.into())
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, nft_resource_address, 1)
         .assert_worktop_contains_any(nft_resource_address)
-        .assert_worktop_contains(nft_resource_address, 1.into())
+        .assert_worktop_contains(nft_resource_address, 1)
         .assert_worktop_contains_non_fungibles(nft_resource_address, &nfid_list)
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -604,18 +526,14 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
             "create_wrong_non_fungible_local_id_type",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -635,18 +553,14 @@ fn create_bytes_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
             "create_bytes_non_fungible",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -663,18 +577,14 @@ fn create_string_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
             "create_string_non_fungible",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -691,18 +601,14 @@ fn create_ruid_non_fungible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
             "create_ruid_non_fungible",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -721,7 +627,7 @@ fn can_get_total_supply() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
@@ -745,18 +651,14 @@ fn can_mint_ruid_non_fungible_in_scrypto() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
             "create_ruid_non_fungible_and_mint",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -786,7 +688,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
@@ -799,7 +701,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .mint_ruid_non_fungible(
             resource_address,
             vec![Sandwich {
@@ -811,11 +713,7 @@ fn can_mint_ruid_non_fungible_with_reference_in_manifest() {
             }],
         )
         .assert_worktop_contains_any(resource_address)
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -830,7 +728,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
@@ -843,7 +741,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .mint_ruid_non_fungible(
             resource_address,
             vec![Sandwich {
@@ -855,11 +753,7 @@ fn can_mint_ruid_non_fungible_in_manifest() {
             }],
         )
         .assert_worktop_contains_any(resource_address)
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -874,18 +768,14 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "NonFungibleTest",
             "create_burnable_non_fungible",
             manifest_args!(),
         )
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
@@ -894,9 +784,9 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, resource_address, 1.into())
-        .burn_non_fungible(non_fungible_global_id.clone())
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, 1)
+        .burn_non_fungible_from_worktop(non_fungible_global_id.clone())
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

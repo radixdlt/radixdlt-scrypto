@@ -4,7 +4,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerNextRoundInput, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
@@ -22,15 +22,11 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             CONSENSUS_MANAGER,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-            to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-                Round::of(1),
-                0,
-                time_to_set_ms,
-            )),
+            ConsensusManagerNextRoundInput::successful(Round::of(1), 0, time_to_set_ms),
         )
         .call_function(
             package_address,
@@ -57,7 +53,7 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ClockTest",
@@ -85,15 +81,11 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             CONSENSUS_MANAGER,
             CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
-            to_manifest_value_and_unwrap!(&ConsensusManagerNextRoundInput::successful(
-                Round::of(1),
-                0,
-                1669663688996,
-            )),
+            ConsensusManagerNextRoundInput::successful(Round::of(1), 0, 1669663688996),
         )
         .call_function(
             package_address,
@@ -116,7 +108,7 @@ fn test_date_time_conversions() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ClockTest",

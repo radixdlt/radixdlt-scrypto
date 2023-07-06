@@ -2,7 +2,7 @@ use paste::paste;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::WasmModule;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 // Verify WASM sign-extensions, which were enabled by default to the wasm32 target
 // since rust 1.70.0
@@ -39,7 +39,7 @@ macro_rules! assert_sign_extensions {
                     OwnerRole::None,
                 );
                 let manifest = ManifestBuilder::new()
-                    .lock_fee(test_runner.faucet_component(), 500u32.into())
+                    .lock_fee_from_faucet()
                     .call_function(package_address, "Test", "f", manifest_args!())
                     .build();
                 let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -66,7 +66,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
     // Act
     let mut test_runner = TestRunner::builder().build();
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
             code,
@@ -100,7 +100,7 @@ fn test_wasm_non_mvp_mutable_globals_export() {
         OwnerRole::None,
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

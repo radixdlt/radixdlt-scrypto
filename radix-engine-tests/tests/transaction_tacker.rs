@@ -3,17 +3,9 @@ use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::consensus_manager::EpochChangeCondition;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::builder::TransactionBuilder;
 use transaction::errors::TransactionValidationError;
-use transaction::model::{
-    NotarizedTransactionV1, TransactionHeaderV1, TransactionPayload,
-    ValidatedNotarizedTransactionV1,
-};
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
-use transaction::validation::{
-    NotarizedTransactionValidator, TransactionValidator, ValidationConfig,
-};
+use transaction::prelude::*;
+use transaction::validation::*;
 
 #[test]
 fn test_transaction_replay_protection() {
@@ -113,7 +105,7 @@ fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransacti
         })
         .manifest(
             ManifestBuilder::new()
-                .lock_fee(FAUCET, 500u32.into())
+                .lock_fee_from_faucet()
                 .clear_auth_zone()
                 .build(),
         )

@@ -6,8 +6,8 @@ CALL_METHOD
 ALLOCATE_GLOBAL_ADDRESS
     Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
     "Package"
-    AddressReservation("reservation1")
-    NamedAddress("address1")
+    AddressReservation("radiswap_package_reservation")
+    NamedAddress("radiswap_package")
 ;
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
@@ -386,22 +386,22 @@ PUBLISH_PACKAGE_ADVANCED
         )
     )
     Enum<1u8>(
-        AddressReservation("reservation1")
+        AddressReservation("radiswap_package_reservation")
     )
 ;
 CALL_FUNCTION
-    NamedAddress("address1")
+    NamedAddress("radiswap_package")
     "Radiswap"
     "new"
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Address("resource_sim1thdalvfhl96adf92zercu7r8t4ukc04n38napxx3cd9hun3ylwvw2e")
+    Address("resource_sim1th47ntgk0vvcujeeucmtzhmnch00ems7su7akeszjutt582tqw8cnx")
 ;
 CALL_FUNCTION
-    NamedAddress("address1")
+    NamedAddress("radiswap_package")
     "Radiswap"
     "new"
-    Address("resource_sim1thrrnjljy22wazlwcykpfj2x9cah6d93805n0fjd2gay0l70cnehx4")
-    Address("resource_sim1th286ewj3f5dc5ld7wnzy8fkpu5cw4xkmujk6mtv98syku0x9ssgly")
+    Address("resource_sim1thvtyk4j7ry44p2fq5ucjwfay2n7d9gcl2huyv0hwpj0ffjehs3tcd")
+    Address("resource_sim1themku2nqm2ktjmz529wr786ckk8cyn9cljhfe8c4c8zqslrkp5dcl")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")

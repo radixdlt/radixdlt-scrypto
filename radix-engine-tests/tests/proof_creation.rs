@@ -4,7 +4,7 @@ use radix_engine::{
 };
 use radix_engine_queries::typed_substate_layout::{AuthZoneError, ComposeProofError};
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 fn create_proof_internal(function_name: &str, error: Option<&str>) {
     // Arrange
@@ -13,7 +13,7 @@ fn create_proof_internal(function_name: &str, error: Option<&str>) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "ProofCreation",
@@ -109,12 +109,13 @@ fn test_create_non_fungible_proof_with_large_amount() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+        .lock_standard_test_fee(account)
         .create_proof_from_auth_zone_of_amount(
             resource_address,
             dec!("100000000000000000000000000000000000000000000"),
-            |builder, proof| builder.drop_proof(proof),
+            "proof",
         )
+        .drop_proof("proof")
         .drop_all_proofs()
         .build();
     let receipt =

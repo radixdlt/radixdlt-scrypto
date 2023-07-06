@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 pub enum TestResourceAction {
     Mint,
@@ -76,13 +76,13 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
             ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
-                    token_address.into(),
+                    token_address,
                     ObjectModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
                 )
                 .update_role(
-                    token_address.into(),
+                    token_address,
                     ObjectModuleId::Main,
                     updater_role_key,
                     rule!(require(admin_auth)),
@@ -100,13 +100,13 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
             ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
-                    token_address.into(),
+                    token_address,
                     ObjectModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
                 )
                 .update_role(
-                    token_address.into(),
+                    token_address,
                     ObjectModuleId::Main,
                     updater_role_key,
                     rule!(require(admin_auth)),
@@ -124,7 +124,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
                 ManifestBuilder::new()
                     .create_proof_from_account(account, admin_auth)
                     .update_role(
-                        token_address.into(),
+                        token_address,
                         ObjectModuleId::Main,
                         role_key,
                         AccessRule::DenyAll,
@@ -142,7 +142,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
             ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
-                    token_address.into(),
+                    token_address,
                     ObjectModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),
@@ -158,7 +158,7 @@ pub fn assert_locked_auth_can_no_longer_be_updated(action: TestResourceAction) {
             ManifestBuilder::new()
                 .create_proof_from_account(account, admin_auth)
                 .update_role(
-                    token_address.into(),
+                    token_address,
                     ObjectModuleId::Main,
                     role_key,
                     rule!(require(admin_auth)),

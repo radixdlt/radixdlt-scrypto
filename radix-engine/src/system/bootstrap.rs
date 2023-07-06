@@ -38,8 +38,7 @@ use radix_engine_interface::blueprints::consensus_manager::{
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::{
-    burn_roles, internal_roles_struct, metadata, metadata_init, mint_roles, role_definition_entry,
-    rule, withdraw_roles,
+    burn_roles, metadata, metadata_init, mint_roles, rule, withdraw_roles,
 };
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
@@ -564,7 +563,7 @@ pub fn create_system_bootstrap_transaction(
     {
         pre_allocated_addresses.push((
             BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT),
-            GlobalAddress::from(RADIX_TOKEN),
+            GlobalAddress::from(XRD),
         ));
         instructions.push(InstructionV1::CallFunction {
             package_address: RESOURCE_PACKAGE.into(),
@@ -1084,7 +1083,8 @@ pub fn create_system_bootstrap_transaction(
                 id_allocator.new_address_reservation_id(),
                 CONSENSUS_MANAGER,
                 AuthAddresses::system_role()
-            ),
+            )
+            .into(),
         });
     }
 
@@ -1117,7 +1117,7 @@ pub fn create_system_bootstrap_transaction(
             package_address: TRANSACTION_TRACKER_PACKAGE.into(),
             blueprint_name: TRANSACTION_TRACKER_BLUEPRINT.to_string(),
             function_name: TRANSACTION_TRACKER_CREATE_IDENT.to_string(),
-            args: manifest_args!(id_allocator.new_address_reservation_id()),
+            args: manifest_args!(id_allocator.new_address_reservation_id()).into(),
         });
     }
 
@@ -1135,15 +1135,15 @@ pub fn create_system_bootstrap_transaction(
         let faucet_xrd_bucket = id_allocator.new_bucket_id();
         instructions.push(
             InstructionV1::CallMethod {
-                address: RADIX_TOKEN.clone().into(),
+                address: XRD.clone().into(),
                 method_name: FUNGIBLE_RESOURCE_MANAGER_MINT_IDENT.to_string(),
-                args: manifest_args!(faucet_supply),
+                args: manifest_args!(faucet_supply).into(),
             }
             .into(),
         );
         instructions.push(
             InstructionV1::TakeFromWorktop {
-                resource_address: RADIX_TOKEN,
+                resource_address: XRD,
                 amount: faucet_supply,
             }
             .into(),
@@ -1152,7 +1152,8 @@ pub fn create_system_bootstrap_transaction(
             package_address: FAUCET_PACKAGE.into(),
             blueprint_name: FAUCET_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
-            args: manifest_args!(id_allocator.new_address_reservation_id(), faucet_xrd_bucket),
+            args: manifest_args!(id_allocator.new_address_reservation_id(), faucet_xrd_bucket)
+                .into(),
         });
     }
 
@@ -1179,7 +1180,7 @@ pub fn create_genesis_data_ingestion_transaction(
     instructions.push(InstructionV1::CallMethod {
         address: genesis_helper.clone().into(),
         method_name: "ingest_data_chunk".to_string(),
-        args: manifest_args!(chunk),
+        args: manifest_args!(chunk).into(),
     });
 
     SystemTransactionV1 {
@@ -1251,7 +1252,7 @@ pub fn create_genesis_wrap_up_transaction() -> SystemTransactionV1 {
     instructions.push(InstructionV1::CallMethod {
         address: GENESIS_HELPER.clone().into(),
         method_name: "wrap_up".to_string(),
-        args: manifest_args!(),
+        args: manifest_args!().into(),
     });
 
     SystemTransactionV1 {
