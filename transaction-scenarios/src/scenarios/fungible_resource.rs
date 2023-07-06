@@ -145,23 +145,17 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                     vec![&config.user_account_1.key],
                 )
             })
-            .failed_transaction_with_error_handler(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "fungible-max-div-recall-frozen-vault",
-                        |builder| {
-                            builder
-                                .recall(state.vault1.unwrap(), dec!("2"))
-                                .try_deposit_batch_or_abort(config.user_account_1.address)
-                        },
-                        vec![&config.user_account_1.key],
-                    )
-                },
-                |core, config, state, result| {
-                    // FIXME: Recalling from frozen vaults should be allowed per product requirement
-                    Ok(())
-                },
-            )
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "fungible-max-div-recall-frozen-vault",
+                    |builder| {
+                        builder
+                            .recall(state.vault1.unwrap(), dec!("1"))
+                            .try_deposit_batch_or_abort(config.user_account_2.address)
+                    },
+                    vec![&config.user_account_1.key],
+                )
+            })
             .successful_transaction(|core, config, state| {
                 core.next_transaction_with_faucet_lock_fee(
                     "fungible-max-div-unfreeze-withdraw",

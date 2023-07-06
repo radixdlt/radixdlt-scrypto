@@ -104,7 +104,7 @@ fn cannot_withdraw_from_frozen_vault() {
 }
 
 #[test]
-fn cannot_recall_from_frozen_vault() {
+fn can_recall_from_frozen_vault() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (key, _priv, account) = test_runner.new_account(true);

@@ -271,26 +271,20 @@ impl ScenarioCreator for NonFungibleResourceScenarioCreator {
                 },
                 |core, config, state, result| Ok(()),
             )
-            .failed_transaction_with_error_handler(
-                |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
-                        "non-fungible-resource-recall-frozen-vault",
-                        |builder| {
-                            builder
-                                .recall_non_fungibles(
-                                    state.vault1.unwrap(),
-                                    &btreeset!(NonFungibleLocalId::integer(120)),
-                                )
-                                .try_deposit_batch_or_abort(config.main_account.address)
-                        },
-                        vec![&config.main_account.key],
-                    )
-                },
-                |core, config, state, result| {
-                    // FIXME: Recalling from frozen vaults should be allowed per product requirement
-                    Ok(())
-                },
-            )
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee(
+                    "non-fungible-resource-recall-frozen-vault",
+                    |builder| {
+                        builder
+                            .recall_non_fungibles(
+                                state.vault1.unwrap(),
+                                &btreeset!(NonFungibleLocalId::integer(120)),
+                            )
+                            .try_deposit_batch_or_abort(config.occasional_recipient_account.address)
+                    },
+                    vec![&config.main_account.key],
+                )
+            })
             .successful_transaction_with_result_handler(
                 |core, config, state| {
                     core.next_transaction_with_faucet_lock_fee(
