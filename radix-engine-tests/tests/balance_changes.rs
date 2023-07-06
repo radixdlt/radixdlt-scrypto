@@ -176,7 +176,7 @@ fn test_balance_changes_when_recall() {
                 XRD => BalanceChange::Fungible(-(result.fee_summary.total_cost()))
             ),
             other_account.into() => indexmap!(
-                recallable_token => BalanceChange::Fungible(dec!("1"))
+                recallable_token => BalanceChange::Fungible(dec!(1))
             ),
             CONSENSUS_MANAGER.into() => indexmap!(
                 XRD => BalanceChange::Fungible(result.fee_summary.expected_reward_if_single_validator())

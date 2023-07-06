@@ -38,7 +38,8 @@ mod cross_component {
             match &mut self.auth_vault {
                 Some(vault) => {
                     let auth_bucket = vault.take_all();
-                    let value = auth_bucket.authorize(|| other_component.get_component_state());
+                    let value =
+                        auth_bucket.authorize_with_all(|| other_component.get_component_state());
                     vault.put(auth_bucket);
                     value
                 }

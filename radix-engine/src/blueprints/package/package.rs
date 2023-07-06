@@ -1235,7 +1235,7 @@ impl PackageNativePackage {
                 name: "Package Owner Badge".to_owned(),
                 package: address.try_into().expect("Impossible Case"),
             },
-            None,
+            Some(NonFungibleLocalId::bytes(address.as_node_id().0).unwrap()),
             api,
         )?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;

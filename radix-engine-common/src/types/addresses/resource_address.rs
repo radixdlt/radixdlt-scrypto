@@ -57,6 +57,10 @@ impl ResourceAddress {
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
     }
+
+    pub fn is_fungible(&self) -> bool {
+        self.0.is_global_fungible_resource_manager()
+    }
 }
 
 #[cfg(feature = "radix_engine_fuzzing")]

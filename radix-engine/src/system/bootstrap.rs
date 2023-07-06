@@ -690,7 +690,7 @@ pub fn create_system_bootstrap_transaction(
             args: to_manifest_value_and_unwrap!(
                 &NonFungibleResourceManagerCreateManifestInput {
                     owner_role: OwnerRole::Fixed(rule!(require(global_caller(PACKAGE_PACKAGE)))),
-                    id_type: NonFungibleIdType::RUID,
+                    id_type: NonFungibleIdType::Bytes,
                     track_total_supply: false,
                     non_fungible_schema: NonFungibleDataSchema::new_schema::<PackageOwnerBadgeData>(),
                     resource_roles: NonFungibleResourceRoles {

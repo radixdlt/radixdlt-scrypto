@@ -167,7 +167,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
+        .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
@@ -175,7 +175,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     )
 }
 
@@ -247,7 +247,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     );
 }
 
@@ -376,7 +376,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
+        .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
     let receipt =
         test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
@@ -385,7 +385,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     )
 }
 
@@ -461,7 +461,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     );
 }
 
@@ -589,7 +589,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
+        .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
@@ -794,7 +794,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
+        .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
@@ -802,7 +802,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     )
 }
 
@@ -874,7 +874,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     );
 }
 
@@ -960,7 +960,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(account, "burn", manifest_args!(resource_address, dec!("1")))
+        .call_method(account, "burn", manifest_args!(resource_address, dec!(1)))
         .build();
     let receipt =
         test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
@@ -971,7 +971,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
         test_runner
             .account_balance(account, resource_address)
             .unwrap(),
-        dec!("1")
+        dec!(1)
     )
 }
 
@@ -1023,7 +1023,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
         test_runner
             .account_balance(account, resource_address)
             .unwrap(),
-        dec!("1")
+        dec!(1)
     )
 }
 

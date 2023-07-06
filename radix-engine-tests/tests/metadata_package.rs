@@ -64,7 +64,11 @@ fn can_set_package_metadata_with_owner() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .create_proof_from_account(account, PACKAGE_OWNER_BADGE)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            PACKAGE_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(package_address.as_node_id().0).unwrap()),
+        )
         .set_metadata(
             package_address,
             "name".to_string(),

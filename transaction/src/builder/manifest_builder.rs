@@ -233,11 +233,9 @@ impl ManifestBuilder {
                 new_bucket = Some(lookup.bucket(bucket_name));
             }
             InstructionV1::PopFromAuthZone { .. }
-            | InstructionV1::CreateProofFromAuthZone { .. }
             | InstructionV1::CreateProofFromAuthZoneOfAmount { .. }
             | InstructionV1::CreateProofFromAuthZoneOfNonFungibles { .. }
             | InstructionV1::CreateProofFromAuthZoneOfAll { .. }
-            | InstructionV1::CreateProofFromBucket { .. }
             | InstructionV1::CreateProofFromBucketOfAmount { .. }
             | InstructionV1::CreateProofFromBucketOfNonFungibles { .. }
             | InstructionV1::CreateProofFromBucketOfAll { .. }
@@ -303,13 +301,13 @@ impl ManifestBuilder {
     pub fn take_non_fungibles_from_worktop(
         self,
         resource_address: impl ResolvableResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         new_bucket: impl NewManifestBucket,
     ) -> Self {
         let resource_address = resource_address.resolve_static(&self.registrar);
         new_bucket.register(&self.registrar);
         self.add_instruction(InstructionV1::TakeNonFungiblesFromWorktop {
-            ids: ids.into_iter().collect(),
+            ids: ids.iter().cloned().collect(),
             resource_address,
         })
     }
@@ -373,17 +371,6 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::ClearAuthZone)
     }
 
-    /// Creates proof from the auth zone.
-    pub fn create_proof_from_auth_zone(
-        self,
-        resource_address: impl ResolvableResourceAddress,
-        new_proof: impl NewManifestProof,
-    ) -> Self {
-        let resource_address = resource_address.resolve_static(&self.registrar);
-        new_proof.register(&self.registrar);
-        self.add_instruction(InstructionV1::CreateProofFromAuthZone { resource_address })
-    }
-
     /// Creates proof from the auth zone by amount.
     pub fn create_proof_from_auth_zone_of_amount(
         self,
@@ -404,13 +391,13 @@ impl ManifestBuilder {
     pub fn create_proof_from_auth_zone_of_non_fungibles(
         self,
         resource_address: impl ResolvableResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         new_proof: impl NewManifestProof,
     ) -> Self {
         let resource_address = resource_address.resolve_static(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_instruction(InstructionV1::CreateProofFromAuthZoneOfNonFungibles {
-            ids: ids.into_iter().collect(),
+            ids: ids.iter().cloned().collect(),
             resource_address,
         })
     }
@@ -424,17 +411,6 @@ impl ManifestBuilder {
         let resource_address = resource_address.resolve_static(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_instruction(InstructionV1::CreateProofFromAuthZoneOfAll { resource_address })
-    }
-
-    /// Creates proof from a bucket. The bucket is not consumed by this process.
-    pub fn create_proof_from_bucket(
-        self,
-        bucket: impl ExistingManifestBucket,
-        new_proof: impl NewManifestProof,
-    ) -> Self {
-        let bucket = bucket.resolve(&self.registrar);
-        new_proof.register(&self.registrar);
-        self.add_instruction(InstructionV1::CreateProofFromBucket { bucket_id: bucket })
     }
 
     /// Creates proof from a bucket. The bucket is not consumed by this process.
@@ -457,14 +433,14 @@ impl ManifestBuilder {
     pub fn create_proof_from_bucket_of_non_fungibles(
         self,
         bucket: impl ExistingManifestBucket,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
         new_proof: impl NewManifestProof,
     ) -> Self {
         let bucket = bucket.resolve(&self.registrar);
         new_proof.register(&self.registrar);
         self.add_instruction(InstructionV1::CreateProofFromBucketOfNonFungibles {
             bucket_id: bucket,
-            ids: ids.into_iter().collect(),
+            ids: ids.iter().cloned().collect(),
         })
     }
 
@@ -1329,7 +1305,7 @@ impl ManifestBuilder {
         let resource_address = non_fungible_global_id.resource_address().clone();
         let bucket = self.generate_bucket_name("to_burn");
 
-        self.take_non_fungibles_from_worktop(resource_address, ids, &bucket)
+        self.take_non_fungibles_from_worktop(resource_address, &ids, &bucket)
             .burn_resource(bucket)
     }
 
@@ -1401,10 +1377,10 @@ impl ManifestBuilder {
     pub fn recall_non_fungibles(
         self,
         vault_address: InternalAddress,
-        non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
+        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Self {
         let args = to_manifest_value_and_unwrap!(&NonFungibleVaultRecallNonFungiblesInput {
-            non_fungible_local_ids,
+            non_fungible_local_ids: non_fungible_local_ids.clone(),
         });
 
         self.add_instruction(InstructionV1::CallDirectVaultMethod {
@@ -1523,7 +1499,7 @@ impl ManifestBuilder {
         account_address: impl ResolvableComponentAddress,
         amount_to_lock: impl ResolvableDecimal,
         resource_address: impl ResolvableResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let amount_to_lock = amount_to_lock.resolve();
@@ -1532,7 +1508,7 @@ impl ManifestBuilder {
         let args = to_manifest_value_and_unwrap!(&AccountLockFeeAndWithdrawNonFungiblesInput {
             amount_to_lock,
             resource_address,
-            ids,
+            ids: ids.iter().cloned().collect(),
         });
 
         self.add_instruction(InstructionV1::CallMethod {
@@ -1618,7 +1594,7 @@ impl ManifestBuilder {
         self,
         account_address: impl ResolvableComponentAddress,
         resource_address: impl ResolvableResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let resource_address = resource_address.resolve_static(&self.registrar);
@@ -1658,24 +1634,6 @@ impl ManifestBuilder {
     }
 
     /// Creates resource proof from an account.
-    pub fn create_proof_from_account(
-        self,
-        account_address: impl ResolvableComponentAddress,
-        resource_address: impl ResolvableResourceAddress,
-    ) -> Self {
-        let address = account_address.resolve(&self.registrar);
-        let resource_address = resource_address.resolve_static(&self.registrar);
-
-        let args = to_manifest_value_and_unwrap!(&AccountCreateProofInput { resource_address });
-
-        self.add_instruction(InstructionV1::CallMethod {
-            address: address.into(),
-            method_name: ACCOUNT_CREATE_PROOF_IDENT.to_string(),
-            args,
-        })
-    }
-
-    /// Creates resource proof from an account.
     pub fn create_proof_from_account_of_amount(
         self,
         account_address: impl ResolvableComponentAddress,
@@ -1702,7 +1660,7 @@ impl ManifestBuilder {
         self,
         account_address: impl ResolvableComponentAddress,
         resource_address: impl ResolvableResourceAddress,
-        ids: BTreeSet<NonFungibleLocalId>,
+        ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Self {
         let address = account_address.resolve(&self.registrar);
         let resource_address = resource_address.resolve_static(&self.registrar);

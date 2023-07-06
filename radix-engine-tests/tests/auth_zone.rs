@@ -34,7 +34,14 @@ fn test_auth_zone_create_proof_of_all_for_non_fungible() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, resource_address, 2)
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            resource_address,
+            &btreeset!(
+                NonFungibleLocalId::integer(1),
+                NonFungibleLocalId::integer(2)
+            ),
+        )
         .create_proof_from_auth_zone_of_all(resource_address, "proof")
         .drop_proof("proof")
         .build();

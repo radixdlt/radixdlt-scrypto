@@ -41,7 +41,7 @@ mod move_test {
                 .instantiate()
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize();
-            component.receive_proof(bucket.create_proof());
+            component.receive_proof(bucket.create_proof_of_all());
 
             bucket
         }

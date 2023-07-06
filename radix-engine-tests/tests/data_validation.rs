@@ -28,10 +28,10 @@ fn create_manifest_with_middle(
     ManifestBuilder::new()
         .lock_fee_from_faucet()
         .get_free_xrd_from_faucet()
-        .take_from_worktop(XRD, dec!("1"), "bucket")
+        .take_from_worktop(XRD, dec!(1), "bucket")
         .take_from_worktop(XRD, dec!("0"), "empty_bucket")
-        .take_from_worktop(XRD, dec!("1"), "proof_bucket")
-        .create_proof_from_bucket("proof_bucket", "proof")
+        .take_from_worktop(XRD, dec!(1), "proof_bucket")
+        .create_proof_from_bucket_of_all("proof_bucket", "proof")
         .with_name_lookup(|builder, lookup| {
             constructor(
                 builder,

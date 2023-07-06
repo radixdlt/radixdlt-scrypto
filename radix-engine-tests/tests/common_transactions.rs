@@ -280,7 +280,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
 
     // Creating the minter badge and the requested resource
     let minter_badge_resource_address =
-        test_runner.create_fungible_resource(dec!("1"), 0, component_address);
+        test_runner.create_fungible_resource(dec!(1), 0, component_address);
 
     let manifest = match resource_type {
         ResourceType::Fungible { divisibility } => ManifestBuilder::new()

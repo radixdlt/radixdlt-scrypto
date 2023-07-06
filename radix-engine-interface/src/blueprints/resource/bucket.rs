@@ -60,22 +60,6 @@ pub struct BucketGetResourceAddressInput {}
 
 pub type BucketGetResourceAddressOutput = ResourceAddress;
 
-pub const BUCKET_CREATE_PROOF_IDENT: &str = "create_proof";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct BucketCreateProofInput {}
-
-pub type BucketCreateProofOutput = Proof;
-
-pub const BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct BucketCreateProofOfAmountInput {
-    pub amount: Decimal,
-}
-
-pub type BucketCreateProofOfAmountOutput = Proof;
-
 pub const BUCKET_CREATE_PROOF_OF_ALL_IDENT: &str = "create_proof_of_all";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]

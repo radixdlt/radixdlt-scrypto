@@ -194,7 +194,7 @@ fn can_freezy_recall_unfreezy_non_fungible_vault() {
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .assert_worktop_contains_non_fungibles(resource_address, &BTreeSet::new())
-        .recall_non_fungibles(internal_address, ids.clone())
+        .recall_non_fungibles(internal_address, &ids)
         .assert_worktop_contains_non_fungibles(resource_address, &ids)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

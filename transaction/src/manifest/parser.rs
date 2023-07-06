@@ -42,12 +42,10 @@ pub enum InstructionIdent {
     PopFromAuthZone,
     PushToAuthZone,
     ClearAuthZone,
-    CreateProofFromAuthZone,
     CreateProofFromAuthZoneOfAmount,
     CreateProofFromAuthZoneOfNonFungibles,
     CreateProofFromAuthZoneOfAll,
     ClearSignatureProofs,
-    CreateProofFromBucket,
     CreateProofFromBucketOfAmount,
     CreateProofFromBucketOfNonFungibles,
     CreateProofFromBucketOfAll,
@@ -127,7 +125,6 @@ impl InstructionIdent {
             "POP_FROM_AUTH_ZONE" => InstructionIdent::PopFromAuthZone,
             "PUSH_TO_AUTH_ZONE" => InstructionIdent::PushToAuthZone,
             "CLEAR_AUTH_ZONE" => InstructionIdent::ClearAuthZone,
-            "CREATE_PROOF_FROM_AUTH_ZONE" => InstructionIdent::CreateProofFromAuthZone,
             "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT" => {
                 InstructionIdent::CreateProofFromAuthZoneOfAmount
             }
@@ -137,7 +134,6 @@ impl InstructionIdent {
             "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL" => InstructionIdent::CreateProofFromAuthZoneOfAll,
             "CLEAR_SIGNATURE_PROOFS" => InstructionIdent::ClearSignatureProofs,
 
-            "CREATE_PROOF_FROM_BUCKET" => InstructionIdent::CreateProofFromBucket,
             "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT" => InstructionIdent::CreateProofFromBucketOfAmount,
             "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES" => {
                 InstructionIdent::CreateProofFromBucketOfNonFungibles
@@ -523,10 +519,6 @@ impl Parser {
                 proof: self.parse_value()?,
             },
             InstructionIdent::ClearAuthZone => Instruction::ClearAuthZone,
-            InstructionIdent::CreateProofFromAuthZone => Instruction::CreateProofFromAuthZone {
-                resource_address: self.parse_value()?,
-                new_proof: self.parse_value()?,
-            },
             InstructionIdent::CreateProofFromAuthZoneOfAmount => {
                 Instruction::CreateProofFromAuthZoneOfAmount {
                     resource_address: self.parse_value()?,
@@ -549,10 +541,6 @@ impl Parser {
             }
             InstructionIdent::ClearSignatureProofs => Instruction::ClearSignatureProofs,
 
-            InstructionIdent::CreateProofFromBucket => Instruction::CreateProofFromBucket {
-                bucket: self.parse_value()?,
-                new_proof: self.parse_value()?,
-            },
             InstructionIdent::CreateProofFromBucketOfAmount => {
                 Instruction::CreateProofFromBucketOfAmount {
                     bucket: self.parse_value()?,
