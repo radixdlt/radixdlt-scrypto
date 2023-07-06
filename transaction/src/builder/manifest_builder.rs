@@ -846,7 +846,7 @@ impl ManifestBuilder {
     ///     rather than just some brackets around the inner value.
     /// * A struct which implements `ManifestEncode` representing the arguments
     /// * `manifest_args!(x, y, z)`
-    /// 
+    ///
     /// Example:
     /// ```
     /// # use transaction::prelude::*;
@@ -941,7 +941,7 @@ impl ManifestBuilder {
     ///     rather than just some brackets around the inner value.
     /// * A struct which implements `ManifestEncode` representing the arguments
     /// * `manifest_args!(x, y, z)`
-    /// 
+    ///
     /// Example:
     /// ```
     /// # use transaction::prelude::*;
