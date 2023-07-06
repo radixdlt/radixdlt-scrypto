@@ -9,15 +9,15 @@ define_invocation! {
     blueprint_name: OneResourcePool,
     function_name: instantiate,
     input: struct {
-        resource_address: ResourceAddress,
         owner_role: OwnerRole,
-        pool_manager_rule: AccessRule
+        pool_manager_rule: AccessRule,
+        resource_address: ResourceAddress
     },
     output: type ComponentAddress,
     manifest_input: struct {
-        resource_address: ResourceAddress,
         owner_role: OwnerRole,
-        pool_manager_rule: AccessRule
+        pool_manager_rule: AccessRule,
+        resource_address: ResourceAddress
     }
 }
 

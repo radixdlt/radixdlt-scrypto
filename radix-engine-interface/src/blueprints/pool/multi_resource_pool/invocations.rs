@@ -9,15 +9,15 @@ define_invocation! {
     blueprint_name: MultiResourcePool,
     function_name: instantiate,
     input: struct {
-        resource_addresses: BTreeSet<ResourceAddress>,
         owner_role: OwnerRole,
-        pool_manager_rule: AccessRule
+        pool_manager_rule: AccessRule,
+        resource_addresses: BTreeSet<ResourceAddress>
     },
     output: type ComponentAddress,
     manifest_input: struct {
-        resource_addresses: BTreeSet<ResourceAddress>,
         owner_role: OwnerRole,
-        pool_manager_rule: AccessRule
+        pool_manager_rule: AccessRule,
+        resource_addresses: BTreeSet<ResourceAddress>
     }
 }
 

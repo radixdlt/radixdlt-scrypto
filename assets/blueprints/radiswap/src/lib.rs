@@ -21,9 +21,9 @@ mod radiswap {
             // 1. That both resources are not the same.
             // 2. That none of the resources are non-fungible
             let pool_component = Blueprint::<TwoResourcePool>::instantiate(
-                (resource_address1, resource_address2),
                 owner_role,
                 rule!(require(global_component_caller_badge)),
+                (resource_address1, resource_address2),
             );
 
             Self { pool_component }
