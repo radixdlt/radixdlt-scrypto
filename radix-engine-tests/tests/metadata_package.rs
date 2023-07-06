@@ -60,8 +60,6 @@ fn can_set_package_metadata_with_owner() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let package_address = receipt.expect_commit(true).new_package_addresses()[0];
-    let vault_id = test_runner.get_component_vaults(account, PACKAGE_OWNER_BADGE)[0];
-    let (_, local_id) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -69,7 +67,7 @@ fn can_set_package_metadata_with_owner() {
         .create_proof_from_account_of_non_fungibles(
             account,
             PACKAGE_OWNER_BADGE,
-            &btreeset!(local_id.unwrap()),
+            &btreeset!(NonFungibleLocalId::bytes(package_address.as_node_id().0).unwrap()),
         )
         .set_metadata(
             package_address,
