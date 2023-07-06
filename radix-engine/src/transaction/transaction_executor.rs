@@ -15,7 +15,7 @@ use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
-use crate::vm::{ScryptoVm, Vm};
+use crate::vm::{NativeVm, ScryptoVm, Vm};
 use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -479,6 +479,7 @@ where
             schema_cache: NonIterMap::new(),
             callback_obj: Vm {
                 scrypto_vm: self.scrypto_vm,
+                native_vm: NativeVm,
             },
             modules: SystemModuleMixer::new(
                 execution_config.enabled_modules,

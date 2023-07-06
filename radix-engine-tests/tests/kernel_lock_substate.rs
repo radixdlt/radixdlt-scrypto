@@ -11,7 +11,7 @@ use radix_engine::track::Track;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{ScryptoVm, Vm};
+use radix_engine::vm::{NativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::LockFlags;
 use radix_engine_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
@@ -48,6 +48,7 @@ pub fn test_open_substate_of_invisible_package_address() {
         schema_cache: NonIterMap::new(),
         callback_obj: Vm {
             scrypto_vm: &scrypto_vm,
+            native_vm: NativeVm,
         },
         modules: SystemModuleMixer::new(
             execution_config.enabled_modules,

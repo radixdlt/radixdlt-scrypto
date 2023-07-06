@@ -6,13 +6,14 @@ use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::vm::wasm::{WasmEngine, WasmValidator};
-use crate::vm::{NativeVm, ScryptoVm};
+use crate::vm::{NativeVm, NativeVmInstance, ScryptoVm};
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 
 pub struct Vm<'g, W: WasmEngine> {
     pub scrypto_vm: &'g ScryptoVm<W>,
+    pub native_vm: NativeVm,
 }
 
 impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
@@ -76,7 +77,8 @@ impl<'g, W: WasmEngine + 'g> SystemCallbackObject for Vm<'g, W> {
                         .expect(&format!("Original code not found: {:?}", export))
                 };
 
-                let mut vm_instance = { NativeVm::create_instance(address, &original_code.code)? };
+                let mut vm_instance = api.kernel_get_system().callback_obj.native_vm
+                    .create_instance(address, &original_code.code)?;
                 let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
 
                 output

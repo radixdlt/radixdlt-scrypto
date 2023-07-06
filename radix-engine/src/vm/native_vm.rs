@@ -23,6 +23,7 @@ pub struct NativeVm;
 
 impl NativeVm {
     pub fn create_instance(
+        &self,
         package_address: &PackageAddress,
         code: &[u8],
     ) -> Result<NativeVmInstance, RuntimeError> {
@@ -69,6 +70,7 @@ impl VmInvoke for NativeVmInstance {
             export_name: export_name,
             input_size: input.len(),
         })?;
+
 
         match self.native_package_code_id {
             PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api),
