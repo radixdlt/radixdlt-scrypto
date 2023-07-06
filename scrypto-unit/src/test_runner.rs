@@ -16,7 +16,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{NativeVm, ScryptoVm, Vm};
+use radix_engine::vm::{NativeVmV1, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -271,11 +271,7 @@ impl TestRunnerBuilder {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let vm = Vm {
-            scrypto_vm: &scrypto_vm,
-            native_vm: NativeVm,
-        };
-
+        let vm = Vm::new(&scrypto_vm, NativeVmV1);
         let mut substate_db = InMemorySubstateDatabase::standard();
 
         let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
@@ -302,7 +298,7 @@ impl TestRunnerBuilder {
         let next_transaction_nonce = 100;
 
         let runner = TestRunner {
-            scrypto_vm: scrypto_vm,
+            scrypto_vm,
             substate_db,
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
@@ -1010,7 +1006,7 @@ impl TestRunner {
 
         let vm = Vm {
             scrypto_vm: &self.scrypto_vm,
-            native_vm: NativeVm,
+            native_vm: NativeVmV1,
         };
 
         let transaction_receipt = execute_transaction(

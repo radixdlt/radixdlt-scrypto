@@ -6,7 +6,7 @@ use radix_engine::{
     },
 };
 use radix_engine::system::system_callback_api::SystemCallbackObject;
-use radix_engine::vm::{NativeVm, Vm};
+use radix_engine::vm::{NativeVmV1, Vm};
 use radix_engine_store_interface::interface::*;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};
@@ -28,7 +28,7 @@ pub fn run_all_in_memory_and_dump_examples(
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let vm = Vm {
         scrypto_vm: &scrypto_vm,
-        native_vm: NativeVm,
+        native_vm: NativeVmV1,
     };
 
     let receipts = Bootstrapper::new(&mut substate_db, vm, false)
@@ -75,10 +75,7 @@ where
     let fee_reserve_config = FeeReserveConfig::default();
     let execution_config = ExecutionConfig::for_test_transaction();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm = Vm {
-        scrypto_vm: &scrypto_vm,
-        native_vm: NativeVm,
-    };
+    let vm = Vm::new(&scrypto_vm, NativeVmV1);
     let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
 
     run_scenario(

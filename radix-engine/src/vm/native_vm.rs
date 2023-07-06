@@ -19,15 +19,27 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 use resources_tracker_macro::trace_resources;
 
-#[derive(Clone)]
-pub struct NativeVm;
+pub trait NativeVm: Clone {
+    type Instance: VmInvoke;
 
-impl NativeVm {
-    pub fn create_instance(
+    fn create_instance(
         &self,
         package_address: &PackageAddress,
         code: &[u8],
-    ) -> Result<NativeVmInstance, RuntimeError> {
+    ) -> Result<NativeVmV1Instance, RuntimeError>;
+}
+
+#[derive(Clone)]
+pub struct NativeVmV1;
+
+impl NativeVm for NativeVmV1 {
+    type Instance = NativeVmV1Instance;
+
+    fn create_instance(
+        &self,
+        package_address: &PackageAddress,
+        code: &[u8],
+    ) -> Result<NativeVmV1Instance, RuntimeError> {
         let code: [u8; 8] = match code.clone().try_into() {
             Ok(code) => code,
             Err(..) => {
@@ -39,7 +51,7 @@ impl NativeVm {
 
         let native_package_code_id = u64::from_be_bytes(code);
 
-        let instance = NativeVmInstance {
+        let instance = NativeVmV1Instance {
             package_address: *package_address,
             native_package_code_id,
         };
@@ -48,14 +60,14 @@ impl NativeVm {
     }
 }
 
-pub struct NativeVmInstance {
+pub struct NativeVmV1Instance {
     // Used by profiling
     #[allow(dead_code)]
     package_address: PackageAddress,
     native_package_code_id: u64,
 }
 
-impl VmInvoke for NativeVmInstance {
+impl VmInvoke for NativeVmV1Instance {
     #[trace_resources(log=self.package_address.is_native_address(), log=self.package_address.to_hex(), log=export_name)]
     fn invoke<Y>(
         &mut self,

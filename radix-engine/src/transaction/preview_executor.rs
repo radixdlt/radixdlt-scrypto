@@ -1,7 +1,7 @@
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
 use crate::vm::wasm::WasmEngine;
-use crate::vm::{NativeVm, ScryptoVm, Vm};
+use crate::vm::{NativeVmV1, ScryptoVm, Vm};
 use radix_engine_interface::network::NetworkDefinition;
 use radix_engine_store_interface::interface::*;
 use transaction::errors::TransactionValidationError;
@@ -31,7 +31,7 @@ pub fn execute_preview<S: SubstateDatabase, W: WasmEngine>(
 
     let vm = Vm {
         scrypto_vm,
-        native_vm: NativeVm,
+        native_vm: NativeVmV1,
     };
 
     Ok(execute_transaction(

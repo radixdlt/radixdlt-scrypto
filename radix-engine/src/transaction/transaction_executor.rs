@@ -15,7 +15,7 @@ use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use crate::vm::wasm::*;
-use crate::vm::{NativeVm, ScryptoVm, Vm};
+use crate::vm::{NativeVmV1, ScryptoVm, Vm};
 use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
