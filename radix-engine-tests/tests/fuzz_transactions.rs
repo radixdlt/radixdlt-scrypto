@@ -4,7 +4,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{NativeVm, ScryptoVm, Vm};
+use radix_engine::vm::{NativeVmV1, ScryptoVm, Vm};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use rand::Rng;
@@ -32,7 +32,7 @@ impl TransactionFuzzer {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let vm = Vm::new_default(&scrypto_vm);
+        let vm = Vm::new(&scrypto_vm, NativeVmV1);
 
         let mut substate_db = InMemorySubstateDatabase::standard();
         Bootstrapper::new(&mut substate_db, vm, false)
@@ -56,7 +56,7 @@ impl TransactionFuzzer {
         let execution_config = ExecutionConfig::for_test_transaction();
         let fee_reserve_config = FeeReserveConfig::default();
 
-        let vm = Vm::new_default(&self.scrypto_vm);
+        let vm = Vm::new(&self.scrypto_vm, NativeVmV1);
 
         execute_and_commit_transaction(
             &mut self.substate_db,

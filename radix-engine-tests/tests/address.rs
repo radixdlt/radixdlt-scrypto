@@ -7,7 +7,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn get_global_address_in_local_in_function_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
@@ -45,7 +45,7 @@ fn get_global_address_in_local_in_function_should_fail() {
 #[test]
 fn get_global_address_in_local_in_method_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
@@ -94,7 +94,7 @@ fn get_global_address_in_local_in_method_should_fail() {
 #[test]
 fn get_global_address_in_parent_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
@@ -136,7 +136,7 @@ fn get_global_address_in_parent_should_succeed() {
 #[test]
 fn get_global_address_in_child_should_succeed() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
@@ -177,7 +177,7 @@ fn get_global_address_in_child_should_succeed() {
 
 fn test_call_component_address_protected_method(caller_child: bool, callee_child: bool) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
@@ -247,7 +247,7 @@ enum AssertAgainst {
 
 fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
@@ -374,7 +374,7 @@ mod global_caller_actor_badge {
 #[test]
 fn call_component_address_protected_method_in_parent_with_wrong_address_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
@@ -423,7 +423,7 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
 #[test]
 fn can_instantiate_with_preallocated_address() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     // Act + Assert
     let manifest = ManifestBuilder::new()
@@ -441,7 +441,7 @@ fn can_instantiate_with_preallocated_address() {
 #[test]
 fn errors_if_unused_preallocated_address() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
 
     // Act + Assert 1
@@ -476,7 +476,7 @@ fn errors_if_unused_preallocated_address() {
 #[test]
 fn errors_if_assigns_same_address_to_two_components() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
 
     // Act + Assert

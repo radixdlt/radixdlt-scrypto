@@ -31,7 +31,7 @@ macro_rules! assert_sign_extensions {
 
                 assert!(WasmModule::init(&code).unwrap().contains_sign_ext_ops());
 
-                let mut test_runner = TestRunner::builder().build();
+                let mut test_runner = TestRunnerBuilder::new().build();
                 let package_address = test_runner.publish_package(
                     code,
                     single_function_package_definition("Test", "f"),
@@ -64,7 +64,7 @@ fn test_wasm_non_mvp_mutable_globals_import() {
     let code = wat2wasm(&include_str!("wasm/mutable_globals_import.wat"));
 
     // Act
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
         .publish_package_advanced(
@@ -92,7 +92,7 @@ fn test_wasm_non_mvp_mutable_globals_export() {
     let code = wat2wasm(&include_str!("wasm/mutable_globals_export.wat"));
 
     // Act
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.publish_package(
         code,
         single_function_package_definition("Test", "f"),

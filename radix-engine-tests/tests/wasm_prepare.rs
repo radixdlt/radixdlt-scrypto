@@ -11,7 +11,7 @@ use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_too_many_locals() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     let code = include_bytes!("./assets/too_many_locals.wasm").to_vec();

@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn mixed_up_modules_causes_type_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/module");
 
     // Act

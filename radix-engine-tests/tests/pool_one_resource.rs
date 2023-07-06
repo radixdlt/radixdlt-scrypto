@@ -2,6 +2,7 @@ use radix_engine::blueprints::pool::one_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine::types::*;
+use radix_engine::vm::NativeVmV1;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto_unit::*;
@@ -379,7 +380,7 @@ fn protected_deposit_into_the_pool_increases_how_much_resources_the_pool_units_a
 #[test]
 fn creating_a_pool_with_non_fungible_resources_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
@@ -588,7 +589,7 @@ pub fn contribute_fails_without_proper_authority_present() {
 //===================================
 
 struct TestEnvironment {
-    test_runner: TestRunner,
+    test_runner: TestRunner<NativeVmV1>,
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
     resource_address: ResourceAddress,
@@ -598,7 +599,7 @@ struct TestEnvironment {
 
 impl TestEnvironment {
     fn new(divisibility: u8) -> Self {
-        let mut test_runner = TestRunner::builder().without_trace().build();
+        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 

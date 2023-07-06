@@ -10,7 +10,7 @@ use transaction::model::PreviewFlags;
 #[test]
 fn test_trace_resource_transfers() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
     let transfer_amount = 10u8;
@@ -115,7 +115,7 @@ fn test_trace_resource_transfers() {
 #[test]
 fn test_trace_fee_payments() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     // Prepare the component that will pay the fee
@@ -171,7 +171,7 @@ fn test_trace_fee_payments() {
 #[test]
 fn test_instruction_traces() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manifest = ManifestBuilder::new()
@@ -397,7 +397,7 @@ fn test_worktop_changes() {
         builder.return_to_worktop(bucket)
     }
 
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
 
     let fungible_resource = test_runner.create_fungible_resource(100.into(), 18, account);

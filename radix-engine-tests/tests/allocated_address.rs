@@ -8,7 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_create_and_return() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
@@ -32,7 +32,7 @@ fn test_create_and_return() {
 #[test]
 fn test_create_and_drop() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
@@ -56,7 +56,7 @@ fn test_create_and_drop() {
 #[test]
 fn test_create_and_pass_address() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
@@ -78,7 +78,7 @@ fn test_create_and_pass_address() {
 #[test]
 fn test_create_and_call() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
@@ -102,7 +102,7 @@ fn test_create_and_call() {
 #[test]
 fn test_create_and_consume_within_frame() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
@@ -124,7 +124,7 @@ fn test_create_and_consume_within_frame() {
 #[test]
 fn test_create_and_consume_with_mismatching_blueprint() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
@@ -153,7 +153,7 @@ fn test_create_and_consume_with_mismatching_blueprint() {
 #[test]
 fn test_create_and_consume_in_another_frame() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
@@ -175,7 +175,7 @@ fn test_create_and_consume_in_another_frame() {
 #[test]
 fn test_create_and_store_in_key_value_store() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act
@@ -197,7 +197,7 @@ fn test_create_and_store_in_key_value_store() {
 #[test]
 fn test_create_and_store_in_metadata() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/allocated_address");
 
     // Act

@@ -10,7 +10,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_create_global_node_with_local_ref() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -44,7 +44,7 @@ fn test_create_global_node_with_local_ref() {
 #[test]
 fn test_add_local_ref_to_stored_substate() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package

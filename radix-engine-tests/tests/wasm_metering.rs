@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_loop() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "1000"));
@@ -32,7 +32,7 @@ fn test_loop() {
 #[test]
 fn test_finish_before_system_loan_limit() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "1"));
@@ -55,7 +55,7 @@ fn test_finish_before_system_loan_limit() {
 #[test]
 fn test_loop_out_of_cost_unit() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
@@ -78,7 +78,7 @@ fn test_loop_out_of_cost_unit() {
 #[test]
 fn test_recursion() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     // In this test case, each call frame costs 4 stack units
@@ -102,7 +102,7 @@ fn test_recursion() {
 #[test]
 fn test_recursion_stack_overflow() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
@@ -125,7 +125,7 @@ fn test_recursion_stack_overflow() {
 #[test]
 fn test_grow_memory_within_limit() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Grow memory size by `DEFAULT_MAX_MEMORY_SIZE_IN_PAGES - 1`.
     // Note that initial memory size is 1 page.
@@ -152,7 +152,7 @@ fn test_grow_memory_within_limit() {
 #[test]
 fn test_grow_memory_beyond_limit() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Grow memory size by `DEFAULT_MAX_MEMORY_SIZE_IN_PAGES`.
     // Note that initial memory size is 1 page.
@@ -186,7 +186,7 @@ fn test_grow_memory_beyond_limit() {
 #[test]
 fn test_grow_memory_by_more_than_65536() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Max allowed value is 0xffff
     let grow_value = 0x10000;

@@ -14,7 +14,7 @@ use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::{CustomGenesis, TestRunner};
+use scrypto_unit::{CustomGenesis, TestRunnerBuilder};
 use transaction::prelude::ManifestBuilder;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
@@ -385,7 +385,7 @@ fn test_genesis_time() {
 #[test]
 fn should_not_be_able_to_create_genesis_helper() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -413,7 +413,7 @@ fn should_not_be_able_to_create_genesis_helper() {
 #[test]
 fn should_not_be_able_to_call_genesis_helper() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()

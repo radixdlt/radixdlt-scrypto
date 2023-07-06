@@ -7,7 +7,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn deep_auth_rules_on_component_create_creation_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/deep_sbor");
 
     // Act 1 - Small Depth
@@ -47,7 +47,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
 #[test]
 fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/deep_sbor");
 
     let manifest = ManifestBuilder::new()
@@ -113,7 +113,7 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
 
 fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: usize) -> TransactionReceipt {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     let code = wat2wasm(
         &include_str!("wasm/deep_sbor_response.wat").replace("${depth}", &depth.to_string()),

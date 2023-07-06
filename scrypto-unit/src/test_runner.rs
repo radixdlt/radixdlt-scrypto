@@ -16,7 +16,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{NativeVmV1, ScryptoVm, Vm};
+use radix_engine::vm::{NativeVm, NativeVmV1, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -251,6 +251,17 @@ pub struct TestRunnerBuilder {
 }
 
 impl TestRunnerBuilder {
+    pub fn new() -> TestRunnerBuilder {
+        TestRunnerBuilder {
+            custom_genesis: None,
+            #[cfg(not(feature = "resource_tracker"))]
+            trace: true,
+            #[cfg(feature = "resource_tracker")]
+            trace: false,
+            state_hashing: false,
+        }
+    }
+
     pub fn without_trace(mut self) -> Self {
         self.trace = false;
         self
@@ -266,7 +277,7 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
+    pub fn build_and_get_epoch(self) -> (TestRunner<NativeVmV1>, ActiveValidatorSet) {
         let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
@@ -299,6 +310,7 @@ impl TestRunnerBuilder {
 
         let runner = TestRunner {
             scrypto_vm,
+            native_vm: NativeVmV1,
             substate_db,
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
@@ -315,13 +327,14 @@ impl TestRunnerBuilder {
         (runner, next_epoch.validator_set)
     }
 
-    pub fn build(self) -> TestRunner {
+    pub fn build(self) -> TestRunner<NativeVmV1> {
         self.build_and_get_epoch().0
     }
 }
 
-pub struct TestRunner {
+pub struct TestRunner<N: NativeVm> {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    native_vm: N,
     substate_db: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
@@ -337,17 +350,7 @@ pub struct TestRunnerSnapshot {
     state_hash_support: Option<StateHashSupport>,
 }
 
-impl TestRunner {
-    pub fn builder() -> TestRunnerBuilder {
-        TestRunnerBuilder {
-            custom_genesis: None,
-            #[cfg(not(feature = "resource_tracker"))]
-            trace: true,
-            #[cfg(feature = "resource_tracker")]
-            trace: false,
-            state_hashing: false,
-        }
-    }
+impl<N: NativeVm> TestRunner<N> {
 
     pub fn create_snapshot(&self) -> TestRunnerSnapshot {
         TestRunnerSnapshot {

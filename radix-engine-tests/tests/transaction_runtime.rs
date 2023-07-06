@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_get_transaction_hash() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_runtime");
 

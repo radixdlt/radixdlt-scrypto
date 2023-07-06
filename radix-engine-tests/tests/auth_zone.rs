@@ -5,7 +5,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_auth_zone_create_proof_of_all_for_fungible() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -28,7 +28,7 @@ fn test_auth_zone_create_proof_of_all_for_fungible() {
 #[test]
 fn test_auth_zone_create_proof_of_all_for_non_fungible() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
 

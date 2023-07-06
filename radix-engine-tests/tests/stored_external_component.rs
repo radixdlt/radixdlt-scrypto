@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn stored_component_addresses_in_non_globalized_component_are_invokable() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
 
     // Act
@@ -27,7 +27,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
 #[test]
 fn stored_component_addresses_are_invokable() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
     let manifest1 = ManifestBuilder::new()

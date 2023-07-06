@@ -12,7 +12,7 @@ use transaction::builder::ManifestBuilder;
 #[ignore]
 fn cannot_get_total_supply_of_xrd() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -34,7 +34,7 @@ fn cannot_get_total_supply_of_xrd() {
 #[test]
 fn test_set_mintable_with_self_resource_address() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -60,7 +60,7 @@ fn test_set_mintable_with_self_resource_address() {
 #[test]
 fn test_resource_manager() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -99,7 +99,7 @@ fn test_resource_manager() {
 #[test]
 fn mint_with_bad_granularity_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -139,7 +139,7 @@ fn mint_with_bad_granularity_should_fail() {
 #[test]
 fn create_fungible_too_high_granularity_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, _) = test_runner.new_allocated_account();
     let _package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -176,7 +176,7 @@ fn create_fungible_too_high_granularity_should_fail() {
 #[test]
 fn mint_too_much_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -218,7 +218,7 @@ fn mint_too_much_should_fail() {
 #[test]
 fn can_mint_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
     let manifest = ManifestBuilder::new()
@@ -252,7 +252,7 @@ fn can_mint_with_proof_in_root() {
 #[test]
 fn cannot_mint_in_component_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
     let manifest = ManifestBuilder::new()
@@ -293,7 +293,7 @@ fn cannot_mint_in_component_with_proof_in_root() {
 #[test]
 fn can_burn_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
     let manifest = ManifestBuilder::new()
@@ -323,7 +323,7 @@ fn can_burn_with_proof_in_root() {
 #[test]
 fn cannot_burn_in_component_with_proof_in_root() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
     let manifest = ManifestBuilder::new()
@@ -362,7 +362,7 @@ fn cannot_burn_in_component_with_proof_in_root() {
 #[test]
 fn test_fungible_resource_amount_for_withdrawal() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -386,7 +386,7 @@ fn test_fungible_resource_amount_for_withdrawal() {
 #[test]
 fn test_non_fungible_resource_amount_for_withdrawal() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -410,7 +410,7 @@ fn test_non_fungible_resource_amount_for_withdrawal() {
 #[test]
 fn test_fungible_resource_take_advanced() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -434,7 +434,7 @@ fn test_fungible_resource_take_advanced() {
 #[test]
 fn test_non_fungible_resource_take_advanced() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 

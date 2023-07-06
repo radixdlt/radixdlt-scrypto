@@ -8,7 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn cannot_burn_frozen_burn_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
     let token_address = test_runner.create_freezeable_token(account);
     let vaults = test_runner.get_component_vaults(account, token_address);
@@ -40,7 +40,7 @@ fn cannot_burn_frozen_burn_vault() {
 #[test]
 fn cannot_deposit_into_frozen_deposit_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
     let token_address = test_runner.create_freezeable_token(account);
     let vaults = test_runner.get_component_vaults(account, token_address);
@@ -73,7 +73,7 @@ fn cannot_deposit_into_frozen_deposit_vault() {
 #[test]
 fn cannot_withdraw_from_frozen_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
     let token_address = test_runner.create_freezeable_token(account);
     let vaults = test_runner.get_component_vaults(account, token_address);
@@ -106,7 +106,7 @@ fn cannot_withdraw_from_frozen_vault() {
 #[test]
 fn cannot_recall_from_frozen_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
     let token_address = test_runner.create_freezeable_token(account);
     let vaults = test_runner.get_component_vaults(account, token_address);
@@ -135,7 +135,7 @@ fn cannot_recall_from_frozen_vault() {
 #[test]
 fn can_withdraw_from_unfrozen_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
     let token_address = test_runner.create_freezeable_token(account);
     let vaults = test_runner.get_component_vaults(account, token_address);
@@ -170,7 +170,7 @@ fn can_withdraw_from_unfrozen_vault() {
 #[test]
 fn can_freezy_recall_unfreezy_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _priv, account) = test_runner.new_account(true);
     let resource_address = test_runner.create_freezeable_non_fungible(account);
     let vaults = test_runner.get_component_vaults(account, resource_address);

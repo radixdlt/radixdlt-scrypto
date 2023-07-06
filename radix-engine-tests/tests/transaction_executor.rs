@@ -19,7 +19,7 @@ use transaction::validation::{
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     let current_epoch = Epoch::of(150);
     let valid_from_epoch = Epoch::of(151);
@@ -59,7 +59,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
 #[test]
 fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     let current_epoch = Epoch::of(157);
     let valid_from_epoch = Epoch::of(151);

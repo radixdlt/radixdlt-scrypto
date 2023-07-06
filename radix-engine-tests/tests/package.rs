@@ -21,7 +21,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(
@@ -61,7 +61,7 @@ fn missing_memory_should_cause_error() {
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -84,7 +84,7 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -107,7 +107,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -125,7 +125,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
@@ -148,7 +148,7 @@ fn test_basic_package() {
 #[test]
 fn test_basic_package_missing_export() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let mut blueprints = BTreeMap::new();
     blueprints.insert(
         "Test".to_string(),
@@ -217,7 +217,7 @@ fn test_basic_package_missing_export() {
 #[test]
 fn bad_function_schema_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -240,7 +240,7 @@ fn bad_function_schema_should_fail() {
 #[test]
 fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
 
     // Act
@@ -270,7 +270,7 @@ fn should_not_be_able_to_publish_wasm_package_outside_of_transaction_processor()
 #[test]
 fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_processor() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
 
     // Act
@@ -300,7 +300,7 @@ fn should_not_be_able_to_publish_advanced_wasm_package_outside_of_transaction_pr
 #[test]
 fn should_not_be_able_to_publish_native_packages() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -333,7 +333,7 @@ fn should_not_be_able_to_publish_native_packages() {
 #[test]
 fn should_not_be_able_to_publish_native_packages_in_scrypto() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/publish_package");
 
     // Act

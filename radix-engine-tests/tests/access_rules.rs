@@ -2,6 +2,7 @@ use radix_engine::errors::{RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine::vm::NativeVmV1;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -15,7 +16,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 #[test]
 fn can_call_public_function() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
     // Act
@@ -33,7 +34,7 @@ fn can_call_public_function() {
 #[test]
 fn cannot_call_protected_function_without_auth() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
     // Act
@@ -58,7 +59,7 @@ fn cannot_call_protected_function_without_auth() {
 #[test]
 fn can_call_protected_function_with_auth() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
     let (key, _priv, account) = test_runner.new_account(true);
 
@@ -192,7 +193,7 @@ fn component_access_rules_can_be_mutated_to_non_fungible_resource_through_manife
 #[test]
 fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
     let component_address = {
         let manifest = ManifestBuilder::new()
@@ -233,7 +234,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
 #[test]
 fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
@@ -340,7 +341,7 @@ fn change_lock_owner_role_rules() {
 }
 
 struct MutableAccessRulesTestRunner {
-    test_runner: TestRunner,
+    test_runner: TestRunner<NativeVmV1>,
     component_address: ComponentAddress,
     initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
@@ -348,7 +349,7 @@ struct MutableAccessRulesTestRunner {
 impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
-    pub fn create_component(roles: RolesInit, test_runner: &mut TestRunner) -> TransactionReceipt {
+    pub fn create_component(roles: RolesInit, test_runner: &mut TestRunner<NativeVmV1>) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
         let manifest = ManifestBuilder::new()
@@ -364,7 +365,7 @@ impl MutableAccessRulesTestRunner {
 
     pub fn create_component_with_owner(
         owner_role: OwnerRole,
-        test_runner: &mut TestRunner,
+        test_runner: &mut TestRunner<NativeVmV1>,
     ) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
@@ -380,7 +381,7 @@ impl MutableAccessRulesTestRunner {
     }
 
     pub fn new_with_owner(update_access_rule: AccessRule) -> Self {
-        let mut test_runner = TestRunner::builder().build();
+        let mut test_runner = TestRunnerBuilder::new().build();
         let receipt = Self::create_component_with_owner(
             OwnerRole::Fixed(update_access_rule),
             &mut test_runner,
@@ -395,7 +396,7 @@ impl MutableAccessRulesTestRunner {
     }
 
     pub fn new_with_owner_role(owner_role: OwnerRole) -> Self {
-        let mut test_runner = TestRunner::builder().build();
+        let mut test_runner = TestRunnerBuilder::new().build();
         let receipt = Self::create_component_with_owner(owner_role, &mut test_runner);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
@@ -407,7 +408,7 @@ impl MutableAccessRulesTestRunner {
     }
 
     pub fn new(roles: RolesInit) -> Self {
-        let mut test_runner = TestRunner::builder().build();
+        let mut test_runner = TestRunnerBuilder::new().build();
         let receipt = Self::create_component(roles, &mut test_runner);
         let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 

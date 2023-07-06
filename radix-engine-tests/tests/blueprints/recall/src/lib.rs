@@ -9,7 +9,7 @@ mod recall {
     }
 
     impl RecallTest {
-        pub fn new() -> Global<RecallTest> {
+        pub fn new() -> (Global<RecallTest>, ResourceAddress) {
             let bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .mint_roles(mint_roles! {
                     minter => rule!(allow_all);
@@ -30,12 +30,16 @@ mod recall {
                 })
                 .mint_initial_supply(500);
 
-            Self {
+            let address = bucket.resource_address();
+
+            let global = Self {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
-            .globalize()
+            .globalize();
+
+            (global, address)
         }
 
         pub fn recall_on_internal_vault(&self) -> Bucket {
@@ -66,6 +70,21 @@ mod recall {
                     .unwrap(),
             )
             .unwrap()
+        }
+
+        pub fn recall_on_direct_access_ref_method(&self, reference: InternalAddress) -> Bucket {
+            scrypto_decode(
+                &ScryptoEnv
+                    .call_method_advanced(
+                        reference.as_node_id(),
+                        ObjectModuleId::Main,
+                        true,
+                        VAULT_RECALL_IDENT,
+                        scrypto_args!(Decimal::ONE),
+                    )
+                    .unwrap(),
+            )
+                .unwrap()
         }
     }
 }

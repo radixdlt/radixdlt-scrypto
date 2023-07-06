@@ -13,7 +13,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn clear_auth_zone_should_not_drop_named_proofs() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -40,7 +40,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
     // refers to undefined proof ids.
 
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -70,7 +70,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
 #[test]
 fn clear_signature_proofs_should_invalid_public_key_proof() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let rule = rule!(require(NonFungibleGlobalId::from_public_key(&public_key)));
     let other_account = test_runner.new_account_advanced(OwnerRole::Updatable(rule));
@@ -101,7 +101,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
 #[test]
 fn clear_signature_proofs_should_not_invalid_physical_proof() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let rule = rule!(require_amount(dec!(5), RADIX_TOKEN));
     let other_account = test_runner.new_account_advanced(OwnerRole::Updatable(rule));

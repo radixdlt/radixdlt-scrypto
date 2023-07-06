@@ -7,7 +7,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn mis_typed_own_passed_to_worktop_drop_function() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Run manifest

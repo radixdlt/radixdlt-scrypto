@@ -8,7 +8,7 @@ use radix_engine::vm::*;
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
 use radix_engine_store_interface::interface::DatabaseUpdate;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use scrypto_unit::{CustomGenesis, TestRunner};
+use scrypto_unit::{CustomGenesis, TestRunnerBuilder};
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 use transaction_scenarios::scenario::{NextAction, ScenarioCore};
 use transaction_scenarios::scenarios::get_builder_for_every_scenario;
@@ -62,7 +62,7 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
 #[test]
 fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_typed() {
     let network = NetworkDefinition::simulator();
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     let mut next_nonce: u32 = 0;
     for scenario_builder in get_builder_for_every_scenario() {

@@ -20,7 +20,7 @@ pub struct ManifestTransactionProcessorRunInput {
 #[test]
 fn should_not_be_able_to_call_tx_processor_in_tx_processor() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let instructions: Vec<InstructionV1> = Vec::new();
     let manifest_encoded_instructions = manifest_encode(&instructions).unwrap();
 
@@ -55,7 +55,7 @@ fn should_not_be_able_to_call_tx_processor_in_tx_processor() {
 #[test]
 fn calling_transaction_processor_from_scrypto_should_not_panic() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/tx_processor_access");
 
     // Act
@@ -79,7 +79,7 @@ fn calling_transaction_processor_from_scrypto_should_not_panic() {
 #[test]
 fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pub_key, _, account0) = test_runner.new_account(true);
     let (_, _, account1) = test_runner.new_account(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/tx_processor_access");

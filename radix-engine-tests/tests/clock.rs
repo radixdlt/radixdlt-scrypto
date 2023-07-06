@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
     // Arrange
-    let mut test_runner = TestRunner::builder()
+    let mut test_runner = TestRunnerBuilder::new()
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
@@ -52,7 +52,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
 #[test]
 fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
@@ -75,7 +75,7 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
 #[test]
 fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
     // Arrange
-    let mut test_runner = TestRunner::builder()
+    let mut test_runner = TestRunnerBuilder::new()
         .with_custom_genesis(CustomGenesis::default(
             Epoch::of(1),
             CustomGenesis::default_consensus_manager_config(),
@@ -111,7 +111,7 @@ fn sdk_clock_compares_against_timestamp_set_by_validator_next_round() {
 #[test]
 fn test_date_time_conversions() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act

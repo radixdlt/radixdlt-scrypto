@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
     let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
@@ -32,7 +32,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 #[test]
 fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
     let (auth_resource_address, token_resource_address) =

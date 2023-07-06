@@ -12,7 +12,7 @@ enum ExpectedResult {
 
 fn test_arg(method_name: &str, args: ManifestValue, expected_result: ExpectedResult) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/package_schema");
 
     // Act
