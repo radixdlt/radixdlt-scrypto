@@ -1194,6 +1194,35 @@ where
 
         Ok(enabled)
     }
+
+    fn get_module_object_info(
+        &mut self,
+        node_id: &NodeId,
+        object_module_id: ObjectModuleId,
+    ) -> Result<ObjectInfo, RuntimeError> {
+        let module_object_info = match object_module_id {
+            ObjectModuleId::Main => self.get_object_info(node_id)?,
+            ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
+                let node_object_info = self.get_object_info(node_id)?;
+                if !node_object_info.global {
+                    return Err(RuntimeError::SystemError(
+                        SystemError::ObjectModuleDoesNotExist(object_module_id),
+                    ));
+                }
+
+                ObjectInfo {
+                    global: true,
+                    blueprint_id: object_module_id.static_blueprint().unwrap(),
+                    version: BlueprintVersion::default(),
+                    blueprint_info: ObjectBlueprintInfo::default(),
+                    features: btreeset!(),
+                    instance_schema: None,
+                }
+            }
+        };
+
+        Ok(module_object_info)
+    }
 }
 
 impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
@@ -1397,66 +1426,41 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let node_object_info = self.get_object_info(receiver)?;
+        // Direct access methods should never have access to a global address
+        let global_address = if !direct_access {
+            let node_visibility = self.api.kernel_get_node_visibility(receiver);
 
-        let (module_object_info, global_address) = match object_module_id {
-            ObjectModuleId::Main => {
-                // Direct access methods should never have access to a global address
-                let global_address = if !direct_access {
-                    let node_visibility = self.api.kernel_get_node_visibility(receiver);
-
-                    // Retrieve the global address of the receiver node
-                    let mut get_global_address = |node_visibility: NodeVisibility| {
-                        for visibility in node_visibility.0 {
-                            match visibility {
-                                Visibility::StableReference(StableReferenceType::Global) => {
-                                    return Some(GlobalAddress::new_or_panic(
-                                        receiver.clone().into(),
-                                    ))
-                                }
-
-                                // Direct access references dont provide any info regarding global address so continue
-                                Visibility::StableReference(StableReferenceType::DirectAccess) => {
-                                    continue;
-                                }
-
-                                // Anything frame owned does not have a global address
-                                Visibility::FrameOwned => return None,
-
-                                // If borrowed or actor then we just use the current actor's global address
-                                Visibility::Borrowed | Visibility::Actor => {
-                                    return self
-                                        .api
-                                        .kernel_get_system_state()
-                                        .current
-                                        .global_address();
-                                }
-                            }
+            // Retrieve the global address of the receiver node
+            let mut get_global_address = |node_visibility: NodeVisibility| {
+                for visibility in node_visibility.0 {
+                    match visibility {
+                        Visibility::StableReference(StableReferenceType::Global) => {
+                            return Some(GlobalAddress::new_or_panic(receiver.clone().into()))
                         }
-                        None
-                    };
 
-                    get_global_address(node_visibility)
-                } else {
-                    None
-                };
+                        // Direct access references dont provide any info regarding global address so continue
+                        Visibility::StableReference(StableReferenceType::DirectAccess) => {
+                            continue;
+                        }
 
-                (node_object_info.clone(), global_address)
-            }
-            // FIXME: verify whether we need to check the modules or not
-            ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
-                ObjectInfo {
-                    global: node_object_info.global,
-                    blueprint_id: object_module_id.static_blueprint().unwrap(),
-                    version: BlueprintVersion::default(),
-                    blueprint_info: ObjectBlueprintInfo::default(),
-                    features: btreeset!(),
-                    instance_schema: None,
-                },
-                None,
-            ),
+                        // Anything frame owned does not have a global address
+                        Visibility::FrameOwned => return None,
+
+                        // If borrowed or actor then we just use the current actor's global address
+                        Visibility::Borrowed | Visibility::Actor => {
+                            return self.api.kernel_get_system_state().current.global_address();
+                        }
+                    }
+                }
+                None
+            };
+
+            get_global_address(node_visibility)
+        } else {
+            None
         };
 
+        let module_object_info = self.get_module_object_info(receiver, object_module_id)?;
         let identifier =
             MethodIdentifier(receiver.clone(), object_module_id, method_name.to_string());
 

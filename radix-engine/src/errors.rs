@@ -214,6 +214,7 @@ pub enum SystemError {
     IndexDoesNotExist(BlueprintId, u8),
     MutatingImmutableSubstate,
     NotAKeyValueStore,
+    ObjectModuleDoesNotExist(ObjectModuleId),
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
