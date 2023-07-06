@@ -278,7 +278,7 @@ fn can_create_proof_from_account_and_pass_on() {
         .create_proof_from_account_of_amount(account, resource_address, 1)
         .pop_from_auth_zone("proof")
         .with_name_lookup(|builder, lookup| {
-            let proof = lookup.bucket("proof");
+            let proof = lookup.proof("proof");
             builder.call_function(
                 package_address,
                 "VaultProof",
