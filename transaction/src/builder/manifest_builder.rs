@@ -693,12 +693,12 @@ impl ManifestBuilder {
         self.add_instruction(instruction)
     }
 
-    pub fn create_identity_advanced(self, owner_rule: OwnerRole) -> Self {
+    pub fn create_identity_advanced(self, owner_role: OwnerRole) -> Self {
         self.add_instruction(InstructionV1::CallFunction {
             package_address: IDENTITY_PACKAGE.into(),
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
             function_name: IDENTITY_CREATE_ADVANCED_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&IdentityCreateAdvancedInput { owner_rule }),
+            args: to_manifest_value_and_unwrap!(&IdentityCreateAdvancedInput { owner_role }),
         })
     }
 
@@ -1211,10 +1211,10 @@ impl ManifestBuilder {
     pub fn new_token_mutable(
         self,
         metadata: ModuleConfig<MetadataInit>,
-        owner_rule: AccessRule,
+        owner_role: AccessRule,
     ) -> Self {
         self.create_fungible_resource(
-            OwnerRole::Fixed(owner_rule),
+            OwnerRole::Fixed(owner_role),
             true,
             18,
             FungibleResourceRoles {
@@ -1255,10 +1255,10 @@ impl ManifestBuilder {
     pub fn new_badge_mutable(
         self,
         metadata: ModuleConfig<MetadataInit>,
-        owner_rule: AccessRule,
+        owner_role: AccessRule,
     ) -> Self {
         self.create_fungible_resource(
-            OwnerRole::Fixed(owner_rule),
+            OwnerRole::Fixed(owner_role),
             false,
             0,
             FungibleResourceRoles {

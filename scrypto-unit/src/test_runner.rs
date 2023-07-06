@@ -648,9 +648,9 @@ impl TestRunner {
         receipt.expect_commit_success();
     }
 
-    pub fn new_account_advanced(&mut self, owner_rule: OwnerRole) -> ComponentAddress {
+    pub fn new_account_advanced(&mut self, owner_role: OwnerRole) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .new_account_advanced(owner_rule)
+            .new_account_advanced(owner_role)
             .build();
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
@@ -825,11 +825,11 @@ impl TestRunner {
         code: Vec<u8>,
         definition: PackageDefinition,
         metadata: BTreeMap<String, MetadataValue>,
-        owner_rule: OwnerRole,
+        owner_role: OwnerRole,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
-            .publish_package_advanced(None, code, definition, metadata, owner_rule)
+            .publish_package_advanced(None, code, definition, metadata, owner_role)
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);

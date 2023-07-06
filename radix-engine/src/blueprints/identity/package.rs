@@ -139,7 +139,7 @@ impl IdentityNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create_advanced(input.owner_rule, api)?;
+                let rtn = IdentityBlueprint::create_advanced(input.owner_role, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -203,13 +203,13 @@ pub struct IdentityBlueprint;
 
 impl IdentityBlueprint {
     pub fn create_advanced<Y>(
-        owner_rule: OwnerRole,
+        owner_role: OwnerRole,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedIdentity::create_advanced(owner_rule, api)?;
+        let access_rules = SecurifiedIdentity::create_advanced(owner_role, api)?;
 
         let modules = Self::create_object(
             access_rules,

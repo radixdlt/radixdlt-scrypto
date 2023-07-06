@@ -59,7 +59,12 @@ fn bench_radiswap(c: &mut Criterion) {
         .execute_manifest(
             ManifestBuilder::new()
                 .lock_standard_test_fee(account2)
-                .call_function(package_address, "Radiswap", "new", manifest_args!(btc, eth))
+                .call_function(
+                    package_address,
+                    "Radiswap",
+                    "new",
+                    manifest_args!(OwnerRole::None, btc, eth),
+                )
                 .try_deposit_batch_or_abort(account2)
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
