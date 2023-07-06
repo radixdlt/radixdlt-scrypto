@@ -4,6 +4,6 @@ CALL_METHOD
     Decimal("5000")
 ;
 LOCK_METADATA
-    Address("resource_sim1tkjqgcvc90vsf6kjjsw8s7phhqmtru5w0w8sgzsfssj4xu4dxh566n")
+    Address("resource_sim1thew3shgqpunxq95a8mymzd6uq5yml95wryw6radw3q60weg6y2g2z")
     "locked_later"
 ;

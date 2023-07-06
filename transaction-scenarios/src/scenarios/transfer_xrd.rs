@@ -33,44 +33,73 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
 
         #[allow(unused_variables)]
         ScenarioBuilder::new(core, metadata, config, start_state)
-            .successful_transaction(|core, config, state| -> Result<_, ScenarioError> {
+            .successful_transaction(|core, config, state| {
                 core.next_transaction_free_xrd_from_faucet(config.from_account.address)
             })
-            .successful_transaction(|core, config, state| -> Result<_, ScenarioError> {
-                core.next_transaction_with_faucet_lock_fee(
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee_fallible(
+                    "transfer--try_deposit_or_abort",
+                    |builder| {
+                        builder
+                            .withdraw_from_account(config.from_account.address, XRD, dec!(1))
+                            .take_from_worktop(XRD, dec!(1), "xrd")
+                            .try_deposit_or_abort(config.to_account_1.address, "xrd")
+                            .done()
+                    },
+                    vec![&config.from_account.key],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee_fallible(
+                    "transfer--try_deposit_or_refund",
+                    |builder| {
+                        builder
+                            .withdraw_from_account(config.from_account.address, XRD, dec!(1))
+                            .take_from_worktop(XRD, dec!(1), "xrd")
+                            .try_deposit_or_refund(config.to_account_1.address, "xrd")
+                            .done()
+                    },
+                    vec![&config.from_account.key],
+                )
+            })
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee_fallible(
                     "transfer--try_deposit_batch_or_abort",
                     |builder| {
                         builder
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
                             .try_deposit_batch_or_abort(config.to_account_1.address)
+                            .done()
                     },
                     vec![&config.from_account.key],
                 )
             })
-            .successful_transaction(|core, config, state| -> Result<_, ScenarioError> {
-                core.next_transaction_with_faucet_lock_fee(
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee_fallible(
                     "transfer--try_deposit_batch_or_refund",
                     |builder| {
                         builder
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
                             .try_deposit_batch_or_refund(config.to_account_1.address)
+                            .done()
                     },
                     vec![&config.from_account.key],
                 )
             })
-            .successful_transaction(|core, config, state| -> Result<_, ScenarioError> {
-                core.next_transaction_with_faucet_lock_fee(
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee_fallible(
                     "self-transfer--deposit_batch",
                     |builder| {
                         builder
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
                             .deposit_batch(config.from_account.address)
+                            .done()
                     },
                     vec![&config.from_account.key],
                 )
             })
-            .successful_transaction(|core, config, state| -> Result<_, ScenarioError> {
-                core.next_transaction_with_faucet_lock_fee(
+            .successful_transaction(|core, config, state| {
+                core.next_transaction_with_faucet_lock_fee_fallible(
                     "multi-transfer--deposit_batch",
                     |builder| {
                         builder
@@ -78,6 +107,7 @@ impl ScenarioCreator for TransferXrdScenarioCreator {
                             .try_deposit_batch_or_abort(config.to_account_1.address)
                             .withdraw_from_account(config.from_account.address, XRD, dec!(1))
                             .try_deposit_batch_or_abort(config.to_account_2.address)
+                            .done()
                     },
                     vec![&config.from_account.key],
                 )

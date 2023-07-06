@@ -530,32 +530,32 @@ impl TransactionProcessor {
         Ok(GlobalAddressReservation(Own(real_id)))
     }
 
-    fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<ManifestBucket, RuntimeError> {
+    fn create_manifest_bucket(&mut self, bucket: Bucket) -> Result<(), RuntimeError> {
         let new_id = self.id_allocator.new_bucket_id();
         self.bucket_mapping.insert(new_id.clone(), bucket.0.into());
-        Ok(new_id)
+        Ok(())
     }
 
-    fn create_manifest_proof(&mut self, proof: Proof) -> Result<ManifestProof, RuntimeError> {
+    fn create_manifest_proof(&mut self, proof: Proof) -> Result<(), RuntimeError> {
         let new_id = self.id_allocator.new_proof_id();
         self.proof_mapping.insert(new_id.clone(), proof.0.into());
-        Ok(new_id)
+        Ok(())
     }
 
     fn create_manifest_address_reservation(
         &mut self,
         address_reservation: GlobalAddressReservation,
-    ) -> Result<ManifestAddressReservation, RuntimeError> {
+    ) -> Result<(), RuntimeError> {
         let new_id = self.id_allocator.new_address_reservation_id();
         self.address_reservation_mapping
             .insert(new_id, address_reservation.0.into());
-        Ok(new_id)
+        Ok(())
     }
 
-    fn create_manifest_address(&mut self, address: GlobalAddress) -> Result<u32, RuntimeError> {
+    fn create_manifest_address(&mut self, address: GlobalAddress) -> Result<(), RuntimeError> {
         let new_id = self.id_allocator.new_address_id();
         self.address_mapping.insert(new_id, address.into());
-        Ok(new_id)
+        Ok(())
     }
 
     fn resolve_package_address(

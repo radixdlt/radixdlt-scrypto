@@ -1,7 +1,6 @@
 use crate::internal_prelude::*;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT;
 use radix_engine_interface::*;
 
 pub struct FungibleResourceScenarioConfig {
@@ -94,9 +93,8 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                                 state.max_divisibility_fungible_resource.unwrap(),
                                 dec!("10"),
                             )
-                            .take_all_from_worktop(
+                            .burn_all_from_worktop(
                                 state.max_divisibility_fungible_resource.unwrap(),
-                                |builder, bucket| builder.burn_resource(bucket),
                             )
                     },
                     vec![&config.user_account_1.key],
@@ -112,17 +110,14 @@ impl ScenarioCreator for FungibleResourceScenarioCreator {
                             dec!("10"),
                         );
                         for _ in 0..32 {
-                            builder = builder.take_from_worktop(
-                                state.max_divisibility_fungible_resource.unwrap(),
-                                dec!("0.001"),
-                                |builder, bucket| {
-                                    builder.call_method(
-                                        config.user_account_2.address,
-                                        ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT,
-                                        manifest_args!(bucket),
-                                    )
-                                },
-                            );
+                            let bucket = builder.generate_bucket_name("transfer");
+                            builder = builder
+                                .take_from_worktop(
+                                    state.max_divisibility_fungible_resource.unwrap(),
+                                    dec!("0.001"),
+                                    &bucket,
+                                )
+                                .try_deposit_or_abort(config.user_account_2.address, bucket);
                         }
                         builder.try_deposit_batch_or_abort(config.user_account_1.address)
                     },

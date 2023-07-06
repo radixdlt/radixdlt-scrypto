@@ -1,11 +1,10 @@
 use radix_engine::system::system_modules::execution_trace::{
-    ApplicationFnIdentifier, ExecutionTrace, Origin, ResourceSpecifier, WorktopChange,
+    ApplicationFnIdentifier, ExecutionTrace, ResourceSpecifier, TraceOrigin, WorktopChange,
 };
 use radix_engine::types::*;
-use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
 use transaction::model::PreviewFlags;
+use transaction::prelude::*;
 
 #[test]
 fn test_trace_resource_transfers() {
@@ -17,7 +16,7 @@ fn test_trace_resource_transfers() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+        .lock_fee(account, 500)
         .call_function(
             package_address,
             "ExecutionTraceTest",
@@ -120,8 +119,8 @@ fn test_trace_fee_payments() {
 
     // Prepare the component that will pay the fee
     let manifest_prepare = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .call_method(test_runner.faucet_component(), "free", manifest_args!())
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
         .call_function(
             package_address,
             "ExecutionTraceTest",
@@ -142,7 +141,7 @@ fn test_trace_fee_payments() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             funded_component.clone(),
             "test_lock_contingent_fee",
@@ -175,15 +174,12 @@ fn test_instruction_traces() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .call_method(test_runner.faucet_component(), "free", manifest_args!())
-        .take_all_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder
-                .create_proof_from_bucket_of_all(&bucket_id, |builder, proof_id| {
-                    builder.drop_proof(proof_id)
-                })
-                .return_to_worktop(bucket_id)
-        })
+        .lock_fee_from_faucet()
+        .get_free_xrd_from_faucet()
+        .take_all_from_worktop(XRD, "bucket")
+        .create_proof_from_bucket_of_all("bucket", "proof")
+        .drop_proof("proof")
+        .return_to_worktop("bucket")
         .call_function(
             package_address,
             "ExecutionTraceTest",
@@ -220,7 +216,7 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let Origin::ScryptoMethod(ApplicationFnIdentifier {
+        if let TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
             ident: method_name, ..
         }) = &free_trace.origin
         {
@@ -235,12 +231,12 @@ fn test_instruction_traces() {
         assert!(free_trace.output.proofs.is_empty());
         assert_eq!(1, free_trace.output.buckets.len());
         let output_resource = free_trace.output.buckets.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, output_resource.resource_address());
+        assert_eq!(XRD, output_resource.resource_address());
         assert_eq!(dec!("10000"), output_resource.amount());
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(ApplicationFnIdentifier {
+            TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
@@ -251,7 +247,7 @@ fn test_instruction_traces() {
         assert!(worktop_put_trace.input.proofs.is_empty());
         assert_eq!(1, worktop_put_trace.input.buckets.len());
         let input_resource = worktop_put_trace.input.buckets.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, input_resource.resource_address());
+        assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
 
         // We're tracking up to depth "1" (default), so no more child traces
@@ -267,7 +263,7 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(ApplicationFnIdentifier {
+            TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_TAKE_ALL_IDENT.to_string(),
@@ -280,7 +276,7 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.output.buckets.len());
 
         let output_resource = trace.output.buckets.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, output_resource.resource_address());
+        assert_eq!(XRD, output_resource.resource_address());
         assert_eq!(dec!("10000"), output_resource.amount());
     }
 
@@ -290,7 +286,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(ApplicationFnIdentifier {
+            TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_BUCKET_BLUEPRINT.to_string(),
                 ident: BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
@@ -303,7 +299,7 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.output.proofs.len());
 
         let output_proof = trace.output.proofs.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, output_proof.resource_address());
+        assert_eq!(XRD, output_proof.resource_address());
         assert_eq!(dec!("1"), output_proof.amount());
     }
 
@@ -313,7 +309,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoFunction(ApplicationFnIdentifier {
+            TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: FUNGIBLE_PROOF_BLUEPRINT.to_string(),
                 ident: PROOF_DROP_IDENT.to_string()
@@ -326,7 +322,7 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.input.proofs.len());
 
         let input_proof = trace.input.proofs.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, input_proof.resource_address());
+        assert_eq!(XRD, input_proof.resource_address());
         assert_eq!(dec!("1"), input_proof.amount());
     }
 
@@ -336,7 +332,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(ApplicationFnIdentifier {
+            TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_PUT_IDENT.to_string(),
@@ -348,7 +344,7 @@ fn test_instruction_traces() {
         assert_eq!(1, trace.input.buckets.len());
 
         let input_resource = trace.input.buckets.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, input_resource.resource_address());
+        assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
 
@@ -360,7 +356,7 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            Origin::ScryptoMethod(ApplicationFnIdentifier {
+            TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                 package_address: RESOURCE_PACKAGE,
                 blueprint_name: WORKTOP_BLUEPRINT.to_string(),
                 ident: WORKTOP_DRAIN_IDENT.to_string(),
@@ -369,7 +365,7 @@ fn test_instruction_traces() {
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let Origin::ScryptoFunction(ApplicationFnIdentifier {
+        if let TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
             ident: function_name,
             ..
         }) = &call_trace.origin
@@ -382,7 +378,7 @@ fn test_instruction_traces() {
         assert!(call_trace.input.proofs.is_empty());
         assert_eq!(1, call_trace.input.buckets.len());
         let input_resource = call_trace.input.buckets.values().nth(0).unwrap();
-        assert_eq!(RADIX_TOKEN, input_resource.resource_address());
+        assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
     }
 }
@@ -390,13 +386,6 @@ fn test_instruction_traces() {
 #[test]
 fn test_worktop_changes() {
     // Arrange
-    fn return_to_worktop<'a>(
-        builder: &'a mut ManifestBuilder,
-        bucket: ManifestBucket,
-    ) -> &'a mut ManifestBuilder {
-        builder.return_to_worktop(bucket)
-    }
-
     let mut test_runner = TestRunner::builder().build();
     let (pk, _, account) = test_runner.new_account(false);
 
@@ -405,36 +394,37 @@ fn test_worktop_changes() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
-        .withdraw_from_account(account, fungible_resource, 100.into())
+        .lock_standard_test_fee(account)
+        .withdraw_from_account(account, fungible_resource, 100)
         .withdraw_non_fungibles_from_account(
             account,
             non_fungible_resource,
-            &[
+            [
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]
             .into(),
         )
-        .take_all_from_worktop(fungible_resource, return_to_worktop)
-        .take_from_worktop(fungible_resource, 20.into(), return_to_worktop)
-        .take_all_from_worktop(non_fungible_resource, return_to_worktop)
-        .take_from_worktop(non_fungible_resource, 2.into(), return_to_worktop)
+        .take_all_from_worktop(fungible_resource, "bucket1")
+        .return_to_worktop("bucket1")
+        .take_from_worktop(fungible_resource, 20, "bucket2")
+        .return_to_worktop("bucket2")
+        .take_all_from_worktop(non_fungible_resource, "bucket3")
+        .return_to_worktop("bucket3")
+        .take_from_worktop(non_fungible_resource, 2, "bucket4")
+        .return_to_worktop("bucket4")
         .take_non_fungibles_from_worktop(
             non_fungible_resource,
-            &[
+            [
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(3),
             ]
             .into(),
-            return_to_worktop,
+            "bucket5",
         )
-        .call_method(
-            account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .return_to_worktop("bucket5")
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.preview_manifest(
         manifest,

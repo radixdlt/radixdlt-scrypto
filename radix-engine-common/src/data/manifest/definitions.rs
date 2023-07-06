@@ -28,6 +28,51 @@ impl<T: for<'a> Encode<ManifestCustomValueKind, ManifestEncoder<'a>> + ?Sized> M
 {
 }
 
+pub struct ManifestArgs(crate::data::manifest::ManifestValue, usize);
+
+impl ManifestArgs {
+    pub fn new_from_tuple_or_panic(value: ManifestValue) -> Self {
+        let length = match &value {
+            Value::Tuple { fields } => fields.len(),
+            _ => {
+                panic!("ManifestArgs has to be a Tuple");
+            }
+        };
+        Self(value, length)
+    }
+}
+
+impl Categorize<ManifestCustomValueKind> for ManifestArgs {
+    #[inline]
+    fn value_kind() -> ValueKind<ManifestCustomValueKind> {
+        ValueKind::Tuple
+    }
+}
+
+impl SborTuple<ManifestCustomValueKind> for ManifestArgs {
+    fn get_length(&self) -> usize {
+        self.1
+    }
+}
+
+impl<'a> Encode<ManifestCustomValueKind, ManifestEncoder<'a>> for ManifestArgs {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut ManifestEncoder<'a>) -> Result<(), EncodeError> {
+        self.0.encode_value_kind(encoder)
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut ManifestEncoder<'a>) -> Result<(), EncodeError> {
+        self.0.encode_body(encoder)
+    }
+}
+
+impl From<ManifestArgs> for ManifestValue {
+    fn from(value: ManifestArgs) -> Self {
+        value.0
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RustToManifestValueError {
     DecodeError(DecodeError),

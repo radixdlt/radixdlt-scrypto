@@ -253,7 +253,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = RADIX_TOKEN;
+        let resource_address = XRD;
 
         Self::get_vault(
             resource_address,
@@ -687,8 +687,7 @@ impl AccountBlueprint {
                     AccountDefaultDepositRule::Accept => true,
                     AccountDefaultDepositRule::Reject => false,
                     AccountDefaultDepositRule::AllowExisting => {
-                        *resource_address == RADIX_TOKEN
-                            || Self::does_vault_exist(resource_address, api)?
+                        *resource_address == XRD || Self::does_vault_exist(resource_address, api)?
                     }
                 }
             }

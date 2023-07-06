@@ -3,7 +3,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn can_set_validator_metadata_with_owner() {
@@ -14,7 +14,7 @@ fn can_set_validator_metadata_with_owner() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_amount(account, VALIDATOR_OWNER_BADGE, dec!("1"))
         .set_metadata(
             validator,
@@ -47,7 +47,7 @@ fn cannot_set_validator_metadata_without_owner() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .set_metadata(
             validator,
             "name".to_string(),

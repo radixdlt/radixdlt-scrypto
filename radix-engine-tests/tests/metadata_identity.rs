@@ -3,7 +3,7 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn can_set_identity_metadata_with_owner(is_virtual: bool) {
@@ -15,10 +15,10 @@ fn can_set_identity_metadata_with_owner(is_virtual: bool) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .set_metadata(
             component_address,
-            "name".to_string(),
+            "name",
             MetadataValue::String("best package ever!".to_string()),
         )
         .build();
@@ -53,7 +53,7 @@ fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .set_metadata(
             component_address,
             "name".to_string(),

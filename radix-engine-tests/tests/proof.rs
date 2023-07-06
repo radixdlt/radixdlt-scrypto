@@ -5,8 +5,7 @@ use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use utils::ContextualDisplay;
+use transaction::prelude::*;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
@@ -18,21 +17,18 @@ fn can_create_clone_and_drop_bucket_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, resource_address, 1.into())
-        .take_all_from_worktop(resource_address, |builder, bucket_id| {
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, 1)
+        .take_all_from_worktop(resource_address, "bucket")
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "BucketProof",
                 "create_clone_drop_bucket_proof",
-                manifest_args!(bucket_id, dec!("1")),
+                manifest_args!(lookup.bucket("bucket"), dec!("1")),
             )
         })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -58,13 +54,15 @@ fn can_create_clone_and_drop_vault_proof() {
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account(account, resource_address, 1.into())
-                .take_all_from_worktop(resource_address, |builder, bucket_id| {
+                .withdraw_from_account(account, resource_address, 1)
+                .take_all_from_worktop(resource_address, "bucket")
+                .with_name_lookup(|builder, lookup| {
+                    let bucket = lookup.bucket("bucket");
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(bucket_id),
+                        manifest_args!(bucket),
                     )
                 })
         },
@@ -72,7 +70,7 @@ fn can_create_clone_and_drop_vault_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "create_clone_drop_vault_proof",
@@ -101,13 +99,15 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account(account, resource_address, 3.into())
-                .take_all_from_worktop(resource_address, |builder, bucket_id| {
+                .withdraw_from_account(account, resource_address, 3)
+                .take_all_from_worktop(resource_address, "bucket")
+                .with_name_lookup(|builder, lookup| {
+                    let bucket = lookup.bucket("bucket");
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(bucket_id),
+                        manifest_args!(bucket),
                     )
                 })
         },
@@ -115,7 +115,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
@@ -143,13 +143,15 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account(account, resource_address, 3.into())
-                .take_all_from_worktop(resource_address, |builder, bucket_id| {
+                .withdraw_from_account(account, resource_address, 3)
+                .take_all_from_worktop(resource_address, "bucket")
+                .with_name_lookup(|builder, lookup| {
+                    let bucket = lookup.bucket("bucket");
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(bucket_id),
+                        manifest_args!(bucket),
                     )
                 })
         },
@@ -163,7 +165,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     ]);
     let proof_non_fungible_local_ids = BTreeSet::from([NonFungibleLocalId::integer(2)]);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
@@ -187,27 +189,22 @@ fn can_use_bucket_for_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, auth_resource_address, 1.into())
-        .withdraw_from_account(account, burnable_resource_address, 1.into())
-        .take_all_from_worktop(auth_resource_address, |builder, auth_bucket_id| {
-            builder.take_all_from_worktop(
-                burnable_resource_address,
-                |builder, burnable_bucket_id| {
-                    builder.call_function(
-                        package_address,
-                        "BucketProof",
-                        "use_bucket_proof_for_auth",
-                        manifest_args!(auth_bucket_id, burnable_bucket_id),
-                    )
-                },
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, auth_resource_address, 1)
+        .withdraw_from_account(account, burnable_resource_address, 1)
+        .take_all_from_worktop(auth_resource_address, "auth_bucket")
+        .take_all_from_worktop(burnable_resource_address, "burnable_bucket")
+        .with_name_lookup(|builder, lookup| {
+            let auth_bucket = lookup.bucket("auth_bucket");
+            let burnable_bucket = lookup.bucket("burnable_bucket");
+            builder.call_function(
+                package_address,
+                "BucketProof",
+                "use_bucket_proof_for_auth",
+                manifest_args!(auth_bucket, burnable_bucket),
             )
         })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -230,13 +227,15 @@ fn can_use_vault_for_authorization() {
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account(account, auth_resource_address, 1.into())
-                .take_all_from_worktop(auth_resource_address, |builder, bucket_id| {
+                .withdraw_from_account(account, auth_resource_address, 1)
+                .take_all_from_worktop(auth_resource_address, "bucket")
+                .with_name_lookup(|builder, lookup| {
+                    let bucket = lookup.bucket("bucket");
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(bucket_id),
+                        manifest_args!(bucket),
                     )
                 })
         },
@@ -244,13 +243,14 @@ fn can_use_vault_for_authorization() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, burnable_resource_address, 1.into())
-        .take_all_from_worktop(burnable_resource_address, |builder, bucket_id| {
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, burnable_resource_address, 1)
+        .take_all_from_worktop(burnable_resource_address, "bucket")
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 component_address,
                 "use_vault_proof_for_auth",
-                manifest_args!(bucket_id),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
         .build();
@@ -274,14 +274,16 @@ fn can_create_proof_from_account_and_pass_on() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account_of_amount(account, resource_address, 1.into())
-        .pop_from_auth_zone(|builder, proof_id| {
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, resource_address, 1)
+        .pop_from_auth_zone("proof")
+        .with_name_lookup(|builder, lookup| {
+            let proof = lookup.proof("proof");
             builder.call_function(
                 package_address,
                 "VaultProof",
                 "receive_proof",
-                manifest_args!(proof_id),
+                manifest_args!(proof),
             )
         })
         .build();
@@ -305,14 +307,15 @@ fn cant_move_restricted_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account_of_amount(account, resource_address, 1.into())
-        .pop_from_auth_zone(|builder, proof_id| {
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, resource_address, 1)
+        .pop_from_auth_zone("proof")
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "VaultProof",
                 "receive_proof_and_push_to_auth_zone",
-                manifest_args!(proof_id),
+                manifest_args!(lookup.proof("proof")),
             )
         })
         .build();
@@ -349,11 +352,12 @@ fn can_move_restricted_proofs_internally() {
     // Act
     let manifest = ManifestBuilder::new()
         .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!("1"))
-        .create_proof_from_auth_zone_of_all(RADIX_TOKEN, |builder, proof| {
+        .create_proof_from_auth_zone_of_all(XRD, "proof")
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 component_address,
                 "pass_fungible_proof",
-                manifest_args!(proof),
+                manifest_args!(lookup.proof("proof")),
             )
         })
         .build();
@@ -377,21 +381,18 @@ fn can_move_locked_bucket() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, resource_address, 1.into())
-        .take_all_from_worktop(resource_address, |builder, bucket_id| {
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, 1)
+        .take_all_from_worktop(resource_address, "bucket")
+        .with_name_lookup(|builder, lookup| {
             builder.call_function(
                 package_address,
                 "BucketProof",
                 "return_bucket_while_locked",
-                manifest_args!(bucket_id),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -414,13 +415,14 @@ fn can_compose_bucket_and_vault_proof() {
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account(account, resource_address, 1.into())
-                .take_all_from_worktop(resource_address, |builder, bucket_id| {
+                .withdraw_from_account(account, resource_address, 1)
+                .take_all_from_worktop(resource_address, "bucket")
+                .with_name_lookup(|builder, lookup| {
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(bucket_id),
+                        manifest_args!(lookup.bucket("bucket")),
                     )
                 })
         },
@@ -428,13 +430,14 @@ fn can_compose_bucket_and_vault_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, resource_address, 99u32.into())
-        .take_from_worktop(resource_address, 99u32.into(), |builder, bucket_id| {
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, 99)
+        .take_from_worktop(resource_address, 99, "bucket")
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof",
-                manifest_args!(bucket_id),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
         .build();
@@ -459,13 +462,14 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account(account, resource_address, 1.into())
-                .take_all_from_worktop(resource_address, |builder, bucket_id| {
+                .withdraw_from_account(account, resource_address, 1)
+                .take_all_from_worktop(resource_address, "bucket")
+                .with_name_lookup(|builder, lookup| {
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(bucket_id),
+                        manifest_args!(lookup.bucket("bucket")),
                     )
                 })
         },
@@ -473,13 +477,14 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .withdraw_from_account(account, resource_address, 99u32.into())
-        .take_from_worktop(resource_address, 99u32.into(), |builder, bucket_id| {
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, 99)
+        .take_from_worktop(resource_address, 99, "bucket")
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof_by_amount",
-                manifest_args!(bucket_id, Decimal::from(2u32)),
+                manifest_args!(lookup.bucket("bucket"), Decimal::from(2u32)),
             )
         })
         .build();
@@ -506,14 +511,15 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 .withdraw_non_fungibles_from_account(
                     account,
                     resource_address,
-                    &btreeset!(NonFungibleLocalId::integer(1)),
+                    btreeset!(NonFungibleLocalId::integer(1)),
                 )
-                .take_all_from_worktop(resource_address, |builder, bucket_id| {
+                .take_all_from_worktop(resource_address, "bucket")
+                .with_name_lookup(|builder, lookup| {
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(bucket_id),
+                        manifest_args!(lookup.bucket("bucket")),
                     )
                 })
         },
@@ -521,35 +527,36 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .withdraw_non_fungibles_from_account(
             account,
             resource_address,
-            &BTreeSet::from([
+            BTreeSet::from([
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]),
         )
         .take_non_fungibles_from_worktop(
             resource_address,
-            &BTreeSet::from([
+            BTreeSet::from([
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]),
-            |builder, bucket_id| {
-                builder.call_method(
-                    component_address,
-                    "compose_vault_and_bucket_proof_by_ids",
-                    manifest_args!(
-                        bucket_id,
-                        BTreeSet::from([
-                            NonFungibleLocalId::integer(1),
-                            NonFungibleLocalId::integer(2),
-                        ])
-                    ),
-                )
-            },
+            "bucket",
         )
+        .with_name_lookup(|builder, lookup| {
+            builder.call_method(
+                component_address,
+                "compose_vault_and_bucket_proof_by_ids",
+                manifest_args!(
+                    lookup.bucket("bucket"),
+                    BTreeSet::from([
+                        NonFungibleLocalId::integer(1),
+                        NonFungibleLocalId::integer(2),
+                    ])
+                ),
+            )
+        })
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -571,13 +578,14 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         btreeset![NonFungibleGlobalId::from_public_key(&public_key)],
         |builder| {
             builder
-                .withdraw_from_account(account, resource_address, 3.into())
-                .take_all_from_worktop(resource_address, |builder, bucket_id| {
+                .withdraw_from_account(account, resource_address, 3)
+                .take_all_from_worktop(resource_address, "bucket")
+                .with_name_lookup(|builder, lookup| {
                     builder.call_function(
                         package_address,
                         "VaultProof",
                         "new",
-                        manifest_args!(bucket_id),
+                        manifest_args!(lookup.bucket("bucket")),
                     )
                 })
         },
@@ -585,7 +593,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
@@ -608,11 +616,11 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
-            &BTreeSet::from([
+            BTreeSet::from([
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(2),
             ]),
@@ -620,30 +628,31 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
         .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
-            &BTreeSet::from([NonFungibleLocalId::integer(3)]),
+            BTreeSet::from([NonFungibleLocalId::integer(3)]),
         )
         .create_proof_from_auth_zone_of_non_fungibles(
             resource_address,
-            &BTreeSet::from([
+            BTreeSet::from([
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]),
-            |builder, proof_id| {
-                builder.call_function(
-                    package_address,
-                    "Receiver",
-                    "assert_ids",
-                    manifest_args!(
-                        proof_id,
-                        BTreeSet::from([
-                            NonFungibleLocalId::integer(2),
-                            NonFungibleLocalId::integer(3)
-                        ]),
-                        resource_address
-                    ),
-                )
-            },
+            "proof",
         )
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "Receiver",
+                "assert_ids",
+                manifest_args!(
+                    lookup.proof("proof"),
+                    BTreeSet::from([
+                        NonFungibleLocalId::integer(2),
+                        NonFungibleLocalId::integer(3)
+                    ]),
+                    resource_address
+                ),
+            )
+        })
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -670,7 +679,7 @@ fn can_not_call_vault_lock_fungible_amount_directly() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "call_lock_fungible_amount_directly",
@@ -704,7 +713,7 @@ fn can_not_call_vault_unlock_fungible_amount_directly() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "call_lock_fungible_amount_directly",
@@ -738,7 +747,7 @@ fn can_not_call_vault_lock_non_fungibles_directly() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "call_lock_non_fungibles_directly",
@@ -772,7 +781,7 @@ fn can_not_call_vault_unlock_non_fungibles_directly() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component_address,
             "call_lock_non_fungibles_directly",
@@ -798,7 +807,7 @@ fn can_not_call_bucket_lock_fungible_amount_directly() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "BucketLockUnlockAuth",
@@ -825,7 +834,7 @@ fn can_not_call_bucket_unlock_fungible_amount_directly() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "BucketLockUnlockAuth",
@@ -852,7 +861,7 @@ fn can_not_call_bucket_lock_non_fungibles_directly() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "BucketLockUnlockAuth",
@@ -879,7 +888,7 @@ fn can_not_call_bucket_unlock_non_fungibles_directly() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "BucketLockUnlockAuth",

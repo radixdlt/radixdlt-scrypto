@@ -6,8 +6,8 @@ CALL_METHOD
 ALLOCATE_GLOBAL_ADDRESS
     Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
     "Package"
-    AddressReservation("reservation1")
-    NamedAddress("address1")
+    AddressReservation("metadata_package_address_reservation")
+    NamedAddress("metadata_package_address")
 ;
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
@@ -782,7 +782,7 @@ PUBLISH_PACKAGE_ADVANCED
         )
     )
     Enum<1u8>(
-        AddressReservation("reservation1")
+        AddressReservation("metadata_package_address_reservation")
     )
 ;
 CALL_METHOD

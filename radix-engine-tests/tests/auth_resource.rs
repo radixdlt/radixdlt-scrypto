@@ -4,7 +4,7 @@ use radix_engine::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 enum Action {
     Mint,
@@ -47,14 +47,14 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     if update_auth {
         let (module, role_key) = action.get_role();
         let manifest = ManifestBuilder::new()
-            .lock_fee(test_runner.faucet_component(), 500u32.into())
+            .lock_fee_from_faucet()
             .create_proof_from_account_of_non_fungibles(
                 account,
                 admin_auth,
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .update_role(
-                token_address.into(),
+                token_address,
                 module,
                 role_key,
                 rule!(require(updated_auth)),
@@ -82,18 +82,14 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     };
 
     // Act
-    let mut builder = ManifestBuilder::new();
-    builder.lock_fee(test_runner.faucet_component(), 500u32.into());
-    builder.create_proof_from_account_of_amount(account, auth_to_use, Decimal::one());
+    let mut builder = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, auth_to_use, Decimal::one());
 
-    match action {
+    builder = match action {
         Action::Mint => builder
             .mint_fungible(token_address, dec!("1.0"))
-            .call_method(
-                account,
-                "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            ),
+            .try_deposit_batch_or_abort(account),
         Action::Burn => builder
             .create_proof_from_account_of_non_fungibles(
                 account,
@@ -102,18 +98,10 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             )
             .withdraw_from_account(account, token_address, dec!("1.0"))
             .burn_from_worktop(dec!("1.0"), token_address)
-            .call_method(
-                account,
-                "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            ),
+            .try_deposit_batch_or_abort(account),
         Action::Withdraw => builder
             .withdraw_from_account(account, token_address, dec!("1.0"))
-            .call_method(
-                account,
-                "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            ),
+            .try_deposit_batch_or_abort(account),
         Action::Deposit => builder
             .create_proof_from_account_of_non_fungibles(
                 account,
@@ -121,25 +109,16 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .withdraw_from_account(account, token_address, dec!("1.0"))
-            .take_all_from_worktop(token_address, |builder, bucket_id| {
-                builder.call_method(account, "try_deposit_or_abort", manifest_args!(bucket_id))
-            })
-            .call_method(
-                account,
-                "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            ),
+            .take_all_from_worktop(token_address, "withdrawn")
+            .try_deposit_or_abort(account, "withdrawn")
+            .try_deposit_batch_or_abort(account),
         Action::Recall => {
             let vaults = test_runner.get_component_vaults(account, token_address);
             let vault_id = vaults[0];
 
             builder
                 .recall(InternalAddress::new_or_panic(vault_id.into()), Decimal::ONE)
-                .call_method(
-                    account,
-                    "try_deposit_batch_or_abort",
-                    manifest_args!(ManifestExpression::EntireWorktop),
-                )
+                .try_deposit_batch_or_abort(account)
         }
         Action::Freeze => {
             let vaults = test_runner.get_component_vaults(account, token_address);

@@ -2,7 +2,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn test_component() {
@@ -12,7 +12,7 @@ fn test_component() {
 
     // Create component
     let manifest1 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "ComponentTest",
@@ -28,7 +28,7 @@ fn test_component() {
 
     // Call functions & methods
     let manifest2 = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package,
             "ComponentTest",
@@ -37,11 +37,7 @@ fn test_component() {
         )
         .call_method(component, "get_component_state", manifest_args!())
         .call_method(component, "put_component_state", manifest_args!())
-        .call_method(
-            account,
-            "try_deposit_batch_or_abort",
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt2 = test_runner.execute_manifest(
         manifest2,
@@ -58,7 +54,7 @@ fn invalid_blueprint_name_should_cause_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_addr,
             "NonExistentBlueprint",
