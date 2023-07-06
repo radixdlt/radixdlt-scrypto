@@ -74,7 +74,6 @@ const FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleVault";
 const FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_FungibleVault";
 const FUNGIBLE_VAULT_FREEZE_EXPORT_NAME: &str = "freeze_FungibleVault";
 const FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME: &str = "unfreeze_FungibleVault";
-const FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleVault";
 const FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
     "create_proof_of_amount_FungibleVault";
 const FUNGIBLE_VAULT_LOCK_AMOUNT_EXPORT_NAME: &str = "lock_amount_FungibleVault";
@@ -88,9 +87,6 @@ const NON_FUNGIBLE_VAULT_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleV
 const NON_FUNGIBLE_VAULT_RECALL_EXPORT_NAME: &str = "recall_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_FREEZE_EXPORT_NAME: &str = "freeze_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_UNFREEZE_EXPORT_NAME: &str = "unfreeze_NonFungibleVault";
-const NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleVault";
-const NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
-    "create_proof_of_amount_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_LOCK_NON_FUNGIBLES_EXPORT_NAME: &str = "unlock_fungibles_NonFungibleVault";
 const NON_FUNGIBLE_VAULT_UNLOCK_NON_FUNGIBLES_EXPORT_NAME: &str =
     "unlock_non_fungibles_NonFungibleVault";
@@ -102,7 +98,6 @@ const FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_FungibleBucket";
 const FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleBucket";
 const FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_FungibleBucket";
-const FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_FungibleBucket";
 const FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
     "create_proof_of_amount_FungibleBucket";
 const FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str = "create_proof_of_all_FungibleBucket";
@@ -117,9 +112,6 @@ const NON_FUNGIBLE_BUCKET_PUT_EXPORT_NAME: &str = "put_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_NonFungibleBucket";
-const NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME: &str = "create_proof_NonFungibleBucket";
-const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str =
-    "create_proof_of_amount_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME: &str =
     "create_proof_of_non_fungibles_NonFungibleBucket";
 const NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str =
@@ -867,29 +859,16 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                VAULT_CREATE_PROOF_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
-                    ),
-                    export: FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
-                VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
+                FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(
                         aggregator
-                            .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
+                            .add_child_type_and_descendents::<FungibleVaultCreateProofOfAmountInput>(),
                     ),
                     output: TypeRef::Static(
                         aggregator
-                            .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
+                            .add_child_type_and_descendents::<FungibleVaultCreateProofOfAmountOutput>(),
                     ),
                     export: FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
@@ -971,8 +950,7 @@ impl ResourceNativePackage {
                         roles: RoleSpecification::UseOuter,
                         methods: method_auth_template! {
                             VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
-                            VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
-                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                            FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                             VAULT_FREEZE_IDENT => [FREEZER_ROLE];
                             VAULT_UNFREEZE_IDENT => [FREEZER_ROLE];
                             VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
@@ -1148,34 +1126,6 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                VAULT_CREATE_PROOF_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<VaultCreateProofInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<VaultCreateProofOutput>(),
-                    ),
-                    export: NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
-                VAULT_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<VaultCreateProofOfAmountInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<VaultCreateProofOfAmountOutput>(),
-                    ),
-                    export: NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
                 NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -1276,8 +1226,6 @@ impl ResourceNativePackage {
                         methods: method_auth_template! {
                             VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
-                            VAULT_CREATE_PROOF_IDENT => MethodAccessibility::Public;
-                            VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
                             VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
@@ -1381,29 +1329,16 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                BUCKET_CREATE_PROOF_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
-                    ),
-                    export: FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
-                BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
+                FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(
                         aggregator
-                            .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
+                            .add_child_type_and_descendents::<FungibleBucketCreateProofOfAmountInput>(),
                     ),
                     output: TypeRef::Static(
                         aggregator
-                            .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
+                            .add_child_type_and_descendents::<FungibleBucketCreateProofOfAmountOutput>(),
                     ),
                     export: FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
                 },
@@ -1482,9 +1417,8 @@ impl ResourceNativePackage {
                         methods: method_auth_template! {
                             BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
-                            BUCKET_CREATE_PROOF_IDENT => MethodAccessibility::Public;
                             BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
-                            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
+                            FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_PUT_IDENT => MethodAccessibility::Public;
                             BUCKET_TAKE_IDENT => MethodAccessibility::Public;
                             BUCKET_TAKE_ADVANCED_IDENT => MethodAccessibility::Public;
@@ -1593,34 +1527,6 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                BUCKET_CREATE_PROOF_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<BucketCreateProofInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<BucketCreateProofOutput>(),
-                    ),
-                    export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
-                BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<BucketCreateProofOfAmountInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator
-                            .add_child_type_and_descendents::<BucketCreateProofOfAmountOutput>(),
-                    ),
-                    export: NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
                 NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
@@ -1711,9 +1617,7 @@ impl ResourceNativePackage {
                         methods: method_auth_template! {
                             BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
-                            BUCKET_CREATE_PROOF_IDENT => MethodAccessibility::Public;
                             BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
-                            BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_PUT_IDENT => MethodAccessibility::Public;
                             BUCKET_TAKE_IDENT => MethodAccessibility::Public;
                             BUCKET_TAKE_ADVANCED_IDENT => MethodAccessibility::Public;
@@ -2130,19 +2034,6 @@ impl ResourceNativePackage {
                         aggregator.add_child_type_and_descendents::<AuthZonePushOutput>(),
                     ),
                     export: AUTH_ZONE_PUSH_EXPORT_NAME.to_string(),
-                },
-            );
-            functions.insert(
-                AUTH_ZONE_CREATE_PROOF_IDENT.to_string(),
-                FunctionSchemaInit {
-                    receiver: Some(ReceiverInfo::normal_ref_mut()),
-                    input: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<AuthZoneCreateProofInput>(),
-                    ),
-                    output: TypeRef::Static(
-                        aggregator.add_child_type_and_descendents::<AuthZoneCreateProofOutput>(),
-                    ),
-                    export: AUTH_ZONE_CREATE_PROOF_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -2629,19 +2520,12 @@ impl ResourceNativePackage {
                 let rtn = FungibleVaultBlueprint::get_amount(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
-                let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = FungibleVaultBlueprint::create_proof(&receiver, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
             FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 let receiver = Runtime::get_node_id(api)?;
-                let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let input: FungibleVaultCreateProofOfAmountInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn =
                     FungibleVaultBlueprint::create_proof_of_amount(&receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2751,26 +2635,6 @@ impl ResourceNativePackage {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
                 let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
-                let _input: VaultCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleVaultBlueprint::create_proof(&receiver, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
-                let input: VaultCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleVaultBlueprint::create_proof_of_amount(
-                    &receiver,
-                    input.amount,
-                    api,
-                )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {
@@ -2927,19 +2791,12 @@ impl ResourceNativePackage {
                 let rtn = FungibleBucketBlueprint::get_resource_address(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
-                let _input: BucketCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = FungibleBucketBlueprint::create_proof(&receiver, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
             FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 let receiver = Runtime::get_node_id(api)?;
-                let input: BucketCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
+                let input: FungibleBucketCreateProofOfAmountInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
                 let rtn =
                     FungibleBucketBlueprint::create_proof_of_amount(&receiver, input.amount, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -3013,26 +2870,6 @@ impl ResourceNativePackage {
                 })?;
                 let address = NonFungibleBucketBlueprint::get_resource_address(api)?;
                 Ok(IndexedScryptoValue::from_typed(&address))
-            }
-            NON_FUNGIBLE_BUCKET_CREATE_PROOF_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
-                let _input: BucketCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleBucketBlueprint::create_proof(&receiver, api)?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
-                let receiver = Runtime::get_node_id(api)?;
-                let input: BucketCreateProofOfAmountInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = NonFungibleBucketBlueprint::create_proof_of_amount(
-                    &receiver,
-                    input.amount,
-                    api,
-                )?;
-                Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_BUCKET_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME => {
                 let receiver = Runtime::get_node_id(api)?;
@@ -3108,15 +2945,6 @@ impl ResourceNativePackage {
                 AuthZoneBlueprint::push(input.proof, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&()))
-            }
-            AUTH_ZONE_CREATE_PROOF_EXPORT_NAME => {
-                let input: AuthZoneCreateProofInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-
-                let proof = AuthZoneBlueprint::create_proof(input.resource_address, api)?;
-
-                Ok(IndexedScryptoValue::from_typed(&proof))
             }
             AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME => {
                 let input: AuthZoneCreateProofOfAmountInput = input.as_typed().map_err(|e| {

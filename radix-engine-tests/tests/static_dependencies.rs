@@ -3,8 +3,8 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::blueprints::account::ACCOUNT_DEPOSIT_BATCH_IDENT;
 use radix_engine_interface::{metadata, metadata_init};
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
 use transaction::model::InstructionV1;
+use transaction::prelude::*;
 
 fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack
@@ -41,7 +41,7 @@ fn test_static_package_address() {
         test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address2,
             "Sample",
@@ -64,7 +64,7 @@ fn test_static_component_address() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(account, 500u32.into())
+        .lock_standard_test_fee(account)
         .call_function(
             package_address,
             "FaucetCall",
@@ -99,7 +99,7 @@ fn static_component_should_be_callable() {
             package_address: package_address.into(),
             blueprint_name: "Preallocated".to_string(),
             function_name: "new".to_string(),
-            args: manifest_args!(ManifestAddressReservation(0), "my_secret".to_string()),
+            args: manifest_args!(ManifestAddressReservation(0), "my_secret".to_string()).into(),
         }],
         vec![(
             BlueprintId::new(&package_address, "Preallocated"),
@@ -116,7 +116,7 @@ fn static_component_should_be_callable() {
         |blueprint, _| blueprint.eq("PreallocatedCall"),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address2,
             "PreallocatedCall",
@@ -166,7 +166,7 @@ fn static_resource_should_be_callable() {
             InstructionV1::CallMethod {
                 address: account.into(),
                 method_name: ACCOUNT_DEPOSIT_BATCH_IDENT.to_string(),
-                args: manifest_args!(ManifestExpression::EntireWorktop),
+                args: manifest_args!(ManifestExpression::EntireWorktop).into(),
             },
         ],
         vec![(
@@ -184,7 +184,7 @@ fn static_resource_should_be_callable() {
         |blueprint, _| blueprint.eq("SomeResource"),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address2,
             "SomeResource",
@@ -215,7 +215,7 @@ fn static_package_should_be_callable() {
         |blueprint, _| blueprint.eq("SomePackage"),
     );
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address2,
             "SomePackage",

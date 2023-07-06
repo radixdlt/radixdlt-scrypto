@@ -8,9 +8,7 @@ use radix_engine_interface::blueprints::resource::FromPublicKey;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::builder::*;
-use transaction::signing::secp256k1::Secp256k1PrivateKey;
+use transaction::prelude::*;
 
 #[test]
 fn can_call_public_function() {
@@ -23,7 +21,7 @@ fn can_call_public_function() {
         package_address,
         "FunctionAccessRules",
         "public_function",
-        manifest_args!(),
+        (),
     );
 
     // Assert
@@ -41,7 +39,7 @@ fn cannot_call_protected_function_without_auth() {
         package_address,
         "FunctionAccessRules",
         "protected_function",
-        manifest_args!(),
+        (),
     );
 
     // Assert
@@ -64,7 +62,7 @@ fn can_call_protected_function_with_auth() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(account, RADIX_TOKEN)
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(1))
         .call_function(
             package_address,
             "FunctionAccessRules",
@@ -85,7 +83,7 @@ fn access_rules_method_auth_cannot_be_mutated_when_locked() {
     let mut roles = RolesInit::new();
     roles.define_role("deposit_funds_auth_update", rule!(allow_all));
     roles.define_role("borrow_funds_auth", rule!(allow_all));
-    roles.define_role("deposit_funds_auth", rule!(require(RADIX_TOKEN)));
+    roles.define_role("deposit_funds_auth", rule!(require(XRD)));
     let mut test_runner = MutableAccessRulesTestRunner::new(roles);
 
     // Act
@@ -154,7 +152,7 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
     let receipt = test_runner.execute_manifest(
         MutableAccessRulesTestRunner::manifest_builder()
             .update_role(
-                test_runner.component_address.into(),
+                test_runner.component_address,
                 ObjectModuleId::Main,
                 RoleKey::new("borrow_funds_auth"),
                 to_rule,
@@ -180,7 +178,7 @@ fn component_access_rules_can_be_mutated_to_deny_all_through_manifest() {
 
 #[test]
 fn component_access_rules_can_be_mutated_to_fungible_resource_through_manifest() {
-    component_access_rules_can_be_mutated_through_manifest(rule!(require(RADIX_TOKEN)));
+    component_access_rules_can_be_mutated_through_manifest(rule!(require(XRD)));
 }
 
 #[test]
@@ -196,12 +194,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
     let component_address = {
         let manifest = ManifestBuilder::new()
-            .call_function(
-                package_address,
-                "AssertAccessRule".into(),
-                "new",
-                manifest_args!(),
-            )
+            .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
@@ -215,7 +208,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         .call_method(
             component_address,
             "assert_access_rule",
-            manifest_args!(rule!(require(RADIX_TOKEN))),
+            manifest_args!(rule!(require(XRD))),
         )
         .build();
 
@@ -239,12 +232,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
 
     let component_address = {
         let manifest = ManifestBuilder::new()
-            .call_function(
-                package_address,
-                "AssertAccessRule".into(),
-                "new",
-                manifest_args!(),
-            )
+            .call_function(package_address, "AssertAccessRule", "new", manifest_args!())
             .build();
 
         let receipt = test_runner.execute_manifest_ignoring_fee(
@@ -257,11 +245,11 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
     };
 
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account(account, RADIX_TOKEN)
+        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(1))
         .call_method(
             component_address,
             "assert_access_rule",
-            manifest_args!(rule!(require(RADIX_TOKEN))),
+            manifest_args!(rule!(require(XRD))),
         )
         .build();
 
@@ -291,7 +279,7 @@ fn update_rule() {
         ret[1],
         InstructionOutput::CallReturn(
             scrypto_encode(&Some(AccessRule::Protected(AccessRuleNode::ProofRule(
-                ProofRule::Require(ResourceOrNonFungible::Resource(RADIX_TOKEN))
+                ProofRule::Require(ResourceOrNonFungible::Resource(XRD))
             ))))
             .unwrap()
         )
@@ -423,7 +411,7 @@ impl MutableAccessRulesTestRunner {
     ) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
             .update_role(
-                self.component_address.into(),
+                self.component_address,
                 ObjectModuleId::Main,
                 role_key,
                 access_rule,
@@ -434,18 +422,14 @@ impl MutableAccessRulesTestRunner {
 
     pub fn get_role(&mut self, role_key: RoleKey) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .get_role(
-                self.component_address.into(),
-                ObjectModuleId::Main,
-                role_key,
-            )
+            .get_role(self.component_address, ObjectModuleId::Main, role_key)
             .build();
         self.execute_manifest(manifest)
     }
 
     pub fn lock_owner_role(&mut self) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
-            .lock_owner_role(self.component_address.into())
+            .lock_owner_role(self.component_address)
             .build();
         self.execute_manifest(manifest)
     }

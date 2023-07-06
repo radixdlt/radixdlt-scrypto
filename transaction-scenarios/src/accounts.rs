@@ -79,3 +79,11 @@ pub fn ed25519_account_3() -> VirtualAccount {
             .into(),
     )
 }
+
+pub fn ed25519_account_for_private_key(key: u64) -> VirtualAccount {
+    VirtualAccount::for_private_key(
+        Ed25519PrivateKey::from_u64(key)
+            .expect("Should be valid")
+            .into(),
+    )
+}

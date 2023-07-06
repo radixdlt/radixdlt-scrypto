@@ -33,7 +33,7 @@ pub struct ExecutionTraceModule {
     current_kernel_call_depth: usize,
 
     /// A stack of traced kernel call inputs, their origin, and the instruction index.
-    traced_kernel_call_inputs_stack: Vec<(ResourceSummary, Origin, usize)>,
+    traced_kernel_call_inputs_stack: Vec<(ResourceSummary, TraceOrigin, usize)>,
 
     /// A mapping of complete KernelCallTrace stacks (\w both inputs and outputs), indexed by depth.
     kernel_call_traces_stacks: IndexMap<usize, Vec<ExecutionTrace>>,
@@ -179,7 +179,7 @@ impl TraceActor {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct ExecutionTrace {
-    pub origin: Origin,
+    pub origin: TraceOrigin,
     pub kernel_call_depth: usize,
     pub current_frame_actor: TraceActor,
     pub current_frame_depth: usize,
@@ -197,7 +197,7 @@ pub struct ApplicationFnIdentifier {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub enum Origin {
+pub enum TraceOrigin {
     ScryptoFunction(ApplicationFnIdentifier),
     ScryptoMethod(ApplicationFnIdentifier),
     CreateNode,
@@ -209,7 +209,7 @@ impl ExecutionTrace {
         &self,
         worktop_changes_aggregator: &mut IndexMap<usize, Vec<WorktopChange>>,
     ) {
-        if let Origin::ScryptoMethod(fn_identifier) = &self.origin {
+        if let TraceOrigin::ScryptoMethod(fn_identifier) = &self.origin {
             if fn_identifier.blueprint_name == WORKTOP_BLUEPRINT
                 && fn_identifier.package_address == RESOURCE_PACKAGE
             {
@@ -405,7 +405,7 @@ impl ExecutionTraceModule {
 
             let traced_input = (
                 ResourceSummary::default(),
-                Origin::CreateNode,
+                TraceOrigin::CreateNode,
                 instruction_index,
             );
             self.traced_kernel_call_inputs_stack.push(traced_input);
@@ -436,7 +436,7 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let instruction_index = self.instruction_index();
 
-            let traced_input = (resource_summary, Origin::DropNode, instruction_index);
+            let traced_input = (resource_summary, TraceOrigin::DropNode, instruction_index);
             self.traced_kernel_call_inputs_stack.push(traced_input);
         }
 
@@ -471,7 +471,7 @@ impl ExecutionTraceModule {
                     module_object_info: object_info,
                     ident,
                     ..
-                }) => Origin::ScryptoMethod(ApplicationFnIdentifier {
+                }) => TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
                     package_address: object_info.blueprint_id.package_address.clone(),
                     blueprint_name: object_info.blueprint_id.blueprint_name.clone(),
                     ident: ident.clone(),
@@ -479,7 +479,7 @@ impl ExecutionTraceModule {
                 Actor::Function {
                     blueprint_id: blueprint,
                     ident,
-                } => Origin::ScryptoFunction(ApplicationFnIdentifier {
+                } => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
                     package_address: blueprint.package_address.clone(),
                     blueprint_name: blueprint.blueprint_name.clone(),
                     ident: ident.clone(),
@@ -717,7 +717,7 @@ pub fn calculate_resource_changes(
                         .entry(node_id)
                         .or_default()
                         .entry(vault_id)
-                        .or_insert((RADIX_TOKEN, Decimal::zero()))
+                        .or_insert((XRD, Decimal::zero()))
                         .1 -= fee_payments.get(&vault_id).cloned().unwrap_or_default();
                 }
             }

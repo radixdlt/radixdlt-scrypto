@@ -2,7 +2,7 @@ use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn get_global_address_in_local_in_function_should_fail() {
@@ -10,7 +10,7 @@ fn get_global_address_in_local_in_function_should_fail() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "CalledComponent",
@@ -23,7 +23,7 @@ fn get_global_address_in_local_in_function_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MyComponent",
@@ -48,7 +48,7 @@ fn get_global_address_in_local_in_method_should_fail() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "CalledComponent",
@@ -59,7 +59,7 @@ fn get_global_address_in_local_in_method_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MyComponent",
@@ -73,7 +73,7 @@ fn get_global_address_in_local_in_method_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component,
             "get_global_address_in_local_of_parent_method",
@@ -97,7 +97,7 @@ fn get_global_address_in_parent_should_succeed() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "CalledComponent",
@@ -108,7 +108,7 @@ fn get_global_address_in_parent_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MyComponent",
@@ -122,7 +122,7 @@ fn get_global_address_in_parent_should_succeed() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(component, "get_global_address_in_parent", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -139,7 +139,7 @@ fn get_global_address_in_child_should_succeed() {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "CalledComponent",
@@ -150,7 +150,7 @@ fn get_global_address_in_child_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MyComponent",
@@ -164,7 +164,7 @@ fn get_global_address_in_child_should_succeed() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(component, "get_global_address_in_owned", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -180,7 +180,7 @@ fn test_call_component_address_protected_method(caller_child: bool, callee_child
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "CalledComponent",
@@ -191,7 +191,7 @@ fn test_call_component_address_protected_method(caller_child: bool, callee_child
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MyComponent",
@@ -205,7 +205,7 @@ fn test_call_component_address_protected_method(caller_child: bool, callee_child
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component,
             "call_other_component",
@@ -250,7 +250,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "CalledComponent",
@@ -261,7 +261,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MyComponent",
@@ -303,7 +303,7 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(component, method_name, args)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -377,7 +377,7 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
     let mut test_runner = TestRunner::builder().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/address");
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "CalledComponent",
@@ -388,7 +388,7 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let called_component = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "MyComponent",
@@ -402,7 +402,7 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             component,
             "call_other_component_with_wrong_address",

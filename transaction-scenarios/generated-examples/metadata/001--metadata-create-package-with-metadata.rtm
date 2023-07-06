@@ -6,8 +6,8 @@ CALL_METHOD
 ALLOCATE_GLOBAL_ADDRESS
     Address("package_sim1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxlk8hc9")
     "Package"
-    AddressReservation("reservation1")
-    NamedAddress("address1")
+    AddressReservation("metadata_package_address_reservation")
+    NamedAddress("metadata_package_address")
 ;
 CALL_METHOD
     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
@@ -468,7 +468,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("aa6d467dbb736da170914470d6ba3f70694ca3c5f64ac8061f7c85e164b5d677")
+    Blob("bdab1f000bbe3f5eaf838b4b7e7eb196664d55d126dc9acdd4f0f778a3ab4fbe")
     Map<String, Tuple>(
         "" => Tuple(
             Enum<1u8>(
@@ -782,7 +782,7 @@ PUBLISH_PACKAGE_ADVANCED
         )
     )
     Enum<1u8>(
-        AddressReservation("reservation1")
+        AddressReservation("metadata_package_address_reservation")
     )
 ;
 CALL_METHOD

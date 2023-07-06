@@ -234,7 +234,7 @@ macro_rules! scrypto_args {
 
 #[macro_export]
 macro_rules! manifest_args {
-    ($($args: expr),*) => {{
+    ($($args: expr),*$(,)?) => {{
         use ::sbor::Encoder;
         let mut buf = ::sbor::rust::vec::Vec::new();
         let mut encoder = $crate::data::manifest::ManifestEncoder::new(&mut buf, $crate::data::manifest::MANIFEST_SBOR_V1_MAX_DEPTH);
@@ -246,7 +246,8 @@ macro_rules! manifest_args {
             let arg = $args;
             encoder.encode(&arg).unwrap();
         )*
-        $crate::data::manifest::manifest_decode(&buf).unwrap()
+        let value = $crate::data::manifest::manifest_decode(&buf).unwrap();
+        ManifestArgs::new_from_tuple_or_panic(value)
     }};
 }
 

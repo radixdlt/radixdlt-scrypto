@@ -15,7 +15,7 @@ pub const IDENTITY_CREATE_ADVANCED_IDENT: &str = "create_advanced";
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct IdentityCreateAdvancedInput {
-    pub owner_rule: OwnerRole,
+    pub owner_role: OwnerRole,
 }
 
 pub type IdentityCreateAdvancedOutput = ComponentAddress;

@@ -102,12 +102,18 @@ impl TryFrom<[u8; NodeId::LENGTH]> for GlobalAddress {
     type Error = ParseGlobalAddressError;
 
     fn try_from(value: [u8; NodeId::LENGTH]) -> Result<Self, Self::Error> {
-        let node_id = NodeId(value);
+        Self::try_from(NodeId(value))
+    }
+}
 
+impl TryFrom<NodeId> for GlobalAddress {
+    type Error = ParseGlobalAddressError;
+
+    fn try_from(node_id: NodeId) -> Result<Self, Self::Error> {
         if node_id.is_global() {
             Ok(Self(node_id))
         } else {
-            Err(ParseGlobalAddressError::InvalidEntityTypeId(value[0]))
+            Err(ParseGlobalAddressError::InvalidEntityTypeId(node_id.0[0]))
         }
     }
 }

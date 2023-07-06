@@ -353,19 +353,6 @@ where
         }
         ast::Instruction::ClearAuthZone => InstructionV1::ClearAuthZone,
 
-        ast::Instruction::CreateProofFromAuthZone {
-            resource_address,
-            new_proof,
-        } => {
-            let resource_address =
-                generate_resource_address(resource_address, address_bech32_decoder)?;
-            let proof_id = id_validator
-                .new_proof(ProofKind::AuthZoneProof)
-                .map_err(GeneratorError::IdValidationError)?;
-            declare_proof(new_proof, resolver, proof_id)?;
-
-            InstructionV1::CreateProofFromAuthZone { resource_address }
-        }
         ast::Instruction::CreateProofFromAuthZoneOfAmount {
             resource_address,
             amount,
@@ -422,15 +409,6 @@ where
             InstructionV1::ClearSignatureProofs
         }
 
-        ast::Instruction::CreateProofFromBucket { bucket, new_proof } => {
-            let bucket_id = generate_bucket(bucket, resolver)?;
-            let proof_id = id_validator
-                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
-                .map_err(GeneratorError::IdValidationError)?;
-            declare_proof(new_proof, resolver, proof_id)?;
-
-            InstructionV1::CreateProofFromBucket { bucket_id }
-        }
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
@@ -1706,7 +1684,7 @@ mod tests {
                 package_address: package_address.into(),
                 blueprint_name: "Airdrop".into(),
                 function_name: "new".to_string(),
-                args: manifest_args!(500u32, pdec!("120"))
+                args: manifest_args!(500u32, pdec!("120")).into()
             },
         );
         generate_instruction_ok!(
@@ -1714,7 +1692,7 @@ mod tests {
             InstructionV1::CallMethod {
                 address: component.into(),
                 method_name: "refill".to_string(),
-                args: manifest_args!()
+                args: manifest_args!().into()
             },
         );
         generate_instruction_ok!(
@@ -1722,7 +1700,7 @@ mod tests {
             InstructionV1::CallMethod {
                 address: resource_address.into(),
                 method_name: "mint".to_string(),
-                args: manifest_args!(dec!("100"))
+                args: manifest_args!(dec!("100")).into()
             },
         );
     }
@@ -1748,7 +1726,8 @@ mod tests {
                     BTreeMap::<String, PackageRoyaltyConfig>::new(),
                     BTreeMap::<String, MetadataValue>::new(),
                     RolesInit::new()
-                ),
+                )
+                .into(),
             },
         );
     }
@@ -1847,7 +1826,7 @@ mod tests {
                         }
                     ),
                 }],
-                &NetworkDefinition::simulator()
+                &NetworkDefinition::simulator(),
             )
             .unwrap()
         );

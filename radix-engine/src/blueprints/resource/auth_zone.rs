@@ -60,16 +60,6 @@ impl AuthZoneBlueprint {
         Ok(())
     }
 
-    pub(crate) fn create_proof<Y>(
-        resource_address: ResourceAddress,
-        api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-    where
-        Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
-    {
-        Self::create_proof_of_amount(resource_address, Decimal::ONE, api)
-    }
-
     pub(crate) fn create_proof_of_amount<Y>(
         resource_address: ResourceAddress,
         amount: Decimal,

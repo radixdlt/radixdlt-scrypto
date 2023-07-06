@@ -2,7 +2,7 @@ use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{MoveModuleError, PersistNodeError};
 use radix_engine::types::*;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn stored_bucket_in_committed_component_should_fail() {
@@ -12,7 +12,7 @@ fn stored_bucket_in_committed_component_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "InvalidInitStoredBucket",
@@ -43,7 +43,7 @@ fn stored_bucket_in_owned_component_should_fail() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(
             package_address,
             "InvalidStoredBucketInOwnedComponent",

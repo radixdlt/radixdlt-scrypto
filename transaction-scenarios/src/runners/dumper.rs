@@ -52,7 +52,9 @@ pub fn run_all_in_memory_and_dump_examples(
         };
         let end_state =
             run_scenario_with_default_config(&context, &mut substate_db, &mut scenario, &network)?;
-        next_nonce = end_state.next_unused_nonce;
+        // TODO(RCnet-V3): Change it so that each scenario starts at a different fixed nonce value, hard-coded for that
+        // scenario, to minimize separate scenarios causing non-determinism in others
+        next_nonce += 1000;
     }
     Ok(())
 }

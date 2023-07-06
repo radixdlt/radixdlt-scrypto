@@ -1,8 +1,7 @@
+use crate::blueprints::resource::Proof;
 use crate::math::*;
 use crate::*;
 use sbor::rust::prelude::*;
-
-// Protected
 
 pub const FUNGIBLE_BUCKET_BLUEPRINT: &str = "FungibleBucket";
 
@@ -15,8 +14,6 @@ pub struct FungibleBucketLockAmountInput {
 
 pub type FungibleBucketLockAmountOutput = ();
 
-// Protected
-
 pub const FUNGIBLE_BUCKET_UNLOCK_AMOUNT_IDENT: &str = "unlock_amount";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
@@ -25,3 +22,12 @@ pub struct FungibleBucketUnlockAmountInput {
 }
 
 pub type FungibleBucketUnlockAmountOutput = ();
+
+pub const FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct FungibleBucketCreateProofOfAmountInput {
+    pub amount: Decimal,
+}
+
+pub type FungibleBucketCreateProofOfAmountOutput = Proof;

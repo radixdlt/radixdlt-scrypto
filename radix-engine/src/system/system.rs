@@ -607,7 +607,7 @@ where
     pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
         // This is to solve the bootstrapping problem.
         // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
-        if node_id.eq(RADIX_TOKEN.as_node_id()) {
+        if node_id.eq(XRD.as_node_id()) {
             return Some(TypeInfoSubstate::Object(ObjectInfo {
                 global: true,
 

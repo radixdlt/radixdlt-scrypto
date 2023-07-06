@@ -414,7 +414,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
                             TypeMismatchError::MismatchingChildValueType {
                                 expected_type_index: *value_type_index,
                                 expected_type_kind: value_type.clone(),
-                                actual_value_kind: key_value_kind
+                                actual_value_kind: value_value_kind
                             }
                         )
                     }

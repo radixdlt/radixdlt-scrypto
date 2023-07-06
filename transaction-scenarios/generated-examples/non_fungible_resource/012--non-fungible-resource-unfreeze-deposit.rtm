@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 UNFREEZE_VAULT
-    Address("internal_vault_sim1nz2ev7k80kj7n57dzxmhac3yuruwdkfnwjx4mxejlxnt5pk7flfr0y")
+    Address("internal_vault_sim1nr0y8rmqh83a74zpzzk5ssqxxswme7g3a7hsd7pezm7h9h7n8ae6w7")
     Tuple(
         2u32
     )

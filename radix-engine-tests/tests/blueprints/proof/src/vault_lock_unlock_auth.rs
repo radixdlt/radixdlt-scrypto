@@ -38,7 +38,7 @@ mod vault_lock_unlock_auth {
         }
 
         pub fn call_unlock_fungible_amount_directly(&self) {
-            let _proof = self.vault.create_proof_of_amount(dec!(1));
+            let _proof = self.vault.as_fungible().create_proof_of_amount(dec!(1));
 
             ScryptoEnv
                 .call_method(
@@ -78,7 +78,7 @@ mod vault_lock_unlock_auth {
         }
 
         pub fn call_unlock_non_fungibles_directly(&self) {
-            let _proof = self.vault.create_proof_of_amount(dec!(1));
+            let _proof = self.vault.as_fungible().create_proof_of_amount(dec!(1));
 
             ScryptoEnv
                 .call_method(

@@ -1,7 +1,7 @@
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 enum ExpectedBehavior {
     Success,
@@ -20,7 +20,7 @@ fn test_mini_resource_system(test_case: &str, expected: ExpectedBehavior) {
     // Run test case
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
-            .lock_fee(account, 500u32.into())
+            .lock_standard_test_fee(account)
             .call_function(package_address, "MiniUser", test_case, manifest_args!())
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

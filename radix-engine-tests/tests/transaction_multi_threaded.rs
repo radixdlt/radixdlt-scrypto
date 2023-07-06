@@ -8,8 +8,8 @@ mod multi_threaded_test {
     use radix_engine_interface::dec;
     use radix_engine_interface::rule;
     use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-    use transaction::builder::ManifestBuilder;
     use transaction::model::TestTransaction;
+    use transaction::prelude::*;
     use transaction::signing::secp256k1::Secp256k1PrivateKey;
     // using crossbeam for its scoped thread feature, which allows non-static lifetimes for data being
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
@@ -38,7 +38,7 @@ mod multi_threaded_test {
         let accounts = (0..2)
             .map(|i| {
                 let manifest = ManifestBuilder::new()
-                    .lock_fee(FAUCET, 500u32.into())
+                    .lock_fee_from_faucet()
                     .new_account_advanced(OwnerRole::Fixed(rule!(require(
                         NonFungibleGlobalId::from_public_key(&public_key)
                     ))))
@@ -66,13 +66,9 @@ mod multi_threaded_test {
 
         // Fill first account
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 500u32.into())
-            .call_method(FAUCET, "free", manifest_args!())
-            .call_method(
-                account1,
-                "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .lock_fee_from_faucet()
+            .get_free_xrd_from_faucet()
+            .try_deposit_batch_or_abort(account1)
             .build();
         for nonce in 0..10 {
             execute_and_commit_transaction(
@@ -90,13 +86,9 @@ mod multi_threaded_test {
 
         // Create a transfer manifest
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 500u32.into())
-            .withdraw_from_account(account1, RADIX_TOKEN, dec!("0.000001"))
-            .call_method(
-                account2,
-                "try_deposit_batch_or_abort",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .lock_fee_from_faucet()
+            .withdraw_from_account(account1, XRD, dec!("0.000001"))
+            .try_deposit_batch_or_abort(account2)
             .build();
 
         // Spawning threads that will attempt to withdraw some XRD amount from account1 and deposit to

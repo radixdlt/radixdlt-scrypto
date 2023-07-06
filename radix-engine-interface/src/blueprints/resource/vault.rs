@@ -53,22 +53,6 @@ pub struct VaultGetAmountInput {}
 
 pub type VaultGetAmountOutput = Decimal;
 
-pub const VAULT_CREATE_PROOF_IDENT: &str = "create_proof";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultCreateProofInput {}
-
-pub type VaultCreateProofOutput = Proof;
-
-pub const VAULT_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct VaultCreateProofOfAmountInput {
-    pub amount: Decimal,
-}
-
-pub type VaultCreateProofOfAmountOutput = Proof;
-
 pub const VAULT_RECALL_IDENT: &str = "recall";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]

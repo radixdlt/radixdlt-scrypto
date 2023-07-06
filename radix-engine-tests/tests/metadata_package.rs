@@ -2,9 +2,8 @@ use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::account::ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn cannot_set_package_metadata_with_no_owner() {
@@ -12,7 +11,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let mut test_runner = TestRunner::builder().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .publish_package_advanced(
             None,
             code,
@@ -26,7 +25,7 @@ fn cannot_set_package_metadata_with_no_owner() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .set_metadata(
             package_address,
             "name".to_string(),
@@ -55,21 +54,21 @@ fn can_set_package_metadata_with_owner() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .publish_package(code, single_function_package_definition("Test", "f"))
-        .call_method(
-            account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let package_address = receipt.expect_commit(true).new_package_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .create_proof_from_account(account, PACKAGE_OWNER_BADGE)
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_non_fungibles(
+            account,
+            PACKAGE_OWNER_BADGE,
+            &btreeset!(NonFungibleLocalId::bytes(package_address.as_node_id().0).unwrap()),
+        )
         .set_metadata(
             package_address,
             "name".to_string(),

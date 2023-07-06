@@ -171,14 +171,14 @@ impl AccountBlueprint {
     }
 
     pub fn create_advanced<Y>(
-        owner_rule: OwnerRole,
+        owner_role: OwnerRole,
         api: &mut Y,
     ) -> Result<GlobalAddress, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = SecurifiedAccount::create_advanced(owner_rule, api)?;
+        let access_rules = SecurifiedAccount::create_advanced(owner_role, api)?;
         let mut modules = Self::create_modules(
             access_rules,
             metadata_init!(
@@ -252,7 +252,7 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let resource_address = RADIX_TOKEN;
+        let resource_address = XRD;
 
         Self::get_vault(
             resource_address,
@@ -501,23 +501,6 @@ impl AccountBlueprint {
         Ok(bucket)
     }
 
-    pub fn create_proof<Y>(
-        resource_address: ResourceAddress,
-        api: &mut Y,
-    ) -> Result<Proof, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let proof = Self::get_vault(
-            resource_address,
-            |vault, api| vault.create_proof(api),
-            false,
-            api,
-        )?;
-
-        Ok(proof)
-    }
-
     pub fn create_proof_of_amount<Y>(
         resource_address: ResourceAddress,
         amount: Decimal,
@@ -706,8 +689,7 @@ impl AccountBlueprint {
                     AccountDefaultDepositRule::Accept => true,
                     AccountDefaultDepositRule::Reject => false,
                     AccountDefaultDepositRule::AllowExisting => {
-                        *resource_address == RADIX_TOKEN
-                            || Self::does_vault_exist(resource_address, api)?
+                        *resource_address == XRD || Self::does_vault_exist(resource_address, api)?
                     }
                 }
             }

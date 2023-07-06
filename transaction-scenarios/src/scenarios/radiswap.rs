@@ -8,7 +8,7 @@ use radix_engine_interface::*;
 use crate::internal_prelude::*;
 
 pub struct RadiswapScenarioConfig {
-    pub radiswap_owner: VirtualAccount,
+    pub radiswap_dapp_definition_account: VirtualAccount,
     pub storing_account: VirtualAccount,
     pub user_account_1: VirtualAccount,
     pub user_account_2: VirtualAccount,
@@ -18,7 +18,7 @@ pub struct RadiswapScenarioConfig {
 impl Default for RadiswapScenarioConfig {
     fn default() -> Self {
         Self {
-            radiswap_owner: secp256k1_account_1(),
+            radiswap_dapp_definition_account: ed25519_account_for_private_key(891231),
             storing_account: secp256k1_account_2(),
             user_account_1: secp256k1_account_3(),
             user_account_2: ed25519_account_1(),
@@ -29,6 +29,7 @@ impl Default for RadiswapScenarioConfig {
 
 #[derive(Default)]
 pub struct RadiswapScenarioState {
+    owner_badge: State<NonFungibleGlobalId>,
     radiswap_package: State<PackageAddress>,
     pool_1: PoolData,
     pool_2: PoolData,
@@ -62,7 +63,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
         ScenarioBuilder::new(core, metadata, config, start_state)
             .successful_transaction_with_result_handler(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-create-new-resources",
                         |builder| {
                             builder.create_fungible_resource(
@@ -135,16 +136,68 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 Some(100_000_000_000u64.into()),
                             )
                             .try_deposit_batch_or_abort(config.storing_account.address)
+                            .done()
                         },
                         vec![],
                     )
                 },
                 |core, config, state, result| {
                     let new_resources = result.new_resource_addresses();
-                    state.pool_1.resource_1.set(RADIX_TOKEN);
+                    state.pool_1.resource_1.set(XRD);
                     state.pool_1.resource_2.set(new_resources[0]);
                     state.pool_2.resource_1.set(new_resources[1]);
                     state.pool_2.resource_2.set(new_resources[2]);
+                    Ok(())
+                },
+            )
+            .successful_transaction_with_result_handler(
+                |core, config, state| {
+                    core.next_transaction_with_faucet_lock_fee(
+                        "radiswap-create-owner-badge-and-dapp-definition-account",
+                        |builder| {
+                            let definition_account = config.radiswap_dapp_definition_account.address;
+                            builder
+                                .create_non_fungible_resource(
+                                    // TODO: Once we can use address reservation with resource creation,
+                                    // we can set the owner badge to be its own owner
+                                    OwnerRole::None,
+                                    NonFungibleIdType::Integer,
+                                    true,
+                                    NonFungibleResourceRoles::default(),
+                                    metadata! {
+                                        init {
+                                            "name" => "Radiswap - dApp Owner Badge", updatable;
+                                            "description" => "[EXAMPLE] The owner badge for the Radiswap dApp and associated entities", updatable;
+                                            "tags" => ["badge", "dex", "pool", "radiswap"], updatable;
+                                            "info_url" => Url::of("https://radiswap.radixdlt.com/"), updatable;
+                                        }
+                                    },
+                                    Some([
+                                        (NonFungibleLocalId::integer(1), ())
+                                    ]),
+                                )
+                                .try_deposit_batch_or_abort(definition_account)
+                                .set_metadata(definition_account, "account_type", "dapp definition")
+                                .set_metadata(definition_account, "name", "Radiswap dApp Definition")
+                                .set_metadata(definition_account, "description", "[EXAMPLE] The Radiswap dApp definition account")
+                                .set_metadata(definition_account, "tags", ["dex", "pool", "radiswap"])
+                                .set_metadata(definition_account, "info_url", Url::of("https://radiswap.radixdlt.com/"))
+                                .set_metadata(
+                                    definition_account,
+                                    "claimed_websites",
+                                    [Origin::of("https://radiswap.radixdlt.com")]
+                                )
+                        },
+                        vec![&config.radiswap_dapp_definition_account.key]
+                    )
+                },
+                |core, config, state, result| {
+                    let new_resources = result.new_resource_addresses();
+                    state.owner_badge.set(NonFungibleGlobalId::new(
+                        new_resources[0],
+                        NonFungibleLocalId::integer(1)
+                    ));
+
                     Ok(())
                 },
             )
@@ -155,46 +208,52 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                         "../../../assets/radiswap.rpd"
                     ))
                     .unwrap();
-                    core.next_transaction_with_faucet_lock_fee(
+                    let owner_role = radix_engine::types::OwnerRole::Fixed(rule!(require(
+                        state.owner_badge.get()?
+                    )));
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-publish-and-create-pools",
                         |builder| {
+                            let lookup = builder.name_lookup();
                             builder.allocate_global_address(
-                                BlueprintId {
-                                    package_address: PACKAGE_PACKAGE,
-                                    blueprint_name: PACKAGE_BLUEPRINT.to_owned(),
-                                },
-                                |builder, reservation, named_address| {
-                                    builder
-                                        .call_method(FAUCET_COMPONENT, "free", manifest_args!())
-                                        .publish_package_advanced(
-                                            Some(reservation),
-                                            code.to_vec(),
-                                            schema,
-                                            metadata_init! {
-                                                "name" => "Radiswap Package".to_owned(), locked;
-                                                "description" => "A package of the logic of a Uniswap v2 style DEX.".to_owned(), locked;
-                                                "tags" => vec!["dex".to_owned(), "pool".to_owned(), "radiswap".to_owned()], locked;
-                                            },
-                                            radix_engine::types::OwnerRole::Fixed(rule!(require(
-                                                NonFungibleGlobalId::from_public_key(
-                                                    &config.radiswap_owner.public_key
-                                                )
-                                            ))),
-                                        ).call_function(
-                                            DynamicPackageAddress::Named(named_address),
-                                            "Radiswap", 
-                                            "new", 
-                                            manifest_args!(state.pool_1.resource_1.unwrap(), state.pool_1.resource_2.unwrap())
-                                        )
-                                        .call_function(
-                                            DynamicPackageAddress::Named(named_address),
-                                            "Radiswap", 
-                                            "new", 
-                                            manifest_args!(state.pool_2.resource_1.unwrap(), state.pool_2.resource_2.unwrap())
-                                        )
-                                        .try_deposit_batch_or_abort(config.storing_account.address)
-                                },
+                                PACKAGE_PACKAGE,
+                                PACKAGE_BLUEPRINT,
+                                "radiswap_package_reservation",
+                                "radiswap_package"
                             )
+                            .get_free_xrd_from_faucet()
+                            .publish_package_advanced(
+                                Some("radiswap_package_reservation".to_string()),
+                                code.to_vec(),
+                                schema,
+                                metadata_init! {
+                                    "name" => "Radiswap Package", locked;
+                                    "description" => "[EXAMPLE] A package of the logic of a Uniswap v2 style DEX.".to_owned(), locked;
+                                    "tags" => ["dex", "pool", "radiswap"], locked;
+                                },
+                                owner_role.clone(),
+                            ).call_function(
+                                lookup.named_address("radiswap_package"),
+                                "Radiswap", 
+                                "new", 
+                                manifest_args!(
+                                    owner_role.clone(),
+                                    state.pool_1.resource_1.get()?,
+                                    state.pool_1.resource_2.get()?,
+                                )
+                            )
+                            .call_function(
+                                lookup.named_address("radiswap_package"),
+                                "Radiswap", 
+                                "new", 
+                                manifest_args!(
+                                    owner_role.clone(),
+                                    state.pool_2.resource_1.get()?,
+                                    state.pool_2.resource_2.get()?,
+                                )
+                            )
+                            .try_deposit_batch_or_abort(config.radiswap_dapp_definition_account.address)
+                            .done()
                         },
                         vec![],
                     )
@@ -218,51 +277,60 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-add-liquidity",
                         |builder| {
                             builder
-                                .call_method(FAUCET_COMPONENT, "free", manifest_args!())
+                                .get_free_xrd_from_faucet()
                                 .withdraw_from_account(
                                     config.storing_account.address,
-                                    state.pool_1.resource_2.unwrap(),
-                                    7000.into(),
+                                    state.pool_1.resource_2.get()?,
+                                    7000,
                                 )
                                 .withdraw_from_account(
                                     config.storing_account.address,
-                                    state.pool_2.resource_1.unwrap(),
-                                    5000.into(),
+                                    state.pool_2.resource_1.get()?,
+                                    5000,
                                 )
                                 .withdraw_from_account(
                                     config.storing_account.address,
-                                    state.pool_2.resource_2.unwrap(),
-                                    8000.into(),
+                                    state.pool_2.resource_2.get()?,
+                                    8000,
                                 )
-                                .take_all_from_worktop(state.pool_1.resource_1.unwrap(), |builder, bucket1| {
-                                    builder.take_all_from_worktop(
-                                        state.pool_1.resource_2.unwrap(),
-                                        |builder, bucket2| {
-                                            builder.call_method(
-                                                state.pool_1.radiswap.unwrap(),
-                                                "add_liquidity",
-                                                manifest_args!(bucket1, bucket2),
-                                            )
-                                        },
-                                    )
-                                })
-                                .take_all_from_worktop(state.pool_2.resource_1.unwrap(), |builder, bucket1| {
-                                    builder.take_all_from_worktop(
-                                        state.pool_2.resource_2.unwrap(),
-                                        |builder, bucket2| {
-                                            builder.call_method(
-                                                state.pool_2.radiswap.unwrap(),
-                                                "add_liquidity",
-                                                manifest_args!(bucket1, bucket2),
-                                            )
-                                        },
-                                    )
-                                })
+                                .take_all_from_worktop(
+                                    state.pool_1.resource_1.get()?,
+                                    "pool_1_resource_1"
+                                )
+                                .take_all_from_worktop(
+                                    state.pool_1.resource_2.get()?,
+                                    "pool_1_resource_2"
+                                )
+                                .call_method_with_name_lookup(
+                                    state.pool_1.radiswap.get()?,
+                                    "add_liquidity",
+                                    |lookup| (
+                                        lookup.bucket("pool_1_resource_1"),
+                                        lookup.bucket("pool_1_resource_2"),
+                                    ),
+                                )
+                                .take_all_from_worktop(
+                                    state.pool_2.resource_1.get()?,
+                                    "pool_2_resource_1",
+                                )
+                                .take_all_from_worktop(
+                                    state.pool_2.resource_2.get()?,
+                                    "pool_2_resource_2",
+                                )
+                                .call_method_with_name_lookup(
+                                    state.pool_2.radiswap.get()?,
+                                    "add_liquidity",
+                                    |lookup| (
+                                        lookup.bucket("pool_2_resource_1"),
+                                        lookup.bucket("pool_2_resource_2"),
+                                    ),
+                                )
                                 .try_deposit_batch_or_abort(config.storing_account.address)
+                                .done()
                         },
                         vec![&config.storing_account.key],
                     )
@@ -270,29 +338,30 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-distribute-tokens",
-                        |builder| {
-                            builder.call_method(FAUCET, "free", manifest_args!());
+                        |mut builder| {
+                            builder = builder.get_free_xrd_from_faucet()
+                                .try_deposit_batch_or_abort(config.storing_account.address);
                             for destination_account in [&config.user_account_1, &config.user_account_2, &config.user_account_3]
                             {
                                 for resource_address in [
-                                    state.pool_1.resource_1.unwrap(),
-                                    state.pool_1.resource_2.unwrap(),
-                                    state.pool_2.resource_1.unwrap(),
-                                    state.pool_2.resource_2.unwrap(),
-                                    state.pool_1.pool_unit.unwrap(),
-                                    state.pool_2.pool_unit.unwrap(),
+                                    state.pool_1.resource_1.get()?,
+                                    state.pool_1.resource_2.get()?,
+                                    state.pool_2.resource_1.get()?,
+                                    state.pool_2.resource_2.get()?,
+                                    state.pool_1.pool_unit.get()?,
+                                    state.pool_2.pool_unit.get()?,
                                 ] {
-                                    builder.withdraw_from_account(
+                                    builder = builder.withdraw_from_account(
                                         config.storing_account.address,
                                         resource_address,
-                                        333.into(),
+                                        333,
                                     );
                                 }
-                                builder.try_deposit_batch_or_abort(destination_account.address);
+                                builder = builder.try_deposit_batch_or_abort(destination_account.address);
                             }
-                            builder
+                            builder.done()
                         },
                         vec![&config.storing_account.key],
                     )
@@ -300,23 +369,27 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-swap-tokens",
                         |builder| {
                             builder
                                 .withdraw_from_account(
                                     config.user_account_1.address,
-                                    state.pool_1.resource_1.unwrap(),
-                                    100.into(),
+                                    state.pool_1.resource_1.get()?,
+                                    100,
                                 )
-                                .take_all_from_worktop(state.pool_1.resource_1.unwrap(), |builder, bucket| {
-                                    builder.call_method(
-                                        state.pool_1.radiswap.unwrap(),
-                                        "swap",
-                                        manifest_args!(bucket),
+                                .take_all_from_worktop(
+                                    state.pool_1.resource_1.get()?,
+                                    "input",
+                                ).call_method_with_name_lookup(
+                                    state.pool_1.radiswap.unwrap(),
+                                    "swap",
+                                    |lookup| (
+                                        lookup.bucket("input"),
                                     )
-                                })
+                                )
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .done()
                         },
                         vec![&config.user_account_1.key],
                     )
@@ -324,16 +397,21 @@ impl ScenarioCreator for RadiswapScenarioCreator {
             )
             .successful_transaction(
                 |core, config, state| {
-                    core.next_transaction_with_faucet_lock_fee(
+                    core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-remove-tokens",
                         |builder| {
                             builder
                                 .withdraw_from_account(
                                     config.user_account_1.address,
-                                    state.pool_1.pool_unit.unwrap(),
-                                    100.into(),
+                                    state.pool_1.pool_unit.get()?,
+                                    100,
                                 )
-                                .take_all_from_worktop(state.pool_1.pool_unit.unwrap(), |builder, bucket| {
+                                .take_all_from_worktop(
+                                    state.pool_1.pool_unit.get()?,
+                                    "pool_units",
+                                )
+                                .then(|builder| {
+                                    let bucket = builder.bucket("pool_units");
                                     builder.call_method(
                                         state.pool_1.radiswap.unwrap(),
                                         "remove_liquidity",
@@ -341,15 +419,111 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                     )
                                 })
                                 .try_deposit_batch_or_abort(config.user_account_1.address)
+                                .done()
                         },
                         vec![&config.user_account_1.key],
+                    )
+                }
+            )
+            .successful_transaction(
+                |core, config, state| {
+                    let definition = GlobalAddress::from(config.radiswap_dapp_definition_account.address);
+                    let radiswap_1 = GlobalAddress::from(state.pool_1.radiswap.get()?);
+                    let pool_1 = GlobalAddress::from(state.pool_1.pool.get()?);
+                    let pool_unit_1 = GlobalAddress::from(state.pool_1.pool_unit.get()?);
+                    let radiswap_2 = GlobalAddress::from(state.pool_2.radiswap.get()?);
+                    let pool_2 = GlobalAddress::from(state.pool_2.pool.get()?);
+                    let pool_unit_2 = GlobalAddress::from(state.pool_2.pool_unit.get()?);
+                    fn add_metadata(
+                        builder: ManifestBuilder,
+                        address: GlobalAddress,
+                        name: &'static str,
+                        description: &'static str,
+                    ) -> ManifestBuilder {
+                        builder
+                            .set_metadata(address, "name", name)
+                            .set_metadata(address, "description", description)
+                            .set_metadata(address, "tags", ["badge", "dex", "pool", "radiswap"])
+                            .set_metadata(address, "info_url", Url::of("https://radiswap.radixdlt.com/"))
+                    }
+                    core.next_transaction_with_faucet_lock_fee_fallible(
+                        "radiswap-set-two-way-linking",
+                        |builder| {
+                            builder
+                                .create_proof_from_account_of_non_fungibles(
+                                    config.radiswap_dapp_definition_account.address,
+                                    state.owner_badge.get()?.resource_address(),
+                                    &btreeset!(
+                                        state.owner_badge.get()?.local_id().clone()
+                                    ),
+                                )
+                                // Set up two-way-linking
+                                .set_metadata(
+                                    definition,
+                                    "claimed_entities",
+                                    vec![
+                                        radiswap_1,
+                                        pool_1,
+                                        pool_unit_1,
+                                        radiswap_2,
+                                        pool_2,
+                                        pool_unit_2,
+                                    ]
+                                )
+                                .set_metadata(radiswap_1, "dapp_definitions", [definition])
+                                .set_metadata(pool_1, "dapp_definitions", [definition])
+                                .set_metadata(pool_unit_1, "dapp_definitions", [definition])
+                                .set_metadata(radiswap_2, "dapp_definitions", [definition])
+                                .set_metadata(pool_2, "dapp_definitions", [definition])
+                                .set_metadata(pool_unit_2, "dapp_definitions", [definition])
+                                // Set up other metadata which has been missed
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    radiswap_1,
+                                    "Radiswap 1 - XRD/BTC: Component",
+                                    "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\"",
+                                ))
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    pool_1,
+                                    "Radiswap 1 - XRD/BTC: Pool",
+                                    "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\"",
+                                ))
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    pool_unit_1,
+                                    "Radiswap 1 - XRD/BTC: Pool Units",
+                                    "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\"",
+                                ))
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    radiswap_2,
+                                    "Radiswap 2 - ETH/ETC: Component",
+                                    "[EXAMPLE] A Radiswap dApp between test tokens \"ETH\" and \"ETC\"",
+                                ))
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    pool_2,
+                                    "Radiswap 2 - ETH/ETC: Pool",
+                                    "[EXAMPLE] The underyling pool between test tokens \"ETH\" and \"ETC\"",
+                                ))
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    pool_unit_2,
+                                    "Radiswap 2 - ETH/ETC: Pool Units",
+                                    "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"ETH\" and \"ETC\"",
+                                ))
+                                .done()
+                        },
+                        vec![&config.radiswap_dapp_definition_account.key],
                     )
                 }
             )
             .finalize(|core, config, state| {
                 Ok(ScenarioOutput {
                     interesting_addresses: DescribedAddresses::new()
-                        .add("radiswap_owner", &config.radiswap_owner)
+                        .add("radiswap_dapp_definition_account", &config.radiswap_dapp_definition_account)
+                        .add("radiswap_dapp_owner_badge", state.owner_badge.get()?)
                         .add("storing_account", &config.storing_account)
                         .add("user_account_1", &config.user_account_1)
                         .add("user_account_2", &config.user_account_2)

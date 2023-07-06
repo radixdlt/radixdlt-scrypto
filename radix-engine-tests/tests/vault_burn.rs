@@ -5,7 +5,7 @@ use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
 use scrypto::NonFungibleData;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 #[test]
 fn package_burn_is_only_callable_within_resource_package() {
@@ -33,12 +33,13 @@ fn package_burn_is_only_callable_within_resource_package() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .mint_fungible(resource_address, 10.into())
-        .take_all_from_worktop(resource_address, |builder, bucket| {
+        .mint_fungible(resource_address, 10)
+        .take_all_from_worktop(resource_address, "bucket")
+        .with_name_lookup(|builder, lookup| {
             builder.call_method(
                 resource_address,
                 RESOURCE_MANAGER_PACKAGE_BURN_IDENT,
-                manifest_args!(bucket),
+                manifest_args!(lookup.bucket("bucket")),
             )
         })
         .build();
@@ -75,9 +76,15 @@ fn can_burn_by_amount_from_fungible_vault() {
 
     let component_address = {
         let manifest = ManifestBuilder::new()
-            .mint_fungible(resource_address, 100.into())
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .mint_fungible(resource_address, 100)
+            .take_all_from_worktop(resource_address, "to_burn")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("to_burn")),
+                )
             })
             .build();
         test_runner
@@ -138,8 +145,14 @@ fn can_burn_by_amount_from_non_fungible_vault() {
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 ),
             )
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .take_all_from_worktop(resource_address, "to_burn")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("to_burn")),
+                )
             })
             .build();
         test_runner
@@ -154,7 +167,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
+        .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
@@ -162,7 +175,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     )
 }
 
@@ -200,8 +213,14 @@ fn can_burn_by_ids_from_non_fungible_vault() {
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 ),
             )
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
             })
             .build();
         test_runner
@@ -228,7 +247,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     );
 }
 
@@ -262,9 +281,15 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
 
     let component_address = {
         let manifest = ManifestBuilder::new()
-            .mint_fungible(resource_address, 100.into())
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .mint_fungible(resource_address, 100)
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
             })
             .build();
         test_runner
@@ -329,8 +354,14 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 ),
             )
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
             })
             .build();
         test_runner
@@ -345,7 +376,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
+        .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
     let receipt =
         test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
@@ -354,7 +385,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     )
 }
 
@@ -395,8 +426,14 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 ),
             )
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
             })
             .build();
         test_runner
@@ -424,7 +461,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     );
 }
 
@@ -458,9 +495,15 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
 
     let component_address = {
         let manifest = ManifestBuilder::new()
-            .mint_fungible(resource_address, 100.into())
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .mint_fungible(resource_address, 100)
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
             })
             .build();
         test_runner
@@ -524,8 +567,14 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 ),
             )
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
             })
             .build();
         test_runner
@@ -540,7 +589,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
+        .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
@@ -589,8 +638,14 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 ),
             )
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
             })
             .build();
         test_runner
@@ -648,9 +703,15 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
 
     let component_address = {
         let manifest = ManifestBuilder::new()
-            .mint_fungible(resource_address, 100.into())
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .mint_fungible(resource_address, 100)
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
             })
             .build();
         test_runner
@@ -711,8 +772,14 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 ),
             )
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
             })
             .build();
         test_runner
@@ -727,7 +794,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, "burn_amount", manifest_args!(dec!("1")))
+        .call_method(component_address, "burn_amount", manifest_args!(dec!(1)))
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
 
@@ -735,7 +802,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     )
 }
 
@@ -773,8 +840,14 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
                     NonFungibleLocalId::integer(2) => EmptyStruct {},
                 ),
             )
-            .take_all_from_worktop(resource_address, |builder, bucket| {
-                builder.call_function(package_address, "VaultBurn", "new", manifest_args!(bucket))
+            .take_all_from_worktop(resource_address, "bucket")
+            .with_name_lookup(|builder, lookup| {
+                builder.call_function(
+                    package_address,
+                    "VaultBurn",
+                    "new",
+                    manifest_args!(lookup.bucket("bucket")),
+                )
             })
             .build();
         test_runner
@@ -801,7 +874,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     receipt.expect_commit_success();
     assert_eq!(
         test_runner.inspect_non_fungible_vault(vault_id).unwrap().0,
-        dec!("1")
+        dec!(1)
     );
 }
 
@@ -887,7 +960,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(account, "burn", manifest_args!(resource_address, dec!("1")))
+        .call_method(account, "burn", manifest_args!(resource_address, dec!(1)))
         .build();
     let receipt =
         test_runner.execute_manifest_ignoring_fee(manifest, vec![virtual_signature_badge.clone()]);
@@ -898,7 +971,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
         test_runner
             .account_balance(account, resource_address)
             .unwrap(),
-        dec!("1")
+        dec!(1)
     )
 }
 
@@ -950,7 +1023,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
         test_runner
             .account_balance(account, resource_address)
             .unwrap(),
-        dec!("1")
+        dec!(1)
     )
 }
 

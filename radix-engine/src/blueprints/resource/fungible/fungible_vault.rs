@@ -104,7 +104,7 @@ impl FungibleVaultBlueprint {
         // Check resource address and amount
         let resource_address =
             ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
-        if resource_address != RADIX_TOKEN {
+        if resource_address != XRD {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
             ));
@@ -207,13 +207,6 @@ impl FungibleVaultBlueprint {
         api.field_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
-    }
-
-    pub fn create_proof<Y>(receiver: &NodeId, api: &mut Y) -> Result<Proof, RuntimeError>
-    where
-        Y: KernelNodeApi + ClientApi<RuntimeError>,
-    {
-        Self::create_proof_of_amount(receiver, Decimal::ONE, api)
     }
 
     pub fn create_proof_of_amount<Y>(

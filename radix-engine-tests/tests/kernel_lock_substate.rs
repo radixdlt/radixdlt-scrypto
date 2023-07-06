@@ -18,20 +18,15 @@ use radix_engine_queries::typed_substate_layout::{
 };
 use radix_engine_store_interface::db_key_mapper::SpreadPrefixKeyMapper;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
-use transaction::builder::ManifestBuilder;
-use transaction::prelude::TestTransaction;
+use transaction::prelude::*;
 
 #[test]
 pub fn test_open_substate_of_invisible_package_address() {
     // Create dummy transaction
-    let transaction = TestTransaction::new_from_nonce(
-        ManifestBuilder::new()
-            .lock_fee(FAUCET, 500u32.into())
-            .build(),
-        1,
-    )
-    .prepare()
-    .unwrap();
+    let transaction =
+        TestTransaction::new_from_nonce(ManifestBuilder::new().lock_fee_from_faucet().build(), 1)
+            .prepare()
+            .unwrap();
     let executable = transaction.get_executable(btreeset![]);
     let execution_config = ExecutionConfig::for_test_transaction();
 

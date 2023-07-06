@@ -8,7 +8,7 @@ use radix_engine::{
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto_unit::{is_auth_error, TestRunner};
-use transaction::prelude::{ManifestBuilder, TransactionManifestV1};
+use transaction::prelude::*;
 
 #[test]
 fn multi_resource_pool_can_be_instantiated() {
@@ -22,14 +22,32 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
     result: F,
 ) {
     // Arrange
-    let mut test_runner = TestEnvironment::new([18, 18, 18]);
+    let (owner_role, virtual_signature_badge) = {
+        let public_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
+        let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
+        let rule = rule!(require(virtual_signature_badge.clone()));
+        (OwnerRole::Fixed(rule), virtual_signature_badge)
+    };
+    let mut test_runner = TestEnvironment::new_with_owner([18, 18, 18], owner_role);
+
+    let global_address = if pool {
+        GlobalAddress::from(test_runner.pool_component_address)
+    } else {
+        GlobalAddress::from(test_runner.pool_unit_resource_address)
+    };
 
     // Act
-    let receipt = if pool {
-        test_runner.set_pool_metadata(key, MetadataValue::U8(2u8), sign)
+    let initial_proofs = if sign {
+        vec![virtual_signature_badge]
     } else {
-        test_runner.set_pool_unit_resource_metadata(key, MetadataValue::U8(2u8), sign)
+        vec![]
     };
+    let manifest = ManifestBuilder::new()
+        .set_metadata(global_address, key, MetadataValue::Bool(false))
+        .build();
+    let receipt = test_runner
+        .test_runner
+        .execute_manifest_ignoring_fee(manifest, initial_proofs);
 
     // Assert
     result(receipt);
@@ -399,10 +417,11 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             POOL_PACKAGE,
             MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
             MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
-            to_manifest_value_and_unwrap!(&MultiResourcePoolInstantiateManifestInput {
+            MultiResourcePoolInstantiateManifestInput {
                 resource_addresses: [non_fungible_resource].into(),
                 pool_manager_rule: rule!(allow_all),
-            }),
+                owner_role: OwnerRole::None,
+            },
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -738,6 +757,10 @@ struct TestEnvironment<const N: usize> {
 
 impl<const N: usize> TestEnvironment<N> {
     pub fn new(divisibility: [u8; N]) -> Self {
+        Self::new_with_owner(divisibility, OwnerRole::None)
+    }
+
+    pub fn new_with_owner(divisibility: [u8; N], owner_role: OwnerRole) -> Self {
         let mut test_runner = TestRunner::builder().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -757,10 +780,11 @@ impl<const N: usize> TestEnvironment<N> {
                     POOL_PACKAGE,
                     MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
                     MULTI_RESOURCE_POOL_INSTANTIATE_IDENT,
-                    to_manifest_value_and_unwrap!(&MultiResourcePoolInstantiateManifestInput {
+                    MultiResourcePoolInstantiateManifestInput {
                         resource_addresses: resource_addresses.clone().into(),
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
-                    }),
+                        owner_role,
+                    },
                 )
                 .build();
             let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
@@ -790,36 +814,12 @@ impl<const N: usize> TestEnvironment<N> {
         }
     }
 
-    fn set_pool_metadata<S: ToString>(
-        &mut self,
-        key: S,
-        value: MetadataValue,
-        sign: bool,
-    ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_component_address, key, value)
-            .build();
-        self.execute_manifest(manifest, sign)
-    }
-
-    fn set_pool_unit_resource_metadata<S: ToString>(
-        &mut self,
-        key: S,
-        value: MetadataValue,
-        sign: bool,
-    ) -> TransactionReceipt {
-        let manifest = ManifestBuilder::new()
-            .set_metadata(self.pool_unit_resource_address, key, value)
-            .build();
-        self.execute_manifest(manifest, sign)
-    }
-
     pub fn contribute(
         &mut self,
         resource_to_amount_mapping: BTreeMap<ResourceAddress, Decimal>,
         sign: bool,
     ) -> TransactionReceipt {
-        let mut manifest_builder = &mut ManifestBuilder::new();
+        let mut manifest_builder = ManifestBuilder::new();
         for (resource_address, amount) in resource_to_amount_mapping.iter() {
             manifest_builder = manifest_builder.mint_fungible(*resource_address, *amount)
         }
@@ -841,11 +841,14 @@ impl<const N: usize> TestEnvironment<N> {
                 self.pool_unit_resource_address,
                 amount.into(),
             )
-            .take_all_from_worktop(self.pool_unit_resource_address, |builder, bucket| {
+            .take_all_from_worktop(self.pool_unit_resource_address, "pool_unit")
+            .with_name_lookup(|builder, lookup| {
                 builder.call_method(
                     self.pool_component_address,
                     MULTI_RESOURCE_POOL_REDEEM_IDENT,
-                    to_manifest_value_and_unwrap!(&MultiResourcePoolRedeemManifestInput { bucket }),
+                    MultiResourcePoolRedeemManifestInput {
+                        bucket: lookup.bucket("pool_unit"),
+                    },
                 )
             })
             .try_deposit_batch_or_abort(self.account_component_address)
@@ -861,13 +864,13 @@ impl<const N: usize> TestEnvironment<N> {
     ) -> TransactionReceipt {
         let manifest = ManifestBuilder::new()
             .mint_fungible(resource_address, amount.into())
-            .take_all_from_worktop(resource_address, |builder, bucket| {
+            .take_all_from_worktop(resource_address, "to_deposit")
+            .with_name_lookup(|builder, lookup| {
+                let bucket = lookup.bucket("to_deposit");
                 builder.call_method(
                     self.pool_component_address,
                     MULTI_RESOURCE_POOL_PROTECTED_DEPOSIT_IDENT,
-                    to_manifest_value_and_unwrap!(
-                        &MultiResourcePoolProtectedDepositManifestInput { bucket }
-                    ),
+                    MultiResourcePoolProtectedDepositManifestInput { bucket },
                 )
             })
             .build();
@@ -885,11 +888,11 @@ impl<const N: usize> TestEnvironment<N> {
             .call_method(
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_PROTECTED_WITHDRAW_IDENT,
-                to_manifest_value_and_unwrap!(&MultiResourcePoolProtectedWithdrawManifestInput {
+                MultiResourcePoolProtectedWithdrawManifestInput {
                     resource_address,
                     amount: amount.into(),
-                    withdraw_strategy
-                }),
+                    withdraw_strategy,
+                },
             )
             .try_deposit_batch_or_abort(self.account_component_address)
             .build();
@@ -922,7 +925,7 @@ impl<const N: usize> TestEnvironment<N> {
             .call_method(
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_GET_VAULT_AMOUNTS_IDENT,
-                to_manifest_value_and_unwrap!(&MultiResourcePoolGetVaultAmountsManifestInput),
+                MultiResourcePoolGetVaultAmountsManifestInput,
             )
             .build();
         let receipt = self.execute_manifest(manifest, sign);
@@ -938,9 +941,9 @@ impl<const N: usize> TestEnvironment<N> {
             .call_method(
                 self.pool_component_address,
                 MULTI_RESOURCE_POOL_GET_REDEMPTION_VALUE_IDENT,
-                to_manifest_value_and_unwrap!(&MultiResourcePoolGetRedemptionValueManifestInput {
+                MultiResourcePoolGetRedemptionValueManifestInput {
                     amount_of_pool_units: amount_of_pool_units.into(),
-                }),
+                },
             )
             .build();
         let receipt = self.execute_manifest(manifest, sign);

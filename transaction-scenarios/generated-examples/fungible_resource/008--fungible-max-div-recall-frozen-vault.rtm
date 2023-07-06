@@ -4,11 +4,11 @@ CALL_METHOD
     Decimal("5000")
 ;
 RECALL_FROM_VAULT
-    Address("internal_vault_sim1tp74yxmhsvetssx7g44mwha0ul40q9aakekznkjtvy9ch79vxm0nyw")
-    Decimal("2")
+    Address("internal_vault_sim1tzmfs5qf8xkkqptce9naaf0f52fn6lgfg8uyr4me5qs5derjcmquc4")
+    Decimal("1")
 ;
 CALL_METHOD
-    Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
+    Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "try_deposit_batch_or_abort"
     Expression("ENTIRE_WORKTOP")
 ;

@@ -821,19 +821,19 @@ mod tests {
 
     #[test]
     fn test_1_powi_0_decimal() {
-        let a = dec!("1");
+        let a = dec!(1);
         assert_eq!((a.powi(0)).to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_1_decimal() {
-        let a = dec!("1");
+        let a = dec!(1);
         assert_eq!((a.powi(1)).to_string(), "1");
     }
 
     #[test]
     fn test_1_powi_10_decimal() {
-        let a = dec!("1");
+        let a = dec!(1);
         assert_eq!((a.powi(10)).to_string(), "1");
     }
 
@@ -938,7 +938,7 @@ mod tests {
 
     #[test]
     fn test_dec_string_decimal() {
-        assert_eq!(dec!("1").to_string(), "1");
+        assert_eq!(dec!(1).to_string(), "1");
         assert_eq!(dec!("0").to_string(), "0");
     }
 
@@ -1167,7 +1167,7 @@ mod tests {
 
     #[test]
     fn test_sum_decimal() {
-        let decimals = vec![dec!("1"), dec!("2"), dec!("3")];
+        let decimals = vec![dec!(1), dec!("2"), dec!("3")];
         // two syntax
         let sum1: Decimal = decimals.iter().copied().sum();
         let sum2: Decimal = decimals.into_iter().sum();
