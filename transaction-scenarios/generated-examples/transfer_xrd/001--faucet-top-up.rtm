@@ -9,10 +9,10 @@ CALL_METHOD
 ;
 TAKE_ALL_FROM_WORKTOP
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Bucket("bucket1")
+    Bucket("free_xrd")
 ;
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "try_deposit_or_abort"
-    Bucket("bucket1")
+    Bucket("free_xrd")
 ;

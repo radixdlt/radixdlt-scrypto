@@ -4,7 +4,7 @@ use radix_engine::{
     types::*,
 };
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
+use transaction::prelude::*;
 
 fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
     wat2wasm(
@@ -78,7 +78,7 @@ fn test_emit_log(message_size: usize, iterations: usize, expected_err: Option<Ru
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_function(package_address, "Test", "f", manifest_args!())
         .build();
 

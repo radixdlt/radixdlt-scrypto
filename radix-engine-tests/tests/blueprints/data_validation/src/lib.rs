@@ -15,7 +15,7 @@ mod data_validation {
 
             Self {
                 vault: Vault::with_bucket(resource),
-                reference: RADIX_TOKEN,
+                reference: XRD,
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
@@ -45,11 +45,11 @@ mod data_validation {
         }
 
         pub fn create_object_with_illegal_data() {
-            let bucket = Bucket::new(RADIX_TOKEN);
+            let bucket = Bucket::new(XRD);
 
             Self {
                 vault: Vault(bucket.0),
-                reference: RADIX_TOKEN,
+                reference: XRD,
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)

@@ -11,12 +11,12 @@ CALL_METHOD
 ;
 TAKE_ALL_FROM_WORKTOP
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Bucket("bucket1")
+    Bucket("input")
 ;
 CALL_METHOD
-    Address("component_sim1czh8fj0qhq75l2lufkvkfsfeq8zvrjzsnngq29hypqzzdan8l9kyc4")
+    Address("component_sim1cp29wgapfhkprkw20e3pk4gktstqcw7a0mwc3zp8zxk6hqztd4tea0")
     "swap"
-    Bucket("bucket1")
+    Bucket("input")
 ;
 CALL_METHOD
     Address("account_sim168j3paqgngj74yzaljq4n422rtsmupaec3wnqq5425fd85cnd8xmdz")

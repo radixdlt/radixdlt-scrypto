@@ -6,31 +6,31 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "withdraw"
-    Address("resource_sim1ngm8wfjnfmmfv37sm9xdu8tqhx9kgpkwx8h222rxgmp3vmt57l2sva")
+    Address("resource_sim1nfxa03qkvrs3798j38c2dwc89jyntte7452fwyqqm34fslhazr5ugq")
     Decimal("2")
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("resource_sim1ngm8wfjnfmmfv37sm9xdu8tqhx9kgpkwx8h222rxgmp3vmt57l2sva")
-    Bucket("bucket1")
+    Address("resource_sim1nfxa03qkvrs3798j38c2dwc89jyntte7452fwyqqm34fslhazr5ugq")
+    Bucket("to_burn")
 ;
 BURN_RESOURCE
-    Bucket("bucket1")
+    Bucket("to_burn")
 ;
 CALL_METHOD
     Address("account_sim16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7jmhemw")
     "withdraw_non_fungibles"
-    Address("resource_sim1ngm8wfjnfmmfv37sm9xdu8tqhx9kgpkwx8h222rxgmp3vmt57l2sva")
+    Address("resource_sim1nfxa03qkvrs3798j38c2dwc89jyntte7452fwyqqm34fslhazr5ugq")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#110#")
     )
 ;
 TAKE_NON_FUNGIBLES_FROM_WORKTOP
-    Address("resource_sim1ngm8wfjnfmmfv37sm9xdu8tqhx9kgpkwx8h222rxgmp3vmt57l2sva")
+    Address("resource_sim1nfxa03qkvrs3798j38c2dwc89jyntte7452fwyqqm34fslhazr5ugq")
     Array<NonFungibleLocalId>(
         NonFungibleLocalId("#110#")
     )
-    Bucket("bucket2")
+    Bucket("non_fungibles_to_burn")
 ;
 BURN_RESOURCE
-    Bucket("bucket2")
+    Bucket("non_fungibles_to_burn")
 ;

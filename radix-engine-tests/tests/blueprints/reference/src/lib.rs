@@ -8,7 +8,7 @@ mod reference_test {
 
     impl ReferenceTest {
         pub fn create_global_node_with_local_ref() {
-            let bucket = Bucket::new(RADIX_TOKEN);
+            let bucket = Bucket::new(XRD);
 
             Self {
                 reference: Reference(bucket.0.as_node_id().clone()),
@@ -22,7 +22,7 @@ mod reference_test {
 
         pub fn new() -> Global<ReferenceTest> {
             Self {
-                reference: Reference(RADIX_TOKEN.as_node_id().clone()),
+                reference: Reference(XRD.as_node_id().clone()),
             }
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
@@ -30,7 +30,7 @@ mod reference_test {
         }
 
         pub fn add_local_ref_to_stored_substate(&mut self) {
-            let bucket = Bucket::new(RADIX_TOKEN);
+            let bucket = Bucket::new(XRD);
 
             self.reference = Reference(bucket.0.as_node_id().clone());
         }

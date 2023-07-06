@@ -12,6 +12,7 @@ use sbor::*;
 /// Must start with a supported entity type byte.
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[must_use]
 pub enum ManifestAddress {
     /// Static address, either global or internal, with entity type byte checked.
     /// TODO: prevent direct construction, as in `NonFungibleLocalId`

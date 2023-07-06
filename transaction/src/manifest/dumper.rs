@@ -3,8 +3,11 @@ use radix_engine_interface::network::NetworkDefinition;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 
+use super::decompiler::{decompile_with_known_naming, ManifestObjectNames};
+
 pub fn dump_manifest_to_file_system<P>(
     manifest: &TransactionManifestV1,
+    naming: ManifestObjectNames,
     directory_path: P,
     name: Option<&str>,
     network_definition: &NetworkDefinition,
@@ -25,7 +28,8 @@ where
     // Decompile the transaction manifest to the manifest string and then write it to the
     // directory
     {
-        let manifest_string = decompile(&manifest.instructions, network_definition)?;
+        let manifest_string =
+            decompile_with_known_naming(&manifest.instructions, network_definition, naming)?;
         let manifest_path = path.join(format!("{}.rtm", name.unwrap_or("transaction")));
         std::fs::write(manifest_path, manifest_string)?;
     }

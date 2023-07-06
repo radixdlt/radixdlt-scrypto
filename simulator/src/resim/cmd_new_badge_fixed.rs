@@ -2,7 +2,6 @@ use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 
@@ -78,13 +77,9 @@ impl NewBadgeFixed {
         };
 
         let manifest = ManifestBuilder::new()
-            .lock_fee(FAUCET, 500u32.into())
+            .lock_fee_from_faucet()
             .new_badge_fixed(OwnerRole::None, metadata, self.total_supply)
-            .call_method(
-                default_account,
-                "try_deposit_batch_or_refund",
-                manifest_args!(ManifestExpression::EntireWorktop),
-            )
+            .try_deposit_batch_or_refund(default_account)
             .build();
         handle_manifest(
             manifest,

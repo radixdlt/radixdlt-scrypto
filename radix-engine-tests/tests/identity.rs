@@ -3,17 +3,12 @@ use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
-use radix_engine_interface::blueprints::account::{
-    ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT, ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-};
 use radix_engine_interface::blueprints::identity::{
     IdentityCreateAdvancedInput, IdentitySecurifyToSingleBadgeInput, IDENTITY_BLUEPRINT,
     IDENTITY_CREATE_ADVANCED_IDENT, IDENTITY_SECURIFY_IDENT,
 };
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
-use transaction::model::InstructionV1;
-use transaction::prelude::Secp256k1PrivateKey;
+use transaction::prelude::*;
 
 #[test]
 fn cannot_securify_in_advanced_mode() {
@@ -24,18 +19,13 @@ fn cannot_securify_in_advanced_mode() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .add_instruction(InstructionV1::CallMethod {
-            address: component_address.into(),
-            method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
-        })
-        .0
+        .lock_fee_from_faucet()
         .call_method(
-            account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            component_address,
+            IDENTITY_SECURIFY_IDENT,
+            IdentitySecurifyToSingleBadgeInput {},
         )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -60,18 +50,13 @@ fn can_securify_from_virtual_identity() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .add_instruction(InstructionV1::CallMethod {
-            address: component_address.into(),
-            method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
-        })
-        .0
+        .lock_fee_from_faucet()
         .call_method(
-            account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            component_address,
+            IDENTITY_SECURIFY_IDENT,
+            IdentitySecurifyToSingleBadgeInput {},
         )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -87,18 +72,13 @@ fn cannot_securify_twice() {
     let (pk, _, account) = test_runner.new_account(false);
     let component_address = test_runner.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .add_instruction(InstructionV1::CallMethod {
-            address: component_address.into(),
-            method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
-        })
-        .0
+        .lock_fee_from_faucet()
         .call_method(
-            account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            component_address,
+            IDENTITY_SECURIFY_IDENT,
+            IdentitySecurifyToSingleBadgeInput {},
         )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -106,18 +86,13 @@ fn cannot_securify_twice() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .add_instruction(InstructionV1::CallMethod {
-            address: component_address.into(),
-            method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
-        })
-        .0
+        .lock_fee_from_faucet()
         .call_method(
-            account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            component_address,
+            IDENTITY_SECURIFY_IDENT,
+            IdentitySecurifyToSingleBadgeInput {},
         )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -140,18 +115,13 @@ fn can_set_metadata_after_securify() {
     let (pk, _, account) = test_runner.new_account(false);
     let identity_address = test_runner.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
-        .add_instruction(InstructionV1::CallMethod {
-            address: identity_address.into(),
-            method_name: IDENTITY_SECURIFY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
-        })
-        .0
+        .lock_fee_from_faucet()
         .call_method(
-            account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
+            identity_address,
+            IDENTITY_SECURIFY_IDENT,
+            IdentitySecurifyToSingleBadgeInput {},
         )
+        .try_deposit_batch_or_abort(account)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -159,7 +129,7 @@ fn can_set_metadata_after_securify() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .create_proof_from_account(account, IDENTITY_OWNER_BADGE)
         .set_metadata(
             identity_address,
@@ -190,7 +160,7 @@ fn can_set_metadata_on_securified_identity() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .create_proof_from_account(account, IDENTITY_OWNER_BADGE)
         .set_metadata(
             identity_address,
@@ -222,17 +192,13 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee(test_runner.faucet_component(), 500u32.into())
+        .lock_fee_from_faucet()
         .call_method(
             identity,
             IDENTITY_SECURIFY_IDENT,
-            to_manifest_value_and_unwrap!(&IdentitySecurifyToSingleBadgeInput {}),
+            IdentitySecurifyToSingleBadgeInput {},
         )
-        .call_method(
-            account,
-            ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT,
-            manifest_args!(ManifestExpression::EntireWorktop),
-        )
+        .try_deposit_batch_or_refund(account)
         .build();
     let receipt =
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
@@ -264,10 +230,9 @@ fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
                 IDENTITY_PACKAGE,
                 IDENTITY_BLUEPRINT,
                 IDENTITY_CREATE_ADVANCED_IDENT,
-                to_manifest_value(&IdentityCreateAdvancedInput {
+                IdentityCreateAdvancedInput {
                     owner_rule: OwnerRole::None,
-                })
-                .unwrap(),
+                },
             )
             .build();
         test_runner

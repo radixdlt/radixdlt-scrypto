@@ -165,7 +165,7 @@ impl ConsensusManagerNativePackage {
                 blueprint_type: BlueprintType::default(),
                 feature_set: btreeset!(),
                 dependencies: btreeset!(
-                    RADIX_TOKEN.into(),
+                    XRD.into(),
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),
                     SYSTEM_TRANSACTION_BADGE.into(),
                     VALIDATOR_OWNER_BADGE.into(),

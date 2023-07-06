@@ -47,10 +47,15 @@ pub mod prelude {
     pub use radix_engine_common::prelude::*;
 
     // Exports from this crate
+    pub use crate::api::node_modules::metadata::*;
     pub use crate::blueprints::resource::NonFungibleGlobalId;
     pub use crate::macros::*;
     pub use crate::schema::*;
     pub use crate::traits::*;
     pub use crate::types::*;
-    pub use crate::{access_and_or, access_rule_node, role_entry, roles2, rule};
+    pub use crate::{
+        access_and_or, access_rule_node, burn_roles, deposit_roles, freeze_roles, internal_roles,
+        metadata, metadata_init, metadata_init_set_entry, metadata_roles, mint_roles,
+        non_fungible_data_update_roles, recall_roles, role_entry, roles2, rule, withdraw_roles,
+    };
 }
