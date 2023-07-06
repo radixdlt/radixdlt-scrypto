@@ -169,7 +169,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                             "name" => "Radiswap dApp Owner Badge", updatable;
                                             "description" => "The owner badge for the Radiswap dApp", updatable;
                                             "tags" => vec!["badge", "dex", "pool", "radiswap"], updatable;
-                                            "info_url" => Url::of("https://www.radixdlt.com/"), updatable;
+                                            "info_url" => Url::of("https://radiswap.radixdlt.com/"), updatable;
                                         }
                                     },
                                     Some([
@@ -190,7 +190,7 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 .set_metadata(
                                     definition_account,
                                     "claimed_websites",
-                                    vec![Origin::of("https://radiswap.radixdlt.com/")]
+                                    vec![Origin::of("https://radiswap.radixdlt.com")]
                                 )
                         },
                         vec![]
@@ -213,6 +213,9 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                         "../../../assets/radiswap.rpd"
                     ))
                     .unwrap();
+                    let owner_role = radix_engine::types::OwnerRole::Fixed(rule!(require(
+                        state.owner_badge.get()?
+                    )));
                     core.next_transaction_with_faucet_lock_fee_fallible(
                         "radiswap-publish-and-create-pools",
                         |builder| {
@@ -233,22 +236,28 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                     "description" => "A package of the logic of a Uniswap v2 style DEX.".to_owned(), locked;
                                     "tags" => vec!["dex".to_owned(), "pool".to_owned(), "radiswap".to_owned()], locked;
                                 },
-                                radix_engine::types::OwnerRole::Fixed(rule!(require(
-                                    state.owner_badge.get()?
-                                ))),
+                                owner_role.clone(),
                             ).call_function(
                                 lookup.named_address("radiswap_package"),
                                 "Radiswap", 
                                 "new", 
-                                manifest_args!(OwnerRole::None, state.pool_1.resource_1.unwrap(), state.pool_1.resource_2.unwrap())
+                                manifest_args!(
+                                    owner_role.clone(),
+                                    state.pool_1.resource_1.get()?,
+                                    state.pool_1.resource_2.get()?,
+                                )
                             )
                             .call_function(
                                 lookup.named_address("radiswap_package"),
                                 "Radiswap", 
                                 "new", 
-                                manifest_args!(OwnerRole::None, state.pool_2.resource_1.unwrap(), state.pool_2.resource_2.unwrap())
+                                manifest_args!(
+                                    owner_role.clone(),
+                                    state.pool_2.resource_1.get()?,
+                                    state.pool_2.resource_2.get()?,
+                                )
                             )
-                            .try_deposit_batch_or_abort(config.storing_account.address)
+                            .try_deposit_batch_or_abort(config.radiswap_dapp_definition_account.address)
                             .done()
                         },
                         vec![],
@@ -417,6 +426,100 @@ impl ScenarioCreator for RadiswapScenarioCreator {
                                 .done()
                         },
                         vec![&config.user_account_1.key],
+                    )
+                }
+            )
+            .successful_transaction(
+                |core, config, state| {
+                    let definition = GlobalAddress::from(config.radiswap_dapp_definition_account.address);
+                    let radiswap_1 = GlobalAddress::from(state.pool_1.radiswap.get()?);
+                    let pool_1 = GlobalAddress::from(state.pool_1.pool.get()?);
+                    let pool_unit_1 = GlobalAddress::from(state.pool_1.pool_unit.get()?);
+                    let radiswap_2 = GlobalAddress::from(state.pool_2.radiswap.get()?);
+                    let pool_2 = GlobalAddress::from(state.pool_2.pool.get()?);
+                    let pool_unit_2 = GlobalAddress::from(state.pool_2.pool_unit.get()?);
+                    fn add_metadata(
+                        builder: ManifestBuilder,
+                        address: GlobalAddress,
+                        name: &'static str,
+                        description: &'static str,
+                    ) -> ManifestBuilder {
+                        builder
+                            .set_metadata(address, "name", name)
+                            .set_metadata(address, "description", description)
+                            .set_metadata(address, "tags", ["badge", "dex", "pool", "radiswap"])
+                            .set_metadata(address, "info_url", Url::of("https://radiswap.radixdlt.com/"))
+                    }
+                    core.next_transaction_with_faucet_lock_fee_fallible(
+                        "radiswap-set-two-way-linking",
+                        |builder| {
+                            builder
+                                .create_proof_from_account_of_non_fungibles(
+                                    config.radiswap_dapp_definition_account.address,
+                                    state.owner_badge.get()?.resource_address(),
+                                    btreeset!(
+                                        state.owner_badge.get()?.local_id().clone()
+                                    ),
+                                )
+                                // Set up two-way-linking
+                                .set_metadata(
+                                    definition,
+                                    "claimed_entities",
+                                    vec![
+                                        radiswap_1,
+                                        pool_1,
+                                        pool_unit_1,
+                                        radiswap_2,
+                                        pool_2,
+                                        pool_unit_2,
+                                    ]
+                                )
+                                .set_metadata(radiswap_1, "dapp_definitions", [definition])
+                                .set_metadata(pool_1, "dapp_definitions", [definition])
+                                .set_metadata(pool_unit_1, "dapp_definitions", [definition])
+                                .set_metadata(radiswap_2, "dapp_definitions", [definition])
+                                .set_metadata(pool_2, "dapp_definitions", [definition])
+                                .set_metadata(pool_unit_2, "dapp_definitions", [definition])
+                                // Set up other metadata which has been missed
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    radiswap_1,
+                                    "Radiswap 1 - XRD/BTC: Component",
+                                    "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\"",
+                                ))
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    pool_1,
+                                    "Radiswap 1 - XRD/BTC: Pool",
+                                    "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\"",
+                                ))
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    pool_unit_1,
+                                    "Radiswap 1 - XRD/BTC: Pool Units",
+                                    "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\"",
+                                ))
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    radiswap_2,
+                                    "Radiswap 2 - ETH/ETC: Component",
+                                    "[EXAMPLE] A Radiswap dApp between test tokens \"ETH\" and \"ETC\"",
+                                ))
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    pool_2,
+                                    "Radiswap 2 - ETH/ETC: Pool",
+                                    "[EXAMPLE] The underyling pool between test tokens \"ETH\" and \"ETC\"",
+                                ))
+                                .then(|builder| add_metadata(
+                                    builder,
+                                    pool_unit_2,
+                                    "Radiswap 2 - ETH/ETC: Pool Units",
+                                    "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"ETH\" and \"ETC\"",
+                                ))
+                                .done()
+                        },
+                        vec![&config.radiswap_dapp_definition_account.key],
                     )
                 }
             )
