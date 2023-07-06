@@ -31,7 +31,7 @@ mod badge_test {
 
         pub fn borrow() -> Bucket {
             let bucket = Self::create_test_badge(100);
-            let proof = bucket.create_proof();
+            let proof = bucket.create_proof_of_all();
             proof.drop();
             bucket
         }

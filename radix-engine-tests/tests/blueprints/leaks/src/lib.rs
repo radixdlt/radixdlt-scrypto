@@ -60,7 +60,7 @@ mod leaks {
                 })
                 .mint_initial_supply(1);
 
-            bucket.create_proof()
+            bucket.create_proof_of_all()
         }
     }
 }

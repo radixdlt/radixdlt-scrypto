@@ -6,7 +6,7 @@ mod bucket_proof {
 
     impl BucketProof {
         pub fn create_clone_drop_bucket_proof(bucket: Bucket, amount: Decimal) -> Bucket {
-            let proof = bucket.create_proof().skip_checking();
+            let proof = bucket.create_proof_of_all().skip_checking();
             assert_eq!(proof.resource_address(), bucket.resource_address());
             let clone = proof.clone();
 
@@ -20,7 +20,7 @@ mod bucket_proof {
         }
 
         pub fn use_bucket_proof_for_auth(bucket: Bucket, to_burn: Bucket) -> Bucket {
-            bucket.authorize(|| {
+            bucket.as_fungible().authorize_with_amount(dec!(1), || {
                 to_burn.burn();
             });
 
@@ -28,7 +28,7 @@ mod bucket_proof {
         }
 
         pub fn return_bucket_while_locked(bucket: Bucket) -> Bucket {
-            let _proof = bucket.create_proof();
+            let _proof = bucket.create_proof_of_all();
             bucket
         }
     }

@@ -17,7 +17,11 @@ mod vault_proof {
         }
 
         pub fn create_clone_drop_vault_proof(&self, amount: Decimal) {
-            let proof = self.vault.create_proof().skip_checking();
+            let proof = self
+                .vault
+                .as_fungible()
+                .create_proof_of_amount(dec!(1))
+                .skip_checking();
             assert_eq!(proof.resource_address(), self.vault.resource_address());
             let clone = proof.clone();
 
@@ -36,6 +40,7 @@ mod vault_proof {
         ) {
             let proof = self
                 .vault
+                .as_fungible()
                 .create_proof_of_amount(proof_amount)
                 .skip_checking();
             assert_eq!(proof.resource_address(), self.vault.resource_address());
@@ -57,7 +62,7 @@ mod vault_proof {
             let proof = self
                 .vault
                 .as_non_fungible()
-                .create_proof_of_non_fungibles(proof_non_fungible_local_ids.clone())
+                .create_proof_of_non_fungibles(&proof_non_fungible_local_ids.clone())
                 .skip_checking();
             assert_eq!(proof.resource_address(), self.vault.resource_address());
             let clone = proof.clone();
@@ -77,7 +82,7 @@ mod vault_proof {
         }
 
         pub fn use_vault_proof_for_auth(&self, to_burn: Bucket) {
-            self.vault.authorize(|| {
+            self.vault.as_fungible().authorize_with_amount(dec!(1), || {
                 to_burn.burn();
             });
         }
@@ -96,10 +101,10 @@ mod vault_proof {
 
         pub fn compose_vault_and_bucket_proof(&mut self, bucket: Bucket) {
             let expected_amount = Decimal::ONE;
-            self.vault.authorize(|| {
-                bucket.authorize(|| {
-                    let proof =
-                        LocalAuthZone::create_proof(bucket.resource_address()).skip_checking();
+            self.vault.as_fungible().authorize_with_amount(dec!(1), || {
+                bucket.as_fungible().authorize_with_amount(dec!(1), || {
+                    let proof = LocalAuthZone::create_proof_of_all(bucket.resource_address())
+                        .skip_checking();
                     assert_eq!(proof.resource_address(), self.vault.resource_address());
                     assert_eq!(proof.amount(), expected_amount);
                     proof.drop();
@@ -113,8 +118,8 @@ mod vault_proof {
             bucket: Bucket,
             amount: Decimal,
         ) {
-            self.vault.authorize(|| {
-                bucket.authorize(|| {
+            self.vault.as_fungible().authorize_with_amount(dec!(1), || {
+                bucket.as_fungible().authorize_with_amount(dec!(1), || {
                     let proof =
                         LocalAuthZone::create_proof_of_amount(amount, bucket.resource_address())
                             .skip_checking();
@@ -131,8 +136,8 @@ mod vault_proof {
             bucket: Bucket,
             ids: BTreeSet<NonFungibleLocalId>,
         ) {
-            self.vault.authorize(|| {
-                bucket.authorize(|| {
+            self.vault.as_fungible().authorize_with_amount(dec!(1), || {
+                bucket.as_fungible().authorize_with_amount(dec!(1), || {
                     let proof = LocalAuthZone::create_proof_of_non_fungibles(
                         ids.clone(),
                         bucket.resource_address(),

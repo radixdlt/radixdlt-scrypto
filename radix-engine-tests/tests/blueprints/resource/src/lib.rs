@@ -79,7 +79,9 @@ mod resource_test {
                 burner_updater => rule!(deny_all);
             })
             .create_with_no_initial_supply();
-            let tokens = badge.authorize(|| resource_manager.mint(amount));
+            let tokens = badge
+                .as_fungible()
+                .authorize_with_amount(dec!(1), || resource_manager.mint(amount));
             (badge, tokens, resource_manager)
         }
 
@@ -144,7 +146,7 @@ mod resource_test {
 
         pub fn burn() -> Bucket {
             let (badge, resource_manager) = Self::create_fungible();
-            badge.authorize(|| {
+            badge.as_fungible().authorize_with_amount(dec!(1), || {
                 let bucket: Bucket = resource_manager.mint(1);
                 resource_manager.burn(bucket)
             });
@@ -173,7 +175,7 @@ mod resource_test {
                     })
                     .create_with_no_initial_supply();
 
-            badge.authorize(|| {
+            badge.as_fungible().authorize_with_amount(dec!(1), || {
                 token_resource_manager.set_metadata("a".to_owned(), "b".to_owned());
                 let string: String = token_resource_manager.get_metadata("a".to_owned()).unwrap();
                 assert_eq!(string, "b".to_owned());
