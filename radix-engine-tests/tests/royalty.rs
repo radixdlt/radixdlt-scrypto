@@ -242,7 +242,7 @@ fn test_claim_royalty() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                btreeset!(NonFungibleLocalId::integer(1)),
+                &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .claim_package_royalties(package_address)
             .try_deposit_batch_or_abort(account)
@@ -384,7 +384,7 @@ fn cannot_set_component_royalty_if_greater_than_allowed() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                btreeset!(NonFungibleLocalId::integer(1)),
+                &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .set_component_royalty(
                 component_address,
@@ -423,7 +423,7 @@ fn cannot_set_royalty_after_locking() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                btreeset!(NonFungibleLocalId::integer(1)),
+                &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .lock_component_royalty(component_address, "paid_method")
             .build(),
@@ -438,7 +438,7 @@ fn cannot_set_royalty_after_locking() {
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                btreeset!(NonFungibleLocalId::integer(1)),
+                &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .set_component_royalty(
                 component_address,
@@ -484,7 +484,7 @@ fn set_up_package_and_component() -> (
             .create_proof_from_account_of_non_fungibles(
                 account,
                 owner_badge_resource,
-                btreeset!(NonFungibleLocalId::integer(1)),
+                &btreeset!(NonFungibleLocalId::integer(1)),
             )
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],

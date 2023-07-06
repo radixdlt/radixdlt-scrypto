@@ -40,11 +40,11 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
             account,
             500,
             auth_resource_address,
-            BTreeSet::from([NonFungibleLocalId::integer(1)]),
+            &BTreeSet::from([NonFungibleLocalId::integer(1)]),
         )
         .take_non_fungibles_from_worktop(
             auth_resource_address,
-            BTreeSet::from([NonFungibleLocalId::integer(1)]),
+            &BTreeSet::from([NonFungibleLocalId::integer(1)]),
             "bucket",
         )
         .create_proof_from_bucket_of_all("bucket", "proof")

@@ -399,7 +399,7 @@ fn test_worktop_changes() {
         .withdraw_non_fungibles_from_account(
             account,
             non_fungible_resource,
-            [
+            &[
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
@@ -416,7 +416,7 @@ fn test_worktop_changes() {
         .return_to_worktop("bucket4")
         .take_non_fungibles_from_worktop(
             non_fungible_resource,
-            [
+            &[
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(3),
             ]

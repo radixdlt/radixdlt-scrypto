@@ -213,7 +213,7 @@ fn create_empty_bucket() {
         .return_to_worktop("bucket1")
         .take_from_worktop(XRD, Decimal::zero(), "bucket2")
         .return_to_worktop("bucket2")
-        .take_non_fungibles_from_worktop(non_fungible_resource, BTreeSet::new(), "bucket3")
+        .take_non_fungibles_from_worktop(non_fungible_resource, &BTreeSet::new(), "bucket3")
         .return_to_worktop("bucket3")
         .build();
     let receipt = test_runner.execute_manifest(

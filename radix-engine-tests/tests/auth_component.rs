@@ -144,7 +144,7 @@ fn can_make_cross_component_call_with_resource_authorization() {
         .withdraw_non_fungibles_from_account(
             account,
             auth_id.resource_address(),
-            BTreeSet::from([auth_id.local_id().clone()]),
+            &BTreeSet::from([auth_id.local_id().clone()]),
         )
         .call_method(
             my_component,

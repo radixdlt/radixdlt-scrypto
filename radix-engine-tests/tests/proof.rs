@@ -511,7 +511,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 .withdraw_non_fungibles_from_account(
                     account,
                     resource_address,
-                    btreeset!(NonFungibleLocalId::integer(1)),
+                    &btreeset!(NonFungibleLocalId::integer(1)),
                 )
                 .take_all_from_worktop(resource_address, "bucket")
                 .with_name_lookup(|builder, lookup| {
@@ -531,14 +531,14 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         .withdraw_non_fungibles_from_account(
             account,
             resource_address,
-            BTreeSet::from([
+            &BTreeSet::from([
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]),
         )
         .take_non_fungibles_from_worktop(
             resource_address,
-            BTreeSet::from([
+            &BTreeSet::from([
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]),
@@ -620,7 +620,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
         .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
-            BTreeSet::from([
+            &BTreeSet::from([
                 NonFungibleLocalId::integer(1),
                 NonFungibleLocalId::integer(2),
             ]),
@@ -628,11 +628,11 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
         .create_proof_from_account_of_non_fungibles(
             account,
             resource_address,
-            BTreeSet::from([NonFungibleLocalId::integer(3)]),
+            &BTreeSet::from([NonFungibleLocalId::integer(3)]),
         )
         .create_proof_from_auth_zone_of_non_fungibles(
             resource_address,
-            BTreeSet::from([
+            &BTreeSet::from([
                 NonFungibleLocalId::integer(2),
                 NonFungibleLocalId::integer(3),
             ]),
