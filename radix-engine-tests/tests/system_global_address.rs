@@ -19,36 +19,6 @@ use transaction::model::InstructionV1;
 use transaction::prelude::DynamicPackageAddress;
 use transaction::validation::ManifestIdAllocator;
 
-fn package_definition() -> PackageDefinition {
-    PackageDefinition {
-        blueprints: btreemap! {
-            "my_blueprint".to_string() => BlueprintDefinitionInit {
-                schema: BlueprintSchemaInit {
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions: btreemap! {
-                            "test".to_string() => FunctionSchemaInit {
-                                receiver: None,
-                                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                                output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                                export: "test".to_string(),
-                            },
-                            "get_global_address".to_string() => FunctionSchemaInit {
-                                receiver: Some(ReceiverInfo::normal_ref()),
-                                input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                                output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
-                                export: "get_global_address".to_string(),
-                            }
-                        },
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                },
-                ..Default::default()
-            }
-        },
-    }
-}
-
 #[derive(Clone)]
 pub struct TestNativeVm {
     vm: NativeVmV1,
@@ -144,7 +114,10 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
             blueprint_name: "Package".to_string(),
             function_name: "publish_native".to_string(),
             args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
-                definition: package_definition(),
+                definition: PackageDefinition::new_test_definition(
+                    "my_blueprint",
+                    vec![("test", false), ("get_global_address", true)]
+                ),
                 native_package_code_id: 1024u64,
                 metadata: MetadataInit::default(),
                 package_address: Some(id_allocator.new_address_reservation_id()),

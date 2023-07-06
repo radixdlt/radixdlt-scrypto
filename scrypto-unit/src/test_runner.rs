@@ -1965,7 +1965,7 @@ pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
 ) -> PackageDefinition {
-    PackageDefinition::single_test_function(blueprint_name, function_name)
+    PackageDefinition::new_single_test_function(blueprint_name, function_name)
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

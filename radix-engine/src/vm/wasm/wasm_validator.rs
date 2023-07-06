@@ -94,7 +94,7 @@ mod tests {
             WasmValidator::default()
                 .validate(
                     &code,
-                    PackageDefinition::single_test_function("Test", "f")
+                    PackageDefinition::new_single_test_function("Test", "f")
                         .blueprints
                         .values(),
                 )
