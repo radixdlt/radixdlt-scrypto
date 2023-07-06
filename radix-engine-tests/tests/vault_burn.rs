@@ -955,7 +955,10 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
     )
 }
 
-fn get_vault_id(test_runner: &mut TestRunner<NativeVmV1>, component_address: ComponentAddress) -> NodeId {
+fn get_vault_id(
+    test_runner: &mut TestRunner<NativeVmV1>,
+    component_address: ComponentAddress,
+) -> NodeId {
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();

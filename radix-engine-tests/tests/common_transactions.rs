@@ -7,7 +7,7 @@ use radix_engine_interface::{
     internal_roles_struct, metadata, metadata_init, mint_roles, role_definition_entry,
 };
 use scrypto::NonFungibleData;
-use scrypto_unit::{TestRunnerBuilder};
+use scrypto_unit::TestRunnerBuilder;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::{compile, BlobProvider};
 use transaction::signing::secp256k1::Secp256k1PrivateKey;

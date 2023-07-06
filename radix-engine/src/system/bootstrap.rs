@@ -15,6 +15,7 @@ use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::SystemUpdates;
 use crate::transaction::{
     execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig, StateUpdateSummary,
@@ -52,7 +53,6 @@ use transaction::model::{
 };
 use transaction::prelude::{BlobV1, PreAllocatedAddress};
 use transaction::validation::ManifestIdAllocator;
-use crate::system::system_callback_api::SystemCallbackObject;
 
 lazy_static! {
     pub static ref DEFAULT_TESTING_FAUCET_SUPPLY: Decimal = dec!("100000000000000000");
@@ -245,11 +245,7 @@ where
     S: SubstateDatabase + CommittableSubstateDatabase,
     V: SystemCallbackObject + Clone,
 {
-    pub fn new(
-        substate_db: &'s mut S,
-        vm: V,
-        trace: bool,
-    ) -> Bootstrapper<'s, S, V> {
+    pub fn new(substate_db: &'s mut S, vm: V, trace: bool) -> Bootstrapper<'s, S, V> {
         Bootstrapper {
             substate_db,
             vm,

@@ -1,9 +1,9 @@
+use radix_engine::vm::NativeVmV1;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError},
     kernel::call_frame::PassMessageError,
     types::*,
 };
-use radix_engine::vm::NativeVmV1;
 use scrypto_unit::*;
 use transaction::builder::*;
 

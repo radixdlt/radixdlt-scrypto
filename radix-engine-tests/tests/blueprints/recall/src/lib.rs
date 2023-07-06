@@ -84,7 +84,7 @@ mod recall {
                     )
                     .unwrap(),
             )
-                .unwrap()
+            .unwrap()
         }
     }
 }

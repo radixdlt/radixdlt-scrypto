@@ -1,3 +1,5 @@
+use radix_engine::system::system_callback_api::SystemCallbackObject;
+use radix_engine::vm::{NativeVmV1, Vm};
 use radix_engine::{
     system::bootstrap::Bootstrapper,
     vm::{
@@ -5,8 +7,6 @@ use radix_engine::{
         ScryptoVm,
     },
 };
-use radix_engine::system::system_callback_api::SystemCallbackObject;
-use radix_engine::vm::{NativeVmV1, Vm};
 use radix_engine_store_interface::interface::*;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use transaction::validation::{NotarizedTransactionValidator, ValidationConfig};

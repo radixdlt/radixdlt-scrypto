@@ -1,11 +1,11 @@
 use radix_engine::errors::{SystemError, SystemModuleError};
+use radix_engine::vm::NativeVmV1;
 use radix_engine::{
     blueprints::pool::multi_resource_pool::*,
     errors::{ApplicationError, RuntimeError},
     transaction::{BalanceChange, TransactionReceipt},
     types::*,
 };
-use radix_engine::vm::NativeVmV1;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto_unit::{is_auth_error, TestRunner, TestRunnerBuilder};

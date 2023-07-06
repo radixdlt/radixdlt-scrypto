@@ -5,6 +5,7 @@ use radix_engine::blueprints::resource::BucketError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::types::*;
+use radix_engine::vm::NativeVmV1;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -16,7 +17,6 @@ use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-use radix_engine::vm::NativeVmV1;
 use scrypto_unit::*;
 use transaction::builder::{ManifestBuilder, TransactionManifestV1};
 use transaction::model::InstructionV1;
@@ -197,7 +197,9 @@ fn next_round_with_validator_auth_succeeds() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch - 1));
@@ -224,7 +226,9 @@ fn next_round_causes_epoch_change_on_reaching_max_rounds() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let receipt = test_runner
@@ -253,7 +257,9 @@ fn next_round_fails_if_time_moves_backward() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act 1 - a small jump in timestamp should be fine
     let next_round = Round::of(1);
@@ -301,7 +307,9 @@ fn next_round_causes_epoch_change_on_reaching_target_duration_with_sensible_epoc
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Prepare for first epoch
     let current_epoch = initial_epoch;
@@ -405,7 +413,9 @@ fn next_round_after_target_duration_does_not_cause_epoch_change_without_min_roun
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let receipt =
@@ -515,7 +525,9 @@ fn register_validator_with_auth_succeeds() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
@@ -546,7 +558,9 @@ fn register_validator_without_auth_fails() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
@@ -578,7 +592,9 @@ fn unregister_validator_with_auth_succeeds() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
@@ -609,7 +625,9 @@ fn unregister_validator_without_auth_fails() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
@@ -640,7 +658,9 @@ fn test_disabled_delegated_stake(owner: bool, expect_success: bool) {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
@@ -726,7 +746,9 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_set_on_e
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let (pub_key, _, account_address) = test_runner.new_account(false);
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
     let manifest = ManifestBuilder::new()
@@ -809,7 +831,9 @@ fn validator_set_receives_emissions_proportional_to_stake_on_epoch_change() {
     };
 
     // Act
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let receipt = test_runner.advance_to_round(Round::of(1));
 
     // Assert
@@ -925,7 +949,9 @@ fn validator_receives_emission_penalty_when_some_proposals_missed() {
     );
 
     // Act
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert: stake vault balance increased by the given emission * reliability factor
@@ -1007,7 +1033,9 @@ fn validator_receives_no_emission_when_too_many_proposals_missed() {
     );
 
     // Act
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let receipt = test_runner.advance_to_round(Round::of(rounds_per_epoch));
 
     // Assert
@@ -1078,7 +1106,9 @@ fn decreasing_validator_fee_takes_effect_during_next_epoch() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
 
     // Act: request the fee decrease
@@ -1198,7 +1228,9 @@ fn increasing_validator_fee_takes_effect_after_configured_epochs_delay() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_xrd_vault_id = test_runner
         .get_validator_info(validator_address)
@@ -1539,7 +1571,9 @@ fn registered_validator_test(
         1,
     );
     let (pub_key, account_address) = accounts[0];
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = register_and_stake_new_validator(
         register_and_stake_txn_type,
         pub_key,
@@ -1639,7 +1673,9 @@ fn test_registering_and_staking_many_validators() {
     );
     let mut rng = ChaCha8Rng::seed_from_u64(1234);
 
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let mut all_manifests = Vec::new();
     for (pub_key, account_address) in accounts {
         let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
@@ -1700,7 +1736,9 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(test_runner.faucet_component(), 500u32.into())
@@ -1748,7 +1786,9 @@ fn updated_validator_keys_gets_updated_on_epoch_change() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let next_validator_pub_key = Secp256k1PrivateKey::from_u64(3u64).unwrap().public_key();
     let manifest = ManifestBuilder::new()
@@ -1798,7 +1838,9 @@ fn cannot_claim_unstake_immediately() {
         genesis_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
 
@@ -1854,7 +1896,9 @@ fn can_claim_unstake_after_epochs() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
@@ -1916,7 +1960,9 @@ fn owner_can_lock_stake_units() {
         Epoch::of(5),
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
 
@@ -1973,7 +2019,9 @@ fn owner_can_start_unlocking_stake_units() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
@@ -2058,7 +2106,9 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
@@ -2149,7 +2199,9 @@ fn starting_unlock_of_owner_stake_units_moves_already_available_ones_to_separate
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
@@ -2252,7 +2304,9 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
@@ -2356,7 +2410,9 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_owner_stake_units_unlock_epochs(unlock_epochs_delay),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_key);
     let stake_unit_resource = test_runner
         .get_validator_info(validator_address)
@@ -2459,7 +2515,9 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             },
         ),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
@@ -2626,7 +2684,9 @@ fn test_tips_and_fee_distribution_single_validator() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Do some transaction
     let receipt1 = test_runner
@@ -2684,7 +2744,9 @@ fn test_tips_and_fee_distribution_two_validators() {
                 target_duration_millis: 0,
             }),
     );
-    let mut test_runner = TestRunnerBuilder::new().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Do some transaction
     let receipt1 = test_runner

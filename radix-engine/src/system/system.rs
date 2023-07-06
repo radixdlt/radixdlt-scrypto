@@ -1410,21 +1410,27 @@ where
                         for visibility in node_visibility.0 {
                             match visibility {
                                 Visibility::StableReference(StableReferenceType::Global) => {
-                                    return Some(GlobalAddress::new_or_panic(receiver.clone().into()))
-                                },
+                                    return Some(GlobalAddress::new_or_panic(
+                                        receiver.clone().into(),
+                                    ))
+                                }
 
                                 // Direct access references dont provide any info regarding global address so continue
                                 Visibility::StableReference(StableReferenceType::DirectAccess) => {
                                     continue;
-                                },
+                                }
 
                                 // Anything frame owned does not have a global address
                                 Visibility::FrameOwned => return None,
 
                                 // If borrowed or actor then we just use the current actor's global address
                                 Visibility::Borrowed | Visibility::Actor => {
-                                    return self.api.kernel_get_system_state().current.global_address();
-                                },
+                                    return self
+                                        .api
+                                        .kernel_get_system_state()
+                                        .current
+                                        .global_address();
+                                }
                             }
                         }
                         None

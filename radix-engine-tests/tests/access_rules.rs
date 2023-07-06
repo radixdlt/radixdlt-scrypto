@@ -349,7 +349,10 @@ struct MutableAccessRulesTestRunner {
 impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
-    pub fn create_component(roles: RolesInit, test_runner: &mut TestRunner<NativeVmV1>) -> TransactionReceipt {
+    pub fn create_component(
+        roles: RolesInit,
+        test_runner: &mut TestRunner<NativeVmV1>,
+    ) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
         let manifest = ManifestBuilder::new()

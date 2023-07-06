@@ -84,7 +84,6 @@ impl VmInvoke for NativeVmV1Instance {
             input_size: input.len(),
         })?;
 
-
         match self.native_package_code_id {
             PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api),
             RESOURCE_CODE_ID => ResourceNativePackage::invoke_export(export_name, input, api),

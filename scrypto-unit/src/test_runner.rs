@@ -277,7 +277,10 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch_with_native_vm<V: NativeVm>(self, native_vm: V) -> (TestRunner<V>, ActiveValidatorSet) {
+    pub fn build_and_get_epoch_with_native_vm<V: NativeVm>(
+        self,
+        native_vm: V,
+    ) -> (TestRunner<V>, ActiveValidatorSet) {
         let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
@@ -358,7 +361,6 @@ pub struct TestRunnerSnapshot {
 }
 
 impl<N: NativeVm> TestRunner<N> {
-
     pub fn create_snapshot(&self) -> TestRunnerSnapshot {
         TestRunnerSnapshot {
             substate_db: self.substate_db.clone(),
@@ -1046,13 +1048,7 @@ impl<N: NativeVm> TestRunner<N> {
             native_vm: self.native_vm.clone(),
         };
 
-        execute_preview(
-            &self.substate_db,
-            vm,
-            network,
-            preview_intent,
-            self.trace,
-        )
+        execute_preview(&self.substate_db, vm, network, preview_intent, self.trace)
     }
 
     pub fn preview_manifest(

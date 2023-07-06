@@ -6,6 +6,7 @@ use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
 use crate::system::system::{KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
@@ -22,7 +23,6 @@ use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
 use transaction::model::*;
-use crate::system::system_callback_api::SystemCallbackObject;
 
 #[derive(Debug, Clone)]
 pub struct FeeReserveConfig {
@@ -166,10 +166,7 @@ where
     V: SystemCallbackObject + Clone,
 {
     pub fn new(substate_db: &'s S, vm: V) -> Self {
-        Self {
-            substate_db,
-            vm,
-        }
+        Self { substate_db, vm }
     }
 
     pub fn execute(
@@ -946,7 +943,6 @@ pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-
     TransactionExecutor::new(substate_db, vm).execute(
         transaction,
         fee_reserve_config,

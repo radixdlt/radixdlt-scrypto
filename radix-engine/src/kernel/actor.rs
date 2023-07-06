@@ -153,12 +153,9 @@ impl Actor {
         }
     }
 
-
     pub fn global_address(&self) -> Option<GlobalAddress> {
         match self {
-            Actor::Method(MethodActor { global_address, .. }) => {
-                global_address.clone()
-            }
+            Actor::Method(MethodActor { global_address, .. }) => global_address.clone(),
             _ => None,
         }
     }

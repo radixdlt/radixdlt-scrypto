@@ -95,7 +95,10 @@ impl<'g, W: WasmEngine + 'g, N: NativeVm> SystemCallbackObject for Vm<'g, W, N> 
                         .expect(&format!("Original code not found: {:?}", export))
                 };
 
-                let mut vm_instance = api.kernel_get_system().callback_obj.native_vm
+                let mut vm_instance = api
+                    .kernel_get_system()
+                    .callback_obj
+                    .native_vm
                     .create_instance(address, &original_code.code)?;
                 let output = { vm_instance.invoke(export.export_name.as_str(), input, api)? };
 

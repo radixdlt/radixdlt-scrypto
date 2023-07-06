@@ -686,7 +686,10 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
     );
 }
 
-fn get_vault_id(test_runner: &mut TestRunner<NativeVmV1>, component_address: ComponentAddress) -> NodeId {
+fn get_vault_id(
+    test_runner: &mut TestRunner<NativeVmV1>,
+    component_address: ComponentAddress,
+) -> NodeId {
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();
