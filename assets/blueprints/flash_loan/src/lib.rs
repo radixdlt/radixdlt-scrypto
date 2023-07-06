@@ -89,12 +89,15 @@ mod basic_flash_loan {
             // Our component will control the only badge with the authority to burn the resource, so anyone taking
             // a loan must call our repay_loan() method with an appropriate reimbursement, at which point we will
             // burn the NFT and allow the TX to complete.
-            let loan_terms = self.auth_vault.authorize(|| {
-                self.transient_resource_manager
-                    .mint_ruid_non_fungible(LoanDue {
-                        amount_due: amount_due,
-                    })
-            });
+            let loan_terms = self
+                .auth_vault
+                .as_fungible()
+                .authorize_with_amount(dec!(1), || {
+                    self.transient_resource_manager
+                        .mint_ruid_non_fungible(LoanDue {
+                            amount_due: amount_due,
+                        })
+                });
             (self.loan_vault.take(loan_amount), loan_terms)
         }
 
@@ -116,7 +119,9 @@ mod basic_flash_loan {
             self.loan_vault.put(loan_repayment);
 
             // We have our payment; we can now burn the transient token
-            self.auth_vault.authorize(|| loan_terms.burn());
+            self.auth_vault
+                .as_fungible()
+                .authorize_with_amount(dec!(1), || loan_terms.burn());
         }
     }
 }

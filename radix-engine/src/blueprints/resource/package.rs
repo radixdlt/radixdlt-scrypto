@@ -1226,7 +1226,6 @@ impl ResourceNativePackage {
                         methods: method_auth_template! {
                             VAULT_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT => MethodAccessibility::Public;
-                            FUNGIBLE_VAULT_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => MethodAccessibility::Public;
 
                             VAULT_TAKE_IDENT => [WITHDRAWER_ROLE];
@@ -1619,7 +1618,6 @@ impl ResourceNativePackage {
                             BUCKET_GET_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_GET_RESOURCE_ADDRESS_IDENT => MethodAccessibility::Public;
                             BUCKET_CREATE_PROOF_OF_ALL_IDENT => MethodAccessibility::Public;
-                            FUNGIBLE_BUCKET_CREATE_PROOF_OF_AMOUNT_IDENT => MethodAccessibility::Public;
                             BUCKET_PUT_IDENT => MethodAccessibility::Public;
                             BUCKET_TAKE_IDENT => MethodAccessibility::Public;
                             BUCKET_TAKE_ADVANCED_IDENT => MethodAccessibility::Public;
