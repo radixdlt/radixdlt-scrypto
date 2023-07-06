@@ -277,14 +277,13 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner<NativeVmV1>, ActiveValidatorSet) {
+    pub fn build_and_get_epoch_with_native_vm<V: NativeVm>(self, native_vm: V) -> (TestRunner<V>, ActiveValidatorSet) {
         let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let vm = Vm::new(&scrypto_vm, NativeVmV1);
+        let vm = Vm::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = InMemorySubstateDatabase::standard();
-
         let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
         let GenesisReceipts {
             wrap_up_receipt, ..
@@ -310,7 +309,7 @@ impl TestRunnerBuilder {
 
         let runner = TestRunner {
             scrypto_vm,
-            native_vm: NativeVmV1,
+            native_vm,
             substate_db,
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
@@ -327,8 +326,16 @@ impl TestRunnerBuilder {
         (runner, next_epoch.validator_set)
     }
 
+    pub fn build_and_get_epoch(self) -> (TestRunner<NativeVmV1>, ActiveValidatorSet) {
+        self.build_and_get_epoch_with_native_vm(NativeVmV1)
+    }
+
     pub fn build(self) -> TestRunner<NativeVmV1> {
         self.build_and_get_epoch().0
+    }
+
+    pub fn build_with_native_vm<V: NativeVm>(self, vm: V) -> TestRunner<V> {
+        self.build_and_get_epoch_with_native_vm(vm).0
     }
 }
 
@@ -1009,7 +1016,7 @@ impl<N: NativeVm> TestRunner<N> {
 
         let vm = Vm {
             scrypto_vm: &self.scrypto_vm,
-            native_vm: NativeVmV1,
+            native_vm: self.native_vm.clone(),
         };
 
         let transaction_receipt = execute_transaction(
@@ -1034,9 +1041,14 @@ impl<N: NativeVm> TestRunner<N> {
         preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
     ) -> Result<TransactionReceipt, PreviewError> {
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
+
         execute_preview(
             &self.substate_db,
-            &mut self.scrypto_vm,
+            vm,
             network,
             preview_intent,
             self.trace,
@@ -1051,9 +1063,13 @@ impl<N: NativeVm> TestRunner<N> {
         flags: PreviewFlags,
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
         execute_preview(
             &mut self.substate_db,
-            &self.scrypto_vm,
+            vm,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
                 intent: IntentV1 {

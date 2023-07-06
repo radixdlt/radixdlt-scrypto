@@ -8,15 +8,16 @@ use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntentV1;
 use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
+use crate::system::system_callback_api::SystemCallbackObject;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreviewError {
     TransactionValidationError(TransactionValidationError),
 }
 
-pub fn execute_preview<S: SubstateDatabase, W: WasmEngine>(
+pub fn execute_preview<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
     substate_db: &S,
-    scrypto_vm: &ScryptoVm<W>,
+    vm: V,
     network: &NetworkDefinition,
     preview_intent: PreviewIntentV1,
     with_kernel_trace: bool,
@@ -28,11 +29,6 @@ pub fn execute_preview<S: SubstateDatabase, W: WasmEngine>(
     let validated = validator
         .validate_preview_intent_v1(preview_intent)
         .map_err(PreviewError::TransactionValidationError)?;
-
-    let vm = Vm {
-        scrypto_vm,
-        native_vm: NativeVmV1,
-    };
 
     Ok(execute_transaction(
         substate_db,
