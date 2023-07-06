@@ -17,6 +17,7 @@ use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{
     ClientApi, ClientObjectApi, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
 };
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
 use radix_engine_interface::schema::{
@@ -953,7 +954,7 @@ impl PackageNativePackage {
                         btreemap!(
                             PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
                             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
-                            PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
+                            PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                         )
                     ),
                     method_auth: MethodAuthTemplate::StaticRoles(

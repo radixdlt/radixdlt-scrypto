@@ -164,7 +164,7 @@ pub enum MethodAuthTemplate {
 
 impl Default for MethodAuthTemplate {
     fn default() -> Self {
-        MethodAuthTemplate::StaticRoles(StaticRoles::default())
+        MethodAuthTemplate::AllowAll
     }
 }
 

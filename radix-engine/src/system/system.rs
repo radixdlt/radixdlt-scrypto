@@ -1572,11 +1572,14 @@ where
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
-        let user_substates = node_substates.remove(&MAIN_BASE_PARTITION).unwrap();
-        let fields = user_substates
-            .into_iter()
-            .map(|(_key, v)| v.into())
-            .collect();
+        let fields = if let Some(user_substates) = node_substates.remove(&MAIN_BASE_PARTITION) {
+            user_substates
+                .into_iter()
+                .map(|(_key, v)| v.into())
+                .collect()
+        } else {
+            vec![]
+        };
 
         Ok(fields)
     }
