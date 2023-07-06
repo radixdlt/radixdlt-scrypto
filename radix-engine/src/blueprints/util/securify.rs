@@ -28,14 +28,14 @@ pub trait SecurifiedAccessRules {
         non_fungible_local_id: Option<NonFungibleLocalId>,
         api: &mut Y,
     ) -> Result<(AccessRules, Bucket), RuntimeError> {
-        let (bucket, owner_rule) =
+        let (bucket, owner_role) =
             Self::mint_securified_badge(owner_badge_data, non_fungible_local_id, api)?;
         let mut roles = RolesInit::new();
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
         let roles = btreemap!(ObjectModuleId::Main => roles);
-        let access_rules = AccessRules::create(OwnerRole::Fixed(owner_rule), roles, api)?;
+        let access_rules = AccessRules::create(OwnerRole::Fixed(owner_role), roles, api)?;
         Ok((access_rules, bucket))
     }
 
@@ -69,9 +69,9 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
         api: &mut Y,
     ) -> Result<AccessRules, RuntimeError> {
         let mut roles = RolesInit::new();
-        let owner_rule = rule!(require(owner_id));
+        let owner_role = rule!(require(owner_id));
         if let Some(securify_role) = Self::SECURIFY_ROLE {
-            roles.define_role(RoleKey::new(securify_role), owner_rule.clone());
+            roles.define_role(RoleKey::new(securify_role), owner_role.clone());
         }
 
         let roles = btreemap!(
@@ -80,7 +80,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
 
         let access_rules = AccessRules::create(
             OwnerRoleEntry {
-                rule: owner_rule,
+                rule: owner_role,
                 updater: OwnerRoleUpdater::Object,
             },
             roles,
@@ -105,10 +105,10 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
             )?;
         }
 
-        let (bucket, owner_rule) =
+        let (bucket, owner_role) =
             Self::mint_securified_badge(owner_badge_data, non_fungible_local_id, api)?;
 
-        access_rules.set_owner_role(owner_rule, api)?;
+        access_rules.set_owner_role(owner_role, api)?;
 
         Ok(bucket)
     }

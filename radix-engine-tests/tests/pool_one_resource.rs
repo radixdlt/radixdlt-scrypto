@@ -20,13 +20,13 @@ pub fn test_set_metadata<F: FnOnce(TransactionReceipt)>(
     result: F,
 ) {
     // Arrange
-    let (owner_rule, virtual_signature_badge) = {
+    let (owner_role, virtual_signature_badge) = {
         let public_key = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
         let rule = rule!(require(virtual_signature_badge.clone()));
         (OwnerRole::Fixed(rule), virtual_signature_badge)
     };
-    let mut test_runner = TestEnvironment::new_with_owner(18, owner_rule);
+    let mut test_runner = TestEnvironment::new_with_owner(18, owner_role);
 
     let global_address = if pool {
         GlobalAddress::from(test_runner.pool_component_address)
@@ -412,7 +412,7 @@ fn creating_a_pool_with_non_fungible_resources_fails() {
             to_manifest_value_and_unwrap!(&OneResourcePoolInstantiateManifestInput {
                 resource_address: non_fungible_resource,
                 pool_manager_rule: rule!(allow_all),
-                owner_rule: OwnerRole::None
+                owner_role: OwnerRole::None
             }),
         )
         .build();
@@ -626,7 +626,7 @@ impl TestEnvironment {
         Self::new_with_owner(divisibility, OwnerRole::None)
     }
 
-    fn new_with_owner(divisibility: u8, owner_rule: OwnerRole) -> Self {
+    fn new_with_owner(divisibility: u8, owner_role: OwnerRole) -> Self {
         let mut test_runner = TestRunner::builder().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -647,7 +647,7 @@ impl TestEnvironment {
                     to_manifest_value_and_unwrap!(&OneResourcePoolInstantiateManifestInput {
                         resource_address,
                         pool_manager_rule: rule!(require(virtual_signature_badge)),
-                        owner_rule
+                        owner_role
                     }),
                 )
                 .build();

@@ -30,12 +30,12 @@ fn bench_transfer(c: &mut Criterion) {
     // Create two accounts
     let accounts = (0..2)
         .map(|_| {
-            let owner_rule = OwnerRole::Updatable(rule!(require(
+            let owner_role = OwnerRole::Updatable(rule!(require(
                 NonFungibleGlobalId::from_public_key(&public_key)
             )));
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET, 500u32.into())
-                .new_account_advanced(owner_rule)
+                .new_account_advanced(owner_role)
                 .build();
             let account = execute_and_commit_transaction(
                 &mut substate_db,
