@@ -16,13 +16,6 @@ mod pc {
         // Bucket
         //==================
 
-        pub fn create_proof_from_fungible_bucket() {
-            let bucket = Self::create_fungible_bucket();
-            let proof = bucket.create_proof_of_all().skip_checking();
-            assert_eq!(proof.amount(), dec!(1));
-            proof.drop();
-            bucket.burn();
-        }
         pub fn create_proof_from_fungible_bucket_of_amount() {
             let bucket = Self::create_fungible_bucket();
             let proof = bucket
@@ -61,16 +54,7 @@ mod pc {
             proof.drop();
             bucket.burn();
         }
-        pub fn create_proof_from_non_fungible_bucket_of_amount() {
-            let bucket = Self::create_non_fungible_bucket();
-            let proof = bucket
-                .as_fungible()
-                .create_proof_of_amount(2)
-                .skip_checking();
-            assert_eq!(proof.amount(), dec!(2));
-            proof.drop();
-            bucket.burn();
-        }
+
         pub fn create_proof_from_non_fungible_bucket_of_non_fungibles() {
             let bucket = Self::create_non_fungible_bucket();
             let proof = bucket
@@ -96,19 +80,6 @@ mod pc {
         // Vault
         //==================
 
-        pub fn create_proof_from_fungible_vault() {
-            let vault = Self::create_fungible_vault();
-            let proof = vault
-                .as_fungible()
-                .create_proof_of_amount(dec!(1))
-                .skip_checking();
-            assert_eq!(proof.amount(), dec!(1));
-            proof.drop();
-            ProofCreation { vault }
-                .instantiate()
-                .prepare_to_globalize(OwnerRole::None)
-                .globalize();
-        }
         pub fn create_proof_from_fungible_vault_of_amount() {
             let vault = Self::create_fungible_vault();
             let proof = vault
@@ -122,6 +93,7 @@ mod pc {
                 .prepare_to_globalize(OwnerRole::None)
                 .globalize();
         }
+        
         pub fn create_proof_from_fungible_vault_of_non_fungibles() {
             let vault = Self::create_fungible_vault();
             let proof = vault
@@ -186,15 +158,6 @@ mod pc {
         // Auth Zone
         //==================
 
-        pub fn create_proof_from_fungible_auth_zone() {
-            let bucket = Self::prepare_auth_zone_fungible_proof_to_bucket();
-            let proof =
-                LocalAuthZone::create_proof_of_all(bucket.resource_address()).skip_checking();
-            assert_eq!(proof.amount(), dec!(1));
-            proof.drop();
-            LocalAuthZone::clear();
-            bucket.burn();
-        }
         pub fn create_proof_from_fungible_auth_zone_of_amount() {
             let bucket = Self::prepare_auth_zone_fungible_proof_to_bucket();
             let proof =

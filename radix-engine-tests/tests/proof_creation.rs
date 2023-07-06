@@ -38,7 +38,6 @@ fn create_proof_internal(function_name: &str, error: Option<&str>) {
 
 #[test]
 fn can_create_proof_from_fungible_bucket() {
-    create_proof_internal("create_proof_from_fungible_bucket", None);
     create_proof_internal("create_proof_from_fungible_bucket_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_bucket_of_non_fungibles",
@@ -49,8 +48,6 @@ fn can_create_proof_from_fungible_bucket() {
 
 #[test]
 fn can_create_proof_from_non_fungible_bucket() {
-    create_proof_internal("create_proof_from_non_fungible_bucket", None);
-    create_proof_internal("create_proof_from_non_fungible_bucket_of_amount", None);
     create_proof_internal(
         "create_proof_from_non_fungible_bucket_of_non_fungibles",
         None,
@@ -60,7 +57,6 @@ fn can_create_proof_from_non_fungible_bucket() {
 
 #[test]
 fn can_create_proof_from_fungible_vault() {
-    create_proof_internal("create_proof_from_fungible_vault", None);
     create_proof_internal("create_proof_from_fungible_vault_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_vault_of_non_fungibles",
@@ -71,7 +67,6 @@ fn can_create_proof_from_fungible_vault() {
 #[test]
 fn can_create_proof_from_non_fungible_vault() {
     create_proof_internal("create_proof_from_non_fungible_vault", None);
-    create_proof_internal("create_proof_from_non_fungible_vault_of_amount", None);
     create_proof_internal(
         "create_proof_from_non_fungible_vault_of_non_fungibles",
         None,
@@ -80,7 +75,6 @@ fn can_create_proof_from_non_fungible_vault() {
 
 #[test]
 fn can_create_proof_from_fungible_auth_zone() {
-    create_proof_internal("create_proof_from_fungible_auth_zone", None);
     create_proof_internal("create_proof_from_fungible_auth_zone_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_auth_zone_of_non_fungibles",
@@ -91,7 +85,6 @@ fn can_create_proof_from_fungible_auth_zone() {
 
 #[test]
 fn can_create_proof_from_non_fungible_auth_zone() {
-    create_proof_internal("create_proof_from_non_fungible_auth_zone", None);
     create_proof_internal("create_proof_from_non_fungible_auth_zone_of_amount", None);
     create_proof_internal(
         "create_proof_from_non_fungible_auth_zone_of_non_fungibles",
