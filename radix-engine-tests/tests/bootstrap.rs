@@ -5,7 +5,7 @@ use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
     GenesisStakeAllocation,
 };
-use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
@@ -151,12 +151,12 @@ fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
         .unwrap();
 
     let total_supply = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>(
             &resource_address.as_node_id(),
             MAIN_BASE_PARTITION,
             &FungibleResourceManagerField::TotalSupply.into(),
         )
-        .unwrap();
+        .unwrap().value.0;
     assert_eq!(total_supply, allocation_amount);
 
     let key = scrypto_encode("symbol").unwrap();
@@ -376,12 +376,14 @@ fn test_genesis_time() {
         .unwrap();
 
     let proposer_minute_timestamp = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, ProposerMinuteTimestampSubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ProposerMinuteTimestampSubstate>>(
             CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
         )
-        .unwrap();
+        .unwrap()
+        .value
+        .0;
 
     assert_eq!(proposer_minute_timestamp.epoch_minute, 123);
 }

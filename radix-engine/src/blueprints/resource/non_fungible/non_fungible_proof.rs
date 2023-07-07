@@ -1,10 +1,11 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::system::system::FieldSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
-use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::field_api::LockFlags;
+use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -86,9 +87,9 @@ impl NonFungibleProofBlueprint {
                 NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: ProofMoveableSubstate = api.field_lock_read_typed(handle)?;
+            let substate_ref: ProofMoveableSubstate = api.field_read_typed(handle)?;
             let moveable = substate_ref.clone();
-            api.field_lock_release(handle)?;
+            api.field_close(handle)?;
             moveable
         };
         let handle = api.actor_open_field(
@@ -96,20 +97,17 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
 
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                scrypto_encode(&moveable).unwrap(),
-                scrypto_encode(&clone).unwrap(),
-            ],
+            vec![FieldValue::new(&moveable), FieldValue::new(&clone)],
         )?;
 
         // Drop after object creation to keep the reference alive
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(Proof(Own(proof_id)))
     }
@@ -123,9 +121,9 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -140,9 +138,9 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
         let ids = substate_ref.non_fungible_local_ids().clone();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(ids)
     }
 
@@ -169,9 +167,9 @@ impl NonFungibleProofBlueprint {
             LockFlags::read_only(),
             SystemLockData::Default,
         )?;
-        let proof_substate: NonFungibleProofSubstate =
+        let proof_substate: FieldSubstate<NonFungibleProofSubstate> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
-        proof_substate.drop_proof(api)?;
+        proof_substate.value.0.drop_proof(api)?;
         api.kernel_close_substate(handle)?;
 
         // Drop self

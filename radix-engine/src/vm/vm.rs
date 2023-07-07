@@ -7,7 +7,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::vm::wasm::{WasmEngine, WasmValidator};
 use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 

@@ -4,10 +4,12 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientApi, CollectionIndex, KVEntry, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{
+    ClientApi, CollectionIndex, FieldValue, KVEntry, OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::schema::InstanceSchema;
@@ -86,7 +88,7 @@ where
         }
 
         api.key_value_entry_set_typed(non_fungible_handle, value)?;
-        api.key_value_entry_release(non_fungible_handle)?;
+        api.key_value_entry_close(non_fungible_handle)?;
         ids.insert(non_fungible_local_id);
     }
 
@@ -134,14 +136,21 @@ impl NonFungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
+        let total_supply_field =
+            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+                FieldValue::new(&Decimal::zero())
+            } else {
+                FieldValue::immutable(&Decimal::zero())
+            };
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             Some(instance_schema),
             vec![
-                scrypto_encode(&id_type).unwrap(),
-                scrypto_encode(&mutable_fields).unwrap(),
-                scrypto_encode(&Decimal::zero()).unwrap(),
+                FieldValue::immutable(&id_type),
+                FieldValue::immutable(&mutable_fields),
+                total_supply_field,
             ],
             btreemap!(),
         )?;
@@ -229,14 +238,21 @@ impl NonFungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
+        let total_supply_field =
+            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+                FieldValue::new(&supply)
+            } else {
+                FieldValue::immutable(&supply)
+            };
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             Some(instance_schema),
             vec![
-                scrypto_encode(&id_type).unwrap(),
-                scrypto_encode(&mutable_fields).unwrap(),
-                scrypto_encode(&supply).unwrap(),
+                FieldValue::immutable(&id_type),
+                FieldValue::immutable(&mutable_fields),
+                total_supply_field,
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
@@ -305,14 +321,21 @@ impl NonFungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
+        let total_supply_field =
+            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+                FieldValue::new(&supply)
+            } else {
+                FieldValue::immutable(&supply)
+            };
+
         let object_id = api.new_object(
             NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             Some(instance_schema),
             vec![
-                scrypto_encode(&NonFungibleIdType::RUID).unwrap(),
-                scrypto_encode(&mutable_fields).unwrap(),
-                scrypto_encode(&supply).unwrap(),
+                FieldValue::immutable(&NonFungibleIdType::RUID),
+                FieldValue::immutable(&mutable_fields),
+                total_supply_field,
             ],
             btreemap!(NON_FUNGIBLE_RESOURCE_MANAGER_DATA_STORE => non_fungibles),
         )?;
@@ -346,8 +369,8 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::IdType.into(),
                 LockFlags::read_only(),
             )?;
-            let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
-            api.field_lock_release(handle)?;
+            let id_type: NonFungibleIdType = api.field_read_typed(handle)?;
+            api.field_close(handle)?;
             if id_type == NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::NonFungibleResourceManagerError(
@@ -366,10 +389,10 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             let amount: Decimal = entries.len().into();
             total_supply += amount;
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
         let ids = {
@@ -403,10 +426,10 @@ impl NonFungibleResourceManagerBlueprint {
             let id_type_handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::IdType.into(),
-                LockFlags::MUTABLE,
+                LockFlags::read_only(),
             )?;
-            let id_type: NonFungibleIdType = api.field_lock_read_typed(id_type_handle)?;
-            api.field_lock_release(id_type_handle)?;
+            let id_type: NonFungibleIdType = api.field_read_typed(id_type_handle)?;
+            api.field_close(id_type_handle)?;
 
             if id_type != NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
@@ -427,9 +450,9 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             total_supply += 1;
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
         let id = {
@@ -465,10 +488,10 @@ impl NonFungibleResourceManagerBlueprint {
             let handle = api.actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleResourceManagerField::IdType.into(),
-                LockFlags::MUTABLE,
+                LockFlags::read_only(),
             )?;
-            let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
-            api.field_lock_release(handle)?;
+            let id_type: NonFungibleIdType = api.field_read_typed(handle)?;
+            api.field_close(handle)?;
 
             if id_type != NonFungibleIdType::RUID {
                 return Err(RuntimeError::ApplicationError(
@@ -488,10 +511,10 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             let amount: Decimal = entries.len().into();
             total_supply += amount;
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
         // Update data
@@ -531,7 +554,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
         let mutable_fields: NonFungibleResourceManagerMutableFieldsSubstate =
-            api.field_lock_read_typed(data_schema_handle)?;
+            api.field_read_typed(data_schema_handle)?;
 
         let mut instance_schema = api.actor_get_info()?.instance_schema.unwrap();
         let kv_schema = instance_schema.schema;
@@ -587,7 +610,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        api.key_value_entry_release(non_fungible_handle)?;
+        api.key_value_entry_close(non_fungible_handle)?;
 
         Ok(())
     }
@@ -660,8 +683,8 @@ impl NonFungibleResourceManagerBlueprint {
         let bucket_id = api.new_simple_object(
             NON_FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
-                scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+                FieldValue::new(&LiquidNonFungibleResource::new(ids)),
+                FieldValue::new(&LockedNonFungibleResource::default()),
             ],
         )?;
 
@@ -708,9 +731,9 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             total_supply -= other_bucket.liquid.amount();
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
         }
 
         // Update
@@ -725,8 +748,8 @@ impl NonFungibleResourceManagerBlueprint {
                 api.key_value_entry_remove(handle)?;
                 // Tombstone the non fungible
                 // TODO: RUID non fungibles with no data don't need to go through this process
-                api.key_value_entry_freeze(handle)?;
-                api.key_value_entry_release(handle)?;
+                api.key_value_entry_lock(handle)?;
+                api.key_value_entry_close(handle)?;
             }
         }
 
@@ -761,9 +784,9 @@ impl NonFungibleResourceManagerBlueprint {
         let vault_id = api.new_simple_object(
             NON_FUNGIBLE_VAULT_BLUEPRINT,
             vec![
-                scrypto_encode(&vault).unwrap(),
-                scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
-                scrypto_encode(&VaultFrozenFlag::default()).unwrap(),
+                FieldValue::new(&vault),
+                FieldValue::new(&LockedNonFungibleResource::default()),
+                FieldValue::new(&VaultFrozenFlag::default()),
             ],
         )?;
 
@@ -782,7 +805,7 @@ impl NonFungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let id_type: NonFungibleIdType = api.field_lock_read_typed(handle)?;
+        let id_type: NonFungibleIdType = api.field_read_typed(handle)?;
         let resource_type = ResourceType::NonFungible { id_type };
 
         Ok(resource_type)
@@ -798,7 +821,7 @@ impl NonFungibleResourceManagerBlueprint {
                 NonFungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::read_only(),
             )?;
-            let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             Ok(Some(total_supply))
         } else {
             Ok(None)
