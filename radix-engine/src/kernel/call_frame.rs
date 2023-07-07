@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
-use super::actor::{Actor, FunctionActor, MethodActor};
+use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
 
@@ -325,10 +325,10 @@ impl<L: Clone> CallFrame<L> {
                 blueprint_id: blueprint,
                 ..
             })
-            | Actor::VirtualLazyLoad {
+            | Actor::BlueprintHook(BlueprintHookActor {
                 blueprint_id: blueprint,
                 ..
-            } => {
+            }) => {
                 additional_global_refs.push(blueprint.package_address.clone().into());
             }
         }

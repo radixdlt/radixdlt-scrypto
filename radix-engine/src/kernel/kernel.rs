@@ -1,4 +1,4 @@
-use super::actor::{Actor, FunctionActor, MethodActor};
+use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
@@ -222,10 +222,10 @@ where
                 blueprint_id: blueprint,
                 ..
             })
-            | Actor::VirtualLazyLoad {
+            | Actor::BlueprintHook(BlueprintHookActor {
                 blueprint_id: blueprint,
                 ..
-            } => {
+            }) => {
                 // FIXME: combine this with reference check of invocation
                 self.current_frame
                     .get_node_visibility(blueprint.package_address.as_node_id())

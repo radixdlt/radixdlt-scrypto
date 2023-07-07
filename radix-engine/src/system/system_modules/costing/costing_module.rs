@@ -215,7 +215,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     }
                 }
                 Actor::Function(FunctionActor { ident, .. }) => (None, ident),
-                Actor::VirtualLazyLoad { .. } | Actor::Root => {
+                Actor::BlueprintHook(..) | Actor::Root => {
                     return Ok(());
                 }
             };

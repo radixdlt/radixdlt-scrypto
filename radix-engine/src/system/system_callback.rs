@@ -3,6 +3,8 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
+use crate::kernel::actor::BlueprintHook;
+use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
@@ -522,10 +524,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 args.copy_from_slice(&node_id.as_ref()[1..]);
 
                 let invocation = KernelInvocation {
-                    actor: Actor::VirtualLazyLoad {
-                        blueprint_id: blueprint.clone(),
-                        ident: virtual_func_id,
-                    },
+                    actor: Actor::blueprint_hook(blueprint.clone(), BlueprintHook::OnVirtualize),
                     args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
                 };
 

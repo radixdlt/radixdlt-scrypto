@@ -46,15 +46,26 @@ impl FunctionActor {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct BlueprintHookActor {
+    blueprint_id: BlueprintId,
+    hook: BlueprintHook,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum BlueprintHook {
+    OnVirtualize,
+    OnMove,
+    OnDrop,
+    OnPersist,
+}
+
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Root,
     Method(MethodActor),
     Function(FunctionActor),
-    VirtualLazyLoad {
-        blueprint_id: BlueprintId,
-        ident: u8,
-    },
+    BlueprintHook(BlueprintHookActor),
 }
 
 impl Actor {
@@ -72,10 +83,10 @@ impl Actor {
                     + blueprint.blueprint_name.len()
                     + ident.len()
             }
-            Actor::VirtualLazyLoad {
+            Actor::BlueprintHook(BlueprintHookActor {
                 blueprint_id: blueprint,
                 ..
-            } => blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1,
+            }) => blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1,
         }
     }
 
@@ -95,7 +106,7 @@ impl Actor {
                         .eq(AUTH_ZONE_BLUEPRINT)
             }
             Actor::Function { .. } => false,
-            Actor::VirtualLazyLoad { .. } => false,
+            Actor::BlueprintHook { .. } => false,
             Actor::Root { .. } => false,
         }
     }
@@ -107,7 +118,7 @@ impl Actor {
                 ..
             }) => object_info.global,
             Actor::Function { .. } => true,
-            Actor::VirtualLazyLoad { .. } => false,
+            Actor::BlueprintHook { .. } => true,
             Actor::Root { .. } => false,
         }
     }
@@ -135,10 +146,10 @@ impl Actor {
                 blueprint_id: blueprint,
                 ..
             })
-            | Actor::VirtualLazyLoad {
+            | Actor::BlueprintHook(BlueprintHookActor {
                 blueprint_id: blueprint,
                 ..
-            } => blueprint.eq(&BlueprintId::new(
+            }) => blueprint.eq(&BlueprintId::new(
                 &TRANSACTION_PROCESSOR_PACKAGE,
                 TRANSACTION_PROCESSOR_BLUEPRINT,
             )),
@@ -186,10 +197,10 @@ impl Actor {
                 blueprint_id: blueprint,
                 ..
             })
-            | Actor::VirtualLazyLoad {
+            | Actor::BlueprintHook(BlueprintHookActor {
                 blueprint_id: blueprint,
                 ..
-            } => blueprint,
+            }) => blueprint,
             Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
@@ -224,10 +235,10 @@ impl Actor {
                 blueprint_id: blueprint,
                 ..
             }) => blueprint,
-            Actor::VirtualLazyLoad {
+            Actor::BlueprintHook(BlueprintHookActor {
                 blueprint_id: blueprint,
                 ..
-            } => blueprint,
+            }) => blueprint,
             Actor::Root => return &PACKAGE_PACKAGE, // FIXME: have the right interface
         };
 
@@ -248,10 +259,10 @@ impl Actor {
                 blueprint_id: blueprint,
                 ..
             })
-            | Actor::VirtualLazyLoad {
+            | Actor::BlueprintHook(BlueprintHookActor {
                 blueprint_id: blueprint,
                 ..
-            } => blueprint.blueprint_name.as_str(),
+            }) => blueprint.blueprint_name.as_str(),
             Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
@@ -281,10 +292,7 @@ impl Actor {
         })
     }
 
-    pub fn virtual_lazy_load(blueprint: BlueprintId, ident: u8) -> Self {
-        Self::VirtualLazyLoad {
-            blueprint_id: blueprint,
-            ident,
-        }
+    pub fn blueprint_hook(blueprint_id: BlueprintId, hook: BlueprintHook) -> Self {
+        Self::BlueprintHook(BlueprintHookActor { blueprint_id, hook })
     }
 }

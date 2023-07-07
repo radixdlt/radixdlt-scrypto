@@ -119,7 +119,7 @@ impl AuthModule {
 
                     (resolved_permission, ActingLocation::AtBarrier)
                 }
-                Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
+                Actor::BlueprintHook(..) | Actor::Root => return Ok(()),
             };
 
             // Step 2: Check permission

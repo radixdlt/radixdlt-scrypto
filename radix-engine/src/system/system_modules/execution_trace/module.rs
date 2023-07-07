@@ -484,7 +484,7 @@ impl ExecutionTraceModule {
                     blueprint_name: blueprint.blueprint_name.clone(),
                     ident: ident.clone(),
                 }),
-                Actor::VirtualLazyLoad { .. } | Actor::Root => {
+                Actor::BlueprintHook(..) | Actor::Root => {
                     return;
                 }
             };
@@ -542,7 +542,7 @@ impl ExecutionTraceModule {
             {
                 self.handle_vault_take_output(&resource_summary, &caller, node_id)
             }
-            Actor::VirtualLazyLoad { .. } => return,
+            Actor::BlueprintHook(..) => return,
             _ => {}
         }
 
