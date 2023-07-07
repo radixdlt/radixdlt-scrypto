@@ -4,7 +4,7 @@ use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingEntry;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
-    InvalidModuleSet, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
+    InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
@@ -979,40 +979,18 @@ where
             }
         };
 
-        // Check module configuration
-        // TODO: Move this to be a blueprint configuration
-        let expected_modules = if reserved_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
-            && (reserved_blueprint_id
-                .blueprint_name
-                .eq(FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
-                || reserved_blueprint_id
-                    .blueprint_name
-                    .eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT))
-        {
-            btreeset!(
-                ObjectModuleId::Main,
+        // Check for required modules
+        if !modules.contains_key(&ObjectModuleId::AccessRules) {
+            return Err(RuntimeError::SystemError(SystemError::MissingModule(
+                ObjectModuleId::AccessRules,
+            )));
+        }
+        if !modules.contains_key(&ObjectModuleId::Metadata) {
+            return Err(RuntimeError::SystemError(SystemError::MissingModule(
                 ObjectModuleId::Metadata,
-                ObjectModuleId::AccessRules
-            )
-        } else {
-            btreeset!(
-                ObjectModuleId::Main,
-                ObjectModuleId::Metadata,
-                ObjectModuleId::Royalty,
-                ObjectModuleId::AccessRules
-            )
-        };
-        let module_ids = modules
-            .keys()
-            .cloned()
-            .collect::<BTreeSet<ObjectModuleId>>();
-        if module_ids != expected_modules {
-            return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
-                Box::new(InvalidModuleSet(module_ids.clone())),
             )));
         }
 
-        // Read the type info
         let node_id = modules
             .remove(&ObjectModuleId::Main)
             .ok_or(RuntimeError::SystemError(SystemError::MissingModule(
@@ -1026,19 +1004,24 @@ where
                 (node_id, ObjectModuleId::Main),
                 (*global_address.as_node_id(), ObjectModuleId::Main),
             );
-        let lock_handle = self.api.kernel_open_substate(
-            &node_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-            LockFlags::read_only(),
-            SystemLockData::Default,
-        )?;
-        let mut type_info: TypeInfoSubstate = self
-            .api
-            .kernel_read_substate(lock_handle)?
-            .as_typed()
-            .unwrap();
-        self.api.kernel_close_substate(lock_handle)?;
+
+        // Read the type info
+        let mut type_info = {
+            let lock_handle = self.api.kernel_open_substate(
+                &node_id,
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+                LockFlags::read_only(),
+                SystemLockData::Default,
+            )?;
+            let type_info: TypeInfoSubstate = self
+                .api
+                .kernel_read_substate(lock_handle)?
+                .as_typed()
+                .unwrap();
+            self.api.kernel_close_substate(lock_handle)?;
+            type_info
+        };
 
         let object_info = match &mut type_info {
             TypeInfoSubstate::Object(object_info) => object_info,

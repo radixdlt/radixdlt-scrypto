@@ -16,8 +16,7 @@ use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
-#[test]
-fn should_not_be_able_to_call_royalty_methods_on_resource_manager() {
+fn should_not_be_able_to_call_royalty_methods(resource: bool) {
     // Arrange
     const BLUEPRINT_NAME: &str = "MyBlueprint";
     const CUSTOM_PACKAGE_CODE_ID: u64 = 1024;
@@ -61,8 +60,15 @@ fn should_not_be_able_to_call_royalty_methods_on_resource_manager() {
             vec![("test", "test", false)],
         ),
     );
-    let resource_address = test_runner
-        .create_everything_allowed_non_fungible_resource(OwnerRole::Fixed(rule!(allow_all)));
+
+    let args = if resource {
+        let resource_address = test_runner
+            .create_everything_allowed_non_fungible_resource(OwnerRole::Fixed(rule!(allow_all)));
+        manifest_args!(resource_address)
+    } else {
+        manifest_args!(package_address)
+    };
+
 
     // Act
     let receipt = test_runner.execute_manifest(
@@ -72,7 +78,7 @@ fn should_not_be_able_to_call_royalty_methods_on_resource_manager() {
                 package_address,
                 BLUEPRINT_NAME,
                 "test",
-                manifest_args!(resource_address),
+                args,
             )
             .build(),
         vec![],
@@ -89,7 +95,15 @@ fn should_not_be_able_to_call_royalty_methods_on_resource_manager() {
     });
 }
 
-fn should_not_be_able_to_call_royalty_methods_on_package() {}
+#[test]
+fn should_not_be_able_to_call_royalty_methods_on_resource_manager() {
+    should_not_be_able_to_call_royalty_methods(true);
+}
+
+#[test]
+fn should_not_be_able_to_call_royalty_methods_on_package() {
+    should_not_be_able_to_call_royalty_methods(false);
+}
 
 #[test]
 fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {

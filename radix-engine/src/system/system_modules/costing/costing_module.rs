@@ -17,6 +17,7 @@ use crate::{
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
+use radix_engine_interface::api::ObjectModuleId;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -201,13 +202,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (blueprint, ident, optional_component) = {
+        let (blueprint, ident, maybe_object_royalties) = {
             let blueprint = callee.blueprint_id();
             let (maybe_component, ident) = match &callee {
-                Actor::Method(MethodActor { node_id, ident, .. }) => {
-                    if node_id.is_global_component() {
+                Actor::Method(MethodActor { node_id, ident, module_object_info, .. }) => {
+                    if module_object_info.module_versions.contains_key(&ObjectModuleId::Royalty) {
                         (
-                            Some(ComponentAddress::new_or_panic(node_id.clone().into())),
+                            Some(node_id.clone()),
                             ident,
                         )
                     } else {
@@ -237,9 +238,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         // Apply component royalty
         //===========================
-        if let Some(component_address) = optional_component {
+        if let Some(node_id) = maybe_object_royalties {
             ComponentRoyaltyBlueprint::charge_component_royalty(
-                component_address.as_node_id(),
+                &node_id,
                 ident,
                 api,
             )?;

@@ -10,7 +10,6 @@ use crate::types::*;
 use crate::vm::wasm::PrepareError;
 use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -618,6 +617,8 @@ pub fn create_bootstrap_package_partitions(
                 main_blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
                 module_versions: btreemap!(
                     ObjectModuleId::Main => BlueprintVersion::default(),
+                    ObjectModuleId::Metadata => BlueprintVersion::default(),
+                    ObjectModuleId::AccessRules => BlueprintVersion::default(),
                 ),
                 blueprint_info: ObjectBlueprintInfo::default(),
                 features: btreeset!(),
@@ -754,13 +755,10 @@ where
         kv_entries,
     )?;
 
-    let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
-
     let address = api.globalize(
         btreemap!(
             ObjectModuleId::Main => package_object,
             ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::Royalty => royalty.0,
             ObjectModuleId::AccessRules => access_rules.0.0,
         ),
         package_address_reservation,
