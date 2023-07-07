@@ -110,7 +110,7 @@ impl RoleKey {
 }
 
 #[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum OwnerRoleUpdater {
     /// Owner is fixed and cannot be updated by anyone
     None,

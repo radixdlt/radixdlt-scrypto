@@ -3,7 +3,7 @@ use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 
 use super::actor::Actor;
 use super::call_frame::Message;

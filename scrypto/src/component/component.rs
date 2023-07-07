@@ -15,7 +15,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
+use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi, FieldValue};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, Bucket, MethodAccessibility, OwnerRole, RolesInit,
 };
@@ -80,7 +80,7 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
 
     fn instantiate(self) -> Owned<Self> {
         let node_id = ScryptoEnv
-            .new_simple_object(Self::BLUEPRINT_NAME, vec![scrypto_encode(&self).unwrap()])
+            .new_simple_object(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)])
             .unwrap();
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
