@@ -1994,13 +1994,19 @@ pub fn create_notarized_transaction(
         .build()
 }
 
+pub trait NativeVmExtension: Clone {
+    type Instance: VmInvoke + Clone;
+
+    fn try_create_instance(&self, code: &[u8]) -> Option<Self::Instance>;
+}
+
 #[derive(Clone)]
-pub struct TestNativeVm<C: VmInvoke + Clone> {
+pub struct OverridePackageCode<C: VmInvoke + Clone> {
     custom_package_code_id: u64,
     custom_invoke: C,
 }
 
-impl<C: VmInvoke + Clone> TestNativeVm<C> {
+impl<C: VmInvoke + Clone> OverridePackageCode<C> {
     pub fn new(custom_package_code_id: u64, custom_invoke: C) -> Self {
         Self {
             custom_package_code_id,
@@ -2009,32 +2015,53 @@ impl<C: VmInvoke + Clone> TestNativeVm<C> {
     }
 }
 
-impl<C: VmInvoke + Clone> NativeVm for TestNativeVm<C> {
-    type Instance = TestNativeVmInstance<C>;
+impl<C: VmInvoke + Clone> NativeVmExtension for OverridePackageCode<C> {
+    type Instance = C;
+
+    fn try_create_instance(&self, code: &[u8]) -> Option<C> {
+        let code_id = {
+            let code: [u8; 8] = match code.clone().try_into() {
+                Ok(code) => code,
+                Err(..) => return None,
+            };
+            u64::from_be_bytes(code)
+        };
+
+        if self.custom_package_code_id == code_id {
+            Some(self.custom_invoke.clone())
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct TestNativeVm<E: NativeVmExtension> {
+    extension: E,
+}
+
+impl<E: NativeVmExtension> TestNativeVm<E> {
+    pub fn new(extension: E) -> Self {
+        Self {
+            extension,
+        }
+    }
+}
+
+impl<E: NativeVmExtension> NativeVm for TestNativeVm<E> {
+    type Instance = TestNativeVmInstance<E::Instance>;
 
     fn create_instance(
         &self,
         package_address: &PackageAddress,
         code: &[u8],
-    ) -> Result<TestNativeVmInstance<C>, RuntimeError> {
-        let native_package_code_id = {
-            let code: [u8; 8] = match code.clone().try_into() {
-                Ok(code) => code,
-                Err(..) => {
-                    return Err(RuntimeError::VmError(VmError::Native(
-                        NativeRuntimeError::InvalidCodeId,
-                    )));
-                }
-            };
-            u64::from_be_bytes(code)
-        };
-
-        if native_package_code_id == self.custom_package_code_id {
-            Ok(TestNativeVmInstance::Other(self.custom_invoke.clone()))
-        } else {
-            let instance = NativeVmV1.create_instance(package_address, code)?;
-            Ok(TestNativeVmInstance::Normal(instance))
+    ) -> Result<Self::Instance, RuntimeError> {
+        if let Some(custom_invoke) = self.extension.try_create_instance(code) {
+            return Ok(TestNativeVmInstance::Other(custom_invoke));
         }
+
+        let instance = NativeVmV1.create_instance(package_address, code)?;
+        Ok(TestNativeVmInstance::Normal(instance))
     }
 }
 
