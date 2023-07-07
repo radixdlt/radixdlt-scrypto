@@ -68,7 +68,8 @@ impl Publish {
 
         if let Some(package_address) = self.package_address.clone() {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-            let vm = Vm::new(&scrypto_vm, NativeVm);
+            let native_vm = NativeVm::new(DefaultNativeVm);
+            let vm = Vm::new(&scrypto_vm, native_vm);
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
             Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 

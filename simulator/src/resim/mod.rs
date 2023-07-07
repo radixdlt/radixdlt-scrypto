@@ -67,7 +67,7 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
-use radix_engine::vm::{NativeVm, ScryptoVm, Vm};
+use radix_engine::vm::{DefaultNativeVm, NativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, TypePointer,
@@ -172,7 +172,8 @@ pub fn handle_system_transaction<O: std::io::Write>(
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm = Vm::new(&scrypto_vm, NativeVm);
+    let native_vm = NativeVm::new(DefaultNativeVm);
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm.clone(), false).bootstrap_test_default();
 
@@ -245,7 +246,8 @@ pub fn handle_manifest<O: std::io::Write>(
         }
         None => {
             let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-            let vm = Vm::new(&scrypto_vm, NativeVm);
+            let native_vm = NativeVm::new(DefaultNativeVm);
+            let vm = Vm::new(&scrypto_vm, native_vm);
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
             Bootstrapper::new(&mut substate_db, vm.clone(), false).bootstrap_test_default();
 
@@ -329,7 +331,8 @@ pub fn export_package_schema(
     package_address: PackageAddress,
 ) -> Result<BTreeMap<BlueprintVersionKey, BlueprintDefinition>, Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm = Vm::new(&scrypto_vm, NativeVm);
+    let native_vm = NativeVm::new(DefaultNativeVm);
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
@@ -354,7 +357,8 @@ pub fn export_package_schema(
 
 pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectInfo, Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm = Vm::new(&scrypto_vm, NativeVm);
+    let native_vm = NativeVm::new(DefaultNativeVm);
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
@@ -376,7 +380,8 @@ pub fn export_schema(
     schema_hash: Hash,
 ) -> Result<ScryptoSchema, Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm = Vm::new(&scrypto_vm, NativeVm);
+    let native_vm = NativeVm::new(DefaultNativeVm);
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
@@ -412,7 +417,8 @@ pub fn export_blueprint_interface(
 
 pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm = Vm::new(&scrypto_vm, NativeVm);
+    let native_vm = NativeVm::new(DefaultNativeVm);
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
@@ -493,7 +499,8 @@ pub fn db_upsert_timestamps(
     minute_timestamp: ProposerMinuteTimestampSubstate,
 ) -> Result<(), Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm = Vm::new(&scrypto_vm, NativeVm);
+    let native_vm = NativeVm::new(DefaultNativeVm);
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
@@ -516,7 +523,8 @@ pub fn db_upsert_timestamps(
 
 pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm = Vm::new(&scrypto_vm, NativeVm);
+    let native_vm = NativeVm::new(DefaultNativeVm);
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
     Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
