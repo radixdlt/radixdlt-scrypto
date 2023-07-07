@@ -199,6 +199,8 @@ pub enum CallFrameError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
     NoFnIdentifier,
+    NoBlueprintId,
+    NoPackageAddress,
     InvalidObjectHandle,
     NodeIdNotExist,
     GlobalAddressDoesNotExist,

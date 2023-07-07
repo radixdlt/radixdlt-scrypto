@@ -201,8 +201,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (blueprint, ident, optional_component) = {
-            let blueprint = callee.blueprint_id();
+        let (optional_blueprint_id, ident, optional_component) = {
             let (maybe_component, ident) = match &callee {
                 Actor::Method(MethodActor { node_id, ident, .. }) => {
                     if node_id.is_global_component() {
@@ -220,19 +219,22 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 }
             };
 
-            (blueprint, ident, maybe_component)
+            (callee.blueprint_id(), ident, maybe_component)
         };
 
         //===========================
         // Apply package royalty
         //===========================
-        let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.as_str());
-        PackageRoyaltyNativeBlueprint::charge_package_royalty(
-            blueprint.package_address.as_node_id(),
-            &bp_version_key,
-            ident,
-            api,
-        )?;
+        if let Some(blueprint_id) = optional_blueprint_id {
+            let bp_version_key =
+                BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str());
+            PackageRoyaltyNativeBlueprint::charge_package_royalty(
+                blueprint_id.package_address.as_node_id(),
+                &bp_version_key,
+                ident,
+                api,
+            )?;
+        }
 
         //===========================
         // Apply component royalty

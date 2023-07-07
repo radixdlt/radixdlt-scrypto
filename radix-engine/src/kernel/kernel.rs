@@ -421,7 +421,7 @@ where
         SystemState {
             system: &mut self.callback,
             caller,
-            current: self.current_frame.actor(),
+            current_actor: self.current_frame.actor(),
         }
     }
 
