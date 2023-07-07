@@ -307,119 +307,93 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             ident,
         } = system.actor_get_fn_identifier()?;
 
-        let output = {
-            // Make dependent resources/components visible
-            let key = BlueprintVersionKey {
-                blueprint: blueprint_id.blueprint_name.clone(),
-                version: BlueprintVersion::default(),
-            };
+        // Make dependent resources/components visible
+        let key = BlueprintVersionKey {
+            blueprint: blueprint_id.blueprint_name.clone(),
+            version: BlueprintVersion::default(),
+        };
 
-            let handle = system.kernel_open_substate_with_default(
-                blueprint_id.package_address.as_node_id(),
-                MAIN_BASE_PARTITION
-                    .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
-                    .unwrap(),
-                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
-                LockFlags::read_only(),
-                Some(|| {
-                    let kv_entry = KeyValueEntrySubstate::<()>::default();
-                    IndexedScryptoValue::from_typed(&kv_entry)
-                }),
-                SystemLockData::default(),
+        let handle = system.kernel_open_substate_with_default(
+            blueprint_id.package_address.as_node_id(),
+            MAIN_BASE_PARTITION
+                .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
+                .unwrap(),
+            &SubstateKey::Map(scrypto_encode(&key).unwrap()),
+            LockFlags::read_only(),
+            Some(|| {
+                let kv_entry = KeyValueEntrySubstate::<()>::default();
+                IndexedScryptoValue::from_typed(&kv_entry)
+            }),
+            SystemLockData::default(),
+        )?;
+        system.kernel_read_substate(handle)?;
+        system.kernel_close_substate(handle)?;
+
+        //  Validate input
+        let definition = system.get_blueprint_definition(
+            blueprint_id.package_address,
+            &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+        )?;
+
+        let export = {
+            let input_type_pointer = definition
+                .interface
+                .get_function_input_type_pointer(ident.as_str())
+                .ok_or_else(|| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
+                        ident.to_string(),
+                    ))
+                })?;
+
+            system.validate_payload_against_blueprint_schema(
+                &blueprint_id,
+                &None,
+                &[(input.as_vec_ref(), input_type_pointer)],
             )?;
-            system.kernel_read_substate(handle)?;
-            system.kernel_close_substate(handle)?;
 
-            //  Validate input
-            let definition = system.get_blueprint_definition(
-                blueprint_id.package_address,
-                &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-            )?;
+            let function_schema = definition
+                .interface
+                .functions
+                .get(&ident)
+                .expect("Should exist due to schema check");
 
-            let export = match &ident {
-                FnIdent::Application(ident) => {
-                    let input_type_pointer = definition
-                        .interface
-                        .get_function_input_type_pointer(ident.as_str())
-                        .ok_or_else(|| {
-                            RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
-                                ident.to_string(),
-                            ))
-                        })?;
-
-                    system.validate_payload_against_blueprint_schema(
-                        &blueprint_id,
-                        &None,
-                        &[(input.as_vec_ref(), input_type_pointer)],
-                    )?;
-
-                    let function_schema = definition
-                        .interface
-                        .functions
-                        .get(ident)
-                        .expect("Should exist due to schema check");
-
-                    match (&function_schema.receiver, receiver) {
-                        (Some(receiver_info), Some((_, direct_access))) => {
-                            if direct_access
-                                != receiver_info.ref_types.contains(RefTypes::DIRECT_ACCESS)
-                            {
-                                return Err(RuntimeError::SystemUpstreamError(
-                                    SystemUpstreamError::ReceiverNotMatch(ident.to_string()),
-                                ));
-                            }
-                        }
-                        (None, None) => {}
-                        _ => {
-                            return Err(RuntimeError::SystemUpstreamError(
-                                SystemUpstreamError::ReceiverNotMatch(ident.to_string()),
-                            ));
-                        }
-                    }
-
-                    definition
-                        .function_exports
-                        .get(ident)
-                        .expect("Schema should have validated this exists")
-                        .clone()
-                }
-                FnIdent::System(system_func_id) => {
-                    if let Some(package_export) =
-                        definition.virtual_lazy_load_functions.get(&system_func_id)
-                    {
-                        package_export.clone()
-                    } else {
+            match (&function_schema.receiver, receiver) {
+                (Some(receiver_info), Some((_, direct_access))) => {
+                    if direct_access != receiver_info.ref_types.contains(RefTypes::DIRECT_ACCESS) {
                         return Err(RuntimeError::SystemUpstreamError(
-                            SystemUpstreamError::SystemFunctionCallNotAllowed,
+                            SystemUpstreamError::ReceiverNotMatch(ident.to_string()),
                         ));
                     }
                 }
-            };
-
-            // Execute
-            let output = { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
-
-            // Validate output
-            match ident {
-                FnIdent::Application(ident) => {
-                    let output_type_pointer = definition
-                        .interface
-                        .get_function_output_type_pointer(ident.as_str())
-                        .expect("Schema verification should enforce that this exists.");
-
-                    system.validate_payload_against_blueprint_schema(
-                        &blueprint_id,
-                        &None,
-                        &[(output.as_vec_ref(), output_type_pointer)],
-                    )?;
-                }
-                FnIdent::System(..) => {
-                    // FIXME: Validate against virtual schema
+                (None, None) => {}
+                _ => {
+                    return Err(RuntimeError::SystemUpstreamError(
+                        SystemUpstreamError::ReceiverNotMatch(ident.to_string()),
+                    ));
                 }
             }
 
-            output
+            definition
+                .function_exports
+                .get(&ident)
+                .expect("Schema should have validated this exists")
+                .clone()
         };
+
+        // Execute
+        let output = { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
+
+        // Validate output
+        let output_type_pointer = definition
+            .interface
+            .get_function_output_type_pointer(ident.as_str())
+            .expect("Schema verification should enforce that this exists.");
+
+        system.validate_payload_against_blueprint_schema(
+            &blueprint_id,
+            &None,
+            &[(output.as_vec_ref(), output_type_pointer)],
+        )?;
 
         Ok(output)
     }

@@ -1411,7 +1411,7 @@ impl PackageAuthNativeBlueprint {
                     Err(RuntimeError::SystemModuleError(
                         SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
                             blueprint_id,
-                            ident: FnIdent::Application(ident.to_string()),
+                            ident: ident.to_string(),
                         })),
                     ))
                 }

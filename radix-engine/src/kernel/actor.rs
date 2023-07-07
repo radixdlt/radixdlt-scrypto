@@ -26,7 +26,7 @@ impl MethodActor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier {
             blueprint_id: self.module_object_info.blueprint_id.clone(),
-            ident: FnIdent::Application(self.ident.to_string()),
+            ident: self.ident.to_string(),
         }
     }
 }
@@ -109,7 +109,7 @@ impl Actor {
                 ident,
             } => FnIdentifier {
                 blueprint_id: blueprint.clone(),
-                ident: FnIdent::Application(ident.to_string()),
+                ident: ident.to_string(),
             },
             Actor::VirtualLazyLoad {
                 blueprint_id: blueprint,
