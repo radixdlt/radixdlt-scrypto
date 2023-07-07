@@ -420,10 +420,7 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
         .ok_or(Error::ComponentNotFound(component_address))?;
 
     match type_info {
-        TypeInfoSubstate::Object(ObjectInfo {
-            blueprint_id,
-            ..
-        }) => Ok(blueprint.clone()),
+        TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => Ok(blueprint_id.clone()),
         _ => panic!("Unexpected"),
     }
 }

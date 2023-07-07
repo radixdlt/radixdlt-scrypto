@@ -210,21 +210,7 @@ impl Publish {
                         state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),
                     },
                     function_exports,
-                    virtual_lazy_load_functions: s
-                        .schema
-                        .functions
-                        .virtual_lazy_load_functions
-                        .into_iter()
-                        .map(|(key, export_name)| {
-                            (
-                                key,
-                                PackageExport {
-                                    code_hash,
-                                    export_name,
-                                },
-                            )
-                        })
-                        .collect(),
+                    hook_exports: BTreeMap::new(),
                 };
                 let key = SpreadPrefixKeyMapper::map_to_db_sort_key(&scrypto_encode(&b).unwrap());
                 let update = DatabaseUpdate::Set(scrypto_encode(&def).unwrap());
