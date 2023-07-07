@@ -23,10 +23,21 @@ pub enum NonFungibleResourceManagerError {
     FieldNotMutable(String),
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     InvalidNonFungibleIdType,
+    InvalidNonFungibleSchema(InvalidNonFungibleSchema),
     NonFungibleLocalIdProvidedForRUIDType,
     DropNonEmptyBucket,
     NotMintable,
     NotBurnable,
+}
+
+/// Represents an error when accessing a bucket.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum InvalidNonFungibleSchema {
+    SchemaValidationError(SchemaValidationError),
+    InvalidLocalTypeIndex,
+    NotATuple,
+    MissingFieldNames,
+    InvalidMutableField(String),
 }
 
 pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
@@ -96,6 +107,80 @@ where
 pub struct NonFungibleResourceManagerBlueprint;
 
 impl NonFungibleResourceManagerBlueprint {
+    fn validate_non_fungible_schema(
+        non_fungible_schema: &NonFungibleDataSchema,
+    ) -> Result<(), RuntimeError> {
+        // Validate schema
+        validate_schema(&non_fungible_schema.schema).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                    InvalidNonFungibleSchema::SchemaValidationError(e),
+                ),
+            ))
+        })?;
+
+        // Validate type kind
+        let type_kind = non_fungible_schema
+            .schema
+            .resolve_type_kind(non_fungible_schema.non_fungible)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                        InvalidNonFungibleSchema::InvalidLocalTypeIndex,
+                    ),
+                ),
+            ))?;
+
+        if !matches!(type_kind, TypeKind::Tuple { .. }) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                        InvalidNonFungibleSchema::NotATuple,
+                    ),
+                ),
+            ));
+        }
+
+        // Validate names
+        let type_metadata = non_fungible_schema
+            .schema
+            .resolve_type_metadata(non_fungible_schema.non_fungible)
+            .ok_or(RuntimeError::ApplicationError(
+                ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                        InvalidNonFungibleSchema::InvalidLocalTypeIndex,
+                    ),
+                ),
+            ))?;
+        match type_metadata.child_names {
+            Some(ChildNames::NamedFields(names)) => {
+                let allowed_names: IndexSet<_> = names.iter().map(|x| x.as_ref()).collect();
+                for f in &non_fungible_schema.mutable_fields {
+                    if !allowed_names.contains(f.as_str()) {
+                        return Err(RuntimeError::ApplicationError(
+                            ApplicationError::NonFungibleResourceManagerError(
+                                NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                                    InvalidNonFungibleSchema::InvalidMutableField(f.to_string()),
+                                ),
+                            ),
+                        ));
+                    }
+                }
+            }
+            _ => {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::NonFungibleResourceManagerError(
+                        NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                            InvalidNonFungibleSchema::MissingFieldNames,
+                        ),
+                    ),
+                ))
+            }
+        }
+
+        Ok(())
+    }
+
     pub(crate) fn create<Y>(
         owner_role: OwnerRole,
         id_type: NonFungibleIdType,
@@ -109,6 +194,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
+        Self::validate_non_fungible_schema(&non_fungible_schema)?;
+
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
             None => {
@@ -170,6 +257,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::validate_non_fungible_schema(&non_fungible_schema)?;
+
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
             None => {
@@ -266,6 +355,8 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
+        Self::validate_non_fungible_schema(&non_fungible_schema)?;
+
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
             None => {
