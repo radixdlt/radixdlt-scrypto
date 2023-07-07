@@ -495,14 +495,14 @@ pub fn db_upsert_timestamps(
         &CONSENSUS_MANAGER.as_node_id(),
         MAIN_BASE_PARTITION,
         &ConsensusManagerField::CurrentTime.into(),
-        &milli_timestamp,
+        &FieldSubstate::new_field(milli_timestamp),
     );
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
         MAIN_BASE_PARTITION,
         &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
-        &minute_timestamp,
+        &FieldSubstate::new_field(minute_timestamp),
     );
 
     Ok(())
