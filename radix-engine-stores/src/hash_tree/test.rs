@@ -1,8 +1,5 @@
 use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
-use crate::hash_tree::tree_store::{
-    SerializedInMemoryTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
-    TypedInMemoryTreeStore,
-};
+use crate::hash_tree::tree_store::{SerializedInMemoryTreeStore, SubstatePayload, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode, TypedInMemoryTreeStore};
 use crate::hash_tree::types::{LeafKey, NodeKey};
 use crate::hash_tree::{put_at_next_version, SubstateHashChange};
 use itertools::Itertools;
@@ -315,7 +312,7 @@ fn sbor_decodes_what_was_encoded() {
         TreeNode::Null,
     ];
     let encoded = scrypto_encode(&nodes).unwrap();
-    let decoded = scrypto_decode::<Vec<TreeNode<()>>>(&encoded).unwrap();
+    let decoded = scrypto_decode::<Vec<TreeNode<SubstatePayload>>>(&encoded).unwrap();
     assert_eq!(nodes, decoded);
 }
 

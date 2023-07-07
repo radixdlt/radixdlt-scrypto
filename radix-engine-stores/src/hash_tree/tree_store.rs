@@ -63,13 +63,15 @@ pub trait Payload:
 /// the lower-layer root, but actually contains it inside.
 /// This design decision also brings minor space and runtime benefits, and avoids special-casing
 /// the physical `NodeKey`s (no key clashes can occur between the layers).
-pub type PartitionPayload = TreeNode<()>;
+pub type PartitionPayload = TreeNode<SubstatePayload>;
 
 impl Payload for PartitionPayload {}
 
 /// Payload of the leafs within the lower layer.
 /// We do not need any extra information - the implicitly stored `NodeKey` is our value.
-impl Payload for () {}
+pub type SubstatePayload = ();
+
+impl Payload for SubstatePayload {}
 
 /// The "read" part of a physical tree node storage SPI.
 pub trait ReadableTreeStore<P: Payload> {
@@ -95,7 +97,7 @@ impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> f
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TypedInMemoryTreeStore {
     pub root_tree_nodes: HashMap<NodeKey, TreeNode<PartitionPayload>>,
-    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<()>>,
+    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<SubstatePayload>>,
     pub stale_key_buffer: Vec<NodeKey>,
 }
 
@@ -110,14 +112,14 @@ impl TypedInMemoryTreeStore {
     }
 }
 
-impl ReadableTreeStore<()> for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<()>> {
+impl ReadableTreeStore<SubstatePayload> for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstatePayload>> {
         self.sub_tree_nodes.get(key).cloned()
     }
 }
 
-impl WriteableTreeStore<()> for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<()>) {
+impl WriteableTreeStore<SubstatePayload> for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstatePayload>) {
         self.sub_tree_nodes.insert(key, node);
     }
 

@@ -1,4 +1,4 @@
-use crate::hash_tree::tree_store::PartitionPayload;
+use crate::hash_tree::tree_store::{PartitionPayload, SubstatePayload};
 use crate::hash_tree::types::LeafKey;
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_common::crypto::Hash;
@@ -58,7 +58,7 @@ pub type SubstateHashChange = IdChange<DbSubstateKey, Hash>;
 /// # Panics
 /// Panics if a root node for `current_version` does not exist. The caller should use `None` to
 /// denote an empty, initial state of the tree (i.e. inserting at version 1).
-pub fn put_at_next_version<S: TreeStore<PartitionPayload> + TreeStore<()>>(
+pub fn put_at_next_version<S: TreeStore<PartitionPayload> + TreeStore<SubstatePayload>>(
     store: &mut S,
     current_version: Option<Version>,
     changes: Vec<SubstateHashChange>,
@@ -95,12 +95,12 @@ struct TreeRoot<P> {
     node: TreeNode<P>,
 }
 
-fn put_substate_changes<S: TreeStore<PartitionPayload> + TreeStore<()>>(
+fn put_substate_changes<S: TreeStore<PartitionPayload> + TreeStore<SubstatePayload>>(
     store: &mut S,
     current_version: Option<Version>,
     db_partition_key: &DbPartitionKey,
     changes: Vec<IdChange<DbSortKey, Hash>>,
-) -> Option<TreeRoot<()>> {
+) -> Option<TreeRoot<SubstatePayload>> {
     let (subtree_last_update_state_version, subtree_root) =
         get_partition_leaf_entry(store, current_version, db_partition_key);
     let mut subtree_store = NestedTreeStore::new(store, db_partition_key, subtree_root);
@@ -127,7 +127,7 @@ fn put_substate_changes<S: TreeStore<PartitionPayload> + TreeStore<()>>(
 fn put_partition_changes<S: TreeStore<PartitionPayload>>(
     store: &mut S,
     current_version: Option<Version>,
-    changes: Vec<IdChange<DbPartitionKey, TreeRoot<()>>>,
+    changes: Vec<IdChange<DbPartitionKey, TreeRoot<SubstatePayload>>>,
 ) -> Hash {
     put_changes(
         store,
@@ -144,7 +144,7 @@ fn get_partition_leaf_entry<S: ReadableTreeStore<PartitionPayload>>(
     store: &S,
     current_version: Option<Version>,
     db_partition_key: &DbPartitionKey,
-) -> (Option<Version>, Option<TreeNode<()>>) {
+) -> (Option<Version>, Option<TreeNode<SubstatePayload>>) {
     let Some(current_version) = current_version else {
         return (None, None);
     };
@@ -192,7 +192,7 @@ fn put_changes<S: TreeStore<P>, P: Payload>(
 }
 
 fn to_partition_change(
-    change: IdChange<DbPartitionKey, TreeRoot<()>>,
+    change: IdChange<DbPartitionKey, TreeRoot<SubstatePayload>>,
 ) -> LeafChange<PartitionPayload> {
     LeafChange {
         key: LeafKey { bytes: change.id.0 },
@@ -200,7 +200,7 @@ fn to_partition_change(
     }
 }
 
-fn to_substate_change(change: IdChange<DbSortKey, Hash>) -> LeafChange<()> {
+fn to_substate_change(change: IdChange<DbSortKey, Hash>) -> LeafChange<SubstatePayload> {
     LeafChange {
         key: LeafKey { bytes: change.id.0 },
         new_payload: change.changed.map(|value_hash| (value_hash, ())),
@@ -210,15 +210,15 @@ fn to_substate_change(change: IdChange<DbSortKey, Hash>) -> LeafChange<()> {
 struct NestedTreeStore<'s, S> {
     underlying: &'s mut S,
     parent_key: LeafKey,
-    current_root: Option<TreeNode<()>>,
-    new_root: Option<TreeNode<()>>,
+    current_root: Option<TreeNode<SubstatePayload>>,
+    new_root: Option<TreeNode<SubstatePayload>>,
 }
 
 impl<'s, S> NestedTreeStore<'s, S> {
     pub fn new(
         underlying: &'s mut S,
         db_partition_key: &DbPartitionKey,
-        root: Option<TreeNode<()>>,
+        root: Option<TreeNode<SubstatePayload>>,
     ) -> NestedTreeStore<'s, S> {
         NestedTreeStore {
             underlying,
@@ -228,7 +228,7 @@ impl<'s, S> NestedTreeStore<'s, S> {
         }
     }
 
-    pub fn extract_new_root(&mut self) -> TreeNode<()> {
+    pub fn extract_new_root(&mut self) -> TreeNode<SubstatePayload> {
         self.new_root
             .take()
             .expect("no new root stored into the nested tree")
@@ -246,8 +246,8 @@ impl<'s, S> NestedTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore<()>> ReadableTreeStore<()> for NestedTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<()>> {
+impl<'s, S: ReadableTreeStore<SubstatePayload>> ReadableTreeStore<SubstatePayload> for NestedTreeStore<'s, S> {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstatePayload>> {
         if key.nibble_path().is_empty() {
             self.current_root.clone()
         } else {
@@ -256,8 +256,8 @@ impl<'s, S: ReadableTreeStore<()>> ReadableTreeStore<()> for NestedTreeStore<'s,
     }
 }
 
-impl<'s, S: WriteableTreeStore<()>> WriteableTreeStore<()> for NestedTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<()>) {
+impl<'s, S: WriteableTreeStore<SubstatePayload>> WriteableTreeStore<SubstatePayload> for NestedTreeStore<'s, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstatePayload>) {
         if key.nibble_path().is_empty() {
             self.new_root = Some(node);
         } else {
