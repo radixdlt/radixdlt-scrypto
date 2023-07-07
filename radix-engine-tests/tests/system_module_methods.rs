@@ -5,7 +5,7 @@ use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
-use radix_engine::vm::VmInvoke;
+use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
@@ -51,7 +51,7 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
         }
     }
     let mut test_runner = TestRunnerBuilder::new()
-        .build_with_native_vm(TestNativeVm::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke));
+        .build_with_native_vm_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke));
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
@@ -157,7 +157,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new().build_with_native_vm(TestNativeVm::new(
+    let mut test_runner = TestRunnerBuilder::new().build_with_native_vm_extension(OverridePackageCode::new(
         CUSTOM_PACKAGE_CODE_ID,
         TestInvoke { globalized_parent },
     ));

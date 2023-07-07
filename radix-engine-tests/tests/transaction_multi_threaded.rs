@@ -15,7 +15,7 @@ mod multi_threaded_test {
     // passed to the thread (see https://docs.rs/crossbeam/0.8.2/crossbeam/thread/struct.Scope.html)
     extern crate crossbeam;
     use crossbeam::thread;
-    use radix_engine::vm::{NativeVmV1, ScryptoVm, Vm};
+    use radix_engine::vm::{DefaultNativeVm, NativeVm, ScryptoVm, Vm};
 
     // this test was inspired by radix_engine "Transfer" benchmark
     #[test]
@@ -25,9 +25,10 @@ mod multi_threaded_test {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
+        let native_vm = NativeVm::new(DefaultNativeVm);
         let vm = Vm {
             scrypto_vm: &scrypto_vm,
-            native_vm: NativeVmV1,
+            native_vm,
         };
         let mut substate_db = InMemorySubstateDatabase::standard();
         Bootstrapper::new(&mut substate_db, vm.clone(), false)

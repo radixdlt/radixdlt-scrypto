@@ -1,12 +1,12 @@
 use radix_engine::types::*;
-use radix_engine::vm::NativeVmV1;
+use radix_engine::vm::DefaultNativeVm;
 use radix_engine_interface::blueprints::resource::{require, FromPublicKey};
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
 fn create_secured_component(
-    test_runner: &mut TestRunner<NativeVmV1>,
+    test_runner: &mut TestRunner<DefaultNativeVm>,
     auth: NonFungibleGlobalId,
     package_address: PackageAddress,
 ) -> ComponentAddress {
@@ -25,7 +25,7 @@ fn create_secured_component(
 }
 
 fn create_resource_secured_component(
-    test_runner: &mut TestRunner<NativeVmV1>,
+    test_runner: &mut TestRunner<DefaultNativeVm>,
     account: ComponentAddress,
     package_address: PackageAddress,
 ) -> (ComponentAddress, NonFungibleGlobalId) {
@@ -38,7 +38,7 @@ fn create_resource_secured_component(
 }
 
 fn create_component(
-    test_runner: &mut TestRunner<NativeVmV1>,
+    test_runner: &mut TestRunner<DefaultNativeVm>,
     package_address: PackageAddress,
 ) -> ComponentAddress {
     let manifest = ManifestBuilder::new()

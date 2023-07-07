@@ -6,18 +6,18 @@ use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::vm::wasm::{WasmEngine, WasmValidator};
-use crate::vm::{NativeVm, ScryptoVm};
+use crate::vm::{NativeVm, NativeVmExtension, ScryptoVm};
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 
-pub struct Vm<'g, W: WasmEngine, N: NativeVm> {
+pub struct Vm<'g, W: WasmEngine, E: NativeVmExtension> {
     pub scrypto_vm: &'g ScryptoVm<W>,
-    pub native_vm: N,
+    pub native_vm: NativeVm<E>,
 }
 
-impl<'g, W: WasmEngine, N: NativeVm> Vm<'g, W, N> {
-    pub fn new(scrypto_vm: &'g ScryptoVm<W>, native_vm: N) -> Self {
+impl<'g, W: WasmEngine, E: NativeVmExtension> Vm<'g, W, E> {
+    pub fn new(scrypto_vm: &'g ScryptoVm<W>, native_vm: NativeVm<E>) -> Self {
         Self {
             scrypto_vm,
             native_vm,
@@ -25,7 +25,7 @@ impl<'g, W: WasmEngine, N: NativeVm> Vm<'g, W, N> {
     }
 }
 
-impl<'g, W: WasmEngine, N: NativeVm> Clone for Vm<'g, W, N> {
+impl<'g, W: WasmEngine, E: NativeVmExtension> Clone for Vm<'g, W, E> {
     fn clone(&self) -> Self {
         Self {
             scrypto_vm: self.scrypto_vm,
@@ -34,7 +34,7 @@ impl<'g, W: WasmEngine, N: NativeVm> Clone for Vm<'g, W, N> {
     }
 }
 
-impl<'g, W: WasmEngine + 'g, N: NativeVm> SystemCallbackObject for Vm<'g, W, N> {
+impl<'g, W: WasmEngine + 'g, E: NativeVmExtension> SystemCallbackObject for Vm<'g, W, E> {
     fn invoke<Y>(
         address: &PackageAddress,
         export: PackageExport,

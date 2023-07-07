@@ -3,7 +3,7 @@ use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
-use radix_engine::vm::{NativeVm, NativeVmV1, NativeVmV1Instance, VmInvoke};
+use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::{PackageDefinition, RESOURCE_CODE_ID};
 use scrypto_unit::*;
@@ -42,8 +42,9 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
-        .build_with_native_vm(TestNativeVm::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke));
+    let mut test_runner = TestRunnerBuilder::new().build_with_native_vm_extension(
+        OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke),
+    );
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
@@ -76,8 +77,45 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
 #[test]
 fn global_address_access_from_direct_access_methods_should_fail_even_with_borrowed_reference() {
     // Arrange
+    let resource_direct_access_methods: HashSet<String> = ResourceNativePackage::definition()
+        .blueprints
+        .into_iter()
+        .flat_map(|(_, def)| def.schema.functions.functions.into_iter())
+        .filter_map(|(_, def)| {
+            def.receiver.and_then(|i| {
+                if matches!(i.ref_types, RefTypes::DIRECT_ACCESS) {
+                    Some(def.export)
+                } else {
+                    None
+                }
+            })
+        })
+        .collect();
+    #[derive(Clone)]
+    struct ResourceOverride(HashSet<String>);
+    impl VmInvoke for ResourceOverride {
+        fn invoke<Y>(
+            &mut self,
+            export_name: &str,
+            input: &IndexedScryptoValue,
+            api: &mut Y,
+        ) -> Result<IndexedScryptoValue, RuntimeError>
+        where
+            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        {
+            if self.0.contains(export_name) {
+                api.actor_get_global_address()
+                    .expect_err("Direct method calls should never have global address");
+            }
+            ResourceNativePackage::invoke_export(export_name, input, api)
+        }
+    }
     let mut test_runner =
-        TestRunnerBuilder::new().build_with_native_vm(CheckedGlobalAddressNativeVm::new());
+        TestRunnerBuilder::new().build_with_native_vm_extension(OverridePackageCode::new(
+            RESOURCE_CODE_ID,
+            ResourceOverride(resource_direct_access_methods),
+        ));
+
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/recall");
@@ -112,79 +150,4 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
 
     // Assert
     receipt.expect_commit_success();
-}
-
-/// Native VM which adds global address invariant checking on direct access methods
-#[derive(Clone)]
-pub struct CheckedGlobalAddressNativeVm {
-    vm: NativeVmV1,
-    resource_direct_access_methods: HashSet<String>,
-}
-
-impl CheckedGlobalAddressNativeVm {
-    pub fn new() -> Self {
-        let resource_direct_access_methods: HashSet<String> = ResourceNativePackage::definition()
-            .blueprints
-            .into_iter()
-            .flat_map(|(_, def)| def.schema.functions.functions.into_iter())
-            .filter_map(|(_, def)| {
-                def.receiver.and_then(|i| {
-                    if matches!(i.ref_types, RefTypes::DIRECT_ACCESS) {
-                        Some(def.export)
-                    } else {
-                        None
-                    }
-                })
-            })
-            .collect();
-
-        Self {
-            vm: NativeVmV1,
-            resource_direct_access_methods,
-        }
-    }
-}
-
-impl NativeVm for CheckedGlobalAddressNativeVm {
-    type Instance = CheckInvariantsNativeVmInstance;
-
-    fn create_instance(
-        &self,
-        package_address: &PackageAddress,
-        code: &[u8],
-    ) -> Result<CheckInvariantsNativeVmInstance, RuntimeError> {
-        let instance = self.vm.create_instance(package_address, code)?;
-        Ok(CheckInvariantsNativeVmInstance {
-            instance,
-            resource_direct_access_methods: self.resource_direct_access_methods.clone(),
-        })
-    }
-}
-
-pub struct CheckInvariantsNativeVmInstance {
-    instance: NativeVmV1Instance,
-    resource_direct_access_methods: HashSet<String>,
-}
-
-impl VmInvoke for CheckInvariantsNativeVmInstance {
-    fn invoke<Y>(
-        &mut self,
-        export_name: &str,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-    {
-        match self.instance.native_package_code_id {
-            RESOURCE_CODE_ID => {
-                if self.resource_direct_access_methods.contains(export_name) {
-                    api.actor_get_global_address()
-                        .expect_err("Direct method calls should never have global address");
-                }
-            }
-            _ => {}
-        }
-        self.instance.invoke(export_name, input, api)
-    }
 }

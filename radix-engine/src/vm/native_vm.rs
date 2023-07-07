@@ -19,27 +19,25 @@ use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::package::*;
 use resources_tracker_macro::trace_resources;
 
-pub trait NativeVm: Clone {
-    type Instance: VmInvoke;
-
-    fn create_instance(
-        &self,
-        package_address: &PackageAddress,
-        code: &[u8],
-    ) -> Result<Self::Instance, RuntimeError>;
+#[derive(Clone)]
+pub struct NativeVm<E: NativeVmExtension> {
+    extension: E,
 }
 
-#[derive(Clone)]
-pub struct NativeVmV1;
+impl<E: NativeVmExtension> NativeVm<E> {
+    pub fn new(extension: E) -> Self {
+        Self { extension }
+    }
 
-impl NativeVm for NativeVmV1 {
-    type Instance = NativeVmV1Instance;
-
-    fn create_instance(
+    pub fn create_instance(
         &self,
         package_address: &PackageAddress,
         code: &[u8],
-    ) -> Result<NativeVmV1Instance, RuntimeError> {
+    ) -> Result<NativeVmInstance<E::Instance>, RuntimeError> {
+        if let Some(custom_invoke) = self.extension.try_create_instance(code) {
+            return Ok(NativeVmInstance::Extension(custom_invoke));
+        }
+
         let code: [u8; 8] = match code.clone().try_into() {
             Ok(code) => code,
             Err(..) => {
@@ -48,10 +46,8 @@ impl NativeVm for NativeVmV1 {
                 )));
             }
         };
-
         let native_package_code_id = u64::from_be_bytes(code);
-
-        let instance = NativeVmV1Instance {
+        let instance = NativeVmInstance::Native {
             package_address: *package_address,
             native_package_code_id,
         };
@@ -60,14 +56,17 @@ impl NativeVm for NativeVmV1 {
     }
 }
 
-pub struct NativeVmV1Instance {
-    // Used by profiling
-    #[allow(dead_code)]
-    package_address: PackageAddress,
-    pub native_package_code_id: u64,
+pub enum NativeVmInstance<I: VmInvoke> {
+    Native {
+        // Used by profiling
+        #[allow(dead_code)]
+        package_address: PackageAddress,
+        native_package_code_id: u64,
+    },
+    Extension(I),
 }
 
-impl VmInvoke for NativeVmV1Instance {
+impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
     #[trace_resources(log=self.package_address.is_native_address(), log=self.package_address.to_hex(), log=export_name)]
     fn invoke<Y>(
         &mut self,
@@ -78,40 +77,121 @@ impl VmInvoke for NativeVmV1Instance {
     where
         Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
     {
-        api.consume_cost_units(ClientCostingEntry::RunNativeCode {
-            package_address: &self.package_address,
-            export_name: export_name,
-            input_size: input.len(),
-        })?;
+        match self {
+            NativeVmInstance::Extension(e) => e.invoke(export_name, input, api),
+            NativeVmInstance::Native {
+                native_package_code_id,
+                package_address,
+            } => {
+                api.consume_cost_units(ClientCostingEntry::RunNativeCode {
+                    package_address: package_address,
+                    export_name: export_name,
+                    input_size: input.len(),
+                })?;
 
-        match self.native_package_code_id {
-            PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api),
-            RESOURCE_CODE_ID => ResourceNativePackage::invoke_export(export_name, input, api),
-            CONSENSUS_MANAGER_CODE_ID => {
-                ConsensusManagerNativePackage::invoke_export(export_name, input, api)
+                match *native_package_code_id {
+                    PACKAGE_CODE_ID => PackageNativePackage::invoke_export(export_name, input, api),
+                    RESOURCE_CODE_ID => {
+                        ResourceNativePackage::invoke_export(export_name, input, api)
+                    }
+                    CONSENSUS_MANAGER_CODE_ID => {
+                        ConsensusManagerNativePackage::invoke_export(export_name, input, api)
+                    }
+                    IDENTITY_CODE_ID => {
+                        IdentityNativePackage::invoke_export(export_name, input, api)
+                    }
+                    ACCOUNT_CODE_ID => AccountNativePackage::invoke_export(export_name, input, api),
+                    ACCESS_CONTROLLER_CODE_ID => {
+                        AccessControllerNativePackage::invoke_export(export_name, input, api)
+                    }
+                    TRANSACTION_PROCESSOR_CODE_ID => {
+                        TransactionProcessorNativePackage::invoke_export(export_name, input, api)
+                    }
+                    METADATA_CODE_ID => {
+                        MetadataNativePackage::invoke_export(export_name, input, api)
+                    }
+                    ROYALTY_CODE_ID => RoyaltyNativePackage::invoke_export(export_name, input, api),
+                    ACCESS_RULES_CODE_ID => {
+                        AccessRulesNativePackage::invoke_export(export_name, input, api)
+                    }
+                    POOL_CODE_ID => PoolNativePackage::invoke_export(export_name, input, api),
+                    TRANSACTION_TRACKER_CODE_ID => {
+                        TransactionTrackerNativePackage::invoke_export(export_name, input, api)
+                    }
+                    _ => {
+                        return Err(RuntimeError::VmError(VmError::Native(
+                            NativeRuntimeError::InvalidCodeId,
+                        )));
+                    }
+                }
             }
-            IDENTITY_CODE_ID => IdentityNativePackage::invoke_export(export_name, input, api),
-            ACCOUNT_CODE_ID => AccountNativePackage::invoke_export(export_name, input, api),
-            ACCESS_CONTROLLER_CODE_ID => {
-                AccessControllerNativePackage::invoke_export(export_name, input, api)
-            }
-            TRANSACTION_PROCESSOR_CODE_ID => {
-                TransactionProcessorNativePackage::invoke_export(export_name, input, api)
-            }
-            METADATA_CODE_ID => MetadataNativePackage::invoke_export(export_name, input, api),
-            ROYALTY_CODE_ID => RoyaltyNativePackage::invoke_export(export_name, input, api),
-            ACCESS_RULES_CODE_ID => {
-                AccessRulesNativePackage::invoke_export(export_name, input, api)
-            }
-            POOL_CODE_ID => PoolNativePackage::invoke_export(export_name, input, api),
-            TRANSACTION_TRACKER_CODE_ID => {
-                TransactionTrackerNativePackage::invoke_export(export_name, input, api)
-            }
-            _ => {
-                return Err(RuntimeError::VmError(VmError::Native(
-                    NativeRuntimeError::InvalidCodeId,
-                )));
-            }
+        }
+    }
+}
+
+pub trait NativeVmExtension: Clone {
+    type Instance: VmInvoke + Clone;
+
+    fn try_create_instance(&self, code: &[u8]) -> Option<Self::Instance>;
+}
+
+#[derive(Clone)]
+pub struct DefaultNativeVm;
+impl NativeVmExtension for DefaultNativeVm {
+    type Instance = NullVmInvoke;
+    fn try_create_instance(&self, _code: &[u8]) -> Option<Self::Instance> {
+        None
+    }
+}
+
+#[derive(Clone)]
+pub struct NullVmInvoke;
+
+impl VmInvoke for NullVmInvoke {
+    fn invoke<Y>(
+        &mut self,
+        _export_name: &str,
+        _input: &IndexedScryptoValue,
+        _api: &mut Y,
+    ) -> Result<IndexedScryptoValue, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+    {
+        panic!("Invocation was called on null VmInvoke");
+    }
+}
+
+#[derive(Clone)]
+pub struct OverridePackageCode<C: VmInvoke + Clone> {
+    custom_package_code_id: u64,
+    custom_invoke: C,
+}
+
+impl<C: VmInvoke + Clone> OverridePackageCode<C> {
+    pub fn new(custom_package_code_id: u64, custom_invoke: C) -> Self {
+        Self {
+            custom_package_code_id,
+            custom_invoke,
+        }
+    }
+}
+
+impl<C: VmInvoke + Clone> NativeVmExtension for OverridePackageCode<C> {
+    type Instance = C;
+
+    fn try_create_instance(&self, code: &[u8]) -> Option<C> {
+        let code_id = {
+            let code: [u8; 8] = match code.clone().try_into() {
+                Ok(code) => code,
+                Err(..) => return None,
+            };
+            u64::from_be_bytes(code)
+        };
+
+        if self.custom_package_code_id == code_id {
+            Some(self.custom_invoke.clone())
+        } else {
+            None
         }
     }
 }
