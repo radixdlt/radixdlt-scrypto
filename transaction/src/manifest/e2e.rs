@@ -918,7 +918,9 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
         Array<String>()
     )
     Map<NonFungibleLocalId, Tuple>(
-        NonFungibleLocalId("#12#") => Tuple()
+        NonFungibleLocalId("#12#") => Tuple(
+            Tuple()
+        )
     )
     Tuple(
         Enum<1u8>(

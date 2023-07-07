@@ -22,7 +22,7 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
     true                                                                                                # Whether the engine should track supply (avoid for massively parallelizable tokens)
     Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>()), Enum<0u8>(66u8), Array<String>())        # Non Fungible Data Schema
     Map<NonFungibleLocalId, Tuple>(                                                                     # Initial supply to mint
-        NonFungibleLocalId("${non_fungible_local_id}") => Tuple()
+        NonFungibleLocalId("${non_fungible_local_id}") => Tuple(Tuple())
     )
     Tuple(
         Some(         # Mint Roles (if None: defaults to DenyAll, DenyAll)
