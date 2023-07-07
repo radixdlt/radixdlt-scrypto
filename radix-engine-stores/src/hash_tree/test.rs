@@ -142,23 +142,23 @@ fn partition_key_and_sort_key_are_used_directly_for_node_nibble_path() {
         None,
         vec![
             SubstateHashChange::new(
-                (DbPartitionKey(vec![1, 3, 3, 7]), DbSortKey(vec![253])),
+                (db_partition_key(vec![1, 3, 3, 7], 99), DbSortKey(vec![253])),
                 Some(Hash([1; Hash::LENGTH])),
             ),
             SubstateHashChange::new(
-                (DbPartitionKey(vec![1, 3, 3, 7]), DbSortKey(vec![66])),
+                (db_partition_key(vec![1, 3, 3, 7], 99), DbSortKey(vec![66])),
                 Some(Hash([2; Hash::LENGTH])),
             ),
             SubstateHashChange::new(
                 (
-                    DbPartitionKey(vec![123, 12, 1, 0]),
+                    db_partition_key(vec![123, 12, 1, 0], 88),
                     DbSortKey(vec![6, 6, 6]),
                 ),
                 Some(Hash([3; Hash::LENGTH])),
             ),
             SubstateHashChange::new(
                 (
-                    DbPartitionKey(vec![123, 12, 1, 0]),
+                    db_partition_key(vec![123, 12, 1, 0], 88),
                     DbSortKey(vec![6, 6, 7]),
                 ),
                 Some(Hash([4; Hash::LENGTH])),
@@ -179,10 +179,10 @@ fn partition_key_and_sort_key_are_used_directly_for_node_nibble_path() {
         upper_leaf_keys,
         hashset!(
             LeafKey {
-                bytes: vec![1, 3, 3, 7]
+                bytes: vec![1, 3, 3, 7, 99]
             },
             LeafKey {
-                bytes: vec![123, 12, 1, 0]
+                bytes: vec![123, 12, 1, 0, 88]
             },
         )
     );
@@ -202,10 +202,10 @@ fn partition_key_and_sort_key_are_used_directly_for_node_nibble_path() {
     assert_eq!(
         lower_leaves,
         hashmap!(
-            LeafKey { bytes: vec![1, 3, 3, 7, 253] } => Hash([1; Hash::LENGTH]),
-            LeafKey { bytes: vec![1, 3, 3, 7, 66] } => Hash([2; Hash::LENGTH]),
-            LeafKey { bytes: vec![123, 12, 1, 0, 6, 6, 6] } => Hash([3; Hash::LENGTH]),
-            LeafKey { bytes: vec![123, 12, 1, 0, 6, 6, 7] } => Hash([4; Hash::LENGTH]),
+            LeafKey { bytes: vec![1, 3, 3, 7, 99, 253] } => Hash([1; Hash::LENGTH]),
+            LeafKey { bytes: vec![1, 3, 3, 7, 99, 66] } => Hash([2; Hash::LENGTH]),
+            LeafKey { bytes: vec![123, 12, 1, 0, 88, 6, 6, 6] } => Hash([3; Hash::LENGTH]),
+            LeafKey { bytes: vec![123, 12, 1, 0, 88, 6, 6, 7] } => Hash([4; Hash::LENGTH]),
         )
     );
 }
@@ -338,7 +338,7 @@ fn change(
 ) -> SubstateHashChange {
     SubstateHashChange::new(
         (
-            DbPartitionKey(vec![partition_key_seed; Hash::LENGTH]),
+            db_partition_key(vec![partition_key_seed; Hash::LENGTH], partition_key_seed),
             DbSortKey(vec![sort_key_seed; sort_key_seed as usize]),
         ),
         value_hash_seed.map(|value_seed| value_hash(value_seed)),
@@ -368,4 +368,11 @@ fn leaf_key(node_key: &NodeKey, suffix_from_leaf: &NibblePath) -> LeafKey {
         )
         .bytes(),
     )
+}
+
+fn db_partition_key(node_key: Vec<u8>, partition_byte: u8) -> DbPartitionKey {
+    DbPartitionKey {
+        node_key,
+        partition_byte,
+    }
 }

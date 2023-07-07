@@ -149,7 +149,7 @@ fn get_partition_leaf_entry<S: ReadableTreeStore<PartitionPayload>>(
         return (None, None);
     };
     let (node_option, _proof) = JellyfishMerkleTree::new(store)
-        .get_with_proof(&LeafKey::new(&db_partition_key.0), current_version)
+        .get_with_proof(&to_leaf_key(db_partition_key.clone()), current_version)
         .unwrap();
 
     let Some((_hash, payload, version)) = node_option else {
@@ -195,7 +195,7 @@ fn to_partition_change(
     change: IdChange<DbPartitionKey, TreeRoot<SubstatePayload>>,
 ) -> LeafChange<PartitionPayload> {
     LeafChange {
-        key: LeafKey { bytes: change.id.0 },
+        key: to_leaf_key(change.id),
         new_payload: change.changed.map(|root| (root.hash, root.node)),
     }
 }
@@ -205,6 +205,13 @@ fn to_substate_change(change: IdChange<DbSortKey, Hash>) -> LeafChange<SubstateP
         key: LeafKey { bytes: change.id.0 },
         new_payload: change.changed.map(|value_hash| (value_hash, ())),
     }
+}
+
+fn to_leaf_key(db_partition_key: DbPartitionKey) -> LeafKey {
+    let DbPartitionKey { node_key, partition_byte } = db_partition_key;
+    let mut leaf_key_bytes = node_key;
+    leaf_key_bytes.push(partition_byte);
+    LeafKey { bytes: leaf_key_bytes }
 }
 
 struct NestedTreeStore<'s, S> {
@@ -222,7 +229,7 @@ impl<'s, S> NestedTreeStore<'s, S> {
     ) -> NestedTreeStore<'s, S> {
         NestedTreeStore {
             underlying,
-            parent_key: LeafKey::new(&db_partition_key.0),
+            parent_key: to_leaf_key(db_partition_key.clone()),
             current_root: root,
             new_root: None,
         }

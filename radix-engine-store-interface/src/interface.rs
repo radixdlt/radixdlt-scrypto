@@ -8,7 +8,10 @@ use utils::rust::vec::Vec;
 /// Seen from the lower-level implementation: it is used as a key in the upper-layer tree of our
 /// two-layered JMT.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
-pub struct DbPartitionKey(pub Vec<u8>);
+pub struct DbPartitionKey {
+    pub node_key: Vec<u8>,
+    pub partition_byte: u8,
+}
 
 /// A database-level key of a substate within a known partition.
 /// Seen from the higher-level API: it represents a local Substate Key.

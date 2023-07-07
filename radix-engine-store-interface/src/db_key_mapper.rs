@@ -73,19 +73,15 @@ pub struct SpreadPrefixKeyMapper;
 
 impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
     fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey {
-        let mut buffer = Vec::new();
-        buffer.extend(node_id.as_ref());
-        buffer.push(partition_num.0);
-        DbPartitionKey(SpreadPrefixKeyMapper::to_hash_prefixed(&buffer[..]))
+        DbPartitionKey {
+            node_key: SpreadPrefixKeyMapper::to_hash_prefixed(node_id.as_bytes()),
+            partition_byte: partition_num.0,
+        }
     }
 
     fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber) {
-        let buffer = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key.0);
-        let mut bytes = [0u8; NodeId::LENGTH];
-        bytes.copy_from_slice(&buffer[..buffer.len() - 1]);
-        let partition_num = PartitionNumber(*buffer.last().unwrap());
-
-        (NodeId(bytes), partition_num)
+        let node_id_bytes = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key.node_key);
+        (NodeId(copy_u8_array(node_id_bytes)), PartitionNumber(partition_key.partition_byte))
     }
 
     fn field_to_db_sort_key(fields_key: &FieldKey) -> DbSortKey {
@@ -132,7 +128,7 @@ impl SpreadPrefixKeyMapper {
     /// not create the risk of long common prefixes).
     const HASHED_PREFIX_LENGTH: usize = 20;
 
-    /// Returns the given bytes prefixed by their known-length hash (see [`HASHED_PREFIX_LENGTH`]).
+    /// Returns the given bytes prefixed by their known-length hash (see [`Self::HASHED_PREFIX_LENGTH`]).
     fn to_hash_prefixed(plain_bytes: &[u8]) -> Vec<u8> {
         let hashed_prefix = &hash(plain_bytes).0[..Self::HASHED_PREFIX_LENGTH];
         [hashed_prefix, plain_bytes].concat()
