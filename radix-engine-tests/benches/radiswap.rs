@@ -1,6 +1,6 @@
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::vm::{DefaultNativeVm, NativeVm};
+use radix_engine::vm::DefaultNativeVm;
 use radix_engine::{
     transaction::{ExecutionConfig, FeeReserveConfig, TransactionReceipt},
     types::*,
