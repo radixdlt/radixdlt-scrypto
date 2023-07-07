@@ -18,8 +18,7 @@ use radix_engine_interface::schema::{
     FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 
-const ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
-const ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519";
+const ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
 
 pub struct AccountNativePackage;
 
@@ -356,11 +355,6 @@ impl AccountNativePackage {
             },
         );
 
-        let virtual_lazy_load_functions = btreemap!(
-            ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID => ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME.to_string(),
-            ACCOUNT_CREATE_VIRTUAL_ED25519_ID => ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
-        );
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -384,7 +378,7 @@ impl AccountNativePackage {
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
-                    hooks: BlueprintHooksInit::default(),
+                    hooks: BlueprintHooksInit { on_virtualize: Some(ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME.to_string()) }
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -434,20 +428,12 @@ impl AccountNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         match export_name {
-            ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
+            ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME => {
                 let input: OnVirtualizeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::create_virtual_secp256k1(input, api)?;
-
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
-                let input: OnVirtualizeInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = AccountBlueprint::create_virtual_ed25519(input, api)?;
+                let rtn = AccountBlueprint::on_virtualize(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

@@ -89,26 +89,30 @@ impl AccountBlueprint {
         Ok(modules)
     }
 
-    pub fn create_virtual_secp256k1<Y>(
+    pub fn on_virtualize<Y>(
         input: OnVirtualizeInput,
         api: &mut Y,
     ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
-    }
-
-    pub fn create_virtual_ed25519<Y>(
-        input: OnVirtualizeInput,
-        api: &mut Y,
-    ) -> Result<OnVirtualizeOutput, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
+        match input.node_id.entity_type() {
+            Some(EntityType::GlobalVirtualSecp256k1Account) => {
+                let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(
+                    copy_u8_array(&input.node_id.as_bytes()[1..]),
+                ));
+                Self::create_virtual(public_key_hash, api)
+            }
+            Some(EntityType::GlobalVirtualEd25519Account) => {
+                let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(copy_u8_array(
+                    &input.node_id.as_bytes()[1..],
+                )));
+                Self::create_virtual(public_key_hash, api)
+            }
+            x => Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+                format!("Unexpected entity type: {:?}", x),
+            ))),
+        }
     }
 
     fn create_virtual<Y>(

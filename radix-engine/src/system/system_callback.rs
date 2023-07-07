@@ -19,12 +19,8 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::blueprints::account::{
-    ACCOUNT_BLUEPRINT, ACCOUNT_CREATE_VIRTUAL_ED25519_ID, ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID,
-};
-use radix_engine_interface::blueprints::identity::{
-    IDENTITY_BLUEPRINT, IDENTITY_CREATE_VIRTUAL_ED25519_ID, IDENTITY_CREATE_VIRTUAL_SECP256K1_ID,
-};
+use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
+use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{
     Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
@@ -497,29 +493,26 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         match node_id.entity_type() {
             // FIXME: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
             Some(entity_type) => {
-                // Lazy create component if missing
-                let (blueprint, virtual_func_id) = match entity_type {
-                    EntityType::GlobalVirtualSecp256k1Account => (
-                        BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
-                        ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID,
-                    ),
-                    EntityType::GlobalVirtualEd25519Account => (
-                        BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
-                        ACCOUNT_CREATE_VIRTUAL_ED25519_ID,
-                    ),
-                    EntityType::GlobalVirtualSecp256k1Identity => (
-                        BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
-                        IDENTITY_CREATE_VIRTUAL_SECP256K1_ID,
-                    ),
-                    EntityType::GlobalVirtualEd25519Identity => (
-                        BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
-                        IDENTITY_CREATE_VIRTUAL_ED25519_ID,
-                    ),
+                let blueprint_id = match entity_type {
+                    EntityType::GlobalVirtualSecp256k1Account => {
+                        BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT)
+                    }
+                    EntityType::GlobalVirtualEd25519Account => {
+                        BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT)
+                    }
+                    EntityType::GlobalVirtualSecp256k1Identity => {
+                        BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT)
+                    }
+                    EntityType::GlobalVirtualEd25519Identity => {
+                        BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT)
+                    }
                     _ => return Ok(false),
                 };
 
+                // TODO: load schema and find the hook definition.
+
                 let invocation = KernelInvocation {
-                    actor: Actor::blueprint_hook(blueprint.clone(), BlueprintHook::OnVirtualize),
+                    actor: Actor::blueprint_hook(blueprint_id.clone(), BlueprintHook::OnVirtualize),
                     args: IndexedScryptoValue::from_typed(&OnVirtualizeInput { node_id }),
                 };
 
@@ -531,7 +524,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
                 let mut system = SystemService::new(api);
                 let address_reservation =
-                    system.allocate_virtual_global_address(blueprint, address)?;
+                    system.allocate_virtual_global_address(blueprint_id, address)?;
                 system.globalize(modules, Some(address_reservation))?;
 
                 Ok(true)
