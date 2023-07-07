@@ -182,6 +182,7 @@ fn test_basic_package_missing_export() {
                         }
                     ),
                 },
+                hooks: BlueprintHooksInit::default(),
             },
 
             royalty_config: PackageRoyaltyConfig::default(),

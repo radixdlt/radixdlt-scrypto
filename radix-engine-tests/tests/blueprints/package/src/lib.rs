@@ -51,8 +51,8 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
         events: BlueprintEventSchemaInit::default(),
         functions: BlueprintFunctionsSchemaInit {
             functions,
-            virtual_lazy_load_functions: BTreeMap::default(),
         },
+        hooks: BlueprintHooksInit::default(),
     };
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
@@ -102,8 +102,8 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
         events: BlueprintEventSchemaInit::default(),
         functions: BlueprintFunctionsSchemaInit {
             functions,
-            virtual_lazy_load_functions: BTreeMap::default(),
         },
+        hooks: BlueprintHooksInit::default(),
     };
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
@@ -153,8 +153,8 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
         events: BlueprintEventSchemaInit::default(),
         functions: BlueprintFunctionsSchemaInit {
             functions,
-            virtual_lazy_load_functions: BTreeMap::default(),
         },
+        hooks: BlueprintHooksInit::default(),
     };
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
@@ -213,8 +213,8 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
             events: BlueprintEventSchemaInit::default(),
             functions: BlueprintFunctionsSchemaInit {
                 functions,
-                virtual_lazy_load_functions: BTreeMap::default(),
             },
+            hooks: BlueprintHooksInit::default(),
         },
         royalty_config: PackageRoyaltyConfig::default(),
         auth_config: scrypto::blueprints::package::AuthConfig {

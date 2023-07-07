@@ -188,8 +188,8 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
         events: BlueprintEventSchemaInit::default(),
         functions: BlueprintFunctionsSchemaInit {
             functions,
-            virtual_lazy_load_functions: BTreeMap::default(),
         },
+        hooks: BlueprintHooksInit::default(),
     };
 
     let function_auth: BTreeMap<String, AccessRule> = btreemap!(
