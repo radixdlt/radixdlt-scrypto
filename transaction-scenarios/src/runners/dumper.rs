@@ -1,5 +1,5 @@
 use radix_engine::system::system_callback_api::SystemCallbackObject;
-use radix_engine::vm::{NativeVmV1, Vm};
+use radix_engine::vm::{DefaultNativeVm, NativeVm, Vm};
 use radix_engine::{
     system::bootstrap::Bootstrapper,
     vm::{
@@ -26,9 +26,10 @@ pub fn run_all_in_memory_and_dump_examples(
 ) -> Result<(), FullScenarioError> {
     let mut substate_db = InMemorySubstateDatabase::standard();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = NativeVm::new(DefaultNativeVm);
     let vm = Vm {
         scrypto_vm: &scrypto_vm,
-        native_vm: NativeVmV1,
+        native_vm,
     };
 
     let receipts = Bootstrapper::new(&mut substate_db, vm, false)
@@ -77,7 +78,8 @@ where
     let fee_reserve_config = FeeReserveConfig::default();
     let execution_config = ExecutionConfig::for_test_transaction();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let vm = Vm::new(&scrypto_vm, NativeVmV1);
+    let native_vm = NativeVm::new(DefaultNativeVm);
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let validator = NotarizedTransactionValidator::new(ValidationConfig::default(network.id));
 
     run_scenario(

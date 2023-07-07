@@ -5,11 +5,9 @@ use std::process::Command;
 
 use radix_engine::blueprints::consensus_manager::*;
 use radix_engine::errors::*;
-use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::bootstrap::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::KeyValueEntrySubstate;
-use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::transaction::{
     execute_preview, execute_transaction, CommitResult, ExecutionConfig, FeeReserveConfig,
     PreviewError, TransactionReceipt, TransactionResult,
@@ -17,11 +15,11 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{NativeVm, NativeVmV1, NativeVmV1Instance, ScryptoVm, Vm, VmInvoke};
+use radix_engine::vm::{DefaultNativeVm, NativeVm, NativeVmExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
-use radix_engine_interface::api::{ClientApi, ObjectModuleId};
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerConfig, ConsensusManagerGetCurrentEpochInput,
     ConsensusManagerGetCurrentTimeInput, ConsensusManagerNextRoundInput, EpochChangeCondition,
@@ -270,14 +268,15 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch_with_native_vm<V: NativeVm>(
+    pub fn build_and_get_epoch_with_native_vm_extension<E: NativeVmExtension>(
         self,
-        native_vm: V,
-    ) -> (TestRunner<V>, ActiveValidatorSet) {
+        extension: E,
+    ) -> (TestRunner<E>, ActiveValidatorSet) {
         let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
+        let native_vm = NativeVm::new(extension);
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = InMemorySubstateDatabase::standard();
         let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
@@ -322,22 +321,26 @@ impl TestRunnerBuilder {
         (runner, next_epoch.validator_set)
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner<NativeVmV1>, ActiveValidatorSet) {
-        self.build_and_get_epoch_with_native_vm(NativeVmV1)
+    pub fn build_and_get_epoch(self) -> (TestRunner<DefaultNativeVm>, ActiveValidatorSet) {
+        self.build_and_get_epoch_with_native_vm_extension(DefaultNativeVm)
     }
 
-    pub fn build(self) -> TestRunner<NativeVmV1> {
+    pub fn build(self) -> TestRunner<DefaultNativeVm> {
         self.build_and_get_epoch().0
     }
 
-    pub fn build_with_native_vm<V: NativeVm>(self, vm: V) -> TestRunner<V> {
-        self.build_and_get_epoch_with_native_vm(vm).0
+    pub fn build_with_native_vm_extension<E: NativeVmExtension>(
+        self,
+        extension: E,
+    ) -> TestRunner<E> {
+        self.build_and_get_epoch_with_native_vm_extension(extension)
+            .0
     }
 }
 
-pub struct TestRunner<N: NativeVm> {
+pub struct TestRunner<E: NativeVmExtension> {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    native_vm: N,
+    native_vm: NativeVm<E>,
     substate_db: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
@@ -353,7 +356,7 @@ pub struct TestRunnerSnapshot {
     state_hash_support: Option<StateHashSupport>,
 }
 
-impl<N: NativeVm> TestRunner<N> {
+impl<E: NativeVmExtension> TestRunner<E> {
     pub fn create_snapshot(&self) -> TestRunnerSnapshot {
         TestRunnerSnapshot {
             substate_db: self.substate_db.clone(),
@@ -1992,99 +1995,4 @@ pub fn create_notarized_transaction(
         .sign(&sk2)
         .notarize(&sk_notary)
         .build()
-}
-
-pub trait NativeVmExtension: Clone {
-    type Instance: VmInvoke + Clone;
-
-    fn try_create_instance(&self, code: &[u8]) -> Option<Self::Instance>;
-}
-
-#[derive(Clone)]
-pub struct OverridePackageCode<C: VmInvoke + Clone> {
-    custom_package_code_id: u64,
-    custom_invoke: C,
-}
-
-impl<C: VmInvoke + Clone> OverridePackageCode<C> {
-    pub fn new(custom_package_code_id: u64, custom_invoke: C) -> Self {
-        Self {
-            custom_package_code_id,
-            custom_invoke,
-        }
-    }
-}
-
-impl<C: VmInvoke + Clone> NativeVmExtension for OverridePackageCode<C> {
-    type Instance = C;
-
-    fn try_create_instance(&self, code: &[u8]) -> Option<C> {
-        let code_id = {
-            let code: [u8; 8] = match code.clone().try_into() {
-                Ok(code) => code,
-                Err(..) => return None,
-            };
-            u64::from_be_bytes(code)
-        };
-
-        if self.custom_package_code_id == code_id {
-            Some(self.custom_invoke.clone())
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct TestNativeVm<E: NativeVmExtension> {
-    extension: E,
-}
-
-impl<E: NativeVmExtension> TestNativeVm<E> {
-    pub fn new(extension: E) -> Self {
-        Self {
-            extension,
-        }
-    }
-}
-
-impl<E: NativeVmExtension> NativeVm for TestNativeVm<E> {
-    type Instance = TestNativeVmInstance<E::Instance>;
-
-    fn create_instance(
-        &self,
-        package_address: &PackageAddress,
-        code: &[u8],
-    ) -> Result<Self::Instance, RuntimeError> {
-        if let Some(custom_invoke) = self.extension.try_create_instance(code) {
-            return Ok(TestNativeVmInstance::Other(custom_invoke));
-        }
-
-        let instance = NativeVmV1.create_instance(package_address, code)?;
-        Ok(TestNativeVmInstance::Normal(instance))
-    }
-}
-
-pub enum TestNativeVmInstance<C: VmInvoke> {
-    Normal(NativeVmV1Instance),
-    Other(C),
-}
-
-impl<C: VmInvoke + Clone> VmInvoke for TestNativeVmInstance<C> {
-    fn invoke<Y>(
-        &mut self,
-        export_name: &str,
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
-    {
-        match self {
-            TestNativeVmInstance::Normal(instance) => instance.invoke(export_name, input, api),
-            TestNativeVmInstance::Other(custom_invoke) => {
-                custom_invoke.invoke(export_name, input, api)
-            }
-        }
-    }
 }

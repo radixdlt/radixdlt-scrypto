@@ -3,7 +3,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
-use radix_engine::vm::NativeVmV1;
+use radix_engine::vm::DefaultNativeVm;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::account::{AccountSecurifyInput, ACCOUNT_SECURIFY_IDENT};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -78,7 +78,7 @@ fn can_withdraw_from_my_virtual_account() {
 
 fn can_withdraw_from_my_account_internal<F>(new_account: F)
 where
-    F: FnOnce(&mut TestRunner<NativeVmV1>) -> (Secp256k1PublicKey, ComponentAddress),
+    F: FnOnce(&mut TestRunner<DefaultNativeVm>) -> (Secp256k1PublicKey, ComponentAddress),
 {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

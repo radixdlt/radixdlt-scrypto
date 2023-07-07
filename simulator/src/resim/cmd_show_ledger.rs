@@ -20,7 +20,7 @@ pub struct ShowLedger {}
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-        let vm = Vm::new(&scrypto_vm, NativeVmV1);
+        let vm = Vm::new(&scrypto_vm, NativeVm);
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
         Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 

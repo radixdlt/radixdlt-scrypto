@@ -5,7 +5,7 @@ use radix_engine::blueprints::resource::BucketError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::types::*;
-use radix_engine::vm::NativeVmV1;
+use radix_engine::vm::DefaultNativeVm;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -1567,7 +1567,7 @@ fn register_and_stake_new_validator(
     pub_key: Secp256k1PublicKey,
     account_address: ComponentAddress,
     stake_amount: Decimal,
-    test_runner: &mut TestRunner<NativeVmV1>,
+    test_runner: &mut TestRunner<DefaultNativeVm>,
 ) -> ComponentAddress {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
 

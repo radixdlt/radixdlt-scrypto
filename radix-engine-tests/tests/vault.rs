@@ -4,7 +4,7 @@ use radix_engine::errors::{
 };
 use radix_engine::kernel::call_frame::{CloseSubstateError, CreateNodeError, TakeNodeError};
 use radix_engine::types::*;
-use radix_engine::vm::NativeVmV1;
+use radix_engine::vm::DefaultNativeVm;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
 use scrypto::prelude::FromPublicKey;
@@ -689,7 +689,7 @@ fn taking_resource_from_non_fungible_vault_should_reduce_the_contained_amount() 
 }
 
 fn get_vault_id(
-    test_runner: &mut TestRunner<NativeVmV1>,
+    test_runner: &mut TestRunner<DefaultNativeVm>,
     component_address: ComponentAddress,
 ) -> NodeId {
     let manifest = ManifestBuilder::new()

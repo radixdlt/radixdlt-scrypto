@@ -52,7 +52,7 @@ struct Account {
 }
 
 pub struct TxFuzzer {
-    runner: TestRunner<NativeVmV1>,
+    runner: TestRunner<DefaultNativeVm>,
     snapshot: TestRunnerSnapshot,
     accounts: Vec<Account>,
     #[allow(unused)]
