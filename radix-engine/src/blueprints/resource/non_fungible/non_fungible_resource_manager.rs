@@ -175,13 +175,15 @@ impl NonFungibleResourceManagerBlueprint {
                 }
             }
             _ => {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::NonFungibleResourceManagerError(
-                        NonFungibleResourceManagerError::InvalidNonFungibleSchema(
-                            InvalidNonFungibleSchema::MissingFieldNames,
+                if !non_fungible_schema.mutable_fields.is_empty() {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::NonFungibleResourceManagerError(
+                            NonFungibleResourceManagerError::InvalidNonFungibleSchema(
+                                InvalidNonFungibleSchema::MissingFieldNames,
+                            ),
                         ),
-                    ),
-                ))
+                    ));
+                }
             }
         }
 
