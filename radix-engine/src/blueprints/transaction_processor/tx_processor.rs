@@ -108,10 +108,10 @@ impl TransactionProcessorBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {
                         global: false,
-
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
-                        version: BlueprintVersion::default(),
-
+                        module_versions: btreemap!(
+                            ObjectModuleId::Main => BlueprintVersion::default(),
+                        ),
                         instance_schema: None,
                         blueprint_info: ObjectBlueprintInfo::default(),
                         features: btreeset!(),

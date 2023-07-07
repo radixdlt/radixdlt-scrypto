@@ -348,7 +348,9 @@ impl AuthModule {
                     global: false,
 
                     blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
-                    version: BlueprintVersion::default(),
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
 
                     blueprint_info: ObjectBlueprintInfo::default(),
                     features: btreeset!(),

@@ -616,7 +616,9 @@ pub fn create_bootstrap_package_partitions(
             type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                 global: true,
                 blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-                version: BlueprintVersion::default(),
+                module_versions: btreemap!(
+                    ObjectModuleId::Main => BlueprintVersion::default(),
+                ),
                 blueprint_info: ObjectBlueprintInfo::default(),
                 features: btreeset!(),
                 instance_schema: None,

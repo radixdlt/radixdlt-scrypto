@@ -6,7 +6,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::NativeProof;
-use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF, ObjectModuleId};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 
@@ -91,7 +91,9 @@ impl AuthZoneBlueprint {
                             global: false,
 
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
-                            version: BlueprintVersion::default(),
+                            module_versions: btreemap!(
+                                ObjectModuleId::Main => BlueprintVersion::default(),
+                            ),
 
                             blueprint_info: ObjectBlueprintInfo::Inner {
                                 outer_object: resource_address.into(),
@@ -111,7 +113,9 @@ impl AuthZoneBlueprint {
                         global: false,
 
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                        version: BlueprintVersion::default(),
+                        module_versions: btreemap!(
+                            ObjectModuleId::Main => BlueprintVersion::default(),
+                        ),
 
                         blueprint_info: ObjectBlueprintInfo::Inner {
                             outer_object: resource_address.into(),
@@ -155,7 +159,9 @@ impl AuthZoneBlueprint {
                     global: false,
 
                     blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                    version: BlueprintVersion::default(),
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
 
                     blueprint_info: ObjectBlueprintInfo::Inner {
                         outer_object: resource_address.into(),
@@ -201,7 +207,9 @@ impl AuthZoneBlueprint {
                     global: false,
 
                     blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
-                    version: BlueprintVersion::default(),
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
 
                     blueprint_info: ObjectBlueprintInfo::Inner {
                         outer_object: resource_address.into(),

@@ -605,47 +605,6 @@ where
     }
 
     pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
-        // This is to solve the bootstrapping problem.
-        // TODO: Can be removed if we flush bootstrap state updates without transactional execution.
-        if node_id.eq(XRD.as_node_id()) {
-            return Some(TypeInfoSubstate::Object(ObjectInfo {
-                global: true,
-
-                blueprint_id: BlueprintId {
-                    package_address: RESOURCE_PACKAGE,
-                    blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                },
-                version: BlueprintVersion::default(),
-
-                blueprint_info: ObjectBlueprintInfo::default(),
-                features: btreeset!(MINT_FEATURE.to_string(), BURN_FEATURE.to_string(),),
-                instance_schema: None,
-            }));
-        } else if node_id.eq(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_node_id())
-            || node_id.eq(ED25519_SIGNATURE_VIRTUAL_BADGE.as_node_id())
-            || node_id.eq(SYSTEM_TRANSACTION_BADGE.as_node_id())
-            || node_id.eq(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_node_id())
-            || node_id.eq(GLOBAL_CALLER_VIRTUAL_BADGE.as_node_id())
-            || node_id.eq(PACKAGE_OWNER_BADGE.as_node_id())
-            || node_id.eq(VALIDATOR_OWNER_BADGE.as_node_id())
-            || node_id.eq(IDENTITY_OWNER_BADGE.as_node_id())
-            || node_id.eq(ACCOUNT_OWNER_BADGE.as_node_id())
-        {
-            return Some(TypeInfoSubstate::Object(ObjectInfo {
-                global: true,
-
-                blueprint_id: BlueprintId {
-                    package_address: RESOURCE_PACKAGE,
-                    blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                },
-                version: BlueprintVersion::default(),
-
-                blueprint_info: ObjectBlueprintInfo::default(),
-                features: btreeset!(),
-                instance_schema: None,
-            }));
-        }
-
         self.api
             .kernel_open_substate(
                 node_id,
@@ -742,8 +701,10 @@ where
                 TypeInfoSubstate::Object(ObjectInfo {
                     global:false,
 
-                    blueprint_id: blueprint_id.clone(),
-                    version: BlueprintVersion::default(),
+                    main_blueprint_id: blueprint_id.clone(),
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
 
                     blueprint_info,
                     features: object_features,
@@ -800,8 +761,8 @@ where
                 let info = self.get_object_info(address.as_node_id())?;
 
                 let blueprint_interface = self.get_blueprint_default_interface(
-                    info.blueprint_id.package_address,
-                    info.blueprint_id.blueprint_name.as_str(),
+                    info.main_blueprint_id.package_address,
+                    info.main_blueprint_id.blueprint_name.as_str(),
                 )?;
 
                 Ok((
@@ -816,8 +777,8 @@ where
                 let info = method.module_object_info.clone();
                 let object_module_id = method.module_id;
                 let blueprint_interface = self.get_blueprint_default_interface(
-                    info.blueprint_id.package_address,
-                    info.blueprint_id.blueprint_name.as_str(),
+                    info.main_blueprint_id.package_address,
+                    info.main_blueprint_id.blueprint_name.as_str(),
                 )?;
                 Ok((
                     node_id,
@@ -840,7 +801,7 @@ where
         let (partition_offset, field_schema) =
             interface.state.field(field_index).ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                    info.blueprint_id.clone(),
+                    info.main_blueprint_id.clone(),
                     field_index,
                 ))
             })?;
@@ -849,7 +810,7 @@ where
             Condition::IfFeature(feature) => {
                 if !self.is_feature_enabled(&node_id, feature.as_str())? {
                     return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                        info.blueprint_id.clone(),
+                        info.main_blueprint_id.clone(),
                         field_index,
                     )));
                 }
@@ -859,7 +820,7 @@ where
                     .is_feature_enabled(info.get_outer_object().as_node_id(), feature.as_str())?
                 {
                     return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                        info.blueprint_id.clone(),
+                        info.main_blueprint_id.clone(),
                         field_index,
                     )));
                 }
@@ -897,7 +858,7 @@ where
             .key_value_store_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
-                    info.blueprint_id.clone(),
+                    info.main_blueprint_id.clone(),
                     collection_index,
                 ))
             })?;
@@ -922,7 +883,7 @@ where
             .index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::IndexDoesNotExist(
-                    object_info.blueprint_id,
+                    object_info.main_blueprint_id,
                     collection_index,
                 ))
             })?;
@@ -947,7 +908,7 @@ where
             .sorted_index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
-                    object_info.blueprint_id,
+                    object_info.main_blueprint_id,
                     collection_index,
                 ))
             })?;
@@ -969,7 +930,7 @@ where
                 ObjectModuleId::Main,
             )))?;
 
-        Ok(self.get_object_info(node_id)?.blueprint_id)
+        Ok(self.get_object_info(node_id)?.main_blueprint_id)
     }
 
     /// ASSUMPTIONS:
@@ -1083,7 +1044,7 @@ where
         let blueprint_id = match &mut type_info {
             TypeInfoSubstate::Object(ObjectInfo {
                 global,
-                blueprint_id: blueprint,
+                main_blueprint_id: blueprint,
                 ..
             }) => {
                 if *global {
@@ -1146,7 +1107,7 @@ where
                 ObjectModuleId::AccessRules
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
-                    let blueprint_id = self.get_object_info(&node_id)?.blueprint_id;
+                    let blueprint_id = self.get_object_info(&node_id)?.main_blueprint_id;
                     let expected_blueprint = module_id.static_blueprint().unwrap();
                     if !blueprint_id.eq(&expected_blueprint) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -1221,20 +1182,35 @@ where
         node_id: &NodeId,
         object_module_id: ObjectModuleId,
     ) -> Result<ObjectInfo, RuntimeError> {
+        let object_info = self.get_object_info(node_id)?;
         let module_object_info = match object_module_id {
-            ObjectModuleId::Main => self.get_object_info(node_id)?,
+            ObjectModuleId::Main => object_info,
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
-                let node_object_info = self.get_object_info(node_id)?;
-                if !node_object_info.global {
+                if !object_info.global {
                     return Err(RuntimeError::SystemError(
                         SystemError::ObjectModuleDoesNotExist(object_module_id),
                     ));
                 }
 
+                if object_info.main_blueprint_id
+                    .eq(&BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT))
+                    || object_info.main_blueprint_id
+                    .eq(&BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)) {
+
+                    match object_module_id {
+                        ObjectModuleId::Royalty => return Err(RuntimeError::SystemError(
+                            SystemError::ObjectModuleDoesNotExist(object_module_id),
+                        )),
+                        _ => {}
+                    }
+                }
+
                 ObjectInfo {
                     global: true,
-                    blueprint_id: object_module_id.static_blueprint().unwrap(),
-                    version: BlueprintVersion::default(),
+                    main_blueprint_id: object_module_id.static_blueprint().unwrap(),
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
                     blueprint_info: ObjectBlueprintInfo::default(),
                     features: btreeset!(),
                     instance_schema: None,
@@ -1511,7 +1487,7 @@ where
                 None => None,
                 Some(address) => Some(InstanceContext {
                     outer_object: address,
-                    outer_blueprint: module_object_info.blueprint_id.blueprint_name.clone(),
+                    outer_blueprint: module_object_info.main_blueprint_id.blueprint_name.clone(),
                 }),
             }
         } else {
@@ -1521,7 +1497,7 @@ where
                     let outer_info = self.get_object_info(outer_object.as_node_id())?;
                     Some(InstanceContext {
                         outer_object: outer_object.clone(),
-                        outer_blueprint: outer_info.blueprint_id.blueprint_name.clone(),
+                        outer_blueprint: outer_info.main_blueprint_id.blueprint_name.clone(),
                     })
                 }
                 ObjectBlueprintInfo::Outer { .. } => None,
@@ -1601,7 +1577,7 @@ where
             ..
         } = actor
         {
-            if blueprint.eq(&info.blueprint_id) {
+            if blueprint.eq(&info.main_blueprint_id) {
                 is_drop_allowed = true;
             }
         }
@@ -1610,8 +1586,8 @@ where
             return Err(RuntimeError::SystemError(
                 SystemError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
                     node_id: node_id.clone(),
-                    package_address: info.blueprint_id.package_address,
-                    blueprint_name: info.blueprint_id.blueprint_name,
+                    package_address: info.main_blueprint_id.package_address,
+                    blueprint_name: info.main_blueprint_id.blueprint_name,
                 })),
             ));
         }
@@ -2276,11 +2252,11 @@ where
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
             if !(object_info
-                .blueprint_id
+                .main_blueprint_id
                 .package_address
                 .eq(&RESOURCE_PACKAGE)
                 && object_info
-                    .blueprint_id
+                    .main_blueprint_id
                     .blueprint_name
                     .eq(FUNGIBLE_VAULT_BLUEPRINT))
             {
@@ -2290,7 +2266,7 @@ where
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
-                blueprint_id: object_info.blueprint_id,
+                blueprint_id: object_info.main_blueprint_id,
                 type_pointer: schema_pointer,
             }
         } else {
@@ -2451,14 +2427,14 @@ where
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
         self.validate_payload_against_blueprint_schema(
-            &object_info.blueprint_id,
+            &object_info.main_blueprint_id,
             &object_info.instance_schema,
             &[(key, kv_schema.key)],
         )?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             KeyValueEntryLockData::BlueprintWrite {
-                blueprint_id: object_info.blueprint_id,
+                blueprint_id: object_info.main_blueprint_id,
                 instance_schema: object_info.instance_schema,
                 type_pointer: kv_schema.value,
                 can_own: kv_schema.can_own,
@@ -2595,7 +2571,7 @@ where
                     module_object_info, ..
                 }) => (
                     module_object_info.instance_schema.clone(),
-                    module_object_info.blueprint_id.clone(),
+                    module_object_info.main_blueprint_id.clone(),
                 ),
                 Actor::Function {
                     blueprint_id: ref blueprint,
