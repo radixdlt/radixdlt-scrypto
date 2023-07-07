@@ -1,4 +1,5 @@
 use scrypto::api::ClientObjectApi;
+use scrypto::api::FieldValue;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
@@ -10,7 +11,7 @@ mod fake_bucket {
         pub fn free_1000_xrd(bucket: Bucket) -> Bucket {
             // See LiquidFungibleResource definition
             let first_substate = Decimal::from(1000u32);
-            let substates: Vec<Vec<u8>> = vec![scrypto_encode(&first_substate).unwrap()];
+            let substates: Vec<FieldValue> = vec![FieldValue::new(&first_substate)];
 
             let custom_node = ScryptoEnv
                 .new_simple_object("FakeBucket", substates)

@@ -12,6 +12,7 @@ use sbor::rust::ops::AddAssign;
 use sbor::rust::prelude::*;
 
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system::FieldSubstate;
 use crate::track::TrackedSubstateValue;
 use crate::track::{TrackedNode, Write};
 
@@ -281,25 +282,25 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
         {
             // If there is an update to the liquid resource
             if let Some(substate) = self
-                .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                .fetch_substate_from_state_updates::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                     node_id,
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
                 )
             {
                 let old_substate = self
-                    .fetch_substate_from_database::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                    .fetch_substate_from_database::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                         node_id,
                         MAIN_BASE_PARTITION,
                         &FungibleVaultField::LiquidFungible.into(),
                     );
 
                 let old_balance = if let Some(s) = old_substate {
-                    s.amount()
+                    s.value.0.amount()
                 } else {
                     Decimal::ZERO
                 };
-                let new_balance = substate.amount();
+                let new_balance = substate.value.0.amount();
 
                 Some(BalanceChange::Fungible(new_balance - old_balance))
             } else {

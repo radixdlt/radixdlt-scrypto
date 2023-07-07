@@ -311,19 +311,13 @@ fn change_lock_owner_role_rules() {
     // Act: verify if lock owner role is possible
     let receipt = test_runner.lock_owner_role();
     receipt.expect_commit(true).outcome.expect_success();
-
-    // Act: change lock owner role rule to deny all
-    let receipt = test_runner.set_owner_role(rule!(deny_all));
-    receipt.expect_commit_success();
-
-    // Act: verify if lock owner role is not possible  now
     let receipt = test_runner.lock_owner_role();
+
+    // Assert
     receipt.expect_specific_failure(|error: &RuntimeError| {
         matches!(
             error,
-            RuntimeError::SystemModuleError(SystemModuleError::AuthError(AuthError::Unauthorized(
-                _
-            )))
+            RuntimeError::SystemError(SystemError::MutatingImmutableFieldSubstate(..)),
         )
     })
 }
@@ -440,13 +434,6 @@ impl MutableAccessRulesTestRunner {
     pub fn lock_owner_role(&mut self) -> TransactionReceipt {
         let manifest = Self::manifest_builder()
             .lock_owner_role(self.component_address)
-            .build();
-        self.execute_manifest(manifest)
-    }
-
-    pub fn set_owner_role(&mut self, rule: AccessRule) -> TransactionReceipt {
-        let manifest = Self::manifest_builder()
-            .set_owner_role(self.component_address, rule)
             .build();
         self.execute_manifest(manifest)
     }
