@@ -1795,7 +1795,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
 
                         match type_info {
                             TypeInfoSubstate::Object(ObjectInfo {
-                                blueprint_id: blueprint,
+                                main_blueprint_id: blueprint,
                                 ..
                             }) => (blueprint.package_address, *schema_pointer),
                             _ => {

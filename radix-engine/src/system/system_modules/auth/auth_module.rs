@@ -216,13 +216,13 @@ impl AuthModule {
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             callee
                 .module_object_info
-                .blueprint_id
+                .main_blueprint_id
                 .package_address
                 .as_node_id(),
             &BlueprintVersionKey::new_default(
                 callee
                     .module_object_info
-                    .blueprint_id
+                    .main_blueprint_id
                     .blueprint_name
                     .as_str(),
             ),
@@ -258,7 +258,7 @@ impl AuthModule {
         match method_permissions.get(&method_key) {
             Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
             Some(MethodAccessibility::OwnPackageOnly) => {
-                let package = callee.module_object_info.blueprint_id.package_address;
+                let package = callee.module_object_info.main_blueprint_id.package_address;
                 Ok(ResolvedPermission::AccessRule(rule!(require(
                     package_of_direct_caller(package)
                 ))))
@@ -347,7 +347,7 @@ impl AuthModule {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                    main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     module_versions: btreemap!(
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),

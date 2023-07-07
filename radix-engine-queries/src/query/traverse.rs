@@ -121,9 +121,9 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 }
             }
             TypeInfoSubstate::Object(info) => {
-                if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                     && info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_VAULT_BLUEPRINT)
                 {
@@ -141,9 +141,9 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         &ResourceAddress::new_or_panic(info.get_outer_object().into()),
                         &liquid.value.0,
                     );
-                } else if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                } else if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                     && info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
                 {
@@ -187,8 +187,8 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         self.traverse_substates::<MapKey>(node_id, partition_num, depth)
                     }
 
-                    if info.blueprint_id.package_address.eq(&ACCOUNT_PACKAGE)
-                        && info.blueprint_id.blueprint_name.eq(ACCOUNT_BLUEPRINT)
+                    if info.main_blueprint_id.package_address.eq(&ACCOUNT_PACKAGE)
+                        && info.main_blueprint_id.blueprint_name.eq(ACCOUNT_BLUEPRINT)
                     {
                         self.traverse_substates::<MapKey>(
                             node_id,

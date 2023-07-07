@@ -1,4 +1,4 @@
-use crate::blueprints::package::{BlueprintVersion, BlueprintVersionKey};
+use crate::blueprints::package::BlueprintVersion;
 use crate::ScryptoSbor;
 use core::fmt;
 use core::fmt::Formatter;
@@ -26,7 +26,7 @@ impl Default for ObjectBlueprintInfo {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {
     pub global: bool,
-    pub blueprint_id: BlueprintId,
+    pub main_blueprint_id: BlueprintId,
     pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
 
     // Blueprint arguments

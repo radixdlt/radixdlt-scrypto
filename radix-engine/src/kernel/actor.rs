@@ -25,7 +25,7 @@ pub struct MethodActor {
 impl MethodActor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier {
-            blueprint_id: self.module_object_info.blueprint_id.clone(),
+            blueprint_id: self.module_object_info.main_blueprint_id.clone(),
             ident: FnIdent::Application(self.ident.to_string()),
         }
     }
@@ -74,11 +74,11 @@ impl Actor {
                 ..
             }) => {
                 object_info
-                    .blueprint_id
+                    .main_blueprint_id
                     .package_address
                     .eq(&RESOURCE_PACKAGE)
                     && object_info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(AUTH_ZONE_BLUEPRINT)
             }
@@ -127,7 +127,7 @@ impl Actor {
             Actor::Method(MethodActor {
                 module_object_info:
                     ObjectInfo {
-                        blueprint_id: blueprint,
+                        main_blueprint_id: blueprint,
                         ..
                     },
                 ..
@@ -185,7 +185,7 @@ impl Actor {
             Actor::Method(MethodActor {
                 module_object_info:
                     ObjectInfo {
-                        blueprint_id: blueprint,
+                        main_blueprint_id: blueprint,
                         ..
                     },
                 ..
@@ -223,7 +223,7 @@ impl Actor {
             Actor::Method(MethodActor {
                 module_object_info:
                     ObjectInfo {
-                        blueprint_id: blueprint,
+                        main_blueprint_id: blueprint,
                         ..
                     },
                 ..
@@ -247,7 +247,7 @@ impl Actor {
             Actor::Method(MethodActor {
                 module_object_info:
                     ObjectInfo {
-                        blueprint_id: blueprint,
+                        main_blueprint_id: blueprint,
                         ..
                     },
                 ..

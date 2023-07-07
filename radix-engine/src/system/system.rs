@@ -700,7 +700,6 @@ where
             TYPE_INFO_FIELD_PARTITION => type_info_partition(
                 TypeInfoSubstate::Object(ObjectInfo {
                     global:false,
-
                     main_blueprint_id: blueprint_id.clone(),
                     module_versions: btreemap!(
                         ObjectModuleId::Main => BlueprintVersion::default(),
@@ -1009,7 +1008,7 @@ where
             .collect::<BTreeSet<ObjectModuleId>>();
         if module_ids != expected_modules {
             return Err(RuntimeError::SystemError(SystemError::InvalidModuleSet(
-                Box::new(InvalidModuleSet(module_ids)),
+                Box::new(InvalidModuleSet(module_ids.clone())),
             )));
         }
 
@@ -1041,28 +1040,8 @@ where
             .unwrap();
         self.api.kernel_close_substate(lock_handle)?;
 
-        let blueprint_id = match &mut type_info {
-            TypeInfoSubstate::Object(ObjectInfo {
-                global,
-                main_blueprint_id: blueprint,
-                ..
-            }) => {
-                if *global {
-                    return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-                        CannotGlobalizeError::AlreadyGlobalized,
-                    )));
-                } else if blueprint.package_address != reserved_blueprint_id.package_address
-                    || blueprint.blueprint_name != reserved_blueprint_id.blueprint_name
-                {
-                    return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-                        CannotGlobalizeError::InvalidBlueprintId,
-                    )));
-                } else {
-                    *global = true;
-                }
-
-                blueprint
-            }
+        let object_info = match &mut type_info {
+            TypeInfoSubstate::Object(object_info) => object_info,
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                     CannotGlobalizeError::NotAnObject,
@@ -1070,12 +1049,41 @@ where
             }
         };
 
-        let interface = self.get_blueprint_default_interface(
-            blueprint_id.package_address,
-            blueprint_id.blueprint_name.as_str(),
-        )?;
+        // Verify can globalize with address
+        {
+            if object_info.global {
+                return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+                    CannotGlobalizeError::AlreadyGlobalized,
+                )));
+            }
+            if object_info.main_blueprint_id.package_address
+                != reserved_blueprint_id.package_address
+                || object_info.main_blueprint_id.blueprint_name
+                    != reserved_blueprint_id.blueprint_name
+            {
+                return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
+                    CannotGlobalizeError::InvalidBlueprintId,
+                )));
+            }
+        }
 
-        let num_main_partitions = interface.state.num_partitions();
+        // Update Object Info
+        {
+            object_info.global = true;
+            for module_id in modules.keys() {
+                object_info
+                    .module_versions
+                    .insert(module_id.clone(), BlueprintVersion::default());
+            }
+        }
+
+        let num_main_partitions = {
+            let interface = self.get_blueprint_default_interface(
+                object_info.main_blueprint_id.package_address,
+                object_info.main_blueprint_id.blueprint_name.as_str(),
+            )?;
+            interface.state.num_partitions()
+        };
 
         // Create a global node
         self.kernel_create_node(
@@ -1186,29 +1194,17 @@ where
         let module_object_info = match object_module_id {
             ObjectModuleId::Main => object_info,
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
-                if !object_info.global {
+                if !object_info.module_versions.contains_key(&object_module_id) {
                     return Err(RuntimeError::SystemError(
                         SystemError::ObjectModuleDoesNotExist(object_module_id),
                     ));
-                }
-
-                if object_info.main_blueprint_id
-                    .eq(&BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT))
-                    || object_info.main_blueprint_id
-                    .eq(&BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)) {
-
-                    match object_module_id {
-                        ObjectModuleId::Royalty => return Err(RuntimeError::SystemError(
-                            SystemError::ObjectModuleDoesNotExist(object_module_id),
-                        )),
-                        _ => {}
-                    }
                 }
 
                 ObjectInfo {
                     global: true,
                     main_blueprint_id: object_module_id.static_blueprint().unwrap(),
                     module_versions: btreemap!(
+                        // FIXME: This is wrong
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),
                     blueprint_info: ObjectBlueprintInfo::default(),
