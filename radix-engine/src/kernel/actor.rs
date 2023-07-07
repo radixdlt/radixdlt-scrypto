@@ -48,8 +48,8 @@ impl FunctionActor {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintHookActor {
-    blueprint_id: BlueprintId,
-    hook: BlueprintHook,
+    pub blueprint_id: BlueprintId,
+    pub hook: BlueprintHook,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -76,17 +76,16 @@ impl Actor {
                 node_id.as_ref().len() + ident.len()
             }
             Actor::Function(FunctionActor {
-                blueprint_id: blueprint,
+                blueprint_id,
                 ident,
             }) => {
-                blueprint.package_address.as_ref().len()
-                    + blueprint.blueprint_name.len()
+                blueprint_id.package_address.as_ref().len()
+                    + blueprint_id.blueprint_name.len()
                     + ident.len()
             }
-            Actor::BlueprintHook(BlueprintHookActor {
-                blueprint_id: blueprint,
-                ..
-            }) => blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1,
+            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                blueprint_id.package_address.as_ref().len() + blueprint_id.blueprint_name.len() + 1
+            }
         }
     }
 
@@ -135,24 +134,16 @@ impl Actor {
         match self {
             Actor::Root => false,
             Actor::Method(MethodActor {
-                module_object_info:
-                    ObjectInfo {
-                        blueprint_id: blueprint,
-                        ..
-                    },
+                module_object_info: ObjectInfo { blueprint_id, .. },
                 ..
             })
-            | Actor::Function(FunctionActor {
-                blueprint_id: blueprint,
-                ..
-            })
-            | Actor::BlueprintHook(BlueprintHookActor {
-                blueprint_id: blueprint,
-                ..
-            }) => blueprint.eq(&BlueprintId::new(
-                &TRANSACTION_PROCESSOR_PACKAGE,
-                TRANSACTION_PROCESSOR_BLUEPRINT,
-            )),
+            | Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                blueprint_id.eq(&BlueprintId::new(
+                    &TRANSACTION_PROCESSOR_PACKAGE,
+                    TRANSACTION_PROCESSOR_BLUEPRINT,
+                ))
+            }
         }
     }
 
@@ -166,10 +157,9 @@ impl Actor {
     pub fn as_global_caller(&self) -> Option<GlobalCaller> {
         match self {
             Actor::Method(actor) => actor.global_address.map(|address| address.into()),
-            Actor::Function(FunctionActor {
-                blueprint_id: blueprint,
-                ..
-            }) => Some(blueprint.clone().into()),
+            Actor::Function(FunctionActor { blueprint_id, .. }) => {
+                Some(blueprint_id.clone().into())
+            }
             _ => None,
         }
     }
@@ -186,21 +176,11 @@ impl Actor {
     pub fn blueprint_id(&self) -> &BlueprintId {
         match self {
             Actor::Method(MethodActor {
-                module_object_info:
-                    ObjectInfo {
-                        blueprint_id: blueprint,
-                        ..
-                    },
+                module_object_info: ObjectInfo { blueprint_id, .. },
                 ..
             })
-            | Actor::Function(FunctionActor {
-                blueprint_id: blueprint,
-                ..
-            })
-            | Actor::BlueprintHook(BlueprintHookActor {
-                blueprint_id: blueprint,
-                ..
-            }) => blueprint,
+            | Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => blueprint_id,
             Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
@@ -222,47 +202,29 @@ impl Actor {
     }
 
     pub fn package_address(&self) -> &PackageAddress {
-        let blueprint = match &self {
+        let blueprint_id = match &self {
             Actor::Method(MethodActor {
-                module_object_info:
-                    ObjectInfo {
-                        blueprint_id: blueprint,
-                        ..
-                    },
+                module_object_info: ObjectInfo { blueprint_id, .. },
                 ..
-            }) => blueprint,
-            Actor::Function(FunctionActor {
-                blueprint_id: blueprint,
-                ..
-            }) => blueprint,
-            Actor::BlueprintHook(BlueprintHookActor {
-                blueprint_id: blueprint,
-                ..
-            }) => blueprint,
+            }) => blueprint_id,
+            Actor::Function(FunctionActor { blueprint_id, .. }) => blueprint_id,
+            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => blueprint_id,
             Actor::Root => return &PACKAGE_PACKAGE, // FIXME: have the right interface
         };
 
-        &blueprint.package_address
+        &blueprint_id.package_address
     }
 
     pub fn blueprint_name(&self) -> &str {
         match &self {
             Actor::Method(MethodActor {
-                module_object_info:
-                    ObjectInfo {
-                        blueprint_id: blueprint,
-                        ..
-                    },
+                module_object_info: ObjectInfo { blueprint_id, .. },
                 ..
             })
-            | Actor::Function(FunctionActor {
-                blueprint_id: blueprint,
-                ..
-            })
-            | Actor::BlueprintHook(BlueprintHookActor {
-                blueprint_id: blueprint,
-                ..
-            }) => blueprint.blueprint_name.as_str(),
+            | Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                blueprint_id.blueprint_name.as_str()
+            }
             Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
@@ -285,9 +247,9 @@ impl Actor {
         })
     }
 
-    pub fn function(blueprint: BlueprintId, ident: String) -> Self {
+    pub fn function(blueprint_id: BlueprintId, ident: String) -> Self {
         Self::Function(FunctionActor {
-            blueprint_id: blueprint,
+            blueprint_id,
             ident,
         })
     }

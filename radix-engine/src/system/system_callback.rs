@@ -4,7 +4,6 @@ use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHook;
-use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
@@ -409,11 +408,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_id: blueprint,
-                    ..
-                }) => {
-                    match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
+                TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
+                    match (
+                        blueprint_id.package_address,
+                        blueprint_id.blueprint_name.as_str(),
+                    ) {
                         (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
                             let mut system = SystemService::new(api);
                             system.call_function(

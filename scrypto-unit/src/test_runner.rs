@@ -1730,10 +1730,9 @@ impl TestRunner {
                             .unwrap();
 
                         match type_info {
-                            TypeInfoSubstate::Object(ObjectInfo {
-                                blueprint_id: blueprint,
-                                ..
-                            }) => (blueprint.package_address, *schema_pointer),
+                            TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
+                                (blueprint_id.package_address, *schema_pointer)
+                            }
                             _ => {
                                 panic!("No event schema.")
                             }

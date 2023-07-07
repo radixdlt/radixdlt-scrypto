@@ -477,11 +477,11 @@ impl ExecutionTraceModule {
                     ident: ident.clone(),
                 }),
                 Actor::Function(FunctionActor {
-                    blueprint_id: blueprint,
+                    blueprint_id,
                     ident,
                 }) => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
-                    package_address: blueprint.package_address.clone(),
-                    blueprint_name: blueprint.blueprint_name.clone(),
+                    package_address: blueprint_id.package_address.clone(),
+                    blueprint_name: blueprint_id.blueprint_name.clone(),
                     ident: ident.clone(),
                 }),
                 Actor::BlueprintHook(..) | Actor::Root => {

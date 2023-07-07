@@ -1062,15 +1062,15 @@ where
         let blueprint_id = match &mut type_info {
             TypeInfoSubstate::Object(ObjectInfo {
                 global,
-                blueprint_id: blueprint,
+                blueprint_id,
                 ..
             }) => {
                 if *global {
                     return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                         CannotGlobalizeError::AlreadyGlobalized,
                     )));
-                } else if blueprint.package_address != reserved_blueprint_id.package_address
-                    || blueprint.blueprint_name != reserved_blueprint_id.blueprint_name
+                } else if blueprint_id.package_address != reserved_blueprint_id.package_address
+                    || blueprint_id.blueprint_name != reserved_blueprint_id.blueprint_name
                 {
                     return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                         CannotGlobalizeError::InvalidBlueprintId,
@@ -1079,7 +1079,7 @@ where
                     *global = true;
                 }
 
-                blueprint
+                blueprint_id
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
@@ -1541,12 +1541,8 @@ where
         }
 
         // If the actor is a function within the same blueprint
-        if let Actor::Function(FunctionActor {
-            blueprint_id: blueprint,
-            ..
-        }) = actor
-        {
-            if blueprint.eq(&info.blueprint_id) {
+        if let Actor::Function(FunctionActor { blueprint_id, .. }) = actor {
+            if blueprint_id.eq(&info.blueprint_id) {
                 is_drop_allowed = true;
             }
         }

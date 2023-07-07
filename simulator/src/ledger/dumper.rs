@@ -73,7 +73,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let blueprint = match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
-                blueprint_id: blueprint,
+                blueprint_id,
                 ..
             }) => blueprint,
             _ => {
@@ -86,8 +86,8 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let resources = accounter.close();
 
         (
-            blueprint.package_address,
-            blueprint.blueprint_name,
+            blueprint_id.package_address,
+            blueprint_id.blueprint_name,
             resources,
         )
     };

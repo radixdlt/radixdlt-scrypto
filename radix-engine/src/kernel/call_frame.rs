@@ -321,15 +321,9 @@ impl<L: Clone> CallFrame<L> {
                     additional_global_refs.push(instance_context.outer_object.clone());
                 }
             }
-            Actor::Function(FunctionActor {
-                blueprint_id: blueprint,
-                ..
-            })
-            | Actor::BlueprintHook(BlueprintHookActor {
-                blueprint_id: blueprint,
-                ..
-            }) => {
-                additional_global_refs.push(blueprint.package_address.clone().into());
+            Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                additional_global_refs.push(blueprint_id.package_address.clone().into());
             }
         }
 
@@ -1119,14 +1113,13 @@ impl<L: Clone> CallFrame<L> {
         } else {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint_id: blueprint,
-                        ..
-                    }) if blueprint.package_address == RESOURCE_PACKAGE
-                        && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
+                    TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. })
+                        if blueprint_id.package_address == RESOURCE_PACKAGE
+                            && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                                || blueprint_id.blueprint_name
+                                    == NON_FUNGIBLE_BUCKET_BLUEPRINT
+                                || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
+                                || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
                     {
                         false
                     }

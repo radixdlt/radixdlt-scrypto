@@ -421,7 +421,7 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
 
     match type_info {
         TypeInfoSubstate::Object(ObjectInfo {
-            blueprint_id: blueprint,
+            blueprint_id,
             ..
         }) => Ok(blueprint.clone()),
         _ => panic!("Unexpected"),
