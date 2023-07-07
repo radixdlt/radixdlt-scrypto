@@ -46,12 +46,12 @@ impl NonFungibleVaultBlueprint {
         let amount = amount.for_withdrawal(0, withdraw_strategy);
 
         // Check amount
-        check_non_fungible_amount(&amount).map_err(|_| {
+        let n = check_non_fungible_amount(&amount).map_err(|_| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
         })?;
 
         // Take
-        let taken = Self::internal_take(amount, api)?;
+        let taken = Self::internal_take_by_amount(n, api)?;
 
         // Create node
         NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)
@@ -114,11 +114,11 @@ impl NonFungibleVaultBlueprint {
     {
         Self::assert_recallable(api)?;
 
-        check_non_fungible_amount(&amount).map_err(|_| {
+        let n = check_non_fungible_amount(&amount).map_err(|_| {
             RuntimeError::ApplicationError(ApplicationError::VaultError(VaultError::InvalidAmount))
         })?;
 
-        let taken = Self::internal_take(amount, api)?;
+        let taken = Self::internal_take_by_amount(n, api)?;
 
         let bucket = NonFungibleResourceManagerBlueprint::create_bucket(taken.into_ids(), api)?;
 
@@ -422,48 +422,32 @@ impl NonFungibleVaultBlueprint {
         Ok(ids)
     }
 
-    fn internal_take<Y>(
-        amount: Decimal,
+    fn internal_take_by_amount<Y>(
+        n: u32,
         api: &mut Y,
     ) -> Result<LiquidNonFungibleResource, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
+        // deduct from liquidity pool
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
         let mut substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
-
-        // deduct from liquidity pool
-        if substate_ref.amount < amount {
+        if substate_ref.amount < Decimal::from(n) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
             ));
         }
-
-        // FIXME: Fix/Cleanup
-        if substate_ref.amount > Decimal::from(u32::MAX) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::VaultError(VaultError::ResourceError(
-                    ResourceError::InvalidTakeAmount,
-                )),
-            ));
-        }
-
-        substate_ref.amount -= amount;
-
-        let amount_to_take: u32 = amount
-            .to_string()
-            .parse()
-            .expect("Failed to convert amount to u32");
+        substate_ref.amount -= Decimal::from(n);
 
         let taken = {
             let ids: Vec<NonFungibleLocalId> = api.actor_index_take_typed(
                 OBJECT_HANDLE_SELF,
                 NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
-                amount_to_take,
+                n,
             )?;
             LiquidNonFungibleResource {
                 ids: ids.into_iter().collect(),
