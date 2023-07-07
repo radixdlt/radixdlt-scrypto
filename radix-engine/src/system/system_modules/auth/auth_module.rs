@@ -41,7 +41,7 @@ pub enum FailedAccessRules {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
     pub failed_access_rules: FailedAccessRules,
-    pub fn_identifier: FnIdentifier,
+    pub fn_identifier: Option<FnIdentifier>,
 }
 
 #[derive(Debug, Clone)]
@@ -141,7 +141,7 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         resolved_permission: ResolvedPermission,
-        fn_identifier: FnIdentifier,
+        fn_identifier: Option<FnIdentifier>,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         match resolved_permission {

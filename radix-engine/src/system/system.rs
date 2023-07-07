@@ -1181,7 +1181,9 @@ where
 
     pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
-        Ok(actor.fn_identifier())
+        actor
+            .fn_identifier()
+            .ok_or(RuntimeError::SystemError(SystemError::NoFnIdentifier))
     }
 
     pub fn is_feature_enabled(

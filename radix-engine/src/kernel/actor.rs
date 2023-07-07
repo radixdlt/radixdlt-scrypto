@@ -33,8 +33,8 @@ impl MethodActor {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct FunctionActor {
-    blueprint_id: BlueprintId,
-    ident: String,
+    pub blueprint_id: BlueprintId,
+    pub ident: String,
 }
 
 impl FunctionActor {
@@ -112,18 +112,11 @@ impl Actor {
         }
     }
 
-    pub fn fn_identifier(&self) -> FnIdentifier {
+    pub fn fn_identifier(&self) -> Option<FnIdentifier> {
         match self {
-            Actor::Root => panic!("Should never be called"),
-            Actor::Method(method_actor) => method_actor.fn_identifier(),
-            Actor::Function(function_actor) => function_actor.fn_identifier(),
-            Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ident,
-            } => FnIdentifier {
-                blueprint_id: blueprint.clone(),
-                ident: FnIdent::System(*ident),
-            },
+            Actor::Method(method_actor) => Some(method_actor.fn_identifier()),
+            Actor::Function(function_actor) => Some(function_actor.fn_identifier()),
+            _ => None,
         }
     }
 
