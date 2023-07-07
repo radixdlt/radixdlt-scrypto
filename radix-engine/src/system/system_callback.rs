@@ -3,7 +3,6 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
-use crate::kernel::actor::BlueprintHook;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
@@ -17,7 +16,7 @@ use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::{
@@ -519,12 +518,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     _ => return Ok(false),
                 };
 
-                let mut args = [0u8; NodeId::RID_LENGTH];
-                args.copy_from_slice(&node_id.as_ref()[1..]);
-
                 let invocation = KernelInvocation {
                     actor: Actor::blueprint_hook(blueprint.clone(), BlueprintHook::OnVirtualize),
-                    args: IndexedScryptoValue::from_typed(&VirtualLazyLoadInput { id: args }),
+                    args: IndexedScryptoValue::from_typed(&OnVirtualizeInput { node_id }),
                 };
 
                 let rtn: Vec<u8> = api.kernel_invoke(Box::new(invocation))?.into();

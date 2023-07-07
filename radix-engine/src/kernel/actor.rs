@@ -52,14 +52,6 @@ pub struct BlueprintHookActor {
     pub hook: BlueprintHook,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum BlueprintHook {
-    OnVirtualize,
-    OnMove,
-    OnDrop,
-    OnPersist,
-}
-
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Root,

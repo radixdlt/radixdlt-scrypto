@@ -6,8 +6,8 @@ use radix_engine_common::types::NodeId;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
-pub struct VirtualLazyLoadInput {
-    pub id: [u8; NodeId::RID_LENGTH],
+pub struct OnVirtualizeInput {
+    pub node_id: NodeId,
 }
 
-pub type VirtualLazyLoadOutput = BTreeMap<ObjectModuleId, Own>;
+pub type OnVirtualizeOutput = BTreeMap<ObjectModuleId, Own>;

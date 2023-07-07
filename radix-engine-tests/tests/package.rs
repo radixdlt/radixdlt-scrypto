@@ -181,7 +181,6 @@ fn test_basic_package_missing_export() {
                             export: "not_exist".to_string(),
                         }
                     ),
-                    virtual_lazy_load_functions: btreemap!(),
                 },
             },
 

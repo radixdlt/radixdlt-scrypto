@@ -8,7 +8,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
@@ -163,7 +163,7 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
-                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
+                let input: OnVirtualizeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -172,7 +172,7 @@ impl IdentityNativePackage {
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
-                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
+                let input: OnVirtualizeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
@@ -253,7 +253,7 @@ impl IdentityBlueprint {
     }
 
     pub fn create_virtual_secp256k1<Y>(
-        input: VirtualLazyLoadInput,
+        input: OnVirtualizeInput,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
@@ -264,7 +264,7 @@ impl IdentityBlueprint {
     }
 
     pub fn create_virtual_ed25519<Y>(
-        input: VirtualLazyLoadInput,
+        input: OnVirtualizeInput,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where

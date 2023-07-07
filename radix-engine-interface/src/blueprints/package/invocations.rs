@@ -11,6 +11,7 @@ use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
 use scrypto_schema::BlueprintEventSchemaInit;
 use scrypto_schema::BlueprintFunctionsSchemaInit;
+use scrypto_schema::BlueprintHooksInit;
 use scrypto_schema::BlueprintSchemaInit;
 use scrypto_schema::BlueprintStateSchemaInit;
 use scrypto_schema::FieldSchema;
@@ -218,7 +219,6 @@ impl PackageDefinition {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
                         functions: btreemap!(
                         function_name.to_string() => FunctionSchemaInit {
                                 receiver: Option::None,
@@ -228,6 +228,7 @@ impl PackageDefinition {
                             }
                         ),
                     },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),

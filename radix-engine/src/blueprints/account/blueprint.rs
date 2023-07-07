@@ -12,8 +12,8 @@ use native_sdk::resource::NativeVault;
 use radix_engine_interface::api::field_lock_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadOutput;
+use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
+use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeOutput;
 use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::account::*;
@@ -90,9 +90,9 @@ impl AccountBlueprint {
     }
 
     pub fn create_virtual_secp256k1<Y>(
-        input: VirtualLazyLoadInput,
+        input: OnVirtualizeInput,
         api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -101,9 +101,9 @@ impl AccountBlueprint {
     }
 
     pub fn create_virtual_ed25519<Y>(
-        input: VirtualLazyLoadInput,
+        input: OnVirtualizeInput,
         api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -114,7 +114,7 @@ impl AccountBlueprint {
     fn create_virtual<Y>(
         public_key_hash: PublicKeyHash,
         api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

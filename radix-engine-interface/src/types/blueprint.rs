@@ -73,6 +73,14 @@ pub struct BlueprintId {
     pub blueprint_name: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintHook {
+    OnVirtualize,
+    OnMove,
+    OnDrop,
+    OnPersist,
+}
+
 impl BlueprintId {
     pub fn new<S: ToString>(package_address: &PackageAddress, blueprint_name: S) -> Self {
         BlueprintId {
