@@ -9,7 +9,7 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeFungibleVault;
 use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
@@ -580,7 +580,7 @@ impl AccountBlueprint {
                     &resource_deposit_configuration,
                 )?;
 
-                api.key_value_entry_release(kv_store_entry_lock_handle)?;
+                api.key_value_entry_close(kv_store_entry_lock_handle)?;
             }
             ResourceDepositRule::Neither => {
                 api.actor_remove_key_value_entry(
@@ -638,7 +638,7 @@ impl AccountBlueprint {
                 Option::Some(own) => Ok(Vault(own)),
                 Option::None => {
                     if create {
-                        api.key_value_entry_release(kv_store_entry_lock_handle)?;
+                        api.key_value_entry_close(kv_store_entry_lock_handle)?;
                         kv_store_entry_lock_handle = api.actor_open_key_value_entry(
                             OBJECT_HANDLE_SELF,
                             ACCOUNT_VAULT_INDEX,
@@ -659,13 +659,13 @@ impl AccountBlueprint {
         if let Ok(mut vault) = vault {
             match vault_fn(&mut vault, api) {
                 Ok(rtn) => {
-                    api.key_value_entry_release(kv_store_entry_lock_handle)?;
+                    api.key_value_entry_close(kv_store_entry_lock_handle)?;
                     Ok(rtn)
                 }
                 Err(error) => Err(error),
             }
         } else {
-            api.key_value_entry_release(kv_store_entry_lock_handle)?;
+            api.key_value_entry_close(kv_store_entry_lock_handle)?;
             Err(vault.unwrap_err().into())
         }
     }
@@ -724,7 +724,7 @@ impl AccountBlueprint {
             }
         };
 
-        api.key_value_entry_release(kv_store_entry_lock_handle)?;
+        api.key_value_entry_close(kv_store_entry_lock_handle)?;
 
         Ok(does_vault_exist)
     }
@@ -755,7 +755,7 @@ impl AccountBlueprint {
             }
         };
 
-        api.key_value_entry_release(kv_store_entry_lock_handle)?;
+        api.key_value_entry_close(kv_store_entry_lock_handle)?;
 
         Ok(resource_deposit_configuration)
     }

@@ -4,7 +4,7 @@ use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::{
@@ -88,7 +88,7 @@ where
         }
 
         api.key_value_entry_set_typed(non_fungible_handle, value)?;
-        api.key_value_entry_release(non_fungible_handle)?;
+        api.key_value_entry_close(non_fungible_handle)?;
         ids.insert(non_fungible_local_id);
     }
 
@@ -610,7 +610,7 @@ impl NonFungibleResourceManagerBlueprint {
             ));
         }
 
-        api.key_value_entry_release(non_fungible_handle)?;
+        api.key_value_entry_close(non_fungible_handle)?;
 
         Ok(())
     }
@@ -749,7 +749,7 @@ impl NonFungibleResourceManagerBlueprint {
                 // Tombstone the non fungible
                 // TODO: RUID non fungibles with no data don't need to go through this process
                 api.key_value_entry_lock(handle)?;
-                api.key_value_entry_release(handle)?;
+                api.key_value_entry_close(handle)?;
             }
         }
 

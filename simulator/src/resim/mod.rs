@@ -519,14 +519,16 @@ pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
         )
-        .unwrap_or_else(|| FieldSubstate::new_field(ConsensusManagerSubstate {
-            epoch: Epoch::zero(),
-            effective_epoch_start_milli: 0,
-            actual_epoch_start_milli: 0,
-            round: Round::zero(),
-            current_leader: Some(0),
-            started: true,
-        }));
+        .unwrap_or_else(|| {
+            FieldSubstate::new_field(ConsensusManagerSubstate {
+                epoch: Epoch::zero(),
+                effective_epoch_start_milli: 0,
+                actual_epoch_start_milli: 0,
+                round: Round::zero(),
+                current_leader: Some(0),
+                started: true,
+            })
+        });
 
     consensus_manager_substate.value.0.epoch = epoch;
 

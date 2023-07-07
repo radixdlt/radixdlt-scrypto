@@ -23,7 +23,7 @@ use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
-use radix_engine_interface::api::field_lock_api::{FieldLockHandle, LockFlags};
+use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
@@ -1217,14 +1217,14 @@ where
     }
 }
 
-impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientFieldApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     // Costing through kernel
     #[trace_resources]
-    fn field_read(&mut self, handle: FieldLockHandle) -> Result<Vec<u8>, RuntimeError> {
+    fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
             SystemLockData::Field(..) => {}
@@ -1241,11 +1241,7 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn field_write(
-        &mut self,
-        handle: FieldLockHandle,
-        buffer: Vec<u8>,
-    ) -> Result<(), RuntimeError> {
+    fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
 
         match data {
@@ -1276,7 +1272,7 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn field_lock(&mut self, handle: FieldLockHandle) -> Result<(), RuntimeError> {
+    fn field_lock(&mut self, handle: FieldHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
 
         match data {
@@ -1297,7 +1293,7 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn field_close(&mut self, handle: FieldLockHandle) -> Result<(), RuntimeError> {
+    fn field_close(&mut self, handle: FieldHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
             SystemLockData::Field(..) => {}
@@ -1754,7 +1750,7 @@ where
     }
 
     // Costing through kernel
-    fn key_value_entry_release(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
+    fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         if !data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));

@@ -2,7 +2,7 @@ use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::types::*;
 use crate::vm::wasm::*;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::{ClientApi, FieldValue};
 use radix_engine_interface::blueprints::resource::AccessRule;
@@ -264,7 +264,7 @@ where
         &mut self,
         handle: u32,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.key_value_entry_release(handle)?;
+        self.api.key_value_entry_close(handle)?;
         Ok(())
     }
 

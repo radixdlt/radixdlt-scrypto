@@ -6,7 +6,7 @@ use crate::types::*;
 use lazy_static::lazy_static;
 use native_sdk::runtime::Runtime;
 use num_traits::pow::Pow;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};

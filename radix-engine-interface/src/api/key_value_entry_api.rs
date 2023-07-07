@@ -36,5 +36,5 @@ pub trait ClientKeyValueEntryApi<E> {
 
     fn key_value_entry_lock(&mut self, handle: KeyValueEntryHandle) -> Result<(), E>;
 
-    fn key_value_entry_release(&mut self, handle: KeyValueEntryHandle) -> Result<(), E>;
+    fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), E>;
 }
