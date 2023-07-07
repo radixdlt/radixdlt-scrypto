@@ -173,24 +173,28 @@ impl Actor {
         }
     }
 
-    pub fn blueprint_id(&self) -> &BlueprintId {
+    pub fn blueprint_id(&self) -> Option<&BlueprintId> {
         match self {
             Actor::Method(MethodActor {
                 module_object_info: ObjectInfo { blueprint_id, .. },
                 ..
             })
             | Actor::Function(FunctionActor { blueprint_id, .. })
-            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => blueprint_id,
-            Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => Some(blueprint_id),
+            Actor::Root => None,
         }
     }
 
     /// Proofs which exist only on the local call frame
     /// FIXME: Update abstractions such that it is based on local call frame
     pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
-        btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
-            *self.package_address()
-        ))
+        if let Some(package_address) = self.package_address() {
+            btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
+                *package_address
+            ))
+        } else {
+            btreeset!()
+        }
     }
 
     pub fn get_virtual_non_extending_barrier_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
@@ -201,21 +205,7 @@ impl Actor {
         }
     }
 
-    pub fn package_address(&self) -> &PackageAddress {
-        let blueprint_id = match &self {
-            Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
-                ..
-            }) => blueprint_id,
-            Actor::Function(FunctionActor { blueprint_id, .. }) => blueprint_id,
-            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => blueprint_id,
-            Actor::Root => return &PACKAGE_PACKAGE, // FIXME: have the right interface
-        };
-
-        &blueprint_id.package_address
-    }
-
-    pub fn blueprint_name(&self) -> &str {
+    pub fn package_address(&self) -> Option<&PackageAddress> {
         match &self {
             Actor::Method(MethodActor {
                 module_object_info: ObjectInfo { blueprint_id, .. },
@@ -223,9 +213,23 @@ impl Actor {
             })
             | Actor::Function(FunctionActor { blueprint_id, .. })
             | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
-                blueprint_id.blueprint_name.as_str()
+                Some(&blueprint_id.package_address)
             }
-            Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
+            Actor::Root => None,
+        }
+    }
+
+    pub fn blueprint_name(&self) -> Option<&str> {
+        match &self {
+            Actor::Method(MethodActor {
+                module_object_info: ObjectInfo { blueprint_id, .. },
+                ..
+            })
+            | Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                Some(blueprint_id.blueprint_name.as_str())
+            }
+            Actor::Root => None,
         }
     }
 
