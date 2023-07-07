@@ -19,8 +19,7 @@ pub enum NonFungibleResourceManagerError {
     NonFungibleAlreadyExists(Box<NonFungibleGlobalId>),
     NonFungibleNotFound(Box<NonFungibleGlobalId>),
     InvalidRole(String),
-    InvalidField(String),
-    FieldNotMutable(String),
+    UnknownMutableFieldName(String),
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
     InvalidNonFungibleIdType,
     InvalidNonFungibleSchema(InvalidNonFungibleSchema),
@@ -154,7 +153,7 @@ impl NonFungibleResourceManagerBlueprint {
                     ),
                 ),
             ))?;
-        match type_metadata.child_names {
+        match &type_metadata.child_names {
             Some(ChildNames::NamedFields(names)) => {
                 let allowed_names: IndexMap<_, _> = names
                     .iter()
@@ -632,32 +631,15 @@ impl NonFungibleResourceManagerBlueprint {
         let mutable_fields: NonFungibleResourceManagerMutableFieldsSubstate =
             api.field_lock_read_typed(data_schema_handle)?;
 
-        let mut instance_schema = api.actor_get_info()?.instance_schema.unwrap();
-        let kv_schema = instance_schema.schema;
-        let local_index = instance_schema.type_index.remove(0);
-
-        let mutable_fields = mutable_fields.mutable_fields;
-
-        let schema_path = SchemaPath(vec![SchemaSubPath::Field(field_name.clone())]);
-
-        let sbor_path = schema_path.to_sbor_path(&kv_schema, local_index);
-        let sbor_path = if let Some((sbor_path, ..)) = sbor_path {
-            sbor_path
-        } else {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::InvalidField(field_name),
-                ),
-            ));
-        };
-
-        if !mutable_fields.contains(&field_name) {
-            return Err(RuntimeError::ApplicationError(
-                ApplicationError::NonFungibleResourceManagerError(
-                    NonFungibleResourceManagerError::FieldNotMutable(field_name),
-                ),
-            ));
-        }
+        let field_index = mutable_fields
+            .mutable_field_index
+            .get(&field_name)
+            .cloned()
+            .ok_or_else(|| {
+                RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
+                    NonFungibleResourceManagerError::UnknownMutableFieldName(field_name),
+                ))
+            })?;
 
         let non_fungible_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
@@ -670,10 +652,11 @@ impl NonFungibleResourceManagerBlueprint {
             api.key_value_entry_get_typed(non_fungible_handle)?;
 
         if let Some(ref mut non_fungible) = non_fungible_entry {
-            let value = sbor_path.get_from_value_mut(non_fungible).unwrap();
-            *value = data;
+            match non_fungible {
+                Value::Tuple { fields } => fields[field_index] = data,
+                _ => panic!("Non-tuple non-fungible created: id = {}", id),
+            }
             let buffer = scrypto_encode(non_fungible).unwrap();
-
             api.key_value_entry_set(non_fungible_handle, buffer)?;
         } else {
             let non_fungible_global_id = NonFungibleGlobalId::new(resource_address, id);
