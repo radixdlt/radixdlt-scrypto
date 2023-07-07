@@ -44,7 +44,7 @@ pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct NonFungibleResourceManagerMutableFieldsSubstate {
-    pub mutable_fields: BTreeSet<String>, // FIXME double check the behavior of invalid field name
+    pub mutable_field_index: IndexMap<String, usize>,
 }
 
 pub type NonFungibleResourceManagerTotalSupplySubstate = Decimal;
@@ -109,7 +109,9 @@ pub struct NonFungibleResourceManagerBlueprint;
 impl NonFungibleResourceManagerBlueprint {
     fn validate_non_fungible_schema(
         non_fungible_schema: &NonFungibleDataSchema,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<IndexMap<String, usize>, RuntimeError> {
+        let mut mutable_field_index = indexmap!();
+
         // Validate schema
         validate_schema(&non_fungible_schema.schema).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
@@ -154,9 +156,15 @@ impl NonFungibleResourceManagerBlueprint {
             ))?;
         match type_metadata.child_names {
             Some(ChildNames::NamedFields(names)) => {
-                let allowed_names: IndexSet<_> = names.iter().map(|x| x.as_ref()).collect();
+                let allowed_names: IndexMap<_, _> = names
+                    .iter()
+                    .enumerate()
+                    .map(|(i, x)| (x.as_ref(), i))
+                    .collect();
                 for f in &non_fungible_schema.mutable_fields {
-                    if !allowed_names.contains(f.as_str()) {
+                    if let Some(index) = allowed_names.get(f.as_str()) {
+                        mutable_field_index.insert(f.to_string(), *index);
+                    } else {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::NonFungibleResourceManagerError(
                                 NonFungibleResourceManagerError::InvalidNonFungibleSchema(
@@ -178,7 +186,7 @@ impl NonFungibleResourceManagerBlueprint {
             }
         }
 
-        Ok(())
+        Ok(mutable_field_index)
     }
 
     pub(crate) fn create<Y>(
@@ -194,7 +202,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        Self::validate_non_fungible_schema(&non_fungible_schema)?;
+        let mutable_field_index = Self::validate_non_fungible_schema(&non_fungible_schema)?;
 
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
@@ -208,7 +216,7 @@ impl NonFungibleResourceManagerBlueprint {
         };
 
         let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
-            mutable_fields: non_fungible_schema.mutable_fields,
+            mutable_field_index,
         };
 
         let instance_schema = InstanceSchema {
@@ -257,7 +265,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        Self::validate_non_fungible_schema(&non_fungible_schema)?;
+        let mutable_field_index = Self::validate_non_fungible_schema(&non_fungible_schema)?;
 
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
@@ -280,7 +288,7 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
-            mutable_fields: non_fungible_schema.mutable_fields,
+            mutable_field_index,
         };
 
         let supply: Decimal = Decimal::from(entries.len());
@@ -355,7 +363,7 @@ impl NonFungibleResourceManagerBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        Self::validate_non_fungible_schema(&non_fungible_schema)?;
+        let mutable_field_index = Self::validate_non_fungible_schema(&non_fungible_schema)?;
 
         let address_reservation = match address_reservation {
             Some(address_reservation) => address_reservation,
@@ -383,7 +391,7 @@ impl NonFungibleResourceManagerBlueprint {
         }
 
         let mutable_fields = NonFungibleResourceManagerMutableFieldsSubstate {
-            mutable_fields: non_fungible_schema.mutable_fields,
+            mutable_field_index,
         };
 
         let instance_schema = InstanceSchema {
