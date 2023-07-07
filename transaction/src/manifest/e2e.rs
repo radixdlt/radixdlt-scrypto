@@ -913,17 +913,12 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             Array<Enum>()
         ),
         Enum<0u8>(
-            64u8
+            66u8
         ),
         Array<String>()
     )
     Map<NonFungibleLocalId, Tuple>(
-        NonFungibleLocalId("#12#") => Tuple(
-            Tuple(
-                "Hello World",
-                Decimal("12")
-            )
-        )
+        NonFungibleLocalId("#12#") => Tuple()
     )
     Tuple(
         Enum<1u8>(
@@ -1007,7 +1002,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
             Array<Enum>()
         ),
         Enum<0u8>(
-            64u8
+            66u8
         ),
         Array<String>()
     )
