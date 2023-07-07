@@ -31,14 +31,26 @@ impl MethodActor {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct FunctionActor {
+    blueprint_id: BlueprintId,
+    ident: String,
+}
+
+impl FunctionActor {
+    pub fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier {
+            blueprint_id: self.blueprint_id.clone(),
+            ident: self.ident.to_string(),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Root,
     Method(MethodActor),
-    Function {
-        blueprint_id: BlueprintId,
-        ident: String,
-    },
+    Function(FunctionActor),
     VirtualLazyLoad {
         blueprint_id: BlueprintId,
         ident: u8,
@@ -52,10 +64,10 @@ impl Actor {
             Actor::Method(MethodActor { node_id, ident, .. }) => {
                 node_id.as_ref().len() + ident.len()
             }
-            Actor::Function {
+            Actor::Function(FunctionActor {
                 blueprint_id: blueprint,
                 ident,
-            } => {
+            }) => {
                 blueprint.package_address.as_ref().len()
                     + blueprint.blueprint_name.len()
                     + ident.len()
@@ -104,13 +116,7 @@ impl Actor {
         match self {
             Actor::Root => panic!("Should never be called"),
             Actor::Method(method_actor) => method_actor.fn_identifier(),
-            Actor::Function {
-                blueprint_id: blueprint,
-                ident,
-            } => FnIdentifier {
-                blueprint_id: blueprint.clone(),
-                ident: ident.to_string(),
-            },
+            Actor::Function(function_actor) => function_actor.fn_identifier(),
             Actor::VirtualLazyLoad {
                 blueprint_id: blueprint,
                 ident,
@@ -132,10 +138,10 @@ impl Actor {
                     },
                 ..
             })
-            | Actor::Function {
+            | Actor::Function(FunctionActor {
                 blueprint_id: blueprint,
                 ..
-            }
+            })
             | Actor::VirtualLazyLoad {
                 blueprint_id: blueprint,
                 ..
@@ -156,10 +162,10 @@ impl Actor {
     pub fn as_global_caller(&self) -> Option<GlobalCaller> {
         match self {
             Actor::Method(actor) => actor.global_address.map(|address| address.into()),
-            Actor::Function {
+            Actor::Function(FunctionActor {
                 blueprint_id: blueprint,
                 ..
-            } => Some(blueprint.clone().into()),
+            }) => Some(blueprint.clone().into()),
             _ => None,
         }
     }
@@ -183,10 +189,10 @@ impl Actor {
                     },
                 ..
             })
-            | Actor::Function {
+            | Actor::Function(FunctionActor {
                 blueprint_id: blueprint,
                 ..
-            }
+            })
             | Actor::VirtualLazyLoad {
                 blueprint_id: blueprint,
                 ..
@@ -221,10 +227,10 @@ impl Actor {
                     },
                 ..
             }) => blueprint,
-            Actor::Function {
+            Actor::Function(FunctionActor {
                 blueprint_id: blueprint,
                 ..
-            } => blueprint,
+            }) => blueprint,
             Actor::VirtualLazyLoad {
                 blueprint_id: blueprint,
                 ..
@@ -245,10 +251,10 @@ impl Actor {
                     },
                 ..
             })
-            | Actor::Function {
+            | Actor::Function(FunctionActor {
                 blueprint_id: blueprint,
                 ..
-            }
+            })
             | Actor::VirtualLazyLoad {
                 blueprint_id: blueprint,
                 ..
@@ -276,10 +282,10 @@ impl Actor {
     }
 
     pub fn function(blueprint: BlueprintId, ident: String) -> Self {
-        Self::Function {
+        Self::Function(FunctionActor {
             blueprint_id: blueprint,
             ident,
-        }
+        })
     }
 
     pub fn virtual_lazy_load(blueprint: BlueprintId, ident: u8) -> Self {

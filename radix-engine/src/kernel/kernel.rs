@@ -1,4 +1,4 @@
-use super::actor::{Actor, MethodActor};
+use super::actor::{Actor, FunctionActor, MethodActor};
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
@@ -218,10 +218,10 @@ where
                 .current_frame
                 .get_node_visibility(&node_id)
                 .can_be_invoked(*is_direct_access),
-            Actor::Function {
+            Actor::Function(FunctionActor {
                 blueprint_id: blueprint,
                 ..
-            }
+            })
             | Actor::VirtualLazyLoad {
                 blueprint_id: blueprint,
                 ..

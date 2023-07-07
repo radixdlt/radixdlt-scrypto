@@ -1,6 +1,6 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -476,10 +476,10 @@ impl ExecutionTraceModule {
                     blueprint_name: object_info.blueprint_id.blueprint_name.clone(),
                     ident: ident.clone(),
                 }),
-                Actor::Function {
+                Actor::Function(FunctionActor {
                     blueprint_id: blueprint,
                     ident,
-                } => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
+                }) => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
                     package_address: blueprint.package_address.clone(),
                     blueprint_name: blueprint.blueprint_name.clone(),
                     ident: ident.clone(),

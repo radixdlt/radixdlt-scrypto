@@ -1,7 +1,7 @@
 use super::*;
 use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
-use crate::kernel::actor::{Actor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
@@ -214,7 +214,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                         (None, ident)
                     }
                 }
-                Actor::Function { ident, .. } => (None, ident),
+                Actor::Function(FunctionActor { ident, .. }) => (None, ident),
                 Actor::VirtualLazyLoad { .. } | Actor::Root => {
                     return Ok(());
                 }

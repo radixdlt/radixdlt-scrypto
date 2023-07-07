@@ -8,7 +8,7 @@ use crate::errors::{
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
@@ -1539,10 +1539,10 @@ where
         }
 
         // If the actor is a function within the same blueprint
-        if let Actor::Function {
+        if let Actor::Function(FunctionActor {
             blueprint_id: blueprint,
             ..
-        } = actor
+        }) = actor
         {
             if blueprint.eq(&info.blueprint_id) {
                 is_drop_allowed = true;
@@ -2519,10 +2519,10 @@ where
                     module_object_info.instance_schema.clone(),
                     module_object_info.blueprint_id.clone(),
                 ),
-                Actor::Function {
+                Actor::Function(FunctionActor {
                     blueprint_id: ref blueprint,
                     ..
-                } => (None, blueprint.clone()),
+                }) => (None, blueprint.clone()),
                 _ => {
                     return Err(RuntimeError::SystemError(SystemError::EventError(
                         EventError::InvalidActor,
@@ -2561,10 +2561,10 @@ where
                 Emitter::Method(node_id.clone(), module_id.clone()),
                 type_pointer,
             )),
-            Actor::Function {
+            Actor::Function(FunctionActor {
                 blueprint_id: ref blueprint,
                 ..
-            } => Ok(EventTypeIdentifier(
+            }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     blueprint.package_address.into(),
                     ObjectModuleId::Main,

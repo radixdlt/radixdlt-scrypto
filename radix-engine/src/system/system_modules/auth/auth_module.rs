@@ -2,7 +2,7 @@ use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::system::module::SystemModule;
@@ -105,10 +105,10 @@ impl AuthModule {
 
                     (resolved_permission, acting_location)
                 }
-                Actor::Function {
+                Actor::Function(FunctionActor {
                     blueprint_id,
                     ident,
-                } => {
+                }) => {
                     let resolved_permission =
                         PackageAuthNativeBlueprint::resolve_function_permission(
                             blueprint_id.package_address.as_node_id(),
