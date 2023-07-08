@@ -36,7 +36,7 @@ pub enum InvalidNonFungibleSchema {
     InvalidLocalTypeIndex,
     NotATuple,
     MissingFieldNames,
-    InvalidMutableField(String),
+    MutableFieldDoesNotExist(String),
 }
 
 pub type NonFungibleResourceManagerIdTypeSubstate = NonFungibleIdType;
@@ -167,7 +167,9 @@ impl NonFungibleResourceManagerBlueprint {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::NonFungibleResourceManagerError(
                                 NonFungibleResourceManagerError::InvalidNonFungibleSchema(
-                                    InvalidNonFungibleSchema::InvalidMutableField(f.to_string()),
+                                    InvalidNonFungibleSchema::MutableFieldDoesNotExist(
+                                        f.to_string(),
+                                    ),
                                 ),
                             ),
                         ));
