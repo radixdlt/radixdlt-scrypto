@@ -10,7 +10,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::MetadataRoles;
@@ -652,7 +652,7 @@ impl AccessControllerNativePackage {
         );
         let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
-            vec![scrypto_encode(&substate).unwrap()],
+            vec![FieldValue::new(&substate)],
         )?;
 
         let roles = init_roles_from_rule_set(input.rule_set);
@@ -1164,8 +1164,7 @@ impl AccessControllerNativePackage {
                 api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
 
             let access_controller = {
-                let access_controller: AccessControllerSubstate =
-                    api.field_lock_read_typed(handle)?;
+                let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
                 access_controller
             };
             access_controller.recovery_badge
@@ -1227,13 +1226,13 @@ where
     let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
 
     let access_controller = {
-        let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;
+        let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
         access_controller
     };
 
     let rtn = access_controller.transition(api, input)?;
 
-    api.field_lock_release(handle)?;
+    api.field_close(handle)?;
 
     Ok(rtn)
 }
@@ -1250,17 +1249,17 @@ where
     let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
 
     let mut access_controller = {
-        let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;
+        let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
         access_controller
     };
 
     let rtn = access_controller.transition_mut(api, input)?;
 
     {
-        api.field_lock_write_typed(handle, &access_controller)?;
+        api.field_write_typed(handle, &access_controller)?;
     }
 
-    api.field_lock_release(handle)?;
+    api.field_close(handle)?;
 
     Ok(rtn)
 }

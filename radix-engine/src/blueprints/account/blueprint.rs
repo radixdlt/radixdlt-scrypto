@@ -9,13 +9,13 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeFungibleVault;
 use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadOutput;
-use radix_engine_interface::api::CollectionIndex;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{CollectionIndex, FieldValue};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 use radix_engine_interface::metadata_init;
@@ -235,10 +235,9 @@ impl AccountBlueprint {
             ACCOUNT_BLUEPRINT,
             vec![],
             None,
-            vec![scrypto_encode(&AccountSubstate {
+            vec![FieldValue::new(&AccountSubstate {
                 default_deposit_rule: AccountDefaultDepositRule::Accept,
-            })
-            .unwrap()],
+            })],
             btreemap!(),
         )?;
 
@@ -547,12 +546,12 @@ impl AccountBlueprint {
     {
         let substate_key = AccountField::Account.into();
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
-        let mut account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
+        let mut account = api.field_read_typed::<AccountSubstate>(handle)?;
 
         account.default_deposit_rule = default_deposit_rule;
 
-        api.field_lock_write_typed(handle, account)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, account)?;
+        api.field_close(handle)?;
 
         Ok(())
     }
@@ -581,7 +580,7 @@ impl AccountBlueprint {
                     &resource_deposit_configuration,
                 )?;
 
-                api.key_value_entry_release(kv_store_entry_lock_handle)?;
+                api.key_value_entry_close(kv_store_entry_lock_handle)?;
             }
             ResourceDepositRule::Neither => {
                 api.actor_remove_key_value_entry(
@@ -603,9 +602,9 @@ impl AccountBlueprint {
         let substate_key = AccountField::Account.into();
         let handle =
             api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
-        let account = api.field_lock_read_typed::<AccountSubstate>(handle)?;
+        let account = api.field_read_typed::<AccountSubstate>(handle)?;
         let default_deposit_rule = account.default_deposit_rule;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(default_deposit_rule)
     }
@@ -622,15 +621,11 @@ impl AccountBlueprint {
     {
         let encoded_key = scrypto_encode(&resource_address).expect("Impossible Case!");
 
-        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+        let mut kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
             ACCOUNT_VAULT_INDEX,
             &encoded_key,
-            if create {
-                LockFlags::MUTABLE
-            } else {
-                LockFlags::read_only()
-            },
+            LockFlags::read_only(),
         )?;
 
         // Get the vault stored in the KeyValueStore entry - if it doesn't exist, then create it if
@@ -643,9 +638,16 @@ impl AccountBlueprint {
                 Option::Some(own) => Ok(Vault(own)),
                 Option::None => {
                     if create {
+                        api.key_value_entry_close(kv_store_entry_lock_handle)?;
+                        kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+                            OBJECT_HANDLE_SELF,
+                            ACCOUNT_VAULT_INDEX,
+                            &encoded_key,
+                            LockFlags::MUTABLE,
+                        )?;
                         let vault = Vault::create(resource_address, api)?;
-
                         api.key_value_entry_set_typed(kv_store_entry_lock_handle, &vault.0)?;
+                        api.key_value_entry_lock(kv_store_entry_lock_handle)?;
                         Ok(vault)
                     } else {
                         Err(AccountError::VaultDoesNotExist { resource_address })
@@ -657,13 +659,13 @@ impl AccountBlueprint {
         if let Ok(mut vault) = vault {
             match vault_fn(&mut vault, api) {
                 Ok(rtn) => {
-                    api.key_value_entry_release(kv_store_entry_lock_handle)?;
+                    api.key_value_entry_close(kv_store_entry_lock_handle)?;
                     Ok(rtn)
                 }
                 Err(error) => Err(error),
             }
         } else {
-            api.key_value_entry_release(kv_store_entry_lock_handle)?;
+            api.key_value_entry_close(kv_store_entry_lock_handle)?;
             Err(vault.unwrap_err().into())
         }
     }
@@ -722,7 +724,7 @@ impl AccountBlueprint {
             }
         };
 
-        api.key_value_entry_release(kv_store_entry_lock_handle)?;
+        api.key_value_entry_close(kv_store_entry_lock_handle)?;
 
         Ok(does_vault_exist)
     }
@@ -753,7 +755,7 @@ impl AccountBlueprint {
             }
         };
 
-        api.key_value_entry_release(kv_store_entry_lock_handle)?;
+        api.key_value_entry_close(kv_store_entry_lock_handle)?;
 
         Ok(resource_deposit_configuration)
     }

@@ -3,8 +3,8 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::field_api::LockFlags;
+use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 pub struct NonFungibleBucketBlueprint;
@@ -126,8 +126,8 @@ impl NonFungibleBucketBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof_evidence).unwrap(),
+                FieldValue::new(&proof_info),
+                FieldValue::new(&proof_evidence),
             ],
         )?;
         Ok(Proof(Own(proof_id)))
@@ -156,7 +156,7 @@ impl NonFungibleBucketBlueprint {
             NonFungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
 
         // Take from liquid if needed
         let delta: BTreeSet<NonFungibleLocalId> = ids
@@ -171,7 +171,7 @@ impl NonFungibleBucketBlueprint {
             locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
 
-        api.field_lock_write_typed(handle, &locked)?;
+        api.field_write_typed(handle, &locked)?;
 
         // Issue proof
         Ok(())
@@ -189,7 +189,7 @@ impl NonFungibleBucketBlueprint {
             NonFungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
         for id in ids {
@@ -204,7 +204,7 @@ impl NonFungibleBucketBlueprint {
             }
         }
 
-        api.field_lock_write_typed(handle, &locked)?;
+        api.field_write_typed(handle, &locked)?;
 
         Self::internal_put(LiquidNonFungibleResource::new(liquid_non_fungibles), api)
     }
@@ -222,9 +222,9 @@ impl NonFungibleBucketBlueprint {
             NonFungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LiquidNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let substate_ref: LiquidNonFungibleResource = api.field_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -237,9 +237,9 @@ impl NonFungibleBucketBlueprint {
             NonFungibleBucketField::Locked.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -254,9 +254,9 @@ impl NonFungibleBucketBlueprint {
             NonFungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LiquidNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let substate_ref: LiquidNonFungibleResource = api.field_read_typed(handle)?;
         let ids = substate_ref.ids().clone();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(ids)
     }
 
@@ -271,9 +271,9 @@ impl NonFungibleBucketBlueprint {
             NonFungibleBucketField::Locked.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
         let ids = substate_ref.ids();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(ids)
     }
 
@@ -289,13 +289,13 @@ impl NonFungibleBucketBlueprint {
             NonFungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: LiquidNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut substate: LiquidNonFungibleResource = api.field_read_typed(handle)?;
         let taken = substate
             .take_by_ids(ids)
             .map_err(BucketError::ResourceError)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
-        api.field_lock_write_typed(handle, &substate)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &substate)?;
+        api.field_close(handle)?;
         Ok(taken)
     }
 
@@ -311,13 +311,13 @@ impl NonFungibleBucketBlueprint {
             NonFungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: LiquidNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut substate: LiquidNonFungibleResource = api.field_read_typed(handle)?;
         let taken = substate
             .take_by_amount(n)
             .map_err(BucketError::ResourceError)
             .map_err(|e| RuntimeError::ApplicationError(ApplicationError::BucketError(e)))?;
-        api.field_lock_write_typed(handle, &substate)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &substate)?;
+        api.field_close(handle)?;
         Ok(taken)
     }
 
@@ -334,14 +334,14 @@ impl NonFungibleBucketBlueprint {
             NonFungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate: LiquidNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut substate: LiquidNonFungibleResource = api.field_read_typed(handle)?;
         substate.put(resource).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::BucketError(
                 BucketError::ResourceError(e),
             ))
         })?;
-        api.field_lock_write_typed(handle, &substate)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &substate)?;
+        api.field_close(handle)?;
         Ok(())
     }
 }

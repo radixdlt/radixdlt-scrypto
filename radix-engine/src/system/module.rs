@@ -6,7 +6,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 
 pub trait SystemModule<M: KernelCallbackObject> {
     //======================

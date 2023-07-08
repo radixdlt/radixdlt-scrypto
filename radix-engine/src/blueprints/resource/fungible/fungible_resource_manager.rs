@@ -6,10 +6,10 @@ use crate::types::*;
 use lazy_static::lazy_static;
 use native_sdk::runtime::Runtime;
 use num_traits::pow::Pow;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::types::FungibleResourceManagerField;
@@ -101,14 +101,18 @@ impl FungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
+        let total_supply_field =
+            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+                FieldValue::new(&Decimal::zero())
+            } else {
+                FieldValue::immutable(&Decimal::zero())
+            };
+
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             None,
-            vec![
-                scrypto_encode(&divisibility).unwrap(),
-                scrypto_encode(&Decimal::zero()).unwrap(),
-            ],
+            vec![FieldValue::immutable(&divisibility), total_supply_field],
             btreemap!(),
         )?;
 
@@ -155,14 +159,18 @@ impl FungibleResourceManagerBlueprint {
             features.push(TRACK_TOTAL_SUPPLY_FEATURE);
         }
 
+        let total_supply_field =
+            if features.contains(&MINT_FEATURE) || features.contains(&BURN_FEATURE) {
+                FieldValue::new(&initial_supply)
+            } else {
+                FieldValue::immutable(&initial_supply)
+            };
+
         let object_id = api.new_object(
             FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
             features,
             None,
-            vec![
-                scrypto_encode(&divisibility).unwrap(),
-                scrypto_encode(&initial_supply).unwrap(),
-            ],
+            vec![FieldValue::immutable(&divisibility), total_supply_field],
             btreemap!(),
         )?;
 
@@ -193,7 +201,7 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerField::Divisibility.into(),
                 LockFlags::read_only(),
             )?;
-            let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
+            let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
             divisibility
         };
 
@@ -212,10 +220,10 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             total_supply += amount;
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
-            api.field_lock_release(total_supply_handle)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
+            api.field_close(total_supply_handle)?;
         }
 
         Ok(bucket)
@@ -261,10 +269,10 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::MUTABLE,
             )?;
-            let mut total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let mut total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             total_supply -= other_bucket.liquid.amount();
-            api.field_lock_write_typed(total_supply_handle, &total_supply)?;
-            api.field_lock_release(total_supply_handle)?;
+            api.field_write_typed(total_supply_handle, &total_supply)?;
+            api.field_close(total_supply_handle)?;
         }
 
         Ok(())
@@ -301,8 +309,8 @@ impl FungibleResourceManagerBlueprint {
         let bucket_id = api.new_simple_object(
             FUNGIBLE_BUCKET_BLUEPRINT,
             vec![
-                scrypto_encode(&LiquidFungibleResource::new(amount)).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+                FieldValue::new(&LiquidFungibleResource::new(amount)),
+                FieldValue::new(&LockedFungibleResource::default()),
             ],
         )?;
 
@@ -316,9 +324,9 @@ impl FungibleResourceManagerBlueprint {
         let vault_id = api.new_simple_object(
             FUNGIBLE_VAULT_BLUEPRINT,
             vec![
-                scrypto_encode(&LiquidFungibleResource::default()).unwrap(),
-                scrypto_encode(&LockedFungibleResource::default()).unwrap(),
-                scrypto_encode(&VaultFrozenFlag::default()).unwrap(),
+                FieldValue::new(&LiquidFungibleResource::default()),
+                FieldValue::new(&LockedFungibleResource::default()),
+                FieldValue::new(&VaultFrozenFlag::default()),
             ],
         )?;
 
@@ -337,7 +345,7 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
+        let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
         let resource_type = ResourceType::Fungible { divisibility };
 
         Ok(resource_type)
@@ -353,7 +361,7 @@ impl FungibleResourceManagerBlueprint {
                 FungibleResourceManagerField::TotalSupply.into(),
                 LockFlags::read_only(),
             )?;
-            let total_supply: Decimal = api.field_lock_read_typed(total_supply_handle)?;
+            let total_supply: Decimal = api.field_read_typed(total_supply_handle)?;
             Ok(Some(total_supply))
         } else {
             Ok(None)
@@ -374,7 +382,7 @@ impl FungibleResourceManagerBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let divisibility: u8 = api.field_lock_read_typed(divisibility_handle)?;
+        let divisibility: u8 = api.field_read_typed(divisibility_handle)?;
 
         Ok(amount.for_withdrawal(divisibility, withdraw_strategy))
     }
