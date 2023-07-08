@@ -283,42 +283,42 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn globalize(mut self) -> Global<C> {
-        let (metadata, metadata_roles) = {
+        let mut modules = BTreeMap::new();
+        let mut roles = BTreeMap::new();
+
+        // Main
+        {
+            modules.insert(ObjectModuleId::Main, self.stub.handle().as_node_id().clone());
+            roles.insert(ObjectModuleId::Main, self.roles);
+        }
+
+        // Metadata
+        {
             let metadata_config = self
                 .metadata_config
                 .take()
                 .unwrap_or_else(|| Default::default());
 
-            (
-                Metadata::new_with_data(metadata_config.init),
-                metadata_config.roles,
-            )
+            let metadata = Metadata::new_with_data(metadata_config.init);
+            modules.insert(ObjectModuleId::Metadata, metadata.handle().as_node_id().clone());
+            roles.insert(ObjectModuleId::Metadata, metadata_config.roles);
         };
 
-        let (royalty, royalty_roles) = {
-            let royalty_config = self
-                .royalty_config
-                .take()
-                .unwrap_or_else(|| Default::default());
+        // Royalties
+        if let Some(royalty_config) = self.royalty_config {
+            roles.insert(ObjectModuleId::Royalty, royalty_config.roles);
+            let royalty = Royalty::new(royalty_config.init);
+            modules.insert(ObjectModuleId::Royalty, royalty.handle().as_node_id().clone());
+        }
 
-            (Royalty::new(royalty_config.init), royalty_config.roles)
-        };
-
-        let access_rules = AccessRules::new(
-            self.owner_role,
-            btreemap!(
-                ObjectModuleId::Main => self.roles,
-                ObjectModuleId::Metadata => metadata_roles,
-                ObjectModuleId::Royalty => royalty_roles,
-            ),
-        );
-
-        let modules = btreemap!(
-            ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),
-            ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
-            ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
-            ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
-        );
+        // Access Rules
+        {
+            let access_rules = AccessRules::new(
+                self.owner_role,
+                roles,
+            );
+            modules.insert(ObjectModuleId::AccessRules, access_rules.handle().as_node_id().clone());
+        }
 
         let address = ScryptoEnv
             .globalize(modules, self.address_reservation)
