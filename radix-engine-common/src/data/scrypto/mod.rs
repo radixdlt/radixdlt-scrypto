@@ -23,8 +23,6 @@ mod custom_value_kind;
 mod custom_well_known_types;
 /// Defines the core traits and methods for scrypto SBOR encoding
 mod definitions;
-/// Defines a way to uniquely identify an element within a Scrypto schema type.
-mod schema_path;
 
 pub use custom_extension::*;
 pub use custom_formatting::*;
@@ -38,7 +36,6 @@ pub use custom_value::*;
 pub use custom_value_kind::*;
 pub use custom_well_known_types::*;
 pub use definitions::*;
-pub use schema_path::*;
 
 // Prelude:
 // This exposes all the types/traits directly, without exposing the module
@@ -60,5 +57,4 @@ pub mod prelude {
     pub use super::custom_value_kind::*;
     pub use super::custom_well_known_types::*;
     pub use super::definitions::*;
-    pub use super::schema_path::*;
 }
