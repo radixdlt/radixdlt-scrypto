@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 // Re-exports
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
@@ -7,7 +6,7 @@ use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, Scrypto
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_store_interface::interface::DbPartitionNum;
 use sbor::*;
-use utils::rust::collections::{hash_map_new, HashMap};
+use utils::rust::collections::{hash_map_new, BTreeMap, HashMap};
 use utils::rust::vec::Vec;
 
 /// A physical tree node, to be used in the storage.

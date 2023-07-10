@@ -5,10 +5,9 @@ use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_store_interface::interface::{
     DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey, DbSubstateKey,
 };
-use std::collections::BTreeMap;
 use tree_store::{Payload, ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
-use utils::rust::collections::{index_map_new, IndexMap};
+use utils::rust::collections::{index_map_new, BTreeMap, IndexMap};
 use utils::rust::vec::Vec;
 
 pub mod hash_tree_facade;
