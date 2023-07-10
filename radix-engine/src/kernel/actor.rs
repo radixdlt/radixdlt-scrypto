@@ -52,7 +52,7 @@ pub struct BlueprintHookActor {
     pub hook: BlueprintHook,
 }
 
-#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Root,
     Method(MethodActor),

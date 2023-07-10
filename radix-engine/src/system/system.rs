@@ -790,7 +790,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
     ) -> Result<(NodeId, PartitionNumber, ObjectInfo, BlueprintInterface), RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current_actor;
+        let actor = self.current_actor();
         let method = actor
             .try_as_method()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
@@ -1193,18 +1193,8 @@ where
         Ok(global_address)
     }
 
-    pub fn actor_get_receiver_node_id(&mut self) -> Option<(NodeId, bool)> {
-        let actor = self.api.kernel_get_system_state().current_actor;
-        actor
-            .try_as_method()
-            .map(|a| (a.node_id, a.is_direct_access))
-    }
-
-    pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current_actor;
-        actor
-            .fn_identifier()
-            .ok_or(RuntimeError::SystemError(SystemError::NoFnIdentifier))
+    pub fn current_actor(&self) -> Actor {
+        self.api.kernel_get_system_state().current_actor.clone()
     }
 
     pub fn is_feature_enabled(
@@ -1323,7 +1313,7 @@ where
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current_actor;
+        let actor = self.current_actor();
         let package_address = actor
             .package_address()
             .ok_or(RuntimeError::SystemError(SystemError::NoPackageAddress))?;
@@ -1461,7 +1451,7 @@ where
                             .iter()
                             .any(|v| matches!(v, Visibility::FrameOwned))
                     {
-                        match self.api.kernel_get_system_state().current_actor {
+                        match self.current_actor() {
                             Actor::Method(MethodActor { global_address, .. }) => {
                                 global_address.clone()
                             }
@@ -1566,7 +1556,7 @@ where
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
-        let actor = self.api.kernel_get_system_state().current_actor;
+        let actor = self.current_actor();
         let mut is_drop_allowed = false;
 
         // FIXME: what's the right model, trading off between flexibility and security?
@@ -2309,7 +2299,7 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        let actor = self.api.kernel_get_system_state().current_actor;
+        let actor = self.current_actor();
         let object_info = actor
             .try_as_method()
             .map(|m| m.module_object_info.clone())
@@ -2325,12 +2315,12 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        let actor = self.api.kernel_get_system_state().current_actor;
-        match actor {
-            Actor::Method(MethodActor { node_id, .. }) => Ok(*node_id),
-            _ => Err(RuntimeError::SystemError(SystemError::NodeIdNotExist)),
-        }
+        self.current_actor()
+            .try_as_method()
+            .map(|x| x.node_id)
+            .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))
     }
+
     #[trace_resources]
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         self.api
@@ -2338,7 +2328,7 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        let actor = self.api.kernel_get_system_state().current_actor;
+        let actor = self.current_actor();
         match actor {
             Actor::Method(MethodActor {
                 global_address: Some(address),
@@ -2357,9 +2347,7 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        self.api
-            .kernel_get_system_state()
-            .current_actor
+        self.current_actor()
             .blueprint_id()
             .cloned()
             .ok_or(RuntimeError::SystemError(SystemError::NoBlueprintId))
@@ -2376,11 +2364,11 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
         let node_id = match actor_object_type {
-            ActorObjectType::SELF => {
-                self.actor_get_receiver_node_id()
-                    .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?
-                    .0
-            }
+            ActorObjectType::SELF => self
+                .current_actor()
+                .try_as_method()
+                .map(|x| x.node_id)
+                .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?,
             ActorObjectType::OuterObject => match self.actor_get_info()?.blueprint_info {
                 ObjectBlueprintInfo::Inner { outer_object } => outer_object.into_node_id(),
                 ObjectBlueprintInfo::Outer { .. } => {
@@ -2572,7 +2560,7 @@ where
 
         // Locking the package info substate associated with the emitter's package
         let type_pointer = {
-            let actor = self.api.kernel_get_system_state().current_actor;
+            let actor = self.current_actor();
 
             // Getting the package address and blueprint name associated with the actor
             let (instance_schema, blueprint_id) = match actor {
@@ -2616,7 +2604,7 @@ where
         };
 
         // Construct the event type identifier based on the current actor
-        let actor = self.api.kernel_get_system_state().current_actor;
+        let actor = self.current_actor();
         let event_type_identifier = match actor {
             Actor::Method(MethodActor {
                 node_id, module_id, ..
