@@ -23,7 +23,7 @@ use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::actor_index_api::ClientActorIndexApi;
 use radix_engine_interface::api::actor_sorted_index_api::SortedKey;
-use radix_engine_interface::api::field_lock_api::{FieldLockHandle, LockFlags};
+use radix_engine_interface::api::field_api::{FieldHandle, LockFlags};
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
@@ -45,7 +45,6 @@ pub enum SubstateMutability {
     Immutable,
 }
 
-// FIXME: Extend this use into substate fields
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct DynSubstate<E> {
     pub value: E,
@@ -53,12 +52,23 @@ pub struct DynSubstate<E> {
 }
 
 impl<E> DynSubstate<E> {
-    pub fn freeze(&mut self) {
+    pub fn lock(&mut self) {
         self.mutability = SubstateMutability::Immutable;
     }
 
     pub fn is_mutable(&self) -> bool {
         matches!(self.mutability, SubstateMutability::Mutable)
+    }
+}
+
+pub type FieldSubstate<V> = DynSubstate<(V,)>;
+
+impl<V> FieldSubstate<V> {
+    pub fn new_field(value: V) -> Self {
+        Self {
+            value: (value,),
+            mutability: SubstateMutability::Mutable,
+        }
     }
 }
 
@@ -249,7 +259,7 @@ where
         blueprint_features: &BTreeSet<String>,
         outer_blueprint_features: &BTreeSet<String>,
         instance_schema: &Option<InstanceSchema>,
-        fields: Vec<Vec<u8>>,
+        fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<BTreeMap<PartitionOffset, BTreeMap<SubstateKey, IndexedScryptoValue>>, RuntimeError>
     {
@@ -315,7 +325,7 @@ where
                             )
                         })?;
 
-                    fields_to_check.push((field, pointer));
+                    fields_to_check.push((&field.value, pointer));
                 }
 
                 self.validate_payload_against_blueprint_schema(
@@ -340,10 +350,21 @@ where
                         Condition::Always => {}
                     }
 
+                    let value: ScryptoValue =
+                        scrypto_decode(&field.value).expect("Checked by payload-schema validation");
+
+                    let substate = FieldSubstate {
+                        value: (value,),
+                        mutability: if field.locked {
+                            SubstateMutability::Immutable
+                        } else {
+                            SubstateMutability::Mutable
+                        },
+                    };
+
                     partition.insert(
                         SubstateKey::Field(i as u8),
-                        IndexedScryptoValue::from_vec(field)
-                            .expect("Checked by payload-schema validation"),
+                        IndexedScryptoValue::from_typed(&substate),
                     );
                 }
 
@@ -652,7 +673,7 @@ where
         features: Vec<&str>,
         instance_context: Option<InstanceContext>,
         instance_schema: Option<InstanceSchema>,
-        fields: Vec<Vec<u8>>,
+        fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let blueprint_interface = self.get_blueprint_default_interface(
@@ -1198,35 +1219,32 @@ where
     }
 }
 
-impl<'a, Y, V> ClientFieldLockApi<RuntimeError> for SystemService<'a, Y, V>
+impl<'a, Y, V> ClientFieldApi<RuntimeError> for SystemService<'a, Y, V>
 where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
     // Costing through kernel
     #[trace_resources]
-    fn field_lock_read(&mut self, lock_handle: FieldLockHandle) -> Result<Vec<u8>, RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
+    fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
+                return Err(RuntimeError::SystemError(SystemError::NotAFieldHandle));
             }
         }
 
-        self.api
-            .kernel_read_substate(lock_handle)
-            .map(|v| v.as_slice().to_vec())
+        self.api.kernel_read_substate(handle).map(|v| {
+            let wrapper: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+            scrypto_encode(&wrapper.value.0).unwrap()
+        })
     }
 
     // Costing through kernel
     #[trace_resources]
-    fn field_lock_write(
-        &mut self,
-        lock_handle: FieldLockHandle,
-        buffer: Vec<u8>,
-    ) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(lock_handle)?;
+    fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
 
         match data {
             SystemLockData::Field(FieldLockData::Write {
@@ -1241,25 +1259,48 @@ where
                 )?;
             }
             _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteLock));
+                return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
             }
         }
 
-        let substate =
-            IndexedScryptoValue::from_vec(buffer).expect("Should be valid due to payload check");
-        self.api.kernel_write_substate(lock_handle, substate)?;
+        let value: ScryptoValue =
+            scrypto_decode(&buffer).expect("Should be valid due to payload check");
+
+        let substate = IndexedScryptoValue::from_typed(&FieldSubstate::new_field(value));
+        self.api.kernel_write_substate(handle, substate)?;
 
         Ok(())
     }
 
     // Costing through kernel
     #[trace_resources]
-    fn field_lock_release(&mut self, handle: FieldLockHandle) -> Result<(), RuntimeError> {
+    fn field_lock(&mut self, handle: FieldHandle) -> Result<(), RuntimeError> {
+        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+
+        match data {
+            SystemLockData::Field(FieldLockData::Write { .. }) => {}
+            _ => {
+                return Err(RuntimeError::SystemError(SystemError::NotAFieldWriteHandle));
+            }
+        }
+
+        let v = self.api.kernel_read_substate(handle)?;
+        let mut substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+        substate.lock();
+        let indexed = IndexedScryptoValue::from_typed(&substate);
+        self.api.kernel_write_substate(handle, indexed)?;
+
+        Ok(())
+    }
+
+    // Costing through kernel
+    #[trace_resources]
+    fn field_close(&mut self, handle: FieldHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
-                return Err(RuntimeError::SystemError(SystemError::NotAFieldLock));
+                return Err(RuntimeError::SystemError(SystemError::NotAFieldHandle));
             }
         }
 
@@ -1279,7 +1320,7 @@ where
         blueprint_ident: &str,
         features: Vec<&str>,
         schema: Option<InstanceSchema>,
-        fields: Vec<Vec<u8>>,
+        fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current_actor;
@@ -1368,7 +1409,7 @@ where
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
-        inner_object_fields: Vec<Vec<u8>>,
+        inner_object_fields: Vec<FieldValue>,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
 
@@ -1563,7 +1604,10 @@ where
         let user_substates = node_substates.remove(&MAIN_BASE_PARTITION).unwrap();
         let fields = user_substates
             .into_iter()
-            .map(|(_key, v)| v.into())
+            .map(|(_key, v)| {
+                let substate: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+                scrypto_encode(&substate.value.0).unwrap()
+            })
             .collect();
 
         Ok(fields)
@@ -1597,7 +1641,7 @@ where
 
     // Costing through kernel
     // FIXME: Should this release lock or continue allow to mutate entry until lock released?
-    fn key_value_entry_freeze(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
+    fn key_value_entry_lock(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         match data {
             SystemLockData::KeyValueEntry(
@@ -1612,7 +1656,7 @@ where
 
         let v = self.api.kernel_read_substate(handle)?;
         let mut kv_entry: KeyValueEntrySubstate<ScryptoValue> = v.as_typed().unwrap();
-        kv_entry.freeze();
+        kv_entry.lock();
         let indexed = IndexedScryptoValue::from_typed(&kv_entry);
         self.api.kernel_write_substate(handle, indexed)?;
         Ok(())
@@ -1706,7 +1750,7 @@ where
     }
 
     // Costing through kernel
-    fn key_value_entry_release(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
+    fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
         let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
         if !data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
@@ -2234,13 +2278,28 @@ where
             FieldLockData::Read
         };
 
-        self.api.kernel_open_substate(
+        let handle = self.api.kernel_open_substate(
             &node_id,
             partition_num,
             &SubstateKey::Field(field_index),
             flags,
             SystemLockData::Field(lock_data),
-        )
+        )?;
+
+        if flags.contains(LockFlags::MUTABLE) {
+            let mutability = self.api.kernel_read_substate(handle).map(|v| {
+                let field: FieldSubstate<ScryptoValue> = v.as_typed().unwrap();
+                field.mutability
+            })?;
+
+            if let SubstateMutability::Immutable = mutability {
+                return Err(RuntimeError::SystemError(
+                    SystemError::MutatingImmutableFieldSubstate(object_handle, field_index),
+                ));
+            }
+        }
+
+        Ok(handle)
     }
 
     #[trace_resources]
