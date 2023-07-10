@@ -3,6 +3,9 @@ use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
+use crate::kernel::actor::BlueprintHookActor;
+use crate::kernel::actor::FunctionActor;
+use crate::kernel::actor::MethodActor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
@@ -297,101 +300,115 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<SystemConfig<C>>,
     {
         let mut system = SystemService::new(api);
-        let receiver = system.actor_get_receiver_node_id();
-        let FnIdentifier {
-            blueprint_id,
-            ident,
-        } = system.actor_get_fn_identifier()?;
+        let actor = system.current_actor();
+        let receiver = actor
+            .try_as_method()
+            .map(|x| (x.node_id.clone(), x.is_direct_access));
 
         // Make dependent resources/components visible
-        let key = BlueprintVersionKey {
-            blueprint: blueprint_id.blueprint_name.clone(),
-            version: BlueprintVersion::default(),
-        };
+        if let Some(blueprint_id) = actor.blueprint_id() {
+            let key = BlueprintVersionKey {
+                blueprint: blueprint_id.blueprint_name.clone(),
+                version: BlueprintVersion::default(),
+            };
 
-        let handle = system.kernel_open_substate_with_default(
-            blueprint_id.package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
-                .unwrap(),
-            &SubstateKey::Map(scrypto_encode(&key).unwrap()),
-            LockFlags::read_only(),
-            Some(|| {
-                let kv_entry = KeyValueEntrySubstate::<()>::default();
-                IndexedScryptoValue::from_typed(&kv_entry)
-            }),
-            SystemLockData::default(),
-        )?;
-        system.kernel_read_substate(handle)?;
-        system.kernel_close_substate(handle)?;
-
-        //  Validate input
-        let definition = system.get_blueprint_definition(
-            blueprint_id.package_address,
-            &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-        )?;
-
-        let export = {
-            let input_type_pointer = definition
-                .interface
-                .get_function_input_type_pointer(ident.as_str())
-                .ok_or_else(|| {
-                    RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
-                        ident.to_string(),
-                    ))
-                })?;
-
-            system.validate_payload_against_blueprint_schema(
-                &blueprint_id,
-                &None,
-                &[(input.as_vec_ref(), input_type_pointer)],
+            let handle = system.kernel_open_substate_with_default(
+                blueprint_id.package_address.as_node_id(),
+                MAIN_BASE_PARTITION
+                    .at_offset(PACKAGE_BLUEPRINT_DEPENDENCIES_PARTITION_OFFSET)
+                    .unwrap(),
+                &SubstateKey::Map(scrypto_encode(&key).unwrap()),
+                LockFlags::read_only(),
+                Some(|| {
+                    let kv_entry = KeyValueEntrySubstate::<()>::default();
+                    IndexedScryptoValue::from_typed(&kv_entry)
+                }),
+                SystemLockData::default(),
             )?;
+            system.kernel_read_substate(handle)?;
+            system.kernel_close_substate(handle)?;
+        }
 
-            let function_schema = definition
-                .interface
-                .functions
-                .get(&ident)
-                .expect("Should exist due to schema check");
+        match actor {
+            Actor::Root => panic!("Root is invoked"),
+            Actor::Method(MethodActor {
+                module_object_info: ObjectInfo { blueprint_id, .. },
+                ident,
+                ..
+            })
+            | Actor::Function(FunctionActor {
+                blueprint_id,
+                ident,
+                ..
+            }) => {
+                //  Validate input
+                let definition = system.get_blueprint_definition(
+                    blueprint_id.package_address,
+                    &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                )?;
+                let input_type_pointer = definition
+                    .interface
+                    .get_function_input_type_pointer(ident.as_str())
+                    .ok_or_else(|| {
+                        RuntimeError::SystemUpstreamError(SystemUpstreamError::FnNotFound(
+                            ident.to_string(),
+                        ))
+                    })?;
+                system.validate_payload_against_blueprint_schema(
+                    &blueprint_id,
+                    &None,
+                    &[(input.as_vec_ref(), input_type_pointer)],
+                )?;
 
-            match (&function_schema.receiver, receiver) {
-                (Some(receiver_info), Some((_, direct_access))) => {
-                    if direct_access != receiver_info.ref_types.contains(RefTypes::DIRECT_ACCESS) {
+                // Validate receiver type
+                let function_schema = definition
+                    .interface
+                    .functions
+                    .get(&ident)
+                    .expect("Should exist due to schema check");
+                match (&function_schema.receiver, receiver) {
+                    (Some(receiver_info), Some((_, direct_access))) => {
+                        if direct_access
+                            != receiver_info.ref_types.contains(RefTypes::DIRECT_ACCESS)
+                        {
+                            return Err(RuntimeError::SystemUpstreamError(
+                                SystemUpstreamError::ReceiverNotMatch(ident.to_string()),
+                            ));
+                        }
+                    }
+                    (None, None) => {}
+                    _ => {
                         return Err(RuntimeError::SystemUpstreamError(
                             SystemUpstreamError::ReceiverNotMatch(ident.to_string()),
                         ));
                     }
                 }
-                (None, None) => {}
-                _ => {
-                    return Err(RuntimeError::SystemUpstreamError(
-                        SystemUpstreamError::ReceiverNotMatch(ident.to_string()),
-                    ));
-                }
+
+                // Execute
+                let export = definition
+                    .function_exports
+                    .get(&ident)
+                    .expect("Schema should have validated this exists")
+                    .clone();
+                let output =
+                    { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
+
+                // Validate output
+                let output_type_pointer = definition
+                    .interface
+                    .get_function_output_type_pointer(ident.as_str())
+                    .expect("Schema verification should enforce that this exists.");
+                system.validate_payload_against_blueprint_schema(
+                    &blueprint_id,
+                    &None,
+                    &[(output.as_vec_ref(), output_type_pointer)],
+                )?;
+                Ok(output)
             }
-
-            definition
-                .function_exports
-                .get(&ident)
-                .expect("Schema should have validated this exists")
-                .clone()
-        };
-
-        // Execute
-        let output = { C::invoke(&blueprint_id.package_address, export, input, &mut system)? };
-
-        // Validate output
-        let output_type_pointer = definition
-            .interface
-            .get_function_output_type_pointer(ident.as_str())
-            .expect("Schema verification should enforce that this exists.");
-
-        system.validate_payload_against_blueprint_schema(
-            &blueprint_id,
-            &None,
-            &[(output.as_vec_ref(), output_type_pointer)],
-        )?;
-
-        Ok(output)
+            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, hook }) => {
+                todo!()
+            }
+        }
     }
 
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
