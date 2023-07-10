@@ -6,6 +6,7 @@ use crate::kernel::id_allocator::IdAllocator;
 use crate::kernel::kernel::KernelBoot;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SubstateMutability};
 use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::costing::*;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
@@ -14,8 +15,6 @@ use crate::track::interface::SubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
-use crate::vm::wasm::*;
-use crate::vm::{ScryptoVm, Vm};
 use radix_engine_constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
@@ -151,25 +150,21 @@ impl ExecutionConfig {
 /// An executor that runs transactions.
 /// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
 /// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
-struct TransactionExecutor<'s, 'w, S, W>
+struct TransactionExecutor<'s, S, V: SystemCallbackObject + Clone>
 where
     S: SubstateDatabase,
-    W: WasmEngine,
 {
     substate_db: &'s S,
-    scrypto_vm: &'w ScryptoVm<W>,
+    vm: V,
 }
 
-impl<'s, 'w, S, W> TransactionExecutor<'s, 'w, S, W>
+impl<'s, S, V> TransactionExecutor<'s, S, V>
 where
     S: SubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 {
-    pub fn new(substate_db: &'s S, scrypto_vm: &'w ScryptoVm<W>) -> Self {
-        Self {
-            substate_db,
-            scrypto_vm,
-        }
+    pub fn new(substate_db: &'s S, vm: V) -> Self {
+        Self { substate_db, vm }
     }
 
     pub fn execute(
@@ -480,9 +475,7 @@ where
             blueprint_cache: NonIterMap::new(),
             auth_cache: NonIterMap::new(),
             schema_cache: NonIterMap::new(),
-            callback_obj: Vm {
-                scrypto_vm: self.scrypto_vm,
-            },
+            callback_obj: self.vm.clone(),
             modules: SystemModuleMixer::new(
                 execution_config.enabled_modules,
                 executable.intent_hash().to_hash(),
@@ -930,17 +923,17 @@ where
 
 pub fn execute_and_commit_transaction<
     S: SubstateDatabase + CommittableSubstateDatabase,
-    W: WasmEngine,
+    V: SystemCallbackObject + Clone,
 >(
     substate_db: &mut S,
-    scrypto_interpreter: &ScryptoVm<W>,
+    vm: V,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
     let receipt = execute_transaction(
         substate_db,
-        scrypto_interpreter,
+        vm,
         fee_reserve_config,
         execution_config,
         transaction,
@@ -951,14 +944,14 @@ pub fn execute_and_commit_transaction<
     receipt
 }
 
-pub fn execute_transaction<S: SubstateDatabase, W: WasmEngine>(
+pub fn execute_transaction<S: SubstateDatabase, V: SystemCallbackObject + Clone>(
     substate_db: &S,
-    scrypto_interpreter: &ScryptoVm<W>,
+    vm: V,
     fee_reserve_config: &FeeReserveConfig,
     execution_config: &ExecutionConfig,
     transaction: &Executable,
 ) -> TransactionReceipt {
-    TransactionExecutor::new(substate_db, scrypto_interpreter).execute(
+    TransactionExecutor::new(substate_db, vm).execute(
         transaction,
         fee_reserve_config,
         execution_config,

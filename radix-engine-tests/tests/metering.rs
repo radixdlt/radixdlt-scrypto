@@ -1,6 +1,7 @@
 use radix_engine::system::system_modules::costing::FeeSummary;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto::api::node_modules::ModuleConfig;
 use scrypto::prelude::metadata;
@@ -43,6 +44,7 @@ fn test_basic_transfer() {
         "../assets/cost_transfer.csv"
     ))));
 }
+
 #[test]
 fn test_transfer_to_virtual_account() {
     run_basic_transfer_to_virtual_account(Mode::AssertCosting(load_cost_breakdown(include_str!(
@@ -87,7 +89,7 @@ fn test_mint_small_size_nfts_from_manifest() {
 
 #[cfg(feature = "std")]
 fn execute_with_time_logging(
-    test_runner: &mut TestRunner,
+    test_runner: &mut TestRunner<NoExtension>,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
@@ -103,7 +105,7 @@ fn execute_with_time_logging(
 
 #[cfg(feature = "alloc")]
 fn execute_with_time_logging(
-    test_runner: &mut TestRunner,
+    test_runner: &mut TestRunner<NoExtension>,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
@@ -233,7 +235,7 @@ impl Mode {
 
 fn run_basic_transfer(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
 
@@ -256,7 +258,7 @@ fn run_basic_transfer(mode: Mode) {
 
 fn run_basic_transfer_to_virtual_account(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let account2 = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
         Secp256k1PublicKey([123u8; 33]),
@@ -280,7 +282,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
 }
 
 fn run_radiswap(mode: Mode) {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Scrypto developer
     let (pk1, _, _) = test_runner.new_allocated_account();
@@ -380,7 +382,7 @@ fn run_radiswap(mode: Mode) {
 }
 
 fn run_flash_loan(mode: Mode) {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Scrypto developer
     let (pk1, _, _) = test_runner.new_allocated_account();
@@ -460,7 +462,7 @@ fn run_flash_loan(mode: Mode) {
 
 fn run_publish_large_package(mode: Mode) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let code = wat2wasm(&format!(
@@ -520,7 +522,7 @@ fn run_mint_mid_size_nfts_from_manifest(mode: Mode) {
 
 fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -583,7 +585,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
 #[test]
 fn can_run_large_manifest() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -613,7 +615,7 @@ fn can_run_large_manifest() {
 #[test]
 fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
 
@@ -634,9 +636,9 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     receipt.expect_commit(true);
 }
 
-fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner, ComponentAddress) {
+fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner<NoExtension>, ComponentAddress) {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component

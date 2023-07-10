@@ -6,7 +6,7 @@ use transaction::prelude::*;
 #[test]
 fn test_fee_states() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package

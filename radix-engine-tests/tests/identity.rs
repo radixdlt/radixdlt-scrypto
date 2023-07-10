@@ -13,7 +13,7 @@ use transaction::prelude::*;
 #[test]
 fn cannot_securify_in_advanced_mode() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
     let component_address = test_runner.new_identity(pk.clone(), false);
 
@@ -44,7 +44,7 @@ fn cannot_securify_in_advanced_mode() {
 #[test]
 fn can_securify_from_virtual_identity() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
     let component_address = test_runner.new_identity(pk.clone(), true);
 
@@ -68,7 +68,7 @@ fn can_securify_from_virtual_identity() {
 #[test]
 fn cannot_securify_twice() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
     let component_address = test_runner.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
@@ -111,7 +111,7 @@ fn cannot_securify_twice() {
 #[test]
 fn can_set_metadata_after_securify() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
     let identity_address = test_runner.new_identity(pk.clone(), true);
     let manifest = ManifestBuilder::new()
@@ -158,7 +158,7 @@ fn can_set_metadata_after_securify() {
 #[test]
 fn can_set_metadata_on_securified_identity() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
     let identity_address = test_runner.new_securified_identity(account);
 
@@ -193,7 +193,7 @@ fn can_set_metadata_on_securified_identity() {
 #[test]
 fn securified_identity_is_owned_by_correct_owner_badge() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let pk = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let identity = test_runner.new_identity(pk, true);
     let (_, _, account) = test_runner.new_account(true);
@@ -231,7 +231,7 @@ fn securified_identity_is_owned_by_correct_owner_badge() {
 #[test]
 fn identity_created_with_create_advanced_has_an_empty_owner_badge() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let identity = {
         let manifest = ManifestBuilder::new()
             .call_function(

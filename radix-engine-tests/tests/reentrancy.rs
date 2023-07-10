@@ -7,7 +7,7 @@ use transaction::prelude::*;
 #[test]
 fn mut_reentrancy_should_not_be_possible() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -46,7 +46,7 @@ fn mut_reentrancy_should_not_be_possible() {
 #[test]
 fn read_reentrancy_should_be_possible() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -78,7 +78,7 @@ fn read_reentrancy_should_be_possible() {
 #[test]
 fn read_then_mut_reentrancy_should_not_be_possible() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()

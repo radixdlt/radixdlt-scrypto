@@ -8,7 +8,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn can_set_identity_metadata_with_owner(is_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let pk = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let owner_id = NonFungibleGlobalId::from_public_key(&pk);
     let component_address = test_runner.new_identity(pk.clone(), is_virtual);
@@ -47,7 +47,7 @@ fn can_set_allocated_identity_metadata_with_owner() {
 
 fn cannot_set_identity_metadata_without_owner(is_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let pk = Secp256k1PrivateKey::from_u64(1).unwrap().public_key();
     let component_address = test_runner.new_identity(pk.clone(), is_virtual);
 

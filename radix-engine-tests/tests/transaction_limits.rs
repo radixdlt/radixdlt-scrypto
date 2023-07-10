@@ -10,7 +10,7 @@ use transaction::prelude::*;
 #[test]
 fn transaction_limit_exceeded_substate_read_count_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     let component_address = test_runner
         .execute_manifest(
@@ -64,7 +64,7 @@ fn transaction_limit_exceeded_substate_read_count_should_fail() {
 #[test]
 fn transaction_limit_exceeded_substate_write_count_should_fail() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     let component_address = test_runner
         .execute_manifest(
@@ -118,7 +118,7 @@ fn transaction_limit_exceeded_substate_write_count_should_fail() {
 #[test]
 fn test_default_substate_size_limit() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     // Act
     let manifest = ManifestBuilder::new()
@@ -174,7 +174,7 @@ fn test_default_invoke_payload_size_limit() {
     println!("{:?}", actor_len);
 
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
     // Act
     let manifest = ManifestBuilder::new()
@@ -217,7 +217,7 @@ fn test_default_invoke_payload_size_limit() {
 #[ignore]
 fn reproduce_crash() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("tests/blueprints/transaction_limits");
 
     // Act
@@ -235,7 +235,7 @@ fn reproduce_crash() {
 
 #[test]
 fn verify_log_size_limit() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_limits");
 
     let manifest = ManifestBuilder::new()
@@ -260,7 +260,7 @@ fn verify_log_size_limit() {
 
 #[test]
 fn verify_event_size_limit() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_limits");
 
     let manifest = ManifestBuilder::new()
@@ -285,7 +285,7 @@ fn verify_event_size_limit() {
 
 #[test]
 fn verify_panic_size_limit() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/transaction_limits");
 
     let manifest = ManifestBuilder::new()

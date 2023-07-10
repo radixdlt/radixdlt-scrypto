@@ -12,9 +12,11 @@ pub struct Show {
 
 impl Show {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+        let native_vm = DefaultNativeVm::new();
+        let vm = Vm::new(&scrypto_vm, native_vm);
         let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-        Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+        Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
         if let Ok(a) = SimulatorPackageAddress::from_str(&self.address) {
             dump_package(a.0, &substate_db, out).map_err(Error::LedgerDumpError)
