@@ -11,7 +11,7 @@ use radix_engine::track::Track;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{DefaultNativeVm, NativeVm, ScryptoVm, Vm};
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::LockFlags;
 use radix_engine_queries::typed_substate_layout::{
     BlueprintVersionKey, PACKAGE_AUTH_TEMPLATE_PARTITION_OFFSET,
@@ -33,7 +33,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     // Create database and bootstrap
     let mut database = InMemorySubstateDatabase::standard();
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = NativeVm::new(DefaultNativeVm);
+    let native_vm = DefaultNativeVm::new();
     let vm = Vm {
         scrypto_vm: &scrypto_vm,
         native_vm: native_vm.clone(),

@@ -200,7 +200,7 @@ fn cannot_update_non_fungible_when_not_mutable() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
-                NonFungibleResourceManagerError::FieldNotMutable(..)
+                NonFungibleResourceManagerError::UnknownMutableFieldName(..)
             ))
         )
     });
@@ -229,7 +229,7 @@ fn cannot_update_non_fungible_when_does_not_exist() {
         matches!(
             e,
             RuntimeError::ApplicationError(ApplicationError::NonFungibleResourceManagerError(
-                NonFungibleResourceManagerError::InvalidField(..)
+                NonFungibleResourceManagerError::UnknownMutableFieldName(..)
             ))
         )
     });

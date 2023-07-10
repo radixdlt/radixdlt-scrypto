@@ -6,7 +6,7 @@ use radix_engine::kernel::heap::HeapOpenSubstateError;
 use radix_engine::track::interface::AcquireLockError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
-use radix_engine::vm::DefaultNativeVm;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::prelude::PreviewFlags;
@@ -24,7 +24,7 @@ where
     test_runner.execute_manifest(manifest, vec![])
 }
 
-fn setup_test_runner() -> (TestRunner<DefaultNativeVm>, ComponentAddress) {
+fn setup_test_runner() -> (TestRunner<NoExtension>, ComponentAddress) {
     // Basic setup
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();

@@ -2,7 +2,7 @@ use radix_engine::blueprints::package::PackageError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError};
 use radix_engine::system::node_modules::royalty::ComponentRoyaltyError;
 use radix_engine::types::*;
-use radix_engine::vm::DefaultNativeVm;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -460,7 +460,7 @@ fn cannot_set_royalty_after_locking() {
 }
 
 fn set_up_package_and_component() -> (
-    TestRunner<DefaultNativeVm>,
+    TestRunner<NoExtension>,
     ComponentAddress,
     Secp256k1PublicKey,
     PackageAddress,

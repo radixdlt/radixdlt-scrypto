@@ -25,7 +25,7 @@ pub struct NativeVm<E: NativeVmExtension> {
 }
 
 impl<E: NativeVmExtension> NativeVm<E> {
-    pub fn new(extension: E) -> Self {
+    pub fn new_with_extension(extension: E) -> Self {
         Self { extension }
     }
 
@@ -66,8 +66,21 @@ pub enum NativeVmInstance<I: VmInvoke> {
     Extension(I),
 }
 
+impl<I: VmInvoke> NativeVmInstance<I> {
+    // Used by profiling
+    #[allow(dead_code)]
+    pub fn package_address(&self) -> PackageAddress {
+        match self {
+            NativeVmInstance::Native {
+                package_address, ..
+            } => package_address.clone(),
+            _ => panic!("Profiling with NativeVmExtension is not supported."),
+        }
+    }
+}
+
 impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
-    #[trace_resources(log=self.package_address.is_native_address(), log=self.package_address.to_hex(), log=export_name)]
+    #[trace_resources(log=self.package_address().is_native_address(), log=self.package_address().to_hex(), log=export_name)]
     fn invoke<Y>(
         &mut self,
         export_name: &str,
@@ -136,11 +149,19 @@ pub trait NativeVmExtension: Clone {
 }
 
 #[derive(Clone)]
-pub struct DefaultNativeVm;
-impl NativeVmExtension for DefaultNativeVm {
+pub struct NoExtension;
+impl NativeVmExtension for NoExtension {
     type Instance = NullVmInvoke;
     fn try_create_instance(&self, _code: &[u8]) -> Option<Self::Instance> {
         None
+    }
+}
+
+pub type DefaultNativeVm = NativeVm<NoExtension>;
+
+impl DefaultNativeVm {
+    pub fn new() -> Self {
+        NativeVm::new_with_extension(NoExtension)
     }
 }
 

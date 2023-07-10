@@ -15,7 +15,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{DefaultNativeVm, NativeVm, NativeVmExtension, ScryptoVm, Vm};
+use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
@@ -276,7 +276,7 @@ impl TestRunnerBuilder {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let native_vm = NativeVm::new(extension);
+        let native_vm = NativeVm::new_with_extension(extension);
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = InMemorySubstateDatabase::standard();
         let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
@@ -321,11 +321,11 @@ impl TestRunnerBuilder {
         (runner, next_epoch.validator_set)
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner<DefaultNativeVm>, ActiveValidatorSet) {
-        self.build_and_get_epoch_with_native_vm_extension(DefaultNativeVm)
+    pub fn build_and_get_epoch(self) -> (TestRunner<NoExtension>, ActiveValidatorSet) {
+        self.build_and_get_epoch_with_native_vm_extension(NoExtension)
     }
 
-    pub fn build(self) -> TestRunner<DefaultNativeVm> {
+    pub fn build(self) -> TestRunner<NoExtension> {
         self.build_and_get_epoch().0
     }
 

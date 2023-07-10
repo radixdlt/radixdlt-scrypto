@@ -69,17 +69,11 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
         manifest_args!(package_address)
     };
 
-
     // Act
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new()
             .lock_fee(test_runner.faucet_component(), 500u32)
-            .call_function(
-                package_address,
-                BLUEPRINT_NAME,
-                "test",
-                args,
-            )
+            .call_function(package_address, BLUEPRINT_NAME, "test", args)
             .build(),
         vec![],
     );

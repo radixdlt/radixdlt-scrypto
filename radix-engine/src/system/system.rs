@@ -4,8 +4,8 @@ use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingEntry;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
-    InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
-    SystemError, SystemModuleError,
+    InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError, SystemError,
+    SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
@@ -1443,6 +1443,8 @@ where
                         Visibility::FrameOwned => return None,
 
                         // If borrowed or actor then we just use the current actor's global address
+                        // e.g. if the parent to the node is frame owned then the current actor's global
+                        // address would be None
                         Visibility::Borrowed | Visibility::Actor => {
                             return self.api.kernel_get_system_state().current.global_address();
                         }
@@ -1456,6 +1458,7 @@ where
             None
         };
 
+        // Key Value Stores do not have methods so we remove that possibility here
         let module_object_info = self.get_module_object_info(receiver, object_module_id)?;
         let identifier =
             MethodIdentifier(receiver.clone(), object_module_id, method_name.to_string());
