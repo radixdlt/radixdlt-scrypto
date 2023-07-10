@@ -136,7 +136,6 @@ impl CanBeAbortion for RuntimeError {
 pub enum KernelError {
     // Call frame
     CallFrameError(CallFrameError),
-    NodeOrphaned(NodeId),
 
     // ID allocation
     IdAllocationError(IdAllocationError),

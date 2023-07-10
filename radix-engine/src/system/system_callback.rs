@@ -447,93 +447,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
     }
 
-    fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        // Note: this function is not responsible for checking if all nodes are dropped!
-        for node_id in nodes {
-            let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
-
-            match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
-                    match (
-                        blueprint_id.package_address,
-                        blueprint_id.blueprint_name.as_str(),
-                    ) {
-                        (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
-                            let mut system = SystemService::new(api);
-                            system.call_function(
-                                RESOURCE_PACKAGE,
-                                FUNGIBLE_PROOF_BLUEPRINT,
-                                PROOF_DROP_IDENT,
-                                scrypto_encode(&ProofDropInput {
-                                    proof: Proof(Own(node_id)),
-                                })
-                                .unwrap(),
-                            )?;
-                        }
-                        (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
-                            let mut system = SystemService::new(api);
-                            system.call_function(
-                                RESOURCE_PACKAGE,
-                                NON_FUNGIBLE_PROOF_BLUEPRINT,
-                                PROOF_DROP_IDENT,
-                                scrypto_encode(&ProofDropInput {
-                                    proof: Proof(Own(node_id)),
-                                })
-                                .unwrap(),
-                            )?;
-                        }
-                        _ => {
-                            // no-op
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        // Note that we destroy frame's auth zone at the very end of the `auto_drop` process
-        // to make sure the auth zone stack is in good state for the proof dropping above.
-
-        // Detach proofs from the auth zone
-        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
-            let handle = api.kernel_open_substate(
-                &auth_zone_id,
-                MAIN_BASE_PARTITION,
-                &AuthZoneField::AuthZone.into(),
-                LockFlags::MUTABLE,
-                SystemLockData::Default,
-            )?;
-            let mut auth_zone_substate: FieldSubstate<AuthZone> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let proofs = core::mem::replace(&mut auth_zone_substate.value.0.proofs, Vec::new());
-            api.kernel_write_substate(
-                handle,
-                IndexedScryptoValue::from_typed(&auth_zone_substate),
-            )?;
-            api.kernel_close_substate(handle)?;
-
-            // Drop the proofs
-            let mut system = SystemService::new(api);
-            for proof in proofs {
-                let object_info = system.get_object_info(proof.0.as_node_id())?;
-                system.call_function(
-                    RESOURCE_PACKAGE,
-                    &object_info.blueprint_id.blueprint_name,
-                    PROOF_DROP_IDENT,
-                    scrypto_encode(&ProofDropInput { proof }).unwrap(),
-                )?;
-            }
-
-            // Drop the auth zone
-            api.kernel_drop_node(&auth_zone_id)?;
-        }
-
-        Ok(())
-    }
-
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
         _partition_num: PartitionNumber,
@@ -576,5 +489,20 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         system.globalize(modules, Some(address_reservation))?;
 
         Ok(true)
+    }
+
+    fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
+        match type_info {
+            TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
+                todo!()
+            }
+            TypeInfoSubstate::KeyValueStore(_) => todo!(),
+            TypeInfoSubstate::GlobalAddressReservation(_) => todo!(),
+            TypeInfoSubstate::GlobalAddressPhantom(_) => todo!(),
+        }
     }
 }

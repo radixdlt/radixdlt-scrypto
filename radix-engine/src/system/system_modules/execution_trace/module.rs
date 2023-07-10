@@ -370,7 +370,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
 
         let system_state = api.kernel_get_system_state();
 
-        let caller = TraceActor::from_actor(system_state.caller);
+        let caller = TraceActor::from_actor(system_state.caller_actor);
 
         system_state
             .system
