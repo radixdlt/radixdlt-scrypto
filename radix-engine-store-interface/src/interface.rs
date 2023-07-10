@@ -3,14 +3,28 @@ use utils::rust::boxed::Box;
 use utils::rust::collections::IndexMap;
 use utils::rust::vec::Vec;
 
+// TODO(wip): adjust all rustdocs here to reflect the 3-Tier JMT
+
+pub type DbNodeKey = Vec<u8>;
+
+pub type DbPartitionNum = u8;
+
 /// A database-level key of an entire partition.
 /// Seen from the higher-level API: it represents a pair (RE Node ID, Module ID).
 /// Seen from the lower-level implementation: it is used as a key in the upper-layer tree of our
 /// two-layered JMT.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
 pub struct DbPartitionKey {
-    pub node_key: Vec<u8>,
-    pub partition_byte: u8,
+    pub node_key: DbNodeKey,
+    pub partition_num: DbPartitionNum,
+}
+
+impl DbPartitionKey {
+    pub fn into_bytes(self) -> Vec<u8> {
+        let mut bytes = self.node_key;
+        bytes.push(self.partition_num);
+        bytes
+    }
 }
 
 /// A database-level key of a substate within a known partition.

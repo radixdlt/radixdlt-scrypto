@@ -1,18 +1,12 @@
 use crate::hash_tree::tree_store::{
-    NodeKey, PartitionPayload, Payload, ReadableTreeStore, TreeNode, WriteableTreeStore,
+    NodeKey, NodePayload, Payload, ReadableTreeStore, TreeNode, WriteableTreeStore,
 };
 use crate::hash_tree::{put_at_next_version, SubstateHashChange};
 use radix_engine_common::crypto::hash;
 use radix_engine_store_interface::interface::{DatabaseUpdate, DatabaseUpdates};
 
-pub trait ReadableStateTreeStore:
-    ReadableTreeStore<PartitionPayload> + ReadableTreeStore<()>
-{
-}
-impl<T> ReadableStateTreeStore for T where
-    T: ReadableTreeStore<PartitionPayload> + ReadableTreeStore<()>
-{
-}
+pub trait ReadableStateTreeStore: ReadableTreeStore<NodePayload> + ReadableTreeStore<()> {}
+impl<T> ReadableStateTreeStore for T where T: ReadableTreeStore<NodePayload> + ReadableTreeStore<()> {}
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
@@ -38,8 +32,8 @@ impl<'s, S: ReadableTreeStore<P>, P: Payload> ReadableTreeStore<P> for Collectin
     }
 }
 
-impl<'s, S> WriteableTreeStore<PartitionPayload> for CollectingTreeStore<'s, S> {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<PartitionPayload>) {
+impl<'s, S> WriteableTreeStore<NodePayload> for CollectingTreeStore<'s, S> {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode<NodePayload>) {
         self.diff.new_re_node_layer_nodes.push((key, node));
     }
 
@@ -60,7 +54,7 @@ impl<'s, S> WriteableTreeStore<()> for CollectingTreeStore<'s, S> {
 
 #[derive(Clone)]
 pub struct StateHashTreeDiff {
-    pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<PartitionPayload>)>,
+    pub new_re_node_layer_nodes: Vec<(NodeKey, TreeNode<NodePayload>)>,
     pub new_substate_layer_nodes: Vec<(NodeKey, TreeNode<()>)>,
     pub stale_hash_tree_node_keys: Vec<NodeKey>,
 }

@@ -10,6 +10,8 @@ use radix_engine_interface::types::{NodeId, SubstateKey};
 use sbor::rust::prelude::*;
 use utils::copy_u8_array;
 
+// TODO(wip): adjust all rustdocs here to reflect the 3-Tier JMT *and* the "module -> partition" rename
+
 /// A mapper between the business RE Node / Module / Substate IDs and database keys.
 pub trait DatabaseKeyMapper {
     /// Converts the given RE Node and Module ID to the database partition's key.
@@ -75,13 +77,16 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
     fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey {
         DbPartitionKey {
             node_key: SpreadPrefixKeyMapper::to_hash_prefixed(node_id.as_bytes()),
-            partition_byte: partition_num.0,
+            partition_num: partition_num.0,
         }
     }
 
     fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber) {
         let node_id_bytes = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key.node_key);
-        (NodeId(copy_u8_array(node_id_bytes)), PartitionNumber(partition_key.partition_byte))
+        (
+            NodeId(copy_u8_array(node_id_bytes)),
+            PartitionNumber(partition_key.partition_num),
+        )
     }
 
     fn field_to_db_sort_key(fields_key: &FieldKey) -> DbSortKey {

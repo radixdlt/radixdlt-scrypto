@@ -11,10 +11,9 @@ use rocksdb::{
 };
 use sbor::rust::prelude::*;
 use std::path::PathBuf;
-use utils::copy_u8_array;
 mod state_tree;
-use state_tree::*;
 use crate::rocks_db::{decode_from_rocksdb_bytes, encode_to_rocksdb_bytes};
+use state_tree::*;
 
 const META_CF: &str = "meta";
 const SUBSTATES_CF: &str = "substates";
