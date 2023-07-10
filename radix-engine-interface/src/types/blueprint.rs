@@ -11,26 +11,23 @@ use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ObjectBlueprintInfo {
-    Inner { outer_object: GlobalAddress },
-    Outer,
+pub enum OuterObjectInfo {
+    Some { outer_object: GlobalAddress },
+    None,
 }
 
-impl Default for ObjectBlueprintInfo {
+impl Default for OuterObjectInfo {
     fn default() -> Self {
-        ObjectBlueprintInfo::Outer
+        OuterObjectInfo::None
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {
     pub global: bool,
-
     pub blueprint_id: BlueprintId,
-    pub version: BlueprintVersion,
-
-    // Blueprint arguments
-    pub blueprint_info: ObjectBlueprintInfo,
+    pub blueprint_version: BlueprintVersion,
+    pub outer_object: OuterObjectInfo,
     pub features: BTreeSet<String>,
     pub instance_schema: Option<InstanceSchema>,
 }
@@ -39,14 +36,14 @@ impl ObjectInfo {
     pub fn blueprint_version_key(&self) -> BlueprintVersionKey {
         BlueprintVersionKey {
             blueprint: self.blueprint_id.blueprint_name.clone(),
-            version: self.version,
+            version: self.blueprint_version,
         }
     }
 
     pub fn get_outer_object(&self) -> GlobalAddress {
-        match &self.blueprint_info {
-            ObjectBlueprintInfo::Inner { outer_object } => outer_object.clone(),
-            ObjectBlueprintInfo::Outer { .. } => {
+        match &self.outer_object {
+            OuterObjectInfo::Some { outer_object } => outer_object.clone(),
+            OuterObjectInfo::None { .. } => {
                 panic!("Broken Application logic: Expected to be an inner object but is an outer object");
             }
         }

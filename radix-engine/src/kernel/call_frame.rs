@@ -316,7 +316,7 @@ impl<L: Clone> CallFrame<L> {
                 if let Some(global_address) = global_address {
                     additional_global_refs.push(global_address.clone());
                 }
-                if let ObjectBlueprintInfo::Inner { outer_object } = object_info.blueprint_info {
+                if let OuterObjectInfo::Some { outer_object } = object_info.outer_object {
                     additional_global_refs.push(outer_object.clone());
                 }
                 if let Some(instance_context) = instance_context {

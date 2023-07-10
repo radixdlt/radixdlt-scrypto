@@ -615,9 +615,9 @@ where
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
-                version: BlueprintVersion::default(),
+                blueprint_version: BlueprintVersion::default(),
 
-                blueprint_info: ObjectBlueprintInfo::default(),
+                outer_object: OuterObjectInfo::default(),
                 features: btreeset!(MINT_FEATURE.to_string(), BURN_FEATURE.to_string(),),
                 instance_schema: None,
             }));
@@ -638,9 +638,9 @@ where
                     package_address: RESOURCE_PACKAGE,
                     blueprint_name: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
-                version: BlueprintVersion::default(),
+                blueprint_version: BlueprintVersion::default(),
 
-                blueprint_info: ObjectBlueprintInfo::default(),
+                outer_object: OuterObjectInfo::default(),
                 features: btreeset!(),
                 instance_schema: None,
             }));
@@ -682,7 +682,7 @@ where
         )?;
         let expected_outer_blueprint = blueprint_interface.blueprint_type.clone();
 
-        let (blueprint_info, object_features, outer_object_features) =
+        let (outer_object, object_features, outer_object_features) =
             if let BlueprintType::Inner { outer_blueprint } = &expected_outer_blueprint {
                 match instance_context {
                     Some(context) if context.outer_blueprint.eq(outer_blueprint) => {
@@ -690,7 +690,7 @@ where
                             self.get_object_info(context.outer_object.as_node_id())?;
 
                         (
-                            ObjectBlueprintInfo::Inner {
+                            OuterObjectInfo::Some {
                                 outer_object: context.outer_object,
                             },
                             BTreeSet::new(),
@@ -716,7 +716,7 @@ where
                     }
                 }
 
-                (ObjectBlueprintInfo::Outer, features, BTreeSet::new())
+                (OuterObjectInfo::None, features, BTreeSet::new())
             };
 
         let user_substates = self.validate_instance_schema_and_state(
@@ -743,9 +743,9 @@ where
                     global:false,
 
                     blueprint_id: blueprint_id.clone(),
-                    version: BlueprintVersion::default(),
+                    blueprint_version: BlueprintVersion::default(),
 
-                    blueprint_info,
+                    outer_object,
                     features: object_features,
                     instance_schema,
                 })
@@ -1470,9 +1470,9 @@ where
                     global: node_object_info.global,
 
                     blueprint_id: object_module_id.static_blueprint().unwrap(),
-                    version: BlueprintVersion::default(),
+                    blueprint_version: BlueprintVersion::default(),
 
-                    blueprint_info: ObjectBlueprintInfo::default(),
+                    outer_object: OuterObjectInfo::default(),
                     features: btreeset!(),
                     instance_schema: None,
                 },
@@ -1493,8 +1493,8 @@ where
                 }),
             }
         } else {
-            match &module_object_info.blueprint_info {
-                ObjectBlueprintInfo::Inner { outer_object } => {
+            match &module_object_info.outer_object {
+                OuterObjectInfo::Some { outer_object } => {
                     // TODO: do this recursively until global?
                     let outer_info = self.get_object_info(outer_object.as_node_id())?;
                     Some(InstanceContext {
@@ -1502,7 +1502,7 @@ where
                         outer_blueprint: outer_info.blueprint_id.blueprint_name.clone(),
                     })
                 }
-                ObjectBlueprintInfo::Outer { .. } => None,
+                OuterObjectInfo::None { .. } => None,
             }
         };
 
@@ -1562,15 +1562,15 @@ where
         // FIXME: what's the right model, trading off between flexibility and security?
 
         // If the actor is the object's outer object
-        match info.blueprint_info {
-            ObjectBlueprintInfo::Inner { outer_object } => {
+        match info.outer_object {
+            OuterObjectInfo::Some { outer_object } => {
                 if let Some(instance_context) = actor.instance_context() {
                     if instance_context.outer_object.eq(&outer_object) {
                         is_drop_allowed = true;
                     }
                 }
             }
-            ObjectBlueprintInfo::Outer { .. } => {}
+            OuterObjectInfo::None { .. } => {}
         }
 
         // If the actor is a function within the same blueprint
@@ -2369,9 +2369,9 @@ where
                 .try_as_method()
                 .map(|x| x.node_id)
                 .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?,
-            ActorObjectType::OuterObject => match self.actor_get_info()?.blueprint_info {
-                ObjectBlueprintInfo::Inner { outer_object } => outer_object.into_node_id(),
-                ObjectBlueprintInfo::Outer { .. } => {
+            ActorObjectType::OuterObject => match self.actor_get_info()?.outer_object {
+                OuterObjectInfo::Some { outer_object } => outer_object.into_node_id(),
+                OuterObjectInfo::None { .. } => {
                     return Err(RuntimeError::SystemError(
                         SystemError::OuterObjectDoesNotExist,
                     ));

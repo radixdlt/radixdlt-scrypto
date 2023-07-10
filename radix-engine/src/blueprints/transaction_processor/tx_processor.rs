@@ -110,10 +110,10 @@ impl TransactionProcessorBlueprint {
                         global: false,
 
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
-                        version: BlueprintVersion::default(),
+                        blueprint_version: BlueprintVersion::default(),
 
                         instance_schema: None,
-                        blueprint_info: ObjectBlueprintInfo::default(),
+                        outer_object: OuterObjectInfo::default(),
                         features: btreeset!(),
                     })
                 )

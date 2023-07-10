@@ -1,5 +1,4 @@
 use super::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
-use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
@@ -11,8 +10,8 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
+use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
@@ -20,14 +19,10 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
 use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeOutput;
-use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::{
-    Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
-};
 use radix_engine_interface::schema::{InstanceSchema, RefTypes};
 
 #[derive(Clone)]
@@ -497,7 +492,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
         match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
+            TypeInfoSubstate::Object(ObjectInfo { .. }) => {
                 todo!()
             }
             TypeInfoSubstate::KeyValueStore(_) => todo!(),
