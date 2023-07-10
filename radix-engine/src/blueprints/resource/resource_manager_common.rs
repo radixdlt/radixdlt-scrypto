@@ -5,7 +5,7 @@ use native_sdk::modules::metadata::Metadata;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, FieldValue};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
@@ -71,8 +71,8 @@ where
         resource_address_reservation,
         FUNGIBLE_BUCKET_BLUEPRINT,
         vec![
-            scrypto_encode(&LiquidFungibleResource::new(initial_supply)).unwrap(),
-            scrypto_encode(&LockedFungibleResource::default()).unwrap(),
+            FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
+            FieldValue::new(&LockedFungibleResource::default()),
         ],
     )?;
 
@@ -111,8 +111,8 @@ where
         resource_address_reservation,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,
         vec![
-            scrypto_encode(&LiquidNonFungibleResource::new(ids)).unwrap(),
-            scrypto_encode(&LockedNonFungibleResource::default()).unwrap(),
+            FieldValue::new(&LiquidNonFungibleResource::new(ids)),
+            FieldValue::new(&LockedNonFungibleResource::default()),
         ],
     )?;
 

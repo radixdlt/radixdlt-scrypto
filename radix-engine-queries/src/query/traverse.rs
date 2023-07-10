@@ -1,4 +1,5 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::{FieldKey, MapKey, ScryptoValue, SubstateKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
@@ -128,7 +129,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                             &node_id,
                             MAIN_BASE_PARTITION,
                             &FungibleVaultField::LiquidFungible.into(),
@@ -138,7 +139,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     self.visitor.visit_fungible_vault(
                         node_id,
                         &ResourceAddress::new_or_panic(info.get_outer_object().into()),
-                        &liquid,
+                        &liquid.value.0,
                     );
                 } else if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                     && info
@@ -148,7 +149,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
+                        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidNonFungibleVault>>(
                             &node_id,
                             MAIN_BASE_PARTITION,
                             &NonFungibleVaultField::LiquidNonFungible.into(),
@@ -158,7 +159,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     self.visitor.visit_non_fungible_vault(
                         node_id,
                         &ResourceAddress::new_or_panic(info.get_outer_object().into()),
-                        &liquid,
+                        &liquid.value.0,
                     );
 
                     let entries = self

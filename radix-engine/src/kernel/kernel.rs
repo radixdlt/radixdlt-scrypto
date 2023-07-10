@@ -13,13 +13,13 @@ use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::SystemService;
+use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::{AcquireLockError, NodeSubstates, StoreAccessInfo, SubstateStore};
 use crate::types::*;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::{
@@ -471,11 +471,11 @@ where
                     &FungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
-            let liquid: LiquidFungibleResource = substate.as_typed().unwrap();
+            let liquid: FieldSubstate<LiquidFungibleResource> = substate.as_typed().unwrap();
 
             Some(BucketSnapshot::Fungible {
                 resource_address,
-                liquid: liquid.amount(),
+                liquid: liquid.value.0.amount(),
             })
         } else {
             let substate = self
@@ -486,11 +486,11 @@ where
                     &NonFungibleBucketField::Liquid.into(),
                 )
                 .unwrap();
-            let liquid: LiquidNonFungibleResource = substate.as_typed().unwrap();
+            let liquid: FieldSubstate<LiquidNonFungibleResource> = substate.as_typed().unwrap();
 
             Some(BucketSnapshot::NonFungible {
                 resource_address,
-                liquid: liquid.ids().clone(),
+                liquid: liquid.value.0.ids().clone(),
             })
         }
     }
@@ -541,11 +541,11 @@ where
                     &FungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
-            let proof: FungibleProofSubstate = substate.as_typed().unwrap();
+            let proof: FieldSubstate<FungibleProofSubstate> = substate.as_typed().unwrap();
 
             Some(ProofSnapshot::Fungible {
                 resource_address,
-                total_locked: proof.amount(),
+                total_locked: proof.value.0.amount(),
             })
         } else {
             let substate = self
@@ -568,11 +568,11 @@ where
                     &NonFungibleProofField::ProofRefs.into(),
                 )
                 .unwrap();
-            let proof: NonFungibleProofSubstate = substate.as_typed().unwrap();
+            let proof: FieldSubstate<NonFungibleProofSubstate> = substate.as_typed().unwrap();
 
             Some(ProofSnapshot::NonFungible {
                 resource_address,
-                total_locked: proof.non_fungible_local_ids().clone(),
+                total_locked: proof.value.0.non_fungible_local_ids().clone(),
             })
         }
     }

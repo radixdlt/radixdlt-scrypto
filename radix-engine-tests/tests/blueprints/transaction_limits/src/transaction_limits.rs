@@ -103,7 +103,7 @@ mod transaction_limits_substate {
                 )
                 .unwrap();
             unsafe { kv_entry_set(handle, buf.as_ptr(), buf.len()) };
-            ScryptoEnv.key_value_entry_release(handle).unwrap();
+            ScryptoEnv.key_value_entry_close(handle).unwrap();
 
             // Put the kv store into a component
             TransactionLimitSubstateTest { kv_store }
@@ -180,7 +180,7 @@ mod sbor_overflow {
             ScryptoEnv
                 .key_value_entry_set(handle, value_payload)
                 .unwrap();
-            ScryptoEnv.key_value_entry_release(handle).unwrap();
+            ScryptoEnv.key_value_entry_close(handle).unwrap();
 
             // Put the kv store into a component
             SborOverflow { kv_store }

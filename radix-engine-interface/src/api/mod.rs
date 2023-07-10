@@ -3,7 +3,7 @@ pub mod actor_index_api;
 pub mod actor_key_value_entry_api;
 pub mod actor_sorted_index_api;
 pub mod blueprint_api;
-pub mod field_lock_api;
+pub mod field_api;
 pub mod key_value_entry_api;
 pub mod key_value_store_api;
 pub mod node_modules;
@@ -16,8 +16,8 @@ use actor_index_api::ClientActorIndexApi;
 pub use actor_key_value_entry_api::ClientActorKeyValueEntryApi;
 pub use actor_sorted_index_api::ClientActorSortedIndexApi;
 pub use blueprint_api::ClientBlueprintApi;
-pub use field_lock_api::ClientFieldLockApi;
-pub use field_lock_api::LockFlags;
+pub use field_api::ClientFieldApi;
+pub use field_api::LockFlags;
 use key_value_entry_api::ClientKeyValueEntryApi;
 use key_value_store_api::ClientKeyValueStoreApi;
 pub use object_api::*;
@@ -45,7 +45,7 @@ pub trait ClientApi<E: sbor::rust::fmt::Debug>:
     + ClientKeyValueEntryApi<E>
     + ClientActorSortedIndexApi<E>
     + ClientActorIndexApi<E>
-    + ClientFieldLockApi<E>
+    + ClientFieldApi<E>
     + ClientBlueprintApi<E>
     + ClientCostingApi<E>
     + ClientTransactionRuntimeApi<E>

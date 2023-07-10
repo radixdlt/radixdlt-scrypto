@@ -6,7 +6,8 @@ use crate::types::*;
 use native_sdk::resource::NativeBucket;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::{
-    ClientApi, CollectionIndex, LockFlags, OBJECT_HANDLE_OUTER_OBJECT, OBJECT_HANDLE_SELF,
+    ClientApi, CollectionIndex, FieldValue, LockFlags, OBJECT_HANDLE_OUTER_OBJECT,
+    OBJECT_HANDLE_SELF,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -139,9 +140,9 @@ impl NonFungibleVaultBlueprint {
             LockFlags::MUTABLE,
         )?;
 
-        let mut frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+        let mut frozen: VaultFrozenFlag = api.field_read_typed(frozen_flag_handle)?;
         frozen.frozen.insert(to_freeze);
-        api.field_lock_write_typed(frozen_flag_handle, &frozen)?;
+        api.field_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
     }
@@ -157,9 +158,9 @@ impl NonFungibleVaultBlueprint {
             NonFungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
+        let mut frozen: VaultFrozenFlag = api.field_read_typed(frozen_flag_handle)?;
         frozen.frozen.remove(to_unfreeze);
-        api.field_lock_write_typed(frozen_flag_handle, &frozen)?;
+        api.field_write_typed(frozen_flag_handle, &frozen)?;
 
         Ok(())
     }
@@ -205,8 +206,8 @@ impl NonFungibleVaultBlueprint {
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
             vec![
-                scrypto_encode(&proof_info).unwrap(),
-                scrypto_encode(&proof_evidence).unwrap(),
+                FieldValue::new(&proof_info),
+                FieldValue::new(&proof_evidence),
             ],
         )?;
         Ok(Proof(Own(proof_id)))
@@ -251,7 +252,7 @@ impl NonFungibleVaultBlueprint {
             NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
 
         // Take from liquid if needed
         let delta: BTreeSet<NonFungibleLocalId> = ids
@@ -266,7 +267,7 @@ impl NonFungibleVaultBlueprint {
             locked.ids.entry(id.clone()).or_default().add_assign(1);
         }
 
-        api.field_lock_write_typed(handle, &locked)?;
+        api.field_write_typed(handle, &locked)?;
 
         // Issue proof
         Ok(())
@@ -284,7 +285,7 @@ impl NonFungibleVaultBlueprint {
             NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut locked: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let mut locked: LockedNonFungibleResource = api.field_read_typed(handle)?;
 
         let mut liquid_non_fungibles = BTreeSet::<NonFungibleLocalId>::new();
         for id in ids {
@@ -299,7 +300,7 @@ impl NonFungibleVaultBlueprint {
             }
         }
 
-        api.field_lock_write_typed(handle, &locked)?;
+        api.field_write_typed(handle, &locked)?;
 
         Self::internal_put(LiquidNonFungibleResource::new(liquid_non_fungibles), api)
     }
@@ -321,8 +322,8 @@ impl NonFungibleVaultBlueprint {
             NonFungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::read_only(),
         )?;
-        let frozen: VaultFrozenFlag = api.field_lock_read_typed(frozen_flag_handle)?;
-        api.field_lock_release(frozen_flag_handle)?;
+        let frozen: VaultFrozenFlag = api.field_read_typed(frozen_flag_handle)?;
+        api.field_close(frozen_flag_handle)?;
 
         if frozen.frozen.intersects(flags) {
             return Err(RuntimeError::ApplicationError(
@@ -368,9 +369,9 @@ impl NonFungibleVaultBlueprint {
             NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
+        let substate_ref: LiquidNonFungibleVault = api.field_read_typed(handle)?;
         let amount = substate_ref.amount;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -383,9 +384,9 @@ impl NonFungibleVaultBlueprint {
             NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -416,9 +417,9 @@ impl NonFungibleVaultBlueprint {
             NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: LockedNonFungibleResource = api.field_lock_read_typed(handle)?;
+        let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
         let ids = substate_ref.ids();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(ids)
     }
 
@@ -435,7 +436,8 @@ impl NonFungibleVaultBlueprint {
             NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
+        let mut substate_ref: LiquidNonFungibleVault = api.field_read_typed(handle)?;
+
         if substate_ref.amount < Decimal::from(n) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::NonFungibleVaultError(NonFungibleVaultError::NotEnoughAmount),
@@ -454,8 +456,8 @@ impl NonFungibleVaultBlueprint {
             }
         };
 
-        api.field_lock_write_typed(handle, &substate_ref)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &substate_ref)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(api, WithdrawResourceEvent::Ids(taken.ids.clone()))?;
 
@@ -474,7 +476,7 @@ impl NonFungibleVaultBlueprint {
             NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut substate_ref: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
+        let mut substate_ref: LiquidNonFungibleVault = api.field_read_typed(handle)?;
 
         substate_ref.amount -= Decimal::from(ids.len());
 
@@ -496,8 +498,8 @@ impl NonFungibleVaultBlueprint {
         }
 
         Runtime::emit_event(api, WithdrawResourceEvent::Ids(ids.clone()))?;
-        api.field_lock_write_typed(handle, &substate_ref)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &substate_ref)?;
+        api.field_close(handle)?;
 
         Ok(LiquidNonFungibleResource::new(ids.clone()))
     }
@@ -520,7 +522,7 @@ impl NonFungibleVaultBlueprint {
             NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
         )?;
-        let mut vault: LiquidNonFungibleVault = api.field_lock_read_typed(handle)?;
+        let mut vault: LiquidNonFungibleVault = api.field_read_typed(handle)?;
 
         vault.amount += Decimal::from(resource.ids.len());
 
@@ -536,8 +538,8 @@ impl NonFungibleVaultBlueprint {
             )?;
         }
 
-        api.field_lock_write_typed(handle, &vault)?;
-        api.field_lock_release(handle)?;
+        api.field_write_typed(handle, &vault)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(api, event)?;
 
