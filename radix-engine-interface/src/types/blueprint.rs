@@ -73,7 +73,7 @@ pub struct BlueprintId {
     pub blueprint_name: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+#[derive(Copy, Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
 pub enum BlueprintHook {
     OnVirtualize,
     OnMove,

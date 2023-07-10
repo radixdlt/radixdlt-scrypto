@@ -406,42 +406,43 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 Ok(output)
             }
             Actor::BlueprintHook(BlueprintHookActor { blueprint_id, hook }) => {
+                // Find the export
                 let definition = system.get_blueprint_definition(
                     blueprint_id.package_address,
                     &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
                 )?;
+                let export =
+                    definition
+                        .hook_exports
+                        .get(&hook)
+                        .ok_or(RuntimeError::SystemUpstreamError(
+                            SystemUpstreamError::HookNotFound(hook),
+                        ))?;
 
+                // Input is not validated as they're created by system.
+
+                // Invoke the export
+                let output = C::invoke(
+                    &blueprint_id.package_address,
+                    export.clone(),
+                    &input,
+                    &mut system,
+                )?;
+
+                // Check output against well-known schema
                 match hook {
                     BlueprintHook::OnVirtualize => {
-                        if let Some(export) = definition.hook_exports.get(&hook) {
-                            // Not checking input
-
-                            // Execute
-                            let output = C::invoke(
-                                &blueprint_id.package_address,
-                                export.clone(),
-                                &input,
-                                &mut system,
-                            )?;
-
-                            // Check output
-                            scrypto_decode::<OnVirtualizeOutput>(output.as_slice()).map_err(
-                                |e| {
-                                    RuntimeError::SystemUpstreamError(
-                                        SystemUpstreamError::OutputDecodeError(e),
-                                    )
-                                },
-                            )?;
-
-                            Ok(output)
-                        } else {
-                            Ok(IndexedScryptoValue::from_typed(&OnVirtualizeOutput::new()))
-                        }
+                        scrypto_decode::<OnVirtualizeOutput>(output.as_slice())
                     }
                     BlueprintHook::OnMove | BlueprintHook::OnDrop | BlueprintHook::OnPersist => {
-                        todo!("FIXME: add hooks")
+                        todo!("FIXME add other hook implementations")
                     }
                 }
+                .map_err(|e| {
+                    RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
+                })?;
+
+                Ok(output)
             }
         }
     }

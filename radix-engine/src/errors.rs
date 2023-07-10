@@ -262,6 +262,7 @@ pub enum SystemUpstreamError {
 
     FnNotFound(String),
     ReceiverNotMatch(String),
+    HookNotFound(BlueprintHook),
 
     InputDecodeError(DecodeError),
     InputSchemaNotMatch(String, String),
