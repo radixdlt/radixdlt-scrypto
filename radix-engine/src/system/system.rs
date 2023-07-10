@@ -1193,7 +1193,7 @@ where
         Ok(global_address)
     }
 
-    pub fn current_actor(&self) -> Actor {
+    pub fn current_actor(&mut self) -> Actor {
         self.api.kernel_get_system_state().current_actor.clone()
     }
 

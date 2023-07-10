@@ -18,8 +18,8 @@ use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
+use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeOutput;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -406,7 +406,42 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 Ok(output)
             }
             Actor::BlueprintHook(BlueprintHookActor { blueprint_id, hook }) => {
-                todo!()
+                let definition = system.get_blueprint_definition(
+                    blueprint_id.package_address,
+                    &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                )?;
+
+                match hook {
+                    BlueprintHook::OnVirtualize => {
+                        if let Some(export) = definition.hook_exports.get(&hook) {
+                            // Not checking input
+
+                            // Execute
+                            let output = C::invoke(
+                                &blueprint_id.package_address,
+                                export.clone(),
+                                &input,
+                                &mut system,
+                            )?;
+
+                            // Check output
+                            scrypto_decode::<OnVirtualizeOutput>(output.as_slice()).map_err(
+                                |e| {
+                                    RuntimeError::SystemUpstreamError(
+                                        SystemUpstreamError::OutputDecodeError(e),
+                                    )
+                                },
+                            )?;
+
+                            Ok(output)
+                        } else {
+                            Ok(IndexedScryptoValue::from_typed(&OnVirtualizeOutput::new()))
+                        }
+                    }
+                    BlueprintHook::OnMove | BlueprintHook::OnDrop | BlueprintHook::OnPersist => {
+                        todo!("FIXME: add hooks")
+                    }
+                }
             }
         }
     }
@@ -507,46 +542,38 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        match node_id.entity_type() {
-            // FIXME: Need to have a schema check in place before this in order to not create virtual components when accessing illegal substates
-            Some(entity_type) => {
-                let blueprint_id = match entity_type {
-                    EntityType::GlobalVirtualSecp256k1Account => {
-                        BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT)
-                    }
-                    EntityType::GlobalVirtualEd25519Account => {
-                        BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT)
-                    }
-                    EntityType::GlobalVirtualSecp256k1Identity => {
-                        BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT)
-                    }
-                    EntityType::GlobalVirtualEd25519Identity => {
-                        BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT)
-                    }
-                    _ => return Ok(false),
-                };
-
-                // TODO: load schema and find the hook definition.
-
-                let invocation = KernelInvocation {
-                    actor: Actor::blueprint_hook(blueprint_id.clone(), BlueprintHook::OnVirtualize),
-                    args: IndexedScryptoValue::from_typed(&OnVirtualizeInput { node_id }),
-                };
-
-                let rtn: Vec<u8> = api.kernel_invoke(Box::new(invocation))?.into();
-
-                let modules: BTreeMap<ObjectModuleId, Own> = scrypto_decode(&rtn).unwrap();
-                let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-                let address = GlobalAddress::new_or_panic(node_id.into());
-
-                let mut system = SystemService::new(api);
-                let address_reservation =
-                    system.allocate_virtual_global_address(blueprint_id, address)?;
-                system.globalize(modules, Some(address_reservation))?;
-
-                Ok(true)
+        let blueprint_id = match node_id.entity_type() {
+            Some(EntityType::GlobalVirtualSecp256k1Account) => {
+                BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT)
             }
-            _ => Ok(false),
-        }
+            Some(EntityType::GlobalVirtualEd25519Account) => {
+                BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT)
+            }
+            Some(EntityType::GlobalVirtualSecp256k1Identity) => {
+                BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT)
+            }
+            Some(EntityType::GlobalVirtualEd25519Identity) => {
+                BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT)
+            }
+            _ => return Ok(false),
+        };
+
+        let rtn: Vec<u8> = api
+            .kernel_invoke(Box::new(KernelInvocation {
+                actor: Actor::blueprint_hook(blueprint_id.clone(), BlueprintHook::OnVirtualize),
+                args: IndexedScryptoValue::from_typed(&OnVirtualizeInput { node_id }),
+            }))?
+            .into();
+
+        let modules: OnVirtualizeOutput =
+            scrypto_decode(&rtn).expect("`on_virtualize` output should've been validated");
+        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
+        let address = GlobalAddress::new_or_panic(node_id.into());
+
+        let mut system = SystemService::new(api);
+        let address_reservation = system.allocate_virtual_global_address(blueprint_id, address)?;
+        system.globalize(modules, Some(address_reservation))?;
+
+        Ok(true)
     }
 }
