@@ -273,8 +273,8 @@ impl TwoResourcePoolBlueprint {
         // Construct the event - this will be emitted once the resources are contributed to the pool
         let event = ContributionEvent {
             contributed_resources: btreemap! {
-                bucket1.resource_address(api)? => bucket1.amount(api)?,
-                bucket2.resource_address(api)? => bucket2.amount(api)?,
+                bucket1.resource_address(api)? => amount1,
+                bucket2.resource_address(api)? => amount2,
             },
             pool_units_minted: pool_units_to_mint,
         };
