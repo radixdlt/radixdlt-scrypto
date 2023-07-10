@@ -451,3 +451,51 @@ fn test_non_fungible_resource_take_advanced() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn test_fungible_types() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ResourceTypes",
+            "test_fungible_types",
+            manifest_args!(),
+        )
+        .try_deposit_batch_or_abort(account)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_non_fungible_types() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "ResourceTypes",
+            "test_non_fungible_types",
+            manifest_args!(),
+        )
+        .try_deposit_batch_or_abort(account)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
