@@ -1,5 +1,5 @@
 use radix_engine::errors::{SystemError, SystemModuleError};
-use radix_engine::vm::DefaultNativeVm;
+use radix_engine::vm::NoExtension;
 use radix_engine::{
     blueprints::pool::multi_resource_pool::*,
     errors::{ApplicationError, RuntimeError},
@@ -745,7 +745,7 @@ fn cant_withdraw_without_proper_signature() {
 }
 
 struct TestEnvironment<const N: usize> {
-    test_runner: TestRunner<DefaultNativeVm>,
+    test_runner: TestRunner<NoExtension>,
 
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,

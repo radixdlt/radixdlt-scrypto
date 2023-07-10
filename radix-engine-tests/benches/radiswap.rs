@@ -1,6 +1,6 @@
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::vm::DefaultNativeVm;
+use radix_engine::vm::NoExtension;
 use radix_engine::{
     transaction::{ExecutionConfig, FeeReserveConfig, TransactionReceipt},
     types::*,
@@ -177,7 +177,7 @@ fn bench_radiswap(c: &mut Criterion) {
 #[cfg(feature = "rocksdb")]
 type TestRunnerType = BasicRocksdbTestRunner;
 #[cfg(not(feature = "rocksdb"))]
-type TestRunnerType = TestRunner<DefaultNativeVm>;
+type TestRunnerType = TestRunner<NoExtension>;
 
 fn do_swap(
     test_runner: &mut TestRunnerType,

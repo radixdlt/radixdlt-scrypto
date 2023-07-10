@@ -4,7 +4,7 @@ use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{DefaultNativeVm, NativeVm, ScryptoVm, Vm};
+use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -18,7 +18,7 @@ fn bench_transfer(c: &mut Criterion) {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_validator_config: WasmValidatorConfigV1::new(),
     };
-    let native_vm = NativeVm::new(DefaultNativeVm);
+    let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     Bootstrapper::new(&mut substate_db, vm.clone(), false)

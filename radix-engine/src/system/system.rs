@@ -1438,6 +1438,7 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
+        // Key Value Stores do not have methods so we remove that possibility here
         let node_object_info = self.get_object_info(receiver)?;
 
         let (module_object_info, global_address) = match object_module_id {
@@ -1465,6 +1466,8 @@ where
                                 Visibility::FrameOwned => return None,
 
                                 // If borrowed or actor then we just use the current actor's global address
+                                // e.g. if the parent to the node is frame owned then the current actor's global
+                                // address would be None
                                 Visibility::Borrowed | Visibility::Actor => {
                                     return self
                                         .api

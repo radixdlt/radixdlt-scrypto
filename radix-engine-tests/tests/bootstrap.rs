@@ -21,7 +21,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 #[test]
 fn test_bootstrap_receipt_should_match_constants() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = NativeVm::new(DefaultNativeVm);
+    let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
@@ -93,7 +93,7 @@ fn test_bootstrap_receipt_should_match_constants() {
 
 fn test_genesis_resource_with_initial_allocation(owned_resource: bool) {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = NativeVm::new(DefaultNativeVm);
+    let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let token_holder = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
@@ -227,7 +227,7 @@ fn test_genesis_resource_with_initial_unowned_allocation() {
 #[test]
 fn test_genesis_stake_allocation() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = NativeVm::new(DefaultNativeVm);
+    let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
 
@@ -358,7 +358,7 @@ fn test_genesis_stake_allocation() {
 #[test]
 fn test_genesis_time() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = NativeVm::new(DefaultNativeVm);
+    let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
 

@@ -16,7 +16,7 @@ use transaction_scenarios::scenarios::get_builder_for_every_scenario;
 #[test]
 fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
-    let native_vm = NativeVm::new(DefaultNativeVm);
+    let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = InMemorySubstateDatabase::standard();
     let validator_key = Secp256k1PublicKey([0; 33]);
