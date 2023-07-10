@@ -186,9 +186,7 @@ pub extern "C" fn SchemaComponent2_schema() -> Slice {
             collections: vec![],
         },
         events: BlueprintEventSchemaInit::default(),
-        functions: BlueprintFunctionsSchemaInit {
-            functions,
-        },
+        functions: BlueprintFunctionsSchemaInit { functions },
         hooks: BlueprintHooksInit::default(),
     };
 
