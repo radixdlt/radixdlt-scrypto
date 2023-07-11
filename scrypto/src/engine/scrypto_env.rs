@@ -395,16 +395,14 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
 
-    fn actor_call_module_method(
+    fn actor_call_self_module_method(
         &mut self,
-        object_handle: ObjectHandle,
         module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
         let return_data = copy_buffer(unsafe {
             actor_call_module_method(
-                object_handle,
                 module_id as u8 as u32,
                 method_name.as_ptr(),
                 method_name.len(),

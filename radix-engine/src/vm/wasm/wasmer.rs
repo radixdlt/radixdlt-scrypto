@@ -178,7 +178,6 @@ impl WasmerModule {
 
         pub fn actor_call_module_method(
             env: &WasmerInstanceEnv,
-            object_handle: u32,
             module_id: u32,
             ident_ptr: u32,
             ident_len: u32,
@@ -191,7 +190,7 @@ impl WasmerModule {
             let args = read_memory(&instance, args_ptr, args_len)?;
 
             let buffer = runtime
-                .actor_call_module_method(object_handle, module_id, ident, args)
+                .actor_call_module_method(module_id, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)

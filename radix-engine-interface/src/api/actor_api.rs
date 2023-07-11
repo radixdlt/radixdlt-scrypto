@@ -23,9 +23,8 @@ pub trait ClientActorApi<E: Debug> {
 
     fn actor_get_blueprint(&mut self) -> Result<BlueprintId, E>;
 
-    fn actor_call_module_method(
+    fn actor_call_self_module_method(
         &mut self,
-        object_handle: ObjectHandle,
         module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,

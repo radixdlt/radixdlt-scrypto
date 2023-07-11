@@ -2297,9 +2297,10 @@ where
         let actor = self.api.kernel_get_system_state().current;
         match actor {
             Actor::Method(MethodActor { node_id, .. }) => Ok(*node_id),
-            _ => Err(RuntimeError::SystemError(SystemError::NodeIdNotExist)),
+            _ => Err(RuntimeError::SystemError(SystemError::NotAMethod)),
         }
     }
+
     #[trace_resources]
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         self.api
@@ -2332,16 +2333,13 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn actor_call_module_method(
+    fn actor_call_self_module_method(
         &mut self,
-        object_handle: ObjectHandle,
         module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let actor_object_type: ActorObjectType = object_handle.try_into()?;
-        let (node_id, _module_id) = self.get_actor_object_id(actor_object_type)?;
-
+        let node_id = self.actor_get_node_id()?;
         self.call_method_advanced(&node_id, module_id, false, method_name, args)
     }
 

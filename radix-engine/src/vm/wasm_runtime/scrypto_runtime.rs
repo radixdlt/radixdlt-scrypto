@@ -72,7 +72,6 @@ where
 
     fn actor_call_module_method(
         &mut self,
-        object_handle: u32,
         module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
@@ -86,7 +85,7 @@ where
 
         let return_data =
             self.api
-                .actor_call_module_method(object_handle, module_id, ident.as_str(), args)?;
+                .actor_call_self_module_method(module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
