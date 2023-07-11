@@ -471,7 +471,7 @@ macro_rules! define_structure {
                         )*
                     }
 
-                    impl std::str::FromStr for [< Typed $blueprint_ident BlueprintEventKey >] {
+                    impl sbor::prelude::FromStr for [< Typed $blueprint_ident BlueprintEventKey >] {
                         type Err = TypedNativeEventError;
 
                         fn from_str(s: &str) -> Result<Self, Self::Err> {
