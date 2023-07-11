@@ -1,4 +1,5 @@
 use crate::types::*;
+use radix_engine_interface::blueprints::package::PackageExport;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
@@ -53,6 +54,7 @@ impl FunctionActor {
 pub struct BlueprintHookActor {
     pub blueprint_id: BlueprintId,
     pub hook: BlueprintHook,
+    pub export: PackageExport,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -280,7 +282,15 @@ impl Actor {
         })
     }
 
-    pub fn blueprint_hook(blueprint_id: BlueprintId, hook: BlueprintHook) -> Self {
-        Self::BlueprintHook(BlueprintHookActor { blueprint_id, hook })
+    pub fn blueprint_hook(
+        blueprint_id: BlueprintId,
+        hook: BlueprintHook,
+        export: PackageExport,
+    ) -> Self {
+        Self::BlueprintHook(BlueprintHookActor {
+            blueprint_id,
+            hook,
+            export,
+        })
     }
 }

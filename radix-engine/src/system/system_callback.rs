@@ -23,6 +23,10 @@ use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::hooks::OnDropInput;
+use radix_engine_interface::hooks::OnDropOutput;
+use radix_engine_interface::hooks::OnMoveOutput;
+use radix_engine_interface::hooks::OnPersistOutput;
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::schema::{InstanceSchema, RefTypes};
@@ -469,21 +473,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?;
                 Ok(output)
             }
-            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, hook }) => {
-                // Find the export
-                let definition = load_blueprint_definition(
-                    blueprint_id.package_address,
-                    &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-                    system.api,
-                )?;
-                let export =
-                    definition
-                        .hook_exports
-                        .get(&hook)
-                        .ok_or(RuntimeError::SystemUpstreamError(
-                            SystemUpstreamError::HookNotFound(hook),
-                        ))?;
-
+            Actor::BlueprintHook(BlueprintHookActor {
+                blueprint_id,
+                hook,
+                export,
+            }) => {
                 // Input is not validated as they're created by system.
 
                 // Invoke the export
@@ -497,10 +491,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 // Check output against well-known schema
                 match hook {
                     BlueprintHook::OnVirtualize => {
-                        scrypto_decode::<OnVirtualizeOutput>(output.as_slice())
+                        scrypto_decode::<OnVirtualizeOutput>(output.as_slice()).map(|_| ())
                     }
-                    BlueprintHook::OnMove | BlueprintHook::OnDrop | BlueprintHook::OnPersist => {
-                        todo!("FIXME add other hook implementations")
+                    BlueprintHook::OnDrop => {
+                        scrypto_decode::<OnDropOutput>(output.as_slice()).map(|_| ())
+                    }
+                    BlueprintHook::OnMove => {
+                        scrypto_decode::<OnMoveOutput>(output.as_slice()).map(|_| ())
+                    }
+                    BlueprintHook::OnPersist => {
+                        scrypto_decode::<OnPersistOutput>(output.as_slice()).map(|_| ())
                     }
                 }
                 .map_err(|e| {
@@ -570,23 +570,40 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             _ => return Ok(false),
         };
 
-        let rtn: Vec<u8> = api
-            .kernel_invoke(Box::new(KernelInvocation {
-                actor: Actor::blueprint_hook(blueprint_id.clone(), BlueprintHook::OnVirtualize),
-                args: IndexedScryptoValue::from_typed(&OnVirtualizeInput { node_id }),
-            }))?
-            .into();
+        let definition = load_blueprint_definition(
+            blueprint_id.package_address,
+            &BlueprintVersionKey {
+                blueprint: blueprint_id.blueprint_name.clone(),
+                version: BlueprintVersion::default(),
+            },
+            api,
+        )?;
+        if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnDrop).cloned() {
+            let rtn: Vec<u8> = api
+                .kernel_invoke(Box::new(KernelInvocation {
+                    actor: Actor::blueprint_hook(
+                        blueprint_id.clone(),
+                        BlueprintHook::OnVirtualize,
+                        export,
+                    ),
+                    args: IndexedScryptoValue::from_typed(&OnVirtualizeInput { node_id }),
+                }))?
+                .into();
 
-        let modules: OnVirtualizeOutput =
-            scrypto_decode(&rtn).expect("`on_virtualize` output should've been validated");
-        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = GlobalAddress::new_or_panic(node_id.into());
+            let modules: OnVirtualizeOutput =
+                scrypto_decode(&rtn).expect("`on_virtualize` output should've been validated");
+            let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
+            let address = GlobalAddress::new_or_panic(node_id.into());
 
-        let mut system = SystemService::new(api);
-        let address_reservation = system.allocate_virtual_global_address(blueprint_id, address)?;
-        system.globalize(modules, Some(address_reservation))?;
+            let mut system = SystemService::new(api);
+            let address_reservation =
+                system.allocate_virtual_global_address(blueprint_id, address)?;
+            system.globalize(modules, Some(address_reservation))?;
 
-        Ok(true)
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
@@ -597,23 +614,24 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
         match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
-                global,
                 blueprint_id,
                 blueprint_version,
-                outer_object,
-                features,
-                instance_schema,
+                ..
             }) => {
                 let definition = load_blueprint_definition(
                     blueprint_id.package_address,
                     &BlueprintVersionKey {
-                        blueprint: blueprint_id.blueprint_name,
+                        blueprint: blueprint_id.blueprint_name.clone(),
                         version: blueprint_version,
                     },
                     api,
                 )?;
-                if let Some(hook) = definition.hook_exports.get(&BlueprintHook::OnDrop) {
-                    todo!()
+                if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnDrop).cloned() {
+                    api.kernel_invoke(Box::new(KernelInvocation {
+                        actor: Actor::blueprint_hook(blueprint_id, BlueprintHook::OnDrop, export),
+                        args: IndexedScryptoValue::from_typed(&OnDropInput {}),
+                    }))
+                    .map(|_| ())
                 } else {
                     Ok(())
                 }
