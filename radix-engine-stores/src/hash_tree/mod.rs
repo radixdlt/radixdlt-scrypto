@@ -1,5 +1,5 @@
 use crate::hash_tree::tree_store::{NodePayload, PartitionPayload, SubstatePayload};
-use crate::hash_tree::types::LeafKey;
+use crate::hash_tree::types::{LeafKey, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use jellyfish::JellyfishMerkleTree;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_store_interface::interface::{
@@ -116,11 +116,10 @@ fn put_substate_changes<S: TreeStore<NodePayload> + TreeStore<SubstatePayload>>(
             node_key: node_key.clone(),
             partition_num,
         };
-        let (partition_state_version, partition_root) = match partitions.remove(&partition_num) {
-            None => (None, None),
-            Some(partition) => (Some(partition.state_version), Some(partition.root)),
-        };
-        let mut partition_store = NestedTreeStore::new(store, db_partition_key, partition_root);
+        let partition_state_version = partitions
+            .remove(&partition_num)
+            .map(|partition| partition.state_version);
+        let mut partition_store = NestedTreeStore::new(store, db_partition_key);
         let new_partition_state_version = current_version.unwrap_or(0) + 1;
         let new_partition_root_hash = put_changes(
             &mut partition_store,
@@ -131,13 +130,11 @@ fn put_substate_changes<S: TreeStore<NodePayload> + TreeStore<SubstatePayload>>(
                 .map(|change| to_substate_change(change))
                 .collect(),
         );
-        let new_partition_root = partition_store.extract_new_root();
-        if !matches!(new_partition_root, TreeNode::Null) {
+        if new_partition_root_hash != SPARSE_MERKLE_PLACEHOLDER_HASH {
             partitions.insert(
                 partition_num,
                 PartitionPayload {
                     state_version: new_partition_state_version,
-                    root: new_partition_root,
                     root_hash: new_partition_root_hash,
                 },
             );
@@ -241,30 +238,16 @@ fn to_substate_change(change: IdChange<DbSortKey, Hash>) -> LeafChange<SubstateP
 struct NestedTreeStore<'s, S> {
     underlying: &'s mut S,
     parent_key: LeafKey,
-    current_root: Option<TreeNode<SubstatePayload>>,
-    new_root: Option<TreeNode<SubstatePayload>>,
 }
 
 impl<'s, S> NestedTreeStore<'s, S> {
-    pub fn new(
-        underlying: &'s mut S,
-        db_partition_key: DbPartitionKey,
-        root: Option<TreeNode<SubstatePayload>>,
-    ) -> NestedTreeStore<'s, S> {
+    pub fn new(underlying: &'s mut S, db_partition_key: DbPartitionKey) -> NestedTreeStore<'s, S> {
         NestedTreeStore {
             underlying,
             parent_key: LeafKey {
                 bytes: db_partition_key.into_bytes(),
             },
-            current_root: root,
-            new_root: None,
         }
-    }
-
-    pub fn extract_new_root(&mut self) -> TreeNode<SubstatePayload> {
-        self.new_root
-            .take()
-            .expect("no new root stored into the nested tree")
     }
 
     fn prefixed(&self, key: &NodeKey) -> NodeKey {
@@ -283,11 +266,7 @@ impl<'s, S: ReadableTreeStore<SubstatePayload>> ReadableTreeStore<SubstatePayloa
     for NestedTreeStore<'s, S>
 {
     fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstatePayload>> {
-        if key.nibble_path().is_empty() {
-            self.current_root.clone()
-        } else {
-            self.underlying.get_node(&self.prefixed(key))
-        }
+        self.underlying.get_node(&self.prefixed(key))
     }
 }
 
@@ -295,18 +274,10 @@ impl<'s, S: WriteableTreeStore<SubstatePayload>> WriteableTreeStore<SubstatePayl
     for NestedTreeStore<'s, S>
 {
     fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstatePayload>) {
-        if key.nibble_path().is_empty() {
-            self.new_root = Some(node);
-        } else {
-            self.underlying.insert_node(self.prefixed(&key), node);
-        }
+        self.underlying.insert_node(self.prefixed(&key), node);
     }
 
     fn record_stale_node(&mut self, key: NodeKey) {
-        if key.nibble_path().is_empty() {
-            self.current_root = None;
-        } else {
-            self.underlying.record_stale_node(self.prefixed(&key));
-        }
+        self.underlying.record_stale_node(self.prefixed(&key));
     }
 }

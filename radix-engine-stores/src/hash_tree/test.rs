@@ -231,7 +231,7 @@ fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
             LeafKey { bytes: vec![1, 3, 3, 7, 99, 66] } => Hash([2; Hash::LENGTH]),
             LeafKey { bytes: vec![123, 12, 1, 0, 88, 6, 6, 6] } => Hash([3; Hash::LENGTH]),
             LeafKey { bytes: vec![123, 12, 1, 0, 88, 6, 6, 7] } => Hash([4; Hash::LENGTH]),
-            // Note: there is no `[123, 12, 1, 0, 66, 1, 2, 3, 4]` here, since it is a "single-node" JMT (root == leaf), embedded inside `Node[123, 12, 1, 0].partition_map[66]`
+            LeafKey { bytes: vec![123, 12, 1, 0, 66, 1, 2, 3, 4] } => Hash([5; Hash::LENGTH]),
         )
     );
 }

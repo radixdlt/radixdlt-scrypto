@@ -75,7 +75,6 @@ impl Payload for NodePayload {}
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
 pub struct PartitionPayload {
     pub state_version: Version,
-    pub root: TreeNode<SubstatePayload>,
     pub root_hash: Hash,
 }
 impl Payload for PartitionPayload {}
