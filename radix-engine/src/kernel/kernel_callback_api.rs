@@ -173,4 +173,8 @@ pub trait KernelCallbackObject: Sized {
     ) -> Result<bool, RuntimeError>
     where
         Y: KernelApi<Self>;
+
+    fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
 }

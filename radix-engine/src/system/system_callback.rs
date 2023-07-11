@@ -518,4 +518,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
         Ok(true)
     }
+
+    fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        todo!()
+    }
 }

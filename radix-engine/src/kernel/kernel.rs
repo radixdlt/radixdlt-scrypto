@@ -316,6 +316,7 @@ where
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         M::before_drop_node(node_id, self)?;
 
+        M::on_drop_node(node_id, self)?;
         let node = self
             .current_frame
             .drop_node(&mut self.heap, node_id)
