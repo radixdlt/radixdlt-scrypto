@@ -453,7 +453,7 @@ fn test_non_fungible_resource_take_advanced() {
 }
 
 #[test]
-fn test_fungible_types() {
+fn can_use_fungible_types_in_interface() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
@@ -477,7 +477,7 @@ fn test_fungible_types() {
 }
 
 #[test]
-fn test_non_fungible_types() {
+fn can_use_non_fungible_types_in_interface() {
     // Arrange
     let mut test_runner = TestRunner::builder().build();
     let (_, _, account) = test_runner.new_allocated_account();
