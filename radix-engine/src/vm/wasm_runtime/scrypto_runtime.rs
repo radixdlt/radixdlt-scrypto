@@ -2,9 +2,9 @@ use crate::errors::InvokeError;
 use crate::errors::RuntimeError;
 use crate::types::*;
 use crate::vm::wasm::*;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::ClientApi;
+use radix_engine_interface::api::{ClientApi, FieldValue};
 use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::schema::KeyValueStoreSchema;
 use radix_engine_interface::types::ClientCostingEntry;
@@ -157,7 +157,7 @@ where
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
         let blueprint_ident =
             String::from_utf8(blueprint_ident).map_err(|_| WasmRuntimeError::InvalidString)?;
-        let object_states = scrypto_decode::<Vec<Vec<u8>>>(&object_states)
+        let object_states = scrypto_decode::<Vec<FieldValue>>(&object_states)
             .map_err(WasmRuntimeError::InvalidObjectStates)?;
 
         let component_id = self
@@ -264,7 +264,7 @@ where
         &mut self,
         handle: u32,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.key_value_entry_release(handle)?;
+        self.api.key_value_entry_close(handle)?;
         Ok(())
     }
 
@@ -297,7 +297,7 @@ where
         &mut self,
         handle: LockHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let substate = self.api.field_lock_read(handle)?;
+        let substate = self.api.field_read(handle)?;
 
         self.allocate_buffer(substate)
     }
@@ -307,7 +307,7 @@ where
         handle: LockHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.field_lock_write(handle, data)?;
+        self.api.field_write(handle, data)?;
 
         Ok(())
     }
@@ -316,7 +316,7 @@ where
         &mut self,
         handle: LockHandle,
     ) -> Result<(), InvokeError<WasmRuntimeError>> {
-        self.api.field_lock_release(handle)?;
+        self.api.field_close(handle)?;
 
         Ok(())
     }

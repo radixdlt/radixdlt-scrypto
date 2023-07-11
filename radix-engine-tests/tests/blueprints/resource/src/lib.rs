@@ -320,3 +320,95 @@ mod rounding {
         }
     }
 }
+
+#[blueprint]
+mod resource_types {
+    struct ResourceTypes {
+        fungible_vault: Option<FungibleVault>,
+        non_fungible_vault: Option<NonFungibleVault>,
+    }
+
+    impl ResourceTypes {
+        pub fn test_fungible_types() {
+            let x: (FungibleBucket, FungibleProof, FungibleVault) =
+                Blueprint::<ResourceTypes>::call_function("produce_fungible_things", ());
+            let _: () = Blueprint::<ResourceTypes>::call_function("consume_fungible_things", x);
+        }
+
+        pub fn test_non_fungible_types() {
+            let x: (NonFungibleBucket, NonFungibleProof, NonFungibleVault) =
+                Blueprint::<ResourceTypes>::call_function("produce_non_fungible_things", ());
+            let _: () = Blueprint::<ResourceTypes>::call_function("consume_non_fungible_things", x);
+        }
+
+        pub fn produce_fungible_things() -> (FungibleBucket, FungibleProof, FungibleVault) {
+            let mut bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .mint_initial_supply(100)
+                .as_fungible();
+            let proof = bucket.create_proof_of_amount(dec!(1));
+            let vault = FungibleVault::with_bucket(bucket.take(5));
+
+            (bucket, proof, vault)
+        }
+
+        pub fn consume_fungible_things(
+            bucket: FungibleBucket,
+            proof: FungibleProof,
+            mut vault: FungibleVault,
+        ) {
+            proof.drop();
+            vault.put(bucket);
+            Self {
+                fungible_vault: vault.into(),
+                non_fungible_vault: None,
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+
+        pub fn produce_non_fungible_things(
+        ) -> (NonFungibleBucket, NonFungibleProof, NonFungibleVault) {
+            let mut bucket =
+                ResourceBuilder::new_integer_non_fungible::<TestNFData>(OwnerRole::None)
+                    .mint_initial_supply(vec![
+                        (
+                            0u64.into(),
+                            TestNFData {
+                                name: "A".to_string(),
+                                available: true,
+                            },
+                        ),
+                        (
+                            1u64.into(),
+                            TestNFData {
+                                name: "B".to_string(),
+                                available: true,
+                            },
+                        ),
+                    ])
+                    .as_non_fungible();
+            let proof =
+                bucket.create_proof_of_non_fungibles(&btreeset!(NonFungibleLocalId::integer(0)));
+            let vault = NonFungibleVault::with_bucket(bucket.take(1));
+
+            (bucket, proof, vault)
+        }
+
+        pub fn consume_non_fungible_things(
+            bucket: NonFungibleBucket,
+            proof: NonFungibleProof,
+            mut vault: NonFungibleVault,
+        ) {
+            proof.drop();
+            vault.put(bucket);
+            Self {
+                non_fungible_vault: vault.into(),
+                fungible_vault: None,
+            }
+            .instantiate()
+            .prepare_to_globalize(OwnerRole::None)
+            .globalize();
+        }
+    }
+}

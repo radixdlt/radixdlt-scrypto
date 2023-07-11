@@ -8,13 +8,13 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
-use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
+use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -483,9 +483,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 LockFlags::MUTABLE,
                 SystemLockData::Default,
             )?;
-            let mut auth_zone_substate: AuthZone =
+            let mut auth_zone_substate: FieldSubstate<AuthZone> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let proofs = core::mem::replace(&mut auth_zone_substate.proofs, Vec::new());
+            let proofs = core::mem::replace(&mut auth_zone_substate.value.0.proofs, Vec::new());
             api.kernel_write_substate(
                 handle,
                 IndexedScryptoValue::from_typed(&auth_zone_substate),

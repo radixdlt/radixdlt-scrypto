@@ -15,7 +15,7 @@ use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{
-    ClientApi, ClientObjectApi, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
+    ClientApi, ClientObjectApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
 };
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
@@ -30,7 +30,9 @@ use sbor::LocalTypeIndex;
 use crate::roles_template;
 use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::royalty::RoyaltyUtil;
-use crate::system::system::{KeyValueEntrySubstate, SubstateMutability, SystemService};
+use crate::system::system::{
+    FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
+};
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::{AuthError, ResolvedPermission};
@@ -45,7 +47,7 @@ pub const PACKAGE_ROYALTY_FEATURE: &str = "package-royalty";
 pub enum PackageError {
     InvalidWasm(PrepareError),
 
-    InvalidBlueprintWasm(SchemaValidationError),
+    InvalidBlueprintSchema(SchemaValidationError),
     TooManySubstateSchemas,
 
     FailedToResolveLocalSchema {
@@ -108,7 +110,7 @@ fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
     for bp_init in blueprints {
-        validate_schema(&bp_init.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
+        validate_schema(&bp_init.schema).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
 
         if bp_init.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
@@ -745,7 +747,7 @@ where
         PACKAGE_BLUEPRINT,
         vec![PACKAGE_ROYALTY_FEATURE],
         None,
-        vec![scrypto_encode(&royalty).unwrap()],
+        vec![FieldValue::immutable(&royalty)],
         kv_entries,
     )?;
 
@@ -1336,10 +1338,10 @@ impl PackageRoyaltyNativeBlueprint {
                 SystemLockData::default(),
             )?;
 
-            let substate: PackageRoyaltyAccumulatorSubstate =
+            let substate: FieldSubstate<PackageRoyaltyAccumulatorSubstate> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-            let vault_id = substate.royalty_vault.0;
+            let vault_id = substate.value.0.royalty_vault.0;
             let package_address = PackageAddress::new_or_panic(receiver.0);
             apply_royalty_cost(
                 api,
@@ -1370,7 +1372,7 @@ impl PackageRoyaltyNativeBlueprint {
             LockFlags::read_only(),
         )?;
 
-        let mut substate: PackageRoyaltyAccumulatorSubstate = api.field_lock_read_typed(handle)?;
+        let mut substate: PackageRoyaltyAccumulatorSubstate = api.field_read_typed(handle)?;
         let bucket = substate.royalty_vault.take_all(api)?;
 
         Ok(bucket)

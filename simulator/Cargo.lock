@@ -666,7 +666,7 @@ dependencies = [
 
 [[package]]
 name = "native-sdk"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "radix-engine-common",
  "radix-engine-derive",
@@ -851,7 +851,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bitflags",
  "colored",
@@ -879,7 +879,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-common"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bech32",
  "blake2",
@@ -899,11 +899,11 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-constants"
-version = "0.10.0"
+version = "0.11.0"
 
 [[package]]
 name = "radix-engine-derive"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -913,7 +913,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bitflags",
  "const-sha1",
@@ -938,7 +938,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-queries"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "hex",
  "itertools",
@@ -953,7 +953,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-store-interface"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "hex",
  "itertools",
@@ -966,7 +966,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-stores"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "hex",
  "itertools",
@@ -1153,7 +1153,7 @@ dependencies = [
 
 [[package]]
 name = "sbor"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "const-sha1",
  "hex",
@@ -1166,7 +1166,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -1174,7 +1174,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive-common"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -1200,7 +1200,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "scrypto-schema"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bitflags",
  "radix-engine-common",
@@ -1293,7 +1293,7 @@ checksum = "74233d3b3b2f6d4b006dc19dee745e73e2a6bfb6f93607cd3b02bd5b00797d7c"
 
 [[package]]
 name = "simulator"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "cargo_toml",
  "clap",
@@ -1475,7 +1475,7 @@ dependencies = [
 
 [[package]]
 name = "transaction"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bech32",
  "ed25519-dalek",
@@ -1524,7 +1524,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "utils"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "indexmap 2.0.0-pre",
 ]
