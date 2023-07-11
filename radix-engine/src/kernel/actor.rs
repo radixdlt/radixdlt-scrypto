@@ -22,20 +22,20 @@ pub struct MethodActor {
     pub is_direct_access: bool,
 
     // Cached info
-    pub object_info: ObjectInfo,
+    pub node_object_info: NodeObjectInfo,
 }
 
 impl MethodActor {
     pub fn get_blueprint_id(&self) -> BlueprintId {
         match self.module_id {
-            ObjectModuleId::Main => self.object_info.main_blueprint_id.clone(),
+            ObjectModuleId::Main => self.node_object_info.main_blueprint_id.clone(),
             _ => self.module_id.static_blueprint().unwrap(),
         }
     }
 
     pub fn get_blueprint_info(&self) -> ObjectBlueprintInfo {
         match self.module_id {
-            ObjectModuleId::Main => self.object_info.blueprint_info.clone(),
+            ObjectModuleId::Main => self.node_object_info.blueprint_info.clone(),
             _ => ObjectBlueprintInfo::Outer,
         }
     }
@@ -87,7 +87,7 @@ impl Actor {
     pub fn is_auth_zone(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                object_info,
+                              node_object_info: object_info,
                 ..
             }) => {
                 object_info
@@ -108,7 +108,7 @@ impl Actor {
     pub fn is_barrier(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                object_info,
+                              node_object_info: object_info,
                 ..
             }) => object_info.global,
             Actor::Function { .. } => true,
@@ -142,8 +142,8 @@ impl Actor {
         match self {
             Actor::Root => false,
             Actor::Method(MethodActor {
-                object_info:
-                    ObjectInfo {
+                node_object_info:
+                    NodeObjectInfo {
                         main_blueprint_id: blueprint,
                         ..
                     },
@@ -191,8 +191,8 @@ impl Actor {
     pub fn blueprint_id(&self) -> BlueprintId {
         match self {
             Actor::Method(MethodActor {
-                object_info:
-                    ObjectInfo {
+                node_object_info:
+                    NodeObjectInfo {
                         main_blueprint_id: blueprint_id,
                         ..
                     },
@@ -225,7 +225,7 @@ impl Actor {
         node_id: NodeId,
         module_id: ObjectModuleId,
         ident: String,
-        object_info: ObjectInfo,
+        object_info: NodeObjectInfo,
         is_direct_access: bool,
     ) -> Self {
         Self::Method(MethodActor {
@@ -233,7 +233,7 @@ impl Actor {
             node_id,
             module_id,
             ident,
-            object_info,
+            node_object_info: object_info,
             is_direct_access,
         })
     }

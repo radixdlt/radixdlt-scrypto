@@ -612,7 +612,7 @@ pub fn create_bootstrap_package_partitions(
     {
         partitions.insert(
             TYPE_INFO_FIELD_PARTITION,
-            type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+            type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                 global: true,
                 main_blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
                 module_versions: btreemap!(
@@ -1296,7 +1296,7 @@ impl PackageRoyaltyNativeBlueprint {
     {
         {
             let mut service = SystemService::new(api);
-            let object_info = service.get_object_info(receiver)?;
+            let object_info = service.get_node_object_info(receiver)?;
             if !object_info.features.contains(PACKAGE_ROYALTY_FEATURE) {
                 return Ok(());
             }

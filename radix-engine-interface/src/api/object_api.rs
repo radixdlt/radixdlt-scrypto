@@ -129,7 +129,7 @@ pub trait ClientObjectApi<E> {
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, E>;
 
     /// Get info regarding a visible object
-    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
+    fn get_node_object_info(&mut self, node_id: &NodeId) -> Result<NodeObjectInfo, E>;
 
     fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 

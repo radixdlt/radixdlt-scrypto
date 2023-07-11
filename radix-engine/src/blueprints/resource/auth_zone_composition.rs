@@ -154,7 +154,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
     // calculate the max locked amount of each container
     let mut max = BTreeMap::<LocalRef, Decimal>::new();
     for proof in proofs {
-        let info = api.get_object_info(proof.0.as_node_id())?;
+        let info = api.get_node_object_info(proof.0.as_node_id())?;
 
         if info
             .main_blueprint_id
@@ -207,7 +207,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
     // calculate the max locked non-fungibles of each container
     let mut per_container = NonIterMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
     for proof in proofs {
-        let info = api.get_object_info(proof.0.as_node_id())?;
+        let info = api.get_node_object_info(proof.0.as_node_id())?;
         if info
             .main_blueprint_id
             .blueprint_name

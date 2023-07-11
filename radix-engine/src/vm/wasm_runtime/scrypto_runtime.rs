@@ -389,7 +389,7 @@ where
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let type_info = self.api.get_object_info(&node_id)?;
+        let type_info = self.api.get_node_object_info(&node_id)?;
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
         self.allocate_buffer(buffer)

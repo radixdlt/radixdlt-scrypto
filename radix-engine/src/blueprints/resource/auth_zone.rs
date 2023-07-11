@@ -87,7 +87,7 @@ impl AuthZoneBlueprint {
                     node_id,
                     btreemap!(
                         MAIN_BASE_PARTITION => composed_proof.into(),
-                        TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                        TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                             global: false,
 
                             main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
@@ -109,7 +109,7 @@ impl AuthZoneBlueprint {
                     node_id,
                     btreemap!(
                     MAIN_BASE_PARTITION => composed_proof.into(),
-                    TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                    TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                         global: false,
 
                         main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
@@ -155,7 +155,7 @@ impl AuthZoneBlueprint {
             node_id,
             btreemap!(
                 MAIN_BASE_PARTITION => composed_proof.into(),
-                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                     global: false,
 
                     main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
@@ -203,7 +203,7 @@ impl AuthZoneBlueprint {
             node_id,
             btreemap!(
                 MAIN_BASE_PARTITION => composed_proof.into(),
-                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                     global: false,
 
                     main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),

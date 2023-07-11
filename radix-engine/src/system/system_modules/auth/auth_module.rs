@@ -97,7 +97,7 @@ impl AuthModule {
                 Actor::Method(actor) => {
                     let resolved_permission =
                         Self::resolve_method_permission(actor, args, &mut system)?;
-                    let acting_location = if actor.object_info.global {
+                    let acting_location = if actor.node_object_info.global {
                         ActingLocation::AtBarrier
                     } else {
                         ActingLocation::AtLocalBarrier
@@ -227,7 +227,7 @@ impl AuthModule {
                 let access_rules_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module
-                        if !callee.object_info.global {
+                        if !callee.node_object_info.global {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 
@@ -235,7 +235,7 @@ impl AuthModule {
                     }
                     RoleSpecification::UseOuter => {
                         let node_id = callee.node_id;
-                        let info = api.get_object_info(&node_id)?;
+                        let info = api.get_node_object_info(&node_id)?;
 
                         let access_rules_of = info.get_main_outer_object();
                         access_rules_of.into_node_id()
@@ -336,7 +336,7 @@ impl AuthModule {
                 MAIN_BASE_PARTITION => btreemap!(
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
                 ),
-                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                     global: false,
 
                     main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),

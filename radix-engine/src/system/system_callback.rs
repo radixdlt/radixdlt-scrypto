@@ -433,7 +433,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo {
+                TypeInfoSubstate::Object(NodeObjectInfo {
                     main_blueprint_id: blueprint,
                     ..
                 }) => {
@@ -495,7 +495,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Drop the proofs
             let mut system = SystemService::new(api);
             for proof in proofs {
-                let object_info = system.get_object_info(proof.0.as_node_id())?;
+                let object_info = system.get_node_object_info(proof.0.as_node_id())?;
                 system.call_function(
                     RESOURCE_PACKAGE,
                     &object_info.main_blueprint_id.blueprint_name,

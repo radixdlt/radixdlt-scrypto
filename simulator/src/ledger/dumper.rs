@@ -72,7 +72,7 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let blueprint = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo {
+            TypeInfoSubstate::Object(NodeObjectInfo {
                 main_blueprint_id: blueprint,
                 ..
             }) => blueprint,

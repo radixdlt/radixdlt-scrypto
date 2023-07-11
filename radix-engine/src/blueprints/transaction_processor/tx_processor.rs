@@ -106,7 +106,7 @@ impl TransactionProcessorBlueprint {
                     WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(WorktopSubstate::new()))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
-                    TypeInfoSubstate::Object(ObjectInfo {
+                    TypeInfoSubstate::Object(NodeObjectInfo {
                         global: false,
                         main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         module_versions: btreemap!(

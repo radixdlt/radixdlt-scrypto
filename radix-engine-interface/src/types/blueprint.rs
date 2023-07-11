@@ -24,7 +24,8 @@ impl Default for ObjectBlueprintInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ObjectInfo {
+pub struct NodeObjectInfo {
+    /// Whether this node is global or not, ie. true, if this node has no parent, false otherwise
     pub global: bool,
     pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
 
@@ -35,7 +36,7 @@ pub struct ObjectInfo {
     pub instance_schema: Option<InstanceSchema>,
 }
 
-impl ObjectInfo {
+impl NodeObjectInfo {
     pub fn get_main_outer_object(&self) -> GlobalAddress {
         match &self.blueprint_info {
             ObjectBlueprintInfo::Inner { outer_object } => outer_object.clone(),

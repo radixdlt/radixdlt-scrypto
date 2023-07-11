@@ -355,7 +355,7 @@ pub fn export_package_schema(
     Ok(blueprints)
 }
 
-pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectInfo, Error> {
+pub fn export_object_info(component_address: ComponentAddress) -> Result<NodeObjectInfo, Error> {
     let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
     let native_vm = DefaultNativeVm::new();
     let vm = Vm::new(&scrypto_vm, native_vm);
@@ -431,7 +431,7 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
         .ok_or(Error::ComponentNotFound(component_address))?;
 
     match type_info {
-        TypeInfoSubstate::Object(ObjectInfo {
+        TypeInfoSubstate::Object(NodeObjectInfo {
             main_blueprint_id: blueprint,
             ..
         }) => Ok(blueprint.clone()),
@@ -458,7 +458,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         )
                         .unwrap();
                     match type_info {
-                        TypeInfoSubstate::Object(ObjectInfo {
+                        TypeInfoSubstate::Object(NodeObjectInfo {
                             main_blueprint_id: blueprint_id,
                             ..
                         }) => (blueprint_id.package_address, *schema_pointer),

@@ -307,7 +307,7 @@ impl<L: Clone> CallFrame<L> {
             Actor::Root => {}
             Actor::Method(MethodActor {
                 global_address,
-                object_info,
+                              node_object_info: object_info,
                 ..
             }) => {
                 if let Some(global_address) = global_address {
@@ -1115,7 +1115,7 @@ impl<L: Clone> CallFrame<L> {
         } else {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo {
+                    TypeInfoSubstate::Object(NodeObjectInfo {
                         main_blueprint_id: blueprint,
                         ..
                     }) if blueprint.package_address == RESOURCE_PACKAGE

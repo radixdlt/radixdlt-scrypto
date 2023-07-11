@@ -107,7 +107,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             kernel.store.close_substate(handle);
             match type_substate {
-                TypeInfoSubstate::Object(ObjectInfo {
+                TypeInfoSubstate::Object(NodeObjectInfo {
                     main_blueprint_id: blueprint,
                     global,
                     ..
@@ -503,7 +503,7 @@ where
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo {
+                TypeInfoSubstate::Object(NodeObjectInfo {
                     main_blueprint_id: blueprint,
                     ..
                 }) if blueprint.package_address == RESOURCE_PACKAGE

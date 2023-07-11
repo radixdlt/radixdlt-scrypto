@@ -18,7 +18,7 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::{BlueprintId, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId};
-use radix_engine_interface::types::{ObjectInfo, PackageAddress};
+use radix_engine_interface::types::{NodeObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -171,7 +171,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, ClientApiError> {
+    fn get_node_object_info(&mut self, node_id: &NodeId) -> Result<NodeObjectInfo, ClientApiError> {
         let bytes = copy_buffer(unsafe {
             get_object_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
@@ -373,7 +373,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
+    fn actor_get_info(&mut self) -> Result<NodeObjectInfo, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
 

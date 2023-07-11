@@ -222,7 +222,7 @@ impl NativeVault for Vault {
     where
         Y: ClientApi<E>,
     {
-        let info = api.get_object_info(self.0.as_node_id())?;
+        let info = api.get_node_object_info(self.0.as_node_id())?;
         Ok(ResourceAddress::try_from(info.get_main_outer_object().as_ref()).unwrap())
     }
 

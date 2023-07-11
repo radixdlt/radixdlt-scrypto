@@ -644,7 +644,7 @@ where
                 match instance_context {
                     Some(context) if context.outer_blueprint.eq(outer_blueprint) => {
                         let outer_object_info =
-                            self.get_object_info(context.outer_object.as_node_id())?;
+                            self.get_node_object_info(context.outer_object.as_node_id())?;
 
                         (
                             ObjectBlueprintInfo::Inner {
@@ -696,7 +696,7 @@ where
 
         let mut node_substates = btreemap!(
             TYPE_INFO_FIELD_PARTITION => type_info_partition(
-                TypeInfoSubstate::Object(ObjectInfo {
+                TypeInfoSubstate::Object(NodeObjectInfo {
                     global:false,
                     main_blueprint_id: blueprint_id.clone(),
                     module_versions: btreemap!(
@@ -747,7 +747,7 @@ where
     pub fn get_blueprint_info(&mut self, node_id: &NodeId, module_id: ObjectModuleId) -> Result<(BlueprintId, Option<InstanceSchema>), RuntimeError> {
         let info = match module_id {
             ObjectModuleId::Main => {
-                let info = self.get_object_info(node_id)?;
+                let info = self.get_node_object_info(node_id)?;
                 (info.main_blueprint_id, info.instance_schema)
             }
             _ => (module_id.static_blueprint().unwrap(), None)
@@ -766,7 +766,7 @@ where
             ActorObjectType::OuterObject => {
                 let node_id = method_actor.node_id;
                 let module_id = method_actor.module_id;
-                let object_info = self.get_object_info(&node_id)?;
+                let object_info = self.get_node_object_info(&node_id)?;
                 let address = object_info.try_get_outer_object(module_id).ok_or_else(|| {
                     RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist)
                 })?;
@@ -830,7 +830,7 @@ where
             }
             Condition::IfOuterFeature(feature) => {
                 // FIXME: This currently assumes only main modules can have features
-                let object_info = self.get_object_info(&node_id)?;
+                let object_info = self.get_node_object_info(&node_id)?;
 
                 if !self
                     .is_feature_enabled(object_info.get_main_outer_object().as_node_id(), feature.as_str())?
@@ -947,7 +947,7 @@ where
                 ObjectModuleId::Main,
             )))?;
 
-        Ok(self.get_object_info(node_id)?.main_blueprint_id)
+        Ok(self.get_node_object_info(node_id)?.main_blueprint_id)
     }
 
     /// ASSUMPTIONS:
@@ -1024,7 +1024,7 @@ where
             );
 
         // Read the type info
-        let mut object_info = self.get_object_info(&node_id)?;
+        let mut object_info = self.get_node_object_info(&node_id)?;
 
         // Verify can globalize with address
         {
@@ -1091,7 +1091,7 @@ where
                 ObjectModuleId::AccessRules
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
-                    let blueprint_id = self.get_object_info(&node_id)?.main_blueprint_id;
+                    let blueprint_id = self.get_node_object_info(&node_id)?.main_blueprint_id;
                     let expected_blueprint = module_id.static_blueprint().unwrap();
                     if !blueprint_id.eq(&expected_blueprint) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -1157,7 +1157,7 @@ where
             _ => return None,
         };
 
-        let instance_context = if method_actor.object_info.global {
+        let instance_context = if method_actor.node_object_info.global {
             Some(InstanceContext {
                 outer_object: GlobalAddress::new_or_panic(method_actor.node_id.0),
                 outer_blueprint: method_actor.get_blueprint_id().blueprint_name,
@@ -1166,7 +1166,7 @@ where
             match method_actor.get_blueprint_info() {
                 ObjectBlueprintInfo::Inner { outer_object } => {
                     // TODO: do this recursively until global?
-                    let outer_info = self.get_object_info(outer_object.as_node_id()).unwrap();
+                    let outer_info = self.get_node_object_info(outer_object.as_node_id()).unwrap();
                     Some(InstanceContext {
                         outer_object,
                         outer_blueprint: outer_info.main_blueprint_id.blueprint_name,
@@ -1184,7 +1184,7 @@ where
         node_id: &NodeId,
         feature: &str,
     ) -> Result<bool, RuntimeError> {
-        let object_info = self.get_object_info(node_id)?;
+        let object_info = self.get_node_object_info(node_id)?;
         let enabled = object_info.features.contains(feature);
 
         Ok(enabled)
@@ -1449,7 +1449,7 @@ where
         };
 
         // Key Value Stores do not have methods so we remove that possibility here
-        let object_info = self.get_object_info(&receiver)?;
+        let object_info = self.get_node_object_info(&receiver)?;
         if !object_info.module_versions.contains_key(&module_id) {
             return Err(RuntimeError::SystemError(
                 SystemError::ObjectModuleDoesNotExist(module_id),
@@ -1478,7 +1478,7 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
+    fn get_node_object_info(&mut self, node_id: &NodeId) -> Result<NodeObjectInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
@@ -1507,7 +1507,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
-        let info = self.get_object_info(node_id)?;
+        let info = self.get_node_object_info(node_id)?;
         let mut is_drop_allowed = false;
 
         // FIXME: what's the right model, trading off between flexibility and security?
@@ -2241,7 +2241,7 @@ where
     }
 
     #[trace_resources]
-    fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
+    fn actor_get_info(&mut self) -> Result<NodeObjectInfo, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
@@ -2250,7 +2250,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
         let object_info = actor
             .try_as_method()
-            .map(|m| m.object_info.clone())
+            .map(|m| m.node_object_info.clone())
             .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?;
 
         Ok(object_info)
