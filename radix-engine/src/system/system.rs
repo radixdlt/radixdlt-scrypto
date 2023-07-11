@@ -1133,6 +1133,43 @@ where
         Ok(actor.fn_identifier())
     }
 
+    pub fn instance_context(&mut self) -> Option<InstanceContext> {
+        let actor = self.api.kernel_get_system_state().current;
+
+        let method_actor = match actor {
+            Actor::Method(method_actor) => method_actor,
+            _ => return None,
+        };
+
+        let instance_context = if method_actor.module_object_info.global {
+            match method_actor.global_address {
+                None => None,
+                Some(address) => Some(InstanceContext {
+                    outer_object: address,
+                    outer_blueprint: method_actor
+                        .module_object_info
+                        .main_blueprint_id
+                        .blueprint_name
+                        .clone(),
+                }),
+            }
+        } else {
+            match method_actor.module_object_info.blueprint_info.clone() {
+                ObjectBlueprintInfo::Inner { outer_object } => {
+                    // TODO: do this recursively until global?
+                    let outer_info = self.get_object_info(outer_object.as_node_id()).unwrap();
+                    Some(InstanceContext {
+                        outer_object: outer_object,
+                        outer_blueprint: outer_info.main_blueprint_id.blueprint_name,
+                    })
+                }
+                ObjectBlueprintInfo::Outer { .. } => None,
+            }
+        };
+
+        instance_context
+    }
+
     pub fn is_feature_enabled(
         &mut self,
         node_id: &NodeId,
@@ -1153,13 +1190,14 @@ where
         let module_object_info = match object_module_id {
             ObjectModuleId::Main => object_info,
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
-                let version = if let Some(version) = object_info.module_versions.get(&object_module_id) {
-                    version.clone()
-                } else {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectModuleDoesNotExist(object_module_id),
-                    ));
-                };
+                let version =
+                    if let Some(version) = object_info.module_versions.get(&object_module_id) {
+                        version.clone()
+                    } else {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::ObjectModuleDoesNotExist(object_module_id),
+                        ));
+                    };
 
                 // Modules outside of Main do not have their own modules
                 ObjectInfo {
@@ -1286,7 +1324,7 @@ where
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.blueprint_id().package_address;
-        let instance_context = actor.instance_context();
+        let instance_context = self.instance_context();
         let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
         self.new_object_internal(
@@ -1440,29 +1478,6 @@ where
         // Key Value Stores do not have methods so we remove that possibility here
         let module_object_info = self.get_module_object_info(receiver, object_module_id)?;
 
-        // TODO: Can we load this lazily when needed?
-        let instance_context = if module_object_info.global {
-            match global_address {
-                None => None,
-                Some(address) => Some(InstanceContext {
-                    outer_object: address,
-                    outer_blueprint: module_object_info.main_blueprint_id.blueprint_name.clone(),
-                }),
-            }
-        } else {
-            match &module_object_info.blueprint_info {
-                ObjectBlueprintInfo::Inner { outer_object } => {
-                    // TODO: do this recursively until global?
-                    let outer_info = self.get_object_info(outer_object.as_node_id())?;
-                    Some(InstanceContext {
-                        outer_object: outer_object.clone(),
-                        outer_blueprint: outer_info.main_blueprint_id.blueprint_name.clone(),
-                    })
-                }
-                ObjectBlueprintInfo::Outer { .. } => None,
-            }
-        };
-
         let invocation = KernelInvocation {
             actor: Actor::method(
                 global_address,
@@ -1470,7 +1485,6 @@ where
                 object_module_id,
                 method_name.to_string(),
                 module_object_info,
-                instance_context,
                 direct_access,
             ),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
@@ -1515,15 +1529,13 @@ where
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
-        let actor = self.api.kernel_get_system_state().current;
         let mut is_drop_allowed = false;
 
         // FIXME: what's the right model, trading off between flexibility and security?
-
         // If the actor is the object's outer object
         match info.blueprint_info {
             ObjectBlueprintInfo::Inner { outer_object } => {
-                if let Some(instance_context) = actor.instance_context() {
+                if let Some(instance_context) = self.instance_context() {
                     if instance_context.outer_object.eq(&outer_object) {
                         is_drop_allowed = true;
                     }
@@ -1533,6 +1545,7 @@ where
         }
 
         // If the actor is a function within the same blueprint
+        let actor = self.api.kernel_get_system_state().current;
         if let Actor::Function {
             blueprint_id: blueprint,
             ..
@@ -2033,7 +2046,10 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = KernelInvocation {
-            actor: Actor::function(BlueprintId::new(&package_address, blueprint_name), function_name.to_string()),
+            actor: Actor::function(
+                BlueprintId::new(&package_address, blueprint_name),
+                function_name.to_string(),
+            ),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,

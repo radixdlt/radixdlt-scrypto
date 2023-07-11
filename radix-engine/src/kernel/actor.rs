@@ -18,7 +18,6 @@ pub struct MethodActor {
     pub module_object_info: ObjectInfo,
 
     pub ident: String,
-    pub instance_context: Option<InstanceContext>,
     pub is_direct_access: bool,
 }
 
@@ -171,15 +170,6 @@ impl Actor {
         }
     }
 
-    pub fn instance_context(&self) -> Option<InstanceContext> {
-        match self {
-            Actor::Method(MethodActor {
-                instance_context, ..
-            }) => instance_context.clone(),
-            _ => None,
-        }
-    }
-
     pub fn blueprint_id(&self) -> BlueprintId {
         match self {
             Actor::Method(MethodActor {
@@ -190,14 +180,8 @@ impl Actor {
                     },
                 ..
             })
-            | Actor::Function {
-                blueprint_id,
-                ..
-            }
-            | Actor::VirtualLazyLoad {
-                blueprint_id,
-                ..
-            } => blueprint_id.clone(),
+            | Actor::Function { blueprint_id, .. }
+            | Actor::VirtualLazyLoad { blueprint_id, .. } => blueprint_id.clone(),
             Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
@@ -224,7 +208,6 @@ impl Actor {
         module_id: ObjectModuleId,
         ident: String,
         module_object_info: ObjectInfo,
-        instance_context: Option<InstanceContext>,
         is_direct_access: bool,
     ) -> Self {
         Self::Method(MethodActor {
@@ -233,7 +216,6 @@ impl Actor {
             module_id,
             ident,
             module_object_info,
-            instance_context,
             is_direct_access,
         })
     }

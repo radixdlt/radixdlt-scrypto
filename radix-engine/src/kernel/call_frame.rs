@@ -308,7 +308,6 @@ impl<L: Clone> CallFrame<L> {
             Actor::Method(MethodActor {
                 global_address,
                 module_object_info: object_info,
-                instance_context,
                 ..
             }) => {
                 if let Some(global_address) = global_address {
@@ -316,9 +315,6 @@ impl<L: Clone> CallFrame<L> {
                 }
                 if let ObjectBlueprintInfo::Inner { outer_object } = object_info.blueprint_info {
                     additional_global_refs.push(outer_object.clone());
-                }
-                if let Some(instance_context) = instance_context {
-                    additional_global_refs.push(instance_context.outer_object.clone());
                 }
             }
             Actor::Function {
