@@ -213,19 +213,11 @@ impl AuthModule {
             );
         }
 
+        let (blueprint_id, _) = api.get_blueprint_info(&callee.node_id, callee.module_id)?;
+
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
-            callee
-                .module_object_info
-                .main_blueprint_id
-                .package_address
-                .as_node_id(),
-            &BlueprintVersionKey::new_default(
-                callee
-                    .module_object_info
-                    .main_blueprint_id
-                    .blueprint_name
-                    .as_str(),
-            ),
+            blueprint_id.package_address.as_node_id(),
+            &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
             api.api,
         )?
         .method_auth;
@@ -258,13 +250,13 @@ impl AuthModule {
         match method_permissions.get(&method_key) {
             Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
             Some(MethodAccessibility::OwnPackageOnly) => {
-                let package = callee.module_object_info.main_blueprint_id.package_address;
+                let package = blueprint_id.package_address;
                 Ok(ResolvedPermission::AccessRule(rule!(require(
                     package_of_direct_caller(package)
                 ))))
             }
             Some(MethodAccessibility::OuterObjectOnly) => {
-                match callee.module_object_info.blueprint_info {
+                match callee.get_blueprint_info() {
                     ObjectBlueprintInfo::Inner { outer_object } => Ok(
                         ResolvedPermission::AccessRule(rule!(require(global_caller(outer_object)))),
                     ),

@@ -744,7 +744,7 @@ where
         Ok(current_value)
     }
 
-    fn get_blueprint_info(&mut self, node_id: &NodeId, module_id: ObjectModuleId) -> Result<(BlueprintId, Option<InstanceSchema>), RuntimeError> {
+    pub fn get_blueprint_info(&mut self, node_id: &NodeId, module_id: ObjectModuleId) -> Result<(BlueprintId, Option<InstanceSchema>), RuntimeError> {
         let info = match module_id {
             ObjectModuleId::Main => {
                 let info = self.get_object_info(node_id)?;
@@ -2537,11 +2537,16 @@ where
             // Getting the package address and blueprint name associated with the actor
             let (instance_schema, blueprint_id) = match actor {
                 Actor::Method(MethodActor {
-                    module_object_info, ..
-                }) => (
-                    module_object_info.instance_schema.clone(),
-                    module_object_info.main_blueprint_id.clone(),
-                ),
+                    node_id, module_id, ..
+                }) => {
+                    let module_id = *module_id;
+                    let node_id = *node_id;
+                    let (blueprint_id, instance_schema) = self.get_blueprint_info(&node_id, module_id)?;
+                    (
+                        instance_schema,
+                        blueprint_id,
+                    )
+                },
                 Actor::Function {
                     blueprint_id: ref blueprint,
                     ..

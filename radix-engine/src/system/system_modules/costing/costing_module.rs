@@ -207,10 +207,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             let (maybe_component, ident) = match &callee {
                 Actor::Method(MethodActor {
                     node_id,
+                    module_id,
                     ident,
                     module_object_info,
                     ..
                 }) => {
+                    // Only do royalty costing for Main
+                    if module_id.ne(&ObjectModuleId::Main) {
+                        return Ok(());
+                    }
+
                     if module_object_info
                         .module_versions
                         .contains_key(&ObjectModuleId::Royalty)
