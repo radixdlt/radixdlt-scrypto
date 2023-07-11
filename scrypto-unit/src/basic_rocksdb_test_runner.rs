@@ -5,17 +5,13 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::ScryptoVm;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::rule;
 use radix_engine_store_interface::interface::CommittableSubstateDatabase;
 use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use scrypto::api::node_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
-use scrypto::prelude::LOCKED;
 use std::path::{Path, PathBuf};
 use transaction::model::{Executable, TestTransaction};
 use transaction::prelude::*;
@@ -250,17 +246,14 @@ impl BasicRocksdbTestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
                 divisibility,
+                FungibleResourceRoles::single_locked_rule(rule!(allow_all)),
                 metadata!(),
-                access_rules,
                 Some(amount),
             )
             .try_deposit_batch_or_abort(account)
