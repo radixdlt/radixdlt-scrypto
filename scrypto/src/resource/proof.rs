@@ -339,18 +339,22 @@ impl ScryptoProof for CheckedProof {
     }
 
     fn as_fungible(&self) -> CheckedFungibleProof {
-        assert!(self
-            .resource_address()
-            .as_node_id()
-            .is_global_fungible_resource_manager());
+        assert!(
+            self.resource_address()
+                .as_node_id()
+                .is_global_fungible_resource_manager(),
+            "Not a fungible proof"
+        );
         CheckedFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 
     fn as_non_fungible(&self) -> CheckedNonFungibleProof {
-        assert!(self
-            .resource_address()
-            .as_node_id()
-            .is_global_non_fungible_resource_manager());
+        assert!(
+            self.resource_address()
+                .as_node_id()
+                .is_global_non_fungible_resource_manager(),
+            "Not a non-fungible proof"
+        );
         CheckedNonFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 }
