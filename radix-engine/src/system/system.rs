@@ -793,7 +793,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
         field_index: u8,
-    ) -> Result<(NodeId, PartitionNumber, TypePointer, ObjectInfo), RuntimeError> {
+    ) -> Result<(NodeId, PartitionNumber, TypePointer, BlueprintId), RuntimeError> {
         let (node_id, base_partition, info, interface) =
             self.get_actor_schema(actor_object_type)?;
 
@@ -833,7 +833,7 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, pointer, info))
+        Ok((node_id, partition_num, pointer, info.main_blueprint_id))
     }
 
     fn get_actor_kv_partition(
@@ -845,7 +845,8 @@ where
             NodeId,
             PartitionNumber,
             BlueprintKeyValueStoreSchema<TypePointer>,
-            ObjectInfo,
+            Option<InstanceSchema>,
+            BlueprintId,
         ),
         RuntimeError,
     > {
@@ -866,7 +867,7 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, kv_schema, info))
+        Ok((node_id, partition_num, kv_schema, info.instance_schema, info.main_blueprint_id))
     }
 
     fn get_actor_index(
@@ -2218,27 +2219,19 @@ where
     ) -> Result<LockHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, schema_pointer, object_info) =
+        let (node_id, partition_num, schema_pointer, blueprint_id) =
             self.get_actor_field(actor_object_type, field_index)?;
 
         // TODO: Remove
         if flags.contains(LockFlags::UNMODIFIED_BASE) || flags.contains(LockFlags::FORCE_WRITE) {
-            if !(object_info
-                .main_blueprint_id
-                .package_address
-                .eq(&RESOURCE_PACKAGE)
-                && object_info
-                    .main_blueprint_id
-                    .blueprint_name
-                    .eq(FUNGIBLE_VAULT_BLUEPRINT))
-            {
+            if !(blueprint_id.eq(&BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_VAULT_BLUEPRINT))) {
                 return Err(RuntimeError::SystemError(SystemError::InvalidLockFlags));
             }
         }
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             FieldLockData::Write {
-                blueprint_id: object_info.main_blueprint_id,
+                blueprint_id,
                 type_pointer: schema_pointer,
             }
         } else {
@@ -2395,19 +2388,19 @@ where
     ) -> Result<KeyValueEntryHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
-        let (node_id, partition_num, kv_schema, object_info) =
+        let (node_id, partition_num, kv_schema, instance_schema, blueprint_id) =
             self.get_actor_kv_partition(actor_object_type, collection_index)?;
 
         self.validate_payload_against_blueprint_schema(
-            &object_info.main_blueprint_id,
-            &object_info.instance_schema,
+            &blueprint_id,
+            &instance_schema,
             &[(key, kv_schema.key)],
         )?;
 
         let lock_data = if flags.contains(LockFlags::MUTABLE) {
             KeyValueEntryLockData::BlueprintWrite {
-                blueprint_id: object_info.main_blueprint_id,
-                instance_schema: object_info.instance_schema,
+                blueprint_id,
+                instance_schema,
                 type_pointer: kv_schema.value,
                 can_own: kv_schema.can_own,
             }
