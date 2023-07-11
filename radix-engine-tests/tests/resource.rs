@@ -455,7 +455,7 @@ fn test_non_fungible_resource_take_advanced() {
 #[test]
 fn can_use_fungible_types_in_interface() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
@@ -479,7 +479,7 @@ fn can_use_fungible_types_in_interface() {
 #[test]
 fn can_use_non_fungible_types_in_interface() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
