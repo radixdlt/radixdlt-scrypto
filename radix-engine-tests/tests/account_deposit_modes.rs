@@ -2,9 +2,10 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_queries::typed_substate_layout::AccountError;
-use scrypto_unit::TestRunner;
+use scrypto_unit::{TestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
@@ -440,14 +441,14 @@ fn disallow_all_permits_deposit_of_resource_in_allow_list() {
 }
 
 struct AccountDepositModesTestRunner {
-    test_runner: TestRunner,
+    test_runner: TestRunner<NoExtension>,
     public_key: PublicKey,
     component_address: ComponentAddress,
 }
 
 impl AccountDepositModesTestRunner {
     pub fn new(virtual_account: bool) -> Self {
-        let mut test_runner = TestRunner::builder().without_trace().build();
+        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, component_address) = test_runner.new_account(virtual_account);
 
         Self {

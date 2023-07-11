@@ -27,8 +27,8 @@ impl BorrowedObject {
     {
         api.call_method_advanced(
             &self.0,
-            false,
             ObjectModuleId::Metadata,
+            false,
             METADATA_SET_IDENT,
             scrypto_encode(&MetadataSetInput {
                 key: key.as_ref().to_owned(),

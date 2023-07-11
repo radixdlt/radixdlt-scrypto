@@ -9,7 +9,7 @@ use transaction::prelude::*;
 #[ignore]
 fn publishing_many_packages_should_not_cause_system_failure() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let code = wat2wasm(&format!(
         r#"
                 (module

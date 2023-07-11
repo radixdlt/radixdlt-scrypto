@@ -75,8 +75,8 @@ macro_rules! handle_call_method {
 
         let rtn = $api.call_method_advanced(
             $node_id,
-            $direct_access,
             $module_id,
+            $direct_access,
             &$method_name,
             scrypto_encode(&scrypto_value).unwrap(),
         )?;

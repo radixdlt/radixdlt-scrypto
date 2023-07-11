@@ -13,6 +13,7 @@ use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
+use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{
     ClientApi, ClientObjectApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
@@ -47,7 +48,7 @@ pub const PACKAGE_ROYALTY_FEATURE: &str = "package-royalty";
 pub enum PackageError {
     InvalidWasm(PrepareError),
 
-    InvalidBlueprintWasm(SchemaValidationError),
+    InvalidBlueprintSchema(SchemaValidationError),
     TooManySubstateSchemas,
 
     FailedToResolveLocalSchema {
@@ -110,7 +111,7 @@ fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
     for bp_init in blueprints {
-        validate_schema(&bp_init.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
+        validate_schema(&bp_init.schema).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
 
         if bp_init.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
@@ -955,7 +956,7 @@ impl PackageNativePackage {
                         btreemap!(
                             PACKAGE_PUBLISH_WASM_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
                             PACKAGE_PUBLISH_WASM_ADVANCED_IDENT.to_string() => rule!(require(package_of_direct_caller(TRANSACTION_PROCESSOR_PACKAGE))),
-                            PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(SYSTEM_TRANSACTION_BADGE)),
+                            PACKAGE_PUBLISH_NATIVE_IDENT.to_string() => rule!(require(AuthAddresses::system_role())),
                         )
                     ),
                     method_auth: MethodAuthTemplate::StaticRoles(

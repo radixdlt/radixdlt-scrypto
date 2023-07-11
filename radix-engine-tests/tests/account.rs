@@ -3,6 +3,7 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::account::{AccountSecurifyInput, ACCOUNT_SECURIFY_IDENT};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -26,7 +27,7 @@ fn cannot_securify_allocated_account() {
 
 fn securify_account(is_virtual: bool, use_key: bool, expect_success: bool) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (key, _, account) = test_runner.new_account(is_virtual);
 
     let (_, _, storing_account) = test_runner.new_account(true);
@@ -77,10 +78,10 @@ fn can_withdraw_from_my_virtual_account() {
 
 fn can_withdraw_from_my_account_internal<F>(new_account: F)
 where
-    F: FnOnce(&mut TestRunner) -> (Secp256k1PublicKey, ComponentAddress),
+    F: FnOnce(&mut TestRunner<NoExtension>) -> (Secp256k1PublicKey, ComponentAddress),
 {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, account) = new_account(&mut test_runner);
     let (_, _, other_account) = test_runner.new_account(true);
 
@@ -113,7 +114,7 @@ where
 
 fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let (_, _, other_account) = test_runner.new_account(use_virtual);
     let resource_address = test_runner.create_non_fungible_resource(account);
@@ -144,7 +145,7 @@ fn can_withdraw_non_fungible_from_my_virtual_account() {
 
 fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(is_virtual);
     let (_, _, other_account) = test_runner.new_account(is_virtual);
     let manifest = ManifestBuilder::new()
@@ -166,7 +167,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
 #[test]
 fn virtual_account_is_created_with_public_key_hash_metadata() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Act
     let (public_key, _, account) = test_runner.new_account(true);
@@ -193,7 +194,7 @@ fn cannot_withdraw_from_other_virtual_account() {
 
 fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 500u32, XRD, 1)
@@ -235,7 +236,7 @@ fn account_to_bucket_to_virtual_account() {
 
 #[test]
 fn create_account_and_bucket_fail() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let manifest = ManifestBuilder::new().new_account().build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
     receipt.expect_specific_failure(|e| {
@@ -251,7 +252,7 @@ fn create_account_and_bucket_fail() {
 #[test]
 fn virtual_account_has_expected_owner_key() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_, _, account) = test_runner.new_account(true);
 
     // Act
@@ -271,7 +272,7 @@ fn virtual_account_has_expected_owner_key() {
 #[test]
 fn securified_account_is_owned_by_correct_owner_badge() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(true);
 
     // Act
@@ -303,7 +304,7 @@ fn securified_account_is_owned_by_correct_owner_badge() {
 #[test]
 fn account_created_with_create_advanced_has_an_empty_owner_badge() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let account = test_runner.new_account_advanced(OwnerRole::None);
 
     // Act

@@ -67,10 +67,11 @@ impl Publish {
         .map_err(Error::SborDecodeError)?;
 
         if let Some(package_address) = self.package_address.clone() {
-            let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+            let native_vm = DefaultNativeVm::new();
+            let vm = Vm::new(&scrypto_vm, native_vm);
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
-                .bootstrap_test_default();
+            Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
             let node_id: NodeId = package_address.0.into();
 

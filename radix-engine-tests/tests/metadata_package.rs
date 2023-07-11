@@ -8,7 +8,7 @@ use transaction::prelude::*;
 #[test]
 fn cannot_set_package_metadata_with_no_owner() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -50,7 +50,7 @@ fn cannot_set_package_metadata_with_no_owner() {
 #[test]
 fn can_set_package_metadata_with_owner() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
     let manifest = ManifestBuilder::new()

@@ -1,4 +1,5 @@
 use radix_engine::types::*;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -169,7 +170,7 @@ fn non_component_owner_cannot_claim_royalty() {
 }
 
 fn set_up_package_and_component() -> (
-    TestRunner,
+    TestRunner<NoExtension>,
     ComponentAddress,
     Secp256k1PublicKey,
     PackageAddress,
@@ -177,7 +178,7 @@ fn set_up_package_and_component() -> (
     ResourceAddress,
 ) {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr =

@@ -68,7 +68,7 @@ fn prepare_code(message_size: usize, iterations: usize) -> Vec<u8> {
 fn test_emit_log(message_size: usize, iterations: usize, expected_err: Option<RuntimeError>) {
     // Arrange
     let code = prepare_code(message_size, iterations);
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let package_address = test_runner.publish_package(
         code,
         single_function_package_definition("Test", "f"),
