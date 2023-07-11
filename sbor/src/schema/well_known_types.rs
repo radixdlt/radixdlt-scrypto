@@ -86,8 +86,21 @@ pub mod basic_well_known_types {
 
 #[macro_export]
 macro_rules! create_well_known_lookup {
-    ($lookup_name: ident, $custom_type_kind: ty, [$(($id: path, $type_data: expr),)*]) => {
+    ($lookup_name: ident, $constants_mod: ident, $custom_type_kind: ty, [$(($name: ident, $id: expr, $type_data: expr),)*]) => {
         paste::paste! {
+            pub mod $constants_mod {
+                #[allow(unused_imports)]
+                use super::*;
+
+                $(
+                    pub const [<$name:upper _ID>]: u8 = $id;
+
+                    pub fn [<$name:lower _type_data>]<L: SchemaTypeLink>() -> TypeData<ScryptoCustomTypeKind, L> {
+                        $type_data
+                    }
+                )*
+            }
+
             const [<$lookup_name:upper _INIT>]: Option<TypeData<$custom_type_kind, LocalTypeIndex>> = None;
 
             lazy_static::lazy_static! {
@@ -112,8 +125,9 @@ macro_rules! create_well_known_lookup {
                     lookup[ANY_ID as usize] = Some(any_type_data());
                     lookup[BYTES_ID as usize] = Some(bytes_type_data());
                     lookup[UNIT_ID as usize] = Some(unit_type_data());
+
                     // And now add in the custom types
-                    $(lookup[$id as usize] = Some($type_data);)*
+                    $(lookup[$id as usize] = Some($constants_mod::[<$name:lower _type_data>]());)*
 
                     // And return the lookup
                     lookup

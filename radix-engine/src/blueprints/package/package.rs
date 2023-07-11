@@ -48,7 +48,7 @@ pub const PACKAGE_ROYALTY_FEATURE: &str = "package-royalty";
 pub enum PackageError {
     InvalidWasm(PrepareError),
 
-    InvalidBlueprintWasm(SchemaValidationError),
+    InvalidBlueprintSchema(SchemaValidationError),
     TooManySubstateSchemas,
 
     FailedToResolveLocalSchema {
@@ -111,7 +111,7 @@ fn validate_package_schema<'a, I: Iterator<Item = &'a BlueprintSchemaInit>>(
     blueprints: I,
 ) -> Result<(), PackageError> {
     for bp_init in blueprints {
-        validate_schema(&bp_init.schema).map_err(|e| PackageError::InvalidBlueprintWasm(e))?;
+        validate_schema(&bp_init.schema).map_err(|e| PackageError::InvalidBlueprintSchema(e))?;
 
         if bp_init.state.fields.len() > 0xff {
             return Err(PackageError::TooManySubstateSchemas);
