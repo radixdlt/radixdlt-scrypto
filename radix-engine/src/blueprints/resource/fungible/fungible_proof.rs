@@ -50,7 +50,7 @@ impl FungibleProofSubstate {
         })
     }
 
-    pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
+    pub fn teardown<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
         for (container, locked_amount) in &self.evidence {
             api.call_method(
                 container.as_node_id(),
@@ -136,9 +136,15 @@ impl FungibleProofBlueprint {
     where
         Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
+        api.drop_object(proof.0.as_node_id())?;
 
-        // Notify underlying buckets/vaults
+        Ok(())
+    }
+
+    pub(crate) fn on_drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+    {
         let handle = api.kernel_open_substate(
             proof.0.as_node_id(),
             MAIN_BASE_PARTITION,
@@ -148,11 +154,8 @@ impl FungibleProofBlueprint {
         )?;
         let proof_substate: FieldSubstate<FungibleProofSubstate> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
-        proof_substate.value.0.drop_proof(api)?;
+        proof_substate.value.0.teardown(api)?;
         api.kernel_close_substate(handle)?;
-
-        // Drop self
-        api.drop_object(proof.0.as_node_id())?;
 
         Ok(())
     }

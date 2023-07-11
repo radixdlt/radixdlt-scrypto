@@ -127,13 +127,14 @@ const FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_FungibleProof";
 const FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleProof";
 const FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str = "get_resource_address_FungibleProof";
 const FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_FungibleProof";
+const FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME: &str = "on_drop_FungibleProof";
 
 const NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_NonFungibleProof";
-
+const NON_FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME: &str = "on_drop_NonFungibleProof";
 pub struct ResourceNativePackage;
 
 impl ResourceNativePackage {
@@ -1706,7 +1707,10 @@ impl ResourceNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
-                    hooks: BlueprintHooksInit::default(),
+                    hooks: BlueprintHooksInit {
+                        on_virtualize: None,
+                        on_drop: Some(FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME.to_string()),
+                    },
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -1817,7 +1821,10 @@ impl ResourceNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
-                    hooks: BlueprintHooksInit::default(),
+                    hooks: BlueprintHooksInit {
+                        on_virtualize: None,
+                        on_drop: Some(NON_FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME.to_string()),
+                    },
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -2692,6 +2699,13 @@ impl ResourceNativePackage {
                 let rtn = FungibleProofBlueprint::drop(input.proof, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME => {
+                let input: ProofDropInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleProofBlueprint::on_drop(input.proof, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME => {
                 let _input: ProofCloneInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -2727,6 +2741,13 @@ impl ResourceNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::drop(input.proof, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME => {
+                let input: ProofDropInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleProofBlueprint::on_drop(input.proof, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
