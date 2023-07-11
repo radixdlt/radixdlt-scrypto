@@ -585,6 +585,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        todo!()
+        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+        match type_info {
+            TypeInfoSubstate::Object(_) => todo!(),
+            TypeInfoSubstate::KeyValueStore(_) => todo!(),
+            TypeInfoSubstate::GlobalAddressReservation(_) => todo!(),
+            TypeInfoSubstate::GlobalAddressPhantom(_) => todo!(),
+        }
+
+        Ok(())
     }
 }
