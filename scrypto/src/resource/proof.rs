@@ -33,14 +33,14 @@ pub trait ScryptoUncheckedProof {
     /// Checks the resource address of this proof and panics with custom error message if it's unexpected.
     fn check_with_message<S: ToString>(
         self,
-        resource_address: ResourceAddress,
+        expected_resource_address: ResourceAddress,
         custom_error_message: S,
     ) -> Self::CheckedProofType;
 
     /// Skips checking and converts this proof into a "checked" proof.
-    /// 
+    ///
     /// # Warning!
-    /// Be sure to validate the resource address before reading data from the proof 
+    /// Be sure to validate the resource address before reading data from the proof
     /// in your custom validation logic!
     fn skip_checking(self) -> Self::CheckedProofType;
 
