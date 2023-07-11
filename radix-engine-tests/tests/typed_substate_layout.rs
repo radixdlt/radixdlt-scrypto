@@ -141,6 +141,43 @@ fn test_all_scenario_commit_receipts_should_have_substate_changes_which_can_be_t
     }
 }
 
+#[test]
+fn test_all_scenario_commit_receipts_should_have_events_that_can_be_typed() {
+    let network = NetworkDefinition::simulator();
+    let mut test_runner = TestRunner::builder().without_trace().build();
+
+    let mut next_nonce: u32 = 0;
+    for scenario_builder in get_builder_for_every_scenario() {
+        let epoch = test_runner.get_current_epoch();
+        let mut scenario = scenario_builder(ScenarioCore::new(network.clone(), epoch, next_nonce));
+        let mut previous = None;
+        loop {
+            let next = scenario
+                .next(previous.as_ref())
+                .map_err(|err| err.into_full(&scenario))
+                .unwrap();
+            match next {
+                NextAction::Transaction(next) => {
+                    let receipt =
+                        test_runner.execute_raw_transaction(&network, &next.raw_transaction);
+                    match &receipt.transaction_result {
+                        TransactionResult::Commit(commit_result) => {
+                            assert_receipt_events_can_be_typed(commit_result);
+                        }
+                        // Ignore other results - which may be valid in the context of the scenario
+                        _ => {}
+                    }
+                    previous = Some(receipt);
+                }
+                NextAction::Completed(end_state) => {
+                    next_nonce = end_state.next_unused_nonce;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
     let system_updates = &commit_result.state_updates.system_updates;
     for ((node_id, partition_num), partition_updates) in system_updates.into_iter() {
@@ -165,7 +202,6 @@ fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
 
 fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
     for (event_type_identifier, event_data) in &commit_result.application_events {
-        let native_event =
-            to_typed_native_event(event_type_identifier.clone(), event_data.clone()).unwrap();
+        let _ = to_typed_native_event(event_type_identifier, event_data).unwrap();
     }
 }

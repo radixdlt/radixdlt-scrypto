@@ -34,7 +34,7 @@ lazy_static! {
         TransactionProcessorNativePackage::definition();
     pub static ref METADATA_PACKAGE_DEFINITION: PackageDefinition =
         MetadataNativePackage::definition();
-    pub static ref ROYALTIES_PACKAGE_DEFINITION: PackageDefinition =
+    pub static ref ROYALTY_PACKAGE_DEFINITION: PackageDefinition =
         RoyaltyNativePackage::definition();
     pub static ref ACCESS_RULES_PACKAGE_DEFINITION: PackageDefinition =
         AccessRulesNativePackage::definition();
