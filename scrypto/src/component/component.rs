@@ -43,7 +43,7 @@ pub trait HasTypeInfo {
 pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
 
 impl<C: HasTypeInfo> Blueprint<C> {
-    pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: &A) -> T {
+    pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: A) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
 
         let output = ScryptoEnv
@@ -51,7 +51,7 @@ impl<C: HasTypeInfo> Blueprint<C> {
                 package_address,
                 C::BLUEPRINT_NAME,
                 function_name,
-                scrypto_encode(args).unwrap(),
+                scrypto_encode(&args).unwrap(),
             )
             .unwrap();
         scrypto_decode(&output).unwrap()
