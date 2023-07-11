@@ -207,7 +207,7 @@ pub enum SystemError {
     NoParent,
     NotAnAddressReservation,
     NotAnObject,
-    NotAMethod,
+    NoObjectAssociatedWithActor,
     OuterObjectDoesNotExist,
     NotAFieldHandle,
     NotAFieldWriteHandle,

@@ -734,13 +734,9 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
     ) -> Result<(NodeId, PartitionNumber, ObjectInfo, BlueprintInterface), RuntimeError> {
-        let actor = self.current_actor();
-        let method = actor
-            .try_as_method()
-            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
         match actor_object_type {
             ActorObjectType::OuterObject => {
-                let address = method.module_object_info.get_outer_object();
+                let address = self.actor_get_object_info()?.get_outer_object();
                 let info = self.get_object_info(address.as_node_id())?;
 
                 let blueprint_interface = self.get_blueprint_default_interface(
@@ -756,16 +752,22 @@ where
                 ))
             }
             ActorObjectType::SELF => {
-                let node_id = method.node_id;
-                let info = method.module_object_info.clone();
-                let object_module_id = method.module_id;
+                let receiver_info =
+                    self.current_actor()
+                        .receiver_info()
+                        .ok_or(RuntimeError::SystemError(
+                            SystemError::NoObjectAssociatedWithActor,
+                        ))?;
+                let node_id = receiver_info.node_id;
+                let module_id = receiver_info.module_id;
+                let info = receiver_info.object_info.clone();
                 let blueprint_interface = self.get_blueprint_default_interface(
                     info.blueprint_id.package_address,
                     info.blueprint_id.blueprint_name.as_str(),
                 )?;
                 Ok((
                     node_id,
-                    object_module_id.base_partition_num(),
+                    module_id.base_partition_num(),
                     info,
                     blueprint_interface,
                 ))
@@ -2261,13 +2263,14 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        let actor = self.current_actor();
-        let object_info = actor
-            .try_as_method()
-            .map(|m| m.module_object_info.clone())
-            .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let receiver_info =
+            self.current_actor()
+                .receiver_info()
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::NoObjectAssociatedWithActor,
+                ))?;
 
-        Ok(object_info)
+        Ok(receiver_info.object_info)
     }
 
     #[trace_resources]
@@ -2277,10 +2280,14 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        self.current_actor()
-            .try_as_method()
-            .map(|x| x.node_id)
-            .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))
+        let receiver_info =
+            self.current_actor()
+                .receiver_info()
+                .ok_or(RuntimeError::SystemError(
+                    SystemError::NoObjectAssociatedWithActor,
+                ))?;
+
+        Ok(receiver_info.node_id)
     }
 
     #[trace_resources]
@@ -2326,11 +2333,14 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
         let node_id = match actor_object_type {
-            ActorObjectType::SELF => self
-                .current_actor()
-                .try_as_method()
-                .map(|x| x.node_id)
-                .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?,
+            ActorObjectType::SELF => {
+                self.current_actor()
+                    .receiver_info()
+                    .ok_or(RuntimeError::SystemError(
+                        SystemError::NoObjectAssociatedWithActor,
+                    ))?
+                    .node_id
+            }
             ActorObjectType::OuterObject => match self.actor_get_object_info()?.outer_object {
                 OuterObjectInfo::Some { outer_object } => outer_object.into_node_id(),
                 OuterObjectInfo::None { .. } => {

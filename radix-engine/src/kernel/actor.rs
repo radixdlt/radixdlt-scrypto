@@ -17,7 +17,6 @@ pub struct RuntimeReceiverInfo {
     pub object_info: ObjectInfo,
 }
 
-/// No method acting here!
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
     pub ident: String,
