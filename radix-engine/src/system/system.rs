@@ -1,5 +1,6 @@
 use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
+use super::system_callback::load_blueprint_definition;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingEntry;
 use crate::errors::{
@@ -508,66 +509,7 @@ where
         blueprint_name: &str,
     ) -> Result<BlueprintInterface, RuntimeError> {
         let bp_version_key = BlueprintVersionKey::new_default(blueprint_name.to_string());
-        Ok(self
-            .get_blueprint_definition(package_address, &bp_version_key)?
-            .interface)
-    }
-
-    pub fn get_blueprint_definition(
-        &mut self,
-        package_address: PackageAddress,
-        bp_version_key: &BlueprintVersionKey,
-    ) -> Result<BlueprintDefinition, RuntimeError> {
-        let canonical_bp_id = CanonicalBlueprintId {
-            address: package_address,
-            blueprint: bp_version_key.blueprint.to_string(),
-            version: bp_version_key.version.clone(),
-        };
-
-        let def = self
-            .api
-            .kernel_get_system_state()
-            .system
-            .blueprint_cache
-            .get(&canonical_bp_id);
-        if let Some(definition) = def {
-            return Ok(definition.clone());
-        }
-
-        let handle = self.api.kernel_open_substate_with_default(
-            package_address.as_node_id(),
-            MAIN_BASE_PARTITION
-                .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
-                .unwrap(),
-            &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
-            LockFlags::read_only(),
-            Some(|| {
-                let kv_entry = KeyValueEntrySubstate::<()>::default();
-                IndexedScryptoValue::from_typed(&kv_entry)
-            }),
-            SystemLockData::default(),
-        )?;
-
-        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
-            self.api.kernel_read_substate(handle)?.as_typed().unwrap();
-        self.api.kernel_close_substate(handle)?;
-
-        let definition = match substate.value {
-            Some(definition) => definition,
-            None => {
-                return Err(RuntimeError::SystemError(
-                    SystemError::BlueprintDoesNotExist(canonical_bp_id),
-                ))
-            }
-        };
-
-        self.api
-            .kernel_get_system_state()
-            .system
-            .blueprint_cache
-            .insert(canonical_bp_id, definition.clone());
-
-        Ok(definition)
+        Ok(load_blueprint_definition(package_address, &bp_version_key, self.api)?.interface)
     }
 
     pub fn prepare_global_address(

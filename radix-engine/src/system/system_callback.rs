@@ -1,5 +1,6 @@
 use super::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
 use crate::errors::RuntimeError;
+use crate::errors::SystemError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
@@ -75,6 +76,65 @@ pub struct SystemConfig<C: SystemCallbackObject> {
     pub schema_cache: NonIterMap<Hash, ScryptoSchema>,
     pub auth_cache: NonIterMap<CanonicalBlueprintId, AuthConfig>,
     pub modules: SystemModuleMixer,
+}
+
+pub fn load_blueprint_definition<Y, C>(
+    package_address: PackageAddress,
+    bp_version_key: &BlueprintVersionKey,
+    api: &mut Y,
+) -> Result<BlueprintDefinition, RuntimeError>
+where
+    Y: KernelApi<SystemConfig<C>>,
+    C: SystemCallbackObject,
+{
+    let canonical_bp_id = CanonicalBlueprintId {
+        address: package_address,
+        blueprint: bp_version_key.blueprint.to_string(),
+        version: bp_version_key.version.clone(),
+    };
+
+    let def = api
+        .kernel_get_system_state()
+        .system
+        .blueprint_cache
+        .get(&canonical_bp_id);
+    if let Some(definition) = def {
+        return Ok(definition.clone());
+    }
+
+    let handle = api.kernel_open_substate_with_default(
+        package_address.as_node_id(),
+        MAIN_BASE_PARTITION
+            .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+            .unwrap(),
+        &SubstateKey::Map(scrypto_encode(bp_version_key).unwrap()),
+        LockFlags::read_only(),
+        Some(|| {
+            let kv_entry = KeyValueEntrySubstate::<()>::default();
+            IndexedScryptoValue::from_typed(&kv_entry)
+        }),
+        SystemLockData::default(),
+    )?;
+
+    let substate: KeyValueEntrySubstate<BlueprintDefinition> =
+        api.kernel_read_substate(handle)?.as_typed().unwrap();
+    api.kernel_close_substate(handle)?;
+
+    let definition = match substate.value {
+        Some(definition) => definition,
+        None => {
+            return Err(RuntimeError::SystemError(
+                SystemError::BlueprintDoesNotExist(canonical_bp_id),
+            ))
+        }
+    };
+
+    api.kernel_get_system_state()
+        .system
+        .blueprint_cache
+        .insert(canonical_bp_id, definition.clone());
+
+    Ok(definition)
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
@@ -337,9 +397,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 ..
             }) => {
                 //  Validate input
-                let definition = system.get_blueprint_definition(
+                let definition = load_blueprint_definition(
                     blueprint_id.package_address,
                     &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                    system.api,
                 )?;
                 let input_type_pointer = definition
                     .interface
@@ -402,9 +463,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             }
             Actor::BlueprintHook(BlueprintHookActor { blueprint_id, hook }) => {
                 // Find the export
-                let definition = system.get_blueprint_definition(
+                let definition = load_blueprint_definition(
                     blueprint_id.package_address,
                     &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                    system.api,
                 )?;
                 let export =
                     definition
