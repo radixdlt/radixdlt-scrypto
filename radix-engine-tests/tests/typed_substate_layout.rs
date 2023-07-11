@@ -5,6 +5,7 @@ use radix_engine::transaction::{CommitResult, TransactionResult};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
+use radix_engine_queries::typed_native_events::to_typed_native_event;
 use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
 use radix_engine_store_interface::interface::DatabaseUpdate;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -56,6 +57,51 @@ fn test_bootstrap_receipt_should_have_substate_changes_which_can_be_typed() {
         assert_receipt_substate_changes_can_be_typed(receipt.expect_commit_success());
     }
     assert_receipt_substate_changes_can_be_typed(wrap_up_receipt.expect_commit_success());
+}
+
+#[test]
+fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let mut substate_db = InMemorySubstateDatabase::standard();
+    let validator_key = Secp256k1PublicKey([0; 33]);
+    let staker_address = ComponentAddress::virtual_account_from_public_key(
+        &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+    );
+    let stake = GenesisStakeAllocation {
+        account_index: 0,
+        xrd_amount: Decimal::one(),
+    };
+    let genesis_data_chunks = vec![
+        GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
+        GenesisDataChunk::Stakes {
+            accounts: vec![staker_address],
+            allocations: vec![(validator_key, vec![stake])],
+        },
+    ];
+
+    let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_vm, true);
+
+    let GenesisReceipts {
+        system_bootstrap_receipt,
+        data_ingestion_receipts,
+        wrap_up_receipt,
+        ..
+    } = bootstrapper
+        .bootstrap_with_genesis_data(
+            genesis_data_chunks,
+            Epoch::of(1),
+            CustomGenesis::default_consensus_manager_config(),
+            1,
+            Some(0),
+            Decimal::zero(),
+        )
+        .unwrap();
+
+    assert_receipt_events_can_be_typed(system_bootstrap_receipt.expect_commit_success());
+    for receipt in data_ingestion_receipts.into_iter() {
+        assert_receipt_events_can_be_typed(receipt.expect_commit_success());
+    }
+    assert_receipt_events_can_be_typed(wrap_up_receipt.expect_commit_success());
 }
 
 #[test]
@@ -114,5 +160,12 @@ fn assert_receipt_substate_changes_can_be_typed(commit_result: &CommitResult) {
                 DatabaseUpdate::Delete => {}
             }
         }
+    }
+}
+
+fn assert_receipt_events_can_be_typed(commit_result: &CommitResult) {
+    for (event_type_identifier, event_data) in &commit_result.application_events {
+        let native_event =
+            to_typed_native_event(event_type_identifier.clone(), event_data.clone()).unwrap();
     }
 }
