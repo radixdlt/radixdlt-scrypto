@@ -15,6 +15,7 @@ use transaction::{
     validation::{recover_secp256k1, verify_secp256k1},
 };
 use wabt::wat2wasm;
+use scrypto_unit::TestRunner;
 
 fn bench_decode_sbor(c: &mut Criterion) {
     let payload = include_bytes!("../../assets/radiswap.rpd");
@@ -134,6 +135,32 @@ fn bench_validate_wasm(c: &mut Criterion) {
     println!("Code length: {}", code.len());
 }
 
+fn bench_prepare_wasm(c: &mut Criterion) {
+    #[cfg(feature = "rocksdb")]
+    let mut test_runner = {
+        std::fs::remove_dir_all("/tmp/radiswap").unwrap();
+        BasicRocksdbTestRunner::new(PathBuf::from("/tmp/radiswap"), false)
+    };
+    #[cfg(not(feature = "rocksdb"))]
+    let mut test_runner = TestRunner::builder().without_trace().build();
+    let code = include_bytes!("../../assets/radiswap.wasm").to_vec();
+    let package_definition: PackageDefinition = manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+
+    c.bench_function("costing::bench_prepare_wasm", |b| {
+        b.iter(|| {
+            let (pk1, _, _) = test_runner.new_allocated_account();
+            test_runner.publish_package(
+                code.clone(),
+                package_definition.clone(),
+                btreemap!(),
+                OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
+            );
+        })
+    });
+
+}
+
+
 criterion_group!(
     costing,
     bench_decode_sbor,
@@ -142,5 +169,6 @@ criterion_group!(
     bench_spin_loop,
     bench_instantiate_radiswap,
     bench_validate_wasm,
+    bench_prepare_wasm,
 );
 criterion_main!(costing);
