@@ -12,11 +12,13 @@ pub struct InstanceContext {
 /// No method acting here!
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
+    // Cached info
+    pub module_object_info: ObjectInfo,
+
+    /// Global Address exists if: (1) NOT a direct access and (2) the object has been stored
     pub global_address: Option<GlobalAddress>,
     pub node_id: NodeId,
     pub module_id: ObjectModuleId,
-    pub module_object_info: ObjectInfo,
-
     pub ident: String,
     pub is_direct_access: bool,
 }

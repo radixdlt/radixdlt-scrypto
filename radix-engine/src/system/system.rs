@@ -504,12 +504,11 @@ where
 
     pub fn get_blueprint_default_interface(
         &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
+        blueprint_id: BlueprintId,
     ) -> Result<BlueprintInterface, RuntimeError> {
-        let bp_version_key = BlueprintVersionKey::new_default(blueprint_name.to_string());
+        let bp_version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name);
         Ok(self
-            .get_blueprint_definition(package_address, &bp_version_key)?
+            .get_blueprint_definition(blueprint_id.package_address, &bp_version_key)?
             .interface)
     }
 
@@ -636,8 +635,7 @@ where
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let blueprint_interface = self.get_blueprint_default_interface(
-            blueprint_id.package_address,
-            blueprint_id.blueprint_name.as_str(),
+            blueprint_id.clone(),
         )?;
         let expected_outer_blueprint = blueprint_interface.blueprint_type.clone();
 
@@ -749,41 +747,41 @@ where
     fn get_actor_schema(
         &mut self,
         actor_object_type: ActorObjectType,
-    ) -> Result<(NodeId, PartitionNumber, ObjectInfo, BlueprintInterface), RuntimeError> {
+    ) -> Result<(NodeId, PartitionNumber, BlueprintInterface, Option<InstanceSchema>, BlueprintId), RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
-        let method = actor
+        let method_actor = actor
             .try_as_method()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
         match actor_object_type {
             ActorObjectType::OuterObject => {
-                let address = method.module_object_info.get_outer_object();
+                let address = method_actor.module_object_info.get_outer_object();
                 let info = self.get_object_info(address.as_node_id())?;
 
                 let blueprint_interface = self.get_blueprint_default_interface(
-                    info.main_blueprint_id.package_address,
-                    info.main_blueprint_id.blueprint_name.as_str(),
+                    info.main_blueprint_id.clone()
                 )?;
 
                 Ok((
                     address.into_node_id(),
                     MAIN_BASE_PARTITION,
-                    info,
                     blueprint_interface,
+                    info.instance_schema,
+                    info.main_blueprint_id,
                 ))
             }
             ActorObjectType::SELF => {
-                let node_id = method.node_id;
-                let info = method.module_object_info.clone();
-                let object_module_id = method.module_id;
+                let node_id = method_actor.node_id;
+                let info = method_actor.module_object_info.clone();
+                let object_module_id = method_actor.module_id;
                 let blueprint_interface = self.get_blueprint_default_interface(
-                    info.main_blueprint_id.package_address,
-                    info.main_blueprint_id.blueprint_name.as_str(),
+                    info.main_blueprint_id.clone(),
                 )?;
                 Ok((
                     node_id,
                     object_module_id.base_partition_num(),
-                    info,
                     blueprint_interface,
+                    info.instance_schema,
+                    info.main_blueprint_id,
                 ))
             }
         }
@@ -794,13 +792,13 @@ where
         actor_object_type: ActorObjectType,
         field_index: u8,
     ) -> Result<(NodeId, PartitionNumber, TypePointer, BlueprintId), RuntimeError> {
-        let (node_id, base_partition, info, interface) =
+        let (node_id, base_partition, interface, _instance_schema, blueprint_id) =
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, field_schema) =
             interface.state.field(field_index).ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                    info.main_blueprint_id.clone(),
+                    blueprint_id.clone(),
                     field_index,
                 ))
             })?;
@@ -809,17 +807,20 @@ where
             Condition::IfFeature(feature) => {
                 if !self.is_feature_enabled(&node_id, feature.as_str())? {
                     return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                        info.main_blueprint_id.clone(),
+                        blueprint_id.clone(),
                         field_index,
                     )));
                 }
             }
             Condition::IfOuterFeature(feature) => {
+                // FIXME: This currently assumes only main modules can have features
+                let object_info = self.get_object_info(&node_id)?;
+
                 if !self
-                    .is_feature_enabled(info.get_outer_object().as_node_id(), feature.as_str())?
+                    .is_feature_enabled(object_info.get_outer_object().as_node_id(), feature.as_str())?
                 {
                     return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                        info.main_blueprint_id.clone(),
+                        blueprint_id.clone(),
                         field_index,
                     )));
                 }
@@ -833,7 +834,7 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, pointer, info.main_blueprint_id))
+        Ok((node_id, partition_num, pointer, blueprint_id))
     }
 
     fn get_actor_kv_partition(
@@ -850,7 +851,7 @@ where
         ),
         RuntimeError,
     > {
-        let (node_id, base_partition, info, interface) =
+        let (node_id, base_partition, interface, instance_schema, blueprint_id) =
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, kv_schema) = interface
@@ -858,7 +859,7 @@ where
             .key_value_store_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
-                    info.main_blueprint_id.clone(),
+                    blueprint_id.clone(),
                     collection_index,
                 ))
             })?;
@@ -867,7 +868,7 @@ where
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, kv_schema, info.instance_schema, info.main_blueprint_id))
+        Ok((node_id, partition_num, kv_schema, instance_schema, blueprint_id))
     }
 
     fn get_actor_index(
@@ -875,7 +876,7 @@ where
         actor_object_type: ActorObjectType,
         collection_index: CollectionIndex,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
-        let (node_id, base_partition, object_info, interface) =
+        let (node_id, base_partition, interface, _instance_schema, blueprint_id) =
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, _) = interface
@@ -883,7 +884,7 @@ where
             .index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::IndexDoesNotExist(
-                    object_info.main_blueprint_id,
+                    blueprint_id,
                     collection_index,
                 ))
             })?;
@@ -900,7 +901,7 @@ where
         actor_object_type: ActorObjectType,
         collection_index: CollectionIndex,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
-        let (node_id, base_partition, object_info, interface) =
+        let (node_id, base_partition, interface, _instance_schema, blueprint_id) =
             self.get_actor_schema(actor_object_type)?;
 
         let (partition_offset, _) = interface
@@ -908,7 +909,7 @@ where
             .sorted_index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
-                    object_info.main_blueprint_id,
+                    blueprint_id,
                     collection_index,
                 ))
             })?;
@@ -1039,8 +1040,7 @@ where
 
         let num_main_partitions = {
             let interface = self.get_blueprint_default_interface(
-                object_info.main_blueprint_id.package_address,
-                object_info.main_blueprint_id.blueprint_name.as_str(),
+                object_info.main_blueprint_id.clone(),
             )?;
             interface.state.num_partitions()
         };
@@ -1097,8 +1097,7 @@ where
 
                     // Move and drop
                     let interface = self.get_blueprint_default_interface(
-                        blueprint_id.package_address,
-                        blueprint_id.blueprint_name.as_str(),
+                        blueprint_id.clone()
                     )?;
                     let num_partitions = interface.state.num_partitions();
 
@@ -2550,8 +2549,7 @@ where
             };
 
             let blueprint_interface = self.get_blueprint_default_interface(
-                blueprint_id.package_address,
-                blueprint_id.blueprint_name.as_str(),
+                blueprint_id.clone()
             )?;
 
             let type_pointer = blueprint_interface
