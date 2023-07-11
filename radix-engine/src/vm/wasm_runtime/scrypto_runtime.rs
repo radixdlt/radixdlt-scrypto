@@ -120,8 +120,8 @@ where
 
         let return_data = self.api.call_method_advanced(
             &receiver,
-            is_direct_access,
             module_id,
+            is_direct_access,
             ident.as_str(),
             args,
         )?;

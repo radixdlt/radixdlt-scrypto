@@ -150,8 +150,8 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn call_method_advanced(
         &mut self,
         receiver: &NodeId,
-        direct_access: bool,
         module_id: ObjectModuleId,
+        direct_access: bool,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {

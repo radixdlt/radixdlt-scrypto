@@ -6,7 +6,7 @@ use transaction::prelude::*;
 #[test]
 fn can_globalize_with_component_metadata() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
 
     // Act
@@ -32,7 +32,7 @@ fn can_globalize_with_component_metadata() {
 #[test]
 fn can_set_metadata_after_globalized() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
 
     // Act
@@ -59,7 +59,7 @@ fn can_set_metadata_after_globalized() {
 #[test]
 fn can_remove_metadata() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -93,7 +93,7 @@ fn can_remove_metadata() {
 
 fn can_set_metadata_through_manifest(entry: MetadataValue) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -165,7 +165,7 @@ fn can_set_decimal_metadata_through_manifest() {
 #[test]
 fn can_set_address_metadata_through_manifest() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = test_runner
@@ -203,7 +203,7 @@ fn can_set_address_metadata_through_manifest() {
 #[test]
 fn cannot_set_address_metadata_after_freezing() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
     let key = Secp256k1PrivateKey::from_u64(1u64).unwrap().public_key();
     let address = test_runner

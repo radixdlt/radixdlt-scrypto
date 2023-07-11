@@ -15,7 +15,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::utils::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{NativeVm, NativeVmExtension, NoExtension, ScryptoVm, Vm};
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::auth::*;
 use radix_engine_interface::api::node_modules::royalty::ComponentRoyaltySubstate;
@@ -27,9 +27,10 @@ use radix_engine_interface::blueprints::consensus_manager::{
     CONSENSUS_MANAGER_GET_CURRENT_TIME_IDENT, CONSENSUS_MANAGER_NEXT_ROUND_IDENT,
 };
 use radix_engine_interface::blueprints::package::{
-    BlueprintDefinitionInit, PackageDefinition, PackagePublishWasmAdvancedManifestInput,
-    PackageRoyaltyAccumulatorSubstate, TypePointer, PACKAGE_BLUEPRINT,
-    PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, PACKAGE_SCHEMAS_PARTITION_OFFSET,
+    BlueprintDefinitionInit, PackageDefinition, PackagePublishNativeManifestInput,
+    PackagePublishWasmAdvancedManifestInput, PackageRoyaltyAccumulatorSubstate, TypePointer,
+    PACKAGE_BLUEPRINT, PACKAGE_PUBLISH_NATIVE_IDENT, PACKAGE_PUBLISH_WASM_ADVANCED_IDENT,
+    PACKAGE_SCHEMAS_PARTITION_OFFSET,
 };
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::math::Decimal;
@@ -241,6 +242,17 @@ pub struct TestRunnerBuilder {
 }
 
 impl TestRunnerBuilder {
+    pub fn new() -> TestRunnerBuilder {
+        TestRunnerBuilder {
+            custom_genesis: None,
+            #[cfg(not(feature = "resource_tracker"))]
+            trace: true,
+            #[cfg(feature = "resource_tracker")]
+            trace: false,
+            state_hashing: false,
+        }
+    }
+
     pub fn without_trace(mut self) -> Self {
         self.trace = false;
         self
@@ -256,14 +268,18 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner, ActiveValidatorSet) {
-        let scrypto_interpreter = ScryptoVm {
+    pub fn build_and_get_epoch_with_native_vm_extension<E: NativeVmExtension>(
+        self,
+        extension: E,
+    ) -> (TestRunner<E>, ActiveValidatorSet) {
+        let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
+        let native_vm = NativeVm::new_with_extension(extension);
+        let vm = Vm::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = InMemorySubstateDatabase::standard();
-
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false);
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
         let GenesisReceipts {
             wrap_up_receipt, ..
         } = match self.custom_genesis {
@@ -287,7 +303,8 @@ impl TestRunnerBuilder {
         let next_transaction_nonce = 100;
 
         let runner = TestRunner {
-            scrypto_interpreter,
+            scrypto_vm,
+            native_vm,
             substate_db,
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
@@ -304,13 +321,26 @@ impl TestRunnerBuilder {
         (runner, next_epoch.validator_set)
     }
 
-    pub fn build(self) -> TestRunner {
+    pub fn build_and_get_epoch(self) -> (TestRunner<NoExtension>, ActiveValidatorSet) {
+        self.build_and_get_epoch_with_native_vm_extension(NoExtension)
+    }
+
+    pub fn build(self) -> TestRunner<NoExtension> {
         self.build_and_get_epoch().0
+    }
+
+    pub fn build_with_native_vm_extension<E: NativeVmExtension>(
+        self,
+        extension: E,
+    ) -> TestRunner<E> {
+        self.build_and_get_epoch_with_native_vm_extension(extension)
+            .0
     }
 }
 
-pub struct TestRunner {
-    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
+pub struct TestRunner<E: NativeVmExtension> {
+    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    native_vm: NativeVm<E>,
     substate_db: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
@@ -326,18 +356,7 @@ pub struct TestRunnerSnapshot {
     state_hash_support: Option<StateHashSupport>,
 }
 
-impl TestRunner {
-    pub fn builder() -> TestRunnerBuilder {
-        TestRunnerBuilder {
-            custom_genesis: None,
-            #[cfg(not(feature = "resource_tracker"))]
-            trace: true,
-            #[cfg(feature = "resource_tracker")]
-            trace: false,
-            state_hashing: false,
-        }
-    }
-
+impl<E: NativeVmExtension> TestRunner<E> {
     pub fn create_snapshot(&self) -> TestRunnerSnapshot {
         TestRunnerSnapshot {
             substate_db: self.substate_db.clone(),
@@ -788,6 +807,29 @@ impl TestRunner {
         address
     }
 
+    pub fn publish_native_package(
+        &mut self,
+        native_package_code_id: u64,
+        definition: PackageDefinition,
+    ) -> PackageAddress {
+        let receipt = self.execute_system_transaction(
+            vec![InstructionV1::CallFunction {
+                package_address: DynamicPackageAddress::Static(PACKAGE_PACKAGE),
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PACKAGE_PUBLISH_NATIVE_IDENT.to_string(),
+                args: to_manifest_value_and_unwrap!(&PackagePublishNativeManifestInput {
+                    definition,
+                    native_package_code_id,
+                    metadata: MetadataInit::default(),
+                    package_address: None,
+                }),
+            }],
+            btreeset!(AuthAddresses::system_role()),
+        );
+        let package_address: PackageAddress = receipt.expect_commit(true).output(0);
+        package_address
+    }
+
     pub fn publish_package_at_address(
         &mut self,
         code: Vec<u8>,
@@ -984,9 +1026,14 @@ impl TestRunner {
         // Override the kernel trace config
         execution_config = execution_config.with_kernel_trace(self.trace);
 
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
+
         let transaction_receipt = execute_transaction(
             &mut self.substate_db,
-            &self.scrypto_interpreter,
+            vm,
             &fee_reserve_config,
             &execution_config,
             &executable,
@@ -1006,13 +1053,12 @@ impl TestRunner {
         preview_intent: PreviewIntentV1,
         network: &NetworkDefinition,
     ) -> Result<TransactionReceipt, PreviewError> {
-        execute_preview(
-            &self.substate_db,
-            &mut self.scrypto_interpreter,
-            network,
-            preview_intent,
-            self.trace,
-        )
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
+
+        execute_preview(&self.substate_db, vm, network, preview_intent, self.trace)
     }
 
     pub fn preview_manifest(
@@ -1023,9 +1069,13 @@ impl TestRunner {
         flags: PreviewFlags,
     ) -> TransactionReceipt {
         let epoch = self.get_current_epoch();
+        let vm = Vm {
+            scrypto_vm: &self.scrypto_vm,
+            native_vm: self.native_vm.clone(),
+        };
         execute_preview(
             &mut self.substate_db,
-            &self.scrypto_interpreter,
+            vm,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
                 intent: IntentV1 {
@@ -1924,7 +1974,7 @@ pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
 ) -> PackageDefinition {
-    PackageDefinition::single_test_function(blueprint_name, function_name)
+    PackageDefinition::new_single_test_function(blueprint_name, function_name)
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

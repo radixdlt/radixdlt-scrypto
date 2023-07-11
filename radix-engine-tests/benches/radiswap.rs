@@ -1,5 +1,6 @@
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
+use radix_engine::vm::NoExtension;
 use radix_engine::{
     transaction::{ExecutionConfig, FeeReserveConfig, TransactionReceipt},
     types::*,
@@ -7,7 +8,7 @@ use radix_engine::{
 #[cfg(feature = "rocksdb")]
 use scrypto_unit::BasicRocksdbTestRunner;
 #[cfg(not(feature = "rocksdb"))]
-use scrypto_unit::TestRunner;
+use scrypto_unit::{TestRunner, TestRunnerBuilder};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
 use transaction::{
@@ -22,7 +23,7 @@ fn bench_radiswap(c: &mut Criterion) {
         BasicRocksdbTestRunner::new(PathBuf::from("/tmp/radiswap"), false)
     };
     #[cfg(not(feature = "rocksdb"))]
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
     // Scrypto developer
     let (pk1, _, _) = test_runner.new_allocated_account();
@@ -176,7 +177,7 @@ fn bench_radiswap(c: &mut Criterion) {
 #[cfg(feature = "rocksdb")]
 type TestRunnerType = BasicRocksdbTestRunner;
 #[cfg(not(feature = "rocksdb"))]
-type TestRunnerType = TestRunner;
+type TestRunnerType = TestRunner<NoExtension>;
 
 fn do_swap(
     test_runner: &mut TestRunnerType,

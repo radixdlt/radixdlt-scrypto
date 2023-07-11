@@ -8,7 +8,7 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 fn call<S: AsRef<str>>(function_name: &str, message: S) -> TransactionReceipt {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/logger");
 
     let manifest = ManifestBuilder::new()

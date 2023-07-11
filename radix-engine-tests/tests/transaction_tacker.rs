@@ -21,7 +21,9 @@ fn test_transaction_replay_protection() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // 1. Run a notarized transaction
     let transaction = create_notarized_transaction(TransactionParams {

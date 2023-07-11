@@ -6,6 +6,7 @@ use radix_engine::kernel::heap::HeapOpenSubstateError;
 use radix_engine::track::interface::AcquireLockError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::prelude::PreviewFlags;
@@ -23,9 +24,9 @@ where
     test_runner.execute_manifest(manifest, vec![])
 }
 
-fn setup_test_runner() -> (TestRunner, ComponentAddress) {
+fn setup_test_runner() -> (TestRunner<NoExtension>, ComponentAddress) {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
@@ -220,7 +221,7 @@ fn should_succeed_when_lock_fee_and_query_vault() {
 #[test]
 fn test_fee_accounting_success() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -272,7 +273,7 @@ fn test_fee_accounting_success() {
 #[test]
 fn test_fee_accounting_failure() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -331,7 +332,7 @@ fn test_fee_accounting_failure() {
 #[test]
 fn test_fee_accounting_rejection() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let account1_balance = test_runner
         .get_component_resources(account1)
@@ -361,7 +362,7 @@ fn test_fee_accounting_rejection() {
 #[test]
 fn test_contingent_fee_accounting_success() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -417,7 +418,7 @@ fn test_contingent_fee_accounting_success() {
 #[test]
 fn test_contingent_fee_accounting_failure() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -478,7 +479,7 @@ fn test_contingent_fee_accounting_failure() {
 #[test]
 fn locked_fees_are_correct_in_execution_trace() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(false);
 
     // Act
@@ -506,7 +507,7 @@ fn locked_fees_are_correct_in_execution_trace() {
 #[test]
 fn multiple_locked_fees_are_correct_in_execution_trace() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_account(false);
     let (public_key2, _, account2) = test_runner.new_account(false);
 
@@ -536,7 +537,7 @@ fn multiple_locked_fees_are_correct_in_execution_trace() {
 #[test]
 fn regular_and_contingent_fee_locks_are_correct_in_execution_trace() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key1, _, account1) = test_runner.new_account(false);
     let (public_key2, _, account2) = test_runner.new_account(false);
 

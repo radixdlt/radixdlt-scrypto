@@ -6,8 +6,8 @@ use transaction::prelude::*;
 #[test]
 fn test_simple_deterministic_execution() {
     // Arrange
-    let mut test_runner0 = TestRunner::builder().with_state_hashing().build();
-    let mut test_runner1 = TestRunner::builder().with_state_hashing().build();
+    let mut test_runner0 = TestRunnerBuilder::new().with_state_hashing().build();
+    let mut test_runner1 = TestRunnerBuilder::new().with_state_hashing().build();
 
     // Act
     let (public_key0, _, account0) = test_runner0.new_allocated_account();
@@ -38,7 +38,7 @@ fn same_executions_result_in_same_final_state_hash() {
 /// Returns the root hash of the system's final state.
 fn create_and_pass_multiple_proofs() -> Hash {
     // Arrange
-    let mut test_runner = TestRunner::builder().with_state_hashing().build();
+    let mut test_runner = TestRunnerBuilder::new().with_state_hashing().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);

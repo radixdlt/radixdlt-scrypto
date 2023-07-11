@@ -222,7 +222,12 @@ impl CustomSchema for NoCustomSchema {
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum NoCustomExtension {}
 
-create_well_known_lookup!(WELL_KNOWN_LOOKUP, NoCustomTypeKind, []);
+create_well_known_lookup!(
+    WELL_KNOWN_LOOKUP,
+    well_known_basic_custom_types,
+    NoCustomTypeKind,
+    []
+);
 
 impl CustomExtension for NoCustomExtension {
     const MAX_DEPTH: usize = BASIC_SBOR_V1_MAX_DEPTH;

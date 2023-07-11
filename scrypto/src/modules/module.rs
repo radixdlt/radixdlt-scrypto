@@ -78,8 +78,8 @@ pub trait Attachable: Sized {
                 let output = ScryptoEnv
                     .call_method_advanced(
                         address.as_node_id(),
-                        false,
                         module_id.clone(),
+                        false,
                         method,
                         args,
                     )
@@ -107,8 +107,8 @@ pub trait Attachable: Sized {
                 ScryptoEnv
                     .call_method_advanced(
                         address.as_node_id(),
-                        false,
                         module_id.clone(),
+                        false,
                         method,
                         args,
                     )
