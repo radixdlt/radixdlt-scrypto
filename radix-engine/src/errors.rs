@@ -149,6 +149,8 @@ pub enum KernelError {
 
     // Invoke
     InvalidInvokeAccess,
+
+    DanglingNode(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]

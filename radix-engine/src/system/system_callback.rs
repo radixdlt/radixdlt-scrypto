@@ -442,6 +442,39 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
     }
 
+    // Note: we check dangling nodes, in kernel, after auto-drop
+    fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        // Round 1 - drop all proofs
+        for node_id in nodes {
+            let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+            match type_info {
+                TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. })
+                    if blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
+                            || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
+                {
+                    api.kernel_drop_node(&node_id)?;
+                }
+                _ => {}
+            }
+        }
+
+        // Round 2 - drop the auth zone
+        //
+        // Note that we destroy frame's auth zone at the very end of the `auto_drop` process
+        // to make sure the auth zone stack is in good state for the proof dropping above.
+        //
+        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
+            api.kernel_drop_node(&auth_zone_id)?;
+        }
+
+        Ok(())
+    }
+
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
         _partition_num: PartitionNumber,
@@ -484,20 +517,5 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         system.globalize(modules, Some(address_reservation))?;
 
         Ok(true)
-    }
-
-    fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
-        match type_info {
-            TypeInfoSubstate::Object(ObjectInfo { .. }) => {
-                todo!()
-            }
-            TypeInfoSubstate::KeyValueStore(_) => todo!(),
-            TypeInfoSubstate::GlobalAddressReservation(_) => todo!(),
-            TypeInfoSubstate::GlobalAddressPhantom(_) => todo!(),
-        }
     }
 }

@@ -282,9 +282,15 @@ where
                 .map_err(CallFrameError::PassMessageError)
                 .map_err(KernelError::CallFrameError)?;
 
-            // Drop nodes
-            while let Some(node_id) = self.current_frame.owned_nodes().pop() {
-                M::on_drop_node(&node_id, self)?;
+            // Auto-drop
+            let owned_nodes = self.current_frame.owned_nodes();
+            M::auto_drop(owned_nodes, self)?;
+
+            // Now, check if any own has been left!
+            if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
+                return Err(RuntimeError::KernelError(KernelError::DanglingNode(
+                    node_id,
+                )));
             }
         }
 

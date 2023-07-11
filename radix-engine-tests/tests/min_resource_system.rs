@@ -50,7 +50,7 @@ fn test_mini_resource_system(test_case: &str, expected: ExpectedBehavior) {
 pub fn test_create_bucket_proof_and_do_nothing() {
     test_mini_resource_system(
         "create_bucket_proof_and_do_nothing",
-        ExpectedBehavior::Failure("NodeOrphaned"),
+        ExpectedBehavior::Failure("DanglingNode"),
     );
 }
 

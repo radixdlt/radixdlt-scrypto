@@ -161,16 +161,16 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
+    fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
         partition_num: PartitionNumber,
         offset: &SubstateKey,
         api: &mut Y,
     ) -> Result<bool, RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 }

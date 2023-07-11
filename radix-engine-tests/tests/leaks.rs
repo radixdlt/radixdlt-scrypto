@@ -24,7 +24,7 @@ fn dangling_component_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::NodeOrphaned(..)))
+        matches!(e, RuntimeError::KernelError(KernelError::DanglingNode(..)))
     });
 }
 
@@ -48,7 +48,7 @@ fn dangling_bucket_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::NodeOrphaned(..)))
+        matches!(e, RuntimeError::KernelError(KernelError::DanglingNode(..)))
     });
 }
 
@@ -67,7 +67,7 @@ fn dangling_vault_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::NodeOrphaned(..)))
+        matches!(e, RuntimeError::KernelError(KernelError::DanglingNode(..)))
     });
 }
 
@@ -115,7 +115,7 @@ fn dangling_kv_store_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::NodeOrphaned(..)))
+        matches!(e, RuntimeError::KernelError(KernelError::DanglingNode(..)))
     });
 }
 
@@ -139,6 +139,6 @@ fn dangling_bucket_with_proof_should_fail() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::NodeOrphaned(..)))
+        matches!(e, RuntimeError::KernelError(KernelError::DanglingNode(..)))
     });
 }
