@@ -97,7 +97,7 @@ impl AuthModule {
                 Actor::Method(actor) => {
                     let resolved_permission =
                         Self::resolve_method_permission(actor, args, &mut system)?;
-                    let acting_location = if actor.module_object_info.global {
+                    let acting_location = if actor.receiver_info.object_info.global {
                         ActingLocation::AtBarrier
                     } else {
                         ActingLocation::AtLocalBarrier
@@ -204,9 +204,9 @@ impl AuthModule {
     ) -> Result<ResolvedPermission, RuntimeError> {
         let method_key = MethodKey::new(callee.ident.as_str());
 
-        if let ObjectModuleId::AccessRules = callee.module_id {
+        if let ObjectModuleId::AccessRules = callee.receiver_info.module_id {
             return AccessRulesNativePackage::authorization(
-                &callee.node_id,
+                &callee.receiver_info.node_id,
                 method_key.ident.as_str(),
                 args,
                 api,
@@ -215,13 +215,15 @@ impl AuthModule {
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             callee
-                .module_object_info
+                .receiver_info
+                .object_info
                 .blueprint_id
                 .package_address
                 .as_node_id(),
             &BlueprintVersionKey::new_default(
                 callee
-                    .module_object_info
+                    .receiver_info
+                    .object_info
                     .blueprint_id
                     .blueprint_name
                     .as_str(),
@@ -235,14 +237,14 @@ impl AuthModule {
                 let access_rules_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module
-                        if !callee.module_object_info.global {
+                        if !callee.receiver_info.object_info.global {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 
-                        callee.node_id
+                        callee.receiver_info.node_id
                     }
                     RoleSpecification::UseOuter => {
-                        let node_id = callee.node_id;
+                        let node_id = callee.receiver_info.node_id;
                         let info = api.get_object_info(&node_id)?;
 
                         let access_rules_of = info.get_outer_object();
@@ -258,13 +260,17 @@ impl AuthModule {
         match method_permissions.get(&method_key) {
             Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
             Some(MethodAccessibility::OwnPackageOnly) => {
-                let package = callee.module_object_info.blueprint_id.package_address;
+                let package = callee
+                    .receiver_info
+                    .object_info
+                    .blueprint_id
+                    .package_address;
                 Ok(ResolvedPermission::AccessRule(rule!(require(
                     package_of_direct_caller(package)
                 ))))
             }
             Some(MethodAccessibility::OuterObjectOnly) => {
-                match callee.module_object_info.outer_object {
+                match callee.receiver_info.object_info.outer_object {
                     OuterObjectInfo::Some { outer_object } => Ok(ResolvedPermission::AccessRule(
                         rule!(require(global_caller(outer_object))),
                     )),
@@ -277,7 +283,7 @@ impl AuthModule {
                 Ok(ResolvedPermission::RoleList {
                     access_rules_of,
                     role_list: role_list.clone(),
-                    module_id: callee.module_id,
+                    module_id: callee.receiver_info.module_id,
                 })
             }
             None => Err(RuntimeError::SystemModuleError(

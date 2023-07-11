@@ -22,6 +22,7 @@ impl Default for OuterObjectInfo {
     }
 }
 
+/// Core object state, persisted in `TypeInfoSubstate`.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {
     pub global: bool,

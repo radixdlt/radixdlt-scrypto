@@ -6,6 +6,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
+use crate::kernel::actor::RuntimeReceiverInfo;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
@@ -356,9 +357,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
-        let receiver = actor
-            .try_as_method()
-            .map(|x| (x.node_id.clone(), x.is_direct_access));
+        let receiver_info = actor.receiver_info();
 
         // Make dependent resources/components visible
         if let Some(blueprint_id) = actor.blueprint_id() {
@@ -387,7 +386,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         match actor {
             Actor::Root => panic!("Root is invoked"),
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
+                receiver_info:
+                    RuntimeReceiverInfo {
+                        object_info: ObjectInfo { blueprint_id, .. },
+                        ..
+                    },
                 ident,
                 ..
             })
@@ -422,9 +425,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     .functions
                     .get(&ident)
                     .expect("Should exist due to schema check");
-                match (&function_schema.receiver, receiver) {
-                    (Some(receiver_info), Some((_, direct_access))) => {
-                        if direct_access
+                match (&function_schema.receiver, receiver_info) {
+                    (
+                        Some(receiver_info),
+                        Some(RuntimeReceiverInfo {
+                            is_direct_access, ..
+                        }),
+                    ) => {
+                        if is_direct_access
                             != receiver_info.ref_types.contains(RefTypes::DIRECT_ACCESS)
                         {
                             return Err(RuntimeError::SystemUpstreamError(

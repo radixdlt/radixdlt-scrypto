@@ -292,9 +292,9 @@ impl<L: Clone> CallFrame<L> {
             .map_err(CreateFrameError::PassMessageError)?;
 
         // Make sure actor isn't part of the owned nodes
-        if let Actor::Method(method_actor) = &frame.actor {
-            if frame.owned_root_nodes.contains_key(&method_actor.node_id) {
-                return Err(CreateFrameError::ActorBeingMoved(method_actor.node_id));
+        if let Some(receiver) = &frame.actor.receiver_info() {
+            if frame.owned_root_nodes.contains_key(&receiver.node_id) {
+                return Err(CreateFrameError::ActorBeingMoved(receiver.node_id));
             }
         }
 
@@ -309,14 +309,16 @@ impl<L: Clone> CallFrame<L> {
             Actor::Root => {}
             Actor::Method(MethodActor {
                 global_address,
-                module_object_info: object_info,
+                receiver_info,
                 instance_context,
                 ..
             }) => {
                 if let Some(global_address) = global_address {
                     additional_global_refs.push(global_address.clone());
                 }
-                if let OuterObjectInfo::Some { outer_object } = object_info.outer_object {
+                if let OuterObjectInfo::Some { outer_object } =
+                    receiver_info.object_info.outer_object
+                {
                     additional_global_refs.push(outer_object.clone());
                 }
                 if let Some(instance_context) = instance_context {
@@ -1180,12 +1182,8 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Actor
-        if let Actor::Method(MethodActor {
-            node_id: actor_node_id,
-            ..
-        }) = &self.actor
-        {
-            if actor_node_id == node_id {
+        if let Some(receiver) = self.actor.receiver_info() {
+            if receiver.node_id == *node_id {
                 visibilities.insert(Visibility::Actor);
             }
         }

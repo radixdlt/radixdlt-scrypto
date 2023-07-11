@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ProofMoveableSubstate;
 use crate::errors::{RuntimeError, SystemModuleError};
-use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor, RuntimeReceiverInfo};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -39,7 +39,7 @@ impl NodeMoveModule {
                         .blueprint_name
                         .eq(FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor { receiver_info, .. }) if receiver_info.node_id.eq(info.get_outer_object().as_node_id()))
                 {
                     return Ok(());
                 }
@@ -101,7 +101,7 @@ impl NodeMoveModule {
                         .blueprint_name
                         .eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor { receiver_info: RuntimeReceiverInfo {node_id,..}, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
                 {
                     return Ok(());
                 }

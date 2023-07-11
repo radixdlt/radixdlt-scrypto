@@ -9,23 +9,27 @@ pub struct InstanceContext {
     pub outer_blueprint: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct RuntimeReceiverInfo {
+    pub node_id: NodeId,
+    pub module_id: ObjectModuleId,
+    pub is_direct_access: bool,
+    pub object_info: ObjectInfo,
+}
+
 /// No method acting here!
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
-    pub global_address: Option<GlobalAddress>,
-    pub node_id: NodeId,
-    pub module_id: ObjectModuleId,
-    pub module_object_info: ObjectInfo,
-
     pub ident: String,
+    pub receiver_info: RuntimeReceiverInfo,
+    pub global_address: Option<GlobalAddress>,
     pub instance_context: Option<InstanceContext>,
-    pub is_direct_access: bool,
 }
 
 impl MethodActor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier {
-            blueprint_id: self.module_object_info.blueprint_id.clone(),
+            blueprint_id: self.receiver_info.object_info.blueprint_id.clone(),
             ident: self.ident.to_string(),
         }
     }
@@ -64,9 +68,11 @@ impl Actor {
     pub fn len(&self) -> usize {
         match self {
             Actor::Root => 1,
-            Actor::Method(MethodActor { node_id, ident, .. }) => {
-                node_id.as_ref().len() + ident.len()
-            }
+            Actor::Method(MethodActor {
+                ident,
+                receiver_info: RuntimeReceiverInfo { node_id, .. },
+                ..
+            }) => node_id.as_ref().len() + ident.len(),
             Actor::Function(FunctionActor {
                 blueprint_id,
                 ident,
@@ -84,7 +90,7 @@ impl Actor {
     pub fn is_auth_zone(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                module_object_info: object_info,
+                receiver_info: RuntimeReceiverInfo { object_info, .. },
                 ..
             }) => {
                 object_info
@@ -105,7 +111,7 @@ impl Actor {
     pub fn is_barrier(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                module_object_info: object_info,
+                receiver_info: RuntimeReceiverInfo { object_info, .. },
                 ..
             }) => object_info.global,
             Actor::Function { .. } => true,
@@ -126,7 +132,11 @@ impl Actor {
         match self {
             Actor::Root => false,
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
+                receiver_info:
+                    RuntimeReceiverInfo {
+                        object_info: ObjectInfo { blueprint_id, .. },
+                        ..
+                    },
                 ..
             })
             | Actor::Function(FunctionActor { blueprint_id, .. })
@@ -139,9 +149,9 @@ impl Actor {
         }
     }
 
-    pub fn try_as_method(&self) -> Option<&MethodActor> {
+    pub fn receiver_info(&self) -> Option<RuntimeReceiverInfo> {
         match self {
-            Actor::Method(actor) => Some(actor),
+            Actor::Method(MethodActor { receiver_info, .. }) => Some(receiver_info.clone()),
             _ => None,
         }
     }
@@ -175,7 +185,11 @@ impl Actor {
     pub fn blueprint_id(&self) -> Option<&BlueprintId> {
         match self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
+                receiver_info:
+                    RuntimeReceiverInfo {
+                        object_info: ObjectInfo { blueprint_id, .. },
+                        ..
+                    },
                 ..
             })
             | Actor::Function(FunctionActor { blueprint_id, .. })
@@ -207,7 +221,11 @@ impl Actor {
     pub fn package_address(&self) -> Option<&PackageAddress> {
         match &self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
+                receiver_info:
+                    RuntimeReceiverInfo {
+                        object_info: ObjectInfo { blueprint_id, .. },
+                        ..
+                    },
                 ..
             })
             | Actor::Function(FunctionActor { blueprint_id, .. })
@@ -221,7 +239,11 @@ impl Actor {
     pub fn blueprint_name(&self) -> Option<&str> {
         match &self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
+                receiver_info:
+                    RuntimeReceiverInfo {
+                        object_info: ObjectInfo { blueprint_id, .. },
+                        ..
+                    },
                 ..
             })
             | Actor::Function(FunctionActor { blueprint_id, .. })
@@ -235,18 +257,20 @@ impl Actor {
     pub fn method(
         global_address: Option<GlobalAddress>,
         method: MethodIdentifier,
-        module_object_info: ObjectInfo,
+        object_info: ObjectInfo,
         instance_context: Option<InstanceContext>,
         is_direct_access: bool,
     ) -> Self {
         Self::Method(MethodActor {
             global_address,
-            node_id: method.0,
-            module_id: method.1,
             ident: method.2,
-            module_object_info,
+            receiver_info: RuntimeReceiverInfo {
+                node_id: method.0,
+                module_id: method.1,
+                is_direct_access,
+                object_info,
+            },
             instance_context,
-            is_direct_access,
         })
     }
 

@@ -128,7 +128,7 @@ impl FungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
+            ResourceAddress::new_or_panic(api.actor_get_receiver_info()?.get_outer_object().into());
         Ok(address)
     }
 

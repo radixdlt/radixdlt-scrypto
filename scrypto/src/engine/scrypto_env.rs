@@ -373,7 +373,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
+    fn actor_get_receiver_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
 

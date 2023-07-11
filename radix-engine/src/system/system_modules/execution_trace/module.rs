@@ -1,6 +1,6 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor, RuntimeReceiverInfo};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -171,7 +171,9 @@ pub enum TraceActor {
 impl TraceActor {
     pub fn from_actor(actor: &Actor) -> TraceActor {
         match actor {
-            Actor::Method(MethodActor { node_id, .. }) => TraceActor::Method(node_id.clone()),
+            Actor::Method(MethodActor { receiver_info, .. }) => {
+                TraceActor::Method(receiver_info.node_id.clone())
+            }
             _ => TraceActor::NonMethod,
         }
     }
@@ -468,12 +470,20 @@ impl ExecutionTraceModule {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
                 Actor::Method(MethodActor {
-                    module_object_info: object_info,
+                    receiver_info,
                     ident,
                     ..
                 }) => TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                    package_address: object_info.blueprint_id.package_address.clone(),
-                    blueprint_name: object_info.blueprint_id.blueprint_name.clone(),
+                    package_address: receiver_info
+                        .object_info
+                        .blueprint_id
+                        .package_address
+                        .clone(),
+                    blueprint_name: receiver_info
+                        .object_info
+                        .blueprint_id
+                        .blueprint_name
+                        .clone(),
                     ident: ident.clone(),
                 }),
                 Actor::Function(FunctionActor {
@@ -501,8 +511,12 @@ impl ExecutionTraceModule {
 
         match &callee {
             Actor::Method(MethodActor {
-                node_id,
-                module_object_info: object_info,
+                receiver_info:
+                    RuntimeReceiverInfo {
+                        node_id,
+                        object_info,
+                        ..
+                    },
                 ident,
                 ..
             }) if VaultUtil::is_vault_blueprint(&object_info.blueprint_id)
@@ -511,8 +525,12 @@ impl ExecutionTraceModule {
                 self.handle_vault_put_input(&resource_summary, current_actor, node_id)
             }
             Actor::Method(MethodActor {
-                node_id,
-                module_object_info: object_info,
+                receiver_info:
+                    RuntimeReceiverInfo {
+                        node_id,
+                        object_info,
+                        ..
+                    },
                 ident,
                 ..
             }) if VaultUtil::is_vault_blueprint(&object_info.blueprint_id)
@@ -533,14 +551,13 @@ impl ExecutionTraceModule {
     ) {
         match current_actor {
             Actor::Method(MethodActor {
-                node_id,
-                module_object_info: object_info,
+                receiver_info,
                 ident,
                 ..
-            }) if VaultUtil::is_vault_blueprint(&object_info.blueprint_id)
+            }) if VaultUtil::is_vault_blueprint(&receiver_info.object_info.blueprint_id)
                 && ident.eq(VAULT_TAKE_IDENT) =>
             {
-                self.handle_vault_take_output(&resource_summary, &caller, node_id)
+                self.handle_vault_take_output(&resource_summary, &caller, &receiver_info.node_id)
             }
             Actor::BlueprintHook(..) => return,
             _ => {}

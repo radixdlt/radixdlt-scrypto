@@ -1,4 +1,4 @@
-use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
+use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor, RuntimeReceiverInfo};
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
@@ -211,8 +211,12 @@ where
         // Check actor visibility
         let can_be_invoked = match &invocation.actor {
             Actor::Method(MethodActor {
-                node_id,
-                is_direct_access,
+                receiver_info:
+                    RuntimeReceiverInfo {
+                        node_id,
+                        is_direct_access,
+                        ..
+                    },
                 ..
             }) => self
                 .current_frame

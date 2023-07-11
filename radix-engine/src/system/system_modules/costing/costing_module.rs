@@ -1,7 +1,7 @@
 use super::*;
 use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
-use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor, RuntimeReceiverInfo};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
@@ -203,7 +203,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         // Identify the function, and optional component address
         let (optional_blueprint_id, ident, optional_component) = {
             let (maybe_component, ident) = match &callee {
-                Actor::Method(MethodActor { node_id, ident, .. }) => {
+                Actor::Method(MethodActor {
+                    receiver_info: RuntimeReceiverInfo { node_id, .. },
+                    ident,
+                    ..
+                }) => {
                     if node_id.is_global_component() {
                         (
                             Some(ComponentAddress::new_or_panic(node_id.clone().into())),

@@ -9,7 +9,9 @@ use crate::errors::{
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
+use crate::kernel::actor::{
+    Actor, FunctionActor, InstanceContext, MethodActor, RuntimeReceiverInfo,
+};
 use crate::kernel::call_frame::{NodeVisibility, StableReferenceType, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
@@ -2253,7 +2255,7 @@ where
     }
 
     #[trace_resources]
-    fn actor_get_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
+    fn actor_get_receiver_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
@@ -2329,7 +2331,7 @@ where
                 .try_as_method()
                 .map(|x| x.node_id)
                 .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?,
-            ActorObjectType::OuterObject => match self.actor_get_info()?.outer_object {
+            ActorObjectType::OuterObject => match self.actor_get_receiver_info()?.outer_object {
                 OuterObjectInfo::Some { outer_object } => outer_object.into_node_id(),
                 OuterObjectInfo::None { .. } => {
                     return Err(RuntimeError::SystemError(
@@ -2356,9 +2358,10 @@ where
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
         let node_id = match actor_object_type {
             ActorObjectType::SELF => self.actor_get_node_id()?,
-            ActorObjectType::OuterObject => {
-                self.actor_get_info()?.get_outer_object().into_node_id()
-            }
+            ActorObjectType::OuterObject => self
+                .actor_get_receiver_info()?
+                .get_outer_object()
+                .into_node_id(),
         };
         self.is_feature_enabled(&node_id, feature)
     }
@@ -2524,11 +2527,9 @@ where
 
             // Getting the package address and blueprint name associated with the actor
             let (instance_schema, blueprint_id) = match actor {
-                Actor::Method(MethodActor {
-                    module_object_info, ..
-                }) => (
-                    module_object_info.instance_schema.clone(),
-                    module_object_info.blueprint_id.clone(),
+                Actor::Method(MethodActor { receiver_info, .. }) => (
+                    receiver_info.object_info.instance_schema.clone(),
+                    receiver_info.object_info.blueprint_id.clone(),
                 ),
                 Actor::Function(FunctionActor {
                     blueprint_id: ref blueprint,
@@ -2567,7 +2568,11 @@ where
         let actor = self.current_actor();
         let event_type_identifier = match actor {
             Actor::Method(MethodActor {
-                node_id, module_id, ..
+                receiver_info:
+                    RuntimeReceiverInfo {
+                        node_id, module_id, ..
+                    },
+                ..
             }) => Ok(EventTypeIdentifier(
                 Emitter::Method(node_id.clone(), module_id.clone()),
                 type_pointer,
