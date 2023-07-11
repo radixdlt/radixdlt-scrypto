@@ -20,6 +20,7 @@ use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
@@ -477,6 +478,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 blueprint_id,
                 hook,
                 export,
+                ..
             }) => {
                 // Input is not validated as they're created by system.
 
@@ -581,11 +583,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnDrop).cloned() {
             let rtn: Vec<u8> = api
                 .kernel_invoke(Box::new(KernelInvocation {
-                    actor: Actor::blueprint_hook(
-                        blueprint_id.clone(),
-                        BlueprintHook::OnVirtualize,
+                    actor: Actor::BlueprintHook(BlueprintHookActor {
+                        blueprint_id: blueprint_id.clone(),
+                        hook: BlueprintHook::OnVirtualize,
                         export,
-                    ),
+                        receiver_info: None,
+                    }),
                     args: IndexedScryptoValue::from_typed(&OnVirtualizeInput { node_id }),
                 }))?
                 .into();
@@ -613,22 +616,28 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
         match type_info {
-            TypeInfoSubstate::Object(ObjectInfo {
-                blueprint_id,
-                blueprint_version,
-                ..
-            }) => {
+            TypeInfoSubstate::Object(object_info) => {
                 let definition = load_blueprint_definition(
-                    blueprint_id.package_address,
+                    object_info.blueprint_id.package_address,
                     &BlueprintVersionKey {
-                        blueprint: blueprint_id.blueprint_name.clone(),
-                        version: blueprint_version,
+                        blueprint: object_info.blueprint_id.blueprint_name.clone(),
+                        version: object_info.blueprint_version,
                     },
                     api,
                 )?;
                 if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnDrop).cloned() {
                     api.kernel_invoke(Box::new(KernelInvocation {
-                        actor: Actor::blueprint_hook(blueprint_id, BlueprintHook::OnDrop, export),
+                        actor: Actor::BlueprintHook(BlueprintHookActor {
+                            blueprint_id: object_info.blueprint_id.clone(),
+                            hook: BlueprintHook::OnDrop,
+                            export,
+                            receiver_info: Some(RuntimeReceiverInfo {
+                                node_id: node_id.clone(),
+                                module_id: ObjectModuleId::Main,
+                                is_direct_access: false,
+                                object_info,
+                            }),
+                        }),
                         args: IndexedScryptoValue::from_typed(&OnDropInput {}),
                     }))
                     .map(|_| ())

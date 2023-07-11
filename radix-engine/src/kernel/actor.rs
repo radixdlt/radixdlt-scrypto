@@ -55,6 +55,7 @@ pub struct BlueprintHookActor {
     pub blueprint_id: BlueprintId,
     pub hook: BlueprintHook,
     pub export: PackageExport,
+    pub receiver_info: Option<RuntimeReceiverInfo>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -279,18 +280,6 @@ impl Actor {
         Self::Function(FunctionActor {
             blueprint_id,
             ident,
-        })
-    }
-
-    pub fn blueprint_hook(
-        blueprint_id: BlueprintId,
-        hook: BlueprintHook,
-        export: PackageExport,
-    ) -> Self {
-        Self::BlueprintHook(BlueprintHookActor {
-            blueprint_id,
-            hook,
-            export,
         })
     }
 }
