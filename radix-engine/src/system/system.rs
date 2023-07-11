@@ -1006,31 +1006,7 @@ where
             );
 
         // Read the type info
-        let mut type_info = {
-            let lock_handle = self.api.kernel_open_substate(
-                &node_id,
-                TYPE_INFO_FIELD_PARTITION,
-                &TypeInfoField::TypeInfo.into(),
-                LockFlags::read_only(),
-                SystemLockData::Default,
-            )?;
-            let type_info: TypeInfoSubstate = self
-                .api
-                .kernel_read_substate(lock_handle)?
-                .as_typed()
-                .unwrap();
-            self.api.kernel_close_substate(lock_handle)?;
-            type_info
-        };
-
-        let object_info = match &mut type_info {
-            TypeInfoSubstate::Object(object_info) => object_info,
-            _ => {
-                return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
-                    CannotGlobalizeError::NotAnObject,
-                )))
-            }
-        };
+        let mut object_info = self.get_object_info(&node_id)?;
 
         // Verify can globalize with address
         {
@@ -1072,7 +1048,7 @@ where
         self.kernel_create_node(
             global_address.into(),
             btreemap!(
-                TYPE_INFO_FIELD_PARTITION => type_info_partition(type_info)
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(object_info))
             ),
         )?;
 
@@ -1177,18 +1153,21 @@ where
         let module_object_info = match object_module_id {
             ObjectModuleId::Main => object_info,
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
-                if !object_info.module_versions.contains_key(&object_module_id) {
+                let version = if let Some(version) = object_info.module_versions.get(&object_module_id) {
+                    version.clone()
+                } else {
                     return Err(RuntimeError::SystemError(
                         SystemError::ObjectModuleDoesNotExist(object_module_id),
                     ));
-                }
+                };
 
+                // Modules outside of Main do not have their own modules
                 ObjectInfo {
                     global: true,
                     main_blueprint_id: object_module_id.static_blueprint().unwrap(),
                     module_versions: btreemap!(
-                        // FIXME: This is wrong
-                        ObjectModuleId::Main => BlueprintVersion::default(),
+                        // TODO: Is there a better/another abstraction to cover object info of modules?
+                        ObjectModuleId::Main => version,
                     ),
                     blueprint_info: ObjectBlueprintInfo::default(),
                     features: btreeset!(),
@@ -1460,8 +1439,6 @@ where
 
         // Key Value Stores do not have methods so we remove that possibility here
         let module_object_info = self.get_module_object_info(receiver, object_module_id)?;
-        let identifier =
-            MethodIdentifier(receiver.clone(), object_module_id, method_name.to_string());
 
         // TODO: Can we load this lazily when needed?
         let instance_context = if module_object_info.global {
@@ -1489,7 +1466,9 @@ where
         let invocation = KernelInvocation {
             actor: Actor::method(
                 global_address,
-                identifier,
+                receiver.clone(),
+                object_module_id,
+                method_name.to_string(),
                 module_object_info,
                 instance_context,
                 direct_access,
@@ -2053,13 +2032,8 @@ where
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let identifier = FunctionIdentifier::new(
-            BlueprintId::new(&package_address, blueprint_name),
-            function_name.to_string(),
-        );
-
         let invocation = KernelInvocation {
-            actor: Actor::function(identifier.0, identifier.1),
+            actor: Actor::function(BlueprintId::new(&package_address, blueprint_name), function_name.to_string()),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,

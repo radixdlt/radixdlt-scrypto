@@ -191,8 +191,7 @@ pub struct ExecutionTrace {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ApplicationFnIdentifier {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
+    pub blueprint_id: BlueprintId,
     pub ident: String,
 }
 
@@ -210,8 +209,7 @@ impl ExecutionTrace {
         worktop_changes_aggregator: &mut IndexMap<usize, Vec<WorktopChange>>,
     ) {
         if let TraceOrigin::ScryptoMethod(fn_identifier) = &self.origin {
-            if fn_identifier.blueprint_name == WORKTOP_BLUEPRINT
-                && fn_identifier.package_address == RESOURCE_PACKAGE
+            if fn_identifier.blueprint_id == BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT)
             {
                 if fn_identifier.ident == WORKTOP_PUT_IDENT {
                     for (_, bucket_snapshot) in self.input.buckets.iter() {
@@ -472,16 +470,14 @@ impl ExecutionTraceModule {
                     ident,
                     ..
                 }) => TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                    package_address: object_info.main_blueprint_id.package_address.clone(),
-                    blueprint_name: object_info.main_blueprint_id.blueprint_name.clone(),
+                    blueprint_id: object_info.main_blueprint_id.clone(),
                     ident: ident.clone(),
                 }),
                 Actor::Function {
-                    blueprint_id: blueprint,
+                    blueprint_id,
                     ident,
                 } => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
-                    package_address: blueprint.package_address.clone(),
-                    blueprint_name: blueprint.blueprint_name.clone(),
+                    blueprint_id: blueprint_id.clone(),
                     ident: ident.clone(),
                 }),
                 Actor::VirtualLazyLoad { .. } | Actor::Root => {
