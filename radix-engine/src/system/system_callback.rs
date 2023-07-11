@@ -18,12 +18,12 @@ use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
-use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeOutput;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
+use radix_engine_interface::hooks::OnVirtualizeInput;
+use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::schema::{InstanceSchema, RefTypes};
 
 #[derive(Clone)]
@@ -588,12 +588,34 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
         match type_info {
-            TypeInfoSubstate::Object(_) => todo!(),
-            TypeInfoSubstate::KeyValueStore(_) => todo!(),
-            TypeInfoSubstate::GlobalAddressReservation(_) => todo!(),
-            TypeInfoSubstate::GlobalAddressPhantom(_) => todo!(),
+            TypeInfoSubstate::Object(ObjectInfo {
+                global,
+                blueprint_id,
+                blueprint_version,
+                outer_object,
+                features,
+                instance_schema,
+            }) => {
+                let definition = load_blueprint_definition(
+                    blueprint_id.package_address,
+                    &BlueprintVersionKey {
+                        blueprint: blueprint_id.blueprint_name,
+                        version: blueprint_version,
+                    },
+                    api,
+                )?;
+                if let Some(hook) = definition.hook_exports.get(&BlueprintHook::OnDrop) {
+                    todo!()
+                } else {
+                    Ok(())
+                }
+            }
+            TypeInfoSubstate::KeyValueStore(_)
+            | TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => {
+                // There is no way to drop a non-object through system API, triggering `NotAnObject` error.
+                Ok(())
+            }
         }
-
-        Ok(())
     }
 }

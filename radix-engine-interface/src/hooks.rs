@@ -11,3 +11,8 @@ pub struct OnVirtualizeInput {
 }
 
 pub type OnVirtualizeOutput = BTreeMap<ObjectModuleId, Own>;
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct OnDropInput {}
+
+pub type OnDropOutput = ();
