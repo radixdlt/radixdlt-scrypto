@@ -161,7 +161,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
             .blueprint_name
             .eq(FUNGIBLE_PROOF_BLUEPRINT)
         {
-            let proof_resource = ResourceAddress::new_or_panic(info.get_outer_object().into());
+            let proof_resource = ResourceAddress::new_or_panic(info.get_main_outer_object().into());
             if proof_resource == resource_address {
                 let handle = api.kernel_open_substate(
                     proof.0.as_node_id(),
@@ -213,7 +213,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
             .blueprint_name
             .eq(NON_FUNGIBLE_PROOF_BLUEPRINT)
         {
-            let proof_resource = ResourceAddress::new_or_panic(info.get_outer_object().into());
+            let proof_resource = ResourceAddress::new_or_panic(info.get_main_outer_object().into());
             if proof_resource == resource_address {
                 let handle = api.kernel_open_substate(
                     proof.0.as_node_id(),

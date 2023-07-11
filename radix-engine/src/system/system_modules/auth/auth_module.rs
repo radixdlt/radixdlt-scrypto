@@ -245,7 +245,7 @@ impl AuthModule {
                         let node_id = callee.node_id;
                         let info = api.get_object_info(&node_id)?;
 
-                        let access_rules_of = info.get_outer_object();
+                        let access_rules_of = info.get_main_outer_object();
                         access_rules_of.into_node_id()
                     }
                 };

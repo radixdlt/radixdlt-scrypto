@@ -108,7 +108,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
+            ResourceAddress::new_or_panic(api.actor_get_info()?.get_main_outer_object().into());
 
         Ok(resource_address)
     }

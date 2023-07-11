@@ -449,7 +449,7 @@ where
                         .main_blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_BUCKET_BLUEPRINT);
-                    let parent = info.get_outer_object();
+                    let parent = info.get_main_outer_object();
                     let resource_address: ResourceAddress =
                         ResourceAddress::new_or_panic(parent.as_ref().clone().try_into().unwrap());
                     (is_fungible, resource_address)

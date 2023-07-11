@@ -7,6 +7,8 @@ use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCa
 pub struct InstanceContext {
     pub outer_object: GlobalAddress,
     pub outer_blueprint: String,
+    // TODO: Add module id?
+    // TODO: Add features
 }
 
 /// No method acting here!
@@ -24,6 +26,20 @@ pub struct MethodActor {
 }
 
 impl MethodActor {
+    pub fn get_blueprint_id(&self) -> BlueprintId {
+        match self.module_id {
+            ObjectModuleId::Main => self.module_object_info.main_blueprint_id.clone(),
+            _ => self.module_id.static_blueprint().unwrap(),
+        }
+    }
+
+    pub fn get_blueprint_info(&self) -> ObjectBlueprintInfo {
+        match self.module_id {
+            ObjectModuleId::Main => self.module_object_info.blueprint_info.clone(),
+            _ => ObjectBlueprintInfo::Outer,
+        }
+    }
+
     pub fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier {
             blueprint_id: self.module_object_info.main_blueprint_id.clone(),

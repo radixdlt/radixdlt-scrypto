@@ -39,7 +39,7 @@ impl NodeMoveModule {
                         .blueprint_name
                         .eq(FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_main_outer_object().as_node_id()))
                 {
                     return Ok(());
                 }
@@ -101,7 +101,7 @@ impl NodeMoveModule {
                         .blueprint_name
                         .eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_main_outer_object().as_node_id()))
                 {
                     return Ok(());
                 }

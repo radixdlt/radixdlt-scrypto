@@ -29,19 +29,31 @@ pub struct ObjectInfo {
     pub main_blueprint_id: BlueprintId,
     pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
 
-    // Blueprint arguments
+    // Main Blueprint arguments
     pub blueprint_info: ObjectBlueprintInfo,
     pub features: BTreeSet<String>,
     pub instance_schema: Option<InstanceSchema>,
 }
 
 impl ObjectInfo {
-    pub fn get_outer_object(&self) -> GlobalAddress {
+    pub fn get_main_outer_object(&self) -> GlobalAddress {
         match &self.blueprint_info {
             ObjectBlueprintInfo::Inner { outer_object } => outer_object.clone(),
             ObjectBlueprintInfo::Outer { .. } => {
                 panic!("Broken Application logic: Expected to be an inner object but is an outer object");
             }
+        }
+    }
+
+    pub fn try_get_outer_object(&self, module_id: ObjectModuleId) -> Option<GlobalAddress> {
+        match module_id {
+            ObjectModuleId::Main => {
+                match &self.blueprint_info {
+                    ObjectBlueprintInfo::Inner { outer_object } => Some(outer_object.clone()),
+                    ObjectBlueprintInfo::Outer { .. } => None,
+                }
+            }
+            _ => None,
         }
     }
 

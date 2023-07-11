@@ -223,7 +223,7 @@ impl NativeVault for Vault {
         Y: ClientApi<E>,
     {
         let info = api.get_object_info(self.0.as_node_id())?;
-        Ok(ResourceAddress::try_from(info.get_outer_object().as_ref()).unwrap())
+        Ok(ResourceAddress::try_from(info.get_main_outer_object().as_ref()).unwrap())
     }
 
     fn burn<Y, E: Debug + ScryptoDecode>(&mut self, amount: Decimal, api: &mut Y) -> Result<(), E>

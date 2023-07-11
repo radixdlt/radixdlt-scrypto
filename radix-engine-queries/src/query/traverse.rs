@@ -138,7 +138,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                     self.visitor.visit_fungible_vault(
                         node_id,
-                        &ResourceAddress::new_or_panic(info.get_outer_object().into()),
+                        &ResourceAddress::new_or_panic(info.get_main_outer_object().into()),
                         &liquid.value.0,
                     );
                 } else if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
@@ -158,7 +158,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                     self.visitor.visit_non_fungible_vault(
                         node_id,
-                        &ResourceAddress::new_or_panic(info.get_outer_object().into()),
+                        &ResourceAddress::new_or_panic(info.get_main_outer_object().into()),
                         &liquid.value.0,
                     );
 
@@ -171,7 +171,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     for (_key, non_fungible_local_id) in entries {
                         self.visitor.visit_non_fungible(
                             node_id,
-                            &ResourceAddress::new_or_panic(info.get_outer_object().into()),
+                            &ResourceAddress::new_or_panic(info.get_main_outer_object().into()),
                             &non_fungible_local_id,
                         );
                     }
