@@ -1,4 +1,4 @@
-use radix_engine::errors::{RuntimeError, SystemModuleError};
+use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::system::system_modules::node_move::NodeMoveError;
 use radix_engine::types::*;
@@ -775,4 +775,72 @@ fn can_not_call_bucket_unlock_non_fungibles_directly() {
         ))) => true,
         _ => false,
     })
+}
+
+#[test]
+fn test_proof_check() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource_address = test_runner.create_fungible_resource(dec!(100), 0, account);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, resource_address, 1)
+        .create_proof_from_auth_zone_of_amount(resource_address, dec!(1), "proof")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "Receiver",
+                "check_if_xrd",
+                manifest_args!(lookup.proof("proof")),
+            )
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ApplicationError(ApplicationError::Panic(e)) if e.eq("Invalid proof: Expected ResourceAddress(5da66318c6318c61f5a61b4c6318c6318cf794aa8d295f14e6318c6318c6), but got ResourceAddress(5dc78a43cf2b06c67b71f68ab81aa004a8ea8a08ef73ceceba02e33059d7)") => true,
+        _ => false,
+    });
+}
+
+#[test]
+fn test_proof_check_with_message() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource_address = test_runner.create_fungible_resource(dec!(100), 0, account);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, resource_address, 1)
+        .create_proof_from_auth_zone_of_amount(resource_address, dec!(1), "proof")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "Receiver",
+                "check_with_message_if_xrd",
+                manifest_args!(lookup.proof("proof")),
+            )
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ApplicationError(ApplicationError::Panic(e)) if e.eq("Not XRD proof") => true,
+        _ => false,
+    });
 }

@@ -38,6 +38,10 @@ pub trait ScryptoUncheckedProof {
     ) -> Self::CheckedProofType;
 
     /// Skips checking and converts this proof into a "checked" proof.
+    /// 
+    /// # Warning!
+    /// Be sure to validate the resource address before reading data from the proof 
+    /// in your custom validation logic!
     fn skip_checking(self) -> Self::CheckedProofType;
 
     fn resource_address(&self) -> ResourceAddress;
