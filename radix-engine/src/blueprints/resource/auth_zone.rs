@@ -272,26 +272,24 @@ impl AuthZoneBlueprint {
         Ok(proofs)
     }
 
-    pub(crate) fn drop<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
+    pub(crate) fn drop<Y>(auth_zone: OwnedAuthZone, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
+        api.drop_object(auth_zone.0.as_node_id())?;
 
-        let input: AuthZoneDropInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
+        Ok(())
+    }
 
-        // Detach proofs from the auth zone
-        let handle = api.kernel_open_substate(
-            input.auth_zone.0.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &AuthZoneField::AuthZone.into(),
+    pub(crate) fn on_drop<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>, // TODO: remove kernel api
+    {
+        // Detach proofs
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
-            SystemLockData::Default,
         )?;
         let mut auth_zone_substate: AuthZone =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -305,9 +303,6 @@ impl AuthZoneBlueprint {
             proof.drop(api)?;
         }
 
-        // Drop self
-        api.drop_object(input.auth_zone.0.as_node_id())?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
+        Ok(())
     }
 }

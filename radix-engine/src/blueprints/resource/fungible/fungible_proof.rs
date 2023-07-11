@@ -134,23 +134,21 @@ impl FungibleProofBlueprint {
 
     pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
         api.drop_object(proof.0.as_node_id())?;
 
         Ok(())
     }
 
-    pub(crate) fn on_drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
+    pub(crate) fn on_drop<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>, // TODO: remove kernel api
     {
-        let handle = api.kernel_open_substate(
-            proof.0.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &NonFungibleProofField::ProofRefs.into(),
-            LockFlags::read_only(),
-            SystemLockData::Default,
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            FungibleProofField::ProofRefs.into(),
+            LockFlags::MUTABLE,
         )?;
         let proof_substate: FieldSubstate<FungibleProofSubstate> =
             api.kernel_read_substate(handle)?.as_typed().unwrap();
