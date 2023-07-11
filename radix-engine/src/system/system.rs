@@ -1285,7 +1285,7 @@ where
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
-        let package_address = actor.package_address().clone();
+        let package_address = actor.blueprint_id().package_address;
         let instance_context = actor.instance_context();
         let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 

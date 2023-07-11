@@ -301,7 +301,7 @@ impl<L: Clone> CallFrame<L> {
         // Additional global references
         let mut additional_global_refs = Vec::new();
 
-        additional_global_refs.push(frame.actor.package_address().clone().into());
+        additional_global_refs.push(frame.actor.blueprint_id().package_address.into());
 
         match &frame.actor {
             Actor::Root => {}

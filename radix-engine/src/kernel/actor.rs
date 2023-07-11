@@ -180,24 +180,24 @@ impl Actor {
         }
     }
 
-    pub fn blueprint_id(&self) -> &BlueprintId {
+    pub fn blueprint_id(&self) -> BlueprintId {
         match self {
             Actor::Method(MethodActor {
                 module_object_info:
                     ObjectInfo {
-                        main_blueprint_id: blueprint,
+                        main_blueprint_id: blueprint_id,
                         ..
                     },
                 ..
             })
             | Actor::Function {
-                blueprint_id: blueprint,
+                blueprint_id,
                 ..
             }
             | Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
+                blueprint_id,
                 ..
-            } => blueprint,
+            } => blueprint_id.clone(),
             Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
@@ -206,7 +206,7 @@ impl Actor {
     /// FIXME: Update abstractions such that it is based on local call frame
     pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
         btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
-            *self.package_address()
+            self.blueprint_id().package_address
         ))
     }
 
@@ -215,52 +215,6 @@ impl Actor {
             btreeset!(NonFungibleGlobalId::global_caller_badge(global_caller))
         } else {
             btreeset!()
-        }
-    }
-
-    pub fn package_address(&self) -> &PackageAddress {
-        let blueprint = match &self {
-            Actor::Method(MethodActor {
-                module_object_info:
-                    ObjectInfo {
-                        main_blueprint_id: blueprint,
-                        ..
-                    },
-                ..
-            }) => blueprint,
-            Actor::Function {
-                blueprint_id: blueprint,
-                ..
-            } => blueprint,
-            Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ..
-            } => blueprint,
-            Actor::Root => return &PACKAGE_PACKAGE, // FIXME: have the right interface
-        };
-
-        &blueprint.package_address
-    }
-
-    pub fn blueprint_name(&self) -> &str {
-        match &self {
-            Actor::Method(MethodActor {
-                module_object_info:
-                    ObjectInfo {
-                        main_blueprint_id: blueprint,
-                        ..
-                    },
-                ..
-            })
-            | Actor::Function {
-                blueprint_id: blueprint,
-                ..
-            }
-            | Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ..
-            } => blueprint.blueprint_name.as_str(),
-            Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }
 
