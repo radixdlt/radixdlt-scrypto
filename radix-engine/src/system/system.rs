@@ -1153,13 +1153,14 @@ where
         let module_object_info = match object_module_id {
             ObjectModuleId::Main => object_info,
             ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
-                let version = if let Some(version) = object_info.module_versions.get(&object_module_id) {
-                    version.clone()
-                } else {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::ObjectModuleDoesNotExist(object_module_id),
-                    ));
-                };
+                let version =
+                    if let Some(version) = object_info.module_versions.get(&object_module_id) {
+                        version.clone()
+                    } else {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::ObjectModuleDoesNotExist(object_module_id),
+                        ));
+                    };
 
                 // Modules outside of Main do not have their own modules
                 ObjectInfo {
@@ -2033,7 +2034,10 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = KernelInvocation {
-            actor: Actor::function(BlueprintId::new(&package_address, blueprint_name), function_name.to_string()),
+            actor: Actor::function(
+                BlueprintId::new(&package_address, blueprint_name),
+                function_name.to_string(),
+            ),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
