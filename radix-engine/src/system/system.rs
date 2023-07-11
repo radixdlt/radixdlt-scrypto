@@ -2255,7 +2255,7 @@ where
     }
 
     #[trace_resources]
-    fn actor_get_receiver_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
+    fn actor_get_object_info(&mut self) -> Result<ObjectInfo, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
@@ -2331,7 +2331,7 @@ where
                 .try_as_method()
                 .map(|x| x.node_id)
                 .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?,
-            ActorObjectType::OuterObject => match self.actor_get_receiver_info()?.outer_object {
+            ActorObjectType::OuterObject => match self.actor_get_object_info()?.outer_object {
                 OuterObjectInfo::Some { outer_object } => outer_object.into_node_id(),
                 OuterObjectInfo::None { .. } => {
                     return Err(RuntimeError::SystemError(
@@ -2359,7 +2359,7 @@ where
         let node_id = match actor_object_type {
             ActorObjectType::SELF => self.actor_get_node_id()?,
             ActorObjectType::OuterObject => self
-                .actor_get_receiver_info()?
+                .actor_get_object_info()?
                 .get_outer_object()
                 .into_node_id(),
         };
