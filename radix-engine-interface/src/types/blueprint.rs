@@ -26,10 +26,10 @@ impl Default for ObjectBlueprintInfo {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {
     pub global: bool,
-    pub main_blueprint_id: BlueprintId,
     pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
 
-    // Main Blueprint arguments
+    // Main Blueprint Info
+    pub main_blueprint_id: BlueprintId,
     pub blueprint_info: ObjectBlueprintInfo,
     pub features: BTreeSet<String>,
     pub instance_schema: Option<InstanceSchema>,

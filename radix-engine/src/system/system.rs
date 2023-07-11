@@ -1157,7 +1157,7 @@ where
             _ => return None,
         };
 
-        let instance_context = if method_actor.module_object_info.global {
+        let instance_context = if method_actor.object_info.global {
             Some(InstanceContext {
                 outer_object: GlobalAddress::new_or_panic(method_actor.node_id.0),
                 outer_blueprint: method_actor.get_blueprint_id().blueprint_name,
@@ -1188,42 +1188,6 @@ where
         let enabled = object_info.features.contains(feature);
 
         Ok(enabled)
-    }
-
-    fn get_module_object_info(
-        &mut self,
-        node_id: &NodeId,
-        object_module_id: ObjectModuleId,
-    ) -> Result<ObjectInfo, RuntimeError> {
-        let object_info = self.get_object_info(node_id)?;
-        let module_object_info = match object_module_id {
-            ObjectModuleId::Main => object_info,
-            ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
-                let version =
-                    if let Some(version) = object_info.module_versions.get(&object_module_id) {
-                        version.clone()
-                    } else {
-                        return Err(RuntimeError::SystemError(
-                            SystemError::ObjectModuleDoesNotExist(object_module_id),
-                        ));
-                    };
-
-                // Modules outside of Main do not have their own modules
-                ObjectInfo {
-                    global: true,
-                    main_blueprint_id: object_module_id.static_blueprint().unwrap(),
-                    module_versions: btreemap!(
-                        // TODO: Is there a better/another abstraction to cover object info of modules?
-                        ObjectModuleId::Main => version,
-                    ),
-                    blueprint_info: ObjectBlueprintInfo::default(),
-                    features: btreeset!(),
-                    instance_schema: None,
-                }
-            }
-        };
-
-        Ok(module_object_info)
     }
 }
 
@@ -1443,7 +1407,7 @@ where
     fn call_method_advanced(
         &mut self,
         receiver: &NodeId,
-        object_module_id: ObjectModuleId,
+        module_id: ObjectModuleId,
         direct_access: bool,
         method_name: &str,
         args: Vec<u8>,
@@ -1485,15 +1449,20 @@ where
         };
 
         // Key Value Stores do not have methods so we remove that possibility here
-        let module_object_info = self.get_module_object_info(receiver, object_module_id)?;
+        let object_info = self.get_object_info(&receiver)?;
+        if !object_info.module_versions.contains_key(&module_id) {
+            return Err(RuntimeError::SystemError(
+                SystemError::ObjectModuleDoesNotExist(module_id),
+            ));
+        }
 
         let invocation = KernelInvocation {
             actor: Actor::method(
                 global_address,
                 receiver.clone(),
-                object_module_id,
+                module_id,
                 method_name.to_string(),
-                module_object_info,
+                object_info,
                 direct_access,
             ),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
@@ -2281,7 +2250,7 @@ where
         let actor = self.api.kernel_get_system_state().current;
         let object_info = actor
             .try_as_method()
-            .map(|m| m.module_object_info.clone())
+            .map(|m| m.object_info.clone())
             .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?;
 
         Ok(object_info)

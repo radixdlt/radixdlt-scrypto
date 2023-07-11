@@ -209,7 +209,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     node_id,
                     module_id,
                     ident,
-                    module_object_info,
+                    object_info,
                     ..
                 }) => {
                     // Only do royalty costing for Main
@@ -217,7 +217,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                         return Ok(());
                     }
 
-                    if module_object_info
+                    if object_info
                         .module_versions
                         .contains_key(&ObjectModuleId::Royalty)
                     {

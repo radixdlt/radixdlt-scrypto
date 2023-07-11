@@ -307,7 +307,7 @@ impl<L: Clone> CallFrame<L> {
             Actor::Root => {}
             Actor::Method(MethodActor {
                 global_address,
-                module_object_info: object_info,
+                object_info,
                 ..
             }) => {
                 if let Some(global_address) = global_address {
