@@ -8,7 +8,7 @@ use transaction::prelude::*;
 #[test]
 fn local_component_should_return_correct_info() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
@@ -30,7 +30,7 @@ fn local_component_should_return_correct_info() {
 #[test]
 fn local_component_should_be_callable_read_only() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
@@ -52,7 +52,7 @@ fn local_component_should_be_callable_read_only() {
 #[test]
 fn local_component_should_be_callable_with_write() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
@@ -74,7 +74,7 @@ fn local_component_should_be_callable_with_write() {
 #[test]
 fn recursion_bomb() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
@@ -106,7 +106,7 @@ fn recursion_bomb() {
 #[test]
 fn recursion_bomb_to_failure() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
@@ -144,7 +144,7 @@ fn recursion_bomb_to_failure() {
 #[test]
 fn recursion_bomb_2() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 
@@ -176,7 +176,7 @@ fn recursion_bomb_2() {
 #[test]
 fn recursion_bomb_2_to_failure() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_recursion");
 

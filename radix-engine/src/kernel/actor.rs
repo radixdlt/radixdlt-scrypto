@@ -146,6 +146,13 @@ impl Actor {
         }
     }
 
+    pub fn global_address(&self) -> Option<GlobalAddress> {
+        match self {
+            Actor::Method(MethodActor { global_address, .. }) => global_address.clone(),
+            _ => None,
+        }
+    }
+
     pub fn as_global_caller(&self) -> Option<GlobalCaller> {
         match self {
             Actor::Method(actor) => actor.global_address.map(|address| address.into()),

@@ -1,3 +1,4 @@
+use radix_engine::vm::NoExtension;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError},
     kernel::call_frame::PassMessageError,
@@ -6,7 +7,7 @@ use radix_engine::{
 use scrypto_unit::*;
 use transaction::prelude::*;
 
-fn setup_component(test_runner: &mut TestRunner) -> ComponentAddress {
+fn setup_component(test_runner: &mut TestRunner<NoExtension>) -> ComponentAddress {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
 
     let setup_manifest = ManifestBuilder::new()
@@ -59,7 +60,7 @@ type ManifestConstructor = fn(
 #[test]
 fn valid_transactions_can_be_committed() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let component_address = setup_component(&mut test_runner);
 
     // Act
@@ -103,7 +104,7 @@ fn valid_transactions_can_be_committed() {
 #[test]
 fn cannot_pass_bucket_for_proof_argument() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let component_address = setup_component(&mut test_runner);
 
     // Act
@@ -134,7 +135,7 @@ fn cannot_pass_bucket_for_proof_argument() {
 #[test]
 fn cannot_pass_proof_for_bucket_argument() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let component_address = setup_component(&mut test_runner);
 
     // Act
@@ -165,7 +166,7 @@ fn cannot_pass_proof_for_bucket_argument() {
 #[test]
 fn cannot_return_proof_for_bucket() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let component_address = setup_component(&mut test_runner);
 
     // Act
@@ -191,7 +192,7 @@ fn cannot_return_proof_for_bucket() {
 #[test]
 fn cannot_return_bucket_for_proof() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let component_address = setup_component(&mut test_runner);
 
     // Act
@@ -217,7 +218,7 @@ fn cannot_return_bucket_for_proof() {
 #[test]
 fn cannot_create_object_with_mismatching_data() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
 
     // Act
@@ -244,7 +245,7 @@ fn cannot_create_object_with_mismatching_data() {
 #[test]
 fn cannot_update_substate_with_mismatching_data() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let component_address = setup_component(&mut test_runner);
 
     // Act
@@ -271,7 +272,7 @@ fn cannot_update_substate_with_mismatching_data() {
 #[test]
 fn pass_own_as_reference_trigger_move_error_rather_than_payload_validation_error() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let component_address = setup_component(&mut test_runner);
 
     // Act
@@ -299,7 +300,7 @@ fn pass_own_as_reference_trigger_move_error_rather_than_payload_validation_error
 #[test]
 fn test_receive_reference_of_specific_blueprint() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let component_address = setup_component(&mut test_runner);
 
     // Act
@@ -320,7 +321,7 @@ fn test_receive_reference_of_specific_blueprint() {
 #[test]
 fn test_receive_reference_not_of_specific_blueprint() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let component_address = setup_component(&mut test_runner);
 
     // Act

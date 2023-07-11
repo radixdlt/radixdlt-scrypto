@@ -10,7 +10,7 @@ const TARGET_PACKAGE_ADDRESS: [u8; NodeId::LENGTH] = [
 #[test]
 fn test_external_bridges() {
     // ARRANGE
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
 
     // Part 1 - Upload the target and caller packages
     // Note - we put them in separate packages so that we test that the package call is to an external package

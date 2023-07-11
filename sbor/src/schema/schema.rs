@@ -2,7 +2,7 @@ use crate::rust::prelude::*;
 use crate::*;
 
 /// An array of custom type kinds, and associated extra information which can attach to the type kinds
-#[derive(Debug, Clone, PartialEq, Eq, Sbor)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Sbor)]
 // NB - the generic parameter E isn't embedded in the value model itself - instead:
 // * Via TypeKind, E::CustomTypeKind<LocalTypeIndex> gets embedded
 // * Via TypeValidation, E::CustomTypeValidation gets embedded

@@ -68,8 +68,8 @@ pub trait AccessRulesObject {
         let (node_id, module_id) = self.self_id();
         let _rtn = api.call_method_advanced(
             node_id,
-            false,
             module_id,
+            false,
             ACCESS_RULES_SET_OWNER_ROLE_IDENT,
             scrypto_encode(&AccessRulesSetOwnerRoleInput { rule: rule.into() }).unwrap(),
         )?;
@@ -84,8 +84,8 @@ pub trait AccessRulesObject {
         let (node_id, module_id) = self.self_id();
         let _rtn = api.call_method_advanced(
             node_id,
-            false,
             module_id,
+            false,
             ACCESS_RULES_SET_OWNER_ROLE_IDENT,
             scrypto_encode(&AccessRulesLockOwnerRoleInput {}).unwrap(),
         )?;
@@ -108,8 +108,8 @@ pub trait AccessRulesObject {
         let (node_id, module_id) = self.self_id();
         let _rtn = api.call_method_advanced(
             node_id,
-            false,
             module_id,
+            false,
             ACCESS_RULES_SET_ROLE_IDENT,
             scrypto_encode(&AccessRulesSetRoleInput {
                 module,
