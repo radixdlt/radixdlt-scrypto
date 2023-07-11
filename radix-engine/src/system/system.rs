@@ -756,16 +756,13 @@ where
         Ok(info)
     }
 
-    fn get_actor_schema(
-        &mut self,
-        actor_object_type: ActorObjectType,
-    ) -> Result<(NodeId, PartitionNumber, BlueprintInterface, Option<InstanceSchema>, BlueprintId), RuntimeError> {
+    fn get_actor_object_id(&mut self, actor_object_type: ActorObjectType) -> Result<(NodeId, ObjectModuleId), RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         let method_actor = actor
             .try_as_method()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
 
-        let (node_id, module_id) = match actor_object_type {
+        let object_id = match actor_object_type {
             ActorObjectType::OuterObject => {
                 let node_id = method_actor.node_id;
                 let module_id = method_actor.module_id;
@@ -784,6 +781,14 @@ where
             }
         };
 
+        Ok(object_id)
+    }
+
+    fn get_actor_schema(
+        &mut self,
+        actor_object_type: ActorObjectType,
+    ) -> Result<(NodeId, PartitionNumber, BlueprintInterface, Option<InstanceSchema>, BlueprintId), RuntimeError> {
+        let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
         let (blueprint_id, instance_schema) = self.get_blueprint_info(&node_id, module_id)?;
         let blueprint_interface = self.get_blueprint_default_interface(
             blueprint_id.clone()
@@ -2335,21 +2340,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
-        let node_id = match actor_object_type {
-            ActorObjectType::SELF => {
-                self.actor_get_receiver_node_id()
-                    .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?
-                    .0
-            }
-            ActorObjectType::OuterObject => match self.actor_get_info()?.blueprint_info {
-                ObjectBlueprintInfo::Inner { outer_object } => outer_object.into_node_id(),
-                ObjectBlueprintInfo::Outer { .. } => {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::OuterObjectDoesNotExist,
-                    ));
-                }
-            },
-        };
+        let (node_id, _module_id) = self.get_actor_object_id(actor_object_type)?;
 
         self.call_method_advanced(&node_id, module_id, false, method_name, args)
     }
@@ -2366,12 +2357,7 @@ where
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
-        let node_id = match actor_object_type {
-            ActorObjectType::SELF => self.actor_get_node_id()?,
-            ActorObjectType::OuterObject => {
-                self.actor_get_info()?.get_main_outer_object().into_node_id()
-            }
-        };
+        let (node_id, _module_id) = self.get_actor_object_id(actor_object_type)?;
         self.is_feature_enabled(&node_id, feature)
     }
 }
