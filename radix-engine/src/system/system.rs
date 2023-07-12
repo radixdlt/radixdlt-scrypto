@@ -967,13 +967,13 @@ where
         // In the future, we may consider allowing customization at blueprint level.
         let actor = self.current_actor();
         if Some(&reserved_blueprint_id.package_address) != actor.package_address() {
-            // return Err(RuntimeError::SystemError(
-            //     SystemError::InvalidGlobalizeAccess(Box::new(InvalidGlobalizeAccess {
-            //         package_address: reserved_blueprint_id.package_address,
-            //         blueprint_name: reserved_blueprint_id.blueprint_name,
-            //         actor_package: actor.package_address().cloned(),
-            //     })),
-            // ));
+            return Err(RuntimeError::SystemError(
+                SystemError::InvalidGlobalizeAccess(Box::new(InvalidGlobalizeAccess {
+                    package_address: reserved_blueprint_id.package_address,
+                    blueprint_name: reserved_blueprint_id.blueprint_name,
+                    actor_package: actor.package_address().cloned(),
+                })),
+            ));
         }
 
         // Check module configuration
