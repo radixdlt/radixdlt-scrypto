@@ -967,7 +967,7 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameScanSubstateError> {
+    ) -> Result<(Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo), CallFrameScanSubstateError> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameScanSubstateError::NodeNotVisible(node_id.clone()));
@@ -979,11 +979,10 @@ impl<L: Clone> CallFrame<L> {
                 StoreAccessInfo::new(),
             )
         } else {
-            let (scanned, info) = store.scan_substates(node_id, partition_num, count);
-            (scanned.into_iter().map(|(_key, value)| value).collect(), info)
+            store.scan_substates(node_id, partition_num, count)
         };
 
-        for substate in &substates {
+        for (_key, substate) in &substates {
             for reference in substate.references() {
                 if reference.is_global() {
                     self.stable_references

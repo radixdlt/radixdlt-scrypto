@@ -1968,7 +1968,7 @@ where
             .api
             .kernel_scan_substates(&node_id, partition_num, count)?
             .into_iter()
-            .map(|value| value.into())
+            .map(|(_key, value)| value.into())
             .collect();
 
         Ok(substates)
@@ -2861,7 +2861,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api
             .kernel_scan_substates(node_id, partition_num, count)
     }

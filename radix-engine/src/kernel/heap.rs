@@ -142,15 +142,15 @@ impl Heap {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue> {
+    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
             .and_then(|n| n.substates.get_mut(&partition_num));
         if let Some(substates) = node_substates {
-            let substates: Vec<IndexedScryptoValue> = substates
+            let substates: Vec<(SubstateKey, IndexedScryptoValue)> = substates
                 .iter()
-                .map(|(_key, v)| v.clone())
+                .map(|(key, v)| (key.clone(), v.clone()))
                 .take(count.try_into().unwrap())
                 .collect();
 

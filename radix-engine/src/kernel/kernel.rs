@@ -804,7 +804,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         let (substates, store_access) = self
             .current_frame
             .scan_substates(node_id, partition_num, count, &mut self.heap, self.store)
