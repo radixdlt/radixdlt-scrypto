@@ -1,4 +1,5 @@
 use crate::resource::*;
+use crate::runtime::Runtime;
 use crate::*;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
@@ -26,10 +27,21 @@ use scrypto::engine::scrypto_env::ScryptoEnv;
 pub trait ScryptoUncheckedProof {
     type CheckedProofType;
 
-    // Apply basic resource address check and converts self into `CheckedProof`.
-    fn check(self, resource_address: ResourceAddress) -> Self::CheckedProofType;
+    /// Checks the resource address of this proof and panics if it's unexpected.
+    fn check(self, expected_resource_address: ResourceAddress) -> Self::CheckedProofType;
 
-    // Converts self into `CheckedProof` with no address check.
+    /// Checks the resource address of this proof and panics with custom error message if it's unexpected.
+    fn check_with_message<S: ToString>(
+        self,
+        expected_resource_address: ResourceAddress,
+        custom_error_message: S,
+    ) -> Self::CheckedProofType;
+
+    /// Skips checking and converts this proof into a "checked" proof.
+    ///
+    /// # Warning!
+    /// Be sure to validate the resource address before reading data from the proof
+    /// in your custom validation logic!
     fn skip_checking(self) -> Self::CheckedProofType;
 
     fn resource_address(&self) -> ResourceAddress;
@@ -124,7 +136,29 @@ impl ScryptoUncheckedProof for Proof {
     type CheckedProofType = CheckedProof;
 
     fn check(self, expected_resource_address: ResourceAddress) -> CheckedProof {
-        assert_eq!(self.resource_address(), expected_resource_address);
+        let actual_resource_address = self.resource_address();
+
+        if actual_resource_address != expected_resource_address {
+            Runtime::panic(format!(
+                "Invalid proof: Expected {:?}, but got {:?}",
+                expected_resource_address, actual_resource_address
+            ))
+        }
+
+        CheckedProof(self)
+    }
+
+    fn check_with_message<S: ToString>(
+        self,
+        expected_resource_address: ResourceAddress,
+        custom_error_message: S,
+    ) -> CheckedProof {
+        let actual_resource_address = self.resource_address();
+
+        if actual_resource_address != expected_resource_address {
+            Runtime::panic(custom_error_message.to_string())
+        }
+
         CheckedProof(self)
     }
 
@@ -189,8 +223,20 @@ impl ScryptoUncheckedProof for Proof {
 impl ScryptoUncheckedProof for FungibleProof {
     type CheckedProofType = CheckedFungibleProof;
 
-    fn check(self, resource_address: ResourceAddress) -> Self::CheckedProofType {
-        CheckedFungibleProof(Proof::check(self.0, resource_address))
+    fn check(self, expected_resource_address: ResourceAddress) -> Self::CheckedProofType {
+        CheckedFungibleProof(Proof::check(self.0, expected_resource_address))
+    }
+
+    fn check_with_message<S: ToString>(
+        self,
+        expected_resource_address: ResourceAddress,
+        custom_error_message: S,
+    ) -> Self::CheckedProofType {
+        CheckedFungibleProof(Proof::check_with_message(
+            self.0,
+            expected_resource_address,
+            custom_error_message,
+        ))
     }
 
     fn skip_checking(self) -> Self::CheckedProofType {
@@ -217,8 +263,20 @@ impl ScryptoUncheckedProof for FungibleProof {
 impl ScryptoUncheckedProof for NonFungibleProof {
     type CheckedProofType = CheckedNonFungibleProof;
 
-    fn check(self, resource_address: ResourceAddress) -> Self::CheckedProofType {
-        CheckedNonFungibleProof(Proof::check(self.0, resource_address))
+    fn check(self, expected_resource_address: ResourceAddress) -> Self::CheckedProofType {
+        CheckedNonFungibleProof(Proof::check(self.0, expected_resource_address))
+    }
+
+    fn check_with_message<S: ToString>(
+        self,
+        expected_resource_address: ResourceAddress,
+        custom_error_message: S,
+    ) -> Self::CheckedProofType {
+        CheckedNonFungibleProof(Proof::check_with_message(
+            self.0,
+            expected_resource_address,
+            custom_error_message,
+        ))
     }
 
     fn skip_checking(self) -> Self::CheckedProofType {
@@ -284,18 +342,22 @@ impl ScryptoProof for CheckedProof {
     }
 
     fn as_fungible(&self) -> CheckedFungibleProof {
-        assert!(self
-            .resource_address()
-            .as_node_id()
-            .is_global_fungible_resource_manager());
+        assert!(
+            self.resource_address()
+                .as_node_id()
+                .is_global_fungible_resource_manager(),
+            "Not a fungible proof"
+        );
         CheckedFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 
     fn as_non_fungible(&self) -> CheckedNonFungibleProof {
-        assert!(self
-            .resource_address()
-            .as_node_id()
-            .is_global_non_fungible_resource_manager());
+        assert!(
+            self.resource_address()
+                .as_node_id()
+                .is_global_non_fungible_resource_manager(),
+            "Not a non-fungible proof"
+        );
         CheckedNonFungibleProof(CheckedProof(Proof(self.0 .0)))
     }
 }

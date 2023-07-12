@@ -200,12 +200,18 @@ impl ScryptoVault for Vault {
     }
 
     fn as_fungible(&self) -> FungibleVault {
-        assert!(self.0.as_node_id().is_internal_fungible_vault());
+        assert!(
+            self.0.as_node_id().is_internal_fungible_vault(),
+            "Not a fungible vault"
+        );
         FungibleVault(Vault(self.0))
     }
 
     fn as_non_fungible(&self) -> NonFungibleVault {
-        assert!(self.0.as_node_id().is_internal_non_fungible_vault());
+        assert!(
+            self.0.as_node_id().is_internal_non_fungible_vault(),
+            "Not a non-fungible vault"
+        );
         NonFungibleVault(Vault(self.0))
     }
 
