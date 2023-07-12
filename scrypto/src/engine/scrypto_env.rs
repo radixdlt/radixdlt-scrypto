@@ -389,7 +389,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn actor_get_blueprint(&mut self) -> Result<BlueprintId, ClientApiError> {
+    fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, ClientApiError> {
         let actor = copy_buffer(unsafe { get_blueprint() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)

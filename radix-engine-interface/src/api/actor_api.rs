@@ -7,9 +7,10 @@ use sbor::rust::vec::Vec;
 
 /// Api which exposes methods in the context of the actor
 pub trait ClientActorApi<E: Debug> {
-    fn actor_get_blueprint(&mut self) -> Result<BlueprintId, E>;
+    /// Retrieve the current blueprint id
+    fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, E>;
 
-    /// Open a field in the current method actor for reading/writing
+    /// Open a field in a given object for reading/writing
     fn method_actor_open_field(
         &mut self,
         object_handle: ObjectHandle,
@@ -17,18 +18,23 @@ pub trait ClientActorApi<E: Debug> {
         flags: LockFlags,
     ) -> Result<FieldHandle, E>;
 
+    /// Check if a feature is enabled for a given object
     fn method_actor_is_feature_enabled(
         &mut self,
         object_handle: ObjectHandle,
         feature: &str,
     ) -> Result<bool, E>;
 
+    /// Retrieve the current method actor's node id
     fn method_actor_get_node_id(&mut self) -> Result<NodeId, E>;
 
+    /// Retrieve the current method actor's outer object
     fn method_actor_get_outer_object(&mut self) -> Result<GlobalAddress, E>;
 
+    /// Retrieve the current method actor's global address
     fn method_actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
 
+    /// Call a method on a module of the current method actor
     fn method_actor_call_module(
         &mut self,
         module_id: ObjectModuleId,

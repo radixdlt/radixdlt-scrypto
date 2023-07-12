@@ -1168,7 +1168,7 @@ where
         Ok(actor.fn_identifier())
     }
 
-    pub fn instance_context(&mut self) -> Result<Option<InstanceContext>, RuntimeError> {
+    pub fn actor_instance_context(&mut self) -> Result<Option<InstanceContext>, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
 
         let method_actor = match actor {
@@ -1331,7 +1331,7 @@ where
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.blueprint_id().package_address;
-        let instance_context = self.instance_context()?;
+        let instance_context = self.actor_instance_context()?;
         let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
         self.new_object_internal(
@@ -1551,7 +1551,7 @@ where
         // If the actor is the object's outer object
         match info.main_blueprint_info.blueprint_type {
             BlueprintObjectType::Inner { outer_object } => {
-                if let Some(instance_context) = self.instance_context()? {
+                if let Some(instance_context) = self.actor_instance_context()? {
                     if instance_context.outer_object.eq(&outer_object) {
                         is_drop_allowed = true;
                     }
@@ -2331,7 +2331,7 @@ where
     }
 
     #[trace_resources]
-    fn actor_get_blueprint(&mut self) -> Result<BlueprintId, RuntimeError> {
+    fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules

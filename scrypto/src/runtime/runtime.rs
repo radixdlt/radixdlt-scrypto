@@ -49,7 +49,7 @@ impl Runtime {
 
     /// Returns the running entity.
     pub fn blueprint_id() -> BlueprintId {
-        ScryptoEnv.actor_get_blueprint().unwrap()
+        ScryptoEnv.actor_get_blueprint_id().unwrap()
     }
 
     pub fn node_id() -> NodeId {
