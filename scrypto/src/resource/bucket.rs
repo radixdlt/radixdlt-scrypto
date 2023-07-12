@@ -219,18 +219,22 @@ impl ScryptoBucket for Bucket {
     }
 
     fn as_fungible(&self) -> FungibleBucket {
-        assert!(self
-            .resource_address()
-            .as_node_id()
-            .is_global_fungible_resource_manager());
+        assert!(
+            self.resource_address()
+                .as_node_id()
+                .is_global_fungible_resource_manager(),
+            "Not a fungible bucket"
+        );
         FungibleBucket(Bucket(self.0))
     }
 
     fn as_non_fungible(&self) -> NonFungibleBucket {
-        assert!(self
-            .resource_address()
-            .as_node_id()
-            .is_global_non_fungible_resource_manager());
+        assert!(
+            self.resource_address()
+                .as_node_id()
+                .is_global_non_fungible_resource_manager(),
+            "Not a non-fungible bucket"
+        );
         NonFungibleBucket(Bucket(self.0))
     }
 

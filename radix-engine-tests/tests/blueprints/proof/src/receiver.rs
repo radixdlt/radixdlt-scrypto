@@ -32,5 +32,13 @@ mod receiver {
             assert_eq!(proof.as_non_fungible().non_fungible_local_ids(), ids);
             assert_eq!(proof.resource_address(), resource_address);
         }
+
+        pub fn check_if_xrd(proof: Proof) {
+            proof.check(XRD);
+        }
+
+        pub fn check_with_message_if_xrd(proof: Proof) {
+            proof.check_with_message(XRD, "Not XRD proof");
+        }
     }
 }
