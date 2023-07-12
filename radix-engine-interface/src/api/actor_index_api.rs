@@ -60,21 +60,22 @@ pub trait ClientActorIndexApi<E> {
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         count: u32,
-    ) -> Result<Vec<Vec<u8>>, E>;
+    ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, E>;
 
     /// Scans arbitrary elements of count from an index
-    fn actor_index_scan_typed<S: ScryptoDecode>(
+    fn actor_index_scan_typed<K: ScryptoDecode, V: ScryptoDecode>(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         count: u32,
-    ) -> Result<Vec<S>, E> {
+    ) -> Result<Vec<(K ,V)>, E> {
         let entries = self
             .actor_index_scan(object_handle, collection_index, count)?
             .into_iter()
-            .map(|buf| {
-                let typed: S = scrypto_decode(&buf).unwrap();
-                typed
+            .map(|(key, value)| {
+                let key: K = scrypto_decode(&key).unwrap();
+                let value: V = scrypto_decode(&value).unwrap();
+                (key, value)
             })
             .collect();
 
