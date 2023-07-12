@@ -487,6 +487,13 @@ CALL_METHOD
 CALL_METHOD
     Address("${component_address}")
     "custom_types"
+    "normal text"
+    "with an escape\""
+    "with an escape\r"
+    "with an escape\t"
+    "with an escape\n"
+    "with an escape\""
+    "with an escape\\"
     Address("${package_address}")
     Address("${account_address}")
     Address("${consensusmanager_address}")

@@ -90,7 +90,7 @@ SET_METADATA
     Address("component_sim1cqyd2zdufz4q5nlpghs360g9p6xqvyxxjg90kgcjsfmaynuh8l37yc")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] A Radiswap component between test tokens "XRD" and "BTC""
+        "[EXAMPLE] A Radiswap component between test tokens \"XRD\" and \"BTC\""
     )
 ;
 SET_METADATA
@@ -123,7 +123,7 @@ SET_METADATA
     Address("pool_sim1ckhcusnuz96jflrhncdckesejgfwf60g3jt4uhsyqwhwxuhw76e77c")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] The underyling pool between test tokens "XRD" and "BTC""
+        "[EXAMPLE] The underyling pool between test tokens \"XRD\" and \"BTC\""
     )
 ;
 SET_METADATA
@@ -156,7 +156,7 @@ SET_METADATA
     Address("resource_sim1thal498nmv4ldpz0lvjcvaw9kvy0d3khyd549w7tlc5qmfhcudedlg")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] The pool units resource for the underlying pool between test tokens "XRD" and "BTC""
+        "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"XRD\" and \"BTC\""
     )
 ;
 SET_METADATA
@@ -189,7 +189,7 @@ SET_METADATA
     Address("component_sim1cqhz2fug707hss8n6evw744g2tgvl0nh7wmex5z3uyzl39c0ynevmq")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] A Radiswap dApp between test tokens "ETH" and "ETC""
+        "[EXAMPLE] A Radiswap dApp between test tokens \"ETH\" and \"ETC\""
     )
 ;
 SET_METADATA
@@ -222,7 +222,7 @@ SET_METADATA
     Address("pool_sim1ckvrv5q0e08f77nchs9ul0pm27uyjh04q6q4xys80mpsjzp42fw9jn")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] The underyling pool between test tokens "ETH" and "ETC""
+        "[EXAMPLE] The underyling pool between test tokens \"ETH\" and \"ETC\""
     )
 ;
 SET_METADATA
@@ -255,7 +255,7 @@ SET_METADATA
     Address("resource_sim1thl65g9v2h4axeh9chsqksf6u06qn8r3sls9jfzdepderur83rxv08")
     "description"
     Enum<0u8>(
-        "[EXAMPLE] The pool units resource for the underlying pool between test tokens "ETH" and "ETC""
+        "[EXAMPLE] The pool units resource for the underlying pool between test tokens \"ETH\" and \"ETC\""
     )
 ;
 SET_METADATA
