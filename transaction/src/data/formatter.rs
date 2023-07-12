@@ -176,7 +176,7 @@ pub fn format_manifest_value<F: fmt::Write>(
             write_with_indent!(f, context, indent_start, depth, "{}u128", value)?
         }
         Value::String { value } => {
-            write_with_indent!(f, context, indent_start, depth, "\"{}\"", value)?
+            write_with_indent!(f, context, indent_start, depth, "\"{}\"", escape(value))?
         }
         Value::Tuple { fields } => {
             if fields.len() == 2 {
@@ -564,4 +564,22 @@ impl<'a> ContextualDisplay<ManifestDecompilationDisplayContext<'a>> for Manifest
     ) -> Result<(), Self::Error> {
         format_custom_value(f, self, context, false, 0)
     }
+}
+
+const ESCAPE_SEQUENCES: [(&str, &str); 7] = [
+    ("\\", r#"\\"#),
+    ("\n", r#"\n"#),
+    ("\r", r#"\r"#),
+    ("\t", r#"\t"#),
+    ("\x08", r#"\b"#),
+    ("\x0c", r#"\f"#),
+    (r#"""#, r#"\""#),
+];
+
+fn escape(string: &str) -> String {
+    let mut string = string.to_owned();
+    for (find, replace) in ESCAPE_SEQUENCES {
+        string = string.replace(find, replace)
+    }
+    string
 }
