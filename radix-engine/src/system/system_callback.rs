@@ -578,18 +578,18 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        let blueprint_id = match node_id.entity_type() {
+        let (blueprint_id, variant_id) = match node_id.entity_type() {
             Some(EntityType::GlobalVirtualSecp256k1Account) => {
-                BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT)
+                (BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT), 0)
             }
             Some(EntityType::GlobalVirtualEd25519Account) => {
-                BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT)
+                (BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT), 1)
             }
             Some(EntityType::GlobalVirtualSecp256k1Identity) => {
-                BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT)
+                (BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT), 0)
             }
             Some(EntityType::GlobalVirtualEd25519Identity) => {
-                BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT)
+                (BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT), 1)
             }
             _ => return Ok(false),
         };
@@ -615,7 +615,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         export,
                         receiver_info: None,
                     }),
-                    args: IndexedScryptoValue::from_typed(&OnVirtualizeInput { node_id }),
+                    args: IndexedScryptoValue::from_typed(&OnVirtualizeInput {
+                        variant_id,
+                        rid: copy_u8_array(&node_id.as_bytes()[1..]),
+                    }),
                 }))?
                 .into();
 

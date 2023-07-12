@@ -7,7 +7,8 @@ use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct OnVirtualizeInput {
-    pub node_id: NodeId,
+    pub variant_id: u8,
+    pub rid: [u8; NodeId::RID_LENGTH],
 }
 
 pub type OnVirtualizeOutput = BTreeMap<ObjectModuleId, Own>;

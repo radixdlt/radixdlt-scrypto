@@ -107,6 +107,7 @@ pub struct BlueprintFunctionsSchemaInit {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintHooksInit {
+    // TODO: allow registration of variant count if we make virtualizable entity type fully dynamic
     pub hooks: BTreeMap<BlueprintHook, String>,
 }
 

@@ -96,21 +96,17 @@ impl AccountBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        match input.node_id.entity_type() {
-            Some(EntityType::GlobalVirtualSecp256k1Account) => {
-                let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(
-                    copy_u8_array(&input.node_id.as_bytes()[1..]),
-                ));
+        match input.variant_id {
+            0 => {
+                let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, api)
             }
-            Some(EntityType::GlobalVirtualEd25519Account) => {
-                let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(copy_u8_array(
-                    &input.node_id.as_bytes()[1..],
-                )));
+            1 => {
+                let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, api)
             }
             x => Err(RuntimeError::ApplicationError(ApplicationError::Panic(
-                format!("Unexpected entity type: {:?}", x),
+                format!("Unexpected variant id: {:?}", x),
             ))),
         }
     }
