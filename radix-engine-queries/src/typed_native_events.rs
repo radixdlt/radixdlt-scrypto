@@ -53,12 +53,14 @@ fn resolve_typed_event_key_from_event_type_identifier(
             .map(TypedNativeEventKey::from)
         }
         Emitter::Method(_, ObjectModuleId::Royalty)
-        | Emitter::Function(_, ObjectModuleId::Royalty, ..) => TypedRoyaltyBlueprintEventKey::new(
-            &ROYALTY_PACKAGE_DEFINITION,
-            COMPONENT_ROYALTY_BLUEPRINT,
-            &local_type_index,
-        )
-        .map(TypedNativeEventKey::from),
+        | Emitter::Function(_, ObjectModuleId::Royalty, ..) => {
+            TypedComponentRoyaltyBlueprintEventKey::new(
+                &ROYALTY_PACKAGE_DEFINITION,
+                COMPONENT_ROYALTY_BLUEPRINT,
+                &local_type_index,
+            )
+            .map(TypedNativeEventKey::from)
+        }
 
         /* Functions on well-known packages */
         Emitter::Function(node_id, ObjectModuleId::Main, blueprint_name) => {
@@ -358,7 +360,7 @@ define_structure! {
         ]
     },
     Royalty => {
-        Royalty => []
+        ComponentRoyalty => []
     },
 }
 
@@ -522,6 +524,15 @@ macro_rules! define_structure {
                                 })?;
                             Self::from_str(name)
                         }
+
+                        #[allow(unused_mut)]
+                        pub fn registered_events() -> sbor::prelude::HashSet<String> {
+                            let mut set = sbor::prelude::HashSet::default();
+                            $(
+                                set.insert(<$event_ty as radix_engine_interface::prelude::ScryptoEvent>::event_name().to_owned());
+                            )*
+                            set
+                        }
                     }
                 )*
             )*
@@ -551,8 +562,29 @@ macro_rules! define_structure {
                             })
                         }
                     }
+
+                    pub fn registered_events() -> sbor::prelude::HashMap<String, sbor::prelude::HashSet<String>> {
+                        let mut map = sbor::prelude::HashMap::<String, sbor::prelude::HashSet<String>>::default();
+                        $(
+                            map.insert(
+                                stringify!($blueprint_ident).to_owned(),
+                                [< Typed $blueprint_ident BlueprintEventKey >]::registered_events()
+                            );
+                        )*
+                        map
+                    }
                 }
             )*
+
+            impl TypedNativeEvent {
+                pub fn registered_events() -> sbor::prelude::HashMap<String, sbor::prelude::HashMap<String, sbor::prelude::HashSet<String>>> {
+                    let mut map = sbor::prelude::HashMap::<String, sbor::prelude::HashMap<String, sbor::prelude::HashSet<String>>>::default();
+                    $(
+                        map.insert(stringify!($package_ident).to_owned(), [< Typed $package_ident PackageEventKey >]::registered_events());
+                    )*
+                    map
+                }
+            }
 
             // The implementation of a function that converts any `TypedNativeEventKey` + raw SBOR
             // bytes to the appropriate typed event type.
