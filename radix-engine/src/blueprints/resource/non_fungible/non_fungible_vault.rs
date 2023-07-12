@@ -397,12 +397,12 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // FIXME: only allow a certain amount to be returned
-        let items: Vec<(NonFungibleLocalId, ())> = api.actor_index_scan_typed(
+        let items: Vec<NonFungibleLocalId> = api.actor_index_scan_keys_typed(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
             u32::MAX,
         )?;
-        let ids = items.into_iter().map(|(k, _v)| k).collect();
+        let ids = items.into_iter().collect();
         Ok(ids)
     }
 

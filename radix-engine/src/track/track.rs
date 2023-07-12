@@ -755,12 +755,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         Ok((value, store_access))
     }
 
-    fn scan_substates(
+    fn scan_keys(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> (Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo) {
+    ) -> (Vec<SubstateKey>, StoreAccessInfo) {
         let mut store_access = Vec::new();
 
         let count: usize = count.try_into().unwrap();
@@ -779,8 +779,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 }
 
                 // TODO: Check that substate is not write locked, before use outside of native blueprints
-                if let Some(substate) = tracked.substate_value.get() {
-                    items.push((tracked.substate_key.clone(), substate.clone()));
+                if let Some(_substate) = tracked.substate_value.get() {
+                    items.push(tracked.substate_key.clone());
                 }
             }
         }
@@ -796,7 +796,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             &db_partition_key,
             &mut store_access,
         ));
-        for (db_sort_key, value) in &mut tracked_iter {
+        for (db_sort_key, _value) in &mut tracked_iter {
             if items.len() == count {
                 break;
             }
@@ -810,7 +810,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
             let substate_key = M::from_db_sort_key::<MapKey>(&db_sort_key);
 
-            items.push((substate_key, value));
+            items.push(substate_key);
         }
 
         // Update track

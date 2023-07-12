@@ -139,20 +139,20 @@ impl Heap {
 
     /// Scans the substates of a node's partition. On an non-existing node or partition, this
     /// will return an empty vector
-    pub fn scan_substates(
+    pub fn scan_keys(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
+    ) -> Vec<SubstateKey> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
             .and_then(|n| n.substates.get_mut(&partition_num));
         if let Some(substates) = node_substates {
-            let substates: Vec<(SubstateKey, IndexedScryptoValue)> = substates
+            let substates: Vec<SubstateKey> = substates
                 .iter()
-                .map(|(key, v)| (key.clone(), v.clone()))
+                .map(|(key, _value)| key.clone())
                 .take(count.try_into().unwrap())
                 .collect();
 

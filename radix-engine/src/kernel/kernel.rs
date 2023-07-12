@@ -799,15 +799,15 @@ where
     }
 
     #[trace_resources]
-    fn kernel_scan_substates(
+    fn kernel_scan_keys(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<SubstateKey>, RuntimeError> {
         let (substates, store_access) = self
             .current_frame
-            .scan_substates(node_id, partition_num, count, &mut self.heap, self.store)
+            .scan_keys(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;

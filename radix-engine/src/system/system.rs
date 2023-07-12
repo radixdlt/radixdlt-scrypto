@@ -1954,21 +1954,21 @@ where
     }
 
     // Costing through kernel
-    fn actor_index_scan(
+    fn actor_index_scan_keys(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         count: u32,
-    ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
+    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
         let substates = self
             .api
-            .kernel_scan_substates(&node_id, partition_num, count)?
+            .kernel_scan_keys(&node_id, partition_num, count)?
             .into_iter()
-            .map(|(key, value)| (key.into_map(), value.into()))
+            .map(|key| key.into_map())
             .collect();
 
         Ok(substates)
@@ -2856,14 +2856,14 @@ where
             .kernel_scan_sorted_substates(node_id, partition_num, count)
     }
 
-    fn kernel_scan_substates(
+    fn kernel_scan_keys(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+    ) -> Result<Vec<SubstateKey>, RuntimeError> {
         self.api
-            .kernel_scan_substates(node_id, partition_num, count)
+            .kernel_scan_keys(node_id, partition_num, count)
     }
 
     fn kernel_drain_substates(

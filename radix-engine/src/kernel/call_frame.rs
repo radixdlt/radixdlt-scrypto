@@ -245,17 +245,17 @@ pub enum CallFrameRemoveSubstateError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum CallFrameScanSubstateError {
+pub enum CallFrameScanSubstatesError {
+    NodeNotVisible(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CallFrameDrainSubstatesError {
     NodeNotVisible(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanSortedSubstatesError {
-    NodeNotVisible(NodeId),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum CallFrameTakeSortedSubstatesError {
     NodeNotVisible(NodeId),
 }
 
@@ -960,7 +960,7 @@ impl<L: Clone> CallFrame<L> {
         Ok((removed, store_access))
     }
 
-    pub fn scan_substates<'f, S: SubstateStore>(
+    pub fn scan_keys<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -968,35 +968,24 @@ impl<L: Clone> CallFrame<L> {
         heap: &'f mut Heap,
         store: &'f mut S,
     ) -> Result<
-        (Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo),
-        CallFrameScanSubstateError,
+        (Vec<SubstateKey>, StoreAccessInfo),
+        CallFrameScanSubstatesError,
     > {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallFrameScanSubstateError::NodeNotVisible(node_id.clone()));
+            return Err(CallFrameScanSubstatesError::NodeNotVisible(node_id.clone()));
         }
 
-        let (substates, store_access) = if heap.contains_node(node_id) {
+        let (keys, store_access) = if heap.contains_node(node_id) {
             (
-                heap.scan_substates(node_id, partition_num, count),
+                heap.scan_keys(node_id, partition_num, count),
                 StoreAccessInfo::new(),
             )
         } else {
-            store.scan_substates(node_id, partition_num, count)
+            store.scan_keys(node_id, partition_num, count)
         };
 
-        for (_key, substate) in &substates {
-            for reference in substate.references() {
-                if reference.is_global() {
-                    self.stable_references
-                        .insert(reference.clone(), StableReferenceType::Global);
-                } else {
-                    // FIXME: check if non-global reference is needed
-                }
-            }
-        }
-
-        Ok((substates, store_access))
+        Ok((keys, store_access))
     }
 
     pub fn drain_substates<'f, S: SubstateStore>(
@@ -1008,11 +997,11 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<
         (Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo),
-        CallFrameTakeSortedSubstatesError,
+        CallFrameDrainSubstatesError,
     > {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallFrameTakeSortedSubstatesError::NodeNotVisible(
+            return Err(CallFrameDrainSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ));
         }
