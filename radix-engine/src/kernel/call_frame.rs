@@ -1003,7 +1003,7 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameTakeSortedSubstatesError>
+    ) -> Result<(Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo), CallFrameTakeSortedSubstatesError>
     {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
@@ -1021,7 +1021,7 @@ impl<L: Clone> CallFrame<L> {
             store.take_substates(node_id, partition_num, count)
         };
 
-        for substate in &substates {
+        for (_key, substate) in &substates {
             for reference in substate.references() {
                 if reference.is_global() {
                     self.stable_references

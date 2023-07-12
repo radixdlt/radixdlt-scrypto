@@ -1969,8 +1969,7 @@ where
             .kernel_scan_substates(&node_id, partition_num, count)?
             .into_iter()
             .map(|(key, value)| {
-                let map_key = key.into_map();
-                (map_key, value.into())
+                (key.into_map(), value.into())
             })
             .collect();
 
@@ -1983,7 +1982,7 @@ where
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         count: u32,
-    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
@@ -1992,7 +1991,9 @@ where
             .api
             .kernel_take_substates(&node_id, partition_num, count)?
             .into_iter()
-            .map(|value| value.into())
+            .map(|(key, value)| {
+                (key.into_map(), value.into())
+            })
             .collect();
 
         Ok(substates)
@@ -2874,7 +2875,7 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api
             .kernel_take_substates(node_id, partition_num, count)
     }

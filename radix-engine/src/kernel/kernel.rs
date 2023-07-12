@@ -823,8 +823,8 @@ where
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, store_access) = self
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
+        let (substates, store_access) = self
             .current_frame
             .take_substates(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::TakeSubstatesError)
@@ -833,7 +833,7 @@ where
 
         M::on_take_substates(&store_access, self)?;
 
-        Ok(substeates)
+        Ok(substates)
     }
 }
 

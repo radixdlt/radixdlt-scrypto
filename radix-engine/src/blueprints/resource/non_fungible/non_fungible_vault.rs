@@ -446,13 +446,13 @@ impl NonFungibleVaultBlueprint {
         substate_ref.amount -= Decimal::from(n);
 
         let taken = {
-            let ids: Vec<NonFungibleLocalId> = api.actor_index_take_typed(
+            let ids: Vec<(NonFungibleLocalId, NonFungibleLocalId)> = api.actor_index_take_typed(
                 OBJECT_HANDLE_SELF,
                 NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
                 n,
             )?;
             LiquidNonFungibleResource {
-                ids: ids.into_iter().collect(),
+                ids: ids.into_iter().map(|(key, _value)| key).collect(),
             }
         };
 

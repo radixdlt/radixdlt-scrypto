@@ -165,7 +165,7 @@ impl Heap {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue> {
+    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
@@ -181,7 +181,7 @@ impl Heap {
 
             for key in keys {
                 let value = substates.remove(&key).unwrap();
-                items.push(value);
+                items.push((key, value));
             }
 
             items
