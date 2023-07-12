@@ -1,12 +1,12 @@
-Total Cost (XRD)                                                           ,   0.1022545675,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.08980435,     87.8%
-+ Tipping Cost (XRD)                                                       ,   0.0044902175,      4.4%
+Total Cost (XRD)                                                           ,   0.1022545885,    100.0%
++ Execution Cost (XRD)                                                     ,     0.08980437,     87.8%
++ Tipping Cost (XRD)                                                       ,   0.0044902185,      4.4%
 + State Expansion Cost (XRD)                                               ,        0.00796,      7.8%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        8980435,    100.0%
+Total Cost Units Consumed                                                  ,        8980437,    100.0%
 AfterInvoke                                                                ,            886,      0.0%
 AllocateNodeId                                                             ,          13000,      0.1%
-BeforeInvoke                                                               ,          10732,      0.1%
+BeforeInvoke                                                               ,          10734,      0.1%
 CloseSubstate                                                              ,         114000,      1.3%
 Commit::GlobalAccount                                                      ,         100002,      1.1%
 Commit::GlobalVirtualSecp256k1Account                                      ,         900110,     10.0%
