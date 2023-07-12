@@ -64,7 +64,14 @@ pub trait SubstateStore {
         substate_key: &SubstateKey,
     ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), TakeSubstateError>;
 
-    /// Returns tuple of substate vector and boolean which is true for the first database access.
+    /// Returns Substate Keys of maximum count for a given partition.
+    ///
+    /// Clients must ensure that the SubstateKeyContent which the partition is
+    /// associated with is passed in. The returned SubstateKeys are guaranteed to be of
+    /// this type.
+    /// Otherwise, behavior is undefined.
+    ///
+    /// Returns list of substate keys and database access info
     fn scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
@@ -72,7 +79,14 @@ pub trait SubstateStore {
         count: u32,
     ) -> (Vec<SubstateKey>, StoreAccessInfo);
 
-    /// Returns tuple of substate vector and boolean which is true for the first database access.
+    /// Removes substates of maximum count for a given partition.
+    ///
+    /// Clients must ensure that the SubstateKeyContent which the partition is
+    /// associated with is passed in. The returned SubstateKeys are guaranteed to be of
+    /// this type.
+    /// Otherwise, behavior is undefined.
+    ///
+    /// Returns list of removed substates with their associated keys and values, as well as database access info
     fn drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,

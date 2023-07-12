@@ -137,7 +137,7 @@ impl Heap {
             .and_then(|s| s.remove(substate_key))
     }
 
-    /// Scans the substates of a node's partition. On an non-existing node or partition, this
+    /// Scans the keys of a node's partition. On an non-existing node/partition, this
     /// will return an empty vector
     pub fn scan_keys(
         &mut self,
@@ -162,7 +162,7 @@ impl Heap {
         }
     }
 
-    /// Drains the substates from a node's partition. On an non-existing node or partition, this
+    /// Drains the substates from a node's partition. On an non-existing node/partition, this
     /// will return an empty vector
     pub fn drain_substates(
         &mut self,
