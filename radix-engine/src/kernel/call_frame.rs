@@ -967,7 +967,10 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo), CallFrameScanSubstateError> {
+    ) -> Result<
+        (Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo),
+        CallFrameScanSubstateError,
+    > {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameScanSubstateError::NodeNotVisible(node_id.clone()));
@@ -1003,8 +1006,10 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo), CallFrameTakeSortedSubstatesError>
-    {
+    ) -> Result<
+        (Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo),
+        CallFrameTakeSortedSubstatesError,
+    > {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameTakeSortedSubstatesError::NodeNotVisible(

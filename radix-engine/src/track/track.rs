@@ -801,7 +801,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 break;
             }
 
-
             if tracked_partition
                 .map(|tracked_partition| tracked_partition.substates.contains_key(&db_sort_key))
                 .unwrap_or(false)
@@ -883,13 +882,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     continue;
                 }
 
-                // FIXME: review non-fungible implementation and see if this is an issue.
-                // This only works because only NonFungible Vaults use this.
-                // Will need to fix this by maintaining the invariant that the value
-                // of the index contains the key. Or alternatively, change the abstraction
-                // from being a Map to a Set
-                let substate_key = SubstateKey::Map(value.as_slice().to_vec());
-
+                let substate_key = M::from_db_sort_key::<MapKey>(&db_sort_key);
                 let tracked = TrackedSubstate {
                     substate_key: substate_key.clone(),
                     substate_value: TrackedSubstateValue::ReadExistAndWrite(

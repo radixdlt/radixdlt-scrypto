@@ -18,17 +18,17 @@ pub trait ClientActorIndexApi<E> {
     ) -> Result<(), E>;
 
     /// Inserts an entry into an index
-    fn actor_index_insert_typed<V: ScryptoEncode>(
+    fn actor_index_insert_typed<K: ScryptoEncode, V: ScryptoEncode>(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        key: Vec<u8>,
+        key: K,
         value: V,
     ) -> Result<(), E> {
         self.actor_index_insert(
             object_handle,
             collection_index,
-            key,
+            scrypto_encode(&key).unwrap(),
             scrypto_encode(&value).unwrap(),
         )
     }
@@ -68,7 +68,7 @@ pub trait ClientActorIndexApi<E> {
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         count: u32,
-    ) -> Result<Vec<(K ,V)>, E> {
+    ) -> Result<Vec<(K, V)>, E> {
         let entries = self
             .actor_index_scan(object_handle, collection_index, count)?
             .into_iter()

@@ -1968,9 +1968,7 @@ where
             .api
             .kernel_scan_substates(&node_id, partition_num, count)?
             .into_iter()
-            .map(|(key, value)| {
-                (key.into_map(), value.into())
-            })
+            .map(|(key, value)| (key.into_map(), value.into()))
             .collect();
 
         Ok(substates)
@@ -1991,9 +1989,7 @@ where
             .api
             .kernel_drain_substates(&node_id, partition_num, count)?
             .into_iter()
-            .map(|(key, value)| {
-                (key.into_map(), value.into())
-            })
+            .map(|(key, value)| (key.into_map(), value.into()))
             .collect();
 
         Ok(substates)

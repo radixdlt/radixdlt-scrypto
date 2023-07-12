@@ -7,6 +7,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::constants::{ACCOUNT_PACKAGE, RESOURCE_PACKAGE};
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
+use radix_engine_interface::prelude::scrypto_decode;
 use radix_engine_interface::types::{
     AccountPartitionOffset, FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField,
     PartitionNumber, PartitionOffset, ResourceAddress, TypeInfoField, ACCESS_RULES_BASE_PARTITION,
@@ -164,11 +165,13 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                     let entries = self
                         .substate_db
-                        .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
+                        .list_mapped::<SpreadPrefixKeyMapper, (), MapKey>(
                             &node_id,
                             MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
                         );
-                    for (_key, non_fungible_local_id) in entries {
+                    for (key, _value) in entries {
+                        let non_fungible_local_id: NonFungibleLocalId =
+                            scrypto_decode(key.for_map().unwrap()).unwrap();
                         self.visitor.visit_non_fungible(
                             node_id,
                             &ResourceAddress::new_or_panic(info.get_outer_object().into()),
