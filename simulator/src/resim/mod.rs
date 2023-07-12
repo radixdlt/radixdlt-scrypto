@@ -67,7 +67,7 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
-use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm};
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, TypePointer,
