@@ -56,7 +56,7 @@ pub trait SubstateStore {
     /// Otherwise, the behavior is undefined.
     ///
     /// Returns tuple of substate and boolean which is true for the first database access.
-    fn take_substate(
+    fn remove_substate(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

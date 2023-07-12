@@ -948,12 +948,12 @@ impl<L: Clone> CallFrame<L> {
 
         let (removed, store_access) = if heap.contains_node(node_id) {
             (
-                heap.delete_substate(node_id, partition_num, key),
+                heap.remove_substate(node_id, partition_num, key),
                 StoreAccessInfo::new(),
             )
         } else {
             store
-                .take_substate(node_id, partition_num, key)
+                .remove_substate(node_id, partition_num, key)
                 .map_err(|e| CallFrameRemoveSubstateError::StoreError(e))?
         };
 

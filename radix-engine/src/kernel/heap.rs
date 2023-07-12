@@ -125,7 +125,7 @@ impl Heap {
             .insert(substate_key, substate_value);
     }
 
-    pub fn delete_substate(
+    pub fn remove_substate(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
