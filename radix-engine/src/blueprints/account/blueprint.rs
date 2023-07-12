@@ -99,11 +99,11 @@ impl AccountBlueprint {
         match input.variant_id {
             0 => {
                 let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
-                Self::create_virtual(public_key_hash, api)
+                Self::create_virtual(public_key_hash, input.address_reservation, api)
             }
             1 => {
                 let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
-                Self::create_virtual(public_key_hash, api)
+                Self::create_virtual(public_key_hash, input.address_reservation, api)
             }
             x => Err(RuntimeError::ApplicationError(ApplicationError::Panic(
                 format!("Unexpected variant id: {:?}", x),
@@ -113,8 +113,9 @@ impl AccountBlueprint {
 
     fn create_virtual<Y>(
         public_key_hash: PublicKeyHash,
+        address_reservation: GlobalAddressReservation,
         api: &mut Y,
-    ) -> Result<OnVirtualizeOutput, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -148,10 +149,13 @@ impl AccountBlueprint {
             ),
             api,
         )?;
-
         modules.insert(ObjectModuleId::Main, account);
 
-        Ok(modules)
+        api.globalize(
+            modules.into_iter().map(|(k, v)| (k, v.0)).collect(),
+            Some(address_reservation),
+        )?;
+        Ok(())
     }
 
     pub fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>

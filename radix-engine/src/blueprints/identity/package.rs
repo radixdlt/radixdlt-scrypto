@@ -15,7 +15,7 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::hooks::OnVirtualizeInput;
+use radix_engine_interface::hooks::{OnVirtualizeInput, OnVirtualizeOutput};
 use radix_engine_interface::metadata_init;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
@@ -241,18 +241,18 @@ impl IdentityBlueprint {
     pub fn on_virtualize<Y>(
         input: OnVirtualizeInput,
         api: &mut Y,
-    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
+    ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         match input.variant_id {
             0 => {
                 let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
-                Self::create_virtual(public_key_hash, api)
+                Self::create_virtual(public_key_hash, input.address_reservation, api)
             }
             1 => {
                 let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
-                Self::create_virtual(public_key_hash, api)
+                Self::create_virtual(public_key_hash, input.address_reservation, api)
             }
             x => Err(RuntimeError::ApplicationError(ApplicationError::Panic(
                 format!("Unexpected variant id: {:?}", x),
@@ -262,8 +262,9 @@ impl IdentityBlueprint {
 
     fn create_virtual<Y>(
         public_key_hash: PublicKeyHash,
+        address_reservation: GlobalAddressReservation,
         api: &mut Y,
-    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
+    ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -298,7 +299,11 @@ impl IdentityBlueprint {
             api,
         )?;
 
-        Ok(modules)
+        api.globalize(
+            modules.into_iter().map(|(k, v)| (k, v.0)).collect(),
+            Some(address_reservation),
+        )?;
+        Ok(())
     }
 
     fn securify<Y>(receiver: &NodeId, api: &mut Y) -> Result<Bucket, RuntimeError>
