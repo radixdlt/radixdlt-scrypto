@@ -1,6 +1,6 @@
+use scrypto::api::object_api::ObjectModuleId;
 use scrypto::api::ClientBlueprintApi;
 use scrypto::api::ClientObjectApi;
-use scrypto::api::object_api::ObjectModuleId;
 use scrypto::prelude::*;
 
 #[blueprint]
