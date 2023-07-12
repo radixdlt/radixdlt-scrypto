@@ -100,8 +100,8 @@ pub struct BlueprintFunctionsSchemaInit {
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 #[sbor(transparent)]
 pub struct BlueprintHooksInit {
-    pub on_virtualize: Option<String>,
-    // TODO: more incoming
+    pub on_virtualize: Option<String>, // TODO: allow registration of variant count if we make virtualizable entity type fully dynamic
+                                       // TODO: more incoming
 }
 
 impl BlueprintHooksInit {
