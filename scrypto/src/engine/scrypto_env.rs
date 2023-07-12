@@ -373,9 +373,6 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn actor_get_info(&mut self) -> Result<NodeObjectInfo, ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
 
     fn actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {
         let node_id = copy_buffer(unsafe { get_node_id() });
@@ -387,6 +384,10 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         let global_address = copy_buffer(unsafe { get_global_address() });
 
         scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
+    }
+
+    fn actor_get_outer_object_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
+        unimplemented!("Not available for Scrypto")
     }
 
     fn actor_get_blueprint(&mut self) -> Result<BlueprintId, ClientApiError> {

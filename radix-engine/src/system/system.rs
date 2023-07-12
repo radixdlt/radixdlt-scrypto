@@ -2288,22 +2288,6 @@ where
     }
 
     #[trace_resources]
-    fn actor_get_info(&mut self) -> Result<NodeObjectInfo, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(CostingEntry::QueryActor)?;
-
-        let actor = self.api.kernel_get_system_state().current;
-        let object_info = actor
-            .try_as_method()
-            .map(|m| m.node_object_info.clone())
-            .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?;
-
-        Ok(object_info)
-    }
-
-    #[trace_resources]
     fn actor_get_node_id(&mut self) -> Result<NodeId, RuntimeError> {
         self.api
             .kernel_get_system()
@@ -2333,6 +2317,25 @@ where
             _ => Err(RuntimeError::SystemError(
                 SystemError::GlobalAddressDoesNotExist,
             )),
+        }
+    }
+
+    #[trace_resources]
+    fn actor_get_outer_object_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryActor)?;
+
+        let (node_id, module_id) = self.get_actor_object_id(ActorObjectType::SELF)?;
+        let info = self.get_blueprint_object_info(&node_id, module_id)?;
+        match info.blueprint_type {
+            BlueprintObjectType::Inner { outer_object } => {
+                Ok(outer_object)
+            }
+            BlueprintObjectType::Outer => {
+                Err(RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist))
+            }
         }
     }
 

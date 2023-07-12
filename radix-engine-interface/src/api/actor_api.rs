@@ -6,7 +6,9 @@ use sbor::rust::vec::Vec;
 
 /// Api which exposes methods in the context of the actor
 pub trait ClientActorApi<E: Debug> {
-    /// Lock a field in the current object actor for reading/writing
+    fn actor_get_blueprint(&mut self) -> Result<BlueprintId, E>;
+
+    /// Open a field in the current method actor for reading/writing
     fn actor_open_field(
         &mut self,
         object_handle: ObjectHandle,
@@ -14,14 +16,11 @@ pub trait ClientActorApi<E: Debug> {
         flags: LockFlags,
     ) -> Result<LockHandle, E>;
 
-    // TODO: do we need more granular interfaces for this?
-    fn actor_get_info(&mut self) -> Result<NodeObjectInfo, E>;
-
     fn actor_get_node_id(&mut self) -> Result<NodeId, E>;
 
-    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
+    fn actor_get_outer_object_address(&mut self) -> Result<GlobalAddress, E>;
 
-    fn actor_get_blueprint(&mut self) -> Result<BlueprintId, E>;
+    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
 
     fn actor_call_self_module_method(
         &mut self,
