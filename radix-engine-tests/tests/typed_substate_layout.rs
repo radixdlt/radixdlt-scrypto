@@ -7,9 +7,7 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_queries::typed_native_events::{to_typed_native_event, TypedNativeEvent};
-use radix_engine_queries::typed_substate_layout::{
-    to_typed_substate_key, to_typed_substate_value,
-};
+use radix_engine_queries::typed_substate_layout::{to_typed_substate_key, to_typed_substate_value};
 use radix_engine_store_interface::interface::DatabaseUpdate;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use sbor::rust::ops::Deref;
@@ -208,10 +206,14 @@ fn typed_native_event_type_contains_all_native_events() {
 
     // Assert
     for (package_name, package_blueprints) in registered_events.into_iter() {
-        let package_definition = package_name_definition_mapping.get(package_name.as_str()).expect(
-            format!("No package definition found for a package with the name: \"{package_name}\"")
+        let package_definition = package_name_definition_mapping
+            .get(package_name.as_str())
+            .expect(
+                format!(
+                    "No package definition found for a package with the name: \"{package_name}\""
+                )
                 .as_str(),
-        );
+            );
         for (blueprint_name, blueprint_events) in package_blueprints.into_iter() {
             let blueprint_definition = package_definition.blueprints.get(&blueprint_name).expect(
                 format!(
@@ -228,8 +230,8 @@ fn typed_native_event_type_contains_all_native_events() {
                 .collect::<HashSet<_>>();
 
             assert_eq!(
-                blueprint_events, 
-                actual_blueprint_events, 
+                blueprint_events,
+                actual_blueprint_events,
                 "There is a difference between the actual blueprint events and the ones registered in the typed model. Package name: \"{package_name}\", Blueprint name: \"{blueprint_name}\""
             )
         }
