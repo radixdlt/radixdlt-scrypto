@@ -235,11 +235,14 @@ impl CustomGenesis {
     }
 }
 
-pub trait Database:
+pub trait TestDatabase:
     SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase
 {
 }
-impl<T: SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase> Database for T {}
+impl<T: SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase> TestDatabase
+    for T
+{
+}
 
 pub type DefaultTestRunner = TestRunner<NoExtension, InMemorySubstateDatabase>;
 
@@ -266,7 +269,7 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
     }
 }
 
-impl<E: NativeVmExtension, D: Database> TestRunnerBuilder<E, D> {
+impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
     pub fn without_trace(mut self) -> Self {
         self.trace = false;
         self
@@ -295,7 +298,7 @@ impl<E: NativeVmExtension, D: Database> TestRunnerBuilder<E, D> {
         }
     }
 
-    pub fn with_custom_database<ND: Database>(self, database: ND) -> TestRunnerBuilder<E, ND> {
+    pub fn with_custom_database<ND: TestDatabase>(self, database: ND) -> TestRunnerBuilder<E, ND> {
         TestRunnerBuilder::<E, ND> {
             custom_genesis: self.custom_genesis,
             custom_extension: self.custom_extension,
@@ -360,7 +363,7 @@ impl<E: NativeVmExtension, D: Database> TestRunnerBuilder<E, D> {
     }
 }
 
-pub struct TestRunner<E: NativeVmExtension, D: Database> {
+pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
     native_vm: NativeVm<E>,
     database: D,
@@ -396,7 +399,7 @@ impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
     }
 }
 
-impl<E: NativeVmExtension, D: Database> TestRunner<E, D> {
+impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn faucet_component(&self) -> GlobalAddress {
         FAUCET.clone().into()
     }
