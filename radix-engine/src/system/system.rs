@@ -2862,8 +2862,7 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
-        self.api
-            .kernel_scan_keys(node_id, partition_num, count)
+        self.api.kernel_scan_keys(node_id, partition_num, count)
     }
 
     fn kernel_drain_substates(

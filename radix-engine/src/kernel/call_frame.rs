@@ -252,6 +252,7 @@ pub enum CallFrameScanSubstatesError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameDrainSubstatesError {
     NodeNotVisible(NodeId),
+    CantDropOwnedNode(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -570,8 +571,12 @@ impl<L: Clone> CallFrame<L> {
                     }
                     // Owned nodes discarded by the substate go back to the call frame,
                     // and must be explicitly dropped.
-                    // FIXME: I suspect this is buggy as one can detach a locked non-root
+                    // FIXME(Yulong): I suspect this is buggy as one can detach a locked non-root
                     // node, move and drop; which will cause invalid lock handle in previous frames.
+                    // FIXME(Josh): Would prefer removing this case entirely as this edge case
+                    // means that a component's logic may or may not work depending on whether
+                    // it's in the store or the heap, which I think feels very unintuitive.
+                    // Rather, let's fix the specific worktop drop bucket issue
                     self.owned_root_nodes.insert(own.clone(), 0);
                 }
             }
@@ -967,10 +972,7 @@ impl<L: Clone> CallFrame<L> {
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<
-        (Vec<SubstateKey>, StoreAccessInfo),
-        CallFrameScanSubstatesError,
-    > {
+    ) -> Result<(Vec<SubstateKey>, StoreAccessInfo), CallFrameScanSubstatesError> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(CallFrameScanSubstatesError::NodeNotVisible(node_id.clone()));
@@ -1021,7 +1023,7 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    // FIXME: check if non-global reference is needed
+                    return Err(CallFrameDrainSubstatesError::CantDropOwnedNode(reference.clone()));
                 }
             }
         }
