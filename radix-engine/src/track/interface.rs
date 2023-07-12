@@ -69,7 +69,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo);
+    ) -> (Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo);
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn take_substates(

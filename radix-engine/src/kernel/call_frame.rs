@@ -979,7 +979,8 @@ impl<L: Clone> CallFrame<L> {
                 StoreAccessInfo::new(),
             )
         } else {
-            store.scan_substates(node_id, partition_num, count)
+            let (scanned, info) = store.scan_substates(node_id, partition_num, count);
+            (scanned.into_iter().map(|(_key, value)| value).collect(), info)
         };
 
         for substate in &substates {

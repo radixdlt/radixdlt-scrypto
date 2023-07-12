@@ -805,7 +805,7 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, store_access) = self
+        let (substates, store_access) = self
             .current_frame
             .scan_substates(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
@@ -814,7 +814,7 @@ where
 
         M::on_scan_substates(&store_access, self)?;
 
-        Ok(substeates)
+        Ok(substates)
     }
 
     #[trace_resources]
