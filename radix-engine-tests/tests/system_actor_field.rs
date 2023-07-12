@@ -9,7 +9,10 @@ use radix_engine::vm::{OverridePackageCode, VmInvoke};
 use radix_engine_interface::api::node_modules::royalty::{
     ComponentRoyaltySetInput, COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
 };
-use radix_engine_interface::api::{ClientApi, FieldValue, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF, OBJECT_HANDLE_OUTER_OBJECT};
+use radix_engine_interface::api::{
+    ClientApi, FieldValue, LockFlags, ObjectModuleId, OBJECT_HANDLE_OUTER_OBJECT,
+    OBJECT_HANDLE_SELF,
+};
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -28,8 +31,8 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
             _input: &IndexedScryptoValue,
             api: &mut Y,
         ) -> Result<IndexedScryptoValue, RuntimeError>
-            where
-                Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
+        where
+            Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         {
             match export_name {
                 "test" => {
@@ -61,10 +64,7 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
-            vec![
-                ("test", "test", true),
-                ("new", "new", false),
-            ],
+            vec![("test", "test", true), ("new", "new", false)],
         ),
     );
     let receipt = test_runner.execute_manifest(

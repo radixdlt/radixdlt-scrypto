@@ -307,13 +307,15 @@ impl<L: Clone> CallFrame<L> {
             Actor::Root => {}
             Actor::Method(MethodActor {
                 global_address,
-                              node_object_info: object_info,
+                node_object_info: object_info,
                 ..
             }) => {
                 if let Some(global_address) = global_address {
                     additional_global_refs.push(global_address.clone());
                 }
-                if let ObjectBlueprintInfo::Inner { outer_object } = object_info.blueprint_info {
+                if let BlueprintObjectType::Inner { outer_object } =
+                    object_info.main_blueprint_info.blueprint_type
+                {
                     additional_global_refs.push(outer_object.clone());
                 }
             }
@@ -1116,7 +1118,11 @@ impl<L: Clone> CallFrame<L> {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
                     TypeInfoSubstate::Object(NodeObjectInfo {
-                        main_blueprint_id: blueprint,
+                        main_blueprint_info:
+                            BlueprintObjectInfo {
+                                blueprint_id: blueprint,
+                                ..
+                            },
                         ..
                     }) if blueprint.package_address == RESOURCE_PACKAGE
                         && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT

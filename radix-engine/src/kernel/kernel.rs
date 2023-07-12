@@ -108,7 +108,11 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             kernel.store.close_substate(handle);
             match type_substate {
                 TypeInfoSubstate::Object(NodeObjectInfo {
-                    main_blueprint_id: blueprint,
+                    main_blueprint_info:
+                        BlueprintObjectInfo {
+                            blueprint_id: blueprint,
+                            ..
+                        },
                     global,
                     ..
                 }) => {
@@ -440,13 +444,16 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(info)
-                    if info.main_blueprint_id.package_address == RESOURCE_PACKAGE
-                        && (info.main_blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || info.main_blueprint_id.blueprint_name
+                    if info.main_blueprint_info.blueprint_id.package_address
+                        == RESOURCE_PACKAGE
+                        && (info.main_blueprint_info.blueprint_id.blueprint_name
+                            == FUNGIBLE_BUCKET_BLUEPRINT
+                            || info.main_blueprint_info.blueprint_id.blueprint_name
                                 == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                 {
                     let is_fungible = info
-                        .main_blueprint_id
+                        .main_blueprint_info
+                        .blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_BUCKET_BLUEPRINT);
                     let parent = info.get_main_outer_object();
@@ -504,7 +511,11 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(NodeObjectInfo {
-                    main_blueprint_id: blueprint,
+                    main_blueprint_info:
+                        BlueprintObjectInfo {
+                            blueprint_id: blueprint,
+                            ..
+                        },
                     ..
                 }) if blueprint.package_address == RESOURCE_PACKAGE
                     && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT

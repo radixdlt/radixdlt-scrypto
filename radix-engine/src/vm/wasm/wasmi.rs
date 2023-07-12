@@ -582,12 +582,7 @@ impl WasmiModule {
              args_len: u32|
              -> Result<u64, Trap> {
                 actor_call_module_method(
-                    caller,
-                    module_id,
-                    ident_ptr,
-                    ident_len,
-                    args_ptr,
-                    args_len,
+                    caller, module_id, ident_ptr, ident_len, args_ptr, args_len,
                 )
                 .map_err(|e| e.into())
             },

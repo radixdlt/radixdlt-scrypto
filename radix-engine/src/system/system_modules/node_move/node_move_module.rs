@@ -33,9 +33,14 @@ impl NodeMoveModule {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
         match type_info {
             TypeInfoSubstate::Object(info)
-                if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                if info
+                    .main_blueprint_info
+                    .blueprint_id
+                    .package_address
+                    .eq(&RESOURCE_PACKAGE)
                     && info
-                        .main_blueprint_id
+                        .main_blueprint_info
+                        .blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_PROOF_BLUEPRINT) =>
             {
@@ -45,7 +50,9 @@ impl NodeMoveModule {
                 }
 
                 if matches!(callee, Actor::Function { .. })
-                    && callee.blueprint_id().eq(&info.main_blueprint_id)
+                    && callee
+                        .blueprint_id()
+                        .eq(&info.main_blueprint_info.blueprint_id)
                 {
                     return Ok(());
                 }
@@ -95,9 +102,14 @@ impl NodeMoveModule {
                 }
             }
             TypeInfoSubstate::Object(info)
-                if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                if info
+                    .main_blueprint_info
+                    .blueprint_id
+                    .package_address
+                    .eq(&RESOURCE_PACKAGE)
                     && info
-                        .main_blueprint_id
+                        .main_blueprint_info
+                        .blueprint_id
                         .blueprint_name
                         .eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
@@ -107,7 +119,9 @@ impl NodeMoveModule {
                 }
 
                 if matches!(callee, Actor::Function { .. })
-                    && callee.blueprint_id().eq(&info.main_blueprint_id)
+                    && callee
+                        .blueprint_id()
+                        .eq(&info.main_blueprint_info.blueprint_id)
                 {
                     return Ok(());
                 }

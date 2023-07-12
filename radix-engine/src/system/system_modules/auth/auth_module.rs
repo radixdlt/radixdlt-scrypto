@@ -213,7 +213,9 @@ impl AuthModule {
             );
         }
 
-        let (blueprint_id, _) = api.get_blueprint_info(&callee.node_id, callee.module_id)?;
+        let blueprint_id = api
+            .get_blueprint_object_info(&callee.node_id, callee.module_id)?
+            .blueprint_id;
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             blueprint_id.package_address.as_node_id(),
@@ -255,16 +257,14 @@ impl AuthModule {
                     package_of_direct_caller(package)
                 ))))
             }
-            Some(MethodAccessibility::OuterObjectOnly) => {
-                match callee.get_blueprint_info() {
-                    ObjectBlueprintInfo::Inner { outer_object } => Ok(
-                        ResolvedPermission::AccessRule(rule!(require(global_caller(outer_object)))),
-                    ),
-                    ObjectBlueprintInfo::Outer { .. } => Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
-                    )),
-                }
-            }
+            Some(MethodAccessibility::OuterObjectOnly) => match callee.get_blueprint_info() {
+                BlueprintObjectType::Inner { outer_object } => Ok(ResolvedPermission::AccessRule(
+                    rule!(require(global_caller(outer_object))),
+                )),
+                BlueprintObjectType::Outer { .. } => Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
+                )),
+            },
             Some(MethodAccessibility::RoleProtected(role_list)) => {
                 Ok(ResolvedPermission::RoleList {
                     access_rules_of,
@@ -339,14 +339,18 @@ impl AuthModule {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                     global: false,
 
-                    main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     module_versions: btreemap!(
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),
 
-                    blueprint_info: ObjectBlueprintInfo::default(),
-                    features: btreeset!(),
-                    instance_schema: None,
+                    main_blueprint_info: BlueprintObjectInfo {
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                        blueprint_type: BlueprintObjectType::default(),
+                        features: btreeset!(),
+                        instance_schema: None,
+                    }
+
+
                 }))
             ),
         )?;

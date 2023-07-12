@@ -465,13 +465,12 @@ impl ExecutionTraceModule {
     ) {
         if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
             let origin = match &callee {
-                Actor::Method(actor @ MethodActor {
-                    ident,
-                    ..
-                }) => TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                    blueprint_id: actor.get_blueprint_id(),
-                    ident: ident.clone(),
-                }),
+                Actor::Method(actor @ MethodActor { ident, .. }) => {
+                    TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
+                        blueprint_id: actor.get_blueprint_id(),
+                        ident: ident.clone(),
+                    })
+                }
                 Actor::Function {
                     blueprint_id,
                     ident,
@@ -495,21 +494,15 @@ impl ExecutionTraceModule {
         self.current_kernel_call_depth += 1;
 
         match &callee {
-            Actor::Method(actor @ MethodActor {
-                node_id,
-                ident,
-                ..
-            }) if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
-                && ident.eq(VAULT_PUT_IDENT) =>
+            Actor::Method(actor @ MethodActor { node_id, ident, .. })
+                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
+                    && ident.eq(VAULT_PUT_IDENT) =>
             {
                 self.handle_vault_put_input(&resource_summary, current_actor, node_id)
             }
-            Actor::Method(actor @ MethodActor {
-                node_id,
-                ident,
-                ..
-            }) if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
-                && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
+            Actor::Method(actor @ MethodActor { node_id, ident, .. })
+                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
+                    && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
             {
                 self.handle_vault_lock_fee_input(current_actor, node_id, args)
             }
@@ -525,12 +518,9 @@ impl ExecutionTraceModule {
         resource_summary: ResourceSummary,
     ) {
         match current_actor {
-            Actor::Method(actor @ MethodActor {
-                node_id,
-                ident,
-                ..
-            }) if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
-                && ident.eq(VAULT_TAKE_IDENT) =>
+            Actor::Method(actor @ MethodActor { node_id, ident, .. })
+                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
+                    && ident.eq(VAULT_TAKE_IDENT) =>
             {
                 self.handle_vault_take_output(&resource_summary, &caller, node_id)
             }

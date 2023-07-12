@@ -209,7 +209,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                     node_id,
                     module_id,
                     ident,
-                                  node_object_info: object_info,
+                    node_object_info: object_info,
                     ..
                 }) => {
                     // Only do royalty costing for Main

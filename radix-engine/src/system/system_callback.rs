@@ -434,7 +434,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             match type_info {
                 TypeInfoSubstate::Object(NodeObjectInfo {
-                    main_blueprint_id: blueprint,
+                    main_blueprint_info:
+                        BlueprintObjectInfo {
+                            blueprint_id: blueprint,
+                            ..
+                        },
                     ..
                 }) => {
                     match (blueprint.package_address, blueprint.blueprint_name.as_str()) {
@@ -498,7 +502,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 let object_info = system.get_node_object_info(proof.0.as_node_id())?;
                 system.call_function(
                     RESOURCE_PACKAGE,
-                    &object_info.main_blueprint_id.blueprint_name,
+                    &object_info.main_blueprint_info.blueprint_id.blueprint_name,
                     PROOF_DROP_IDENT,
                     scrypto_encode(&ProofDropInput { proof }).unwrap(),
                 )?;

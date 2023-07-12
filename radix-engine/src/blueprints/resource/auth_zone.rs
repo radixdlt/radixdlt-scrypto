@@ -90,16 +90,18 @@ impl AuthZoneBlueprint {
                         TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                             global: false,
 
-                            main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                             module_versions: btreemap!(
                                 ObjectModuleId::Main => BlueprintVersion::default(),
                             ),
 
-                            blueprint_info: ObjectBlueprintInfo::Inner {
-                                outer_object: resource_address.into(),
-                            },
-                            features: btreeset!(),
-                            instance_schema: None,
+                            main_blueprint_info: BlueprintObjectInfo {
+                                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                                blueprint_type: BlueprintObjectType::Inner {
+                                    outer_object: resource_address.into(),
+                                },
+                                features: btreeset!(),
+                                instance_schema: None,
+                            }
                         })),
                     ),
                 )?;
@@ -112,16 +114,18 @@ impl AuthZoneBlueprint {
                     TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                         global: false,
 
-                        main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                         module_versions: btreemap!(
                             ObjectModuleId::Main => BlueprintVersion::default(),
                         ),
 
-                        blueprint_info: ObjectBlueprintInfo::Inner {
-                            outer_object: resource_address.into(),
-                        },
-                        features: btreeset!(),
-                        instance_schema: None,
+                        main_blueprint_info: BlueprintObjectInfo {
+                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                            blueprint_type: BlueprintObjectType::Inner {
+                                outer_object: resource_address.into(),
+                            },
+                            features: btreeset!(),
+                            instance_schema: None,
+                        }
                     }))),
                 )?;
             }
@@ -158,16 +162,18 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                     global: false,
 
-                    main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
                     module_versions: btreemap!(
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),
 
-                    blueprint_info: ObjectBlueprintInfo::Inner {
-                        outer_object: resource_address.into(),
-                    },
-                    features: btreeset!(),
-                    instance_schema: None,
+                    main_blueprint_info: BlueprintObjectInfo {
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                        blueprint_type: BlueprintObjectType::Inner {
+                            outer_object: resource_address.into(),
+                        },
+                        features: btreeset!(),
+                        instance_schema: None,
+                    }
                 }))
             ),
         )?;
@@ -206,16 +212,18 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                     global: false,
 
-                    main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
                     module_versions: btreemap!(
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),
 
-                    blueprint_info: ObjectBlueprintInfo::Inner {
-                        outer_object: resource_address.into(),
+                    main_blueprint_info: BlueprintObjectInfo {
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
+                        blueprint_type: BlueprintObjectType::Inner {
+                            outer_object: resource_address.into(),
+                        },
+                        features: btreeset!(),
+                        instance_schema: None,
                     },
-                    features: btreeset!(),
-                    instance_schema: None,
                 }))
             ),
         )?;

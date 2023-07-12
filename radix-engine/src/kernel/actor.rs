@@ -28,15 +28,23 @@ pub struct MethodActor {
 impl MethodActor {
     pub fn get_blueprint_id(&self) -> BlueprintId {
         match self.module_id {
-            ObjectModuleId::Main => self.node_object_info.main_blueprint_id.clone(),
+            ObjectModuleId::Main => self
+                .node_object_info
+                .main_blueprint_info
+                .blueprint_id
+                .clone(),
             _ => self.module_id.static_blueprint().unwrap(),
         }
     }
 
-    pub fn get_blueprint_info(&self) -> ObjectBlueprintInfo {
+    pub fn get_blueprint_info(&self) -> BlueprintObjectType {
         match self.module_id {
-            ObjectModuleId::Main => self.node_object_info.blueprint_info.clone(),
-            _ => ObjectBlueprintInfo::Outer,
+            ObjectModuleId::Main => self
+                .node_object_info
+                .main_blueprint_info
+                .blueprint_type
+                .clone(),
+            _ => BlueprintObjectType::Outer,
         }
     }
 
@@ -87,15 +95,17 @@ impl Actor {
     pub fn is_auth_zone(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                              node_object_info: object_info,
+                node_object_info: object_info,
                 ..
             }) => {
                 object_info
-                    .main_blueprint_id
+                    .main_blueprint_info
+                    .blueprint_id
                     .package_address
                     .eq(&RESOURCE_PACKAGE)
                     && object_info
-                        .main_blueprint_id
+                        .main_blueprint_info
+                        .blueprint_id
                         .blueprint_name
                         .eq(AUTH_ZONE_BLUEPRINT)
             }
@@ -108,7 +118,7 @@ impl Actor {
     pub fn is_barrier(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                              node_object_info: object_info,
+                node_object_info: object_info,
                 ..
             }) => object_info.global,
             Actor::Function { .. } => true,
@@ -144,7 +154,11 @@ impl Actor {
             Actor::Method(MethodActor {
                 node_object_info:
                     NodeObjectInfo {
-                        main_blueprint_id: blueprint,
+                        main_blueprint_info:
+                            BlueprintObjectInfo {
+                                blueprint_id: blueprint,
+                                ..
+                            },
                         ..
                     },
                 ..
@@ -190,16 +204,10 @@ impl Actor {
 
     pub fn blueprint_id(&self) -> BlueprintId {
         match self {
-            Actor::Method(MethodActor {
-                node_object_info:
-                    NodeObjectInfo {
-                        main_blueprint_id: blueprint_id,
-                        ..
-                    },
-                ..
-            })
-            | Actor::Function { blueprint_id, .. }
-            | Actor::VirtualLazyLoad { blueprint_id, .. } => blueprint_id.clone(),
+            Actor::Method(actor) => actor.get_blueprint_id(),
+            Actor::Function { blueprint_id, .. } | Actor::VirtualLazyLoad { blueprint_id, .. } => {
+                blueprint_id.clone()
+            }
             Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
         }
     }

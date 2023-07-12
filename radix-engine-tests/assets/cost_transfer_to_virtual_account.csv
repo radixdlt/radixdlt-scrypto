@@ -1,31 +1,31 @@
-Total Cost (XRD)                                                           ,   0.1047591775,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.09153255,     87.4%
-+ Tipping Cost (XRD)                                                       ,   0.0045766275,      4.4%
-+ State Expansion Cost (XRD)                                               ,        0.00865,      8.3%
+Total Cost (XRD)                                                           ,    0.104833384,    100.0%
++ Execution Cost (XRD)                                                     ,     0.09154608,     87.3%
++ Tipping Cost (XRD)                                                       ,    0.004577304,      4.4%
++ State Expansion Cost (XRD)                                               ,        0.00871,      8.3%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        9153255,    100.0%
+Total Cost Units Consumed                                                  ,        9154608,    100.0%
 AfterInvoke                                                                ,            886,      0.0%
 AllocateNodeId                                                             ,          13000,      0.1%
 BeforeInvoke                                                               ,          10730,      0.1%
 CloseSubstate                                                              ,         135500,      1.5%
 Commit::GlobalAccount                                                      ,         100002,      1.1%
-Commit::GlobalVirtualSecp256k1Account                                      ,         900124,      9.8%
-Commit::InternalFungibleVault                                              ,         700094,      7.6%
-CreateNode                                                                 ,          25808,      0.3%
-DropNode                                                                   ,          22112,      0.2%
+Commit::GlobalVirtualSecp256k1Account                                      ,         900125,      9.8%
+Commit::InternalFungibleVault                                              ,         700096,      7.6%
+CreateNode                                                                 ,          25912,      0.3%
+DropNode                                                                   ,          22204,      0.2%
 EmitEvent                                                                  ,           3228,      0.0%
 LockFee                                                                    ,            500,      0.0%
 MoveModules                                                                ,           4000,      0.0%
-OpenSubstate::GlobalAccount                                                ,         569382,      6.2%
-OpenSubstate::GlobalFungibleResourceManager                                ,         340724,      3.7%
-OpenSubstate::GlobalNonFungibleResourceManager                             ,          83278,      0.9%
-OpenSubstate::GlobalPackage                                                ,        4459348,     48.7%
-OpenSubstate::GlobalVirtualSecp256k1Account                                ,         647882,      7.1%
-OpenSubstate::InternalAccount                                              ,            662,      0.0%
-OpenSubstate::InternalFungibleVault                                        ,         178704,      2.0%
-OpenSubstate::InternalGenericComponent                                     ,          64392,      0.7%
+OpenSubstate::GlobalAccount                                                ,         569406,      6.2%
+OpenSubstate::GlobalFungibleResourceManager                                ,         340816,      3.7%
+OpenSubstate::GlobalNonFungibleResourceManager                             ,          83294,      0.9%
+OpenSubstate::GlobalPackage                                                ,        4459412,     48.7%
+OpenSubstate::GlobalVirtualSecp256k1Account                                ,         647906,      7.1%
+OpenSubstate::InternalAccount                                              ,            666,      0.0%
+OpenSubstate::InternalFungibleVault                                        ,         178798,      2.0%
+OpenSubstate::InternalGenericComponent                                     ,          64652,      0.7%
 QueryActor                                                                 ,           2500,      0.0%
-ReadSubstate                                                               ,         259860,      2.8%
+ReadSubstate                                                               ,         260436,      2.8%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.2%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.2%
 RunNativeCode::Worktop_put                                                 ,          24411,      0.3%
