@@ -11,8 +11,8 @@ use rocksdb::{
 };
 use sbor::rust::prelude::*;
 use std::path::PathBuf;
-use utils::copy_u8_array;
 mod state_tree;
+use crate::rocks_db::{decode_from_rocksdb_bytes, encode_to_rocksdb_bytes};
 use state_tree::*;
 
 const META_CF: &str = "meta";
@@ -25,6 +25,12 @@ pub struct RocksDBWithMerkleTreeSubstateStore {
 }
 
 impl RocksDBWithMerkleTreeSubstateStore {
+    pub fn clear(root: PathBuf) -> Self {
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::remove_dir_all(&root).unwrap();
+        Self::standard(root)
+    }
+
     pub fn standard(root: PathBuf) -> Self {
         let mut options = Options::default();
         options.create_if_missing(true);
@@ -188,23 +194,6 @@ impl<P: Payload> ReadableTreeStore<P> for RocksDBWithMerkleTreeSubstateStore {
             .unwrap()
             .map(|bytes| scrypto_decode(&bytes).unwrap())
     }
-}
-
-fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
-    let mut buffer = Vec::new();
-    buffer.extend(u32::try_from(partition_key.0.len()).unwrap().to_be_bytes());
-    buffer.extend(partition_key.0.clone());
-    buffer.extend(sort_key.0.clone());
-    buffer
-}
-
-fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
-    let partition_key_len =
-        usize::try_from(u32::from_be_bytes(copy_u8_array(&buffer[..4]))).unwrap();
-    let sort_key_offset = 4 + partition_key_len;
-    let partition_key = DbPartitionKey(buffer[4..sort_key_offset].to_vec());
-    let sort_key = DbSortKey(buffer[sort_key_offset..].to_vec());
-    (partition_key, sort_key)
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, ScryptoSbor)]
