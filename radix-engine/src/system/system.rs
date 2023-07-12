@@ -794,16 +794,15 @@ where
         Ok(object_id)
     }
 
-    fn get_actor_schema(
+    fn get_actor_info(
         &mut self,
         actor_object_type: ActorObjectType,
     ) -> Result<
         (
             NodeId,
-            PartitionNumber,
+            ObjectModuleId,
             BlueprintInterface,
-            Option<InstanceSchema>,
-            BlueprintId,
+            BlueprintObjectInfo,
         ),
         RuntimeError,
     > {
@@ -814,10 +813,9 @@ where
 
         Ok((
             node_id,
-            module_id.base_partition_num(),
+            module_id,
             blueprint_interface,
-            blueprint_info.instance_schema,
-            blueprint_info.blueprint_id,
+            blueprint_info,
         ))
     }
 
@@ -826,36 +824,40 @@ where
         actor_object_type: ActorObjectType,
         field_index: u8,
     ) -> Result<(NodeId, PartitionNumber, TypePointer, BlueprintId), RuntimeError> {
-        let (node_id, base_partition, interface, _instance_schema, blueprint_id) =
-            self.get_actor_schema(actor_object_type)?;
+        let (node_id, module_id, interface, info) =
+            self.get_actor_info(actor_object_type)?;
 
         let (partition_offset, field_schema) =
             interface.state.field(field_index).ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                    blueprint_id.clone(),
+                    info.blueprint_id.clone(),
                     field_index,
                 ))
             })?;
 
         match field_schema.condition {
             Condition::IfFeature(feature) => {
-                if !self.is_feature_enabled(&node_id, feature.as_str())? {
+                if !self.is_feature_enabled(&node_id, module_id, feature.as_str())? {
                     return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                        blueprint_id.clone(),
+                        info.blueprint_id.clone(),
                         field_index,
                     )));
                 }
             }
             Condition::IfOuterFeature(feature) => {
-                // FIXME: This currently assumes only main modules can have features
-                let object_info = self.get_node_object_info(&node_id)?;
+                let parent_id = match info.blueprint_type {
+                    BlueprintObjectType::Inner { outer_object } => outer_object.into_node_id(),
+                    BlueprintObjectType::Outer => panic!("Outer object should not have IfOuterFeature."),
+                };
+                let parent_module = ObjectModuleId::Main;
 
                 if !self.is_feature_enabled(
-                    object_info.get_main_outer_object().as_node_id(),
+                    &parent_id,
+                    parent_module,
                     feature.as_str(),
                 )? {
                     return Err(RuntimeError::SystemError(SystemError::FieldDoesNotExist(
-                        blueprint_id.clone(),
+                        info.blueprint_id.clone(),
                         field_index,
                     )));
                 }
@@ -865,11 +867,11 @@ where
 
         let pointer = field_schema.field;
 
-        let partition_num = base_partition
+        let partition_num = module_id.base_partition_num()
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
-        Ok((node_id, partition_num, pointer, blueprint_id))
+        Ok((node_id, partition_num, pointer, info.blueprint_id))
     }
 
     fn get_actor_kv_partition(
@@ -886,20 +888,20 @@ where
         ),
         RuntimeError,
     > {
-        let (node_id, base_partition, interface, instance_schema, blueprint_id) =
-            self.get_actor_schema(actor_object_type)?;
+        let (node_id, module_id, interface, info) =
+            self.get_actor_info(actor_object_type)?;
 
         let (partition_offset, kv_schema) = interface
             .state
             .key_value_store_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::KeyValueStoreDoesNotExist(
-                    blueprint_id.clone(),
+                    info.blueprint_id.clone(),
                     collection_index,
                 ))
             })?;
 
-        let partition_num = base_partition
+        let partition_num = module_id.base_partition_num()
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
@@ -907,8 +909,8 @@ where
             node_id,
             partition_num,
             kv_schema,
-            instance_schema,
-            blueprint_id,
+            info.instance_schema,
+            info.blueprint_id,
         ))
     }
 
@@ -917,20 +919,21 @@ where
         actor_object_type: ActorObjectType,
         collection_index: CollectionIndex,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
-        let (node_id, base_partition, interface, _instance_schema, blueprint_id) =
-            self.get_actor_schema(actor_object_type)?;
+        let (node_id, module_id, interface, info) =
+            self.get_actor_info(actor_object_type)?;
 
         let (partition_offset, _) = interface
             .state
             .index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::IndexDoesNotExist(
-                    blueprint_id,
+                    info.blueprint_id,
                     collection_index,
                 ))
             })?;
 
-        let partition_num = base_partition
+        let partition_num = module_id
+            .base_partition_num()
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
@@ -942,20 +945,21 @@ where
         actor_object_type: ActorObjectType,
         collection_index: CollectionIndex,
     ) -> Result<(NodeId, PartitionNumber), RuntimeError> {
-        let (node_id, base_partition, interface, _instance_schema, blueprint_id) =
-            self.get_actor_schema(actor_object_type)?;
+        let (node_id, module_id, interface, info) =
+            self.get_actor_info(actor_object_type)?;
 
         let (partition_offset, _) = interface
             .state
             .sorted_index_partition(collection_index)
             .ok_or_else(|| {
                 RuntimeError::SystemError(SystemError::SortedIndexDoesNotExist(
-                    blueprint_id,
+                    info.blueprint_id,
                     collection_index,
                 ))
             })?;
 
-        let partition_num = base_partition
+        let partition_num = module_id
+            .base_partition_num()
             .at_offset(partition_offset)
             .expect("Module number overflow");
 
@@ -1213,12 +1217,19 @@ where
     pub fn is_feature_enabled(
         &mut self,
         node_id: &NodeId,
+        module_id: ObjectModuleId,
         feature: &str,
     ) -> Result<bool, RuntimeError> {
-        let object_info = self.get_node_object_info(node_id)?;
-        let enabled = object_info.main_blueprint_info.features.contains(feature);
-
-        Ok(enabled)
+        match module_id {
+            ObjectModuleId::Main => {
+                let object_info = self.get_node_object_info(node_id)?;
+                let enabled = object_info.main_blueprint_info.features.contains(feature);
+                Ok(enabled)
+            }
+            _ => {
+                Ok(false)
+            }
+        }
     }
 }
 
@@ -2357,8 +2368,8 @@ where
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
-        let (node_id, _module_id) = self.get_actor_object_id(actor_object_type)?;
-        self.is_feature_enabled(&node_id, feature)
+        let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
+        self.is_feature_enabled(&node_id, module_id, feature)
     }
 }
 
@@ -2534,9 +2545,9 @@ where
                     )
                 }
                 Actor::Function {
-                    blueprint_id: ref blueprint,
+                    blueprint_id,
                     ..
-                } => (None, blueprint.clone()),
+                } => (None, blueprint_id.clone()),
                 _ => {
                     return Err(RuntimeError::SystemError(SystemError::EventError(
                         EventError::InvalidActor,
