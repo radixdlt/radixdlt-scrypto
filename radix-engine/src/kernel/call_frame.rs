@@ -10,6 +10,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_PROOF_BLUEPRINT,
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 use super::actor::{Actor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
@@ -965,7 +966,7 @@ impl<L: Clone> CallFrame<L> {
         Ok((removed, store_access))
     }
 
-    pub fn scan_keys<'f, S: SubstateStore>(
+    pub fn scan_keys<'f, K: SubstateKeyContent, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -984,13 +985,13 @@ impl<L: Clone> CallFrame<L> {
                 StoreAccessInfo::new(),
             )
         } else {
-            store.scan_keys(node_id, partition_num, count)
+            store.scan_keys::<K>(node_id, partition_num, count)
         };
 
         Ok((keys, store_access))
     }
 
-    pub fn drain_substates<'f, S: SubstateStore>(
+    pub fn drain_substates<'f, K: SubstateKeyContent, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -1014,7 +1015,7 @@ impl<L: Clone> CallFrame<L> {
                 StoreAccessInfo::new(),
             )
         } else {
-            store.drain_substates(node_id, partition_num, count)
+            store.drain_substates::<K>(node_id, partition_num, count)
         };
 
         for (_key, substate) in &substates {
@@ -1023,7 +1024,9 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    return Err(CallFrameDrainSubstatesError::CantDropOwnedNode(reference.clone()));
+                    return Err(CallFrameDrainSubstatesError::CantDropOwnedNode(
+                        reference.clone(),
+                    ));
                 }
             }
         }

@@ -6,6 +6,7 @@ use crate::track::utils::OverlayingIterator;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::*;
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_engine_store_interface::interface::DbPartitionKey;
 use radix_engine_store_interface::{
     db_key_mapper::DatabaseKeyMapper,
@@ -755,7 +756,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         Ok((value, store_access))
     }
 
-    fn scan_keys(
+    fn scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -808,7 +809,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 continue;
             }
 
-            let substate_key = M::from_db_sort_key::<MapKey>(&db_sort_key);
+            let substate_key = M::from_db_sort_key::<K>(&db_sort_key);
 
             items.push(substate_key);
         }
@@ -822,7 +823,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         (items, store_access)
     }
 
-    fn drain_substates(
+    fn drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -882,7 +883,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     continue;
                 }
 
-                let substate_key = M::from_db_sort_key::<MapKey>(&db_sort_key);
+                let substate_key = M::from_db_sort_key::<K>(&db_sort_key);
                 let tracked = TrackedSubstate {
                     substate_key: substate_key.clone(),
                     substate_value: TrackedSubstateValue::ReadExistAndWrite(

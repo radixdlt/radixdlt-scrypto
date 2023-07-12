@@ -35,6 +35,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, Condition, InstanceSchema, KeyValueStoreSchema,
 };
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -1966,7 +1967,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_keys(&node_id, partition_num, count)?
+            .kernel_scan_keys::<MapKey>(&node_id, partition_num, count)?
             .into_iter()
             .map(|key| key.into_map())
             .collect();
@@ -1987,7 +1988,7 @@ where
 
         let substates = self
             .api
-            .kernel_drain_substates(&node_id, partition_num, count)?
+            .kernel_drain_substates::<MapKey>(&node_id, partition_num, count)?
             .into_iter()
             .map(|(key, value)| (key.into_map(), value.into()))
             .collect();
@@ -2856,23 +2857,24 @@ where
             .kernel_scan_sorted_substates(node_id, partition_num, count)
     }
 
-    fn kernel_scan_keys(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
-        self.api.kernel_scan_keys(node_id, partition_num, count)
+        self.api
+            .kernel_scan_keys::<K>(node_id, partition_num, count)
     }
 
-    fn kernel_drain_substates(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api
-            .kernel_drain_substates(node_id, partition_num, count)
+            .kernel_drain_substates::<K>(node_id, partition_num, count)
     }
 }
 

@@ -25,6 +25,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
 };
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
@@ -799,7 +800,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_scan_keys(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -807,7 +808,7 @@ where
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
         let (substates, store_access) = self
             .current_frame
-            .scan_keys(node_id, partition_num, count, &mut self.heap, self.store)
+            .scan_keys::<K, _>(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
@@ -818,7 +819,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_drain_substates(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -826,7 +827,7 @@ where
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         let (substates, store_access) = self
             .current_frame
-            .drain_substates(node_id, partition_num, count, &mut self.heap, self.store)
+            .drain_substates::<K, _>(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::TakeSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;

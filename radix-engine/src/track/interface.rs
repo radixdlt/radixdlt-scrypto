@@ -1,6 +1,7 @@
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -64,7 +65,7 @@ pub trait SubstateStore {
     ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), TakeSubstateError>;
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
-    fn scan_keys(
+    fn scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -72,7 +73,7 @@ pub trait SubstateStore {
     ) -> (Vec<SubstateKey>, StoreAccessInfo);
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
-    fn drain_substates(
+    fn drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
