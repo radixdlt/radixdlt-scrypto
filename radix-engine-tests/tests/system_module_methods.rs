@@ -224,8 +224,11 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                     Ok(IndexedScryptoValue::from_typed(&()))
                 }
                 "call_metadata_on_child" => {
-                    let handle =
-                        api.actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::read_only())?;
+                    let handle = api.method_actor_open_field(
+                        OBJECT_HANDLE_SELF,
+                        0u8,
+                        LockFlags::read_only(),
+                    )?;
                     let child: Option<Own> = api.field_read_typed(handle)?;
 
                     let _ = api.call_method_advanced(

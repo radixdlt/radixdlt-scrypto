@@ -17,7 +17,7 @@ impl FungibleBucketBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let divisibility_handle = api.actor_open_field(
+        let divisibility_handle = api.method_actor_open_field(
             OBJECT_HANDLE_OUTER_OBJECT,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
@@ -54,7 +54,7 @@ impl FungibleBucketBlueprint {
         }
 
         // Take
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
@@ -83,7 +83,7 @@ impl FungibleBucketBlueprint {
         let resource = other_bucket.liquid;
 
         // Put
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
@@ -108,7 +108,7 @@ impl FungibleBucketBlueprint {
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_outer_object_address()?.into());
+            ResourceAddress::new_or_panic(api.method_actor_get_outer_object()?.into());
 
         Ok(resource_address)
     }
@@ -168,7 +168,7 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
@@ -195,7 +195,7 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::MUTABLE,
@@ -225,7 +225,7 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::read_only(),
@@ -240,7 +240,7 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleBucketField::Locked.into(),
             LockFlags::read_only(),
@@ -258,7 +258,7 @@ impl FungibleBucketBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,
@@ -282,7 +282,7 @@ impl FungibleBucketBlueprint {
             return Ok(());
         }
 
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleBucketField::Liquid.into(),
             LockFlags::MUTABLE,

@@ -1368,13 +1368,13 @@ impl PackageRoyaltyNativeBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, PACKAGE_ROYALTY_FEATURE)? {
+        if !api.method_actor_is_feature_enabled(OBJECT_HANDLE_SELF, PACKAGE_ROYALTY_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::PackageError(PackageError::RoyaltiesNotEnabled),
             ));
         }
 
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             PackageField::Royalty.into(),
             LockFlags::read_only(),

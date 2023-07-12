@@ -354,7 +354,7 @@ impl ClientFieldApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn actor_open_field(
+    fn method_actor_open_field(
         &mut self,
         object_handle: u32,
         field: u8,
@@ -365,7 +365,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
-    fn actor_is_feature_enabled(
+    fn method_actor_is_feature_enabled(
         &mut self,
         _: ObjectHandle,
         _feature: &str,
@@ -373,20 +373,19 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-
-    fn actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {
+    fn method_actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {
         let node_id = copy_buffer(unsafe { get_node_id() });
 
         scrypto_decode(&node_id).map_err(ClientApiError::DecodeError)
     }
 
-    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
+    fn method_actor_get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
         let global_address = copy_buffer(unsafe { get_global_address() });
 
         scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
     }
 
-    fn actor_get_outer_object_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
+    fn method_actor_get_outer_object(&mut self) -> Result<GlobalAddress, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
 
@@ -396,7 +395,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
 
-    fn actor_call_self_module_method(
+    fn method_actor_call_module(
         &mut self,
         module_id: ObjectModuleId,
         method_name: &str,

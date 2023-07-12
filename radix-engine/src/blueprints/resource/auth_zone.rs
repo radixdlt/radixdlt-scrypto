@@ -25,7 +25,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_open_field(
+        let auth_zone_handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -45,7 +45,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_open_field(
+        let auth_zone_handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -68,7 +68,7 @@ impl AuthZoneBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_open_field(
+        let auth_zone_handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::read_only(),
@@ -142,7 +142,7 @@ impl AuthZoneBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_open_field(
+        let auth_zone_handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -188,7 +188,7 @@ impl AuthZoneBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_open_field(
+        let auth_zone_handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -235,7 +235,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -257,7 +257,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -274,7 +274,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.actor_open_field(
+        let auth_zone_handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,

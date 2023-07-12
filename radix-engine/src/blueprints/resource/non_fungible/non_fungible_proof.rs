@@ -82,7 +82,7 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let moveable = {
-            let handle = api.actor_open_field(
+            let handle = api.method_actor_open_field(
                 OBJECT_HANDLE_SELF,
                 NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
@@ -92,7 +92,7 @@ impl NonFungibleProofBlueprint {
             api.field_close(handle)?;
             moveable
         };
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -116,7 +116,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -133,7 +133,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -148,8 +148,7 @@ impl NonFungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address =
-            ResourceAddress::new_or_panic(api.actor_get_outer_object_address()?.into());
+        let address = ResourceAddress::new_or_panic(api.method_actor_get_outer_object()?.into());
         Ok(address)
     }
 
