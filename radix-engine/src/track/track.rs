@@ -823,7 +823,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         (items, store_access)
     }
 
-    fn take_substates(
+    fn drain_substates(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

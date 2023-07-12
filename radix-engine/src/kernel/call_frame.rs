@@ -996,7 +996,7 @@ impl<L: Clone> CallFrame<L> {
         Ok((substates, store_access))
     }
 
-    pub fn take_substates<'f, S: SubstateStore>(
+    pub fn drain_substates<'f, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -1014,11 +1014,11 @@ impl<L: Clone> CallFrame<L> {
 
         let (substates, store_access) = if heap.contains_node(node_id) {
             (
-                heap.take_substates(node_id, partition_num, count),
+                heap.drain_substates(node_id, partition_num, count),
                 StoreAccessInfo::new(),
             )
         } else {
-            store.take_substates(node_id, partition_num, count)
+            store.drain_substates(node_id, partition_num, count)
         };
 
         for (_key, substate) in &substates {

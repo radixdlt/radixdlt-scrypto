@@ -818,7 +818,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_take_substates(
+    fn kernel_drain_substates(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -826,7 +826,7 @@ where
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         let (substates, store_access) = self
             .current_frame
-            .take_substates(node_id, partition_num, count, &mut self.heap, self.store)
+            .drain_substates(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::TakeSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;

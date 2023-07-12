@@ -160,7 +160,7 @@ impl Heap {
         }
     }
 
-    pub fn take_substates(
+    pub fn drain_substates(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

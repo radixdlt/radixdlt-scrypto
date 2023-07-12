@@ -72,7 +72,7 @@ pub trait SubstateStore {
     ) -> (Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo);
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
-    fn take_substates(
+    fn drain_substates(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

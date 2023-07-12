@@ -1977,7 +1977,7 @@ where
     }
 
     // Costing through kernel
-    fn actor_index_take(
+    fn actor_index_drain(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
@@ -1989,7 +1989,7 @@ where
 
         let substates = self
             .api
-            .kernel_take_substates(&node_id, partition_num, count)?
+            .kernel_drain_substates(&node_id, partition_num, count)?
             .into_iter()
             .map(|(key, value)| {
                 (key.into_map(), value.into())
@@ -2870,14 +2870,14 @@ where
             .kernel_scan_substates(node_id, partition_num, count)
     }
 
-    fn kernel_take_substates(
+    fn kernel_drain_substates(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api
-            .kernel_take_substates(node_id, partition_num, count)
+            .kernel_drain_substates(node_id, partition_num, count)
     }
 }
 

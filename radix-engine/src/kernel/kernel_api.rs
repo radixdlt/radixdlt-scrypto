@@ -147,7 +147,7 @@ pub trait KernelSubstateApi<L> {
         count: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
 
-    fn kernel_take_substates(
+    fn kernel_drain_substates(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

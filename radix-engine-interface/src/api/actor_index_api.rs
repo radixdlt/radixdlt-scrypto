@@ -83,7 +83,7 @@ pub trait ClientActorIndexApi<E> {
     }
 
     /// Removes and returns arbitrary elements of count from an index
-    fn actor_index_take(
+    fn actor_index_drain(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
@@ -91,14 +91,14 @@ pub trait ClientActorIndexApi<E> {
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, E>;
 
     /// Removes and returns arbitrary elements of count from an index
-    fn actor_index_take_typed<K: ScryptoDecode, V: ScryptoDecode>(
+    fn actor_index_drain_typed<K: ScryptoDecode, V: ScryptoDecode>(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         count: u32,
     ) -> Result<Vec<(K, V)>, E> {
         let entries = self
-            .actor_index_take(object_handle, collection_index, count)?
+            .actor_index_drain(object_handle, collection_index, count)?
             .into_iter()
             .map(|(key, value)| {
                 let key: K = scrypto_decode(&key).unwrap();
