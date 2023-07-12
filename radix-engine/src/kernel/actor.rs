@@ -154,6 +154,7 @@ impl Actor {
     pub fn receiver_info(&self) -> Option<RuntimeReceiverInfo> {
         match self {
             Actor::Method(MethodActor { receiver_info, .. }) => Some(receiver_info.clone()),
+            Actor::BlueprintHook(BlueprintHookActor { receiver_info, .. }) => receiver_info.clone(),
             _ => None,
         }
     }

@@ -378,7 +378,7 @@ impl AccountNativePackage {
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
-                    hooks: BlueprintHooksInit { on_virtualize: Some(ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME.to_string()), ..Default::default() }
+                    hooks: BlueprintHooksInit { hooks: btreemap!(BlueprintHook::OnVirtualize => ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME.to_string()) }
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),

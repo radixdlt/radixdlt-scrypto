@@ -752,12 +752,10 @@ where
                 ))
             }
             ActorObjectType::SELF => {
-                let receiver_info =
-                    self.current_actor()
-                        .receiver_info()
-                        .ok_or(RuntimeError::SystemError(
-                            SystemError::NoObjectAssociatedWithActor,
-                        ))?;
+                let receiver_info = self
+                    .current_actor()
+                    .receiver_info()
+                    .ok_or(RuntimeError::SystemError(SystemError::NoReceiver))?;
                 let node_id = receiver_info.node_id;
                 let module_id = receiver_info.module_id;
                 let info = receiver_info.object_info.clone();
@@ -2263,12 +2261,10 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        let receiver_info =
-            self.current_actor()
-                .receiver_info()
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::NoObjectAssociatedWithActor,
-                ))?;
+        let receiver_info = self
+            .current_actor()
+            .receiver_info()
+            .ok_or(RuntimeError::SystemError(SystemError::NoReceiver))?;
 
         Ok(receiver_info.object_info)
     }
@@ -2280,12 +2276,10 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        let receiver_info =
-            self.current_actor()
-                .receiver_info()
-                .ok_or(RuntimeError::SystemError(
-                    SystemError::NoObjectAssociatedWithActor,
-                ))?;
+        let receiver_info = self
+            .current_actor()
+            .receiver_info()
+            .ok_or(RuntimeError::SystemError(SystemError::NoReceiver))?;
 
         Ok(receiver_info.node_id)
     }
@@ -2336,9 +2330,7 @@ where
             ActorObjectType::SELF => {
                 self.current_actor()
                     .receiver_info()
-                    .ok_or(RuntimeError::SystemError(
-                        SystemError::NoObjectAssociatedWithActor,
-                    ))?
+                    .ok_or(RuntimeError::SystemError(SystemError::NoReceiver))?
                     .node_id
             }
             ActorObjectType::OuterObject => match self.actor_get_object_info()?.outer_object {

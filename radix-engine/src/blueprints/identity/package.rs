@@ -98,9 +98,10 @@ impl IdentityNativePackage {
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
-                    hooks: BlueprintHooksInit {on_virtualize:Some(IDENTITY_ON_VIRTUALIZE_EXPORT_NAME.to_string()), ..Default::default() }
+                    hooks: BlueprintHooksInit {
+                        hooks: btreemap!(BlueprintHook::OnVirtualize => IDENTITY_ON_VIRTUALIZE_EXPORT_NAME.to_string())
+                    }
                 },
-
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,

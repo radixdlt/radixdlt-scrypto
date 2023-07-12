@@ -45,6 +45,14 @@ pub enum Generic {
     Any,
 }
 
+#[derive(Copy, Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintHook {
+    OnVirtualize,
+    OnMove,
+    OnDrop,
+    OnPersist,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchemaInit {
     pub generics: Vec<Generic>,
@@ -99,35 +107,17 @@ pub struct BlueprintFunctionsSchemaInit {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintHooksInit {
-    //===================================================================================
-    // Please ensure `is_empty()` and `exports()` are updated after changing fields here.
-    //===================================================================================
-    pub on_virtualize: Option<String>,
-    pub on_drop: Option<String>,
-    // TODO: more incoming
-}
-
-impl BlueprintHooksInit {
-    pub fn is_empty(&self) -> bool {
-        self.on_virtualize.is_none() && self.on_drop.is_none()
-    }
+    pub hooks: BTreeMap<BlueprintHook, String>,
 }
 
 impl BlueprintSchemaInit {
     pub fn exports(&self) -> Vec<String> {
-        let mut exports: Vec<String> = self
-            .functions
+        self.functions
             .functions
             .values()
             .map(|t| t.export.clone())
-            .collect();
-        if let Some(export) = &self.hooks.on_virtualize {
-            exports.push(export.clone());
-        }
-        if let Some(export) = &self.hooks.on_drop {
-            exports.push(export.clone());
-        }
-        exports
+            .chain(self.hooks.hooks.values().cloned())
+            .collect()
     }
 }
 

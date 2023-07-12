@@ -49,7 +49,7 @@ pub struct AuthModule {
     pub params: AuthZoneParams,
     /// Stack of auth zones
     /// Invariants:
-    /// - An auth zone is created for every non-frame.
+    /// - An auth zone is created for every non-root frame.
     /// - Auth zones are created by the caller frame and moved to the callee
     pub auth_zone_stack: Vec<NodeId>,
 }

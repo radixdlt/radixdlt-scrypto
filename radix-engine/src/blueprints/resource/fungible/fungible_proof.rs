@@ -1,8 +1,5 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::system::FieldSubstate;
-use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
@@ -143,17 +140,16 @@ impl FungibleProofBlueprint {
 
     pub(crate) fn on_drop<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>, // TODO: remove kernel api
+        Y: ClientApi<RuntimeError>,
     {
         let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::MUTABLE,
         )?;
-        let proof_substate: FieldSubstate<FungibleProofSubstate> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        proof_substate.value.0.teardown(api)?;
-        api.kernel_close_substate(handle)?;
+        let proof_substate: FungibleProofSubstate = api.field_read_typed(handle)?;
+        proof_substate.teardown(api)?;
+        api.field_close(handle)?;
 
         Ok(())
     }

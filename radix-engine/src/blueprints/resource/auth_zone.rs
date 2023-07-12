@@ -271,38 +271,4 @@ impl AuthZoneBlueprint {
 
         Ok(proofs)
     }
-
-    pub(crate) fn drop<Y>(auth_zone: OwnedAuthZone, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        api.drop_object(auth_zone.0.as_node_id())?;
-
-        Ok(())
-    }
-
-    pub(crate) fn on_drop<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>, // TODO: remove kernel api
-    {
-        // Detach proofs
-        let handle = api.actor_open_field(
-            OBJECT_HANDLE_SELF,
-            AuthZoneField::AuthZone.into(),
-            LockFlags::MUTABLE,
-        )?;
-        let mut auth_zone_substate: AuthZone =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let proofs = core::mem::replace(&mut auth_zone_substate.proofs, Vec::new());
-        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&auth_zone_substate))?;
-        api.kernel_close_substate(handle)?;
-
-        // Destroy all proofs
-        // Note: the current auth zone will be used for authentication; It's just empty.
-        for proof in proofs {
-            proof.drop(api)?;
-        }
-
-        Ok(())
-    }
 }

@@ -86,16 +86,6 @@ pub const AUTH_ZONE_DRAIN_IDENT: &str = "drain";
 pub struct AuthZoneDrainInput {}
 
 pub type AuthZoneDrainOutput = Vec<Proof>;
-
-pub const AUTH_ZONE_DROP_IDENT: &str = "drop";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AuthZoneDropInput {
-    pub auth_zone: OwnedAuthZone,
-}
-
-pub type AuthZoneDropOutput = ();
-
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 #[sbor(transparent)]
 pub struct OwnedAuthZone(pub Own);

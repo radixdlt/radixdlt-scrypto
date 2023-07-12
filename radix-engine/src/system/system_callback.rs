@@ -1,4 +1,5 @@
 use super::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::errors::SystemError;
 use crate::errors::SystemUpstreamError;
@@ -12,6 +13,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
+use crate::system::system::FieldSubstate;
 use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -541,6 +543,26 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         // to make sure the auth zone stack is in good state for the proof dropping above.
         //
         if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
+            // Detach proofs from the auth zone
+            let handle = api.kernel_open_substate(
+                &auth_zone_id,
+                MAIN_BASE_PARTITION,
+                &AuthZoneField::AuthZone.into(),
+                LockFlags::MUTABLE,
+                SystemLockData::Default,
+            )?;
+            let mut substate: FieldSubstate<AuthZone> =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
+            let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
+            api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
+            api.kernel_close_substate(handle)?;
+
+            // Drop all proofs (previously) owned by the auth zone
+            for proof in proofs {
+                api.kernel_drop_node(proof.0.as_node_id())?;
+            }
+
+            // Drop the auth zone
             api.kernel_drop_node(&auth_zone_id)?;
         }
 
