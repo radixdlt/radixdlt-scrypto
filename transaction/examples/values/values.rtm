@@ -52,6 +52,15 @@ CALL_METHOD
     Address("${component_address}")
     "custom_types"
 
+    # Strings
+    "normal text"
+    "with an escape\""
+    "with an escape\r"
+    "with an escape\t"
+    "with an escape\n"
+    "with an escape\""
+    "with an escape\\"
+
     # Address
     Address("${package_address}")
     Address("${account_address}")
