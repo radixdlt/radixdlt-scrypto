@@ -291,9 +291,10 @@ where
             M::auto_drop(owned_nodes, self)?;
 
             // Now, check if any own has been left!
-            if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
-                return Err(RuntimeError::KernelError(KernelError::DanglingNode(
-                    node_id,
+            let owned_nodes = self.current_frame.owned_nodes();
+            if !owned_nodes.is_empty() {
+                return Err(RuntimeError::KernelError(KernelError::DanglingNodes(
+                    owned_nodes,
                 )));
             }
         }

@@ -635,7 +635,10 @@ PUBLISH_PACKAGE_ADVANCED
                             )
                         )
                     ),
-                    Enum<0u8>()
+                    Tuple(
+                        Enum<0u8>(),
+                        Enum<0u8>()
+                    )
                 ),
                 Enum<0u8>(),
                 Tuple(

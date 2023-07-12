@@ -580,7 +580,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             },
             api,
         )?;
-        if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnDrop).cloned() {
+        if let Some(export) = definition
+            .hook_exports
+            .get(&BlueprintHook::OnVirtualize)
+            .cloned()
+        {
             let rtn: Vec<u8> = api
                 .kernel_invoke(Box::new(KernelInvocation {
                     actor: Actor::BlueprintHook(BlueprintHookActor {
