@@ -154,10 +154,18 @@ pub enum KernelError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidDropNodeAccess {
+pub struct InvalidDropAccess {
     pub node_id: NodeId,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
+    pub actor_package: Option<PackageAddress>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidGlobalizeAccess {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub actor_package: Option<PackageAddress>,
 }
 
 impl CanBeAbortion for VmError {
@@ -237,7 +245,8 @@ pub enum SystemError {
     AssertAccessRuleFailed,
     BlueprintDoesNotExist(CanonicalBlueprintId),
     AuthTemplateDoesNotExist(CanonicalBlueprintId),
-    InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
+    InvalidGlobalizeAccess(Box<InvalidGlobalizeAccess>),
+    InvalidDropAccess(Box<InvalidDropAccess>),
     InvalidScryptoValue(DecodeError),
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,
