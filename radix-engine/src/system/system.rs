@@ -637,20 +637,18 @@ where
         let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
         let expected_outer_blueprint = blueprint_interface.blueprint_type.clone();
 
-        let (blueprint_type, object_features, outer_object_features) =
+        let object_features: BTreeSet<String> =
+            features.into_iter().map(|s| s.to_string()).collect();
+
+        let (blueprint_type, outer_object_features) =
             if let BlueprintType::Inner { outer_blueprint } = &expected_outer_blueprint {
                 match instance_context {
-                    Some(context) if context.outer_blueprint.eq(outer_blueprint) => {
-                        let outer_object_info =
-                            self.get_node_object_info(context.outer_object.as_node_id())?;
-
+                    Some(context) if context.info.blueprint_id.blueprint_name.eq(outer_blueprint) => {
                         (
                             BlueprintObjectType::Inner {
                                 outer_object: context.outer_object,
                             },
-                            BTreeSet::new(),
-                            // FIXME
-                            outer_object_info.get_main_features(),
+                            context.info.features,
                         )
                     }
                     _ => {
@@ -660,11 +658,9 @@ where
                     }
                 }
             } else {
-                let features: BTreeSet<String> =
-                    features.into_iter().map(|s| s.to_string()).collect();
 
                 // Validate features
-                for feature in &features {
+                for feature in &object_features {
                     if !blueprint_interface.feature_set.contains(feature) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
                             feature.to_string(),
@@ -672,7 +668,7 @@ where
                     }
                 }
 
-                (BlueprintObjectType::Outer, features, BTreeSet::new())
+                (BlueprintObjectType::Outer, BTreeSet::new())
             };
 
         let user_substates = self.validate_instance_schema_and_state(
@@ -1182,36 +1178,41 @@ where
         Ok(actor.fn_identifier())
     }
 
-    pub fn instance_context(&mut self) -> Option<InstanceContext> {
+    pub fn instance_context(&mut self) -> Result<Option<InstanceContext>, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
 
         let method_actor = match actor {
             Actor::Method(method_actor) => method_actor,
-            _ => return None,
+            _ => return Ok(None),
         };
 
         let instance_context = if method_actor.node_object_info.global {
+            let node_id = method_actor.node_id;
+            let module_id = method_actor.module_id;
+            let info = self.get_blueprint_object_info(&node_id, module_id)?;
+
             Some(InstanceContext {
-                outer_object: GlobalAddress::new_or_panic(method_actor.node_id.0),
-                outer_blueprint: method_actor.get_blueprint_id().blueprint_name,
+                outer_object: GlobalAddress::new_or_panic(node_id.0),
+                module_id,
+                info,
             })
         } else {
             match method_actor.get_blueprint_info() {
                 BlueprintObjectType::Inner { outer_object } => {
                     // TODO: do this recursively until global?
-                    let outer_info = self
-                        .get_node_object_info(outer_object.as_node_id())
-                        .unwrap();
+                    let info = self.get_blueprint_object_info(outer_object.as_node_id(), ObjectModuleId::Main)?;
+
                     Some(InstanceContext {
                         outer_object,
-                        outer_blueprint: outer_info.main_blueprint_info.blueprint_id.blueprint_name,
+                        module_id: ObjectModuleId::Main,
+                        info,
                     })
                 }
                 BlueprintObjectType::Outer { .. } => None,
             }
         };
 
-        instance_context
+        Ok(instance_context)
     }
 
     pub fn is_feature_enabled(
@@ -1339,7 +1340,7 @@ where
     ) -> Result<NodeId, RuntimeError> {
         let actor = self.api.kernel_get_system_state().current;
         let package_address = actor.blueprint_id().package_address;
-        let instance_context = self.instance_context();
+        let instance_context = self.instance_context()?;
         let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
         self.new_object_internal(
@@ -1426,15 +1427,17 @@ where
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
 
         let global_address = self.globalize_with_address_internal(modules, address_reservation)?;
+        let outer_info = self.get_blueprint_object_info(global_address.as_node_id(), ObjectModuleId::Main)?;
 
-        let blueprint = BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
+        let blueprint_id = BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
 
         let inner_object = self.new_object_internal(
-            &blueprint,
+            &blueprint_id,
             vec![],
             Some(InstanceContext {
                 outer_object: global_address,
-                outer_blueprint: actor_blueprint.blueprint_name,
+                module_id: ObjectModuleId::Main,
+                info: outer_info,
             }),
             None,
             inner_object_fields,
@@ -1555,7 +1558,7 @@ where
         // If the actor is the object's outer object
         match info.main_blueprint_info.blueprint_type {
             BlueprintObjectType::Inner { outer_object } => {
-                if let Some(instance_context) = self.instance_context() {
+                if let Some(instance_context) = self.instance_context()? {
                     if instance_context.outer_object.eq(&outer_object) {
                         is_drop_allowed = true;
                     }

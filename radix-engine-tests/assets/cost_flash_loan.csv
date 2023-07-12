@@ -1,13 +1,13 @@
-Total Cost (XRD)                                                           ,    0.200394051,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.19050862,     95.1%
-+ Tipping Cost (XRD)                                                       ,    0.009525431,      4.8%
+Total Cost (XRD)                                                           ,    0.200309841,    100.0%
++ Execution Cost (XRD)                                                     ,     0.19042842,     95.1%
++ Tipping Cost (XRD)                                                       ,    0.009521421,      4.8%
 + State Expansion Cost (XRD)                                               ,        0.00036,      0.2%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       19050862,    100.0%
+Total Cost Units Consumed                                                  ,       19042842,    100.0%
 AfterInvoke                                                                ,           1948,      0.0%
 AllocateNodeId                                                             ,          26500,      0.1%
 BeforeInvoke                                                               ,          28652,      0.2%
-CloseSubstate                                                              ,         369000,      1.9%
+CloseSubstate                                                              ,         367000,      1.9%
 Commit::GlobalAccount                                                      ,         100002,      0.5%
 Commit::GlobalGenericComponent                                             ,         100025,      0.5%
 Commit::GlobalNonFungibleResourceManager                                   ,         400016,      2.1%
@@ -18,16 +18,16 @@ EmitEvent                                                                  ,    
 GenerateRuid                                                               ,            500,      0.0%
 LockFee                                                                    ,            500,      0.0%
 OpenSubstate::GlobalAccount                                                ,         735488,      3.9%
-OpenSubstate::GlobalFungibleResourceManager                                ,         513600,      2.7%
+OpenSubstate::GlobalFungibleResourceManager                                ,         509614,      2.7%
 OpenSubstate::GlobalGenericComponent                                       ,          85944,      0.5%
-OpenSubstate::GlobalNonFungibleResourceManager                             ,        1400552,      7.4%
+OpenSubstate::GlobalNonFungibleResourceManager                             ,        1401528,      7.4%
 OpenSubstate::GlobalPackage                                                ,        6928554,     36.4%
 OpenSubstate::InternalFungibleVault                                        ,         699040,      3.7%
 OpenSubstate::InternalGenericComponent                                     ,         231006,      1.2%
 PrepareWasmCode                                                            ,        2262584,     11.9%
 QueryActor                                                                 ,          10500,      0.1%
 QueryAuthZone                                                              ,           2000,      0.0%
-ReadSubstate                                                               ,        2891066,     15.2%
+ReadSubstate                                                               ,        2888056,     15.2%
 RunNativeCode::AuthZone_pop                                                ,          50666,      0.3%
 RunNativeCode::AuthZone_push                                               ,          59672,      0.3%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.1%
