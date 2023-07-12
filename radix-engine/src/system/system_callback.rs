@@ -610,7 +610,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let mut system = SystemService::new(api);
             let address = GlobalAddress::new_or_panic(node_id.into());
             let address_reservation =
-                system.allocate_virtual_global_address(blueprint_id, address)?;
+                system.allocate_virtual_global_address(blueprint_id.clone(), address)?;
 
             api.kernel_invoke(Box::new(KernelInvocation {
                 actor: Actor::BlueprintHook(BlueprintHookActor {
