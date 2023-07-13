@@ -2,10 +2,9 @@ use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_queries::typed_substate_layout::AccountError;
-use scrypto_unit::{TestRunner, TestRunnerBuilder};
+use scrypto_unit::{DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
@@ -441,7 +440,7 @@ fn disallow_all_permits_deposit_of_resource_in_allow_list() {
 }
 
 struct AccountDepositModesTestRunner {
-    test_runner: TestRunner<NoExtension>,
+    test_runner: DefaultTestRunner,
     public_key: PublicKey,
     component_address: ComponentAddress,
 }

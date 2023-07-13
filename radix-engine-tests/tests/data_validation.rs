@@ -1,4 +1,3 @@
-use radix_engine::vm::NoExtension;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError},
     kernel::call_frame::PassMessageError,
@@ -7,7 +6,7 @@ use radix_engine::{
 use scrypto_unit::*;
 use transaction::prelude::*;
 
-fn setup_component(test_runner: &mut TestRunner<NoExtension>) -> ComponentAddress {
+fn setup_component(test_runner: &mut DefaultTestRunner) -> ComponentAddress {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/data_validation");
 
     let setup_manifest = ManifestBuilder::new()

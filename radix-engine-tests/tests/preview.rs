@@ -1,7 +1,6 @@
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::FeeReserveConfig;
 use radix_engine::types::*;
-use radix_engine::vm::NoExtension;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -87,7 +86,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 }
 
 fn prepare_matching_test_tx_and_preview_intent(
-    test_runner: &mut TestRunner<NoExtension>,
+    test_runner: &mut DefaultTestRunner,
     network: &NetworkDefinition,
     manifest: TransactionManifestV1,
     flags: &PreviewFlags,
