@@ -1662,7 +1662,6 @@ fn low_stakes_should_cause_no_problems() {
     }
 }
 
-
 #[test]
 fn one_hundred_validators_should_work() {
     registered_validator_test(
