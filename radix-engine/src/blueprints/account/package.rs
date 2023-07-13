@@ -18,7 +18,7 @@ use radix_engine_interface::schema::{
     FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 
-const ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
+pub const ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
 
 pub struct AccountNativePackage;
 

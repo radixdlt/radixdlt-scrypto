@@ -88,7 +88,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Loop
     let mut nonce = 3;
-    c.bench_function("Transfer::run", |b| {
+    c.bench_function("transaction::transfer", |b| {
         b.iter(|| {
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,

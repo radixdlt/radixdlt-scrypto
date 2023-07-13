@@ -23,7 +23,10 @@ use radix_engine_interface::schema::{
 };
 use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 
-const IDENTITY_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
+pub const IDENTITY_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
+
+pub const IDENTITY_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
+pub const IDENTITY_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
 
 pub struct IdentityNativePackage;
 
@@ -246,11 +249,11 @@ impl IdentityBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         match input.variant_id {
-            0 => {
+            IDENTITY_CREATE_VIRTUAL_SECP256K1_ID => {
                 let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, api)
             }
-            1 => {
+            IDENTITY_CREATE_VIRTUAL_ED25519_ID => {
                 let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, api)
             }

@@ -134,12 +134,32 @@ where
 #[cfg(test)]
 #[cfg(feature = "std")]
 mod test {
+    use transaction::manifest::{compile, MockBlobProvider};
+
     use super::*;
 
     #[test]
     pub fn regenerate_all() {
+        let network_definition = NetworkDefinition::simulator();
         let scenarios_dir =
             std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("generated-examples");
-        run_all_in_memory_and_dump_examples(NetworkDefinition::simulator(), scenarios_dir).unwrap()
+        run_all_in_memory_and_dump_examples(network_definition.clone(), scenarios_dir.clone())
+            .unwrap();
+
+        // Ensure that they can all be compiled back again
+        for entry in walkdir::WalkDir::new(&scenarios_dir) {
+            let path = entry.unwrap().path().canonicalize().unwrap();
+            if path.extension().and_then(|str| str.to_str()) != Some("rtm") {
+                continue;
+            }
+
+            let manifest_string = std::fs::read_to_string(path).unwrap();
+            compile(
+                &manifest_string,
+                &network_definition,
+                MockBlobProvider::new(),
+            )
+            .unwrap();
+        }
     }
 }

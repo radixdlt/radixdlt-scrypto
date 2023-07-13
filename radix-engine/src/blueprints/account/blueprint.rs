@@ -20,6 +20,9 @@ use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::metadata_init;
 
+pub const ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
+pub const ACCOUNT_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
+
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
     pub default_deposit_rule: AccountDefaultDepositRule,
@@ -97,11 +100,11 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         match input.variant_id {
-            0 => {
+            ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID => {
                 let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, api)
             }
-            1 => {
+            ACCOUNT_CREATE_VIRTUAL_ED25519_ID => {
                 let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
                 Self::create_virtual(public_key_hash, api)
             }
