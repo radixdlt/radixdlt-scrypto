@@ -67,25 +67,40 @@ pub trait DatabaseKeyMapper {
 ///
 /// This implementation achieves the prefix-spreading by adding a hash prefix (shortened hash for
 /// performance reasons, but still hard to crack) to:
-/// - the PartitionKey (namely a RE Node and Module ID)
+/// - the PartitionKey (to be specific: its `NodeId` only; the `PartitionNumber` stays untouched)
 /// - the SubstateKey
 pub struct SpreadPrefixKeyMapper;
 
+// Please see the implementation note in the `to_db_partition_key()`, which is the only usage:
+const PARTITION_NUM_INDEX: usize = 2;
+
 impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
     fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey {
-        let mut buffer = Vec::new();
-        buffer.extend(node_id.as_ref());
-        buffer.push(partition_num.0);
-        DbPartitionKey(SpreadPrefixKeyMapper::to_hash_prefixed(&buffer[..]))
+        let mut partition_key_bytes = SpreadPrefixKeyMapper::to_hash_prefixed(node_id.as_bytes());
+        // Note on the raw byte-fiddling below:
+        // The "prefix real bytes with their N-byte hash" is our common trick to "spread" the values
+        // across their space. However, we discovered that RocksDB prefers a closer grouping of
+        // keys on their first byte(s), due to how the SSTs are divided up on disk (which may yield
+        // even ~2x better read performance for some workloads).
+        // An ideal RocksDB key would simply be `NodeId || PartitionNumber || SortKey`. But since
+        // the same mapper is used for JMT purposes, we need to `hash(NodeId)` (avoid adversarial
+        // "long common prefix" generation) and we also need to move the `PartitionNumber` closer
+        // to the beginning (avoid "long common prefix" for different partitions of the same node).
+        // This is still sub-optimal, but will be improved by a 3-Tier JMT coming in the near future
+        // (where the `PartitionNumber` will not need to be encoded together with `NodeId` at all).
+        partition_key_bytes.insert(PARTITION_NUM_INDEX, partition_num.0);
+        DbPartitionKey(partition_key_bytes)
     }
 
     fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber) {
-        let buffer = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key.0);
-        let mut bytes = [0u8; NodeId::LENGTH];
-        bytes.copy_from_slice(&buffer[..buffer.len() - 1]);
-        let partition_num = PartitionNumber(*buffer.last().unwrap());
-
-        (NodeId(bytes), partition_num)
+        // Please see the implementation note in the `to_db_partition_key()`; here is the inverse:
+        let mut partition_key_bytes = partition_key.0.clone();
+        let partition_num = partition_key_bytes.remove(PARTITION_NUM_INDEX);
+        let node_id_bytes = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key_bytes);
+        (
+            NodeId(copy_u8_array(node_id_bytes)),
+            PartitionNumber(partition_num),
+        )
     }
 
     fn field_to_db_sort_key(fields_key: &FieldKey) -> DbSortKey {
@@ -133,13 +148,13 @@ impl SpreadPrefixKeyMapper {
     const HASHED_PREFIX_LENGTH: usize = 20;
 
     /// Returns the given bytes prefixed by their known-length hash (see [`HASHED_PREFIX_LENGTH`]).
-    fn to_hash_prefixed(plain_bytes: &[u8]) -> Vec<u8> {
+    pub fn to_hash_prefixed(plain_bytes: &[u8]) -> Vec<u8> {
         let hashed_prefix = &hash(plain_bytes).0[..Self::HASHED_PREFIX_LENGTH];
         [hashed_prefix, plain_bytes].concat()
     }
 
     /// Returns the given slice without its known-length hash prefix (see [`HASHED_PREFIX_LENGTH`]).
-    fn from_hash_prefixed(prefixed_bytes: &[u8]) -> &[u8] {
+    pub fn from_hash_prefixed(prefixed_bytes: &[u8]) -> &[u8] {
         &prefixed_bytes[Self::HASHED_PREFIX_LENGTH..]
     }
 }
