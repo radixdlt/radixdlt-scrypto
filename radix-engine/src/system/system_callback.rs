@@ -1,4 +1,8 @@
 use super::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_ED25519_ID;
+use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
+use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
+use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::errors::SystemUpstreamError;
@@ -544,18 +548,22 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<Self>,
     {
         let (blueprint_id, variant_id) = match node_id.entity_type() {
-            Some(EntityType::GlobalVirtualSecp256k1Account) => {
-                (BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT), 0)
-            }
-            Some(EntityType::GlobalVirtualEd25519Account) => {
-                (BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT), 1)
-            }
-            Some(EntityType::GlobalVirtualSecp256k1Identity) => {
-                (BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT), 0)
-            }
-            Some(EntityType::GlobalVirtualEd25519Identity) => {
-                (BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT), 1)
-            }
+            Some(EntityType::GlobalVirtualSecp256k1Account) => (
+                BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
+                ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID,
+            ),
+            Some(EntityType::GlobalVirtualEd25519Account) => (
+                BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT),
+                ACCOUNT_CREATE_VIRTUAL_ED25519_ID,
+            ),
+            Some(EntityType::GlobalVirtualSecp256k1Identity) => (
+                BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
+                IDENTITY_CREATE_VIRTUAL_SECP256K1_ID,
+            ),
+            Some(EntityType::GlobalVirtualEd25519Identity) => (
+                BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT),
+                IDENTITY_CREATE_VIRTUAL_ED25519_ID,
+            ),
             _ => return Ok(false),
         };
 
