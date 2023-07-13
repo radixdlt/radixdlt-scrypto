@@ -11,7 +11,6 @@ use scrypto_schema::BlueprintSchemaInit;
 use scrypto_schema::FunctionSchemaInit;
 use scrypto_schema::TypeRef;
 use scrypto_schema::{BlueprintFunctionsSchemaInit, ReceiverInfo};
-use utils::btreemap;
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -213,7 +212,6 @@ impl PackageDefinition {
             BlueprintDefinitionInit {
                 schema: BlueprintSchemaInit {
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
                         functions: functions
                             .into_iter()
                             .map(|(function_name, export_name, has_receiver)| {

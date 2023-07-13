@@ -1,31 +1,30 @@
+use crate::Compile;
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
+use radix_engine::vm::wasm::WasmValidatorConfigV1;
+use radix_engine::vm::DefaultNativeVm;
 use radix_engine::vm::ScryptoVm;
-use radix_engine_interface::api::node_modules::metadata::*;
-use radix_engine_interface::blueprints::account::*;
+use radix_engine::vm::Vm;
 use radix_engine_interface::blueprints::package::PackageDefinition;
-use radix_engine_interface::data::manifest::model::ManifestExpression;
 use radix_engine_interface::rule;
 use radix_engine_store_interface::interface::CommittableSubstateDatabase;
 use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
 use scrypto::api::node_modules::ModuleConfig;
 use scrypto::prelude::metadata;
 use scrypto::prelude::metadata_init;
-use scrypto::prelude::LOCKED;
 use std::path::{Path, PathBuf};
 use transaction::model::{Executable, TestTransaction};
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
-use crate::Compile;
-
 // Basic RocksDB test runner for benchmark purpose.
 pub struct BasicRocksdbTestRunner {
-    scrypto_interpreter: ScryptoVm<DefaultWasmEngine>,
+    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
+    native_vm: DefaultNativeVm,
     substate_db: RocksDBWithMerkleTreeSubstateStore,
     next_private_key: u64,
     next_transaction_nonce: u32,
@@ -34,14 +33,19 @@ pub struct BasicRocksdbTestRunner {
 
 impl BasicRocksdbTestRunner {
     pub fn new(root: PathBuf, trace: bool) -> Self {
-        let scrypto_interpreter = ScryptoVm::default();
         let mut substate_db = RocksDBWithMerkleTreeSubstateStore::standard(root);
-
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false);
+        let scrypto_vm = ScryptoVm {
+            wasm_engine: DefaultWasmEngine::default(),
+            wasm_validator_config: WasmValidatorConfigV1::new(),
+        };
+        let native_vm = DefaultNativeVm::new();
+        let vm = Vm::new(&scrypto_vm, native_vm.clone());
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
         bootstrapper.bootstrap_test_default().unwrap();
 
         Self {
-            scrypto_interpreter,
+            scrypto_vm,
+            native_vm,
             substate_db,
             next_private_key: 1,
             next_transaction_nonce: 1,
@@ -232,7 +236,10 @@ impl BasicRocksdbTestRunner {
 
         let transaction_receipt = execute_transaction(
             &mut self.substate_db,
-            &self.scrypto_interpreter,
+            Vm {
+                scrypto_vm: &self.scrypto_vm,
+                native_vm: self.native_vm.clone(),
+            },
             &fee_reserve_config,
             &execution_config,
             &executable,
@@ -250,17 +257,14 @@ impl BasicRocksdbTestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_fungible_resource(
                 OwnerRole::None,
                 true,
                 divisibility,
+                FungibleResourceRoles::default(),
                 metadata!(),
-                access_rules,
                 Some(amount),
             )
             .try_deposit_batch_or_abort(account)

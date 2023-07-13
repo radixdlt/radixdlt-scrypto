@@ -347,10 +347,8 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
@@ -681,10 +679,8 @@ impl ResourceNativePackage {
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -937,10 +933,8 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -1212,10 +1206,8 @@ impl ResourceNativePackage {
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -1404,10 +1396,8 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -1604,10 +1594,8 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -1717,10 +1705,8 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -1830,10 +1816,8 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -1987,10 +1971,8 @@ impl ResourceNativePackage {
                         collections: vec![],
                     },
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -2136,10 +2118,8 @@ impl ResourceNativePackage {
                     schema,
                     state: auth_zone_blueprint,
                     events: BlueprintEventSchemaInit::default(),
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
