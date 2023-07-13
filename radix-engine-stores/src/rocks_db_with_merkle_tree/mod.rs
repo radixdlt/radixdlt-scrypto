@@ -26,8 +26,11 @@ pub struct RocksDBWithMerkleTreeSubstateStore {
 
 impl RocksDBWithMerkleTreeSubstateStore {
     pub fn clear(root: PathBuf) -> Self {
-        std::fs::create_dir_all(&root).unwrap();
-        std::fs::remove_dir_all(&root).unwrap();
+        if root.exists() {
+            std::fs::remove_dir_all(&root).unwrap();
+        } else {
+            std::fs::create_dir_all(&root).unwrap();
+        }
         Self::standard(root)
     }
 

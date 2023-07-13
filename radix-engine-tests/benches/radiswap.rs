@@ -1,10 +1,6 @@
-use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
+use radix_engine::types::*;
 use radix_engine::vm::NoExtension;
-use radix_engine::{
-    transaction::{ExecutionConfig, FeeReserveConfig, TransactionReceipt},
-    types::*,
-};
 #[cfg(not(feature = "rocksdb"))]
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 #[cfg(feature = "rocksdb")]
@@ -12,11 +8,28 @@ use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstat
 use scrypto_unit::{TestRunner, TestRunnerBuilder};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
-use transaction::{
-    prelude::*,
-    validation::{NotarizedTransactionValidator, TransactionValidator, ValidationConfig},
-};
+use transaction::prelude::*;
 
+/// Number of prefilled accounts in the substate store
+#[cfg(feature = "rocksdb")]
+const NUM_OF_PRE_FILLED_ACCOUNTS: usize = 100_000;
+#[cfg(not(feature = "rocksdb"))]
+const NUM_OF_PRE_FILLED_ACCOUNTS: usize = 200;
+
+/// To profile with flamegraph, run
+/// ```bash
+/// sudo cargo flamegraph --bench radiswap --features flamegraph
+/// ```
+///
+/// To benchmark, run
+/// ```bash
+/// cargo bench --bench radiswap
+/// ```
+///
+/// To benchmark with rocksdb, run
+/// ```bash
+/// cargo bench --bench radiswap --features rocksdb
+/// ```
 fn bench_radiswap(c: &mut Criterion) {
     #[cfg(feature = "rocksdb")]
     let mut test_runner = TestRunnerBuilder::new()
@@ -28,63 +41,56 @@ fn bench_radiswap(c: &mut Criterion) {
     #[cfg(not(feature = "rocksdb"))]
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
-    // Scrypto developer
-    let (pk1, _, _) = test_runner.new_allocated_account();
-    // Radiswap operator
-    let (pk2, _, account2) = test_runner.new_allocated_account();
-    // Radiswap user
-    let (pk3, sk3, account3) = test_runner.new_allocated_account();
-
-    // Publish package
+    // Create account and publish package
+    let (pk, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.publish_package(
         include_bytes!("../../assets/radiswap.wasm").to_vec(),
         manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap(),
         btreemap!(),
-        OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
+        OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk)))),
     );
 
-    #[cfg(feature = "rocksdb")]
-    for i in 0..100_000 {
-        if i % 100 == 0 {
-            println!("{}/{}", i, 100_000);
-        }
-        test_runner.publish_package(
-            include_bytes!("../../assets/radiswap.wasm").to_vec(),
-            manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap(),
-            btreemap!(),
-            OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
-        );
-    }
+    // Create freely mintable resources
+    let (btc_mint_auth, btc) = test_runner.create_mintable_burnable_fungible_resource(account);
+    let (eth_mint_auth, eth) = test_runner.create_mintable_burnable_fungible_resource(account);
 
-    // Instantiate Radiswap
-    let btc = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
-    let eth = test_runner.create_fungible_resource(1_000_000.into(), 18, account2);
+    // Create Radiswap
     let component_address: ComponentAddress = test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_standard_test_fee(account2)
+                .lock_standard_test_fee(account)
                 .call_function(
                     package_address,
                     "Radiswap",
                     "new",
                     manifest_args!(OwnerRole::None, btc, eth),
                 )
-                .try_deposit_batch_or_abort(account2)
+                .try_deposit_batch_or_abort(account)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk2)],
+            vec![NonFungibleGlobalId::from_public_key(&pk)],
         )
         .expect_commit(true)
         .output(1);
 
-    // Contributing an initial amount to radiswap
+    // Contribute to radiswap
     let btc_init_amount = Decimal::from(500_000);
     let eth_init_amount = Decimal::from(300_000);
     test_runner
         .execute_manifest(
             ManifestBuilder::new()
-                .lock_standard_test_fee(account2)
-                .withdraw_from_account(account2, btc, btc_init_amount)
-                .withdraw_from_account(account2, eth, eth_init_amount)
+                .lock_standard_test_fee(account)
+                .create_proof_from_account_of_non_fungibles(
+                    account,
+                    btc_mint_auth,
+                    &btreeset!(NonFungibleLocalId::integer(1)),
+                )
+                .mint_fungible(btc, btc_init_amount)
+                .create_proof_from_account_of_non_fungibles(
+                    account,
+                    eth_mint_auth,
+                    &btreeset!(NonFungibleLocalId::integer(1)),
+                )
+                .mint_fungible(eth, eth_init_amount)
                 .take_all_from_worktop(btc, "liquidity_part_1")
                 .take_all_from_worktop(eth, "liquidity_part_2")
                 .with_name_lookup(|builder, lookup| {
@@ -96,83 +102,63 @@ fn bench_radiswap(c: &mut Criterion) {
                         manifest_args!(bucket1, bucket2),
                     )
                 })
-                .try_deposit_batch_or_abort(account2)
+                .try_deposit_batch_or_abort(account)
                 .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk2)],
+            vec![NonFungibleGlobalId::from_public_key(&pk)],
         )
         .expect_commit(true);
 
-    // Transfer `10,000 BTC` from `account2` to `account3`
-    let btc_amount = Decimal::from(10_000);
-    test_runner
-        .execute_manifest(
-            ManifestBuilder::new()
-                .lock_standard_test_fee(account2)
-                .withdraw_from_account(account2, btc, btc_amount)
-                .try_deposit_batch_or_abort(account3)
-                .build(),
-            vec![NonFungibleGlobalId::from_public_key(&pk2)],
-        )
-        .expect_commit_success();
-
-    // Swap 1 BTC into ETH
-    let btc_to_swap = Decimal::from(1);
-    let manifest = ManifestBuilder::new()
-        .lock_standard_test_fee(account3)
-        .withdraw_from_account(account3, btc, btc_to_swap)
-        .take_all_from_worktop(btc, "to_trade")
-        .with_name_lookup(|builder, lookup| {
-            let to_trade_bucket = lookup.bucket("to_trade");
-            builder.call_method(component_address, "swap", manifest_args!(to_trade_bucket))
-        })
-        .try_deposit_batch_or_abort(account3)
-        .build();
-
-    // Drain the faucet
-    for _ in 0..100 {
+    let mut accounts = Vec::new();
+    for i in 0..NUM_OF_PRE_FILLED_ACCOUNTS {
+        if i % 100 == 0 {
+            println!("{}/{}", i, NUM_OF_PRE_FILLED_ACCOUNTS);
+        }
+        let (pk2, _, account2) = test_runner.new_allocated_account();
         test_runner
             .execute_manifest(
                 ManifestBuilder::new()
-                    .lock_fee_from_faucet()
-                    .get_free_xrd_from_faucet()
-                    .try_deposit_batch_or_abort(account3)
+                    .lock_standard_test_fee(account)
+                    .create_proof_from_account_of_non_fungibles(
+                        account,
+                        btc_mint_auth,
+                        &btreeset!(NonFungibleLocalId::integer(1)),
+                    )
+                    .mint_fungible(btc, dec!("100"))
+                    .create_proof_from_account_of_non_fungibles(
+                        account,
+                        eth_mint_auth,
+                        &btreeset!(NonFungibleLocalId::integer(1)),
+                    )
+                    .mint_fungible(eth, dec!("100"))
+                    .try_deposit_batch_or_abort(account2)
                     .build(),
-                vec![],
+                vec![NonFungibleGlobalId::from_public_key(&pk)],
             )
-            .expect_commit_success();
+            .expect_commit(true);
+        accounts.push((pk2, account2));
     }
 
-    let transaction_payload = TransactionBuilder::new()
-        .header(TransactionHeaderV1 {
-            network_id: NetworkDefinition::simulator().id,
-            start_epoch_inclusive: Epoch::zero(),
-            end_epoch_exclusive: Epoch::of(100),
-            nonce: 0,
-            notary_public_key: pk3.clone().into(),
-            notary_is_signatory: true,
-            tip_percentage: 5,
-        })
-        .manifest(manifest.clone())
-        .notarize(&sk3)
-        .build()
-        .to_payload_bytes()
-        .unwrap();
-
-    // To profile with flamegraph, run
-    // ```
-    // sudo cargo flamegraph --bench radiswap --features flamegraph
-    // ```
-    let mut nonce = 100u32;
+    let mut index = 0;
     #[cfg(feature = "flamegraph")]
     for _ in 0..1000 {
-        do_swap(&mut test_runner, &transaction_payload, nonce);
-        nonce += 1;
+        do_swap(
+            &mut test_runner,
+            &accounts[index % accounts.len()],
+            btc,
+            component_address,
+        );
+        index += 1;
     }
     #[cfg(not(feature = "flamegraph"))]
     c.bench_function("transaction::radiswap", |b| {
         b.iter(|| {
-            do_swap(&mut test_runner, &transaction_payload, nonce);
-            nonce += 1;
+            do_swap(
+                &mut test_runner,
+                &accounts[index % accounts.len()],
+                btc,
+                component_address,
+            );
+            index += 1;
         })
     });
 }
@@ -184,33 +170,28 @@ type DatabaseType = InMemorySubstateDatabase;
 
 fn do_swap(
     test_runner: &mut TestRunner<NoExtension, DatabaseType>,
-    transaction_payload: &[u8],
-    nonce: u32,
-) -> TransactionReceipt {
-    // Validate
-    let validated = NotarizedTransactionValidator::new(ValidationConfig::simulator())
-        .validate_from_payload_bytes(transaction_payload)
-        .unwrap();
+    account: &(Secp256k1PublicKey, ComponentAddress),
+    btc: ResourceAddress,
+    component_address: ComponentAddress,
+) {
+    let manifest = ManifestBuilder::new()
+        .lock_standard_test_fee(account.1)
+        .withdraw_from_account(account.1, btc, dec!("1"))
+        .take_all_from_worktop(btc, "to_trade")
+        .with_name_lookup(|builder, lookup| {
+            let to_trade_bucket = lookup.bucket("to_trade");
+            builder.call_method(component_address, "swap", manifest_args!(to_trade_bucket))
+        })
+        .try_deposit_batch_or_abort(account.1)
+        .build();
 
-    let mut executable = validated.get_executable();
-
-    // Execute & commit
-    executable.overwrite_intent_hash(hash(nonce.to_le_bytes()));
-    let receipt = test_runner.execute_transaction(
-        executable,
-        FeeReserveConfig::default(),
-        ExecutionConfig::for_notarized_transaction(),
-    );
-    receipt.expect_commit_success();
-
-    receipt
+    test_runner
+        .execute_manifest(
+            manifest,
+            vec![NonFungibleGlobalId::from_public_key(&account.0)],
+        )
+        .expect_commit_success();
 }
 
-criterion_group!(
-    name = radiswap;
-    // Reduce number of iterations by reducing the benchmark duration.
-    // This is to avoid VaultError(LockFeeInsufficientBalance) error
-    config = Criterion::default().measurement_time(Duration::from_millis(2000));
-    targets = bench_radiswap
-);
+criterion_group!(radiswap, bench_radiswap);
 criterion_main!(radiswap);
