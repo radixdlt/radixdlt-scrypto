@@ -52,6 +52,7 @@ pub struct BlueprintSchemaInit {
     pub state: BlueprintStateSchemaInit,
     pub events: BlueprintEventSchemaInit,
     pub functions: BlueprintFunctionsSchemaInit,
+    pub hooks: BlueprintHooksInit,
 }
 
 impl Default for BlueprintSchemaInit {
@@ -66,6 +67,7 @@ impl Default for BlueprintSchemaInit {
             state: BlueprintStateSchemaInit::default(),
             events: BlueprintEventSchemaInit::default(),
             functions: BlueprintFunctionsSchemaInit::default(),
+            hooks: BlueprintHooksInit::default(),
         }
     }
 }
@@ -93,13 +95,30 @@ pub struct FunctionSchemaInit {
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintFunctionsSchemaInit {
     pub functions: BTreeMap<String, FunctionSchemaInit>,
-    pub virtual_lazy_load_functions: BTreeMap<u8, String>,
 }
 
-impl BlueprintFunctionsSchemaInit {
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
+#[sbor(transparent)]
+pub struct BlueprintHooksInit {
+    pub on_virtualize: Option<String>, // TODO: allow registration of variant count if we make virtualizable entity type fully dynamic
+                                       // TODO: more incoming
+}
+
+impl BlueprintHooksInit {
+    pub fn is_empty(&self) -> bool {
+        self.on_virtualize.is_none()
+    }
+}
+
+impl BlueprintSchemaInit {
     pub fn exports(&self) -> Vec<String> {
-        let mut exports: Vec<String> = self.functions.values().map(|t| t.export.clone()).collect();
-        for export in self.virtual_lazy_load_functions.values() {
+        let mut exports: Vec<String> = self
+            .functions
+            .functions
+            .values()
+            .map(|t| t.export.clone())
+            .collect();
+        if let Some(export) = &self.hooks.on_virtualize {
             exports.push(export.clone());
         }
         exports

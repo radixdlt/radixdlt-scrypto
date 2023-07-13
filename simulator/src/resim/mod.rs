@@ -67,7 +67,7 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
-use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm};
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, TypePointer,
@@ -432,9 +432,8 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
 
     match type_info {
         TypeInfoSubstate::Object(ObjectInfo {
-            main_blueprint_id: blueprint,
-            ..
-        }) => Ok(blueprint.clone()),
+            main_blueprint_id, ..
+        }) => Ok(main_blueprint_id.clone()),
         _ => panic!("Unexpected"),
     }
 }

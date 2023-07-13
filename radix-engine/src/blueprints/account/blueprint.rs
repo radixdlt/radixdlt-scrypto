@@ -12,13 +12,16 @@ use native_sdk::resource::NativeVault;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadOutput;
+use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
+use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeOutput;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::api::{CollectionIndex, FieldValue};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 use radix_engine_interface::metadata_init;
+
+pub const ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
+pub const ACCOUNT_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
@@ -89,32 +92,32 @@ impl AccountBlueprint {
         Ok(modules)
     }
 
-    pub fn create_virtual_secp256k1<Y>(
-        input: VirtualLazyLoadInput,
+    pub fn on_virtualize<Y>(
+        input: OnVirtualizeInput,
         api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
-    }
-
-    pub fn create_virtual_ed25519<Y>(
-        input: VirtualLazyLoadInput,
-        api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
+        match input.variant_id {
+            ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID => {
+                let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
+                Self::create_virtual(public_key_hash, api)
+            }
+            ACCOUNT_CREATE_VIRTUAL_ED25519_ID => {
+                let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
+                Self::create_virtual(public_key_hash, api)
+            }
+            x => Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+                format!("Unexpected variant id: {:?}", x),
+            ))),
+        }
     }
 
     fn create_virtual<Y>(
         public_key_hash: PublicKeyHash,
         api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

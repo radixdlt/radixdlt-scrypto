@@ -945,9 +945,9 @@ impl PackageNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
                         functions,
                     },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -1146,21 +1146,19 @@ impl PackageNativePackage {
                         ),
                     },
                     function_exports,
-                    virtual_lazy_load_functions: definition_init
-                        .schema
-                        .functions
-                        .virtual_lazy_load_functions
-                        .into_iter()
-                        .map(|(key, export_name)| {
-                            (
-                                key,
+                    hook_exports: {
+                        let mut hook_exports = btreemap!();
+                        if let Some(export_name) = definition_init.schema.hooks.on_virtualize {
+                            hook_exports.insert(
+                                BlueprintHook::OnVirtualize,
                                 PackageExport {
                                     code_hash,
                                     export_name,
                                 },
-                            )
-                        })
-                        .collect(),
+                            );
+                        }
+                        hook_exports
+                    },
                 };
                 definitions.insert(blueprint.clone(), definition);
 
@@ -1414,7 +1412,7 @@ impl PackageAuthNativeBlueprint {
                     Err(RuntimeError::SystemModuleError(
                         SystemModuleError::AuthError(AuthError::NoFunction(FnIdentifier {
                             blueprint_id,
-                            ident: FnIdent::Application(ident.to_string()),
+                            ident: ident.to_string(),
                         })),
                     ))
                 }

@@ -199,8 +199,9 @@ pub enum CallFrameError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
+    NoBlueprintId,
+    NoPackageAddress,
     InvalidObjectHandle,
-    NodeIdNotExist,
     GlobalAddressDoesNotExist,
     NoParent,
     NotAnAddressReservation,
@@ -261,6 +262,7 @@ pub enum SystemUpstreamError {
 
     FnNotFound(String),
     ReceiverNotMatch(String),
+    HookNotFound(BlueprintHook),
 
     InputDecodeError(DecodeError),
     InputSchemaNotMatch(String, String),

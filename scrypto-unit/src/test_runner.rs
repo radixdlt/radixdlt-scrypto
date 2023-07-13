@@ -42,12 +42,12 @@ use radix_engine_queries::typed_substate_layout::{
     BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
 };
 use radix_engine_store_interface::db_key_mapper::DatabaseKeyMapper;
-use radix_engine_store_interface::interface::{ListableSubstateDatabase, SubstateDatabase};
-use radix_engine_store_interface::{
-    db_key_mapper::{
-        MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
-    },
-    interface::{CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates},
+use radix_engine_store_interface::db_key_mapper::{
+    MappedCommittableSubstateDatabase, MappedSubstateDatabase, SpreadPrefixKeyMapper,
+};
+use radix_engine_store_interface::interface::{
+    CommittableSubstateDatabase, DatabaseUpdate, DatabaseUpdates, ListableSubstateDatabase,
+    SubstateDatabase,
 };
 use radix_engine_stores::hash_tree::tree_store::{TypedInMemoryTreeStore, Version};
 use radix_engine_stores::hash_tree::{put_at_next_version, SubstateHashChange};
@@ -235,16 +235,31 @@ impl CustomGenesis {
     }
 }
 
-pub struct TestRunnerBuilder {
+pub trait TestDatabase:
+    SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase
+{
+}
+impl<T: SubstateDatabase + CommittableSubstateDatabase + ListableSubstateDatabase> TestDatabase
+    for T
+{
+}
+
+pub type DefaultTestRunner = TestRunner<NoExtension, InMemorySubstateDatabase>;
+
+pub struct TestRunnerBuilder<E, D> {
     custom_genesis: Option<CustomGenesis>,
+    custom_extension: E,
+    custom_database: D,
     trace: bool,
     state_hashing: bool,
 }
 
-impl TestRunnerBuilder {
-    pub fn new() -> TestRunnerBuilder {
+impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
+    pub fn new() -> Self {
         TestRunnerBuilder {
             custom_genesis: None,
+            custom_extension: NoExtension,
+            custom_database: InMemorySubstateDatabase::standard(),
             #[cfg(not(feature = "resource_tracker"))]
             trace: true,
             #[cfg(feature = "resource_tracker")]
@@ -252,7 +267,9 @@ impl TestRunnerBuilder {
             state_hashing: false,
         }
     }
+}
 
+impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
     pub fn without_trace(mut self) -> Self {
         self.trace = false;
         self
@@ -268,17 +285,37 @@ impl TestRunnerBuilder {
         self
     }
 
-    pub fn build_and_get_epoch_with_native_vm_extension<E: NativeVmExtension>(
+    pub fn with_custom_extension<NE: NativeVmExtension>(
         self,
-        extension: E,
-    ) -> (TestRunner<E>, ActiveValidatorSet) {
+        extension: NE,
+    ) -> TestRunnerBuilder<NE, D> {
+        TestRunnerBuilder::<NE, D> {
+            custom_genesis: self.custom_genesis,
+            custom_extension: extension,
+            custom_database: self.custom_database,
+            trace: self.trace,
+            state_hashing: self.state_hashing,
+        }
+    }
+
+    pub fn with_custom_database<ND: TestDatabase>(self, database: ND) -> TestRunnerBuilder<E, ND> {
+        TestRunnerBuilder::<E, ND> {
+            custom_genesis: self.custom_genesis,
+            custom_extension: self.custom_extension,
+            custom_database: database,
+            trace: self.trace,
+            state_hashing: self.state_hashing,
+        }
+    }
+
+    pub fn build_and_get_epoch(self) -> (TestRunner<E, D>, ActiveValidatorSet) {
         let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
         };
-        let native_vm = NativeVm::new_with_extension(extension);
+        let native_vm = NativeVm::new_with_extension(self.custom_extension);
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
-        let mut substate_db = InMemorySubstateDatabase::standard();
+        let mut substate_db = self.custom_database;
         let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
         let GenesisReceipts {
             wrap_up_receipt, ..
@@ -305,7 +342,7 @@ impl TestRunnerBuilder {
         let runner = TestRunner {
             scrypto_vm,
             native_vm,
-            substate_db,
+            database: substate_db,
             state_hash_support: Some(self.state_hashing)
                 .filter(|x| *x)
                 .map(|_| StateHashSupport::new()),
@@ -321,27 +358,15 @@ impl TestRunnerBuilder {
         (runner, next_epoch.validator_set)
     }
 
-    pub fn build_and_get_epoch(self) -> (TestRunner<NoExtension>, ActiveValidatorSet) {
-        self.build_and_get_epoch_with_native_vm_extension(NoExtension)
-    }
-
-    pub fn build(self) -> TestRunner<NoExtension> {
+    pub fn build(self) -> TestRunner<E, D> {
         self.build_and_get_epoch().0
-    }
-
-    pub fn build_with_native_vm_extension<E: NativeVmExtension>(
-        self,
-        extension: E,
-    ) -> TestRunner<E> {
-        self.build_and_get_epoch_with_native_vm_extension(extension)
-            .0
     }
 }
 
-pub struct TestRunner<E: NativeVmExtension> {
+pub struct TestRunner<E: NativeVmExtension, D: TestDatabase> {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
     native_vm: NativeVm<E>,
-    substate_db: InMemorySubstateDatabase,
+    database: D,
     next_private_key: u64,
     next_transaction_nonce: u32,
     trace: bool,
@@ -350,16 +375,16 @@ pub struct TestRunner<E: NativeVmExtension> {
 
 #[derive(Clone)]
 pub struct TestRunnerSnapshot {
-    substate_db: InMemorySubstateDatabase,
+    database: InMemorySubstateDatabase,
     next_private_key: u64,
     next_transaction_nonce: u32,
     state_hash_support: Option<StateHashSupport>,
 }
 
-impl<E: NativeVmExtension> TestRunner<E> {
+impl<E: NativeVmExtension> TestRunner<E, InMemorySubstateDatabase> {
     pub fn create_snapshot(&self) -> TestRunnerSnapshot {
         TestRunnerSnapshot {
-            substate_db: self.substate_db.clone(),
+            database: self.database.clone(),
             next_private_key: self.next_private_key,
             next_transaction_nonce: self.next_transaction_nonce,
             state_hash_support: self.state_hash_support.clone(),
@@ -367,22 +392,24 @@ impl<E: NativeVmExtension> TestRunner<E> {
     }
 
     pub fn restore_snapshot(&mut self, snapshot: TestRunnerSnapshot) {
-        self.substate_db = snapshot.substate_db;
+        self.database = snapshot.database;
         self.next_private_key = snapshot.next_private_key;
         self.next_transaction_nonce = snapshot.next_transaction_nonce;
         self.state_hash_support = snapshot.state_hash_support;
     }
+}
 
+impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     pub fn faucet_component(&self) -> GlobalAddress {
         FAUCET.clone().into()
     }
 
-    pub fn substate_db(&self) -> &InMemorySubstateDatabase {
-        &self.substate_db
+    pub fn substate_db(&self) -> &D {
+        &self.database
     }
 
-    pub fn substate_db_mut(&mut self) -> &mut InMemorySubstateDatabase {
-        &mut self.substate_db
+    pub fn substate_db_mut(&mut self) -> &mut D {
+        &mut self.database
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -438,7 +465,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
         let key = scrypto_encode(key).unwrap();
 
         let metadata_value = self
-            .substate_db
+            .database
             .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<MetadataValue>>(
                 address.as_node_id(),
                 METADATA_KV_STORE_PARTITION,
@@ -451,7 +478,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
 
     pub fn inspect_component_royalty(&mut self, component_address: ComponentAddress) -> Decimal {
         let accumulator = self
-            .substate_db
+            .database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ComponentRoyaltySubstate>>(
                 component_address.as_node_id(),
                 ROYALTY_FIELDS_PARTITION,
@@ -460,7 +487,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
             .unwrap()
             .value
             .0;
-        self.substate_db
+        self.database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                 accumulator.royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -474,7 +501,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let output = self
-            .substate_db
+            .database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<PackageRoyaltyAccumulatorSubstate>>(
                 package_address.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -483,7 +510,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
             .value
             .0;
 
-        self.substate_db
+        self.database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                 output.royalty_vault.0.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -511,7 +538,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
 
     pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
         let mut node_ids = index_set_new();
-        for pk in self.substate_db.list_partition_keys() {
+        for pk in self.database.list_partition_keys() {
             let (node_id, _) = SpreadPrefixKeyMapper::from_db_partition_key(&pk);
             node_ids.insert(node_id);
         }
@@ -603,7 +630,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
     ) -> Vec<NodeId> {
         let node_id = component_address.as_node_id();
         let mut vault_finder = VaultFinder::new(resource_address);
-        let mut traverser = StateTreeTraverser::new(&self.substate_db, &mut vault_finder, 100);
+        let mut traverser = StateTreeTraverser::new(&self.database, &mut vault_finder, 100);
         traverser.traverse_all_descendents(None, *node_id);
         vault_finder.to_vaults()
     }
@@ -656,7 +683,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = component_address.as_node_id();
-        let mut accounter = ResourceAccounter::new(&self.substate_db);
+        let mut accounter = ResourceAccounter::new(&self.database);
         accounter.traverse(node_id.clone());
         accounter.close().balances
     }
@@ -1032,15 +1059,14 @@ impl<E: NativeVmExtension> TestRunner<E> {
         };
 
         let transaction_receipt = execute_transaction(
-            &mut self.substate_db,
+            &mut self.database,
             vm,
             &fee_reserve_config,
             &execution_config,
             &executable,
         );
         if let TransactionResult::Commit(commit) = &transaction_receipt.transaction_result {
-            self.substate_db
-                .commit(&commit.state_updates.database_updates);
+            self.database.commit(&commit.state_updates.database_updates);
             if let Some(state_hash_support) = &mut self.state_hash_support {
                 state_hash_support.update_with(&commit.state_updates.database_updates);
             }
@@ -1058,7 +1084,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
             native_vm: self.native_vm.clone(),
         };
 
-        execute_preview(&self.substate_db, vm, network, preview_intent, self.trace)
+        execute_preview(&self.database, vm, network, preview_intent, self.trace)
     }
 
     pub fn preview_manifest(
@@ -1074,7 +1100,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
             native_vm: self.native_vm.clone(),
         };
         execute_preview(
-            &mut self.substate_db,
+            &mut self.database,
             vm,
             &NetworkDefinition::simulator(),
             PreviewIntentV1 {
@@ -1585,7 +1611,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
 
     pub fn set_current_epoch(&mut self, epoch: Epoch) {
         let mut substate = self
-            .substate_db
+            .database
             .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
                 &CONSENSUS_MANAGER.as_node_id(),
                 MAIN_BASE_PARTITION,
@@ -1593,7 +1619,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
             )
             .unwrap();
         substate.value.0.epoch = epoch;
-        self.substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
+        self.database.put_mapped::<SpreadPrefixKeyMapper, _>(
             &CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
@@ -1795,9 +1821,9 @@ impl<E: NativeVmExtension> TestRunner<E> {
 
                         match type_info {
                             TypeInfoSubstate::Object(ObjectInfo {
-                                main_blueprint_id: blueprint,
+                                main_blueprint_id: blueprint_id,
                                 ..
-                            }) => (blueprint.package_address, *schema_pointer),
+                            }) => (blueprint_id.package_address, *schema_pointer),
                             _ => {
                                 panic!("No event schema.")
                             }

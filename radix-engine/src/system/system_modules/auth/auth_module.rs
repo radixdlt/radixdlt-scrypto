@@ -2,7 +2,7 @@ use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::system::module::SystemModule;
@@ -41,7 +41,7 @@ pub enum FailedAccessRules {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
     pub failed_access_rules: FailedAccessRules,
-    pub fn_identifier: FnIdentifier,
+    pub fn_identifier: Option<FnIdentifier>,
 }
 
 #[derive(Debug, Clone)]
@@ -105,10 +105,10 @@ impl AuthModule {
 
                     (resolved_permission, acting_location)
                 }
-                Actor::Function {
+                Actor::Function(FunctionActor {
                     blueprint_id,
                     ident,
-                } => {
+                }) => {
                     let resolved_permission =
                         PackageAuthNativeBlueprint::resolve_function_permission(
                             blueprint_id.package_address.as_node_id(),
@@ -119,7 +119,7 @@ impl AuthModule {
 
                     (resolved_permission, ActingLocation::AtBarrier)
                 }
-                Actor::VirtualLazyLoad { .. } | Actor::Root => return Ok(()),
+                Actor::BlueprintHook(..) | Actor::Root => return Ok(()),
             };
 
             // Step 2: Check permission
@@ -141,7 +141,7 @@ impl AuthModule {
         auth_zone_id: &NodeId,
         acting_location: ActingLocation,
         resolved_permission: ResolvedPermission,
-        fn_identifier: FnIdentifier,
+        fn_identifier: Option<FnIdentifier>,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         match resolved_permission {
