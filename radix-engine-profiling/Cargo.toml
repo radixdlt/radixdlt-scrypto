@@ -22,3 +22,5 @@ default = []
 resource_tracker = ["dep:shared_memory"]
 rocksdb = ["dep:plotters", "dep:linreg", "dep:blake2", "dep:rand", "radix-engine-stores/std", 
            "radix-engine-store-interface/std", "radix-engine-interface/std"]
+parnum_hashed = []
+parnum_not_hashed = []

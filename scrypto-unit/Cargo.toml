@@ -28,6 +28,8 @@ moka = ["radix-engine/moka", "radix-engine-queries/moka"]
 lru = ["radix-engine/lru", "radix-engine-queries/lru"]
 
 rocksdb = ["radix-engine-stores/rocksdb"]
+parnum_hashed = ["radix-engine-stores/parnum_hashed"]
+parnum_not_hashed = ["radix-engine-stores/parnum_not_hashed"]
 
 [lib]
 bench = false

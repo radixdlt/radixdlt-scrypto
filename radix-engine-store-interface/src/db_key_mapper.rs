@@ -72,6 +72,7 @@ pub trait DatabaseKeyMapper {
 pub struct SpreadPrefixKeyMapper;
 
 impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
+    #[cfg(feature = "parnum_hashed")]
     fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey {
         let mut buffer = Vec::new();
         buffer.extend(node_id.as_ref());
@@ -79,6 +80,7 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         DbPartitionKey(SpreadPrefixKeyMapper::to_hash_prefixed(&buffer[..]))
     }
 
+    #[cfg(feature = "parnum_hashed")]
     fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber) {
         let buffer = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key.0);
         let mut bytes = [0u8; NodeId::LENGTH];
@@ -86,6 +88,23 @@ impl DatabaseKeyMapper for SpreadPrefixKeyMapper {
         let partition_num = PartitionNumber(*buffer.last().unwrap());
 
         (NodeId(bytes), partition_num)
+    }
+
+    #[cfg(feature = "parnum_not_hashed")]
+    fn to_db_partition_key(node_id: &NodeId, partition_num: PartitionNumber) -> DbPartitionKey {
+        let mut k = SpreadPrefixKeyMapper::to_hash_prefixed(node_id.as_bytes());
+        k[0] = partition_num.0;
+        DbPartitionKey(k)
+    }
+
+    #[cfg(feature = "parnum_not_hashed")]
+    fn from_db_partition_key(partition_key: &DbPartitionKey) -> (NodeId, PartitionNumber) {
+        let partition_num = partition_key.0[0];
+        let buffer = SpreadPrefixKeyMapper::from_hash_prefixed(&partition_key.0);
+        let mut bytes = [0u8; NodeId::LENGTH];
+        bytes.copy_from_slice(buffer);
+
+        (NodeId(bytes), PartitionNumber(partition_num))
     }
 
     fn field_to_db_sort_key(fields_key: &FieldKey) -> DbSortKey {
@@ -133,13 +152,13 @@ impl SpreadPrefixKeyMapper {
     const HASHED_PREFIX_LENGTH: usize = 20;
 
     /// Returns the given bytes prefixed by their known-length hash (see [`HASHED_PREFIX_LENGTH`]).
-    fn to_hash_prefixed(plain_bytes: &[u8]) -> Vec<u8> {
+    pub fn to_hash_prefixed(plain_bytes: &[u8]) -> Vec<u8> {
         let hashed_prefix = &hash(plain_bytes).0[..Self::HASHED_PREFIX_LENGTH];
         [hashed_prefix, plain_bytes].concat()
     }
 
     /// Returns the given slice without its known-length hash prefix (see [`HASHED_PREFIX_LENGTH`]).
-    fn from_hash_prefixed(prefixed_bytes: &[u8]) -> &[u8] {
+    pub fn from_hash_prefixed(prefixed_bytes: &[u8]) -> &[u8] {
         &prefixed_bytes[Self::HASHED_PREFIX_LENGTH..]
     }
 }

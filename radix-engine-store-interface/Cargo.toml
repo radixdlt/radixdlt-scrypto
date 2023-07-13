@@ -16,7 +16,8 @@ hex = { version = "0.4.3", default-features = false }
 default = ["std"]
 std = ["hex/std", "utils/std", "sbor/std", "radix-engine-derive/std", "radix-engine-common/std", "radix-engine-interface/std", "itertools/use_std"]
 alloc = ["hex/alloc", "utils/alloc", "sbor/alloc", "radix-engine-derive/alloc", "radix-engine-common/alloc", "radix-engine-interface/alloc", "itertools/use_alloc"]
-
+parnum_hashed = []
+parnum_not_hashed = []
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

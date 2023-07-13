@@ -19,6 +19,8 @@ std = ["hex/std", "sbor/std", "utils/std", "radix-engine-common/std", "radix-eng
 alloc = ["hex/alloc", "sbor/alloc", "utils/alloc", "radix-engine-common/alloc", "radix-engine-derive/alloc", "radix-engine-store-interface/alloc", "itertools/use_alloc"]
 
 rocksdb = ["dep:rocksdb"]
+parnum_hashed = []
+parnum_not_hashed = []
 
 # Ref: https://bheisler.github.io/criterion.rs/book/faq.html#cargo-bench-gives-unrecognized-option-errors-for-valid-command-line-options
 [lib]

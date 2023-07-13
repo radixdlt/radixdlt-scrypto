@@ -40,7 +40,7 @@ fn bench_radiswap(c: &mut Criterion) {
     );
 
     #[cfg(feature = "rocksdb")]
-    for i in 0..100_000 {
+    for i in 0..1_000 {
         if i % 100 == 0 {
             println!("{}/{}", i, 100_000);
         }
