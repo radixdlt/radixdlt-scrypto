@@ -1,6 +1,7 @@
 use radix_engine::system::system_modules::costing::FeeSummary;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto::api::node_modules::ModuleConfig;
 use scrypto::prelude::metadata;
@@ -88,7 +89,7 @@ fn test_mint_small_size_nfts_from_manifest() {
 
 #[cfg(feature = "std")]
 fn execute_with_time_logging(
-    test_runner: &mut DefaultTestRunner,
+    test_runner: &mut TestRunner<NoExtension>,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
@@ -104,7 +105,7 @@ fn execute_with_time_logging(
 
 #[cfg(feature = "alloc")]
 fn execute_with_time_logging(
-    test_runner: &mut DefaultTestRunner,
+    test_runner: &mut TestRunner<NoExtension>,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
@@ -637,7 +638,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     receipt.expect_commit(true);
 }
 
-fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, ComponentAddress) {
+fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner<NoExtension>, ComponentAddress) {
     // Basic setup
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
