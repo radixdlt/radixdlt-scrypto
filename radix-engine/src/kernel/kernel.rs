@@ -293,7 +293,7 @@ where
             // Now, check if any own has been left!
             let owned_nodes = self.current_frame.owned_nodes();
             if !owned_nodes.is_empty() {
-                return Err(RuntimeError::KernelError(KernelError::DanglingNodes(
+                return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
                     owned_nodes,
                 )));
             }

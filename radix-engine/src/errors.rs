@@ -150,7 +150,7 @@ pub enum KernelError {
     // Invoke
     InvalidInvokeAccess,
 
-    DanglingNodes(Vec<NodeId>),
+    OrphanedNodes(Vec<NodeId>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
