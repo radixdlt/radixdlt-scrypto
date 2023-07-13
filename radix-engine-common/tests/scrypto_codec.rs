@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::*;
