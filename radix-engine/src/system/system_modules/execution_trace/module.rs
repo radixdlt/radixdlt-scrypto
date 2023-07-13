@@ -350,10 +350,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        update: &mut Message,
+        message: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        let resource_summary = ResourceSummary::from_message(api, update);
+        let resource_summary = ResourceSummary::from_message(api, message);
         let system_state = api.kernel_get_system_state();
         system_state
             .system
@@ -365,10 +365,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        update: &Message,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
-        let resource_summary = ResourceSummary::from_message(api, update);
+        let resource_summary = ResourceSummary::from_message(api, message);
 
         let system_state = api.kernel_get_system_state();
 

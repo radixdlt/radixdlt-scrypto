@@ -249,10 +249,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        update: &mut Message,
+        message: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, before_push_frame(api, callee, update, args))
+        internal_call_dispatch!(api, before_push_frame(api, callee, message, args))
     }
 
     #[trace_resources]
@@ -263,9 +263,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        update: &Message,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_execution_finish(api, update))
+        internal_call_dispatch!(api, on_execution_finish(api, message))
     }
 
     #[trace_resources]

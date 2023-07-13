@@ -31,6 +31,7 @@ use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::hooks::OnDropOutput;
+use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::hooks::OnMoveOutput;
 use radix_engine_interface::hooks::OnPersistOutput;
 use radix_engine_interface::hooks::OnVirtualizeInput;
@@ -245,14 +246,20 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_push_frame<Y>(
         callee: &Actor,
-        update: &mut Message,
+        message: &mut Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_push_frame(api, callee, update, args)
+        SystemModuleMixer::before_push_frame(api, callee, message, args)?;
+
+        for own in &message.move_nodes {
+            Self::on_move_node(own, true, api)?;
+        }
+
+        Ok(())
     }
 
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -262,11 +269,17 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_execution_start(api)
     }
 
-    fn on_execution_finish<Y>(update: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_execution_finish(api, update)
+        SystemModuleMixer::on_execution_finish(api, message)?;
+
+        for own in &message.move_nodes {
+            Self::on_move_node(own, false, api)?;
+        }
+
+        Ok(())
     }
 
     fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
@@ -620,6 +633,55 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 // There is no way to drop a non-object through system API, triggering `NotAnObject` error.
                 Ok(())
             }
+        }
+    }
+
+    fn on_move_node<Y>(
+        node_id: &NodeId,
+        is_moving_down: bool,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => {
+                let mut service = SystemService::new(api);
+                let definition = service.load_blueprint_definition(
+                    object_info.blueprint_id.package_address,
+                    &BlueprintVersionKey {
+                        blueprint: object_info.blueprint_id.blueprint_name.clone(),
+                        version: object_info.blueprint_version,
+                    },
+                )?;
+                if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnMove).cloned() {
+                    api.kernel_invoke(Box::new(KernelInvocation {
+                        actor: Actor::BlueprintHook(BlueprintHookActor {
+                            blueprint_id: object_info.blueprint_id.clone(),
+                            hook: BlueprintHook::OnMove,
+                            export,
+                            receiver_info: Some(RuntimeReceiverInfo {
+                                node_id: node_id.clone(),
+                                module_id: ObjectModuleId::Main,
+                                is_direct_access: false,
+                                object_info,
+                            }),
+                        }),
+                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
+                            node_id: *node_id,
+                            is_moving_down,
+                        }),
+                    }))
+                    .map(|_| ())
+                } else {
+                    Ok(())
+                }
+            }
+            TypeInfoSubstate::KeyValueStore(_)
+            | TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
 }

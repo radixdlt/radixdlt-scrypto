@@ -263,7 +263,7 @@ where
 
             // Run
             let output = M::invoke_upstream(args, self)?;
-            let mut message = Message::from_indexed_scrypto_value(&output);
+            let message = Message::from_indexed_scrypto_value(&output);
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -272,7 +272,7 @@ where
                 .map_err(KernelError::CallFrameError)?;
 
             // Handle execution finish
-            M::on_execution_finish(&mut message, self)?;
+            M::on_execution_finish(&message, self)?;
 
             (output, message)
         };

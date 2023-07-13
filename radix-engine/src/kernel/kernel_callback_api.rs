@@ -131,7 +131,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_push_frame<Y>(
         callee: &Actor,
-        update: &mut Message,
+        message: &mut Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -175,6 +175,14 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn on_move_node<Y>(
+        node_id: &NodeId,
+        is_moving_down: bool,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 }

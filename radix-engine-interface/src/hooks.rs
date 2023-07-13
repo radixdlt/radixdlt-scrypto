@@ -17,7 +17,13 @@ pub struct OnDropInput {}
 pub type OnDropOutput = ();
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct OnMoveInput {}
+pub struct OnMoveInput {
+    /// The ID of the node being moved.
+    /// Note that there is no guarantee about the validity of the node id.
+    pub node_id: NodeId,
+    /// True if the node moves from caller to callee, otherwise false.
+    pub is_moving_down: bool,
+}
 
 pub type OnMoveOutput = ();
 
