@@ -445,9 +445,9 @@ impl AccessControllerNativePackage {
                     },
                     events,
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
                         functions,
                     },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),

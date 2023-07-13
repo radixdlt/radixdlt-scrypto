@@ -159,7 +159,7 @@ pub struct BlueprintDefinition {
     // matches that of the `functions` under `interface`. This is currently maintained since the
     // `publish` interface uses `BlueprintDefinitionInit` rather than `BlueprintDefinition`.
     pub function_exports: BTreeMap<String, PackageExport>,
-    pub virtual_lazy_load_functions: BTreeMap<u8, PackageExport>,
+    pub hook_exports: BTreeMap<BlueprintHook, PackageExport>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

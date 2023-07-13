@@ -1,12 +1,12 @@
-Total Cost (XRD)                                                           ,   0.1022554285,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.08980517,     87.8%
-+ Tipping Cost (XRD)                                                       ,   0.0044902585,      4.4%
+Total Cost (XRD)                                                           ,   0.1022523415,    100.0%
++ Execution Cost (XRD)                                                     ,     0.08980223,     87.8%
++ Tipping Cost (XRD)                                                       ,   0.0044901115,      4.4%
 + State Expansion Cost (XRD)                                               ,        0.00796,      7.8%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        8980517,    100.0%
+Total Cost Units Consumed                                                  ,        8980223,    100.0%
 AfterInvoke                                                                ,            886,      0.0%
 AllocateNodeId                                                             ,          13000,      0.1%
-BeforeInvoke                                                               ,          10736,      0.1%
+BeforeInvoke                                                               ,          10740,      0.1%
 CloseSubstate                                                              ,         114000,      1.3%
 Commit::GlobalAccount                                                      ,         100002,      1.1%
 Commit::GlobalVirtualSecp256k1Account                                      ,         900110,     10.0%
@@ -18,22 +18,22 @@ LockFee                                                                    ,    
 MoveModules                                                                ,           4000,      0.0%
 OpenSubstate::GlobalAccount                                                ,         566066,      6.3%
 OpenSubstate::GlobalFungibleResourceManager                                ,         332494,      3.7%
-OpenSubstate::GlobalPackage                                                ,        4457860,     49.6%
+OpenSubstate::GlobalPackage                                                ,        4457704,     49.6%
 OpenSubstate::GlobalVirtualSecp256k1Account                                ,         643914,      7.2%
 OpenSubstate::InternalAccount                                              ,            652,      0.0%
 OpenSubstate::InternalFungibleVault                                        ,         168310,      1.9%
 OpenSubstate::InternalGenericComponent                                     ,          58956,      0.7%
 QueryActor                                                                 ,           4000,      0.0%
-ReadSubstate                                                               ,         223838,      2.5%
+ReadSubstate                                                               ,         223696,      2.5%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.3%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.2%
 RunNativeCode::Worktop_put                                                 ,          24411,      0.3%
 RunNativeCode::create                                                      ,          54027,      0.6%
 RunNativeCode::create_empty_vault_FungibleResourceManager                  ,          46810,      0.5%
-RunNativeCode::create_virtual_secp256k1                                    ,          24877,      0.3%
 RunNativeCode::create_with_data                                            ,          26638,      0.3%
 RunNativeCode::get_amount_FungibleBucket                                   ,           7453,      0.1%
 RunNativeCode::lock_fee                                                    ,         131708,      1.5%
+RunNativeCode::on_virtualize                                               ,          24877,      0.3%
 RunNativeCode::put_FungibleVault                                           ,          21358,      0.2%
 RunNativeCode::take_FungibleVault                                          ,          53491,      0.6%
 RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      0.7%

@@ -2,7 +2,6 @@ use radix_engine::blueprints::pool::two_resource_pool::*;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemError, SystemModuleError};
 use radix_engine::transaction::{BalanceChange, TransactionReceipt};
 use radix_engine::types::*;
-use radix_engine::vm::NoExtension;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
 use scrypto_unit::*;
@@ -899,7 +898,7 @@ pub fn contribute_fails_without_proper_authority_present() {
 }
 
 struct TestEnvironment {
-    test_runner: TestRunner<NoExtension>,
+    test_runner: DefaultTestRunner,
 
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,

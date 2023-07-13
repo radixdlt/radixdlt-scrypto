@@ -8,7 +8,7 @@ use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
+use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
@@ -23,8 +23,10 @@ use radix_engine_interface::schema::{
 };
 use radix_engine_interface::schema::{BlueprintSchemaInit, BlueprintStateSchemaInit};
 
-const IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
-const IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519";
+pub const IDENTITY_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
+
+pub const IDENTITY_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
+pub const IDENTITY_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
 
 pub struct IdentityNativePackage;
 
@@ -77,11 +79,6 @@ impl IdentityNativePackage {
             },
         );
 
-        let virtual_lazy_load_functions = btreemap!(
-            IDENTITY_CREATE_VIRTUAL_SECP256K1_ID => IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME.to_string(),
-            IDENTITY_CREATE_VIRTUAL_ED25519_ID => IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
-        );
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             IDENTITY_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -102,9 +99,9 @@ impl IdentityNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions,
                         functions,
                     },
+                    hooks: BlueprintHooksInit { on_virtualize: Some(IDENTITY_ON_VIRTUALIZE_EXPORT_NAME.to_string()) }
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -162,21 +159,12 @@ impl IdentityNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
-            IDENTITY_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
-                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
+            IDENTITY_ON_VIRTUALIZE_EXPORT_NAME => {
+                let input: OnVirtualizeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = IdentityBlueprint::create_virtual_secp256k1(input, api)?;
-
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            IDENTITY_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
-                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-
-                let rtn = IdentityBlueprint::create_virtual_ed25519(input, api)?;
+                let rtn = IdentityBlueprint::on_virtualize(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
@@ -252,26 +240,26 @@ impl IdentityBlueprint {
         Ok((address, bucket))
     }
 
-    pub fn create_virtual_secp256k1<Y>(
-        input: VirtualLazyLoadInput,
+    pub fn on_virtualize<Y>(
+        input: OnVirtualizeInput,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
-    }
-
-    pub fn create_virtual_ed25519<Y>(
-        input: VirtualLazyLoadInput,
-        api: &mut Y,
-    ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
+        match input.variant_id {
+            IDENTITY_CREATE_VIRTUAL_SECP256K1_ID => {
+                let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
+                Self::create_virtual(public_key_hash, api)
+            }
+            IDENTITY_CREATE_VIRTUAL_ED25519_ID => {
+                let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
+                Self::create_virtual(public_key_hash, api)
+            }
+            x => Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+                format!("Unexpected variant id: {:?}", x),
+            ))),
+        }
     }
 
     fn create_virtual<Y>(

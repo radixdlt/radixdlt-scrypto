@@ -20,9 +20,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
 fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
     let compiled_transaction = compiled_notarized_transaction();
-    let mut group = c.benchmark_group("Decompile Intent Natively");
-
-    group.bench_function("Prepare NotarizedTransaction", |b| {
+    c.bench_function("transaction_processing::prepare", |b| {
         b.iter(|| {
             black_box(
                 PreparedNotarizedTransactionV1::prepare_from_payload(&compiled_transaction)
@@ -30,7 +28,7 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
             )
         })
     });
-    group.bench_function("Prepare NotarizedTransaction and Decompile", |b| {
+    c.bench_function("transaction_processing::prepare_and_decompile", |b| {
         b.iter(|| {
             black_box({
                 let transaction: PreparedNotarizedTransactionV1 =
@@ -44,8 +42,8 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
             })
         })
     });
-    group.bench_function(
-        "Prepare NotarizedTransaction, Decompile, then Recompile",
+    c.bench_function(
+        "transaction_processing::prepare_and_decompile_and_recompile",
         |b| {
             b.iter(|| {
                 black_box({
@@ -66,8 +64,6 @@ fn decompile_notarized_intent_benchmarks(c: &mut Criterion) {
             })
         },
     );
-
-    group.finish();
 }
 
 fn compiled_notarized_transaction() -> Vec<u8> {

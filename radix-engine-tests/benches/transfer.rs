@@ -4,7 +4,7 @@ use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::{DefaultWasmEngine, WasmValidatorConfigV1};
-use radix_engine::vm::{DefaultNativeVm, NativeVm, NoExtension, ScryptoVm, Vm};
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
@@ -88,7 +88,7 @@ fn bench_transfer(c: &mut Criterion) {
 
     // Loop
     let mut nonce = 3;
-    c.bench_function("Transfer::run", |b| {
+    c.bench_function("transaction::transfer", |b| {
         b.iter(|| {
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,

@@ -1,7 +1,6 @@
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
-use radix_engine::vm::NoExtension;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::{metadata, metadata_init};
 use scrypto::NonFungibleData;
@@ -1029,7 +1028,7 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
 }
 
 fn get_vault_id(
-    test_runner: &mut TestRunner<NoExtension>,
+    test_runner: &mut DefaultTestRunner,
     component_address: ComponentAddress,
 ) -> NodeId {
     let manifest = ManifestBuilder::new()
