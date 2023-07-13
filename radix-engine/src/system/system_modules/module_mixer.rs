@@ -15,7 +15,6 @@ use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
-use crate::system::system_modules::node_move::NodeMoveModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::track::interface::StoreCommit;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
@@ -38,7 +37,6 @@ bitflags! {
         const LIMITS = 0x01 << 1;
         const COSTING = 0x01 << 2;
         const AUTH = 0x01 << 3;
-        const NODE_MOVE = 0x01 << 4;
 
         // Transaction runtime data
         const TRANSACTION_RUNTIME = 0x01 << 5;
@@ -52,15 +50,15 @@ impl EnabledModules {
     /// The difference between genesis transaction and system transaction is "no auth".
     /// TODO: double check if this is the right assumption.
     pub fn for_genesis_transaction() -> Self {
-        Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
+        Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_system_transaction() -> Self {
-        Self::AUTH | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
+        Self::AUTH | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_notarized_transaction() -> Self {
-        Self::LIMITS | Self::COSTING | Self::AUTH | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
+        Self::LIMITS | Self::COSTING | Self::AUTH | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_test_transaction() -> Self {
@@ -85,7 +83,6 @@ pub struct SystemModuleMixer {
     pub(super) limits: LimitsModule,
     pub(super) costing: CostingModule,
     pub(super) auth: AuthModule,
-    pub(super) node_move: NodeMoveModule,
     pub(super) transaction_runtime: TransactionRuntimeModule,
     pub(super) execution_trace: ExecutionTraceModule,
 }
@@ -107,9 +104,6 @@ macro_rules! internal_call_dispatch {
             }
             if modules.contains(EnabledModules::AUTH) {
                 AuthModule::[< $fn >]($($param, )*)?;
-            }
-            if modules.contains(EnabledModules::NODE_MOVE) {
-                NodeMoveModule::[< $fn >]($($param, )*)?;
             }
             if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
                 TransactionRuntimeModule::[< $fn >]($($param, )*)?;
@@ -146,7 +140,6 @@ impl SystemModuleMixer {
                 enable_cost_breakdown: execution_config.enable_cost_breakdown,
                 costing_traces: index_map_new(),
             },
-            node_move: NodeMoveModule {},
             auth: AuthModule {
                 params: auth_zone_params.clone(),
                 auth_zone_stack: Vec::new(),
@@ -202,11 +195,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         // Enable transaction runtime
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
             TransactionRuntimeModule::on_init(api)?;
-        }
-
-        // Enable node move
-        if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_init(api)?;
         }
 
         // Enable auth

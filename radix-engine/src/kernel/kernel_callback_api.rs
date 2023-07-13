@@ -181,6 +181,8 @@ pub trait KernelCallbackObject: Sized {
     fn on_move_node<Y>(
         node_id: &NodeId,
         is_moving_down: bool,
+        is_to_barrier: bool,
+        is_to_auth_zone: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

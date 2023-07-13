@@ -255,8 +255,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         SystemModuleMixer::before_push_frame(api, callee, message, args)?;
 
+        let is_to_barrier = callee.is_barrier();
+        let is_to_auth_zone = callee.is_auth_zone();
         for own in &message.move_nodes {
-            Self::on_move_node(own, true, api)?;
+            Self::on_move_node(own, true, is_to_barrier, is_to_auth_zone, api)?;
         }
 
         Ok(())
@@ -275,8 +277,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         SystemModuleMixer::on_execution_finish(api, message)?;
 
+        let is_to_barrier = api.kernel_get_system_state().caller_actor.is_barrier();
+        let is_to_auth_zone = api.kernel_get_system_state().caller_actor.is_auth_zone();
         for own in &message.move_nodes {
-            Self::on_move_node(own, false, api)?;
+            Self::on_move_node(own, false, is_to_barrier, is_to_auth_zone, api)?;
         }
 
         Ok(())
@@ -639,6 +643,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     fn on_move_node<Y>(
         node_id: &NodeId,
         is_moving_down: bool,
+        is_to_barrier: bool,
+        is_to_auth_zone: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -670,8 +676,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                             }),
                         }),
                         args: IndexedScryptoValue::from_typed(&OnMoveInput {
-                            node_id: *node_id,
                             is_moving_down,
+                            is_to_barrier,
+                            is_to_auth_zone,
                         }),
                     }))
                     .map(|_| ())

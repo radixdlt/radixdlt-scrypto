@@ -1,6 +1,5 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::system::system_modules::node_move::NodeMoveError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
@@ -281,13 +280,13 @@ fn cant_move_restricted_proof() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemModuleError(SystemModuleError::NodeMoveError(
-                NodeMoveError::CantMoveDownstream(..)
-            ))
-        )
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ApplicationError(ApplicationError::Panic(e))
+            if e.eq("Moving restricted proof downstream") =>
+        {
+            true
+        }
+        _ => false,
     });
 }
 

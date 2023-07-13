@@ -18,11 +18,16 @@ pub type OnDropOutput = ();
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct OnMoveInput {
-    /// The ID of the node being moved.
-    /// Note that there is no guarantee about the validity of the node id.
-    pub node_id: NodeId,
     /// True if the node moves from caller to callee, otherwise false.
     pub is_moving_down: bool,
+    /// True if the destination actor is a barrier, otherwise false.
+    ///
+    /// TODO: expose generic information but fully-detailed actor?
+    pub is_to_barrier: bool,
+    /// True if the destination actor is auth zone, otherwise false.
+    ///
+    /// TODO: expose generic information but fully-detailed actor?
+    pub is_to_auth_zone: bool,
 }
 
 pub type OnMoveOutput = ();
