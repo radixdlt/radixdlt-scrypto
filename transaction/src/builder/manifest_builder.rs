@@ -1013,8 +1013,8 @@ impl ManifestBuilder {
         let address = address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesSetOwnerRoleInput { rule }),
+            method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentSetOwnerInput { rule }),
         })
     }
 
@@ -1028,8 +1028,8 @@ impl ManifestBuilder {
         let address = address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesSetRoleInput {
+            method_name: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentSetInput {
                 module,
                 role_key,
                 rule,
@@ -1041,8 +1041,8 @@ impl ManifestBuilder {
         let address = address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesLockOwnerRoleInput {}),
+            method_name: ROLE_ASSINGMENT_LOCK_OWNER_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentLockOwnerInput {}),
         })
     }
 
@@ -1055,8 +1055,8 @@ impl ManifestBuilder {
         let address = address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallAccessRulesMethod {
             address: address.into(),
-            method_name: ACCESS_RULES_GET_ROLE_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&AccessRulesGetRoleInput { module, role_key }),
+            method_name: ROLE_ASSINGMENT_GET_IDENT.to_string(),
+            args: to_manifest_value_and_unwrap!(&RoleAssignmentGetInput { module, role_key }),
         })
     }
 

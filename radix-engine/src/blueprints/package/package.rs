@@ -8,7 +8,7 @@ use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipien
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::PrepareError;
-use native_sdk::modules::access_rules::AccessRules;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
@@ -631,7 +631,7 @@ fn globalize_package<Y>(
     package_address_reservation: Option<GlobalAddressReservation>,
     package_structure: PackageStructure,
     metadata: Own,
-    access_rules: AccessRules,
+    access_rules: RoleAssignment,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
 where
@@ -1203,7 +1203,7 @@ impl PackageNativePackage {
             VmType::Native,
             native_package_code_id.to_be_bytes().to_vec(),
         )?;
-        let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?;
+        let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
 
         globalize_package(

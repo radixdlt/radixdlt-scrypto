@@ -5,8 +5,8 @@ use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_interface::address::AddressBech32Encoder;
 use radix_engine_interface::api::node_modules::auth::{
-    ACCESS_RULES_LOCK_OWNER_ROLE_IDENT, ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-    ACCESS_RULES_SET_ROLE_IDENT,
+    ROLE_ASSINGMENT_LOCK_OWNER_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+    ROLE_ASSIGNMENT_SET_IDENT,
 };
 use radix_engine_interface::api::node_modules::metadata::METADATA_SET_IDENT;
 use radix_engine_interface::api::node_modules::metadata::{
@@ -564,15 +564,15 @@ pub fn decompile_instruction<F: fmt::Write>(
             let mut fields = Vec::new();
             let name = match (address, method_name.as_str()) {
                 /* Access rules */
-                (address, ACCESS_RULES_SET_OWNER_ROLE_IDENT) => {
+                (address, ROLE_ASSIGNMENT_SET_OWNER_IDENT) => {
                     fields.push(address.to_instruction_argument());
                     "SET_OWNER_ROLE"
                 }
-                (address, ACCESS_RULES_LOCK_OWNER_ROLE_IDENT) => {
+                (address, ROLE_ASSINGMENT_LOCK_OWNER_IDENT) => {
                     fields.push(address.to_instruction_argument());
                     "LOCK_OWNER_ROLE"
                 }
-                (address, ACCESS_RULES_SET_ROLE_IDENT) => {
+                (address, ROLE_ASSIGNMENT_SET_IDENT) => {
                     fields.push(address.to_instruction_argument());
                     "SET_ROLE"
                 }

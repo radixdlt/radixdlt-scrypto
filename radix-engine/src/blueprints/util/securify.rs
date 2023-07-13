@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
+use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject, AttachedAccessRules};
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
@@ -13,13 +13,13 @@ pub trait SecurifiedAccessRules {
     fn create_advanced<Y: ClientApi<RuntimeError>>(
         owner_role: OwnerRole,
         api: &mut Y,
-    ) -> Result<AccessRules, RuntimeError> {
+    ) -> Result<RoleAssignment, RuntimeError> {
         let mut roles = RolesInit::new();
         if let Some(securify_role) = Self::SECURIFY_ROLE {
             roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
         let roles = btreemap!(ObjectModuleId::Main => roles);
-        let access_rules = AccessRules::create(owner_role, roles, api)?;
+        let access_rules = RoleAssignment::create(owner_role, roles, api)?;
         Ok(access_rules)
     }
 
@@ -27,7 +27,7 @@ pub trait SecurifiedAccessRules {
         owner_badge_data: Self::OwnerBadgeNonFungibleData,
         non_fungible_local_id: Option<NonFungibleLocalId>,
         api: &mut Y,
-    ) -> Result<(AccessRules, Bucket), RuntimeError> {
+    ) -> Result<(RoleAssignment, Bucket), RuntimeError> {
         let (bucket, owner_role) =
             Self::mint_securified_badge(owner_badge_data, non_fungible_local_id, api)?;
         let mut roles = RolesInit::new();
@@ -35,7 +35,7 @@ pub trait SecurifiedAccessRules {
             roles.define_role(RoleKey::new(securify_role), AccessRule::DenyAll);
         }
         let roles = btreemap!(ObjectModuleId::Main => roles);
-        let access_rules = AccessRules::create(OwnerRole::Fixed(owner_role), roles, api)?;
+        let access_rules = RoleAssignment::create(OwnerRole::Fixed(owner_role), roles, api)?;
         Ok((access_rules, bucket))
     }
 
@@ -67,7 +67,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
     fn create_presecurified<Y: ClientApi<RuntimeError>>(
         owner_id: NonFungibleGlobalId,
         api: &mut Y,
-    ) -> Result<AccessRules, RuntimeError> {
+    ) -> Result<RoleAssignment, RuntimeError> {
         let mut roles = RolesInit::new();
         let owner_role = rule!(require(owner_id));
         if let Some(securify_role) = Self::SECURIFY_ROLE {
@@ -78,7 +78,7 @@ pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
             ObjectModuleId::Main => roles,
         );
 
-        let access_rules = AccessRules::create(
+        let access_rules = RoleAssignment::create(
             OwnerRoleEntry {
                 rule: owner_role,
                 updater: OwnerRoleUpdater::Object,

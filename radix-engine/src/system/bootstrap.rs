@@ -438,7 +438,7 @@ pub fn create_system_bootstrap_flash(
             },
         ),
         (
-            ACCESS_RULES_MODULE_PACKAGE,
+            ROLE_ASSIGNMENT_MODULE_PACKAGE,
             AccessRulesNativePackage::definition(),
             ACCESS_RULES_CODE_ID,
             metadata_init! {

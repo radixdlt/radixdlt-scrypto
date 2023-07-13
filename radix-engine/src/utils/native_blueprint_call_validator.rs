@@ -186,7 +186,7 @@ fn get_arguments_schema<'s>(
             get_blueprint_schema(&ROYALTIES_PACKAGE_DEFINITION, package_address, blueprint)
                 .map(Some)?
         }
-        Invocation::Function(package_address @ ACCESS_RULES_MODULE_PACKAGE, ref blueprint, _) => {
+        Invocation::Function(package_address @ ROLE_ASSIGNMENT_MODULE_PACKAGE, ref blueprint, _) => {
             get_blueprint_schema(&ACCESS_RULES_PACKAGE_DEFINITION, package_address, blueprint)
                 .map(Some)?
         }
@@ -258,7 +258,7 @@ fn get_arguments_schema<'s>(
             .get(METADATA_BLUEPRINT),
         Invocation::Method(_, ObjectModuleId::AccessRules, _) => ACCESS_RULES_PACKAGE_DEFINITION
             .blueprints
-            .get(ACCESS_RULES_BLUEPRINT),
+            .get(ROLE_ASSIGNMENT_BLUEPRINT),
         Invocation::Method(_, ObjectModuleId::Royalty, _) => ROYALTIES_PACKAGE_DEFINITION
             .blueprints
             .get(COMPONENT_ROYALTY_BLUEPRINT),

@@ -2,7 +2,7 @@ use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeBucket;
@@ -70,7 +70,7 @@ pub struct AccountBlueprint;
 
 impl AccountBlueprint {
     fn create_modules<Y>(
-        access_rules: AccessRules,
+        access_rules: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>

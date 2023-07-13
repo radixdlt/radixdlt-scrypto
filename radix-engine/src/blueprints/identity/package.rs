@@ -2,7 +2,7 @@ use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::roles_template;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
@@ -332,7 +332,7 @@ impl IdentityBlueprint {
     }
 
     fn create_object<Y>(
-        access_rules: AccessRules,
+        access_rules: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>

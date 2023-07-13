@@ -4,7 +4,7 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use crate::{event_schema, roles_template};
-use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
+use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeBucket;
@@ -657,7 +657,7 @@ impl AccessControllerNativePackage {
 
         let roles = init_roles_from_rule_set(input.rule_set);
         let roles = btreemap!(ObjectModuleId::Main => roles);
-        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
+        let access_rules = RoleAssignment::create(OwnerRole::None, roles, api)?.0;
 
         let metadata = Metadata::create_with_data(
             metadata_init! {

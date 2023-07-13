@@ -1,23 +1,23 @@
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesLockOwnerRoleInput, AccessRulesSetOwnerRoleInput,
-    AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT, ACCESS_RULES_CREATE_IDENT,
-    ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
+    RoleAssignmentCreateInput, RoleAssignmentLockOwnerInput, RoleAssignmentSetOwnerInput,
+    RoleAssignmentSetInput, ROLE_ASSIGNMENT_BLUEPRINT, ROLE_ASSIGNMENT_CREATE_IDENT,
+    ROLE_ASSIGNMENT_SET_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT,
 };
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, OwnerRoleEntry, RoleKey, RolesInit,
 };
-use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
+use radix_engine_interface::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::Own;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::NodeId;
 use sbor::rust::fmt::Debug;
 use sbor::rust::prelude::*;
 
-pub struct AccessRules(pub Own);
+pub struct RoleAssignment(pub Own);
 
-impl AccessRules {
+impl RoleAssignment {
     pub fn create<Y, R: Into<OwnerRoleEntry>, E: Debug + ScryptoDecode>(
         owner_role: R,
         roles: BTreeMap<ObjectModuleId, RolesInit>,
@@ -27,10 +27,10 @@ impl AccessRules {
         Y: ClientApi<E>,
     {
         let rtn = api.call_function(
-            ACCESS_RULES_MODULE_PACKAGE,
-            ACCESS_RULES_BLUEPRINT,
-            ACCESS_RULES_CREATE_IDENT,
-            scrypto_encode(&AccessRulesCreateInput {
+            ROLE_ASSIGNMENT_MODULE_PACKAGE,
+            ROLE_ASSIGNMENT_BLUEPRINT,
+            ROLE_ASSIGNMENT_CREATE_IDENT,
+            scrypto_encode(&RoleAssignmentCreateInput {
                 owner_role: owner_role.into(),
                 roles,
             })
@@ -43,7 +43,7 @@ impl AccessRules {
     }
 }
 
-impl AccessRulesObject for AccessRules {
+impl RoleAssignmentObject for RoleAssignment {
     fn self_id(&self) -> (&NodeId, ObjectModuleId) {
         (&self.0 .0, ObjectModuleId::Main)
     }
@@ -51,13 +51,13 @@ impl AccessRulesObject for AccessRules {
 
 pub struct AttachedAccessRules(pub NodeId);
 
-impl AccessRulesObject for AttachedAccessRules {
+impl RoleAssignmentObject for AttachedAccessRules {
     fn self_id(&self) -> (&NodeId, ObjectModuleId) {
         (&self.0, ObjectModuleId::AccessRules)
     }
 }
 
-pub trait AccessRulesObject {
+pub trait RoleAssignmentObject {
     fn self_id(&self) -> (&NodeId, ObjectModuleId);
 
     fn set_owner_role<Y: ClientApi<E>, E: Debug + ScryptoDecode, A: Into<AccessRule>>(
@@ -70,8 +70,8 @@ pub trait AccessRulesObject {
             node_id,
             module_id,
             false,
-            ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-            scrypto_encode(&AccessRulesSetOwnerRoleInput { rule: rule.into() }).unwrap(),
+            ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+            scrypto_encode(&RoleAssignmentSetOwnerInput { rule: rule.into() }).unwrap(),
         )?;
 
         Ok(())
@@ -86,8 +86,8 @@ pub trait AccessRulesObject {
             node_id,
             module_id,
             false,
-            ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-            scrypto_encode(&AccessRulesLockOwnerRoleInput {}).unwrap(),
+            ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+            scrypto_encode(&RoleAssignmentLockOwnerInput {}).unwrap(),
         )?;
 
         Ok(())
@@ -110,8 +110,8 @@ pub trait AccessRulesObject {
             node_id,
             module_id,
             false,
-            ACCESS_RULES_SET_ROLE_IDENT,
-            scrypto_encode(&AccessRulesSetRoleInput {
+            ROLE_ASSIGNMENT_SET_IDENT,
+            scrypto_encode(&RoleAssignmentSetInput {
                 module,
                 role_key: role_key.into(),
                 rule: rule.into(),

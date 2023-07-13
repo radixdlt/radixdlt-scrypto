@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::metadata::Metadata;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
@@ -25,7 +25,7 @@ where
         ObjectModuleId::Metadata => metadata.roles,
     );
 
-    let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
+    let resman_access_rules = RoleAssignment::create(owner_role, roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
@@ -57,7 +57,7 @@ where
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,
     );
-    let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
+    let resman_access_rules = RoleAssignment::create(owner_role, roles, api)?.0;
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let modules = btreemap!(
@@ -98,7 +98,7 @@ where
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,
     );
-    let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
+    let resman_access_rules = RoleAssignment::create(owner_role, roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
