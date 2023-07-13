@@ -2,6 +2,7 @@ use radix_engine::errors::{RuntimeError, SystemError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -324,7 +325,7 @@ fn change_lock_owner_role_rules() {
 }
 
 struct MutableRolesTestRunner {
-    test_runner: DefaultTestRunner,
+    test_runner: TestRunner<NoExtension>,
     component_address: ComponentAddress,
     initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
@@ -334,7 +335,7 @@ impl MutableRolesTestRunner {
 
     pub fn create_component(
         roles: RolesInit,
-        test_runner: &mut DefaultTestRunner,
+        test_runner: &mut TestRunner<NoExtension>,
     ) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/role_assignment");
 
@@ -351,7 +352,7 @@ impl MutableRolesTestRunner {
 
     pub fn create_component_with_owner(
         owner_role: OwnerRole,
-        test_runner: &mut DefaultTestRunner,
+        test_runner: &mut TestRunner<NoExtension>,
     ) -> TransactionReceipt {
         let package_address = test_runner.compile_and_publish("./tests/blueprints/role_assignment");
 

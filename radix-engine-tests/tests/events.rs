@@ -9,6 +9,7 @@ use radix_engine::errors::{
 };
 use radix_engine::system::node_modules::metadata::SetMetadataEvent;
 use radix_engine::types::*;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::api::node_modules::auth::{RoleDefinition, ToRoleEntry};
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::api::node_modules::ModuleConfig;
@@ -1600,7 +1601,7 @@ fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -
     scrypto_decode::<T>(&actual).unwrap() == *expected
 }
 
-fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceAddress {
+fn create_all_allowed_resource(test_runner: &mut TestRunner<NoExtension>) -> ResourceAddress {
     let manifest = ManifestBuilder::new()
         .create_fungible_resource(
             OwnerRole::Fixed(AccessRule::AllowAll),
