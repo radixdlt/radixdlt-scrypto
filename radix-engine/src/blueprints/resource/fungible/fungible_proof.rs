@@ -181,7 +181,7 @@ impl FungibleProofBlueprint {
                 }
 
                 // Update restricted flag
-                if !is_to_auth_zone {
+                if is_to_barrier {
                     proof.change_to_restricted();
                 }
 
