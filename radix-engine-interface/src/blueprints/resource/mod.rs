@@ -1,4 +1,4 @@
-mod access_rules;
+mod role_assignment;
 mod auth_zone;
 mod bucket;
 mod fungible;
@@ -12,7 +12,7 @@ mod resource_type;
 mod vault;
 mod worktop;
 
-pub use access_rules::*;
+pub use role_assignment::*;
 pub use auth_zone::*;
 pub use bucket::*;
 pub use fungible::*;

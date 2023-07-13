@@ -9,7 +9,7 @@ use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
 use crate::errors::{NativeRuntimeError, RuntimeError, VmError};
 use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
+use crate::system::node_modules::role_assignment::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::system_callback::SystemLockData;
@@ -124,7 +124,7 @@ impl<I: VmInvoke> VmInvoke for NativeVmInstance<I> {
                         MetadataNativePackage::invoke_export(export_name, input, api)
                     }
                     ROYALTY_CODE_ID => RoyaltyNativePackage::invoke_export(export_name, input, api),
-                    ACCESS_RULES_CODE_ID => {
+                    ROLE_ASSIGNMENT_CODE_ID => {
                         AccessRulesNativePackage::invoke_export(export_name, input, api)
                     }
                     POOL_CODE_ID => PoolNativePackage::invoke_export(export_name, input, api),

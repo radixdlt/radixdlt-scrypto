@@ -29,7 +29,7 @@ use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
+use crate::system::node_modules::role_assignment::AccessRulesNativePackage;
 use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::{
     FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,

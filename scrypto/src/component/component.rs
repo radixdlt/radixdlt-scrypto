@@ -1,6 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{AccessRules, Attachable, HasMetadata, Royalty};
-use crate::prelude::{scrypto_encode, HasAccessRules, ObjectStub, ObjectStubHandle};
+use crate::modules::{RoleAssignment, Attachable, HasMetadata, Royalty};
+use crate::prelude::{scrypto_encode, HasRoleAssignment, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
@@ -304,7 +304,7 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
             (Royalty::new(royalty_config.init), royalty_config.roles)
         };
 
-        let access_rules = AccessRules::new(
+        let access_rules = RoleAssignment::new(
             self.owner_role,
             btreemap!(
                 ObjectModuleId::Main => self.roles,
@@ -370,9 +370,9 @@ impl<O: HasStub> Global<O> {
         Attached(metadata, PhantomData::default())
     }
 
-    fn access_rules(&self) -> Attached<AccessRules> {
+    fn access_rules(&self) -> Attached<RoleAssignment> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
-        let access_rules = AccessRules::attached(address);
+        let access_rules = RoleAssignment::attached(address);
         Attached(access_rules, PhantomData::default())
     }
 }
@@ -403,7 +403,7 @@ impl<O: HasStub> HasMetadata for Global<O> {
     }
 }
 
-impl<O: HasStub> HasAccessRules for Global<O> {
+impl<O: HasStub> HasRoleAssignment for Global<O> {
     fn set_owner_role<A: Into<AccessRule>>(&self, rule: A) {
         self.access_rules().set_owner_role(rule)
     }

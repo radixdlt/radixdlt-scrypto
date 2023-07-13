@@ -1,10 +1,10 @@
-mod access_rules;
+mod role_assignment;
 mod metadata;
 mod module;
 mod royalty;
 
-pub use access_rules::Mutability::*;
-pub use access_rules::*;
+pub use role_assignment::Mutability::*;
+pub use role_assignment::*;
 pub use metadata::*;
 pub use module::*;
 pub use royalty::*;

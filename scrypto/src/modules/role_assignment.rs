@@ -19,7 +19,7 @@ use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
-pub trait HasAccessRules {
+pub trait HasRoleAssignment {
     fn set_owner_role<A: Into<AccessRule>>(&self, rule: A);
     fn lock_owner_role<A: Into<AccessRule>>(&self);
     fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
@@ -29,9 +29,9 @@ pub trait HasAccessRules {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AccessRules(pub ModuleHandle);
+pub struct RoleAssignment(pub ModuleHandle);
 
-impl AccessRules {
+impl RoleAssignment {
     pub fn new<R: Into<OwnerRoleEntry>>(
         owner_role: R,
         roles: BTreeMap<ObjectModuleId, RolesInit>,
@@ -112,7 +112,7 @@ impl AccessRules {
     }
 }
 
-impl Attachable for AccessRules {
+impl Attachable for RoleAssignment {
     const MODULE_ID: ObjectModuleId = ObjectModuleId::AccessRules;
 
     fn new(handle: ModuleHandle) -> Self {

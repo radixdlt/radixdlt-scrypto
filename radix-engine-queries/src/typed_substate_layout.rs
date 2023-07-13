@@ -10,7 +10,7 @@ pub use radix_engine::blueprints::pool::one_resource_pool;
 pub use radix_engine::blueprints::pool::two_resource_pool;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::blueprints::transaction_tracker::*;
-pub use radix_engine::system::node_modules::access_rules::*;
+pub use radix_engine::system::node_modules::role_assignment::*;
 pub use radix_engine::system::node_modules::metadata::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
@@ -98,7 +98,7 @@ pub enum TypedTypeInfoModuleSubstateKey {
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessRulesSubstateKey {
-    AccessRulesField(AccessRulesField),
+    AccessRulesField(RoleAssignmentField),
     Rule(ModuleRoleKey),
 }
 
@@ -209,12 +209,12 @@ pub fn to_typed_substate_key(
                 .map_err(|_| error("string RoyaltyConfigEntryFnIdent key"))?,
             ),
         ),
-        ACCESS_RULES_FIELDS_PARTITION => {
+        ROLE_ASSIGNMENT_FIELDS_PARTITION => {
             TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::AccessRulesField(
-                AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
+                RoleAssignmentField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
             ))
         }
-        ACCESS_RULES_ROLE_DEF_PARTITION => {
+        ROLE_ASSIGNMENT_ROLE_DEF_PARTITION => {
             let key = substate_key
                 .for_map()
                 .ok_or_else(|| error("Access Rules key"))?;
@@ -615,7 +615,7 @@ fn to_typed_substate_value_internal(
         TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
             TypedAccessRulesSubstateKey::AccessRulesField(access_rules_field_offset) => {
                 match access_rules_field_offset {
-                    AccessRulesField::OwnerRole => TypedSubstateValue::AccessRulesModule(
+                    RoleAssignmentField::OwnerRole => TypedSubstateValue::AccessRulesModule(
                         TypedAccessRulesModuleSubstateValue::OwnerRole(scrypto_decode(data)?),
                     ),
                 }

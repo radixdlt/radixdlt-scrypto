@@ -1,7 +1,7 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::node_modules::access_rules::OwnerRoleSubstate;
+use crate::system::node_modules::role_assignment::OwnerRoleSubstate;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_callback::SystemLockData;
 use crate::system::system_modules::auth::{
@@ -340,8 +340,8 @@ impl Authorization {
         } else {
             let handle = api.kernel_open_substate_with_default(
                 access_rules_of,
-                ACCESS_RULES_BASE_PARTITION
-                    .at_offset(ACCESS_RULES_ROLE_DEF_PARTITION_OFFSET)
+                ROLE_ASSIGNMENT_BASE_PARTITION
+                    .at_offset(ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET)
                     .unwrap(),
                 &SubstateKey::Map(scrypto_encode(&key).unwrap()),
                 LockFlags::read_only(),
@@ -360,8 +360,8 @@ impl Authorization {
                 None => {
                     let handle = api.kernel_open_substate(
                         access_rules_of,
-                        ACCESS_RULES_BASE_PARTITION
-                            .at_offset(ACCESS_RULES_FIELDS_PARTITION_OFFSET)
+                        ROLE_ASSIGNMENT_BASE_PARTITION
+                            .at_offset(ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET)
                             .unwrap(),
                         &SubstateKey::Field(0u8),
                         LockFlags::read_only(),

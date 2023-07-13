@@ -1,4 +1,4 @@
-use crate::modules::HasAccessRules;
+use crate::modules::HasRoleAssignment;
 use crate::prelude::{Global, ObjectStub, ObjectStubHandle, ScryptoEncode};
 use crate::*;
 use radix_engine_interface::api::node_modules::metadata::{
