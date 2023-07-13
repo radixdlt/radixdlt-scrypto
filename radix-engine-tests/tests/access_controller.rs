@@ -6,8 +6,9 @@ use radix_engine::errors::SystemModuleError;
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::access_controller::*;
-use scrypto_unit::{CustomGenesis, DefaultTestRunner, TestRunnerBuilder};
+use scrypto_unit::{CustomGenesis, TestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 
 #[test]
@@ -1634,7 +1635,7 @@ fn is_drop_non_empty_bucket_error(error: &RuntimeError) -> bool {
 
 #[allow(dead_code)]
 struct AccessControllerTestRunner {
-    pub test_runner: DefaultTestRunner,
+    pub test_runner: TestRunner<NoExtension>,
 
     pub account: (ComponentAddress, PublicKey),
 
