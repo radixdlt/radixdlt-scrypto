@@ -8,7 +8,7 @@ use crate::errors::{
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, InstanceContext, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, StableReferenceType, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
@@ -790,7 +790,7 @@ where
         &mut self,
         actor_object_type: ActorObjectType,
     ) -> Result<(NodeId, PartitionNumber, ObjectInfo, BlueprintInterface), RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current;
+        let actor = self.current_actor();
         let method = actor
             .try_as_method()
             .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
@@ -1083,15 +1083,15 @@ where
         let blueprint_id = match &mut type_info {
             TypeInfoSubstate::Object(ObjectInfo {
                 global,
-                blueprint_id: blueprint,
+                blueprint_id,
                 ..
             }) => {
                 if *global {
                     return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                         CannotGlobalizeError::AlreadyGlobalized,
                     )));
-                } else if blueprint.package_address != reserved_blueprint_id.package_address
-                    || blueprint.blueprint_name != reserved_blueprint_id.blueprint_name
+                } else if blueprint_id.package_address != reserved_blueprint_id.package_address
+                    || blueprint_id.blueprint_name != reserved_blueprint_id.blueprint_name
                 {
                     return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                         CannotGlobalizeError::InvalidBlueprintId,
@@ -1100,7 +1100,7 @@ where
                     *global = true;
                 }
 
-                blueprint
+                blueprint_id
             }
             _ => {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
@@ -1193,16 +1193,8 @@ where
         Ok(global_address)
     }
 
-    pub fn actor_get_receiver_node_id(&mut self) -> Option<(NodeId, bool)> {
-        let actor = self.api.kernel_get_system_state().current;
-        actor
-            .try_as_method()
-            .map(|a| (a.node_id, a.is_direct_access))
-    }
-
-    pub fn actor_get_fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current;
-        Ok(actor.fn_identifier())
+    pub fn current_actor(&mut self) -> Actor {
+        self.api.kernel_get_system_state().current_actor.clone()
     }
 
     pub fn is_feature_enabled(
@@ -1321,13 +1313,15 @@ where
         fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current;
-        let package_address = actor.package_address().clone();
+        let actor = self.current_actor();
+        let package_address = actor
+            .package_address()
+            .ok_or(RuntimeError::SystemError(SystemError::NoPackageAddress))?;
+        let blueprint_id = BlueprintId::new(package_address, blueprint_ident);
         let instance_context = actor.instance_context();
-        let blueprint = BlueprintId::new(&package_address, blueprint_ident);
 
         self.new_object_internal(
-            &blueprint,
+            &blueprint_id,
             features,
             instance_context,
             schema,
@@ -1472,7 +1466,7 @@ where
                                     return self
                                         .api
                                         .kernel_get_system_state()
-                                        .current
+                                        .current_actor
                                         .global_address();
                                 }
                             }
@@ -1577,7 +1571,7 @@ where
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let info = self.get_object_info(node_id)?;
-        let actor = self.api.kernel_get_system_state().current;
+        let actor = self.current_actor();
         let mut is_drop_allowed = false;
 
         // FIXME: what's the right model, trading off between flexibility and security?
@@ -1595,12 +1589,8 @@ where
         }
 
         // If the actor is a function within the same blueprint
-        if let Actor::Function {
-            blueprint_id: blueprint,
-            ..
-        } = actor
-        {
-            if blueprint.eq(&info.blueprint_id) {
+        if let Actor::Function(FunctionActor { blueprint_id, .. }) = actor {
+            if blueprint_id.eq(&info.blueprint_id) {
                 is_drop_allowed = true;
             }
         }
@@ -2327,7 +2317,7 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        let actor = self.api.kernel_get_system_state().current;
+        let actor = self.current_actor();
         let object_info = actor
             .try_as_method()
             .map(|m| m.module_object_info.clone())
@@ -2343,12 +2333,12 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        let actor = self.api.kernel_get_system_state().current;
-        match actor {
-            Actor::Method(MethodActor { node_id, .. }) => Ok(*node_id),
-            _ => Err(RuntimeError::SystemError(SystemError::NodeIdNotExist)),
-        }
+        self.current_actor()
+            .try_as_method()
+            .map(|x| x.node_id)
+            .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))
     }
+
     #[trace_resources]
     fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         self.api
@@ -2356,7 +2346,7 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        let actor = self.api.kernel_get_system_state().current;
+        let actor = self.current_actor();
         match actor {
             Actor::Method(MethodActor {
                 global_address: Some(address),
@@ -2375,8 +2365,10 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        let actor = self.api.kernel_get_system_state().current;
-        Ok(actor.blueprint_id().clone())
+        self.current_actor()
+            .blueprint_id()
+            .cloned()
+            .ok_or(RuntimeError::SystemError(SystemError::NoBlueprintId))
     }
 
     // Costing through kernel
@@ -2390,11 +2382,11 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
         let node_id = match actor_object_type {
-            ActorObjectType::SELF => {
-                self.actor_get_receiver_node_id()
-                    .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?
-                    .0
-            }
+            ActorObjectType::SELF => self
+                .current_actor()
+                .try_as_method()
+                .map(|x| x.node_id)
+                .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))?,
             ActorObjectType::OuterObject => match self.actor_get_info()?.blueprint_info {
                 ObjectBlueprintInfo::Inner { outer_object } => outer_object.into_node_id(),
                 ObjectBlueprintInfo::Outer { .. } => {
@@ -2586,7 +2578,7 @@ where
 
         // Locking the package info substate associated with the emitter's package
         let type_pointer = {
-            let actor = self.api.kernel_get_system_state().current;
+            let actor = self.current_actor();
 
             // Getting the package address and blueprint name associated with the actor
             let (instance_schema, blueprint_id) = match actor {
@@ -2596,10 +2588,10 @@ where
                     module_object_info.instance_schema.clone(),
                     module_object_info.blueprint_id.clone(),
                 ),
-                Actor::Function {
+                Actor::Function(FunctionActor {
                     blueprint_id: ref blueprint,
                     ..
-                } => (None, blueprint.clone()),
+                }) => (None, blueprint.clone()),
                 _ => {
                     return Err(RuntimeError::SystemError(SystemError::EventError(
                         EventError::InvalidActor,
@@ -2630,7 +2622,7 @@ where
         };
 
         // Construct the event type identifier based on the current actor
-        let actor = self.api.kernel_get_system_state().current;
+        let actor = self.current_actor();
         let event_type_identifier = match actor {
             Actor::Method(MethodActor {
                 node_id, module_id, ..
@@ -2638,10 +2630,10 @@ where
                 Emitter::Method(node_id.clone(), module_id.clone()),
                 type_pointer,
             )),
-            Actor::Function {
+            Actor::Function(FunctionActor {
                 blueprint_id: ref blueprint,
                 ..
-            } => Ok(EventTypeIdentifier(
+            }) => Ok(EventTypeIdentifier(
                 Emitter::Function(
                     blueprint.package_address.into(),
                     ObjectModuleId::Main,

@@ -169,7 +169,7 @@ fn bench_radiswap(c: &mut Criterion) {
         nonce += 1;
     }
     #[cfg(not(feature = "flamegraph"))]
-    c.bench_function("Radiswap::run", |b| {
+    c.bench_function("transaction::radiswap", |b| {
         b.iter(|| {
             do_swap(&mut test_runner, &transaction_payload, nonce);
             nonce += 1;
