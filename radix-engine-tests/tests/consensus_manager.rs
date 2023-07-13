@@ -1698,6 +1698,19 @@ fn low_stakes_should_cause_no_problems() {
 }
 
 #[test]
+fn one_hundred_validators_should_work() {
+    registered_validator_test(
+        RegisterAndStakeTransactionType::RegisterFirst,
+        100,
+        100,
+        1000000.into(),
+        1100000.into(),
+        true,
+        100,
+    );
+}
+
+#[test]
 fn test_registering_and_staking_many_validators() {
     // Arrange
     let genesis_epoch = Epoch::of(5);
