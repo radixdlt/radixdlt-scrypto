@@ -244,15 +244,15 @@ impl TxFuzzer {
 
                     Some(InstructionV1::BurnResource { bucket_id })
                 }
-                // CallAccessRulesMethod
+                // CallRoleAssignmentMethod
                 5 => {
                     // TODO - fuzz more methods
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let input = AccessRulesCreateInput::arbitrary(&mut unstructured).unwrap();
+                    let input = RoleAssignmentCreateInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
-                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                        Ok(args) => Some(InstructionV1::CallRoleAssignmentMethod {
                             address: address.into(),
                             method_name: ROLE_ASSIGNMENT_CREATE_IDENT.to_string(),
                             args,
@@ -587,12 +587,12 @@ impl TxFuzzer {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
                     let input =
-                        AccessRulesLockOwnerRoleInput::arbitrary(&mut unstructured).unwrap();
+                        RoleAssignmentLockOwnerInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
-                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                        Ok(args) => Some(InstructionV1::CallRoleAssignmentMethod {
                             address: address.into(),
-                            method_name: ROLE_ASSIGNMENT_LOCK_OWNER_ROLE_IDENT.to_string(),
+                            method_name: ROLE_ASSIGNMENT_LOCK_OWNER_IDENT.to_string(),
                             args,
                         }),
                         Err(_) => None,
@@ -741,10 +741,10 @@ impl TxFuzzer {
                 50 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let input = AccessRulesSetOwnerRoleInput::arbitrary(&mut unstructured).unwrap();
+                    let input = RoleAssignmentSetOwnerInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
-                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                        Ok(args) => Some(InstructionV1::CallRoleAssignmentMethod {
                             address: address.into(),
                             method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
                             args,
@@ -756,10 +756,10 @@ impl TxFuzzer {
                 51 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let input = AccessRulesSetRoleInput::arbitrary(&mut unstructured).unwrap();
+                    let input = RoleAssignmentSetInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
-                        Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
+                        Ok(args) => Some(InstructionV1::CallRoleAssignmentMethod {
                             address: address.into(),
                             method_name: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
                             args,

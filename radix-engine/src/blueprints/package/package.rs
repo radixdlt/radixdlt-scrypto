@@ -1,4 +1,4 @@
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::SecurifiedRoleAssignment;
 use crate::errors::*;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
@@ -8,8 +8,8 @@ use crate::system::system_modules::costing::{apply_royalty_cost, RoyaltyRecipien
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use crate::vm::wasm::PrepareError;
-use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
@@ -417,7 +417,7 @@ const SECURIFY_OWNER_ROLE: &str = "securify_owner";
 
 struct SecurifiedPackage;
 
-impl SecurifiedAccessRules for SecurifiedPackage {
+impl SecurifiedRoleAssignment for SecurifiedPackage {
     type OwnerBadgeNonFungibleData = PackageOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = PACKAGE_OWNER_BADGE;
 }

@@ -593,7 +593,7 @@ impl Parser {
                 method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::CallRoleAssignmentMethod => Instruction::CallAccessRulesMethod {
+            InstructionIdent::CallRoleAssignmentMethod => Instruction::CallRoleAssignmentMethod {
                 address: self.parse_value()?,
                 method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,

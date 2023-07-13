@@ -1041,7 +1041,7 @@ impl ManifestBuilder {
         let address = address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
-            method_name: ROLE_ASSINGMENT_LOCK_OWNER_IDENT.to_string(),
+            method_name: ROLE_ASSIGNMENT_LOCK_OWNER_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&RoleAssignmentLockOwnerInput {}),
         })
     }
@@ -1055,7 +1055,7 @@ impl ManifestBuilder {
         let address = address.resolve(&self.registrar);
         self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
-            method_name: ROLE_ASSINGMENT_GET_IDENT.to_string(),
+            method_name: ROLE_ASSIGNMENT_GET_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&RoleAssignmentGetInput { module, role_key }),
         })
     }

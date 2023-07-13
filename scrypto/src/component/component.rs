@@ -1,5 +1,5 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{RoleAssignment, Attachable, HasMetadata, Royalty};
+use crate::modules::{Attachable, HasMetadata, RoleAssignment, Royalty};
 use crate::prelude::{scrypto_encode, HasRoleAssignment, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
@@ -425,7 +425,8 @@ impl<O: HasStub> HasRoleAssignment for Global<O> {
     }
 
     fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.role_assignment().set_component_royalties_role(name, rule);
+        self.role_assignment()
+            .set_component_royalties_role(name, rule);
     }
 }
 

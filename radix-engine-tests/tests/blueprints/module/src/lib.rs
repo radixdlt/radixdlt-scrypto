@@ -42,7 +42,7 @@ mod component_module {
                     ROLE_ASSIGNMENT_MODULE_PACKAGE,
                     ROLE_ASSIGNMENT_BLUEPRINT,
                     ROLE_ASSIGNMENT_CREATE_IDENT,
-                    scrypto_encode(&AccessRulesCreateInput {
+                    scrypto_encode(&RoleAssignmentCreateInput {
                         owner_role: OwnerRole::None.into(),
                         roles: BTreeMap::new(),
                     })
@@ -55,7 +55,7 @@ mod component_module {
                 .globalize(
                     btreemap!(
                         ObjectModuleId::Main => *component.0.handle().as_node_id(),
-                        ObjectModuleId::AccessRules => metadata.0,
+                        ObjectModuleId::RoleAssignment => metadata.0,
                         ObjectModuleId::Metadata => royalty.0,
                         ObjectModuleId::Royalty => role_assignment.0,
                     ),

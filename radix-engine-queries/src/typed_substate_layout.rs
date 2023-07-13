@@ -10,8 +10,8 @@ pub use radix_engine::blueprints::pool::one_resource_pool;
 pub use radix_engine::blueprints::pool::two_resource_pool;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::blueprints::transaction_tracker::*;
-pub use radix_engine::system::node_modules::role_assignment::*;
 pub use radix_engine::system::node_modules::metadata::*;
+pub use radix_engine::system::node_modules::role_assignment::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
 use radix_engine::system::system::FieldSubstate;
@@ -209,11 +209,12 @@ pub fn to_typed_substate_key(
                 .map_err(|_| error("string RoyaltyConfigEntryFnIdent key"))?,
             ),
         ),
-        ROLE_ASSIGNMENT_FIELDS_PARTITION => {
-            TypedSubstateKey::RoleAssignmentModule(TypedRoleAssignmentSubstateKey::RoleAssignmentField(
-                RoleAssignmentField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
-            ))
-        }
+        ROLE_ASSIGNMENT_FIELDS_PARTITION => TypedSubstateKey::RoleAssignmentModule(
+            TypedRoleAssignmentSubstateKey::RoleAssignmentField(
+                RoleAssignmentField::try_from(substate_key)
+                    .map_err(|_| error("RoleAssignmentField"))?,
+            ),
+        ),
         ROLE_ASSIGNMENT_ROLE_DEF_PARTITION => {
             let key = substate_key
                 .for_map()

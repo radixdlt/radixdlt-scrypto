@@ -5,9 +5,9 @@ use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
     RoleAssignmentCreateInput, RoleAssignmentGetInput, RoleAssignmentLockOwnerInput,
-    RoleAssignmentSetOwnerInput, RoleAssignmentSetInput, ROLE_ASSIGNMENT_BLUEPRINT,
-    ROLE_ASSIGNMENT_CREATE_IDENT, ROLE_ASSINGMENT_GET_IDENT, ROLE_ASSINGMENT_LOCK_OWNER_IDENT,
-    ROLE_ASSIGNMENT_SET_OWNER_IDENT, ROLE_ASSIGNMENT_SET_IDENT,
+    RoleAssignmentSetInput, RoleAssignmentSetOwnerInput, ROLE_ASSIGNMENT_BLUEPRINT,
+    ROLE_ASSIGNMENT_CREATE_IDENT, ROLE_ASSIGNMENT_GET_IDENT, ROLE_ASSIGNMENT_LOCK_OWNER_IDENT,
+    ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
@@ -61,7 +61,7 @@ impl RoleAssignment {
 
     pub fn lock_owner_role(&self) {
         self.call_ignore_rtn(
-            ROLE_ASSINGMENT_LOCK_OWNER_IDENT,
+            ROLE_ASSIGNMENT_LOCK_OWNER_IDENT,
             &RoleAssignmentLockOwnerInput {},
         );
     }
@@ -79,7 +79,7 @@ impl RoleAssignment {
 
     fn internal_get_role(&self, module: ObjectModuleId, name: &str) -> Option<AccessRule> {
         self.call(
-            ROLE_ASSINGMENT_GET_IDENT,
+            ROLE_ASSIGNMENT_GET_IDENT,
             &RoleAssignmentGetInput {
                 module,
                 role_key: RoleKey::new(name),

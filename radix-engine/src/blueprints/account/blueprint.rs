@@ -1,9 +1,9 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignment};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeFungibleVault;
@@ -52,13 +52,13 @@ pub const SECURIFY_ROLE: &'static str = "securify";
 
 struct SecurifiedAccount;
 
-impl SecurifiedAccessRules for SecurifiedAccount {
+impl SecurifiedRoleAssignment for SecurifiedAccount {
     type OwnerBadgeNonFungibleData = AccountOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
 
-impl PresecurifiedAccessRules for SecurifiedAccount {}
+impl PresecurifiedRoleAssignment for SecurifiedAccount {}
 
 pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;

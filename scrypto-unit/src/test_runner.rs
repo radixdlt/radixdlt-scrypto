@@ -1417,10 +1417,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_roles(
-            NonFungibleResourceRoles::default(),
-            account,
-        )
+        self.create_non_fungible_resource_with_roles(NonFungibleResourceRoles::default(), account)
     }
 
     pub fn create_non_fungible_resource_with_roles(

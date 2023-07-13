@@ -85,7 +85,7 @@ fn roles_assignment_method_auth_cannot_be_mutated_when_locked() {
     roles.define_role("deposit_funds_auth_update", rule!(allow_all));
     roles.define_role("borrow_funds_auth", rule!(allow_all));
     roles.define_role("deposit_funds_auth", rule!(require(XRD)));
-    let mut test_runner = MutableAccessRulesTestRunner::new(roles);
+    let mut test_runner = MutableRolesTestRunner::new(roles);
 
     // Act
     let receipt = test_runner.set_role_rule(RoleKey::new("deposit_funds_auth"), rule!(allow_all));
@@ -105,7 +105,7 @@ fn role_assignment_method_auth_cant_be_mutated_when_required_proofs_are_not_pres
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
+    let mut test_runner = MutableRolesTestRunner::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
 
@@ -127,7 +127,7 @@ fn role_assignment_method_auth_can_be_mutated_when_required_proofs_are_present()
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
+    let mut test_runner = MutableRolesTestRunner::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
 
@@ -144,14 +144,14 @@ fn component_role_assignment_can_be_mutated_through_manifest(to_rule: AccessRule
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
+    let mut test_runner = MutableRolesTestRunner::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
     test_runner.add_initial_proof(virtual_badge_non_fungible_global_id.clone());
 
     // Act
     let receipt = test_runner.execute_manifest(
-        MutableAccessRulesTestRunner::manifest_builder()
+        MutableRolesTestRunner::manifest_builder()
             .update_role(
                 test_runner.component_address,
                 ObjectModuleId::Main,
@@ -185,7 +185,9 @@ fn component_role_assignment_can_be_mutated_to_fungible_resource_through_manifes
 #[test]
 fn component_role_assignment_can_be_mutated_to_non_fungible_resource_through_manifest() {
     let non_fungible_global_id = AuthAddresses::system_role();
-    component_role_assignment_can_be_mutated_through_manifest(rule!(require(non_fungible_global_id)));
+    component_role_assignment_can_be_mutated_through_manifest(rule!(require(
+        non_fungible_global_id
+    )));
 }
 
 #[test]
@@ -270,7 +272,7 @@ fn update_rule() {
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
     let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
-    let mut test_runner = MutableAccessRulesTestRunner::new_with_owner(rule!(require(
+    let mut test_runner = MutableRolesTestRunner::new_with_owner(rule!(require(
         virtual_badge_non_fungible_global_id.clone()
     )));
 
@@ -306,7 +308,7 @@ fn update_rule() {
 fn change_lock_owner_role_rules() {
     // Arrange
     let mut test_runner =
-        MutableAccessRulesTestRunner::new_with_owner_role(OwnerRole::Updatable(rule!(allow_all)));
+        MutableRolesTestRunner::new_with_owner_role(OwnerRole::Updatable(rule!(allow_all)));
 
     // Act: verify if lock owner role is possible
     let receipt = test_runner.lock_owner_role();
@@ -322,13 +324,13 @@ fn change_lock_owner_role_rules() {
     })
 }
 
-struct MutableAccessRulesTestRunner {
+struct MutableRolesTestRunner {
     test_runner: TestRunner<NoExtension>,
     component_address: ComponentAddress,
     initial_proofs: BTreeSet<NonFungibleGlobalId>,
 }
 
-impl MutableAccessRulesTestRunner {
+impl MutableRolesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
     pub fn create_component(

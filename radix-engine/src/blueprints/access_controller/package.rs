@@ -4,8 +4,10 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use crate::{event_schema, roles_template};
-use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject, AttachedRoleAssignment};
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::{
+    AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
+};
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;

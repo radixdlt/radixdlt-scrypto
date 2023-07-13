@@ -1,9 +1,9 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignment};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::roles_template;
 use crate::types::*;
-use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
@@ -191,13 +191,13 @@ const SECURIFY_ROLE: &'static str = "securify";
 
 struct SecurifiedIdentity;
 
-impl SecurifiedAccessRules for SecurifiedIdentity {
+impl SecurifiedRoleAssignment for SecurifiedIdentity {
     type OwnerBadgeNonFungibleData = IdentityOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
 
-impl PresecurifiedAccessRules for SecurifiedIdentity {}
+impl PresecurifiedRoleAssignment for SecurifiedIdentity {}
 
 pub struct IdentityBlueprint;
 

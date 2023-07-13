@@ -1488,17 +1488,19 @@ where
                 (node_object_info.clone(), global_address)
             }
             // FIXME: verify whether we need to check the modules or not
-            ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::RoleAssignment => (
-                ObjectInfo {
-                    global: node_object_info.global,
-                    blueprint_id: object_module_id.static_blueprint().unwrap(),
-                    version: BlueprintVersion::default(),
-                    blueprint_info: ObjectBlueprintInfo::default(),
-                    features: btreeset!(),
-                    instance_schema: None,
-                },
-                None,
-            ),
+            ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::RoleAssignment => {
+                (
+                    ObjectInfo {
+                        global: node_object_info.global,
+                        blueprint_id: object_module_id.static_blueprint().unwrap(),
+                        version: BlueprintVersion::default(),
+                        blueprint_info: ObjectBlueprintInfo::default(),
+                        features: btreeset!(),
+                        instance_schema: None,
+                    },
+                    None,
+                )
+            }
         };
 
         let identifier =

@@ -1,11 +1,13 @@
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::modules::role_assignment::{RoleAssignment, RoleAssignmentObject, AttachedRoleAssignment};
+use native_sdk::modules::role_assignment::{
+    AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
+};
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::{ClientApi, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 
-pub trait SecurifiedAccessRules {
+pub trait SecurifiedRoleAssignment {
     const OWNER_BADGE: ResourceAddress;
     type OwnerBadgeNonFungibleData: NonFungibleData;
     const SECURIFY_ROLE: Option<&'static str> = None;
@@ -63,7 +65,7 @@ pub trait SecurifiedAccessRules {
     }
 }
 
-pub trait PresecurifiedAccessRules: SecurifiedAccessRules {
+pub trait PresecurifiedRoleAssignment: SecurifiedRoleAssignment {
     fn create_presecurified<Y: ClientApi<RuntimeError>>(
         owner_id: NonFungibleGlobalId,
         api: &mut Y,

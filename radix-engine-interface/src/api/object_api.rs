@@ -1,7 +1,7 @@
 use crate::api::node_modules::auth::ROLE_ASSIGNMENT_BLUEPRINT;
 use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
 use crate::constants::{
-    ROLE_ASSIGNMENT_MODULE_PACKAGE, METADATA_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
+    METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
 };
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
