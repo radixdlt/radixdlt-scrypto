@@ -2733,6 +2733,7 @@ impl ResourceNativePackage {
                     input.is_moving_down,
                     input.is_to_barrier,
                     input.is_to_auth_zone,
+                    input.is_to_self_blueprint,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
@@ -2789,6 +2790,7 @@ impl ResourceNativePackage {
                     input.is_moving_down,
                     input.is_to_barrier,
                     input.is_to_auth_zone,
+                    input.is_to_self_blueprint,
                     api,
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))

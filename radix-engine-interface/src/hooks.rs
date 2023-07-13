@@ -20,14 +20,19 @@ pub type OnDropOutput = ();
 pub struct OnMoveInput {
     /// True if the node moves from caller to callee, otherwise false.
     pub is_moving_down: bool,
+
     /// True if the destination actor is a barrier, otherwise false.
     ///
     /// TODO: expose generic information but fully-detailed actor?
     pub is_to_barrier: bool,
+
     /// True if the destination actor is auth zone, otherwise false.
     ///
     /// TODO: expose generic information but fully-detailed actor?
     pub is_to_auth_zone: bool,
+
+    /// True if the destination actor is self blueprint.
+    pub is_to_self_blueprint: bool,
 }
 
 pub type OnMoveOutput = ();

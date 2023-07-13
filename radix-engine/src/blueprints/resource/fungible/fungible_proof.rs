@@ -158,14 +158,14 @@ impl FungibleProofBlueprint {
         is_moving_down: bool,
         is_to_barrier: bool,
         is_to_auth_zone: bool,
+        is_to_self_blueprint: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         if is_moving_down {
-            // Change to restricted unless it's moved to auth zone.
-            if is_to_barrier || is_to_auth_zone {
+            if !is_to_self_blueprint && (is_to_barrier || is_to_auth_zone) {
                 let handle = api.actor_open_field(
                     OBJECT_HANDLE_SELF,
                     FungibleProofField::Moveable.into(),

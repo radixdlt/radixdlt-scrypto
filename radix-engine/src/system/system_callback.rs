@@ -257,8 +257,22 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
         let is_to_barrier = callee.is_barrier();
         let is_to_auth_zone = callee.is_auth_zone();
-        for own in &message.move_nodes {
-            Self::on_move_node(own, true, is_to_barrier, is_to_auth_zone, api)?;
+        let dest_blueprint_id = callee.blueprint_id();
+        for node_id in &message.move_nodes {
+            let is_to_self_blueprint = if dest_blueprint_id.is_some() {
+                let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
+                type_info.blueprint_id() == dest_blueprint_id
+            } else {
+                false
+            };
+            Self::on_move_node(
+                node_id,
+                true,
+                is_to_barrier,
+                is_to_auth_zone,
+                is_to_self_blueprint,
+                api,
+            )?;
         }
 
         Ok(())
@@ -277,10 +291,25 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         SystemModuleMixer::on_execution_finish(api, message)?;
 
-        let is_to_barrier = api.kernel_get_system_state().caller_actor.is_barrier();
-        let is_to_auth_zone = api.kernel_get_system_state().caller_actor.is_auth_zone();
-        for own in &message.move_nodes {
-            Self::on_move_node(own, false, is_to_barrier, is_to_auth_zone, api)?;
+        let caller_actor = api.kernel_get_system_state().caller_actor;
+        let is_to_barrier = caller_actor.is_barrier();
+        let is_to_auth_zone = caller_actor.is_auth_zone();
+        let dest_blueprint_id = caller_actor.blueprint_id().cloned();
+        for node_id in &message.move_nodes {
+            let is_to_self_blueprint = if dest_blueprint_id.is_some() {
+                let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
+                type_info.blueprint_id() == dest_blueprint_id.as_ref()
+            } else {
+                false
+            };
+            Self::on_move_node(
+                node_id,
+                false,
+                is_to_barrier,
+                is_to_auth_zone,
+                is_to_self_blueprint,
+                api,
+            )?;
         }
 
         Ok(())
@@ -645,6 +674,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         is_moving_down: bool,
         is_to_barrier: bool,
         is_to_auth_zone: bool,
+        is_to_self_blueprint: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -679,6 +709,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                             is_moving_down,
                             is_to_barrier,
                             is_to_auth_zone,
+                            is_to_self_blueprint,
                         }),
                     }))
                     .map(|_| ())

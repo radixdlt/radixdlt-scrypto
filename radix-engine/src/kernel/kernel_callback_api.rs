@@ -178,11 +178,13 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
+    // This is technically not a kernel event, but system event, per current implementation.
     fn on_move_node<Y>(
         node_id: &NodeId,
         is_moving_down: bool,
         is_to_barrier: bool,
         is_to_auth_zone: bool,
+        is_to_self_blueprint: bool,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
