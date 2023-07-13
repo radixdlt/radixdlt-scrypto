@@ -40,10 +40,6 @@ name = "costing"
 harness = false
 
 [[bench]]
-name = "validation"
-harness = false
-
-[[bench]]
 name = "radiswap"
 harness = false
 
@@ -57,7 +53,11 @@ harness = false
 required-features = ["cpu_ram_metrics"]
 
 [[bench]]
-name = "transaction_decompilation"
+name = "transaction_processing"
+harness = false
+
+[[bench]]
+name = "transaction_validation"
 harness = false
 
 [features]
