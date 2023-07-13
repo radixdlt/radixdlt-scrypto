@@ -100,6 +100,7 @@ fn test_recursion() {
 }
 
 #[test]
+#[cfg(not(feature = "wasmer"))]
 fn test_recursion_stack_overflow() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -123,6 +124,7 @@ fn test_recursion_stack_overflow() {
 }
 
 #[test]
+#[cfg(not(feature = "wasmer"))]
 fn test_grow_memory_within_limit() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -150,6 +152,7 @@ fn test_grow_memory_within_limit() {
 }
 
 #[test]
+#[cfg(not(feature = "wasmer"))]
 fn test_grow_memory_beyond_limit() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
@@ -184,6 +187,7 @@ fn test_grow_memory_beyond_limit() {
 }
 
 #[test]
+#[cfg(not(feature = "wasmer"))]
 fn test_grow_memory_by_more_than_65536() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();

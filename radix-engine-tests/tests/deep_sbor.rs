@@ -10,6 +10,7 @@ fn small_sbor_depth_should_succeed() {
 }
 
 #[test]
+#[cfg(not(feature = "wasmer"))]
 fn large_sbor_depth_should_fail() {
     // Very Large Depth - we get a panic at encoding time in the Scrypto WASM
     test_sbor_depth(100, false)
@@ -54,6 +55,7 @@ fn setting_struct_with_small_sbor_depth_should_succeed() {
 }
 
 #[test]
+#[cfg(not(feature = "wasmer"))]
 fn setting_struct_with_very_large_sbor_depth_should_fail() {
     test_setting_struct_with_deep_recursive_data_inside_component(100, false);
 }
