@@ -1032,14 +1032,14 @@ where
             btreeset!(
                 ObjectModuleId::Main,
                 ObjectModuleId::Metadata,
-                ObjectModuleId::AccessRules
+                ObjectModuleId::RoleAssignment
             )
         } else {
             btreeset!(
                 ObjectModuleId::Main,
                 ObjectModuleId::Metadata,
                 ObjectModuleId::Royalty,
-                ObjectModuleId::AccessRules
+                ObjectModuleId::RoleAssignment
             )
         };
         let module_ids = modules
@@ -1143,7 +1143,7 @@ where
         for (module_id, node_id) in modules {
             match module_id {
                 ObjectModuleId::Main => panic!("Should have been removed already"),
-                ObjectModuleId::AccessRules
+                ObjectModuleId::RoleAssignment
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
                     let blueprint_id = self.get_object_info(&node_id)?.blueprint_id;
@@ -1482,17 +1482,19 @@ where
                 (node_object_info.clone(), global_address)
             }
             // FIXME: verify whether we need to check the modules or not
-            ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => (
-                ObjectInfo {
-                    global: node_object_info.global,
-                    blueprint_id: object_module_id.static_blueprint().unwrap(),
-                    version: BlueprintVersion::default(),
-                    blueprint_info: ObjectBlueprintInfo::default(),
-                    features: btreeset!(),
-                    instance_schema: None,
-                },
-                None,
-            ),
+            ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::RoleAssignment => {
+                (
+                    ObjectInfo {
+                        global: node_object_info.global,
+                        blueprint_id: object_module_id.static_blueprint().unwrap(),
+                        version: BlueprintVersion::default(),
+                        blueprint_info: ObjectBlueprintInfo::default(),
+                        features: btreeset!(),
+                        instance_schema: None,
+                    },
+                    None,
+                )
+            }
         };
 
         let identifier =

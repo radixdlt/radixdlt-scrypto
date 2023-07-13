@@ -10,8 +10,8 @@ use crate::blueprints::pool::*;
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::*;
 use crate::blueprints::transaction_tracker::TransactionTrackerNativePackage;
-use crate::system::node_modules::access_rules::*;
 use crate::system::node_modules::metadata::*;
+use crate::system::node_modules::role_assignment::*;
 use crate::system::node_modules::royalty::*;
 
 lazy_static! {
@@ -36,6 +36,6 @@ lazy_static! {
         MetadataNativePackage::definition();
     pub static ref ROYALTIES_PACKAGE_DEFINITION: PackageDefinition =
         RoyaltyNativePackage::definition();
-    pub static ref ACCESS_RULES_PACKAGE_DEFINITION: PackageDefinition =
-        AccessRulesNativePackage::definition();
+    pub static ref ROLE_ASSIGNMENT_PACKAGE_DEFINITION: PackageDefinition =
+        RoleAssignmentNativePackage::definition();
 }
