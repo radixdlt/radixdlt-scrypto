@@ -39,9 +39,9 @@ mod component_module {
 
             let rtn = ScryptoEnv
                 .call_function(
-                    ACCESS_RULES_MODULE_PACKAGE,
-                    ACCESS_RULES_BLUEPRINT,
-                    ACCESS_RULES_CREATE_IDENT,
+                    ROLE_ASSIGNMENT_MODULE_PACKAGE,
+                    ROLE_ASSIGNMENT_BLUEPRINT,
+                    ROLE_ASSIGNMENT_CREATE_IDENT,
                     scrypto_encode(&AccessRulesCreateInput {
                         owner_role: OwnerRole::None.into(),
                         roles: BTreeMap::new(),
@@ -49,7 +49,7 @@ mod component_module {
                     .unwrap(),
                 )
                 .unwrap();
-            let access_rules: Own = scrypto_decode(&rtn).unwrap();
+            let role_assignment: Own = scrypto_decode(&rtn).unwrap();
 
             let address = ScryptoEnv
                 .globalize(
@@ -57,7 +57,7 @@ mod component_module {
                         ObjectModuleId::Main => *component.0.handle().as_node_id(),
                         ObjectModuleId::AccessRules => metadata.0,
                         ObjectModuleId::Metadata => royalty.0,
-                        ObjectModuleId::Royalty => access_rules.0,
+                        ObjectModuleId::Royalty => role_assignment.0,
                     ),
                     None,
                 )

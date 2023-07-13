@@ -254,7 +254,7 @@ impl TxFuzzer {
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
                             address: address.into(),
-                            method_name: ACCESS_RULES_CREATE_IDENT.to_string(),
+                            method_name: ROLE_ASSIGNMENT_CREATE_IDENT.to_string(),
                             args,
                         }),
                         Err(_) => None,
@@ -592,7 +592,7 @@ impl TxFuzzer {
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
                             address: address.into(),
-                            method_name: ACCESS_RULES_LOCK_OWNER_ROLE_IDENT.to_string(),
+                            method_name: ROLE_ASSIGNMENT_LOCK_OWNER_ROLE_IDENT.to_string(),
                             args,
                         }),
                         Err(_) => None,
@@ -746,7 +746,7 @@ impl TxFuzzer {
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
                             address: address.into(),
-                            method_name: ACCESS_RULES_SET_OWNER_ROLE_IDENT.to_string(),
+                            method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
                             args,
                         }),
                         Err(_) => None,
@@ -761,7 +761,7 @@ impl TxFuzzer {
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallAccessRulesMethod {
                             address: address.into(),
-                            method_name: ACCESS_RULES_SET_ROLE_IDENT.to_string(),
+                            method_name: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
                             args,
                         }),
                         Err(_) => None,

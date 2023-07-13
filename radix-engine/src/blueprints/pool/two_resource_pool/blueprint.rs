@@ -81,7 +81,7 @@ impl TwoResourcePoolBlueprint {
         };
 
         // Creating the pool nodes
-        let access_rules = RoleAssignment::create(
+        let role_assignment = RoleAssignment::create(
             owner_role,
             btreemap! {
                 ObjectModuleId::Main => roles_init! {
@@ -121,7 +121,7 @@ impl TwoResourcePoolBlueprint {
         api.globalize(
             btreemap!(
                 ObjectModuleId::Main => object_id,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),

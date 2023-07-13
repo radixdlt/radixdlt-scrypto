@@ -250,9 +250,9 @@ impl BasicRocksdbTestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
-        access_rules.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
+        let mut roles = BTreeMap::new();
+        roles.insert(ResourceAction::Withdraw, (rule!(allow_all), LOCKED));
+        roles.insert(ResourceAction::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new()
             .lock_fee_from_faucet()
             .create_fungible_resource(
@@ -260,7 +260,7 @@ impl BasicRocksdbTestRunner {
                 true,
                 divisibility,
                 metadata!(),
-                access_rules,
+                roles,
                 Some(amount),
             )
             .try_deposit_batch_or_abort(account)

@@ -220,14 +220,14 @@ impl TransactionTrackerBlueprint {
                 epochs_per_partition: EPOCHS_PER_PARTITION,
             })],
         )?;
-        let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?.0;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
             btreemap!(
                 ObjectModuleId::Main => intent_store,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),

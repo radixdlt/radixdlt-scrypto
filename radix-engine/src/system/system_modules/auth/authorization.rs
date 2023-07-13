@@ -328,18 +328,18 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules_of: &NodeId,
+        role_assignment_of: &NodeId,
         key: &ModuleRoleKey,
         api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         let access_rule = if key.key.key.eq(SELF_ROLE) {
             // FIXME: Prevent panics of node id, this may be triggered by vaults and auth zone
             rule!(require(global_caller(GlobalAddress::new_or_panic(
-                access_rules_of.0
+                role_assignment_of.0
             ))))
         } else {
             let handle = api.kernel_open_substate_with_default(
-                access_rules_of,
+                role_assignment_of,
                 ROLE_ASSIGNMENT_BASE_PARTITION
                     .at_offset(ROLE_ASSIGNMENT_ROLE_DEF_PARTITION_OFFSET)
                     .unwrap(),
@@ -359,7 +359,7 @@ impl Authorization {
                 Some(access_rule) => access_rule,
                 None => {
                     let handle = api.kernel_open_substate(
-                        access_rules_of,
+                        role_assignment_of,
                         ROLE_ASSIGNMENT_BASE_PARTITION
                             .at_offset(ROLE_ASSIGNMENT_FIELDS_PARTITION_OFFSET)
                             .unwrap(),
@@ -430,7 +430,7 @@ impl Authorization {
     >(
         acting_location: ActingLocation,
         auth_zone_id: NodeId,
-        access_rules_of: &NodeId,
+        role_assignment_of: &NodeId,
         module: ObjectModuleId,
         role_list: &RoleList,
         api: &mut Y,
@@ -442,7 +442,7 @@ impl Authorization {
             let result = Self::check_authorization_against_role_key_internal(
                 acting_location,
                 auth_zone_id,
-                access_rules_of,
+                role_assignment_of,
                 &module_role_key,
                 api,
             )?;

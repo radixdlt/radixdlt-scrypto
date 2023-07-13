@@ -17,7 +17,7 @@ use crate::kernel::call_frame::{
     CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError,
     OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError,
 };
-use crate::system::node_modules::role_assignment::AccessRulesError;
+use crate::system::node_modules::role_assignment::RolesAssignmentError;
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
@@ -423,7 +423,7 @@ pub enum ApplicationError {
     //===================
     // Node module errors
     //===================
-    AccessRulesError(AccessRulesError),
+    AccessRulesError(RolesAssignmentError),
 
     MetadataError(MetadataPanicError),
 
@@ -491,8 +491,8 @@ impl From<FungibleResourceManagerError> for ApplicationError {
     }
 }
 
-impl From<AccessRulesError> for ApplicationError {
-    fn from(value: AccessRulesError) -> Self {
+impl From<RolesAssignmentError> for ApplicationError {
+    fn from(value: RolesAssignmentError) -> Self {
         Self::AccessRulesError(value)
     }
 }

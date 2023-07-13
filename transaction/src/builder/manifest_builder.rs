@@ -1011,7 +1011,7 @@ impl ManifestBuilder {
 
     pub fn set_owner_role(self, address: impl ResolvableGlobalAddress, rule: AccessRule) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
             method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&RoleAssignmentSetOwnerInput { rule }),
@@ -1026,7 +1026,7 @@ impl ManifestBuilder {
         rule: AccessRule,
     ) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
             method_name: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&RoleAssignmentSetInput {
@@ -1039,7 +1039,7 @@ impl ManifestBuilder {
 
     pub fn lock_owner_role(self, address: impl ResolvableGlobalAddress) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
             method_name: ROLE_ASSINGMENT_LOCK_OWNER_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&RoleAssignmentLockOwnerInput {}),
@@ -1053,7 +1053,7 @@ impl ManifestBuilder {
         role_key: RoleKey,
     ) -> Self {
         let address = address.resolve(&self.registrar);
-        self.add_instruction(InstructionV1::CallAccessRulesMethod {
+        self.add_instruction(InstructionV1::CallRoleAssignmentMethod {
             address: address.into(),
             method_name: ROLE_ASSINGMENT_GET_IDENT.to_string(),
             args: to_manifest_value_and_unwrap!(&RoleAssignmentGetInput { module, role_key }),

@@ -79,7 +79,7 @@ fn can_call_protected_function_with_auth() {
 }
 
 #[test]
-fn access_rules_method_auth_cannot_be_mutated_when_locked() {
+fn roles_assignment_method_auth_cannot_be_mutated_when_locked() {
     // Arrange
     let mut roles = RolesInit::new();
     roles.define_role("deposit_funds_auth_update", rule!(allow_all));
@@ -100,7 +100,7 @@ fn access_rules_method_auth_cannot_be_mutated_when_locked() {
 }
 
 #[test]
-fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present() {
+fn role_assignment_method_auth_cant_be_mutated_when_required_proofs_are_not_present() {
     // Arrange
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
@@ -122,7 +122,7 @@ fn access_rules_method_auth_cant_be_mutated_when_required_proofs_are_not_present
 }
 
 #[test]
-fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
+fn role_assignment_method_auth_can_be_mutated_when_required_proofs_are_present() {
     // Arrange
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
@@ -139,7 +139,7 @@ fn access_rules_method_auth_can_be_mutated_when_required_proofs_are_present() {
     receipt.expect_commit_success();
 }
 
-fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
+fn component_role_assignment_can_be_mutated_through_manifest(to_rule: AccessRule) {
     // Arrange
     let private_key = Secp256k1PrivateKey::from_u64(709).unwrap();
     let public_key = private_key.public_key();
@@ -173,19 +173,19 @@ fn component_access_rules_can_be_mutated_through_manifest(to_rule: AccessRule) {
 }
 
 #[test]
-fn component_access_rules_can_be_mutated_to_deny_all_through_manifest() {
-    component_access_rules_can_be_mutated_through_manifest(rule!(deny_all));
+fn component_role_assignment_can_be_mutated_to_deny_all_through_manifest() {
+    component_role_assignment_can_be_mutated_through_manifest(rule!(deny_all));
 }
 
 #[test]
-fn component_access_rules_can_be_mutated_to_fungible_resource_through_manifest() {
-    component_access_rules_can_be_mutated_through_manifest(rule!(require(XRD)));
+fn component_role_assignment_can_be_mutated_to_fungible_resource_through_manifest() {
+    component_role_assignment_can_be_mutated_through_manifest(rule!(require(XRD)));
 }
 
 #[test]
-fn component_access_rules_can_be_mutated_to_non_fungible_resource_through_manifest() {
+fn component_role_assignment_can_be_mutated_to_non_fungible_resource_through_manifest() {
     let non_fungible_global_id = AuthAddresses::system_role();
-    component_access_rules_can_be_mutated_through_manifest(rule!(require(non_fungible_global_id)));
+    component_role_assignment_can_be_mutated_through_manifest(rule!(require(non_fungible_global_id)));
 }
 
 #[test]

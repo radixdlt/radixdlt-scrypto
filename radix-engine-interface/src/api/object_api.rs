@@ -35,7 +35,7 @@ pub enum ObjectModuleId {
     Main,
     Metadata,
     Royalty,
-    AccessRules,
+    RoleAssignment,
 }
 
 impl ObjectModuleId {
@@ -44,7 +44,7 @@ impl ObjectModuleId {
             ObjectModuleId::Main => 0u8,
             ObjectModuleId::Metadata => 1u8,
             ObjectModuleId::Royalty => 2u8,
-            ObjectModuleId::AccessRules => 3u8,
+            ObjectModuleId::RoleAssignment => 3u8,
         }
     }
 
@@ -52,7 +52,7 @@ impl ObjectModuleId {
         match self {
             ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
             ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
-            ObjectModuleId::AccessRules => ROLE_ASSIGNMENT_BASE_PARTITION,
+            ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
             ObjectModuleId::Main => MAIN_BASE_PARTITION,
         }
     }
@@ -67,7 +67,7 @@ impl ObjectModuleId {
                 &ROYALTY_MODULE_PACKAGE,
                 COMPONENT_ROYALTY_BLUEPRINT,
             )),
-            ObjectModuleId::AccessRules => Some(BlueprintId::new(
+            ObjectModuleId::RoleAssignment => Some(BlueprintId::new(
                 &ROLE_ASSIGNMENT_MODULE_PACKAGE,
                 ROLE_ASSIGNMENT_BLUEPRINT,
             )),

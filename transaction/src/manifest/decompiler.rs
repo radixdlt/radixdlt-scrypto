@@ -556,7 +556,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             let parameters = Value::Tuple { fields };
             (name, parameters)
         }
-        InstructionV1::CallAccessRulesMethod {
+        InstructionV1::CallRoleAssignmentMethod {
             address,
             method_name,
             args,
@@ -581,7 +581,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 _ => {
                     fields.push(address.to_instruction_argument());
                     fields.push(to_manifest_value(method_name)?);
-                    "CALL_ACCESS_RULES_METHOD"
+                    "CALL_ROLE_ASSIGNMENT_METHOD"
                 }
             };
 

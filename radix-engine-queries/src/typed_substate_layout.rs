@@ -68,7 +68,7 @@ use transaction::prelude::IntentHash;
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
     TypeInfoModule(TypedTypeInfoModuleSubstateKey),
-    AccessRulesModule(TypedAccessRulesSubstateKey),
+    RoleAssignmentModule(TypedRoleAssignmentSubstateKey),
     RoyaltyModule(TypedRoyaltyModuleSubstateKey),
     MetadataModule(TypedMetadataModuleSubstateKey),
     MainModule(TypedMainModuleSubstateKey),
@@ -97,8 +97,8 @@ pub enum TypedTypeInfoModuleSubstateKey {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedAccessRulesSubstateKey {
-    AccessRulesField(RoleAssignmentField),
+pub enum TypedRoleAssignmentSubstateKey {
+    RoleAssignmentField(RoleAssignmentField),
     Rule(ModuleRoleKey),
 }
 
@@ -210,7 +210,7 @@ pub fn to_typed_substate_key(
             ),
         ),
         ROLE_ASSIGNMENT_FIELDS_PARTITION => {
-            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::AccessRulesField(
+            TypedSubstateKey::RoleAssignmentModule(TypedRoleAssignmentSubstateKey::RoleAssignmentField(
                 RoleAssignmentField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
             ))
         }
@@ -218,7 +218,7 @@ pub fn to_typed_substate_key(
             let key = substate_key
                 .for_map()
                 .ok_or_else(|| error("Access Rules key"))?;
-            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(
+            TypedSubstateKey::RoleAssignmentModule(TypedRoleAssignmentSubstateKey::Rule(
                 scrypto_decode(&key).map_err(|_| error("Access Rules key"))?,
             ))
         }
@@ -442,7 +442,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug, Clone)]
 pub enum TypedSubstateValue {
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
-    AccessRulesModule(TypedAccessRulesModuleSubstateValue),
+    RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
     RoyaltyModule(TypedRoyaltyModuleSubstateValue),
     MetadataModule(TypedMetadataModuleSubstateValue),
     MainModule(TypedMainModuleSubstateValue),
@@ -454,7 +454,7 @@ pub enum TypedTypeInfoModuleSubstateValue {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedAccessRulesModuleSubstateValue {
+pub enum TypedRoleAssignmentModuleSubstateValue {
     OwnerRole(FieldSubstate<OwnerRoleSubstate>),
     Rule(KeyValueEntrySubstate<AccessRule>),
 }
@@ -612,16 +612,16 @@ fn to_typed_substate_value_internal(
                 }
             })
         }
-        TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
-            TypedAccessRulesSubstateKey::AccessRulesField(access_rules_field_offset) => {
-                match access_rules_field_offset {
-                    RoleAssignmentField::OwnerRole => TypedSubstateValue::AccessRulesModule(
-                        TypedAccessRulesModuleSubstateValue::OwnerRole(scrypto_decode(data)?),
+        TypedSubstateKey::RoleAssignmentModule(role_assignment_key) => match role_assignment_key {
+            TypedRoleAssignmentSubstateKey::RoleAssignmentField(role_assignment_field_offset) => {
+                match role_assignment_field_offset {
+                    RoleAssignmentField::OwnerRole => TypedSubstateValue::RoleAssignmentModule(
+                        TypedRoleAssignmentModuleSubstateValue::OwnerRole(scrypto_decode(data)?),
                     ),
                 }
             }
-            TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(
-                TypedAccessRulesModuleSubstateValue::Rule(scrypto_decode(data)?),
+            TypedRoleAssignmentSubstateKey::Rule(_) => TypedSubstateValue::RoleAssignmentModule(
+                TypedRoleAssignmentModuleSubstateValue::Rule(scrypto_decode(data)?),
             ),
         },
         TypedSubstateKey::RoyaltyModule(royalty_module_key) => {

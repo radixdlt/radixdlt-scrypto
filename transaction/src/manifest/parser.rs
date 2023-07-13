@@ -56,7 +56,7 @@ pub enum InstructionIdent {
     CallMethod,
     CallRoyaltyMethod,
     CallMetadataMethod,
-    CallAccessRulesMethod,
+    CallRoleAssignmentMethod,
     DropAllProofs,
     AllocateGlobalAddress,
 
@@ -148,7 +148,7 @@ impl InstructionIdent {
             "CALL_METHOD" => InstructionIdent::CallMethod,
             "CALL_ROYALTY_METHOD" => InstructionIdent::CallRoyaltyMethod,
             "CALL_METADATA_METHOD" => InstructionIdent::CallMetadataMethod,
-            "CALL_ACCESS_RULES_METHOD" => InstructionIdent::CallAccessRulesMethod,
+            "CALL_ROLE_ASSIGNMENT_METHOD" => InstructionIdent::CallRoleAssignmentMethod,
 
             "DROP_ALL_PROOFS" => InstructionIdent::DropAllProofs,
             "ALLOCATE_GLOBAL_ADDRESS" => InstructionIdent::AllocateGlobalAddress,
@@ -593,7 +593,7 @@ impl Parser {
                 method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,
             },
-            InstructionIdent::CallAccessRulesMethod => Instruction::CallAccessRulesMethod {
+            InstructionIdent::CallRoleAssignmentMethod => Instruction::CallAccessRulesMethod {
                 address: self.parse_value()?,
                 method_name: self.parse_value()?,
                 args: self.parse_values_till_semicolon()?,

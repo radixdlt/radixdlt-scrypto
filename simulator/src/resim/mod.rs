@@ -67,7 +67,7 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
-use radix_engine::vm::{DefaultNativeVm, NoExtension, ScryptoVm, Vm};
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, TypePointer,
@@ -446,7 +446,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let (package_address, schema_pointer) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
             match node_module {
-                ObjectModuleId::AccessRules => (ROLE_ASSIGNMENT_MODULE_PACKAGE, *schema_pointer),
+                ObjectModuleId::RoleAssignment => (ROLE_ASSIGNMENT_MODULE_PACKAGE, *schema_pointer),
                 ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, *schema_pointer),
                 ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, *schema_pointer),
                 ObjectModuleId::Main => {

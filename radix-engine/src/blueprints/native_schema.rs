@@ -36,6 +36,6 @@ lazy_static! {
         MetadataNativePackage::definition();
     pub static ref ROYALTIES_PACKAGE_DEFINITION: PackageDefinition =
         RoyaltyNativePackage::definition();
-    pub static ref ACCESS_RULES_PACKAGE_DEFINITION: PackageDefinition =
-        AccessRulesNativePackage::definition();
+    pub static ref ROLE_ASSIGNMENT_PACKAGE_DEFINITION: PackageDefinition =
+        RoleAssignmentNativePackage::definition();
 }

@@ -37,9 +37,9 @@ impl RoleAssignment {
             .unwrap(),
         )?;
 
-        let access_rules: Own = scrypto_decode(&rtn).unwrap();
+        let role_assignment: Own = scrypto_decode(&rtn).unwrap();
 
-        Ok(Self(access_rules))
+        Ok(Self(role_assignment))
     }
 }
 
@@ -49,11 +49,11 @@ impl RoleAssignmentObject for RoleAssignment {
     }
 }
 
-pub struct AttachedAccessRules(pub NodeId);
+pub struct AttachedRoleAssignment(pub NodeId);
 
-impl RoleAssignmentObject for AttachedAccessRules {
+impl RoleAssignmentObject for AttachedRoleAssignment {
     fn self_id(&self) -> (&NodeId, ObjectModuleId) {
-        (&self.0, ObjectModuleId::AccessRules)
+        (&self.0, ObjectModuleId::RoleAssignment)
     }
 }
 

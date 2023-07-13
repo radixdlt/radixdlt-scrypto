@@ -60,14 +60,14 @@ pub fn validate_call_arguments_to_native_components(
                 Invocation::Method(*address, ObjectModuleId::Royalty, method_name.to_owned()),
                 args,
             ),
-            InstructionV1::CallAccessRulesMethod {
+            InstructionV1::CallRoleAssignmentMethod {
                 address: DynamicGlobalAddress::Static(address),
                 method_name,
                 args,
             } => (
                 Invocation::Method(
                     *address,
-                    ObjectModuleId::AccessRules,
+                    ObjectModuleId::RoleAssignment,
                     method_name.to_owned(),
                 ),
                 args,
@@ -187,7 +187,7 @@ fn get_arguments_schema<'s>(
                 .map(Some)?
         }
         Invocation::Function(package_address @ ROLE_ASSIGNMENT_MODULE_PACKAGE, ref blueprint, _) => {
-            get_blueprint_schema(&ACCESS_RULES_PACKAGE_DEFINITION, package_address, blueprint)
+            get_blueprint_schema(&ROLE_ASSIGNMENT_PACKAGE_DEFINITION, package_address, blueprint)
                 .map(Some)?
         }
         Invocation::Function(..) => None,
@@ -256,7 +256,7 @@ fn get_arguments_schema<'s>(
         Invocation::Method(_, ObjectModuleId::Metadata, _) => METADATA_PACKAGE_DEFINITION
             .blueprints
             .get(METADATA_BLUEPRINT),
-        Invocation::Method(_, ObjectModuleId::AccessRules, _) => ACCESS_RULES_PACKAGE_DEFINITION
+        Invocation::Method(_, ObjectModuleId::RoleAssignment, _) => ROLE_ASSIGNMENT_PACKAGE_DEFINITION
             .blueprints
             .get(ROLE_ASSIGNMENT_BLUEPRINT),
         Invocation::Method(_, ObjectModuleId::Royalty, _) => ROYALTIES_PACKAGE_DEFINITION

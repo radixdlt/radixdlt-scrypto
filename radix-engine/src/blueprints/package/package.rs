@@ -29,7 +29,7 @@ use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
 use crate::roles_template;
-use crate::system::node_modules::role_assignment::AccessRulesNativePackage;
+use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::royalty::RoyaltyUtil;
 use crate::system::system::{
     FieldSubstate, KeyValueEntrySubstate, SubstateMutability, SystemService,
@@ -347,7 +347,7 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
 
                 let check_list = |list: &RoleList| {
                     for role_key in &list.list {
-                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
+                        if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
                             continue;
                         }
                         if !role_specification.contains_key(role_key) {
@@ -360,7 +360,7 @@ fn validate_auth(definition: &PackageDefinition) -> Result<(), PackageError> {
                 if let RoleSpecification::Normal(roles) = roles {
                     for (role_key, role_list) in roles {
                         check_list(role_list)?;
-                        if AccessRulesNativePackage::is_reserved_role_key(role_key) {
+                        if RoleAssignmentNativePackage::is_reserved_role_key(role_key) {
                             return Err(PackageError::DefiningReservedRoleKey(
                                 blueprint.to_string(),
                                 role_key.clone(),
@@ -631,7 +631,7 @@ fn globalize_package<Y>(
     package_address_reservation: Option<GlobalAddressReservation>,
     package_structure: PackageStructure,
     metadata: Own,
-    access_rules: RoleAssignment,
+    role_assignment: RoleAssignment,
     api: &mut Y,
 ) -> Result<PackageAddress, RuntimeError>
 where
@@ -759,7 +759,7 @@ where
             ObjectModuleId::Main => package_object,
             ObjectModuleId::Metadata => metadata.0,
             ObjectModuleId::Royalty => royalty.0,
-            ObjectModuleId::AccessRules => access_rules.0.0,
+            ObjectModuleId::RoleAssignment => role_assignment.0.0,
         ),
         package_address_reservation,
     )?;
@@ -1203,14 +1203,14 @@ impl PackageNativePackage {
             VmType::Native,
             native_package_code_id.to_be_bytes().to_vec(),
         )?;
-        let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
 
         globalize_package(
             package_address,
             package_structure,
             metadata,
-            access_rules,
+            role_assignment,
             api,
         )
     }
@@ -1233,7 +1233,7 @@ impl PackageNativePackage {
             blueprint_name: PACKAGE_BLUEPRINT.to_string(),
         })?;
 
-        let (access_rules, bucket) = SecurifiedPackage::create_securified(
+        let (role_assignment, bucket) = SecurifiedPackage::create_securified(
             PackageOwnerBadgeData {
                 name: "Package Owner Badge".to_owned(),
                 package: address.try_into().expect("Impossible Case"),
@@ -1247,7 +1247,7 @@ impl PackageNativePackage {
             Some(address_reservation),
             package_structure,
             metadata,
-            access_rules,
+            role_assignment,
             api,
         )?;
 
@@ -1269,13 +1269,13 @@ impl PackageNativePackage {
         let package_structure =
             Self::validate_and_build_package_structure(definition, VmType::ScryptoV1, code)?;
         let metadata = Metadata::create_with_data(metadata_init, api)?;
-        let access_rules = SecurifiedPackage::create_advanced(owner_role, api)?;
+        let role_assignment = SecurifiedPackage::create_advanced(owner_role, api)?;
 
         globalize_package(
             package_address,
             package_structure,
             metadata,
-            access_rules,
+            role_assignment,
             api,
         )
     }
@@ -1403,8 +1403,8 @@ impl PackageAuthNativeBlueprint {
                     Ok(ResolvedPermission::AccessRule(AccessRule::DenyAll))
                 }
             }
-            FunctionAuth::AccessRules(access_rules) => {
-                let access_rule = access_rules.get(ident);
+            FunctionAuth::AccessRules(rules) => {
+                let access_rule = rules.get(ident);
                 if let Some(access_rule) = access_rule {
                     Ok(ResolvedPermission::AccessRule(access_rule.clone()))
                 } else {

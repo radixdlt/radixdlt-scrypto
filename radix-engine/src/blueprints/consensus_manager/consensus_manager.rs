@@ -307,7 +307,7 @@ impl ConsensusManagerBlueprint {
         };
 
         let roles = btreemap!(ObjectModuleId::Main => role_definitions);
-        let access_rules = RoleAssignment::create(OwnerRole::None, roles, api)?.0;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, roles, api)?.0;
         let metadata = Metadata::create_with_data(
             metadata_init! {
                 "name" => "Consensus Manager".to_owned(), locked;
@@ -320,7 +320,7 @@ impl ConsensusManagerBlueprint {
         api.globalize(
             btreemap!(
                 ObjectModuleId::Main => consensus_manager_id,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),

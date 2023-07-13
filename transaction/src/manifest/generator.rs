@@ -563,7 +563,7 @@ where
             id_validator
                 .process_call_data(&args)
                 .map_err(GeneratorError::IdValidationError)?;
-            InstructionV1::CallAccessRulesMethod {
+            InstructionV1::CallRoleAssignmentMethod {
                 address,
                 method_name,
                 args,
@@ -746,17 +746,17 @@ where
                 args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
             }
         }
-        ast::Instruction::SetOwnerRole { address, args } => InstructionV1::CallAccessRulesMethod {
+        ast::Instruction::SetOwnerRole { address, args } => InstructionV1::CallRoleAssignmentMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: ROLE_ASSIGNMENT_SET_OWNER_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
-        ast::Instruction::LockOwnerRole { address, args } => InstructionV1::CallAccessRulesMethod {
+        ast::Instruction::LockOwnerRole { address, args } => InstructionV1::CallRoleAssignmentMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: ROLE_ASSINGMENT_LOCK_OWNER_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,
         },
-        ast::Instruction::SetRole { address, args } => InstructionV1::CallAccessRulesMethod {
+        ast::Instruction::SetRole { address, args } => InstructionV1::CallRoleAssignmentMethod {
             address: generate_dynamic_global_address(address, address_bech32_decoder, resolver)?,
             method_name: ROLE_ASSIGNMENT_SET_IDENT.to_string(),
             args: generate_args(args, resolver, address_bech32_decoder, blobs)?,

@@ -48,8 +48,8 @@ impl RoleAssignment {
                 .unwrap(),
             )
             .unwrap();
-        let access_rules: Own = scrypto_decode(&rtn).unwrap();
-        Self(ModuleHandle::Own(access_rules))
+        let role_assignment: Own = scrypto_decode(&rtn).unwrap();
+        Self(ModuleHandle::Own(role_assignment))
     }
 
     pub fn set_owner_role<A: Into<AccessRule>>(&self, rule: A) {
@@ -113,7 +113,7 @@ impl RoleAssignment {
 }
 
 impl Attachable for RoleAssignment {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::AccessRules;
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::RoleAssignment;
 
     fn new(handle: ModuleHandle) -> Self {
         Self(handle)
