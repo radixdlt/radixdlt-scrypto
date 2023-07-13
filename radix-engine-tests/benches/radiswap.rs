@@ -117,7 +117,7 @@ fn bench_radiswap(c: &mut Criterion) {
         test_runner
             .execute_manifest(
                 ManifestBuilder::new()
-                    .lock_standard_test_fee(account)
+                    .lock_fee_from_faucet()
                     .create_proof_from_account_of_non_fungibles(
                         account,
                         btc_mint_auth,
