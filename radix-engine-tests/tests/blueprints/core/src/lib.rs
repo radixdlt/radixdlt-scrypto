@@ -24,7 +24,6 @@ mod globalize_test {
         pub fn globalize(x: Own) {
             let modules = btreemap!(
                 ObjectModuleId::Main => x.0,
-                ObjectModuleId::AccessRules => AccessRules::new(OwnerRole::None, btreemap!()).0.as_node_id().clone(),
                 ObjectModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
                 ObjectModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
             );
