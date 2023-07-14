@@ -1,4 +1,4 @@
-use crate::blueprints::package::{BlueprintVersion, BlueprintVersionKey};
+use crate::blueprints::package::BlueprintVersion;
 use crate::ScryptoSbor;
 use core::fmt;
 use core::fmt::Formatter;
@@ -6,6 +6,7 @@ use radix_engine_common::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_common::types::GlobalAddress;
 use radix_engine_common::types::PackageAddress;
 use radix_engine_derive::ManifestSbor;
+use radix_engine_interface::api::ObjectModuleId;
 use sbor::rust::prelude::*;
 use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
 use utils::ContextualDisplay;
@@ -26,21 +27,16 @@ impl Default for OuterObjectInfo {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct ObjectInfo {
     pub global: bool,
-    pub blueprint_id: BlueprintId,
-    pub blueprint_version: BlueprintVersion,
+    pub main_blueprint_id: BlueprintId,
+    pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
+
+    // Blueprint arguments
     pub outer_object: OuterObjectInfo,
     pub features: BTreeSet<String>,
     pub instance_schema: Option<InstanceSchema>,
 }
 
 impl ObjectInfo {
-    pub fn blueprint_version_key(&self) -> BlueprintVersionKey {
-        BlueprintVersionKey {
-            blueprint: self.blueprint_id.blueprint_name.clone(),
-            version: self.blueprint_version,
-        }
-    }
-
     pub fn get_outer_object(&self) -> GlobalAddress {
         match &self.outer_object {
             OuterObjectInfo::Some { outer_object } => outer_object.clone(),

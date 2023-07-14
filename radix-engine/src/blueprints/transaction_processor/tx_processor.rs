@@ -108,10 +108,10 @@ impl TransactionProcessorBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {
                         global: false,
-
-                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
-                        blueprint_version: BlueprintVersion::default(),
-
+                        main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
+                        module_versions: btreemap!(
+                            ObjectModuleId::Main => BlueprintVersion::default(),
+                        ),
                         instance_schema: None,
                         outer_object: OuterObjectInfo::default(),
                         features: btreeset!(),
@@ -344,14 +344,14 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                InstructionV1::CallAccessRulesMethod {
+                InstructionV1::CallRoleAssignmentMethod {
                     address,
                     method_name,
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_method!(
-                        ObjectModuleId::AccessRules,
+                        ObjectModuleId::RoleAssignment,
                         address.as_node_id(),
                         false,
                         method_name,
@@ -607,8 +607,8 @@ impl TransactionProcessor {
             let info = TypeInfoBlueprint::get_type(node_id, api)?;
             match info {
                 TypeInfoSubstate::Object(info) => match (
-                    info.blueprint_id.package_address,
-                    info.blueprint_id.blueprint_name.as_str(),
+                    info.main_blueprint_id.package_address,
+                    info.main_blueprint_id.blueprint_name.as_str(),
                 ) {
                     (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                     | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {

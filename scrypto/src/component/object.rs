@@ -61,6 +61,6 @@ pub trait ObjectStub: Copy {
         ScryptoEnv
             .get_object_info(self.handle().as_node_id())
             .unwrap()
-            .blueprint_id
+            .main_blueprint_id
     }
 }
