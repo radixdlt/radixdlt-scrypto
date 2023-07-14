@@ -227,7 +227,6 @@ jobs:
     - name: Run tests
       run: |
         cargo nextest run \
-          --no-run \
           --features wasmer \
           -p radix-engine \
           -p radix-engine-tests
