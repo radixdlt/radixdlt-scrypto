@@ -1178,13 +1178,6 @@ impl WasmInstance for WasmiInstance {
             _ => Err(InvokeError::SelfError(WasmRuntimeError::InvalidWasmPointer)),
         }
     }
-
-    fn consumed_memory(&self) -> Result<usize, InvokeError<WasmRuntimeError>> {
-        self.memory
-            .current_pages(self.store.as_context())
-            .to_bytes()
-            .ok_or(InvokeError::SelfError(WasmRuntimeError::MemoryAccessError))
-    }
 }
 
 #[derive(Debug, Clone)]
