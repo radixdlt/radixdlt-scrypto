@@ -434,6 +434,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
             store_access: &'b mut StoreAccessInfo,
             on_store_access: F,
+            started: bool,
             errored_out: bool,
         }
 
@@ -441,6 +442,16 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             type Item = Result<(DbSortKey, IndexedScryptoValue), E>;
 
             fn next(&mut self) -> Option<Self::Item> {
+                if !self.started {
+                    let result = (self.on_store_access)(StoreAccess::ScanInitialization);
+                    if let Err(e) = result {
+                        self.errored_out = true;
+                        return Some(Err(e));
+                    }
+
+                    self.started = true;
+                }
+
                 if self.errored_out {
                     return None;
                 }
@@ -481,6 +492,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             iterator: substate_db.list_entries(partition_key),
             store_access,
             on_store_access,
+            started: false,
             errored_out: false,
         })
     }

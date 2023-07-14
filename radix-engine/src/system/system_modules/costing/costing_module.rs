@@ -373,15 +373,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_scan_substates(system: &mut SystemConfig<V>) -> Result<(), RuntimeError> {
-        system
-            .modules
-            .costing
-            .apply_execution_cost(CostingEntry::ScanSubstates)?;
-
-        Ok(())
-    }
-
     fn on_scan_substate(
         store_access: &StoreAccess,
         system: &mut SystemConfig<V>,
@@ -389,7 +380,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::ScanSubstate {
+            .apply_execution_cost(CostingEntry::StoreAccess {
                 store_access,
             })?;
 

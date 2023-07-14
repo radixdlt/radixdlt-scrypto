@@ -189,11 +189,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_write_substate(api, lock_handle, value_size, store_access)
     }
 
-    fn on_scan_substates(&mut self) -> Result<(), RuntimeError>
-    {
-        SystemModuleMixer::on_scan_substates(self)
-    }
-
     fn on_scan_substate(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError>
     {
         SystemModuleMixer::on_scan_substate(store_access, self)

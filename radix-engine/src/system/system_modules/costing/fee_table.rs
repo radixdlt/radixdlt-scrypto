@@ -81,6 +81,9 @@ impl FeeTable {
 
     fn store_access_cost(store_access: &StoreAccess) -> u32 {
         match store_access {
+            StoreAccess::ScanInitialization => {
+                500
+            }
             StoreAccess::ReadFromDb(size) => {
                 // Execution time (µs): 0.0009622109 * size + 389.5155
                 // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
@@ -303,11 +306,6 @@ impl FeeTable {
     #[inline]
     pub fn scan_substate_cost(&self, store_access: &StoreAccess) -> u32 {
         Self::store_access_cost(store_access)
-    }
-
-    #[inline]
-    pub fn scan_substates_cost(&self) -> u32 {
-        500
     }
 
     #[inline]

@@ -144,6 +144,7 @@ pub type StoreAccessInfo = Vec<StoreAccess>;
 
 #[derive(Debug, Clone, Copy)]
 pub enum StoreAccess {
+    ScanInitialization,
     /// Some substate was read from database.
     ReadFromDb(usize),
     /// Non-existent substate was read from database.

@@ -783,8 +783,6 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.callback.on_scan_substates()?;
-
         let (substates, store_access_info) = self
             .current_frame
             .scan_sorted(node_id, partition_num, count, &mut self.heap, self.store)
@@ -806,9 +804,6 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        // FIXME: Remove
-        self.callback.on_scan_substates()?;
-
         let (substates, _store_access_info) = self
             .current_frame
             .scan_substates(

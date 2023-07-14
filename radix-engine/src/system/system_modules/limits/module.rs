@@ -56,7 +56,7 @@ impl LimitsModule {
 
     pub fn process_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError> {
         match store_access {
-            StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
+            StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound | StoreAccess::ScanInitialization => {}
             StoreAccess::NewEntryInTrack => {
                 self.number_of_substates_in_track += 1;
             }
@@ -79,7 +79,7 @@ impl LimitsModule {
     ) -> Result<(), RuntimeError> {
         for access in store_access {
             match access {
-                StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
+                StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound | StoreAccess::ScanInitialization => {}
                 StoreAccess::NewEntryInTrack => {
                     self.number_of_substates_in_track += 1;
                 }
