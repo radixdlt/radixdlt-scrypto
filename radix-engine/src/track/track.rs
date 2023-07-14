@@ -424,17 +424,19 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         result
     }
 
-    fn list_entries_from_db<'x>(
+    fn list_entries_from_db<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
         substate_db: &'x S,
         partition_key: &DbPartitionKey,
         store_access: &'x mut StoreAccessInfo,
+        on_store_access: F,
     ) -> Box<dyn Iterator<Item = (DbSortKey, IndexedScryptoValue, StoreAccess)> + 'x> {
-        struct TracedIterator<'a, 'b> {
+        struct TracedIterator<'a, 'b, E, F: FnMut(StoreAccess) -> Result<(), E>> {
             iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
             store_access: &'b mut StoreAccessInfo,
+            on_store_access: F,
         }
 
-        impl<'a, 'b> Iterator for TracedIterator<'a, 'b> {
+        impl<'a, 'b, E, F: FnMut(StoreAccess) -> Result<(), E>> Iterator for TracedIterator<'a, 'b, E, F> {
             type Item = (DbSortKey, IndexedScryptoValue, StoreAccess);
 
             fn next(&mut self) -> Option<Self::Item> {
@@ -457,6 +459,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         Box::new(TracedIterator {
             iterator: substate_db.list_entries(partition_key),
             store_access,
+            on_store_access,
         })
     }
 
@@ -798,6 +801,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             self.substate_db,
             &db_partition_key,
             &mut store_access,
+            |e| -> Result<(), ()> {
+                Ok(())
+            }
         ));
         for (db_sort_key, value, store_access) in &mut tracked_iter {
             if items.len() == count {
@@ -869,6 +875,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             self.substate_db,
             &db_partition_key,
             &mut store_access,
+            |e| -> Result<(), ()> {
+                Ok(())
+            }
         ));
         let new_updates = {
             let mut new_updates = Vec::new();
@@ -953,6 +962,9 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     self.substate_db,
                     &partition_key,
                     &mut store_access,
+                    |e| -> Result<(), ()> {
+                        Ok(())
+                    }
                 ).map(|(key, value, _access)| (key, value)))
             };
         let db_read_entries = raw_db_entries.inspect(|(_key, _value)| {
