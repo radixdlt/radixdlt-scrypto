@@ -460,32 +460,10 @@ impl ExecutionTraceModule {
         resource_summary: ResourceSummary,
         args: &IndexedScryptoValue,
     ) {
-        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let origin = match &callee {
-                Actor::Method(MethodActor {
-                    object_info, ident, ..
-                }) => TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                    blueprint_id: object_info.main_blueprint_id.clone(),
-                    ident: ident.clone(),
-                }),
-                Actor::Function(FunctionActor {
-                    blueprint_id,
-                    ident,
-                }) => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
-                    blueprint_id: blueprint_id.clone(),
-                    ident: ident.clone(),
-                }),
-                Actor::BlueprintHook(..) | Actor::Root => {
-                    return;
-                }
-            };
-            let instruction_index = self.instruction_index();
-
-            self.traced_kernel_call_inputs_stack.push((
-                resource_summary.clone(),
-                origin,
-                instruction_index,
-            ));
+        // Important to always update the counter (even if we're over the depth limit).
+        self.current_kernel_call_depth += 1;
+        if self.current_kernel_call_depth - 1 > self.max_kernel_call_depth_traced {
+            return;
         }
 
         let origin = match &callee {
@@ -545,21 +523,6 @@ impl ExecutionTraceModule {
         caller: &TraceActor,
         resource_summary: ResourceSummary,
     ) {
-        match current_actor {
-            Actor::Method(MethodActor {
-                node_id,
-                object_info,
-                ident,
-                ..
-            }) if VaultUtil::is_vault_blueprint(&object_info.main_blueprint_id)
-                && ident.eq(VAULT_TAKE_IDENT) =>
-            {
-                self.handle_vault_take_output(&resource_summary, &caller, node_id)
-            }
-            Actor::BlueprintHook(..) => return,
-            _ => {}
-        }
-
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
         if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
