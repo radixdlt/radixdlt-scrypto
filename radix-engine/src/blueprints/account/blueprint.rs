@@ -1,9 +1,9 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignment};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeFungibleVault;
@@ -55,13 +55,13 @@ pub const SECURIFY_ROLE: &'static str = "securify";
 
 struct SecurifiedAccount;
 
-impl SecurifiedAccessRules for SecurifiedAccount {
+impl SecurifiedRoleAssignment for SecurifiedAccount {
     type OwnerBadgeNonFungibleData = AccountOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
 
-impl PresecurifiedAccessRules for SecurifiedAccount {}
+impl PresecurifiedRoleAssignment for SecurifiedAccount {}
 
 pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
@@ -73,7 +73,7 @@ pub struct AccountBlueprint;
 
 impl AccountBlueprint {
     fn create_modules<Y>(
-        access_rules: AccessRules,
+        role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
@@ -84,7 +84,7 @@ impl AccountBlueprint {
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
-            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::RoleAssignment => role_assignment.0,
             ObjectModuleId::Metadata => metadata,
             ObjectModuleId::Royalty => royalty,
         );
@@ -136,9 +136,9 @@ impl AccountBlueprint {
 
         let account = Self::create_local(api)?;
         let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
-        let access_rules = SecurifiedAccount::create_presecurified(owner_id, api)?;
+        let role_assignment = SecurifiedAccount::create_presecurified(owner_id, api)?;
         let mut modules = Self::create_modules(
-            access_rules,
+            role_assignment,
             metadata_init!(
                 // NOTE:
                 // This is the owner key for ROLA. We choose to set this explicitly to simplify the
@@ -181,9 +181,9 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = SecurifiedAccount::create_advanced(owner_role, api)?;
+        let role_assignment = SecurifiedAccount::create_advanced(owner_role, api)?;
         let mut modules = Self::create_modules(
-            access_rules,
+            role_assignment,
             metadata_init!(
                 "owner_badge" => EMPTY, locked;
             ),
@@ -207,7 +207,7 @@ impl AccountBlueprint {
         })?;
 
         let account = Self::create_local(api)?;
-        let (access_rules, bucket) = SecurifiedAccount::create_securified(
+        let (role_assignment, bucket) = SecurifiedAccount::create_securified(
             AccountOwnerBadgeData {
                 name: "Account Owner Badge".into(),
                 account: address.try_into().expect("Impossible Case"),
@@ -216,7 +216,7 @@ impl AccountBlueprint {
             api,
         )?;
         let mut modules = Self::create_modules(
-            access_rules,
+            role_assignment,
             metadata_init! {
                 "owner_badge" => NonFungibleLocalId::bytes(address.as_node_id().0).unwrap(), locked;
             },

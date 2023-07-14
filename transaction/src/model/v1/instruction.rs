@@ -441,8 +441,8 @@ pub enum InstructionV1 {
         args: ManifestValue,
     },
 
-    #[sbor(discriminator(INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR))]
-    CallAccessRulesMethod {
+    #[sbor(discriminator(INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR))]
+    CallRoleAssignmentMethod {
         address: DynamicGlobalAddress,
         method_name: String,
         args: ManifestValue,
@@ -525,7 +525,7 @@ pub const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 0x40;
 pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 0x41;
 pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 0x42;
 pub const INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR: u8 = 0x43;
-pub const INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR: u8 = 0x44;
+pub const INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR: u8 = 0x44;
 pub const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
 
 //==============

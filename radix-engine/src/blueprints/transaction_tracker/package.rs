@@ -1,7 +1,7 @@
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -220,14 +220,14 @@ impl TransactionTrackerBlueprint {
                 epochs_per_partition: EPOCHS_PER_PARTITION,
             })],
         )?;
-        let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?.0;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
             btreemap!(
                 ObjectModuleId::Main => intent_store,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),

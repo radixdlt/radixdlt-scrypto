@@ -70,7 +70,7 @@ impl PackageAddress {
             || self.0 == native_addresses::TRANSACTION_PROCESSOR_PACKAGE.0
             || self.0 == native_addresses::METADATA_MODULE_PACKAGE.0
             || self.0 == native_addresses::ROYALTY_MODULE_PACKAGE.0
-            || self.0 == native_addresses::ACCESS_RULES_MODULE_PACKAGE.0
+            || self.0 == native_addresses::ROLE_ASSIGNMENT_MODULE_PACKAGE.0
             || self.0 == native_addresses::TRANSACTION_TRACKER_PACKAGE.0
     }
 }
