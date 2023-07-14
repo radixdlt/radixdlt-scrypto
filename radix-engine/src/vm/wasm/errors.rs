@@ -121,7 +121,7 @@ pub enum WasmRuntimeError {
     InvalidObjectStates(DecodeError),
 
     /// Invalid access rules
-    InvalidAccessRules(DecodeError),
+    InvalidAccessRule(DecodeError),
 
     /// Invalid modules
     InvalidModules(DecodeError),

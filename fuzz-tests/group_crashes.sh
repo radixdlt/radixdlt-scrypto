@@ -34,7 +34,7 @@ function process_crashes {
     # Exemplary entries in crash inventory file depending on event type:
     # - Crash
     #   column  #1                                                                                #16                                                                      Last (NF in awk)
-    #           panic   : thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: MismatchingMapKeyValueKind { key_value_kind: 2, actual_value_kind: 1 }', /home/radixdlt/_work/radixdlt-scrypto/radixdlt-scrypto/radix-engine-common/src/data/manifest/mod.rs:62:45
+    #           panic   : thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: MismatchingMapKeyValueKind { key_value_kind: 2, actual_value_kind: 1 }', /home/radixdlt/_work/radixdlt-scrypto/radixdlt-scrypto/radix-engine-common/src/data/manifest/role_assignment:62:45
     #           count   : 2
     #           list    : 00b8778915d6dd5b50f2da62eb9d8c89054d5b0ad84f099f0a645ee85e7aa503.panic
     # - Timeout

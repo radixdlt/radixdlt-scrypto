@@ -42,9 +42,9 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
-        .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
-        .build();
+    let mut test_runner = TestRunnerBuilder::new().build_with_native_vm_extension(
+        OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke),
+    );
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
@@ -110,12 +110,11 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
             ResourceNativePackage::invoke_export(export_name, input, api)
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
-        .with_custom_extension(OverridePackageCode::new(
+    let mut test_runner =
+        TestRunnerBuilder::new().build_with_native_vm_extension(OverridePackageCode::new(
             RESOURCE_CODE_ID,
             ResourceOverride(resource_direct_access_methods),
-        ))
-        .build();
+        ));
 
     let (public_key, _, account) = test_runner.new_allocated_account();
 

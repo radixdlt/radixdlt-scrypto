@@ -1,5 +1,5 @@
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -50,9 +50,9 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
-        .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
-        .build();
+    let mut test_runner = TestRunnerBuilder::new().build_with_native_vm_extension(
+        OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke),
+    );
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
@@ -138,9 +138,9 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
-        .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
-        .build();
+    let mut test_runner = TestRunnerBuilder::new().build_with_native_vm_extension(
+        OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke),
+    );
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
@@ -201,7 +201,8 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
 
                     let parent_node_id = if self.globalized_parent {
                         let metadata = Metadata::create(api)?;
-                        let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?;
+                        let role_assignment =
+                            RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
                         let royalty =
                             ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
 
@@ -209,7 +210,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                             btreemap!(
                                 ObjectModuleId::Main => parent,
                                 ObjectModuleId::Metadata => metadata.0,
-                                ObjectModuleId::AccessRules => access_rules.0.0,
+                                ObjectModuleId::RoleAssignment => role_assignment.0.0,
                                 ObjectModuleId::Royalty => royalty.0,
                             ),
                             None,
@@ -246,12 +247,9 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new()
-        .with_custom_extension(OverridePackageCode::new(
-            CUSTOM_PACKAGE_CODE_ID,
-            TestInvoke { globalized_parent },
-        ))
-        .build();
+    let mut test_runner = TestRunnerBuilder::new().build_with_native_vm_extension(
+        OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke { globalized_parent }),
+    );
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_with_field_test_definition(

@@ -86,7 +86,7 @@ impl ListableSubstateDatabase for RocksdbSubstateStore {
     }
 }
 
-pub fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
+fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSortKey) -> Vec<u8> {
     let mut buffer = Vec::new();
     buffer.extend(u32::try_from(partition_key.0.len()).unwrap().to_be_bytes());
     buffer.extend(partition_key.0.clone());
@@ -94,7 +94,7 @@ pub fn encode_to_rocksdb_bytes(partition_key: &DbPartitionKey, sort_key: &DbSort
     buffer
 }
 
-pub fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
+fn decode_from_rocksdb_bytes(buffer: &[u8]) -> DbSubstateKey {
     let partition_key_len =
         usize::try_from(u32::from_be_bytes(copy_u8_array(&buffer[..4]))).unwrap();
     let sort_key_offset = 4 + partition_key_len;

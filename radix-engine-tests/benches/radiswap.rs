@@ -1,14 +1,12 @@
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::vm::NoExtension;
 use radix_engine::{
     transaction::{ExecutionConfig, FeeReserveConfig, TransactionReceipt},
     types::*,
 };
-#[cfg(not(feature = "rocksdb"))]
-use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 #[cfg(feature = "rocksdb")]
-use radix_engine_stores::rocks_db_with_merkle_tree::RocksDBWithMerkleTreeSubstateStore;
+use scrypto_unit::BasicRocksdbTestRunner;
+#[cfg(not(feature = "rocksdb"))]
 use scrypto_unit::{TestRunner, TestRunnerBuilder};
 #[cfg(feature = "rocksdb")]
 use std::path::PathBuf;
@@ -19,12 +17,10 @@ use transaction::{
 
 fn bench_radiswap(c: &mut Criterion) {
     #[cfg(feature = "rocksdb")]
-    let mut test_runner = TestRunnerBuilder::new()
-        .with_custom_database(RocksDBWithMerkleTreeSubstateStore::clear(PathBuf::from(
-            "/tmp/radiswap",
-        )))
-        .without_trace()
-        .build();
+    let mut test_runner = {
+        std::fs::remove_dir_all("/tmp/radiswap").unwrap();
+        BasicRocksdbTestRunner::new(PathBuf::from("/tmp/radiswap"), false)
+    };
     #[cfg(not(feature = "rocksdb"))]
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
@@ -178,12 +174,12 @@ fn bench_radiswap(c: &mut Criterion) {
 }
 
 #[cfg(feature = "rocksdb")]
-type DatabaseType = RocksDBWithMerkleTreeSubstateStore;
+type TestRunnerType = BasicRocksdbTestRunner;
 #[cfg(not(feature = "rocksdb"))]
-type DatabaseType = InMemorySubstateDatabase;
+type TestRunnerType = TestRunner<radix_engine::vm::NoExtension>;
 
 fn do_swap(
-    test_runner: &mut TestRunner<NoExtension, DatabaseType>,
+    test_runner: &mut TestRunnerType,
     transaction_payload: &[u8],
     nonce: u32,
 ) -> TransactionReceipt {

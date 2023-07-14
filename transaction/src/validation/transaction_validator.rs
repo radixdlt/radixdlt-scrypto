@@ -250,7 +250,7 @@ impl NotarizedTransactionValidator {
                 | InstructionV1::CallMethod { args, .. }
                 | InstructionV1::CallRoyaltyMethod { args, .. }
                 | InstructionV1::CallMetadataMethod { args, .. }
-                | InstructionV1::CallAccessRulesMethod { args, .. } => {
+                | InstructionV1::CallRoleAssignmentMethod { args, .. } => {
                     Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }

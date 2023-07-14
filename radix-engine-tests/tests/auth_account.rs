@@ -1,13 +1,14 @@
 use radix_engine::errors::{ApplicationError, RuntimeError};
 use radix_engine::system::node_modules::royalty::ComponentRoyaltyError;
 use radix_engine::types::*;
+use radix_engine::vm::NoExtension;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::prelude::*;
 
 fn test_auth_rule(
-    test_runner: &mut DefaultTestRunner,
+    test_runner: &mut TestRunner<NoExtension>,
     auth_rule: &AccessRule,
     signer_public_keys: &[PublicKey],
     should_succeed: bool,

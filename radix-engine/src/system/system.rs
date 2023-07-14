@@ -980,9 +980,9 @@ where
         };
 
         // Check for required modules
-        if !modules.contains_key(&ObjectModuleId::AccessRules) {
+        if !modules.contains_key(&ObjectModuleId::RoleAssignment) {
             return Err(RuntimeError::SystemError(SystemError::MissingModule(
-                ObjectModuleId::AccessRules,
+                ObjectModuleId::RoleAssignment,
             )));
         }
         if !modules.contains_key(&ObjectModuleId::Metadata) {
@@ -1071,7 +1071,7 @@ where
         for (module_id, node_id) in modules {
             match module_id {
                 ObjectModuleId::Main => panic!("Should have been removed already"),
-                ObjectModuleId::AccessRules
+                ObjectModuleId::RoleAssignment
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
                     let blueprint_id = self.get_object_info(&node_id)?.main_blueprint_id;
@@ -1144,7 +1144,7 @@ where
         let object_info = self.get_object_info(node_id)?;
         let module_object_info = match object_module_id {
             ObjectModuleId::Main => object_info,
-            ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::AccessRules => {
+            ObjectModuleId::Metadata | ObjectModuleId::Royalty | ObjectModuleId::RoleAssignment => {
                 let version =
                     if let Some(version) = object_info.module_versions.get(&object_module_id) {
                         version.clone()
