@@ -973,7 +973,9 @@ impl<L: Clone> CallFrame<L> {
                 StoreAccessInfo::new(),
             )
         } else {
-            store.scan_substates(node_id, partition_num, count)
+            store.scan_substates(node_id, partition_num, count, |access| -> Result<(), ()> {
+                Ok(())
+            }).unwrap()
         };
 
         for substate in &substates {
