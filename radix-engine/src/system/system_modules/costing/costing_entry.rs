@@ -77,9 +77,6 @@ pub enum CostingEntry<'a> {
     RemoveSubstate {
         store_access: &'a StoreAccessInfo,
     },
-    ScanSortedSubstates {
-        store_access: &'a StoreAccessInfo,
-    },
     StoreAccess {
         store_access: &'a StoreAccess,
     },
@@ -172,10 +169,7 @@ impl<'a> CostingEntry<'a> {
                 store_access,
             } => ft.set_substate_cost(*value_size, store_access),
             CostingEntry::RemoveSubstate { store_access } => ft.remove_substate_cost(store_access),
-            CostingEntry::ScanSortedSubstates { store_access } => {
-                ft.scan_sorted_substates_cost(store_access)
-            }
-            CostingEntry::StoreAccess { store_access } => ft.scan_substate_cost(store_access),
+            CostingEntry::StoreAccess { store_access } => ft.store_access_cost(store_access),
             CostingEntry::TakeSubstate { store_access } => ft.take_substates_cost(store_access),
             CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),

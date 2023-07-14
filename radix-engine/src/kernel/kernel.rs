@@ -9,7 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::{Message, ScanSortedSubstateError, ScanSubstateError};
+use crate::kernel::call_frame::{Message, ScanSortedSubstateError, ScanSubstateError, TakeSubstatesError};
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -790,7 +790,7 @@ where
                 partition_num,
                 count,
                 |store_access| {
-                    self.callback.on_scan_substate(&store_access)
+                    self.callback.on_store_access(&store_access)
                 },
                 &mut self.heap,
                 self.store,
@@ -821,7 +821,7 @@ where
                 partition_num,
                 count,
                 |store_access| {
-                    self.callback.on_scan_substate(&store_access)
+                    self.callback.on_store_access(&store_access)
                 },
                 &mut self.heap,
                 self.store,
@@ -844,16 +844,28 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, store_access) = self
+        let substates = self
             .current_frame
-            .take_substates(node_id, partition_num, count, &mut self.heap, self.store)
-            .map_err(CallFrameError::TakeSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+            .take_substates(
+                node_id,
+                partition_num,
+                count,
+                |store_access| {
+                    self.callback.on_store_access(&store_access)
+                },
+                &mut self.heap,
+                self.store,
+            )
+            .map_err(|e| {
+                match e {
+                    TakeSubstatesError::CallbackError(e) => e,
+                    TakeSubstatesError::TakeSubstateError(e) => {
+                        RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::TakeSubstatesError(e)))
+                    }
+                }
+            })?;
 
-        M::on_take_substates(&store_access, self)?;
-
-        Ok(substeates)
+        Ok(substates)
     }
 }
 

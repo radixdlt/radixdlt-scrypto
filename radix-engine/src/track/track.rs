@@ -863,14 +863,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         Ok(items)
     }
 
-    fn take_substates(
+    fn take_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo) {
-        let mut store_access = Vec::new();
-
+        on_store_access: F,
+    ) -> Result<Vec<IndexedScryptoValue>, E> {
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -886,7 +885,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         if let Some(tracked_partition) = tracked_partition.as_mut() {
             for tracked in tracked_partition.substates.values_mut() {
                 if items.len() == count {
-                    return (items, store_access);
+                    return Ok(items);
                 }
 
                 // TODO: Check that substate is not locked, before use outside of native blueprints
@@ -897,25 +896,24 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         }
 
         // Optimization, no need to go into database if the node is just created
-        if is_new {
-            return (items, store_access);
+        if items.len() == count || is_new {
+            return Ok(items);
         }
 
         // Read from database
+        let mut tmp_info = StoreAccessInfo::new();
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
         let mut tracked_iter = TrackedIter::new(Self::list_entries_from_db(
             self.substate_db,
             &db_partition_key,
-            &mut store_access,
-            |e| -> Result<(), ()> {
-                Ok(())
-            }
+            &mut tmp_info,
+            on_store_access,
         ));
         let new_updates = {
             let mut new_updates = Vec::new();
             for result in &mut tracked_iter {
 
-                let (db_sort_key, value) = result.unwrap();
+                let (db_sort_key, value) = result?;
 
                 if items.len() == count {
                     break;
@@ -962,7 +960,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         }
 
         drop(tracked_iter);
-        (items, store_access)
+        Ok(items)
     }
 
     fn scan_sorted_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(

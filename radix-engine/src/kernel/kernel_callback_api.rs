@@ -99,7 +99,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_scan_substate(
+    fn on_store_access(
         &mut self,
         store_access: &StoreAccess,
     ) -> Result<(), RuntimeError>;

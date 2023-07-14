@@ -79,34 +79,11 @@ impl FeeTable {
     }
 
 
-    fn store_access_cost(store_access: &StoreAccess) -> u32 {
-        match store_access {
-            StoreAccess::ScanInitialization => {
-                500
-            }
-            StoreAccess::ReadFromDb(size) => {
-                // Execution time (µs): 0.0009622109 * size + 389.5155
-                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
-                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                add(cast(*size) / 10, 40_000)
-            }
-            StoreAccess::ReadFromDbNotFound => {
-                // Execution time (µs): varies, using max 1,600
-                // Execution cost: 1,600 * 100
-                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                160_000
-            }
-            StoreAccess::NewEntryInTrack => {
-                // The max number of entries is limited by limits module.
-                0
-            }
-        }
-    }
 
-    fn store_access_info_cost(info: &StoreAccessInfo) -> u32 {
+    fn store_access_info_cost(&self, info: &StoreAccessInfo) -> u32 {
         let mut sum = 0;
         for store_access in info {
-            let cost = Self::store_access_cost(store_access);
+            let cost = self.store_access_cost(store_access);
             sum = add(sum, cost);
         }
         sum
@@ -229,6 +206,31 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
+        match store_access {
+            StoreAccess::ScanInitialization => {
+                500
+            }
+            StoreAccess::ReadFromDb(size) => {
+                // Execution time (µs): 0.0009622109 * size + 389.5155
+                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                add(cast(*size) / 10, 40_000)
+            }
+            StoreAccess::ReadFromDbNotFound => {
+                // Execution time (µs): varies, using max 1,600
+                // Execution cost: 1,600 * 100
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                160_000
+            }
+            StoreAccess::NewEntryInTrack => {
+                // The max number of entries is limited by limits module.
+                0
+            }
+        }
+    }
+
+    #[inline]
     pub fn create_node_cost(
         &self,
         _node_id: &NodeId,
@@ -238,7 +240,7 @@ impl FeeTable {
         add3(
             500,
             Self::data_processing_cost(total_substate_size),
-            Self::store_access_info_cost(store_access),
+            self.store_access_info_cost(store_access),
         )
     }
 
@@ -249,7 +251,7 @@ impl FeeTable {
 
     #[inline]
     pub fn move_modules_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_info_cost(store_access))
+        add(500, self.store_access_info_cost(store_access))
     }
 
     #[inline]
@@ -257,7 +259,7 @@ impl FeeTable {
         add3(
             500,
             Self::data_processing_cost(size),
-            Self::store_access_info_cost(store_access),
+            self.store_access_info_cost(store_access),
         )
     }
 
@@ -266,7 +268,7 @@ impl FeeTable {
         add3(
             500,
             Self::data_processing_cost(size),
-            Self::store_access_info_cost(store_access),
+            self.store_access_info_cost(store_access),
         )
     }
 
@@ -275,13 +277,13 @@ impl FeeTable {
         add3(
             500,
             Self::data_processing_cost(size),
-            Self::store_access_info_cost(store_access),
+            self.store_access_info_cost(store_access),
         )
     }
 
     #[inline]
     pub fn close_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_info_cost(store_access))
+        add(500, self.store_access_info_cost(store_access))
     }
 
     #[inline]
@@ -289,28 +291,18 @@ impl FeeTable {
         add3(
             500,
             Self::data_processing_cost(size),
-            Self::store_access_info_cost(store_access),
+            self.store_access_info_cost(store_access),
         )
     }
 
     #[inline]
     pub fn remove_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_info_cost(store_access))
-    }
-
-    #[inline]
-    pub fn scan_sorted_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_info_cost(store_access))
-    }
-
-    #[inline]
-    pub fn scan_substate_cost(&self, store_access: &StoreAccess) -> u32 {
-        Self::store_access_cost(store_access)
+        add(500, self.store_access_info_cost(store_access))
     }
 
     #[inline]
     pub fn take_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_info_cost(store_access))
+        add(500, self.store_access_info_cost(store_access))
     }
 
     //======================

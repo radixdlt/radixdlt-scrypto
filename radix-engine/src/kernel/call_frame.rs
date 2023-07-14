@@ -265,9 +265,15 @@ pub enum ScanSortedSubstateError<E> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum CallFrameTakeSortedSubstatesError {
+pub enum CallFrameTakeSubstatesError {
     NodeNotVisible(NodeId),
 }
+
+pub enum TakeSubstatesError<E> {
+    CallbackError(E),
+    TakeSubstateError(CallFrameTakeSubstatesError),
+}
+
 
 impl<L: Clone> CallFrame<L> {
     pub fn new_root(actor: Actor) -> Self {
@@ -999,29 +1005,28 @@ impl<L: Clone> CallFrame<L> {
         Ok(substates)
     }
 
-    pub fn take_substates<'f, S: SubstateStore>(
+    pub fn take_substates<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
+        on_store_access: F,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameTakeSortedSubstatesError>
+    ) -> Result<Vec<IndexedScryptoValue>, TakeSubstatesError<E>>
     {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallFrameTakeSortedSubstatesError::NodeNotVisible(
+            return Err(TakeSubstatesError::TakeSubstateError(CallFrameTakeSubstatesError::NodeNotVisible(
                 node_id.clone(),
-            ));
+            )));
         }
 
-        let (substates, store_access) = if heap.contains_node(node_id) {
-            (
-                heap.take_substates(node_id, partition_num, count),
-                StoreAccessInfo::new(),
-            )
+        let substates = if heap.contains_node(node_id) {
+            heap.take_substates(node_id, partition_num, count)
         } else {
-            store.take_substates(node_id, partition_num, count)
+            store.take_substates(node_id, partition_num, count, on_store_access)
+                .map_err(|e| TakeSubstatesError::CallbackError(e))?
         };
 
         for substate in &substates {
@@ -1035,7 +1040,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok((substates, store_access))
+        Ok(substates)
     }
 
     // Substate Virtualization does not apply to this call
