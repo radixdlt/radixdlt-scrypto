@@ -49,7 +49,7 @@ pub struct AuthModule {
     pub params: AuthZoneParams,
     /// Stack of auth zones
     /// Invariants:
-    /// - An auth zone is created for every non-frame.
+    /// - An auth zone is created for every non-root frame.
     /// - Auth zones are created by the caller frame and moved to the callee
     pub auth_zone_stack: Vec<NodeId>,
 }
@@ -97,7 +97,7 @@ impl AuthModule {
                 Actor::Method(actor) => {
                     let resolved_permission =
                         Self::resolve_method_permission(actor, args, &mut system)?;
-                    let acting_location = if actor.module_object_info.global {
+                    let acting_location = if actor.object_info.global {
                         ActingLocation::AtBarrier
                     } else {
                         ActingLocation::AtLocalBarrier
@@ -215,16 +215,12 @@ impl AuthModule {
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             callee
-                .module_object_info
+                .object_info
                 .main_blueprint_id
                 .package_address
                 .as_node_id(),
             &BlueprintVersionKey::new_default(
-                callee
-                    .module_object_info
-                    .main_blueprint_id
-                    .blueprint_name
-                    .as_str(),
+                callee.object_info.main_blueprint_id.blueprint_name.as_str(),
             ),
             api.api,
         )?
@@ -235,7 +231,7 @@ impl AuthModule {
                 let role_assignment_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module
-                        if !callee.module_object_info.global {
+                        if !callee.object_info.global {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 
@@ -258,21 +254,19 @@ impl AuthModule {
         match method_permissions.get(&method_key) {
             Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
             Some(MethodAccessibility::OwnPackageOnly) => {
-                let package = callee.module_object_info.main_blueprint_id.package_address;
+                let package = callee.object_info.main_blueprint_id.package_address;
                 Ok(ResolvedPermission::AccessRule(rule!(require(
                     package_of_direct_caller(package)
                 ))))
             }
-            Some(MethodAccessibility::OuterObjectOnly) => {
-                match callee.module_object_info.blueprint_info {
-                    ObjectBlueprintInfo::Inner { outer_object } => Ok(
-                        ResolvedPermission::AccessRule(rule!(require(global_caller(outer_object)))),
-                    ),
-                    ObjectBlueprintInfo::Outer { .. } => Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
-                    )),
-                }
-            }
+            Some(MethodAccessibility::OuterObjectOnly) => match callee.object_info.outer_object {
+                OuterObjectInfo::Some { outer_object } => Ok(ResolvedPermission::AccessRule(
+                    rule!(require(global_caller(outer_object))),
+                )),
+                OuterObjectInfo::None { .. } => Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
+                )),
+            },
             Some(MethodAccessibility::RoleProtected(role_list)) => {
                 Ok(ResolvedPermission::RoleList {
                     role_assignment_of,
@@ -352,7 +346,7 @@ impl AuthModule {
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),
 
-                    blueprint_info: ObjectBlueprintInfo::default(),
+                    outer_object: OuterObjectInfo::default(),
                     features: btreeset!(),
                     instance_schema: None,
                 }))

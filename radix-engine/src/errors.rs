@@ -136,7 +136,6 @@ impl CanBeAbortion for RuntimeError {
 pub enum KernelError {
     // Call frame
     CallFrameError(CallFrameError),
-    NodeOrphaned(NodeId),
 
     // ID allocation
     IdAllocationError(IdAllocationError),
@@ -150,6 +149,8 @@ pub enum KernelError {
 
     // Invoke
     InvalidInvokeAccess,
+
+    OrphanedNodes(Vec<NodeId>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -206,7 +207,9 @@ pub enum SystemError {
     NoParent,
     NotAnAddressReservation,
     NotAnObject,
-    NotAMethod,
+    ActorNodeIdDoesNotExist,
+    ActorModuleIdIdDoesNotExist,
+    ActorObjectInfoDoesNotExist,
     OuterObjectDoesNotExist,
     NotAFieldHandle,
     NotAFieldWriteHandle,

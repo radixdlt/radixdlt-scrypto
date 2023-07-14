@@ -1,4 +1,5 @@
 use crate::types::*;
+use radix_engine_interface::blueprints::package::PackageExport;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
@@ -9,23 +10,22 @@ pub struct InstanceContext {
     pub outer_blueprint: String,
 }
 
-/// No method acting here!
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
-    pub global_address: Option<GlobalAddress>,
     pub node_id: NodeId,
     pub module_id: ObjectModuleId,
-    pub module_object_info: ObjectInfo,
-
-    pub ident: String,
-    pub instance_context: Option<InstanceContext>,
     pub is_direct_access: bool,
+    pub ident: String,
+
+    pub object_info: ObjectInfo,
+    pub global_address: Option<GlobalAddress>,
+    pub instance_context: Option<InstanceContext>,
 }
 
 impl MethodActor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier {
-            blueprint_id: self.module_object_info.main_blueprint_id.clone(),
+            blueprint_id: self.object_info.main_blueprint_id.clone(),
             ident: self.ident.to_string(),
         }
     }
@@ -50,6 +50,11 @@ impl FunctionActor {
 pub struct BlueprintHookActor {
     pub blueprint_id: BlueprintId,
     pub hook: BlueprintHook,
+    pub export: PackageExport,
+
+    pub node_id: Option<NodeId>,
+    pub module_id: Option<ObjectModuleId>,
+    pub object_info: Option<ObjectInfo>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -64,7 +69,7 @@ impl Actor {
     pub fn len(&self) -> usize {
         match self {
             Actor::Root => 1,
-            Actor::Method(MethodActor { node_id, ident, .. }) => {
+            Actor::Method(MethodActor { ident, node_id, .. }) => {
                 node_id.as_ref().len() + ident.len()
             }
             Actor::Function(FunctionActor {
@@ -83,10 +88,7 @@ impl Actor {
 
     pub fn is_auth_zone(&self) -> bool {
         match self {
-            Actor::Method(MethodActor {
-                module_object_info: object_info,
-                ..
-            }) => {
+            Actor::Method(MethodActor { object_info, .. }) => {
                 object_info
                     .main_blueprint_id
                     .package_address
@@ -104,10 +106,7 @@ impl Actor {
 
     pub fn is_barrier(&self) -> bool {
         match self {
-            Actor::Method(MethodActor {
-                module_object_info: object_info,
-                ..
-            }) => object_info.global,
+            Actor::Method(MethodActor { object_info, .. }) => object_info.global,
             Actor::Function { .. } => true,
             Actor::BlueprintHook { .. } => true,
             Actor::Root { .. } => false,
@@ -126,7 +125,7 @@ impl Actor {
         match self {
             Actor::Root => false,
             Actor::Method(MethodActor {
-                module_object_info:
+                object_info:
                     ObjectInfo {
                         main_blueprint_id: blueprint_id,
                         ..
@@ -143,10 +142,36 @@ impl Actor {
         }
     }
 
-    pub fn try_as_method(&self) -> Option<&MethodActor> {
+    pub fn node_id(&self) -> Option<NodeId> {
         match self {
-            Actor::Method(actor) => Some(actor),
+            Actor::Method(MethodActor { node_id, .. }) => Some(*node_id),
+            Actor::BlueprintHook(BlueprintHookActor { node_id, .. }) => node_id.clone(),
             _ => None,
+        }
+    }
+
+    pub fn module_id(&self) -> Option<ObjectModuleId> {
+        match self {
+            Actor::Method(MethodActor { module_id, .. }) => Some(*module_id),
+            Actor::BlueprintHook(BlueprintHookActor { module_id, .. }) => module_id.clone(),
+            _ => None,
+        }
+    }
+
+    pub fn object_info(&self) -> Option<ObjectInfo> {
+        match self {
+            Actor::Method(MethodActor { object_info, .. }) => Some(object_info.clone()),
+            Actor::BlueprintHook(BlueprintHookActor { object_info, .. }) => object_info.clone(),
+            _ => None,
+        }
+    }
+
+    pub fn is_direct_access(&self) -> bool {
+        match self {
+            Actor::Method(MethodActor {
+                is_direct_access, ..
+            }) => *is_direct_access,
+            _ => false,
         }
     }
 
@@ -179,7 +204,7 @@ impl Actor {
     pub fn blueprint_id(&self) -> Option<&BlueprintId> {
         match self {
             Actor::Method(MethodActor {
-                module_object_info:
+                object_info:
                     ObjectInfo {
                         main_blueprint_id: blueprint_id,
                         ..
@@ -215,7 +240,7 @@ impl Actor {
     pub fn package_address(&self) -> Option<&PackageAddress> {
         match &self {
             Actor::Method(MethodActor {
-                module_object_info:
+                object_info:
                     ObjectInfo {
                         main_blueprint_id: blueprint_id,
                         ..
@@ -233,7 +258,7 @@ impl Actor {
     pub fn blueprint_name(&self) -> Option<&str> {
         match &self {
             Actor::Method(MethodActor {
-                module_object_info:
+                object_info:
                     ObjectInfo {
                         main_blueprint_id: blueprint_id,
                         ..
@@ -253,7 +278,7 @@ impl Actor {
         node_id: NodeId,
         module_id: ObjectModuleId,
         ident: String,
-        module_object_info: ObjectInfo,
+        object_info: ObjectInfo,
         instance_context: Option<InstanceContext>,
         is_direct_access: bool,
     ) -> Self {
@@ -262,7 +287,7 @@ impl Actor {
             node_id,
             module_id,
             ident,
-            module_object_info,
+            object_info,
             instance_context,
             is_direct_access,
         })
@@ -273,9 +298,5 @@ impl Actor {
             blueprint_id,
             ident,
         })
-    }
-
-    pub fn blueprint_hook(blueprint_id: BlueprintId, hook: BlueprintHook) -> Self {
-        Self::BlueprintHook(BlueprintHookActor { blueprint_id, hook })
     }
 }

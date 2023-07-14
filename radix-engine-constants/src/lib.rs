@@ -72,7 +72,7 @@ pub const DEFAULT_COST_UNIT_LIMIT: u32 = 100_000_000;
 /// The default free credit, for preview only.
 pub const DEFAULT_FREE_CREDIT_IN_XRD: &str = "100";
 
-pub const DEFAULT_MAX_EXECUTION_TRACE_DEPTH: usize = 1;
+pub const DEFAULT_MAX_EXECUTION_TRACE_DEPTH: usize = 16;
 
 /// The default max call depth, used by transaction executor.
 pub const DEFAULT_MAX_CALL_DEPTH: usize = 8;

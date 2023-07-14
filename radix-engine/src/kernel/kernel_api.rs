@@ -181,7 +181,7 @@ pub trait KernelInvokeApi {
 pub struct SystemState<'a, M: KernelCallbackObject> {
     pub system: &'a mut M,
     pub current_actor: &'a Actor,
-    pub caller: &'a Actor,
+    pub caller_actor: &'a Actor,
 }
 
 /// Internal API for kernel modules.
@@ -197,7 +197,7 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     /// Gets the number of call frames that are currently in the call frame stack
     fn kernel_get_current_depth(&self) -> usize;
 
-    // TODO: Cleanup
+    /// Returns the visibility of a node
     fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */

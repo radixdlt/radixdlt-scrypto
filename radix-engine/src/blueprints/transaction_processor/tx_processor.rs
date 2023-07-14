@@ -113,7 +113,7 @@ impl TransactionProcessorBlueprint {
                             ObjectModuleId::Main => BlueprintVersion::default(),
                         ),
                         instance_schema: None,
-                        blueprint_info: ObjectBlueprintInfo::default(),
+                        outer_object: OuterObjectInfo::default(),
                         features: btreeset!(),
                     })
                 )

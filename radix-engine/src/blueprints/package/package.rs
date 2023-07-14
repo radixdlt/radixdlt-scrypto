@@ -620,7 +620,7 @@ pub fn create_bootstrap_package_partitions(
                     ObjectModuleId::Metadata => BlueprintVersion::default(),
                     ObjectModuleId::RoleAssignment => BlueprintVersion::default(),
                 ),
-                blueprint_info: ObjectBlueprintInfo::default(),
+                outer_object: OuterObjectInfo::default(),
                 features: btreeset!(),
                 instance_schema: None,
             })),
@@ -1147,17 +1147,21 @@ impl PackageNativePackage {
                     },
                     function_exports,
                     hook_exports: {
-                        let mut hook_exports = btreemap!();
-                        if let Some(export_name) = definition_init.schema.hooks.on_virtualize {
-                            hook_exports.insert(
-                                BlueprintHook::OnVirtualize,
-                                PackageExport {
-                                    code_hash,
-                                    export_name,
-                                },
-                            );
-                        }
-                        hook_exports
+                        definition_init
+                            .schema
+                            .hooks
+                            .hooks
+                            .into_iter()
+                            .map(|(k, v)| {
+                                (
+                                    k,
+                                    PackageExport {
+                                        code_hash,
+                                        export_name: v,
+                                    },
+                                )
+                            })
+                            .collect()
                     },
                 };
                 definitions.insert(blueprint.clone(), definition);
