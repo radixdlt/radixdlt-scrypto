@@ -640,7 +640,7 @@ where
         let object_features: BTreeSet<String> =
             features.into_iter().map(|s| s.to_string()).collect();
 
-        let (blueprint_type, outer_object_features) = if let BlueprintType::Inner {
+        let (outer_obj_info, outer_object_features) = if let BlueprintType::Inner {
             outer_blueprint,
         } = &expected_outer_blueprint
         {
