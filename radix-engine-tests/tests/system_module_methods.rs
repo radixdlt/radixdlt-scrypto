@@ -50,9 +50,9 @@ fn should_not_be_able_to_call_royalty_methods(resource: bool) {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
-    let mut test_runner = TestRunnerBuilder::new().build_with_native_vm_extension(
-        OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke),
-    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
+        .build();
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
@@ -138,9 +138,9 @@ fn should_not_be_able_to_call_metadata_methods_on_frame_owned_object() {
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new().build_with_native_vm_extension(
-        OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke),
-    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
+        .build();
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(
@@ -250,9 +250,12 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
             }
         }
     }
-    let mut test_runner = TestRunnerBuilder::new().build_with_native_vm_extension(
-        OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke { globalized_parent }),
-    );
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_extension(OverridePackageCode::new(
+            CUSTOM_PACKAGE_CODE_ID,
+            TestInvoke { globalized_parent },
+        ))
+        .build();
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_with_field_test_definition(
