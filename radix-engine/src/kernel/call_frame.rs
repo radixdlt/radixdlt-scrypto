@@ -249,6 +249,11 @@ pub enum CallFrameScanSubstateError {
     NodeNotVisible(NodeId),
 }
 
+pub enum ScanSubstateError<E> {
+    CallbackError(E),
+    ScanSubstateError(CallFrameScanSubstateError),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanSortedSubstatesError {
     NodeNotVisible(NodeId),
@@ -954,17 +959,18 @@ impl<L: Clone> CallFrame<L> {
         Ok((removed, store_access))
     }
 
-    pub fn scan_substates<'f, S: SubstateStore>(
+    pub fn scan_substates<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
+        on_store_access: F,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameScanSubstateError> {
+    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), ScanSubstateError<E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallFrameScanSubstateError::NodeNotVisible(node_id.clone()));
+            return Err(ScanSubstateError::ScanSubstateError(CallFrameScanSubstateError::NodeNotVisible(node_id.clone())));
         }
 
         let (substates, store_access) = if heap.contains_node(node_id) {
@@ -973,9 +979,8 @@ impl<L: Clone> CallFrame<L> {
                 StoreAccessInfo::new(),
             )
         } else {
-            store.scan_substates(node_id, partition_num, count, |access| -> Result<(), ()> {
-                Ok(())
-            }).unwrap()
+            store.scan_substates(node_id, partition_num, count, on_store_access)
+                .map_err(|e| ScanSubstateError::CallbackError(e))?
         };
 
         for substate in &substates {

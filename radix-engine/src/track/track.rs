@@ -757,12 +757,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         Ok((value, store_access))
     }
 
-    fn scan_substates<E, F: Fn(StoreAccess) -> Result<(), E>>(
+    fn scan_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        mut on_store_access: F,
     ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), E> {
         let mut store_access = Vec::new();
 

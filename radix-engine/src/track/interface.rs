@@ -64,7 +64,7 @@ pub trait SubstateStore {
     ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), TakeSubstateError>;
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
-    fn scan_substates<E, F: Fn(StoreAccess) -> Result<(), E>>(
+    fn scan_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
