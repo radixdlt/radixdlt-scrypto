@@ -10,7 +10,6 @@ use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
-use crate::kernel::actor::RuntimeReceiverInfo;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
@@ -24,6 +23,7 @@ use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
@@ -354,7 +354,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
-        let receiver_info = actor.receiver_info();
+        let node_id = actor.node_id();
+        let is_direct_access = actor.is_direct_access();
 
         // Make dependent resources/components visible
         if let Some(blueprint_id) = actor.blueprint_id() {
@@ -383,9 +384,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         match actor {
             Actor::Root => panic!("Root is invoked"),
             Actor::Method(MethodActor {
-                receiver_info:
-                    RuntimeReceiverInfo {
-                        object_info: ObjectInfo { blueprint_id, .. },
+                object_info:
+                    ObjectInfo {
+                        main_blueprint_id: blueprint_id,
                         ..
                     },
                 ident,
@@ -421,13 +422,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     .functions
                     .get(&ident)
                     .expect("Should exist due to schema check");
-                match (&function_schema.receiver, receiver_info) {
-                    (
-                        Some(receiver_info),
-                        Some(RuntimeReceiverInfo {
-                            is_direct_access, ..
-                        }),
-                    ) => {
+                match (&function_schema.receiver, node_id) {
+                    (Some(receiver_info), Some(_)) => {
                         if is_direct_access
                             != receiver_info.ref_types.contains(RefTypes::DIRECT_ACCESS)
                         {
@@ -515,12 +511,42 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. })
-                    if blueprint_id.package_address == RESOURCE_PACKAGE
-                        && (blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
-                            || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
-                {
-                    api.kernel_drop_node(&node_id)?;
+                TypeInfoSubstate::Object(ObjectInfo {
+                    main_blueprint_id: blueprint_id,
+                    ..
+                }) => {
+                    match (
+                        blueprint_id.package_address,
+                        blueprint_id.blueprint_name.as_str(),
+                    ) {
+                        (RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT) => {
+                            let mut system = SystemService::new(api);
+                            system.call_function(
+                                RESOURCE_PACKAGE,
+                                FUNGIBLE_PROOF_BLUEPRINT,
+                                PROOF_DROP_IDENT,
+                                scrypto_encode(&ProofDropInput {
+                                    proof: Proof(Own(node_id)),
+                                })
+                                .unwrap(),
+                            )?;
+                        }
+                        (RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT) => {
+                            let mut system = SystemService::new(api);
+                            system.call_function(
+                                RESOURCE_PACKAGE,
+                                NON_FUNGIBLE_PROOF_BLUEPRINT,
+                                PROOF_DROP_IDENT,
+                                scrypto_encode(&ProofDropInput {
+                                    proof: Proof(Own(node_id)),
+                                })
+                                .unwrap(),
+                            )?;
+                        }
+                        _ => {
+                            // no-op
+                        }
+                    }
                 }
                 _ => {}
             }
@@ -548,7 +574,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             // Drop all proofs (previously) owned by the auth zone
             for proof in proofs {
-                api.kernel_drop_node(proof.0.as_node_id())?;
+                let mut system = SystemService::new(api);
+                let object_info = system.get_object_info(proof.0.as_node_id())?;
+                system.call_function(
+                    RESOURCE_PACKAGE,
+                    &object_info.main_blueprint_id.blueprint_name,
+                    PROOF_DROP_IDENT,
+                    scrypto_encode(&ProofDropInput { proof }).unwrap(),
+                )?;
             }
 
             // Drop the auth zone
@@ -610,7 +643,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     blueprint_id: blueprint_id.clone(),
                     hook: BlueprintHook::OnVirtualize,
                     export,
-                    receiver_info: None,
+                    node_id: None,
+                    module_id: None,
+                    object_info: None,
                 }),
                 args: IndexedScryptoValue::from_typed(&OnVirtualizeInput {
                     variant_id,
@@ -634,24 +669,22 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             TypeInfoSubstate::Object(object_info) => {
                 let mut service = SystemService::new(api);
                 let definition = service.load_blueprint_definition(
-                    object_info.blueprint_id.package_address,
+                    object_info.main_blueprint_id.package_address,
                     &BlueprintVersionKey {
-                        blueprint: object_info.blueprint_id.blueprint_name.clone(),
-                        version: object_info.blueprint_version,
+                        blueprint: object_info.main_blueprint_id.blueprint_name.clone(),
+                        version: BlueprintVersion::default(),
                     },
                 )?;
                 if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnDrop).cloned() {
+                    let object_info = service.get_object_info(node_id)?;
                     api.kernel_invoke(Box::new(KernelInvocation {
                         actor: Actor::BlueprintHook(BlueprintHookActor {
-                            blueprint_id: object_info.blueprint_id.clone(),
+                            blueprint_id: object_info.main_blueprint_id.clone(),
                             hook: BlueprintHook::OnDrop,
                             export,
-                            receiver_info: Some(RuntimeReceiverInfo {
-                                node_id: node_id.clone(),
-                                module_id: ObjectModuleId::Main,
-                                is_direct_access: false,
-                                object_info,
-                            }),
+                            node_id: Some(node_id.clone()),
+                            module_id: Some(ObjectModuleId::Main),
+                            object_info: Some(object_info),
                         }),
                         args: IndexedScryptoValue::from_typed(&OnDropInput {}),
                     }))
@@ -686,24 +719,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             TypeInfoSubstate::Object(object_info) => {
                 let mut service = SystemService::new(api);
                 let definition = service.load_blueprint_definition(
-                    object_info.blueprint_id.package_address,
+                    object_info.main_blueprint_id.package_address,
                     &BlueprintVersionKey {
-                        blueprint: object_info.blueprint_id.blueprint_name.clone(),
-                        version: object_info.blueprint_version,
+                        blueprint: object_info.main_blueprint_id.blueprint_name.clone(),
+                        version: BlueprintVersion::default(),
                     },
                 )?;
                 if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnMove).cloned() {
                     api.kernel_invoke(Box::new(KernelInvocation {
                         actor: Actor::BlueprintHook(BlueprintHookActor {
-                            blueprint_id: object_info.blueprint_id.clone(),
+                            blueprint_id: object_info.main_blueprint_id.clone(),
                             hook: BlueprintHook::OnMove,
                             export,
-                            receiver_info: Some(RuntimeReceiverInfo {
-                                node_id: node_id.clone(),
-                                module_id: ObjectModuleId::Main,
-                                is_direct_access: false,
-                                object_info,
-                            }),
+                            node_id: Some(node_id.clone()),
+                            module_id: Some(ObjectModuleId::Main),
+                            object_info: Some(object_info),
                         }),
                         args: IndexedScryptoValue::from_typed(&OnMoveInput {
                             is_moving_down,

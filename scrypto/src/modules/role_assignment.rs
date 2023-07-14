@@ -4,22 +4,22 @@ use crate::modules::ModuleHandle;
 use crate::prelude::Attachable;
 use radix_engine_derive::*;
 use radix_engine_interface::api::node_modules::auth::{
-    AccessRulesCreateInput, AccessRulesGetRoleInput, AccessRulesLockOwnerRoleInput,
-    AccessRulesSetOwnerRoleInput, AccessRulesSetRoleInput, ACCESS_RULES_BLUEPRINT,
-    ACCESS_RULES_CREATE_IDENT, ACCESS_RULES_GET_ROLE_IDENT, ACCESS_RULES_LOCK_OWNER_ROLE_IDENT,
-    ACCESS_RULES_SET_OWNER_ROLE_IDENT, ACCESS_RULES_SET_ROLE_IDENT,
+    RoleAssignmentCreateInput, RoleAssignmentGetInput, RoleAssignmentLockOwnerInput,
+    RoleAssignmentSetInput, RoleAssignmentSetOwnerInput, ROLE_ASSIGNMENT_BLUEPRINT,
+    ROLE_ASSIGNMENT_CREATE_IDENT, ROLE_ASSIGNMENT_GET_IDENT, ROLE_ASSIGNMENT_LOCK_OWNER_IDENT,
+    ROLE_ASSIGNMENT_SET_IDENT, ROLE_ASSIGNMENT_SET_OWNER_IDENT,
 };
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::resource::{
     AccessRule, OwnerRoleEntry, RoleKey, RolesInit,
 };
-use radix_engine_interface::constants::ACCESS_RULES_MODULE_PACKAGE;
+use radix_engine_interface::constants::ROLE_ASSIGNMENT_MODULE_PACKAGE;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 
-pub trait HasAccessRules {
+pub trait HasRoleAssignment {
     fn set_owner_role<A: Into<AccessRule>>(&self, rule: A);
     fn lock_owner_role<A: Into<AccessRule>>(&self);
     fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A);
@@ -29,47 +29,47 @@ pub trait HasAccessRules {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AccessRules(pub ModuleHandle);
+pub struct RoleAssignment(pub ModuleHandle);
 
-impl AccessRules {
+impl RoleAssignment {
     pub fn new<R: Into<OwnerRoleEntry>>(
         owner_role: R,
         roles: BTreeMap<ObjectModuleId, RolesInit>,
     ) -> Self {
         let rtn = ScryptoEnv
             .call_function(
-                ACCESS_RULES_MODULE_PACKAGE,
-                ACCESS_RULES_BLUEPRINT,
-                ACCESS_RULES_CREATE_IDENT,
-                scrypto_encode(&AccessRulesCreateInput {
+                ROLE_ASSIGNMENT_MODULE_PACKAGE,
+                ROLE_ASSIGNMENT_BLUEPRINT,
+                ROLE_ASSIGNMENT_CREATE_IDENT,
+                scrypto_encode(&RoleAssignmentCreateInput {
                     owner_role: owner_role.into(),
                     roles,
                 })
                 .unwrap(),
             )
             .unwrap();
-        let access_rules: Own = scrypto_decode(&rtn).unwrap();
-        Self(ModuleHandle::Own(access_rules))
+        let role_assignment: Own = scrypto_decode(&rtn).unwrap();
+        Self(ModuleHandle::Own(role_assignment))
     }
 
     pub fn set_owner_role<A: Into<AccessRule>>(&self, rule: A) {
         self.call_ignore_rtn(
-            ACCESS_RULES_SET_OWNER_ROLE_IDENT,
-            &AccessRulesSetOwnerRoleInput { rule: rule.into() },
+            ROLE_ASSIGNMENT_SET_OWNER_IDENT,
+            &RoleAssignmentSetOwnerInput { rule: rule.into() },
         );
     }
 
     pub fn lock_owner_role(&self) {
         self.call_ignore_rtn(
-            ACCESS_RULES_LOCK_OWNER_ROLE_IDENT,
-            &AccessRulesLockOwnerRoleInput {},
+            ROLE_ASSIGNMENT_LOCK_OWNER_IDENT,
+            &RoleAssignmentLockOwnerInput {},
         );
     }
 
     fn internal_set_role<A: Into<AccessRule>>(&self, module: ObjectModuleId, name: &str, rule: A) {
         self.call_ignore_rtn(
-            ACCESS_RULES_SET_ROLE_IDENT,
-            &AccessRulesSetRoleInput {
+            ROLE_ASSIGNMENT_SET_IDENT,
+            &RoleAssignmentSetInput {
                 module,
                 role_key: RoleKey::new(name),
                 rule: rule.into(),
@@ -79,8 +79,8 @@ impl AccessRules {
 
     fn internal_get_role(&self, module: ObjectModuleId, name: &str) -> Option<AccessRule> {
         self.call(
-            ACCESS_RULES_GET_ROLE_IDENT,
-            &AccessRulesGetRoleInput {
+            ROLE_ASSIGNMENT_GET_IDENT,
+            &RoleAssignmentGetInput {
                 module,
                 role_key: RoleKey::new(name),
             },
@@ -112,8 +112,8 @@ impl AccessRules {
     }
 }
 
-impl Attachable for AccessRules {
-    const MODULE_ID: ObjectModuleId = ObjectModuleId::AccessRules;
+impl Attachable for RoleAssignment {
+    const MODULE_ID: ObjectModuleId = ObjectModuleId::RoleAssignment;
 
     fn new(handle: ModuleHandle) -> Self {
         Self(handle)

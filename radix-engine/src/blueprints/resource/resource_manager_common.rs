@@ -1,7 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -25,14 +25,14 @@ where
         ObjectModuleId::Metadata => metadata.roles,
     );
 
-    let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
+    let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let address = api.globalize(
         btreemap!(
             ObjectModuleId::Main => object_id,
-            ObjectModuleId::AccessRules => resman_access_rules.0,
+            ObjectModuleId::RoleAssignment => role_assignment.0,
             ObjectModuleId::Metadata => metadata.0,
         ),
         Some(resource_address_reservation),
@@ -57,12 +57,12 @@ where
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,
     );
-    let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
+    let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let modules = btreemap!(
         ObjectModuleId::Main => object_id,
-        ObjectModuleId::AccessRules => resman_access_rules.0,
+        ObjectModuleId::RoleAssignment => role_assignment.0,
         ObjectModuleId::Metadata => metadata.0,
     );
 
@@ -98,14 +98,14 @@ where
         ObjectModuleId::Main => main_roles,
         ObjectModuleId::Metadata => metadata.roles,
     );
-    let resman_access_rules = AccessRules::create(owner_role, roles, api)?.0;
+    let role_assignment = RoleAssignment::create(owner_role, roles, api)?.0;
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
     let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
         btreemap!(
             ObjectModuleId::Main => object_id,
-            ObjectModuleId::AccessRules => resman_access_rules.0,
+            ObjectModuleId::RoleAssignment => role_assignment.0,
             ObjectModuleId::Metadata => metadata.0,
         ),
         resource_address_reservation,

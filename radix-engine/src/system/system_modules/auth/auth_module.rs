@@ -7,7 +7,7 @@ use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
+use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -66,7 +66,7 @@ pub enum AuthorityListAuthorizationResult {
 
 pub enum ResolvedPermission {
     RoleList {
-        access_rules_of: NodeId,
+        role_assignment_of: NodeId,
         module_id: ObjectModuleId,
         role_list: RoleList,
     },
@@ -97,7 +97,7 @@ impl AuthModule {
                 Actor::Method(actor) => {
                     let resolved_permission =
                         Self::resolve_method_permission(actor, args, &mut system)?;
-                    let acting_location = if actor.receiver_info.object_info.global {
+                    let acting_location = if actor.object_info.global {
                         ActingLocation::AtBarrier
                     } else {
                         ActingLocation::AtLocalBarrier
@@ -169,14 +169,14 @@ impl AuthModule {
                 }
             }
             ResolvedPermission::RoleList {
-                access_rules_of,
+                role_assignment_of,
                 role_list,
                 module_id,
             } => {
                 let result = Authorization::check_authorization_against_role_list(
                     acting_location,
                     *auth_zone_id,
-                    &access_rules_of,
+                    &role_assignment_of,
                     module_id,
                     &role_list,
                     api,
@@ -204,9 +204,9 @@ impl AuthModule {
     ) -> Result<ResolvedPermission, RuntimeError> {
         let method_key = MethodKey::new(callee.ident.as_str());
 
-        if let ObjectModuleId::AccessRules = callee.receiver_info.module_id {
-            return AccessRulesNativePackage::authorization(
-                &callee.receiver_info.node_id,
+        if let ObjectModuleId::RoleAssignment = callee.module_id {
+            return RoleAssignmentNativePackage::authorization(
+                &callee.node_id,
                 method_key.ident.as_str(),
                 args,
                 api,
@@ -215,44 +215,38 @@ impl AuthModule {
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             callee
-                .receiver_info
                 .object_info
-                .blueprint_id
+                .main_blueprint_id
                 .package_address
                 .as_node_id(),
             &BlueprintVersionKey::new_default(
-                callee
-                    .receiver_info
-                    .object_info
-                    .blueprint_id
-                    .blueprint_name
-                    .as_str(),
+                callee.object_info.main_blueprint_id.blueprint_name.as_str(),
             ),
             api.api,
         )?
         .method_auth;
 
-        let (access_rules_of, method_permissions) = match auth_template {
+        let (role_assignment_of, method_permissions) = match auth_template {
             MethodAuthTemplate::StaticRoles(static_roles) => {
-                let access_rules_of = match static_roles.roles {
+                let role_assignment_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module
-                        if !callee.receiver_info.object_info.global {
+                        if !callee.object_info.global {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 
-                        callee.receiver_info.node_id
+                        callee.node_id
                     }
                     RoleSpecification::UseOuter => {
-                        let node_id = callee.receiver_info.node_id;
+                        let node_id = callee.node_id;
                         let info = api.get_object_info(&node_id)?;
 
-                        let access_rules_of = info.get_outer_object();
-                        access_rules_of.into_node_id()
+                        let role_assignment_of = info.get_outer_object();
+                        role_assignment_of.into_node_id()
                     }
                 };
 
-                (access_rules_of, static_roles.methods)
+                (role_assignment_of, static_roles.methods)
             }
             MethodAuthTemplate::AllowAll => return Ok(ResolvedPermission::AllowAll),
         };
@@ -260,30 +254,24 @@ impl AuthModule {
         match method_permissions.get(&method_key) {
             Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
             Some(MethodAccessibility::OwnPackageOnly) => {
-                let package = callee
-                    .receiver_info
-                    .object_info
-                    .blueprint_id
-                    .package_address;
+                let package = callee.object_info.main_blueprint_id.package_address;
                 Ok(ResolvedPermission::AccessRule(rule!(require(
                     package_of_direct_caller(package)
                 ))))
             }
-            Some(MethodAccessibility::OuterObjectOnly) => {
-                match callee.receiver_info.object_info.outer_object {
-                    OuterObjectInfo::Some { outer_object } => Ok(ResolvedPermission::AccessRule(
-                        rule!(require(global_caller(outer_object))),
-                    )),
-                    OuterObjectInfo::None { .. } => Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
-                    )),
-                }
-            }
+            Some(MethodAccessibility::OuterObjectOnly) => match callee.object_info.outer_object {
+                OuterObjectInfo::Some { outer_object } => Ok(ResolvedPermission::AccessRule(
+                    rule!(require(global_caller(outer_object))),
+                )),
+                OuterObjectInfo::None { .. } => Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
+                )),
+            },
             Some(MethodAccessibility::RoleProtected(role_list)) => {
                 Ok(ResolvedPermission::RoleList {
-                    access_rules_of,
+                    role_assignment_of,
                     role_list: role_list.clone(),
-                    module_id: callee.receiver_info.module_id,
+                    module_id: callee.module_id,
                 })
             }
             None => Err(RuntimeError::SystemModuleError(
@@ -353,8 +341,10 @@ impl AuthModule {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
-                    blueprint_version: BlueprintVersion::default(),
+                    main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
 
                     outer_object: OuterObjectInfo::default(),
                     features: btreeset!(),

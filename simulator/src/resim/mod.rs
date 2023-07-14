@@ -431,7 +431,9 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
         .ok_or(Error::ComponentNotFound(component_address))?;
 
     match type_info {
-        TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => Ok(blueprint_id.clone()),
+        TypeInfoSubstate::Object(ObjectInfo {
+            main_blueprint_id, ..
+        }) => Ok(main_blueprint_id.clone()),
         _ => panic!("Unexpected"),
     }
 }
@@ -443,7 +445,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let (package_address, schema_pointer) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
             match node_module {
-                ObjectModuleId::AccessRules => (ACCESS_RULES_MODULE_PACKAGE, *schema_pointer),
+                ObjectModuleId::RoleAssignment => (ROLE_ASSIGNMENT_MODULE_PACKAGE, *schema_pointer),
                 ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, *schema_pointer),
                 ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, *schema_pointer),
                 ObjectModuleId::Main => {
@@ -455,9 +457,10 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         )
                         .unwrap();
                     match type_info {
-                        TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
-                            (blueprint_id.package_address, *schema_pointer)
-                        }
+                        TypeInfoSubstate::Object(ObjectInfo {
+                            main_blueprint_id: blueprint_id,
+                            ..
+                        }) => (blueprint_id.package_address, *schema_pointer),
                         _ => return None,
                     }
                 }

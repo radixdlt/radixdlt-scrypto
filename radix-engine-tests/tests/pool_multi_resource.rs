@@ -1,5 +1,4 @@
 use radix_engine::errors::{SystemError, SystemModuleError};
-use radix_engine::vm::NoExtension;
 use radix_engine::{
     blueprints::pool::multi_resource_pool::*,
     errors::{ApplicationError, RuntimeError},
@@ -8,7 +7,7 @@ use radix_engine::{
 };
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::pool::*;
-use scrypto_unit::{is_auth_error, TestRunner, TestRunnerBuilder};
+use scrypto_unit::{is_auth_error, DefaultTestRunner, TestRunnerBuilder};
 use transaction::prelude::*;
 
 #[test]
@@ -745,7 +744,7 @@ fn cant_withdraw_without_proper_signature() {
 }
 
 struct TestEnvironment<const N: usize> {
-    test_runner: TestRunner<NoExtension>,
+    test_runner: DefaultTestRunner,
 
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
