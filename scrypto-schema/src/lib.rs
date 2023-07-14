@@ -45,6 +45,14 @@ pub enum Generic {
     Any,
 }
 
+#[derive(Copy, Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
+pub enum BlueprintHook {
+    OnVirtualize,
+    OnMove,
+    OnDrop,
+    OnPersist,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintSchemaInit {
     pub generics: Vec<Generic>,
@@ -98,30 +106,19 @@ pub struct BlueprintFunctionsSchemaInit {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor, ManifestSbor)]
-#[sbor(transparent)]
 pub struct BlueprintHooksInit {
-    pub on_virtualize: Option<String>, // TODO: allow registration of variant count if we make virtualizable entity type fully dynamic
-                                       // TODO: more incoming
-}
-
-impl BlueprintHooksInit {
-    pub fn is_empty(&self) -> bool {
-        self.on_virtualize.is_none()
-    }
+    // TODO: allow registration of variant count if we make virtualizable entity type fully dynamic
+    pub hooks: BTreeMap<BlueprintHook, String>,
 }
 
 impl BlueprintSchemaInit {
     pub fn exports(&self) -> Vec<String> {
-        let mut exports: Vec<String> = self
-            .functions
+        self.functions
             .functions
             .values()
             .map(|t| t.export.clone())
-            .collect();
-        if let Some(export) = &self.hooks.on_virtualize {
-            exports.push(export.clone());
-        }
-        exports
+            .chain(self.hooks.hooks.values().cloned())
+            .collect()
     }
 }
 

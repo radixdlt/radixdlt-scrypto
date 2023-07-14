@@ -14,6 +14,7 @@ use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
     transaction::AbortReason,
 };
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
@@ -201,14 +202,19 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (optional_blueprint_id, ident, optional_component) = {
+        let (optional_blueprint_id, ident, maybe_object_royalties) = {
             let (maybe_component, ident) = match &callee {
-                Actor::Method(MethodActor { node_id, ident, .. }) => {
-                    if node_id.is_global_component() {
-                        (
-                            Some(ComponentAddress::new_or_panic(node_id.clone().into())),
-                            ident,
-                        )
+                Actor::Method(MethodActor {
+                    node_id,
+                    ident,
+                    object_info,
+                    ..
+                }) => {
+                    if object_info
+                        .module_versions
+                        .contains_key(&ObjectModuleId::Royalty)
+                    {
+                        (Some(node_id.clone()), ident)
                     } else {
                         (None, ident)
                     }
@@ -239,12 +245,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         // Apply component royalty
         //===========================
-        if let Some(component_address) = optional_component {
-            ComponentRoyaltyBlueprint::charge_component_royalty(
-                component_address.as_node_id(),
-                ident,
-                api,
-            )?;
+        if let Some(node_id) = maybe_object_royalties {
+            ComponentRoyaltyBlueprint::charge_component_royalty(&node_id, ident, api)?;
         }
 
         Ok(())

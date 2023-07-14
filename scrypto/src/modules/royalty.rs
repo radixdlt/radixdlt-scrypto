@@ -4,8 +4,8 @@ use crate::runtime::*;
 use crate::*;
 use radix_engine_common::types::RoyaltyAmount;
 use radix_engine_interface::api::node_modules::royalty::{
-    ComponentClaimRoyaltiesInput, ComponentLockRoyaltyInput, ComponentRoyaltyCreateInput,
-    ComponentSetRoyaltyInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIMER_ROLE,
+    ComponentClaimRoyaltiesInput, ComponentRoyaltyCreateInput, ComponentRoyaltyLockInput,
+    ComponentRoyaltySetInput, COMPONENT_ROYALTY_BLUEPRINT, COMPONENT_ROYALTY_CLAIMER_ROLE,
     COMPONENT_ROYALTY_CLAIMER_UPDATER_ROLE, COMPONENT_ROYALTY_CLAIM_ROYALTIES_IDENT,
     COMPONENT_ROYALTY_CREATE_IDENT, COMPONENT_ROYALTY_LOCKER_ROLE,
     COMPONENT_ROYALTY_LOCKER_UPDATER_ROLE, COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
@@ -68,7 +68,7 @@ impl Royalty {
     pub fn set_royalty<M: ToString>(&self, method: M, amount: RoyaltyAmount) {
         self.call_ignore_rtn(
             COMPONENT_ROYALTY_SET_ROYALTY_IDENT,
-            &ComponentSetRoyaltyInput {
+            &ComponentRoyaltySetInput {
                 method: method.to_string(),
                 amount,
             },
@@ -78,7 +78,7 @@ impl Royalty {
     pub fn lock_royalty<M: ToString>(&self, method: M) {
         self.call_ignore_rtn(
             COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT,
-            &ComponentLockRoyaltyInput {
+            &ComponentRoyaltyLockInput {
                 method: method.to_string(),
             },
         );

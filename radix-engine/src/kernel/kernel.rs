@@ -108,7 +108,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             kernel.store.close_substate(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_id,
+                    main_blueprint_id: blueprint_id,
                     global,
                     ..
                 }) => {
@@ -287,9 +287,10 @@ where
             M::auto_drop(owned_nodes, self)?;
 
             // Now, check if any own has been left!
-            if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
-                return Err(RuntimeError::KernelError(KernelError::NodeOrphaned(
-                    node_id,
+            let owned_nodes = self.current_frame.owned_nodes();
+            if !owned_nodes.is_empty() {
+                return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
+                    owned_nodes,
                 )));
             }
         }
@@ -316,6 +317,7 @@ where
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         M::before_drop_node(node_id, self)?;
 
+        M::on_drop_node(node_id, self)?;
         let node = self
             .current_frame
             .drop_node(&mut self.heap, node_id)
@@ -411,7 +413,7 @@ where
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
-        let caller = match self.prev_frame_stack.last() {
+        let caller_actor = match self.prev_frame_stack.last() {
             Some(call_frame) => call_frame.actor(),
             None => {
                 // This will only occur on initialization
@@ -420,8 +422,8 @@ where
         };
         SystemState {
             system: &mut self.callback,
-            caller,
             current_actor: self.current_frame.actor(),
+            caller_actor,
         }
     }
 
@@ -434,13 +436,13 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(info)
-                    if info.blueprint_id.package_address == RESOURCE_PACKAGE
-                        && (info.blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || info.blueprint_id.blueprint_name
+                    if info.main_blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (info.main_blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                            || info.main_blueprint_id.blueprint_name
                                 == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                 {
                     let is_fungible = info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_BUCKET_BLUEPRINT);
                     let parent = info.get_outer_object();
@@ -497,10 +499,12 @@ where
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. })
-                    if blueprint_id.package_address == RESOURCE_PACKAGE
-                        && (blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
-                            || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
+                TypeInfoSubstate::Object(ObjectInfo {
+                    main_blueprint_id: blueprint_id,
+                    ..
+                }) if blueprint_id.package_address == RESOURCE_PACKAGE
+                    && (blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
+                        || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
                 {
                     blueprint_id.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
                 }

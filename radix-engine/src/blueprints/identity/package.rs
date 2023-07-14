@@ -1,14 +1,13 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignment};
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::roles_template;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::identity::*;
 use radix_engine_interface::blueprints::package::{
@@ -16,6 +15,7 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::metadata_init;
 use radix_engine_interface::schema::{
     BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit, FunctionSchemaInit, ReceiverInfo,
@@ -101,9 +101,10 @@ impl IdentityNativePackage {
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
                     },
-                    hooks: BlueprintHooksInit { on_virtualize: Some(IDENTITY_ON_VIRTUALIZE_EXPORT_NAME.to_string()) }
+                    hooks: BlueprintHooksInit {
+                        hooks: btreemap!(BlueprintHook::OnVirtualize => IDENTITY_ON_VIRTUALIZE_EXPORT_NAME.to_string())
+                    }
                 },
-
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {
                     function_auth: FunctionAuth::AllowAll,
@@ -179,13 +180,13 @@ const SECURIFY_ROLE: &'static str = "securify";
 
 struct SecurifiedIdentity;
 
-impl SecurifiedAccessRules for SecurifiedIdentity {
+impl SecurifiedRoleAssignment for SecurifiedIdentity {
     type OwnerBadgeNonFungibleData = IdentityOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = IDENTITY_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
 
-impl PresecurifiedAccessRules for SecurifiedIdentity {}
+impl PresecurifiedRoleAssignment for SecurifiedIdentity {}
 
 pub struct IdentityBlueprint;
 
@@ -197,10 +198,10 @@ impl IdentityBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let access_rules = SecurifiedIdentity::create_advanced(owner_role, api)?;
+        let role_assignment = SecurifiedIdentity::create_advanced(owner_role, api)?;
 
         let modules = Self::create_object(
-            access_rules,
+            role_assignment,
             metadata_init!(
                 "owner_badge" => EMPTY, locked;
             ),
@@ -219,7 +220,7 @@ impl IdentityBlueprint {
             package_address: IDENTITY_PACKAGE,
             blueprint_name: IDENTITY_BLUEPRINT.to_string(),
         })?;
-        let (access_rules, bucket) = SecurifiedIdentity::create_securified(
+        let (role_assignment, bucket) = SecurifiedIdentity::create_securified(
             IdentityOwnerBadgeData {
                 name: "Identity Owner Badge".to_string(),
                 identity: address.try_into().expect("Impossible Case"),
@@ -229,7 +230,7 @@ impl IdentityBlueprint {
         )?;
 
         let modules = Self::create_object(
-            access_rules,
+            role_assignment,
             metadata_init! {
                 "owner_badge" => NonFungibleLocalId::bytes(address.as_node_id().0).unwrap(), locked;
             },
@@ -283,10 +284,10 @@ impl IdentityBlueprint {
         };
 
         let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
-        let access_rules = SecurifiedIdentity::create_presecurified(owner_id, api)?;
+        let role_assignment = SecurifiedIdentity::create_presecurified(owner_id, api)?;
 
         let modules = Self::create_object(
-            access_rules,
+            role_assignment,
             metadata_init! {
                 // NOTE:
                 // This is the owner key for ROLA. We choose to set this explicitly to simplify the
@@ -320,7 +321,7 @@ impl IdentityBlueprint {
     }
 
     fn create_object<Y>(
-        access_rules: AccessRules,
+        role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
@@ -334,7 +335,7 @@ impl IdentityBlueprint {
 
         let modules = btreemap!(
             ObjectModuleId::Main => Own(object_id),
-            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::RoleAssignment => role_assignment.0,
             ObjectModuleId::Metadata => metadata,
             ObjectModuleId::Royalty => royalty,
         );
