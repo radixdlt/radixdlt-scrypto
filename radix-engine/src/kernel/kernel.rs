@@ -9,7 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::{Message, ScanSubstateError};
+use crate::kernel::call_frame::{Message, ScanSortedSubstateError, ScanSubstateError};
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -783,16 +783,26 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substates, store_access_info) = self
+        let substates = self
             .current_frame
-            .scan_sorted(node_id, partition_num, count, &mut self.heap, self.store)
-            .map_err(CallFrameError::ScanSortedSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
-
-        for store_access in store_access_info {
-            self.callback.on_scan_substate(&store_access)?;
-        }
+            .scan_sorted(
+                node_id,
+                partition_num,
+                count,
+                |store_access| {
+                    self.callback.on_scan_substate(&store_access)
+                },
+                &mut self.heap,
+                self.store,
+            )
+            .map_err(|e| {
+                match e {
+                    ScanSortedSubstateError::CallbackError(e) => e,
+                    ScanSortedSubstateError::ScanSortedSubstateError(e) => {
+                        RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::ScanSortedSubstatesError(e)))
+                    }
+                }
+            })?;
 
         Ok(substates)
     }
@@ -804,7 +814,7 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substates, _store_access_info) = self
+        let substates = self
             .current_frame
             .scan_substates(
                 node_id,

@@ -2,7 +2,7 @@ use crate::track::interface::{
     AcquireLockError, NodeSubstates, SetSubstateError, StoreAccess, StoreAccessInfo, SubstateStore,
     TakeSubstateError,
 };
-use crate::track::utils::OverlayingIterator;
+use crate::track::utils::{OverlayingIterator, OverlayingResultIterator};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::*;
@@ -800,9 +800,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: F,
-    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), E> {
-        let mut store_access = Vec::new();
-
+    ) -> Result<Vec<IndexedScryptoValue>, E> {
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
 
@@ -815,7 +813,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         if let Some(tracked_partition) = tracked_partition {
             for tracked in tracked_partition.substates.values() {
                 if items.len() == count {
-                    return Ok((items, store_access));
+                    return Ok(items);
                 }
 
                 // TODO: Check that substate is not write locked, before use outside of native blueprints
@@ -827,14 +825,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // Optimization, no need to go into database if the node is just created
         if items.len() == count || is_new {
-            return Ok((items, store_access));
+            return Ok(items);
         }
 
+        let mut tmp_info = StoreAccessInfo::new();
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
         let mut tracked_iter = TrackedIter::new(Self::list_entries_from_db(
             self.substate_db,
             &db_partition_key,
-            &mut store_access,
+            &mut tmp_info,
             on_store_access,
         ));
 
@@ -861,7 +860,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         tracked_partition.range_read = u32::max(tracked_partition.range_read, num_iterations);
 
         drop(tracked_iter);
-        Ok((items, store_access))
+        Ok(items)
     }
 
     fn take_substates(
@@ -966,14 +965,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         (items, store_access)
     }
 
-    fn scan_sorted_substates(
+    fn scan_sorted_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> (Vec<IndexedScryptoValue>, StoreAccessInfo) {
-        let mut store_access = Vec::new();
-
+        on_store_access: F,
+    ) -> Result<Vec<IndexedScryptoValue>, E> {
         // TODO: ensure we abort if any substates are write locked.
         let count: usize = count.try_into().unwrap();
 
@@ -989,7 +987,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // initialize the "from db" iterator: use `dyn`, since we want to skip it altogether if the node is marked as `is_new` in our track
         let mut db_values_count = 0u32;
-        let raw_db_entries: Box<dyn Iterator<Item = (DbSortKey, IndexedScryptoValue)>> =
+        let mut tmp_info = StoreAccessInfo::new();
+        let raw_db_entries: Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>>> =
             if tracked_node.is_new {
                 Box::new(empty()) // optimization: avoid touching the database altogether
             } else {
@@ -997,16 +996,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 Box::new(Self::list_entries_from_db(
                     self.substate_db,
                     &partition_key,
-                    &mut store_access,
-                    |e| -> Result<(), ()> {
-                        Ok(())
-                    }
-                ).map(|result| {
-                    let (key, value) = result.unwrap();
-                    (key, value)
-                }))
+                    &mut tmp_info,
+                    on_store_access,
+                ))
             };
-        let db_read_entries = raw_db_entries.inspect(|(_key, _value)| {
+        let db_read_entries = raw_db_entries.inspect(|_| {
             db_values_count += 1;
         });
 
@@ -1020,16 +1014,17 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     (key.clone(), tracked_substate.substate_value.get().cloned())
                 });
 
+        let mut items = Vec::new();
         // construct the composite iterator, which applies changes read from our track on top of db values
-        let items = OverlayingIterator::new(db_read_entries, tracked_entry_changes)
-            .map(|(_key, value)| value)
-            .take(count)
-            .collect();
+        for result in OverlayingResultIterator::new(db_read_entries, tracked_entry_changes).take(count) {
+            let (_key, value) = result?;
+            items.push(value);
+        }
 
         // Use the statistics (gathered by the `.inspect()`s above) to update the track's metadata and to return costing info
         tracked_partition.range_read = u32::max(tracked_partition.range_read, db_values_count);
 
-        return (items, store_access);
+        Ok(items)
     }
 
     fn acquire_lock_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(

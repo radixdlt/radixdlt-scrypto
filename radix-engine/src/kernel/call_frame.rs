@@ -259,6 +259,11 @@ pub enum CallFrameScanSortedSubstatesError {
     NodeNotVisible(NodeId),
 }
 
+pub enum ScanSortedSubstateError<E> {
+    CallbackError(E),
+    ScanSortedSubstateError(CallFrameScanSortedSubstatesError),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameTakeSortedSubstatesError {
     NodeNotVisible(NodeId),
@@ -967,17 +972,14 @@ impl<L: Clone> CallFrame<L> {
         on_store_access: F,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), ScanSubstateError<E>> {
+    ) -> Result<Vec<IndexedScryptoValue>, ScanSubstateError<E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
             return Err(ScanSubstateError::ScanSubstateError(CallFrameScanSubstateError::NodeNotVisible(node_id.clone())));
         }
 
-        let (substates, store_access) = if heap.contains_node(node_id) {
-            (
-                heap.scan_substates(node_id, partition_num, count),
-                StoreAccessInfo::new(),
-            )
+        let substates = if heap.contains_node(node_id) {
+            heap.scan_substates(node_id, partition_num, count)
         } else {
             store.scan_substates(node_id, partition_num, count, on_store_access)
                 .map_err(|e| ScanSubstateError::CallbackError(e))?
@@ -994,7 +996,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok((substates, store_access))
+        Ok(substates)
     }
 
     pub fn take_substates<'f, S: SubstateStore>(
@@ -1038,28 +1040,30 @@ impl<L: Clone> CallFrame<L> {
 
     // Substate Virtualization does not apply to this call
     // Should this be prevented at this layer?
-    pub fn scan_sorted<'f, S: SubstateStore>(
+    pub fn scan_sorted<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
+        on_store_access: F,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameScanSortedSubstatesError>
+    ) -> Result<Vec<IndexedScryptoValue>, ScanSortedSubstateError<E>>
     {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallFrameScanSortedSubstatesError::NodeNotVisible(
+            return Err(ScanSortedSubstateError::ScanSortedSubstateError(CallFrameScanSortedSubstatesError::NodeNotVisible(
                 node_id.clone(),
-            ));
+            )));
         }
 
-        let (substates, store_access) = if heap.contains_node(node_id) {
+        let substates = if heap.contains_node(node_id) {
             // This should never be triggered because sorted index store is
             // used by consensus manager only.
             panic!("Unexpected code path")
         } else {
-            store.scan_sorted_substates(node_id, partition_num, count)
+            store.scan_sorted_substates(node_id, partition_num, count, on_store_access)
+                .map_err(|e| ScanSortedSubstateError::CallbackError(e))?
         };
 
         for substate in &substates {
@@ -1073,7 +1077,7 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        Ok((substates, store_access))
+        Ok(substates)
     }
 
     pub fn drop_all_locks<S: SubstateStore>(
