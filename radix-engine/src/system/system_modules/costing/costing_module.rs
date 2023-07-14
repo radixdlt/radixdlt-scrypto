@@ -8,7 +8,7 @@ use crate::system::module::SystemModule;
 use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::{StoreAccessInfo, StoreCommit};
+use crate::track::interface::{StoreAccess, StoreAccessInfo, StoreCommit};
 use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
@@ -373,15 +373,24 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
+    fn on_scan_substates(system: &mut SystemConfig<V>) -> Result<(), RuntimeError> {
+        system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::ScanSubstates {
-                store_access: store_access,
+            .apply_execution_cost(CostingEntry::ScanSubstates)?;
+
+        Ok(())
+    }
+
+    fn on_scan_substate(
+        store_access: &StoreAccess,
+        system: &mut SystemConfig<V>,
+    ) -> Result<(), RuntimeError> {
+        system
+            .modules
+            .costing
+            .apply_execution_cost(CostingEntry::ScanSubstate {
+                store_access,
             })?;
 
         Ok(())

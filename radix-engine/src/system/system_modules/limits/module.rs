@@ -54,7 +54,26 @@ impl LimitsModule {
         &self.config
     }
 
-    pub fn process_store_access(
+    pub fn process_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError> {
+        match store_access {
+            StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
+            StoreAccess::NewEntryInTrack => {
+                self.number_of_substates_in_track += 1;
+            }
+        }
+
+        if self.number_of_substates_in_track > self.config.max_number_of_substates_in_track {
+            Err(RuntimeError::SystemModuleError(
+                SystemModuleError::TransactionLimitsError(
+                    TransactionLimitsError::TooManyEntriesInTrack,
+                ),
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn process_store_access_info(
         &mut self,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
@@ -139,7 +158,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api.kernel_get_system()
             .modules
             .limits
-            .process_store_access(store_access)
+            .process_store_access_info(store_access)
     }
 
     #[inline(always)]
@@ -152,7 +171,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api.kernel_get_system()
             .modules
             .limits
-            .process_store_access(store_access)
+            .process_store_access_info(store_access)
     }
 
     fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
@@ -165,7 +184,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api.kernel_get_system()
             .modules
             .limits
-            .process_store_access(store_access)
+            .process_store_access_info(store_access)
     }
 
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
@@ -177,7 +196,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api.kernel_get_system()
             .modules
             .limits
-            .process_store_access(store_access)
+            .process_store_access_info(store_access)
     }
 
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
@@ -199,7 +218,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api.kernel_get_system()
             .modules
             .limits
-            .process_store_access(store_access)
+            .process_store_access_info(store_access)
     }
 
     fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
@@ -210,14 +229,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api.kernel_get_system()
             .modules
             .limits
-            .process_store_access(store_access)
+            .process_store_access_info(store_access)
     }
 
-    fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
+    fn on_scan_substate(
+        store_access: &StoreAccess,
+        system: &mut SystemConfig<V>,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
+        system
             .modules
             .limits
             .process_store_access(store_access)
@@ -231,7 +250,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api.kernel_get_system()
             .modules
             .limits
-            .process_store_access(store_access)
+            .process_store_access_info(store_access)
     }
 
     fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
@@ -241,6 +260,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         api.kernel_get_system()
             .modules
             .limits
-            .process_store_access(store_access)
+            .process_store_access_info(store_access)
     }
 }

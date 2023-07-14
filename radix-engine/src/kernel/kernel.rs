@@ -783,14 +783,18 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substates, store_access) = self
+        self.callback.on_scan_substates()?;
+
+        let (substates, store_access_info) = self
             .current_frame
             .scan_sorted(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSortedSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(&store_access, self)?;
+        for store_access in store_access_info {
+            self.callback.on_scan_substate(&store_access)?;
+        }
 
         Ok(substates)
     }
@@ -802,14 +806,18 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, store_access) = self
+        self.callback.on_scan_substates()?;
+
+        let (substeates, store_access_info) = self
             .current_frame
             .scan_substates(node_id, partition_num, count, &mut self.heap, self.store)
             .map_err(CallFrameError::ScanSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_scan_substates(&store_access, self)?;
+        for store_access in store_access_info {
+            self.callback.on_scan_substate(&store_access)?;
+        }
 
         Ok(substeates)
     }

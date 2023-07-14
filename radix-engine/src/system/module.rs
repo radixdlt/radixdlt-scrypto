@@ -4,7 +4,7 @@ use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
-use crate::track::interface::{NodeSubstates, StoreAccessInfo};
+use crate::track::interface::{NodeSubstates, StoreAccess, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
@@ -193,9 +193,16 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_scan_substate<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _store_access: &StoreAccessInfo,
+    fn on_scan_substates(
+        _system: &mut M,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn on_scan_substate(
+        _store_access: &StoreAccess,
+        _system: &mut M,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

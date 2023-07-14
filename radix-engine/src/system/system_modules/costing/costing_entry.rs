@@ -1,6 +1,6 @@
 use super::FeeTable;
 use crate::kernel::actor::Actor;
-use crate::track::interface::{StoreAccessInfo, StoreCommit};
+use crate::track::interface::{StoreAccess, StoreAccessInfo, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
 
@@ -80,9 +80,11 @@ pub enum CostingEntry<'a> {
     ScanSortedSubstates {
         store_access: &'a StoreAccessInfo,
     },
-    ScanSubstates {
-        store_access: &'a StoreAccessInfo,
+    ScanSubstate {
+        store_access: &'a StoreAccess,
     },
+    ScanSubstates,
+
     TakeSubstate {
         store_access: &'a StoreAccessInfo,
     },
@@ -174,7 +176,8 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::ScanSortedSubstates { store_access } => {
                 ft.scan_sorted_substates_cost(store_access)
             }
-            CostingEntry::ScanSubstates { store_access } => ft.scan_substates_cost(store_access),
+            CostingEntry::ScanSubstate { store_access } => ft.scan_substate_cost(store_access),
+            CostingEntry::ScanSubstates => ft.scan_substates_cost(),
             CostingEntry::TakeSubstate { store_access } => ft.take_substates_cost(store_access),
             CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),

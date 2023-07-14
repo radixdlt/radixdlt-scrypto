@@ -1,7 +1,7 @@
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::track::interface::{NodeSubstates, StoreAccessInfo};
+use crate::track::interface::{NodeSubstates, StoreAccess, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
@@ -99,12 +99,12 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_scan_substates<Y>(
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
+    fn on_scan_substates(&mut self) -> Result<(), RuntimeError>;
+
+    fn on_scan_substate(
+        &mut self,
+        store_access: &StoreAccess,
+    ) -> Result<(), RuntimeError>;
 
     fn on_set_substate<Y>(
         value_size: usize,

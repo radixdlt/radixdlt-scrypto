@@ -17,7 +17,7 @@ use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::node_move::NodeMoveModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
-use crate::track::interface::StoreCommit;
+use crate::track::interface::{StoreAccess, StoreCommit};
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
@@ -407,11 +407,34 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
+    fn on_scan_substate(
+        store_access: &StoreAccess,
+        system: &mut SystemConfig<V>,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_scan_substate(api, store_access))
+        let modules: EnabledModules = system.modules.enabled_modules;
+        if modules.contains(EnabledModules::KERNEL_TRACE) {
+            KernelTraceModule::on_scan_substate(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::LIMITS) {
+            LimitsModule::on_scan_substate(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::COSTING) {
+            CostingModule::on_scan_substate(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::AUTH) {
+            AuthModule::on_scan_substate(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::NODE_MOVE) {
+            NodeMoveModule::on_scan_substate(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
+            TransactionRuntimeModule::on_scan_substate(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::EXECUTION_TRACE) {
+            ExecutionTraceModule::on_scan_substate(store_access, system)?;
+        }
+
+        Ok(())
     }
 
     #[trace_resources]

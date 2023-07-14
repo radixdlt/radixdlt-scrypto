@@ -19,7 +19,7 @@ use crate::system::system::SystemService;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
-use crate::track::interface::StoreAccessInfo;
+use crate::track::interface::{StoreAccess, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
@@ -189,11 +189,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_write_substate(api, lock_handle, value_size, store_access)
     }
 
-    fn on_scan_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+    fn on_scan_substates(&mut self) -> Result<(), RuntimeError>
     {
-        SystemModuleMixer::on_scan_substate(api, store_access)
+        SystemModuleMixer::on_scan_substates(self)
+    }
+
+    fn on_scan_substate(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError>
+    {
+        SystemModuleMixer::on_scan_substate(store_access, self)
     }
 
     fn on_set_substate<Y>(
