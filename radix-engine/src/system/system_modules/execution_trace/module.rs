@@ -1,6 +1,6 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -312,7 +312,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
             .system
             .modules
             .execution_trace
-            .handle_after_create_node(system_state.current, current_depth, resource_summary);
+            .handle_after_create_node(system_state.current_actor, current_depth, resource_summary);
         Ok(())
     }
 
@@ -339,7 +339,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
             .system
             .modules
             .execution_trace
-            .handle_after_drop_node(system_state.current, current_depth);
+            .handle_after_drop_node(system_state.current_actor, current_depth);
         Ok(())
     }
 
@@ -355,7 +355,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
             .system
             .modules
             .execution_trace
-            .handle_before_push_frame(system_state.current, callee, resource_summary, args);
+            .handle_before_push_frame(system_state.current_actor, callee, resource_summary, args);
         Ok(())
     }
 
@@ -375,7 +375,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
             .modules
             .execution_trace
             .handle_on_execution_finish(
-                system_state.current,
+                system_state.current_actor,
                 current_depth,
                 &caller,
                 resource_summary,
@@ -471,14 +471,14 @@ impl ExecutionTraceModule {
                         ident: ident.clone(),
                     })
                 }
-                Actor::Function {
+                Actor::Function(FunctionActor {
                     blueprint_id,
                     ident,
-                } => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
+                }) => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
                     blueprint_id: blueprint_id.clone(),
                     ident: ident.clone(),
                 }),
-                Actor::VirtualLazyLoad { .. } | Actor::Root => {
+                Actor::BlueprintHook(..) | Actor::Root => {
                     return;
                 }
             };
@@ -524,7 +524,7 @@ impl ExecutionTraceModule {
             {
                 self.handle_vault_take_output(&resource_summary, &caller, node_id)
             }
-            Actor::VirtualLazyLoad { .. } => return,
+            Actor::BlueprintHook(..) => return,
             _ => {}
         }
 

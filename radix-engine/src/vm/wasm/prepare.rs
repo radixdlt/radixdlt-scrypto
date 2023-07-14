@@ -946,7 +946,7 @@ impl WasmModule {
             .export_section()
             .ok_or(PrepareError::NoExportSection)?;
         for blueprint_def_init in blueprints {
-            for export_name in blueprint_def_init.schema.functions.exports() {
+            for export_name in blueprint_def_init.schema.exports() {
                 if !exports.entries().iter().any(|x| {
                     x.field().eq(&export_name) && {
                         if let Internal::Function(func_index) = x.internal() {
@@ -1293,8 +1293,8 @@ mod tests {
                                 export: "Test_f".to_string(),
                             }
                         ),
-                        virtual_lazy_load_functions: btreemap!(),
                     },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: Default::default(),

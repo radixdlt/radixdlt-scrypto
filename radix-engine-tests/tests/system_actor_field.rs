@@ -1,5 +1,5 @@
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use radix_engine::errors::RuntimeError;
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
@@ -39,13 +39,13 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
                 }
                 "new" => {
                     let metadata = Metadata::create(api)?;
-                    let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?;
+                    let access_rules = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
                     let node_id = api.new_simple_object(BLUEPRINT_NAME, vec![])?;
                     api.globalize(
                         btreemap!(
                             ObjectModuleId::Main => node_id,
                             ObjectModuleId::Metadata => metadata.0,
-                            ObjectModuleId::AccessRules => access_rules.0.0,
+                            ObjectModuleId::RoleAssignment => access_rules.0.0,
                         ),
                         None,
                     )?;

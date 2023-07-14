@@ -456,9 +456,9 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 "MetadataTest_set_string"
                             )
-                        ),
-                        Map<U8, String>()
-                    )
+                        )
+                    ),
+                    Enum<0u8>()
                 ),
                 Enum<0u8>(),
                 Tuple(
@@ -468,7 +468,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("6f1eb3e69fc60abe7ef7b7d24ef18e2a7b5e41958555e807f5855a4fd5a8b73c")
+    Blob("040f107a228843e5b6d38c95cc83c0d618f3909b3586b8bc5e5c3b2d73f293a3")
     Map<String, Tuple>(
         "" => Tuple(
             Enum<1u8>(

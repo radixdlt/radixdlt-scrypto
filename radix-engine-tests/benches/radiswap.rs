@@ -1,6 +1,5 @@
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Criterion};
-use radix_engine::vm::NoExtension;
 use radix_engine::{
     transaction::{ExecutionConfig, FeeReserveConfig, TransactionReceipt},
     types::*,
@@ -166,7 +165,7 @@ fn bench_radiswap(c: &mut Criterion) {
         nonce += 1;
     }
     #[cfg(not(feature = "flamegraph"))]
-    c.bench_function("Radiswap::run", |b| {
+    c.bench_function("transaction::radiswap", |b| {
         b.iter(|| {
             do_swap(&mut test_runner, &transaction_payload, nonce);
             nonce += 1;
@@ -177,7 +176,7 @@ fn bench_radiswap(c: &mut Criterion) {
 #[cfg(feature = "rocksdb")]
 type TestRunnerType = BasicRocksdbTestRunner;
 #[cfg(not(feature = "rocksdb"))]
-type TestRunnerType = TestRunner<NoExtension>;
+type TestRunnerType = TestRunner<radix_engine::vm::NoExtension>;
 
 fn do_swap(
     test_runner: &mut TestRunnerType,

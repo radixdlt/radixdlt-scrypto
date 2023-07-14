@@ -1,5 +1,5 @@
 use crate::blueprints::consensus_manager::*;
-use crate::blueprints::util::SecurifiedAccessRules;
+use crate::blueprints::util::SecurifiedRoleAssignment;
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
@@ -1076,7 +1076,7 @@ fn create_sort_prefix_from_stake(stake: Decimal) -> u16 {
 
 struct SecurifiedValidator;
 
-impl SecurifiedAccessRules for SecurifiedValidator {
+impl SecurifiedRoleAssignment for SecurifiedValidator {
     type OwnerBadgeNonFungibleData = ValidatorOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = VALIDATOR_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = None;
@@ -1212,7 +1212,7 @@ impl ValidatorCreator {
             ],
         )?;
 
-        let (access_rules, owner_token_bucket) = SecurifiedValidator::create_securified(
+        let (role_assignment, owner_token_bucket) = SecurifiedValidator::create_securified(
             ValidatorOwnerBadgeData {
                 name: "Validator Owner Badge".to_owned(),
                 validator: validator_address.try_into().expect("Impossible Case!"),
@@ -1237,7 +1237,7 @@ impl ValidatorCreator {
         api.globalize(
             btreemap!(
                 ObjectModuleId::Main => validator_id,
-                ObjectModuleId::AccessRules => access_rules.0.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),

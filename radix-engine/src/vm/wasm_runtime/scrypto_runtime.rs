@@ -352,7 +352,7 @@ where
 
     fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>> {
         let rule =
-            scrypto_decode::<AccessRule>(&rule).map_err(WasmRuntimeError::InvalidAccessRules)?;
+            scrypto_decode::<AccessRule>(&rule).map_err(WasmRuntimeError::InvalidAccessRule)?;
 
         self.api
             .assert_access_rule(rule)

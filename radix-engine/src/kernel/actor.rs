@@ -50,23 +50,38 @@ impl MethodActor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier {
             blueprint_id: self.get_blueprint_id(),
-            ident: FnIdent::Application(self.ident.to_string()),
+            ident: self.ident.to_string(),
         }
     }
 }
 
-#[derive(Debug, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct FunctionActor {
+    pub blueprint_id: BlueprintId,
+    pub ident: String,
+}
+
+impl FunctionActor {
+    pub fn fn_identifier(&self) -> FnIdentifier {
+        FnIdentifier {
+            blueprint_id: self.blueprint_id.clone(),
+            ident: self.ident.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct BlueprintHookActor {
+    pub blueprint_id: BlueprintId,
+    pub hook: BlueprintHook,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum Actor {
     Root,
     Method(MethodActor),
-    Function {
-        blueprint_id: BlueprintId,
-        ident: String,
-    },
-    VirtualLazyLoad {
-        blueprint_id: BlueprintId,
-        ident: u8,
-    },
+    Function(FunctionActor),
+    BlueprintHook(BlueprintHookActor),
 }
 
 impl Actor {
@@ -76,18 +91,17 @@ impl Actor {
             Actor::Method(MethodActor { node_id, ident, .. }) => {
                 node_id.as_ref().len() + ident.len()
             }
-            Actor::Function {
-                blueprint_id: blueprint,
+            Actor::Function(FunctionActor {
+                blueprint_id,
                 ident,
-            } => {
-                blueprint.package_address.as_ref().len()
-                    + blueprint.blueprint_name.len()
+            }) => {
+                blueprint_id.package_address.as_ref().len()
+                    + blueprint_id.blueprint_name.len()
                     + ident.len()
             }
-            Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ..
-            } => blueprint.package_address.as_ref().len() + blueprint.blueprint_name.len() + 1,
+            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                blueprint_id.package_address.as_ref().len() + blueprint_id.blueprint_name.len() + 1
+            }
         }
     }
 
@@ -109,7 +123,7 @@ impl Actor {
                         .eq(AUTH_ZONE_BLUEPRINT)
             }
             Actor::Function { .. } => false,
-            Actor::VirtualLazyLoad { .. } => false,
+            Actor::BlueprintHook { .. } => false,
             Actor::Root { .. } => false,
         }
     }
@@ -121,29 +135,16 @@ impl Actor {
                 ..
             }) => object_info.global,
             Actor::Function { .. } => true,
-            Actor::VirtualLazyLoad { .. } => false,
+            Actor::BlueprintHook { .. } => true,
             Actor::Root { .. } => false,
         }
     }
 
-    pub fn fn_identifier(&self) -> FnIdentifier {
+    pub fn fn_identifier(&self) -> Option<FnIdentifier> {
         match self {
-            Actor::Root => panic!("Should never be called"),
-            Actor::Method(method_actor) => method_actor.fn_identifier(),
-            Actor::Function {
-                blueprint_id: blueprint,
-                ident,
-            } => FnIdentifier {
-                blueprint_id: blueprint.clone(),
-                ident: FnIdent::Application(ident.to_string()),
-            },
-            Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ident,
-            } => FnIdentifier {
-                blueprint_id: blueprint.clone(),
-                ident: FnIdent::System(*ident),
-            },
+            Actor::Method(method_actor) => Some(method_actor.fn_identifier()),
+            Actor::Function(function_actor) => Some(function_actor.fn_identifier()),
+            _ => None,
         }
     }
 
@@ -153,26 +154,18 @@ impl Actor {
             Actor::Method(MethodActor {
                 node_object_info:
                     NodeObjectInfo {
-                        main_blueprint_info:
-                            BlueprintObjectInfo {
-                                blueprint_id: blueprint,
-                                ..
-                            },
+                        main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
                         ..
                     },
                 ..
             })
-            | Actor::Function {
-                blueprint_id: blueprint,
-                ..
+            | Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                blueprint_id.eq(&BlueprintId::new(
+                    &TRANSACTION_PROCESSOR_PACKAGE,
+                    TRANSACTION_PROCESSOR_BLUEPRINT,
+                ))
             }
-            | Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ..
-            } => blueprint.eq(&BlueprintId::new(
-                &TRANSACTION_PROCESSOR_PACKAGE,
-                TRANSACTION_PROCESSOR_BLUEPRINT,
-            )),
         }
     }
 
@@ -193,30 +186,34 @@ impl Actor {
     pub fn as_global_caller(&self) -> Option<GlobalCaller> {
         match self {
             Actor::Method(actor) => actor.global_address.map(|address| address.into()),
-            Actor::Function {
-                blueprint_id: blueprint,
-                ..
-            } => Some(blueprint.clone().into()),
+            Actor::Function(FunctionActor { blueprint_id, .. }) => {
+                Some(blueprint_id.clone().into())
+            }
             _ => None,
         }
     }
 
-    pub fn blueprint_id(&self) -> BlueprintId {
+    pub fn blueprint_id(&self) -> Option<BlueprintId> {
         match self {
-            Actor::Method(actor) => actor.get_blueprint_id(),
-            Actor::Function { blueprint_id, .. } | Actor::VirtualLazyLoad { blueprint_id, .. } => {
-                blueprint_id.clone()
+            Actor::Method(actor) => Some(actor.get_blueprint_id()),
+            Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                Some(blueprint_id.clone())
             }
-            Actor::Root => panic!("Unexpected call"), // FIXME: have the right interface
+            Actor::Root => None,
         }
     }
 
     /// Proofs which exist only on the local call frame
     /// FIXME: Update abstractions such that it is based on local call frame
     pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
-        btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
-            self.blueprint_id().package_address
-        ))
+        if let Some(blueprint_id) = self.blueprint_id() {
+            btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
+                blueprint_id.package_address
+            ))
+        } else {
+            btreeset!()
+        }
     }
 
     pub fn get_virtual_non_extending_barrier_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
@@ -245,17 +242,14 @@ impl Actor {
         })
     }
 
-    pub fn function(blueprint: BlueprintId, ident: String) -> Self {
-        Self::Function {
-            blueprint_id: blueprint,
+    pub fn function(blueprint_id: BlueprintId, ident: String) -> Self {
+        Self::Function(FunctionActor {
+            blueprint_id,
             ident,
-        }
+        })
     }
 
-    pub fn virtual_lazy_load(blueprint: BlueprintId, ident: u8) -> Self {
-        Self::VirtualLazyLoad {
-            blueprint_id: blueprint,
-            ident,
-        }
+    pub fn blueprint_hook(blueprint_id: BlueprintId, hook: BlueprintHook) -> Self {
+        Self::BlueprintHook(BlueprintHookActor { blueprint_id, hook })
     }
 }

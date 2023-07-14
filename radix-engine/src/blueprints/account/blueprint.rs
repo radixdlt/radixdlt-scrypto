@@ -1,9 +1,9 @@
-use crate::blueprints::util::{PresecurifiedAccessRules, SecurifiedAccessRules};
+use crate::blueprints::util::{PresecurifiedRoleAssignment, SecurifiedRoleAssignment};
 use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeFungibleVault;
@@ -12,13 +12,16 @@ use native_sdk::resource::NativeVault;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadOutput;
+use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
+use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeOutput;
 use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::api::{CollectionIndex, FieldValue};
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::resource::{Bucket, Proof};
 use radix_engine_interface::metadata_init;
+
+pub const ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID: u8 = 0u8;
+pub const ACCOUNT_CREATE_VIRTUAL_ED25519_ID: u8 = 1u8;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, Clone)]
 pub struct AccountSubstate {
@@ -52,13 +55,13 @@ pub const SECURIFY_ROLE: &'static str = "securify";
 
 struct SecurifiedAccount;
 
-impl SecurifiedAccessRules for SecurifiedAccount {
+impl SecurifiedRoleAssignment for SecurifiedAccount {
     type OwnerBadgeNonFungibleData = AccountOwnerBadgeData;
     const OWNER_BADGE: ResourceAddress = ACCOUNT_OWNER_BADGE;
     const SECURIFY_ROLE: Option<&'static str> = Some(SECURIFY_ROLE);
 }
 
-impl PresecurifiedAccessRules for SecurifiedAccount {}
+impl PresecurifiedRoleAssignment for SecurifiedAccount {}
 
 pub const ACCOUNT_VAULT_INDEX: CollectionIndex = 0u8;
 pub type AccountVaultIndexEntry = Option<Own>;
@@ -70,7 +73,7 @@ pub struct AccountBlueprint;
 
 impl AccountBlueprint {
     fn create_modules<Y>(
-        access_rules: AccessRules,
+        role_assignment: RoleAssignment,
         metadata_init: MetadataInit,
         api: &mut Y,
     ) -> Result<BTreeMap<ObjectModuleId, Own>, RuntimeError>
@@ -81,7 +84,7 @@ impl AccountBlueprint {
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let modules = btreemap!(
-            ObjectModuleId::AccessRules => access_rules.0,
+            ObjectModuleId::RoleAssignment => role_assignment.0,
             ObjectModuleId::Metadata => metadata,
             ObjectModuleId::Royalty => royalty,
         );
@@ -89,32 +92,32 @@ impl AccountBlueprint {
         Ok(modules)
     }
 
-    pub fn create_virtual_secp256k1<Y>(
-        input: VirtualLazyLoadInput,
+    pub fn on_virtualize<Y>(
+        input: OnVirtualizeInput,
         api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
-    }
-
-    pub fn create_virtual_ed25519<Y>(
-        input: VirtualLazyLoadInput,
-        api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
-    where
-        Y: ClientApi<RuntimeError>,
-    {
-        let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.id));
-        Self::create_virtual(public_key_hash, api)
+        match input.variant_id {
+            ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID => {
+                let public_key_hash = PublicKeyHash::Secp256k1(Secp256k1PublicKeyHash(input.rid));
+                Self::create_virtual(public_key_hash, api)
+            }
+            ACCOUNT_CREATE_VIRTUAL_ED25519_ID => {
+                let public_key_hash = PublicKeyHash::Ed25519(Ed25519PublicKeyHash(input.rid));
+                Self::create_virtual(public_key_hash, api)
+            }
+            x => Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+                format!("Unexpected variant id: {:?}", x),
+            ))),
+        }
     }
 
     fn create_virtual<Y>(
         public_key_hash: PublicKeyHash,
         api: &mut Y,
-    ) -> Result<VirtualLazyLoadOutput, RuntimeError>
+    ) -> Result<OnVirtualizeOutput, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -133,9 +136,9 @@ impl AccountBlueprint {
 
         let account = Self::create_local(api)?;
         let owner_id = NonFungibleGlobalId::from_public_key_hash(public_key_hash);
-        let access_rules = SecurifiedAccount::create_presecurified(owner_id, api)?;
+        let role_assignment = SecurifiedAccount::create_presecurified(owner_id, api)?;
         let mut modules = Self::create_modules(
-            access_rules,
+            role_assignment,
             metadata_init!(
                 // NOTE:
                 // This is the owner key for ROLA. We choose to set this explicitly to simplify the
@@ -178,9 +181,9 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let account = Self::create_local(api)?;
-        let access_rules = SecurifiedAccount::create_advanced(owner_role, api)?;
+        let role_assignment = SecurifiedAccount::create_advanced(owner_role, api)?;
         let mut modules = Self::create_modules(
-            access_rules,
+            role_assignment,
             metadata_init!(
                 "owner_badge" => EMPTY, locked;
             ),
@@ -204,7 +207,7 @@ impl AccountBlueprint {
         })?;
 
         let account = Self::create_local(api)?;
-        let (access_rules, bucket) = SecurifiedAccount::create_securified(
+        let (role_assignment, bucket) = SecurifiedAccount::create_securified(
             AccountOwnerBadgeData {
                 name: "Account Owner Badge".into(),
                 account: address.try_into().expect("Impossible Case"),
@@ -213,7 +216,7 @@ impl AccountBlueprint {
             api,
         )?;
         let mut modules = Self::create_modules(
-            access_rules,
+            role_assignment,
             metadata_init! {
                 "owner_badge" => NonFungibleLocalId::bytes(address.as_node_id().0).unwrap(), locked;
             },

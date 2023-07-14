@@ -178,10 +178,8 @@ impl ConsensusManagerNativePackage {
                         collections,
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        functions,
-                        virtual_lazy_load_functions: btreemap!(),
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -457,10 +455,8 @@ impl ConsensusManagerNativePackage {
                         collections: vec![],
                     },
                     events: event_schema,
-                    functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
-                        functions,
-                    },
+                    functions: BlueprintFunctionsSchemaInit { functions },
+                    hooks: BlueprintHooksInit::default(),
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {

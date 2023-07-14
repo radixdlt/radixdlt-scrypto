@@ -4,8 +4,8 @@ use crate::errors::ApplicationError;
 use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::{NativeBucket, ResourceManager};
@@ -307,7 +307,7 @@ impl ConsensusManagerBlueprint {
         };
 
         let roles = btreemap!(ObjectModuleId::Main => role_definitions);
-        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, roles, api)?.0;
         let metadata = Metadata::create_with_data(
             metadata_init! {
                 "name" => "Consensus Manager".to_owned(), locked;
@@ -320,7 +320,7 @@ impl ConsensusManagerBlueprint {
         api.globalize(
             btreemap!(
                 ObjectModuleId::Main => consensus_manager_id,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),

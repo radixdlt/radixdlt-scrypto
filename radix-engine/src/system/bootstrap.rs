@@ -11,8 +11,8 @@ use crate::blueprints::transaction_processor::TransactionProcessorNativePackage;
 use crate::blueprints::transaction_tracker::{
     TransactionTrackerNativePackage, TRANSACTION_TRACKER_CREATE_IDENT,
 };
-use crate::system::node_modules::access_rules::AccessRulesNativePackage;
 use crate::system::node_modules::metadata::MetadataNativePackage;
+use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::node_modules::royalty::RoyaltyNativePackage;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -438,9 +438,9 @@ pub fn create_system_bootstrap_flash(
             },
         ),
         (
-            ACCESS_RULES_MODULE_PACKAGE,
-            AccessRulesNativePackage::definition(),
-            ACCESS_RULES_CODE_ID,
+            ROLE_ASSIGNMENT_MODULE_PACKAGE,
+            RoleAssignmentNativePackage::definition(),
+            ROLE_ASSIGNMENT_CODE_ID,
             metadata_init! {
                 "name" => "Access Rules Package".to_owned(), locked;
                 "description" => "A native package that defines the logic of the access rules module that is used by resources, components, and packages.".to_owned(), locked;

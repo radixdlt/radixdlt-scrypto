@@ -1,7 +1,7 @@
 use super::*;
 use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
-use crate::kernel::actor::{Actor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
@@ -202,8 +202,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
-        let (blueprint, ident, maybe_object_royalties) = {
-            let blueprint = callee.blueprint_id();
+        let (optional_blueprint_id, ident, maybe_object_royalties) = {
             let (maybe_component, ident) = match &callee {
                 Actor::Method(MethodActor {
                     node_id,
@@ -226,25 +225,28 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                         (None, ident)
                     }
                 }
-                Actor::Function { ident, .. } => (None, ident),
-                Actor::VirtualLazyLoad { .. } | Actor::Root => {
+                Actor::Function(FunctionActor { ident, .. }) => (None, ident),
+                Actor::BlueprintHook(..) | Actor::Root => {
                     return Ok(());
                 }
             };
 
-            (blueprint, ident, maybe_component)
+            (callee.blueprint_id(), ident, maybe_component)
         };
 
         //===========================
         // Apply package royalty
         //===========================
-        let bp_version_key = BlueprintVersionKey::new_default(blueprint.blueprint_name.as_str());
-        PackageRoyaltyNativeBlueprint::charge_package_royalty(
-            blueprint.package_address.as_node_id(),
-            &bp_version_key,
-            ident,
-            api,
-        )?;
+        if let Some(blueprint_id) = optional_blueprint_id {
+            let bp_version_key =
+                BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str());
+            PackageRoyaltyNativeBlueprint::charge_package_royalty(
+                blueprint_id.package_address.as_node_id(),
+                &bp_version_key,
+                ident,
+                api,
+            )?;
+        }
 
         //===========================
         // Apply component royalty

@@ -30,8 +30,8 @@ fn update_expected_costs() {
     run_publish_large_package(Mode::OutputCosting(
         "./assets/cost_publish_large_package.csv".to_string(),
     ));
-    run_mint_mid_size_nfts_from_manifest(Mode::OutputCosting(
-        "./assets/cost_mint_mid_size_nfts_from_manifest.csv".to_string(),
+    run_mint_large_size_nfts_from_manifest(Mode::OutputCosting(
+        "./assets/cost_mint_large_size_nfts_from_manifest.csv".to_string(),
     ));
     run_mint_small_size_nfts_from_manifest(Mode::OutputCosting(
         "./assets/cost_mint_small_size_nfts_from_manifest.csv".to_string(),
@@ -74,9 +74,9 @@ fn test_publish_large_package() {
 }
 
 #[test]
-fn test_mint_mid_size_nfts_from_manifest() {
-    run_mint_mid_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_str!(
-        "../assets/cost_mint_mid_size_nfts_from_manifest.csv"
+fn test_mint_large_size_nfts_from_manifest() {
+    run_mint_large_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_mint_large_size_nfts_from_manifest.csv"
     ))));
 }
 
@@ -502,19 +502,21 @@ fn run_mint_small_size_nfts_from_manifest(mode: Mode) {
     )
 }
 
-fn run_mint_mid_size_nfts_from_manifest(mode: Mode) {
+fn run_mint_large_size_nfts_from_manifest(mode: Mode) {
+    const N: usize = 50;
+
     run_mint_nfts_from_manifest(
         mode,
         TestNonFungibleData {
             metadata: btreemap!(
-                "Name".to_string() => "Type".to_string(),
-                "Abilities".to_string() => "Lightning Rod".to_string(),
-                "Egg Groups".to_string() => "Field and Fairy or No Eggs Discovered".to_string(),
-                "Hatch time".to_string() => "10 cycles".to_string(),
-                "Height".to_string() => "0.4 m".to_string(),
-                "Weight".to_string() => "6.0 kg".to_string(),
-                "Base experience yield".to_string() => "82".to_string(),
-                "Leveling rate".to_string() => "Medium Fast".to_string(),
+                "Name".to_string() => "Type".repeat(N),
+                "Abilities".to_string() => "Lightning Rod".repeat(N),
+                "Egg Groups".to_string() => "Field and Fairy or No Eggs Discovered".repeat(N),
+                "Hatch time".to_string() => "10 cycles".repeat(N),
+                "Height".to_string() => "0.4 m".repeat(N),
+                "Weight".to_string() => "6.0 kg".repeat(N),
+                "Base experience yield".to_string() => "82".repeat(N),
+                "Leveling rate".to_string() => "Medium Fast".repeat(N),
             ),
         },
     )

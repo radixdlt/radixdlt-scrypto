@@ -346,14 +346,14 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                InstructionV1::CallAccessRulesMethod {
+                InstructionV1::CallRoleAssignmentMethod {
                     address,
                     method_name,
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_method!(
-                        ObjectModuleId::AccessRules,
+                        ObjectModuleId::RoleAssignment,
                         address.as_node_id(),
                         false,
                         method_name,

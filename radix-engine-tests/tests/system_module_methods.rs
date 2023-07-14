@@ -1,5 +1,5 @@
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use radix_engine::errors::{RuntimeError, SystemError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
@@ -201,7 +201,8 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
 
                     let parent_node_id = if self.globalized_parent {
                         let metadata = Metadata::create(api)?;
-                        let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?;
+                        let role_assignment =
+                            RoleAssignment::create(OwnerRole::None, btreemap!(), api)?;
                         let royalty =
                             ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
 
@@ -209,7 +210,7 @@ fn should_not_be_able_to_call_metadata_methods_on_child_object(globalized_parent
                             btreemap!(
                                 ObjectModuleId::Main => parent,
                                 ObjectModuleId::Metadata => metadata.0,
-                                ObjectModuleId::AccessRules => access_rules.0.0,
+                                ObjectModuleId::RoleAssignment => role_assignment.0.0,
                                 ObjectModuleId::Royalty => royalty.0,
                             ),
                             None,

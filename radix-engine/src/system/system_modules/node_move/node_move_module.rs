@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ProofMoveableSubstate;
 use crate::errors::{RuntimeError, SystemModuleError};
-use crate::kernel::actor::{Actor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -49,12 +49,10 @@ impl NodeMoveModule {
                     return Ok(());
                 }
 
-                if matches!(callee, Actor::Function { .. })
-                    && callee
-                        .blueprint_id()
-                        .eq(&info.main_blueprint_info.blueprint_id)
-                {
-                    return Ok(());
+                if let Actor::Function(FunctionActor { blueprint_id, .. }) = callee {
+                    if blueprint_id.eq(&info.main_blueprint_info.blueprint_id) {
+                        return Ok(());
+                    }
                 }
 
                 // Change to restricted unless it's moved to auth zone.
@@ -118,12 +116,10 @@ impl NodeMoveModule {
                     return Ok(());
                 }
 
-                if matches!(callee, Actor::Function { .. })
-                    && callee
-                        .blueprint_id()
-                        .eq(&info.main_blueprint_info.blueprint_id)
-                {
-                    return Ok(());
+                if let Actor::Function(FunctionActor { blueprint_id, .. }) = callee {
+                    if blueprint_id.eq(&info.main_blueprint_info.blueprint_id) {
+                        return Ok(());
+                    }
                 }
 
                 // Change to restricted unless it's moved to auth zone.

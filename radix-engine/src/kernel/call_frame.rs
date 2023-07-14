@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
-use super::actor::{Actor, MethodActor};
+use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
 
@@ -301,7 +301,9 @@ impl<L: Clone> CallFrame<L> {
         // Additional global references
         let mut additional_global_refs = Vec::new();
 
-        additional_global_refs.push(frame.actor.blueprint_id().package_address.into());
+        if let Some(blueprint_id) = frame.actor.blueprint_id() {
+            additional_global_refs.push(blueprint_id.package_address.into());
+        }
 
         match &frame.actor {
             Actor::Root => {}
@@ -319,15 +321,9 @@ impl<L: Clone> CallFrame<L> {
                     additional_global_refs.push(outer_object.clone());
                 }
             }
-            Actor::Function {
-                blueprint_id: blueprint,
-                ..
-            }
-            | Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ..
-            } => {
-                additional_global_refs.push(blueprint.package_address.clone().into());
+            Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                additional_global_refs.push(blueprint_id.package_address.clone().into());
             }
         }
 
@@ -1118,17 +1114,13 @@ impl<L: Clone> CallFrame<L> {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
                     TypeInfoSubstate::Object(NodeObjectInfo {
-                        main_blueprint_info:
-                            BlueprintObjectInfo {
-                                blueprint_id: blueprint,
-                                ..
-                            },
+                        main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
                         ..
-                    }) if blueprint.package_address == RESOURCE_PACKAGE
-                        && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
+                    }) if blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint_id.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
+                            || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
                     {
                         false
                     }
