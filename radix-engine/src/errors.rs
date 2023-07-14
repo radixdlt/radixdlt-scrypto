@@ -17,8 +17,8 @@ use crate::kernel::call_frame::{
     CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError,
     OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError,
 };
-use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
+use crate::system::node_modules::role_assignment::RoleAssignmentError;
 use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
@@ -207,7 +207,9 @@ pub enum SystemError {
     NoParent,
     NotAnAddressReservation,
     NotAnObject,
-    NoReceiver,
+    ActorNodeIdDoesNotExist,
+    ActorModuleIdIdDoesNotExist,
+    ActorObjectInfoDoesNotExist,
     OuterObjectDoesNotExist,
     NotAFieldHandle,
     NotAFieldWriteHandle,
@@ -218,6 +220,7 @@ pub enum SystemError {
     MutatingImmutableSubstate,
     MutatingImmutableFieldSubstate(ObjectHandle, u8),
     NotAKeyValueStore,
+    ObjectModuleDoesNotExist(ObjectModuleId),
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
@@ -227,7 +230,6 @@ pub enum SystemError {
     InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize(CannotGlobalizeError),
     MissingModule(ObjectModuleId),
-    InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidGlobalAddressReservation,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
@@ -328,9 +330,6 @@ pub enum CannotGlobalizeError {
     InvalidBlueprintId,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidModuleSet(pub BTreeSet<ObjectModuleId>);
-
 impl CanBeAbortion for SystemModuleError {
     fn abortion(&self) -> Option<&AbortReason> {
         match self {
@@ -426,7 +425,7 @@ pub enum ApplicationError {
     //===================
     // Node module errors
     //===================
-    AccessRulesError(AccessRulesError),
+    RoleAssignmentError(RoleAssignmentError),
 
     MetadataError(MetadataPanicError),
 
@@ -494,9 +493,9 @@ impl From<FungibleResourceManagerError> for ApplicationError {
     }
 }
 
-impl From<AccessRulesError> for ApplicationError {
-    fn from(value: AccessRulesError) -> Self {
-        Self::AccessRulesError(value)
+impl From<RoleAssignmentError> for ApplicationError {
+    fn from(value: RoleAssignmentError) -> Self {
+        Self::RoleAssignmentError(value)
     }
 }
 

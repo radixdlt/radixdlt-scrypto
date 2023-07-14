@@ -6,7 +6,7 @@ use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use native_sdk::resource::NativeProof;
-use radix_engine_interface::api::{ClientApi, LockFlags, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
 
@@ -90,8 +90,10 @@ impl AuthZoneBlueprint {
                         TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                             global: false,
 
-                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
-                            blueprint_version: BlueprintVersion::default(),
+                            main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
+                            module_versions: btreemap!(
+                                ObjectModuleId::Main => BlueprintVersion::default(),
+                            ),
 
                             outer_object: OuterObjectInfo::Some {
                                 outer_object: resource_address.into(),
@@ -110,8 +112,10 @@ impl AuthZoneBlueprint {
                     TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                         global: false,
 
-                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                        blueprint_version: BlueprintVersion::default(),
+                        main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                        module_versions: btreemap!(
+                            ObjectModuleId::Main => BlueprintVersion::default(),
+                        ),
 
                         outer_object: OuterObjectInfo::Some {
                             outer_object: resource_address.into(),
@@ -154,8 +158,10 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                    blueprint_version: BlueprintVersion::default(),
+                    main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
 
                     outer_object: OuterObjectInfo::Some {
                         outer_object: resource_address.into(),
@@ -200,8 +206,10 @@ impl AuthZoneBlueprint {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
-                    blueprint_version: BlueprintVersion::default(),
+                    main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
+                    module_versions: btreemap!(
+                        ObjectModuleId::Main => BlueprintVersion::default(),
+                    ),
 
                     outer_object: OuterObjectInfo::Some {
                         outer_object: resource_address.into(),

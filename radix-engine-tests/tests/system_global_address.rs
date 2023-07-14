@@ -47,7 +47,7 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
     );
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
-        PackageDefinition::new_test_definition(
+        PackageDefinition::new_functions_only_test_definition(
             BLUEPRINT_NAME,
             vec![
                 ("test", "test", false),

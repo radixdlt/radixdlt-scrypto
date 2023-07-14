@@ -292,9 +292,9 @@ impl<L: Clone> CallFrame<L> {
             .map_err(CreateFrameError::PassMessageError)?;
 
         // Make sure actor isn't part of the owned nodes
-        if let Some(receiver) = &frame.actor.receiver_info() {
-            if frame.owned_root_nodes.contains_key(&receiver.node_id) {
-                return Err(CreateFrameError::ActorBeingMoved(receiver.node_id));
+        if let Some(node_id) = frame.actor.node_id() {
+            if frame.owned_root_nodes.contains_key(&node_id) {
+                return Err(CreateFrameError::ActorBeingMoved(node_id));
             }
         }
 
@@ -309,16 +309,14 @@ impl<L: Clone> CallFrame<L> {
             Actor::Root => {}
             Actor::Method(MethodActor {
                 global_address,
-                receiver_info,
+                object_info,
                 instance_context,
                 ..
             }) => {
                 if let Some(global_address) = global_address {
                     additional_global_refs.push(global_address.clone());
                 }
-                if let OuterObjectInfo::Some { outer_object } =
-                    receiver_info.object_info.outer_object
-                {
+                if let OuterObjectInfo::Some { outer_object } = object_info.outer_object {
                     additional_global_refs.push(outer_object.clone());
                 }
                 if let Some(instance_context) = instance_context {
@@ -1117,13 +1115,14 @@ impl<L: Clone> CallFrame<L> {
         } else {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. })
-                        if blueprint_id.package_address == RESOURCE_PACKAGE
-                            && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                                || blueprint_id.blueprint_name
-                                    == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                                || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
-                                || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        main_blueprint_id: blueprint_id,
+                        ..
+                    }) if blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint_id.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
+                            || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
                     {
                         false
                     }
@@ -1182,8 +1181,8 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Actor
-        if let Some(receiver) = self.actor.receiver_info() {
-            if receiver.node_id == *node_id {
+        if let Some(actor_node_id) = self.actor.node_id() {
+            if actor_node_id == *node_id {
                 visibilities.insert(Visibility::Actor);
             }
         }

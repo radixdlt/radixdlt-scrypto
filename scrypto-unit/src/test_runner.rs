@@ -1340,7 +1340,7 @@ impl<E: NativeVmExtension> TestRunner<E> {
     }
 
     pub fn create_freezeable_non_fungible(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_access_rules(
+        self.create_non_fungible_resource_with_roles(
             NonFungibleResourceRoles {
                 burn_roles: burn_roles! {
                     burner => rule!(allow_all);
@@ -1417,13 +1417,10 @@ impl<E: NativeVmExtension> TestRunner<E> {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        self.create_non_fungible_resource_with_access_rules(
-            NonFungibleResourceRoles::default(),
-            account,
-        )
+        self.create_non_fungible_resource_with_roles(NonFungibleResourceRoles::default(), account)
     }
 
-    pub fn create_non_fungible_resource_with_access_rules(
+    pub fn create_non_fungible_resource_with_roles(
         &mut self,
         resource_roles: NonFungibleResourceRoles,
         account: ComponentAddress,
@@ -1778,8 +1775,8 @@ impl<E: NativeVmExtension> TestRunner<E> {
         let (package_address, schema_pointer) = match event_type_identifier {
             EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
                 match node_module {
-                    ObjectModuleId::AccessRules => {
-                        (ACCESS_RULES_MODULE_PACKAGE, schema_pointer.clone())
+                    ObjectModuleId::RoleAssignment => {
+                        (ROLE_ASSIGNMENT_MODULE_PACKAGE, schema_pointer.clone())
                     }
                     ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, schema_pointer.clone()),
                     ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, schema_pointer.clone()),
@@ -1794,9 +1791,10 @@ impl<E: NativeVmExtension> TestRunner<E> {
                             .unwrap();
 
                         match type_info {
-                            TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
-                                (blueprint_id.package_address, *schema_pointer)
-                            }
+                            TypeInfoSubstate::Object(ObjectInfo {
+                                main_blueprint_id: blueprint_id,
+                                ..
+                            }) => (blueprint_id.package_address, *schema_pointer),
                             _ => {
                                 panic!("No event schema.")
                             }
@@ -1973,7 +1971,7 @@ pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
 ) -> PackageDefinition {
-    PackageDefinition::new_single_test_function(blueprint_name, function_name)
+    PackageDefinition::new_single_function_test_definition(blueprint_name, function_name)
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

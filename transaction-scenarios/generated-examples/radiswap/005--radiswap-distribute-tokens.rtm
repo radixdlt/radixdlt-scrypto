@@ -39,13 +39,21 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1tkx2clwmyfkkel68kqhmchr4thud82nl75u07mlex7cur3yhf4tmzx")
+=======
+    Address("resource_sim1tkpkakqeav9n0z4e6tv4f8r03eu20egzegwm30rye77spm00cg3vhn")
+>>>>>>> origin/develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1tkn8qvseqfhadfwgn7fv93w6vzqd7segslm2lwp99n307gxxk99qcn")
+=======
+    Address("resource_sim1t5exhfu7c0qwekr66hd42x0j4ag0vwhddy4252l7d66rugrk2s3c63")
+>>>>>>> origin/develop
     Decimal("333")
 ;
 CALL_METHOD
@@ -80,13 +88,21 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1tkx2clwmyfkkel68kqhmchr4thud82nl75u07mlex7cur3yhf4tmzx")
+=======
+    Address("resource_sim1tkpkakqeav9n0z4e6tv4f8r03eu20egzegwm30rye77spm00cg3vhn")
+>>>>>>> origin/develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1tkn8qvseqfhadfwgn7fv93w6vzqd7segslm2lwp99n307gxxk99qcn")
+=======
+    Address("resource_sim1t5exhfu7c0qwekr66hd42x0j4ag0vwhddy4252l7d66rugrk2s3c63")
+>>>>>>> origin/develop
     Decimal("333")
 ;
 CALL_METHOD
@@ -121,13 +137,21 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1tkx2clwmyfkkel68kqhmchr4thud82nl75u07mlex7cur3yhf4tmzx")
+=======
+    Address("resource_sim1tkpkakqeav9n0z4e6tv4f8r03eu20egzegwm30rye77spm00cg3vhn")
+>>>>>>> origin/develop
     Decimal("333")
 ;
 CALL_METHOD
     Address("account_sim168qgdkgfqxpnswu38wy6fy5v0q0um52zd0umuely5t9xrf88t3unc0")
     "withdraw"
+<<<<<<< HEAD
     Address("resource_sim1tkn8qvseqfhadfwgn7fv93w6vzqd7segslm2lwp99n307gxxk99qcn")
+=======
+    Address("resource_sim1t5exhfu7c0qwekr66hd42x0j4ag0vwhddy4252l7d66rugrk2s3c63")
+>>>>>>> origin/develop
     Decimal("333")
 ;
 CALL_METHOD
