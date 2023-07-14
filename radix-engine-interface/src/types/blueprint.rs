@@ -12,21 +12,21 @@ use scrypto_schema::{InstanceSchema, KeyValueStoreSchema};
 use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum BlueprintObjectType {
+pub enum OuterObjectInfo {
     Inner { outer_object: GlobalAddress },
     Outer,
 }
 
-impl Default for BlueprintObjectType {
+impl Default for OuterObjectInfo {
     fn default() -> Self {
-        BlueprintObjectType::Outer
+        OuterObjectInfo::Outer
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintObjectInfo {
     pub blueprint_id: BlueprintId,
-    pub blueprint_type: BlueprintObjectType,
+    pub outer_obj_info: OuterObjectInfo,
     pub features: BTreeSet<String>,
     pub instance_schema: Option<InstanceSchema>,
 }
@@ -43,9 +43,9 @@ pub struct NodeObjectInfo {
 
 impl NodeObjectInfo {
     pub fn get_main_outer_object(&self) -> GlobalAddress {
-        match &self.main_blueprint_info.blueprint_type {
-            BlueprintObjectType::Inner { outer_object } => outer_object.clone(),
-            BlueprintObjectType::Outer { .. } => {
+        match &self.main_blueprint_info.outer_obj_info {
+            OuterObjectInfo::Inner { outer_object } => outer_object.clone(),
+            OuterObjectInfo::Outer { .. } => {
                 panic!("Broken Application logic: Expected to be an inner object but is an outer object");
             }
         }
@@ -57,9 +57,9 @@ impl NodeObjectInfo {
 
     pub fn try_get_outer_object(&self, module_id: ObjectModuleId) -> Option<GlobalAddress> {
         match module_id {
-            ObjectModuleId::Main => match &self.main_blueprint_info.blueprint_type {
-                BlueprintObjectType::Inner { outer_object } => Some(outer_object.clone()),
-                BlueprintObjectType::Outer { .. } => None,
+            ObjectModuleId::Main => match &self.main_blueprint_info.outer_obj_info {
+                OuterObjectInfo::Inner { outer_object } => Some(outer_object.clone()),
+                OuterObjectInfo::Outer { .. } => None,
             },
             _ => None,
         }

@@ -622,7 +622,7 @@ pub fn create_bootstrap_package_partitions(
 
                 main_blueprint_info: BlueprintObjectInfo {
                     blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-                    blueprint_type: BlueprintObjectType::default(),
+                    outer_obj_info: OuterObjectInfo::default(),
                     features: btreeset!(),
                     instance_schema: None,
                 },

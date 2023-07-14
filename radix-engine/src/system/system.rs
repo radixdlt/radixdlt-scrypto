@@ -646,7 +646,7 @@ where
         {
             match instance_context {
                 Some(context) if context.info.blueprint_id.blueprint_name.eq(outer_blueprint) => (
-                    BlueprintObjectType::Inner {
+                    OuterObjectInfo::Inner {
                         outer_object: context.outer_object,
                     },
                     context.info.features,
@@ -667,7 +667,7 @@ where
                 }
             }
 
-            (BlueprintObjectType::Outer, BTreeSet::new())
+            (OuterObjectInfo::Outer, BTreeSet::new())
         };
 
         let user_substates = self.validate_instance_schema_and_state(
@@ -698,7 +698,7 @@ where
 
                     main_blueprint_info: BlueprintObjectInfo {
                         blueprint_id: blueprint_id.clone(),
-                        blueprint_type,
+                        outer_obj_info,
                         features: object_features,
                         instance_schema,
                     }
@@ -749,7 +749,7 @@ where
             ObjectModuleId::Main => self.get_node_object_info(node_id)?.main_blueprint_info,
             _ => BlueprintObjectInfo {
                 blueprint_id: module_id.static_blueprint().unwrap(),
-                blueprint_type: BlueprintObjectType::Outer,
+                outer_obj_info: OuterObjectInfo::Outer,
                 features: BTreeSet::default(),
                 instance_schema: None,
             },
@@ -834,9 +834,9 @@ where
                 }
             }
             Condition::IfOuterFeature(feature) => {
-                let parent_id = match info.blueprint_type {
-                    BlueprintObjectType::Inner { outer_object } => outer_object.into_node_id(),
-                    BlueprintObjectType::Outer => {
+                let parent_id = match info.outer_obj_info {
+                    OuterObjectInfo::Inner { outer_object } => outer_object.into_node_id(),
+                    OuterObjectInfo::Outer => {
                         panic!("Outer object should not have IfOuterFeature.")
                     }
                 };
@@ -1180,7 +1180,7 @@ where
             })
         } else {
             match method_actor.get_blueprint_info() {
-                BlueprintObjectType::Inner { outer_object } => {
+                OuterObjectInfo::Inner { outer_object } => {
                     // TODO: do this recursively until global?
                     let info = self.get_blueprint_object_info(
                         outer_object.as_node_id(),
@@ -1193,7 +1193,7 @@ where
                         info,
                     })
                 }
-                BlueprintObjectType::Outer { .. } => None,
+                OuterObjectInfo::Outer { .. } => None,
             }
         };
 
@@ -1549,15 +1549,15 @@ where
 
         // FIXME: what's the right model, trading off between flexibility and security?
         // If the actor is the object's outer object
-        match info.main_blueprint_info.blueprint_type {
-            BlueprintObjectType::Inner { outer_object } => {
+        match info.main_blueprint_info.outer_obj_info {
+            OuterObjectInfo::Inner { outer_object } => {
                 if let Some(instance_context) = self.actor_instance_context()? {
                     if instance_context.outer_object.eq(&outer_object) {
                         is_drop_allowed = true;
                     }
                 }
             }
-            BlueprintObjectType::Outer { .. } => {}
+            OuterObjectInfo::Outer { .. } => {}
         }
 
         // If the actor is a function within the same blueprint
@@ -2316,9 +2316,9 @@ where
 
         let (node_id, module_id) = self.get_actor_object_id(ActorObjectType::SELF)?;
         let info = self.get_blueprint_object_info(&node_id, module_id)?;
-        match info.blueprint_type {
-            BlueprintObjectType::Inner { outer_object } => Ok(outer_object),
-            BlueprintObjectType::Outer => Err(RuntimeError::SystemError(
+        match info.outer_obj_info {
+            OuterObjectInfo::Inner { outer_object } => Ok(outer_object),
+            OuterObjectInfo::Outer => Err(RuntimeError::SystemError(
                 SystemError::OuterObjectDoesNotExist,
             )),
         }

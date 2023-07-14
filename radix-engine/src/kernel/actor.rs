@@ -36,14 +36,14 @@ impl MethodActor {
         }
     }
 
-    pub fn get_blueprint_info(&self) -> BlueprintObjectType {
+    pub fn get_blueprint_info(&self) -> OuterObjectInfo {
         match self.module_id {
             ObjectModuleId::Main => self
                 .node_object_info
                 .main_blueprint_info
-                .blueprint_type
+                .outer_obj_info
                 .clone(),
-            _ => BlueprintObjectType::Outer,
+            _ => OuterObjectInfo::Outer,
         }
     }
 

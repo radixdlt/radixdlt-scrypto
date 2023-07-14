@@ -96,7 +96,7 @@ impl AuthZoneBlueprint {
 
                             main_blueprint_info: BlueprintObjectInfo {
                                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
-                                blueprint_type: BlueprintObjectType::Inner {
+                                outer_obj_info: OuterObjectInfo::Inner {
                                     outer_object: resource_address.into(),
                                 },
                                 features: btreeset!(),
@@ -120,7 +120,7 @@ impl AuthZoneBlueprint {
 
                         main_blueprint_info: BlueprintObjectInfo {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                            blueprint_type: BlueprintObjectType::Inner {
+                            outer_obj_info: OuterObjectInfo::Inner {
                                 outer_object: resource_address.into(),
                             },
                             features: btreeset!(),
@@ -168,7 +168,7 @@ impl AuthZoneBlueprint {
 
                     main_blueprint_info: BlueprintObjectInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                        blueprint_type: BlueprintObjectType::Inner {
+                        outer_obj_info: OuterObjectInfo::Inner {
                             outer_object: resource_address.into(),
                         },
                         features: btreeset!(),
@@ -218,7 +218,7 @@ impl AuthZoneBlueprint {
 
                     main_blueprint_info: BlueprintObjectInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
-                        blueprint_type: BlueprintObjectType::Inner {
+                        outer_obj_info: OuterObjectInfo::Inner {
                             outer_object: resource_address.into(),
                         },
                         features: btreeset!(),

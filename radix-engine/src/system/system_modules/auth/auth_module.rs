@@ -258,10 +258,10 @@ impl AuthModule {
                 ))))
             }
             Some(MethodAccessibility::OuterObjectOnly) => match callee.get_blueprint_info() {
-                BlueprintObjectType::Inner { outer_object } => Ok(ResolvedPermission::AccessRule(
+                OuterObjectInfo::Inner { outer_object } => Ok(ResolvedPermission::AccessRule(
                     rule!(require(global_caller(outer_object))),
                 )),
-                BlueprintObjectType::Outer { .. } => Err(RuntimeError::SystemModuleError(
+                OuterObjectInfo::Outer { .. } => Err(RuntimeError::SystemModuleError(
                     SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
                 )),
             },
@@ -345,7 +345,7 @@ impl AuthModule {
 
                     main_blueprint_info: BlueprintObjectInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
-                        blueprint_type: BlueprintObjectType::default(),
+                        outer_obj_info: OuterObjectInfo::default(),
                         features: btreeset!(),
                         instance_schema: None,
                     }
