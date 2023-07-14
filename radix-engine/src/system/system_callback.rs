@@ -212,6 +212,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_take_substates(api, store_access)
     }
 
+    fn on_scan_substates<Y>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelApi<Self> {
+        SystemModuleMixer::on_scan_substates(api)
+    }
+
     fn on_scan_sorted_substates<Y>(
         api: &mut Y,
     ) -> Result<(), RuntimeError>

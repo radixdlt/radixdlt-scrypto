@@ -373,6 +373,17 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
+    fn on_scan_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(CostingEntry::ScanSubstatesBase)?;
+
+        Ok(())
+    }
+
     fn on_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules

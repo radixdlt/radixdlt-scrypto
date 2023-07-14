@@ -407,6 +407,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
+    fn on_scan_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_scan_substates(api))
+    }
+
+    #[trace_resources]
     fn on_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {

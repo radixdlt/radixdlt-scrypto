@@ -206,6 +206,11 @@ impl FeeTable {
     }
 
     #[inline]
+    pub fn scan_substates_base_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
     pub fn scan_sorted_substates_base_cost(&self) -> u32 {
         500
     }

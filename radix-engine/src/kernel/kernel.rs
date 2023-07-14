@@ -816,6 +816,8 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+        M::on_scan_substates(self)?;
+
         let substates = self
             .current_frame
             .scan_substates(
