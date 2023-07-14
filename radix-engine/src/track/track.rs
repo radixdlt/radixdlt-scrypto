@@ -356,13 +356,13 @@ pub fn to_state_updates<M: DatabaseKeyMapper>(
     }
 }
 
-struct TrackedIter<'a> {
-    iter: Box<dyn Iterator<Item = (DbSortKey, IndexedScryptoValue, StoreAccess)> + 'a>,
+struct TrackedIter<'a, E> {
+    iter: Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>> + 'a>,
     num_iterations: u32,
 }
 
-impl<'a> TrackedIter<'a> {
-    fn new(iter: Box<dyn Iterator<Item = (DbSortKey, IndexedScryptoValue, StoreAccess)> + 'a>) -> Self {
+impl<'a, E> TrackedIter<'a, E> {
+    fn new(iter: Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>> + 'a>) -> Self {
         Self {
             iter,
             num_iterations: 0u32,
@@ -370,8 +370,8 @@ impl<'a> TrackedIter<'a> {
     }
 }
 
-impl<'a> Iterator for TrackedIter<'a> {
-    type Item = (DbSortKey, IndexedScryptoValue, StoreAccess);
+impl<'a, E> Iterator for TrackedIter<'a, E> {
+    type Item = Result<(DbSortKey, IndexedScryptoValue), E>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.num_iterations = self.num_iterations + 1;
@@ -429,29 +429,50 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
         partition_key: &DbPartitionKey,
         store_access: &'x mut StoreAccessInfo,
         on_store_access: F,
-    ) -> Box<dyn Iterator<Item = (DbSortKey, IndexedScryptoValue, StoreAccess)> + 'x> {
+    ) -> Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>> + 'x> {
         struct TracedIterator<'a, 'b, E, F: FnMut(StoreAccess) -> Result<(), E>> {
             iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
             store_access: &'b mut StoreAccessInfo,
             on_store_access: F,
+            errored_out: bool,
         }
 
         impl<'a, 'b, E, F: FnMut(StoreAccess) -> Result<(), E>> Iterator for TracedIterator<'a, 'b, E, F> {
-            type Item = (DbSortKey, IndexedScryptoValue, StoreAccess);
+            type Item = Result<(DbSortKey, IndexedScryptoValue), E>;
 
             fn next(&mut self) -> Option<Self::Item> {
+                if self.errored_out {
+                    return None;
+                }
+
                 let result = self.iterator.next();
                 if let Some(x) = result {
                     let store_access = StoreAccess::ReadFromDb(x.1.len());
                     self.store_access.push(store_access.clone());
-                    Some((
-                        x.0,
-                        IndexedScryptoValue::from_vec(x.1).expect("Failed to decode substate"),
-                        store_access,
-                    ))
+
+                    let result = (self.on_store_access)(store_access.clone());
+                    match result {
+                        Ok(()) => {
+                            Some(Ok((
+                                x.0,
+                                IndexedScryptoValue::from_vec(x.1).expect("Failed to decode substate"),
+                            )))
+                        }
+                        Err(e) => {
+                            self.errored_out = true;
+                            Some(Err(e))
+                        }
+                    }
                 } else {
                     self.store_access.push(StoreAccess::ReadFromDbNotFound);
-                    None
+                    let result = (self.on_store_access)(StoreAccess::ReadFromDbNotFound);
+                    match result {
+                        Ok(()) => None,
+                        Err(e) => {
+                            self.errored_out = true;
+                            Some(Err(e))
+                        }
+                    }
                 }
             }
         }
@@ -460,6 +481,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             iterator: substate_db.list_entries(partition_key),
             store_access,
             on_store_access,
+            errored_out: false,
         })
     }
 
@@ -765,7 +787,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        mut on_store_access: F,
+        on_store_access: F,
     ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), E> {
         let mut store_access = Vec::new();
 
@@ -792,7 +814,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         }
 
         // Optimization, no need to go into database if the node is just created
-        if is_new {
+        if items.len() == count || is_new {
             return Ok((items, store_access));
         }
 
@@ -801,16 +823,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             self.substate_db,
             &db_partition_key,
             &mut store_access,
-            |e| -> Result<(), ()> {
-                Ok(())
-            }
+            on_store_access,
         ));
-        for (db_sort_key, value, store_access) in &mut tracked_iter {
+
+        for result in &mut tracked_iter {
+            let (db_sort_key, value) = result?;
+
             if items.len() == count {
                 break;
             }
-
-            on_store_access(store_access)?;
 
             if tracked_partition
                 .map(|tracked_partition| tracked_partition.substates.contains_key(&db_sort_key))
@@ -881,7 +902,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         ));
         let new_updates = {
             let mut new_updates = Vec::new();
-            for (db_sort_key, value, _) in &mut tracked_iter {
+            for result in &mut tracked_iter {
+
+                let (db_sort_key, value) = result.unwrap();
+
                 if items.len() == count {
                     break;
                 }
@@ -965,7 +989,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                     |e| -> Result<(), ()> {
                         Ok(())
                     }
-                ).map(|(key, value, _access)| (key, value)))
+                ).map(|result| {
+                    let (key, value) = result.unwrap();
+                    (key, value)
+                }))
             };
         let db_read_entries = raw_db_entries.inspect(|(_key, _value)| {
             db_values_count += 1;
