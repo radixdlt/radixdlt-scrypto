@@ -431,7 +431,9 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
         .ok_or(Error::ComponentNotFound(component_address))?;
 
     match type_info {
-        TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => Ok(blueprint_id.clone()),
+        TypeInfoSubstate::Object(ObjectInfo {
+            main_blueprint_id, ..
+        }) => Ok(main_blueprint_id.clone()),
         _ => panic!("Unexpected"),
     }
 }
@@ -455,9 +457,10 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         )
                         .unwrap();
                     match type_info {
-                        TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
-                            (blueprint_id.package_address, *schema_pointer)
-                        }
+                        TypeInfoSubstate::Object(ObjectInfo {
+                            main_blueprint_id: blueprint_id,
+                            ..
+                        }) => (blueprint_id.package_address, *schema_pointer),
                         _ => return None,
                     }
                 }

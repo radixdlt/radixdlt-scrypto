@@ -10,7 +10,6 @@ use crate::types::*;
 use crate::vm::wasm::PrepareError;
 use native_sdk::modules::metadata::Metadata;
 use native_sdk::modules::role_assignment::RoleAssignment;
-use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeVault;
 use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
@@ -615,8 +614,12 @@ pub fn create_bootstrap_package_partitions(
             TYPE_INFO_FIELD_PARTITION,
             type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                 global: true,
-                blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
-                version: BlueprintVersion::default(),
+                main_blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                module_versions: btreemap!(
+                    ObjectModuleId::Main => BlueprintVersion::default(),
+                    ObjectModuleId::Metadata => BlueprintVersion::default(),
+                    ObjectModuleId::RoleAssignment => BlueprintVersion::default(),
+                ),
                 blueprint_info: ObjectBlueprintInfo::default(),
                 features: btreeset!(),
                 instance_schema: None,
@@ -752,13 +755,10 @@ where
         kv_entries,
     )?;
 
-    let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::Disabled, api)?;
-
     let address = api.globalize(
         btreemap!(
             ObjectModuleId::Main => package_object,
             ObjectModuleId::Metadata => metadata.0,
-            ObjectModuleId::Royalty => royalty.0,
             ObjectModuleId::RoleAssignment => role_assignment.0.0,
         ),
         package_address_reservation,

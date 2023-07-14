@@ -336,7 +336,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         match actor {
             Actor::Root => panic!("Root is invoked"),
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
+                module_object_info:
+                    ObjectInfo {
+                        main_blueprint_id: blueprint_id,
+                        ..
+                    },
                 ident,
                 ..
             })
@@ -460,7 +464,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
+                TypeInfoSubstate::Object(ObjectInfo {
+                    main_blueprint_id: blueprint_id,
+                    ..
+                }) => {
                     match (
                         blueprint_id.package_address,
                         blueprint_id.blueprint_name.as_str(),
@@ -525,7 +532,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 let object_info = system.get_object_info(proof.0.as_node_id())?;
                 system.call_function(
                     RESOURCE_PACKAGE,
-                    &object_info.blueprint_id.blueprint_name,
+                    &object_info.main_blueprint_id.blueprint_name,
                     PROOF_DROP_IDENT,
                     scrypto_encode(&ProofDropInput { proof }).unwrap(),
                 )?;

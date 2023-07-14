@@ -4,6 +4,7 @@ version = "0.11.0"
 edition = "2021"
 
 [dependencies]
+native-sdk = { path = "../native-sdk", default-features = false }
 sbor = { path = "../sbor", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests"] }
 radix-engine-constants = { path = "../radix-engine-constants" }

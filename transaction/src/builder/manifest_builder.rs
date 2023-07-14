@@ -975,7 +975,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: address.into(),
             method_name: COMPONENT_ROYALTY_SET_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ComponentSetRoyaltyInput {
+            args: to_manifest_value_and_unwrap!(&ComponentRoyaltySetInput {
                 method: method.into(),
                 amount,
             }),
@@ -991,7 +991,7 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::CallRoyaltyMethod {
             address: address.into(),
             method_name: COMPONENT_ROYALTY_LOCK_ROYALTY_IDENT.to_string(),
-            args: to_manifest_value_and_unwrap!(&ComponentLockRoyaltyInput {
+            args: to_manifest_value_and_unwrap!(&ComponentRoyaltyLockInput {
                 method: method.into(),
             }),
         })

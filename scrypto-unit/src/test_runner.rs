@@ -1791,9 +1791,10 @@ impl<E: NativeVmExtension> TestRunner<E> {
                             .unwrap();
 
                         match type_info {
-                            TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
-                                (blueprint_id.package_address, *schema_pointer)
-                            }
+                            TypeInfoSubstate::Object(ObjectInfo {
+                                main_blueprint_id: blueprint_id,
+                                ..
+                            }) => (blueprint_id.package_address, *schema_pointer),
                             _ => {
                                 panic!("No event schema.")
                             }
@@ -1970,7 +1971,7 @@ pub fn single_function_package_definition(
     blueprint_name: &str,
     function_name: &str,
 ) -> PackageDefinition {
-    PackageDefinition::new_single_test_function(blueprint_name, function_name)
+    PackageDefinition::new_single_function_test_definition(blueprint_name, function_name)
 }
 
 #[derive(ScryptoSbor, NonFungibleData, ManifestSbor)]

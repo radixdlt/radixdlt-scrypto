@@ -25,7 +25,7 @@ pub struct MethodActor {
 impl MethodActor {
     pub fn fn_identifier(&self) -> FnIdentifier {
         FnIdentifier {
-            blueprint_id: self.module_object_info.blueprint_id.clone(),
+            blueprint_id: self.module_object_info.main_blueprint_id.clone(),
             ident: self.ident.to_string(),
         }
     }
@@ -88,11 +88,11 @@ impl Actor {
                 ..
             }) => {
                 object_info
-                    .blueprint_id
+                    .main_blueprint_id
                     .package_address
                     .eq(&RESOURCE_PACKAGE)
                     && object_info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(AUTH_ZONE_BLUEPRINT)
             }
@@ -126,7 +126,11 @@ impl Actor {
         match self {
             Actor::Root => false,
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
+                module_object_info:
+                    ObjectInfo {
+                        main_blueprint_id: blueprint_id,
+                        ..
+                    },
                 ..
             })
             | Actor::Function(FunctionActor { blueprint_id, .. })
@@ -175,7 +179,11 @@ impl Actor {
     pub fn blueprint_id(&self) -> Option<&BlueprintId> {
         match self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
+                module_object_info:
+                    ObjectInfo {
+                        main_blueprint_id: blueprint_id,
+                        ..
+                    },
                 ..
             })
             | Actor::Function(FunctionActor { blueprint_id, .. })
@@ -207,7 +215,11 @@ impl Actor {
     pub fn package_address(&self) -> Option<&PackageAddress> {
         match &self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
+                module_object_info:
+                    ObjectInfo {
+                        main_blueprint_id: blueprint_id,
+                        ..
+                    },
                 ..
             })
             | Actor::Function(FunctionActor { blueprint_id, .. })
@@ -221,7 +233,11 @@ impl Actor {
     pub fn blueprint_name(&self) -> Option<&str> {
         match &self {
             Actor::Method(MethodActor {
-                module_object_info: ObjectInfo { blueprint_id, .. },
+                module_object_info:
+                    ObjectInfo {
+                        main_blueprint_id: blueprint_id,
+                        ..
+                    },
                 ..
             })
             | Actor::Function(FunctionActor { blueprint_id, .. })
@@ -234,16 +250,18 @@ impl Actor {
 
     pub fn method(
         global_address: Option<GlobalAddress>,
-        method: MethodIdentifier,
+        node_id: NodeId,
+        module_id: ObjectModuleId,
+        ident: String,
         module_object_info: ObjectInfo,
         instance_context: Option<InstanceContext>,
         is_direct_access: bool,
     ) -> Self {
         Self::Method(MethodActor {
             global_address,
-            node_id: method.0,
-            module_id: method.1,
-            ident: method.2,
+            node_id,
+            module_id,
+            ident,
             module_object_info,
             instance_context,
             is_direct_access,
