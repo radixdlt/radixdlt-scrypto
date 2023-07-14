@@ -7,11 +7,10 @@ use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use sbor::basic_well_known_types::ANY_ID;
 use sbor::rust::prelude::*;
 use sbor::LocalTypeIndex;
-use scrypto_schema::BlueprintSchemaInit;
 use scrypto_schema::FunctionSchemaInit;
 use scrypto_schema::TypeRef;
 use scrypto_schema::{BlueprintFunctionsSchemaInit, ReceiverInfo};
-use utils::btreemap;
+use scrypto_schema::{BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema};
 
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 
@@ -188,11 +187,11 @@ impl Default for StaticRoles {
 
 impl PackageDefinition {
     // For testing only
-    pub fn new_single_test_function(
+    pub fn new_single_function_test_definition(
         blueprint_name: &str,
         function_name: &str,
     ) -> PackageDefinition {
-        Self::new_test_definition(
+        Self::new_functions_only_test_definition(
             blueprint_name,
             vec![(
                 function_name,
@@ -203,7 +202,7 @@ impl PackageDefinition {
     }
 
     // For testing only
-    pub fn new_test_definition(
+    pub fn new_functions_only_test_definition(
         blueprint_name: &str,
         functions: Vec<(&str, &str, bool)>,
     ) -> PackageDefinition {
@@ -213,7 +212,6 @@ impl PackageDefinition {
             BlueprintDefinitionInit {
                 schema: BlueprintSchemaInit {
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
                         functions: functions
                             .into_iter()
                             .map(|(function_name, export_name, has_receiver)| {
@@ -230,6 +228,47 @@ impl PackageDefinition {
                                 (function_name.to_string(), schema)
                             })
                             .collect(),
+                    },
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        );
+        PackageDefinition { blueprints }
+    }
+
+    // For testing only
+    pub fn new_with_field_test_definition(
+        blueprint_name: &str,
+        functions: Vec<(&str, &str, bool)>,
+    ) -> PackageDefinition {
+        let mut blueprints = BTreeMap::new();
+        blueprints.insert(
+            blueprint_name.to_string(),
+            BlueprintDefinitionInit {
+                schema: BlueprintSchemaInit {
+                    state: BlueprintStateSchemaInit {
+                        fields: vec![FieldSchema::static_field(LocalTypeIndex::WellKnown(ANY_ID))],
+                        ..Default::default()
+                    },
+                    functions: BlueprintFunctionsSchemaInit {
+                        functions: functions
+                            .into_iter()
+                            .map(|(function_name, export_name, has_receiver)| {
+                                let schema = FunctionSchemaInit {
+                                    receiver: if has_receiver {
+                                        Some(ReceiverInfo::normal_ref())
+                                    } else {
+                                        None
+                                    },
+                                    input: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                                    output: TypeRef::Static(LocalTypeIndex::WellKnown(ANY_ID)),
+                                    export: export_name.to_string(),
+                                };
+                                (function_name.to_string(), schema)
+                            })
+                            .collect(),
+                        ..Default::default()
                     },
                     ..Default::default()
                 },

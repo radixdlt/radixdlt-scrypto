@@ -164,8 +164,8 @@ pub const ROYALTY_MODULE_PACKAGE: PackageAddress = PackageAddress::new_or_panic(
     61, 24, 151, 70, 49, 140, 99, 24, 198,
 ]);
 
-/// The native package for the access rules module.
-pub const ACCESS_RULES_MODULE_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
+/// The native package for the role assignment module.
+pub const ROLE_ASSIGNMENT_MODULE_PACKAGE: PackageAddress = PackageAddress::new_or_panic([
     13, 144, 99, 24, 198, 49, 140, 110, 143, 159, 204, 12, 99, 24, 198, 49, 140, 247, 170, 47, 173,
     116, 162, 158, 38, 49, 140, 99, 24, 198,
 ]);
@@ -341,7 +341,7 @@ mod tests {
             "package_rdx1pkgxxxxxxxxxryaltyxxxxxxxxx003849573396xxxxxxxxxryalty",
         );
         check_address(
-            ACCESS_RULES_MODULE_PACKAGE.as_ref(),
+            ROLE_ASSIGNMENT_MODULE_PACKAGE.as_ref(),
             EntityType::GlobalPackage,
             "package_rdx1pkgxxxxxxxxxarulesxxxxxxxxx002304462983xxxxxxxxxarules",
         );

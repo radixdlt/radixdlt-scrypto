@@ -30,7 +30,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Check format
       run: bash ./check.sh
   sbor-unit-tests:
@@ -43,7 +43,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Run tests
       run: cargo test
       working-directory: sbor
@@ -63,7 +63,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Run tests
       run: cargo test
       working-directory: sbor-tests
@@ -83,7 +83,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Run tests
       run: cargo test
       working-directory: scrypto
@@ -106,7 +106,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Run tests
       run: cargo test
       working-directory: scrypto-tests
@@ -123,7 +123,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
@@ -143,6 +143,25 @@ jobs:
     - name: Build and test everything
       run: cargo build --target wasm32-unknown-unknown --release && cargo test --release
       working-directory: examples/everything
+  radix-engine-build:
+    name: Run Radix Engine build (RocksDB)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [k8s-linux-runner]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.70.0
+    - name: Install dependency
+      run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
+    - name: Build with resource tracking
+      run: cargo build --features resource_tracker
+    - name: Build with rocksdb
+      run: cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb --release --no-run -- --nocapture
+    - name: Build bench with rocksdb
+      run: cargo bench --features rocksdb --no-run
   radix-engine:
     name: Run Radix Engine tests
     runs-on: ${{ matrix.os }}
@@ -153,17 +172,11 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Install nextest
       uses: taiki-e/install-action@nextest
-    - name: Install RocksDB metrics dependency
-      run: sudo apt-get -y update && sudo apt-get -y install pkg-config libfreetype6-dev libfontconfig1-dev
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
-    - name: Build with resource tracking
-      run: cargo build --features resource_tracker
-    - name: Build RocksDB metrics test
-      run: cargo test -p radix-engine-profiling -p radix-engine-stores --features rocksdb test_store_db --release --no-run -- --nocapture
     - name: Run tests
       run: |
         cargo nextest run \
@@ -185,7 +198,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -206,7 +219,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target
@@ -227,7 +240,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -243,7 +256,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -259,7 +272,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Run tests
       run: cargo test
       working-directory: transaction
@@ -287,7 +300,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
         prefix-key: ""
@@ -321,7 +334,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
         prefix-key: ""
@@ -349,7 +362,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.70.0
     - name: Install nextest
       uses: taiki-e/install-action@nextest
     - name: Add wasm target

@@ -1,4 +1,4 @@
-use super::actor::{Actor, MethodActor};
+use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
@@ -109,7 +109,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             kernel.store.close_substate(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_id: blueprint,
+                    main_blueprint_id: blueprint_id,
                     global,
                     ..
                 }) => {
@@ -119,9 +119,9 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                             .add_global_reference(GlobalAddress::new_or_panic(
                                 node_id.clone().into(),
                             ));
-                    } else if blueprint.package_address.eq(&RESOURCE_PACKAGE)
-                        && (blueprint.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
-                            || blueprint.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
+                    } else if blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                        && (blueprint_id.blueprint_name.eq(FUNGIBLE_VAULT_BLUEPRINT)
+                            || blueprint_id.blueprint_name.eq(NON_FUNGIBLE_VAULT_BLUEPRINT))
                     {
                         kernel.current_frame.add_direct_access_reference(
                             InternalAddress::new_or_panic(node_id.clone().into()),
@@ -219,17 +219,11 @@ where
                 .current_frame
                 .get_node_visibility(&node_id)
                 .can_be_invoked(*is_direct_access),
-            Actor::Function {
-                blueprint_id: blueprint,
-                ..
-            }
-            | Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ..
-            } => {
+            Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
                 // FIXME: combine this with reference check of invocation
                 self.current_frame
-                    .get_node_visibility(blueprint.package_address.as_node_id())
+                    .get_node_visibility(blueprint_id.package_address.as_node_id())
                     .can_be_invoked(false)
             }
             Actor::Root => true,
@@ -428,7 +422,7 @@ where
         SystemState {
             system: &mut self.callback,
             caller,
-            current: self.current_frame.actor(),
+            current_actor: self.current_frame.actor(),
         }
     }
 
@@ -441,13 +435,13 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(info)
-                    if info.blueprint_id.package_address == RESOURCE_PACKAGE
-                        && (info.blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || info.blueprint_id.blueprint_name
+                    if info.main_blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (info.main_blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                            || info.main_blueprint_id.blueprint_name
                                 == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                 {
                     let is_fungible = info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_BUCKET_BLUEPRINT);
                     let parent = info.get_outer_object();
@@ -505,13 +499,13 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    blueprint_id: blueprint,
+                    main_blueprint_id: blueprint_id,
                     ..
-                }) if blueprint.package_address == RESOURCE_PACKAGE
-                    && (blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
-                        || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
+                }) if blueprint_id.package_address == RESOURCE_PACKAGE
+                    && (blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
+                        || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT) =>
                 {
-                    blueprint.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
+                    blueprint_id.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT)
                 }
                 _ => {
                     return None;

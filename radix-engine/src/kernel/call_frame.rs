@@ -12,7 +12,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
-use super::actor::{Actor, MethodActor};
+use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
 
@@ -303,7 +303,9 @@ impl<L: Clone> CallFrame<L> {
         // Additional global references
         let mut additional_global_refs = Vec::new();
 
-        additional_global_refs.push(frame.actor.package_address().clone().into());
+        if let Some(address) = frame.actor.package_address() {
+            additional_global_refs.push(address.clone().into());
+        }
 
         match &frame.actor {
             Actor::Root => {}
@@ -323,15 +325,9 @@ impl<L: Clone> CallFrame<L> {
                     additional_global_refs.push(instance_context.outer_object.clone());
                 }
             }
-            Actor::Function {
-                blueprint_id: blueprint,
-                ..
-            }
-            | Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ..
-            } => {
-                additional_global_refs.push(blueprint.package_address.clone().into());
+            Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                additional_global_refs.push(blueprint_id.package_address.clone().into());
             }
         }
 
@@ -1119,13 +1115,13 @@ impl<L: Clone> CallFrame<L> {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
                     TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint_id: blueprint,
+                        main_blueprint_id: blueprint_id,
                         ..
-                    }) if blueprint.package_address == RESOURCE_PACKAGE
-                        && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
+                    }) if blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint_id.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
+                            || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
                     {
                         false
                     }

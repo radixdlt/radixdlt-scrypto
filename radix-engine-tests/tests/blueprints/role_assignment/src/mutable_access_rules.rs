@@ -1,7 +1,7 @@
 use scrypto::prelude::*;
 
 #[blueprint]
-mod mutable_access_rules_component {
+mod mutable_role_assignment_component {
     enable_method_auth! {
         roles {
             borrow_funds_auth => updatable_by: [deposit_funds_auth];

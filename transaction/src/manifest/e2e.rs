@@ -383,9 +383,9 @@ CALL_METADATA_METHOD
     "get"
     "HelloWorld"
 ;
-CALL_ACCESS_RULES_METHOD
+CALL_ROLE_ASSIGNMENT_METHOD
     Address("${component_address}")
-    "get_role"
+    "get"
     Enum<0u8>()
     "hello"
 ;

@@ -564,7 +564,6 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                         BlueprintFunctionsSchemaInit {
                             functions,
-                            virtual_lazy_load_functions: BTreeMap::default(),
                         }
                     };
 
@@ -588,6 +587,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                         state,
                         events,
                         functions,
+                        hooks: BlueprintHooksInit::default(),
                     }
                 };
 
@@ -1460,7 +1460,6 @@ mod tests {
 
                                 BlueprintFunctionsSchemaInit {
                                     functions,
-                                    virtual_lazy_load_functions: BTreeMap::default(),
                                 }
                             };
 
@@ -1479,6 +1478,7 @@ mod tests {
                                 state,
                                 events,
                                 functions,
+                                hooks: BlueprintHooksInit::default(),
                             }
                         };
 

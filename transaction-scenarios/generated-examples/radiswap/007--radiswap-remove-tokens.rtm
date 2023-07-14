@@ -6,15 +6,15 @@ CALL_METHOD
 CALL_METHOD
     Address("account_sim168j3paqgngj74yzaljq4n422rtsmupaec3wnqq5425fd85cnd8xmdz")
     "withdraw"
-    Address("resource_sim1thlelm5ak8qaq3xk9ar8rdanyundwuw3nhfuegk0dfl2wsn098rewy")
+    Address("resource_sim1tkpkakqeav9n0z4e6tv4f8r03eu20egzegwm30rye77spm00cg3vhn")
     Decimal("100")
 ;
 TAKE_ALL_FROM_WORKTOP
-    Address("resource_sim1thlelm5ak8qaq3xk9ar8rdanyundwuw3nhfuegk0dfl2wsn098rewy")
+    Address("resource_sim1tkpkakqeav9n0z4e6tv4f8r03eu20egzegwm30rye77spm00cg3vhn")
     Bucket("pool_units")
 ;
 CALL_METHOD
-    Address("component_sim1cqy90x4c5nf205mp73e39vhsg7mrgpwwq7f8u8t9j0shtmfr2jyeuc")
+    Address("component_sim1crv0shxn9fqcx4emxx6z008kmldkmalzjnp755gjysqqesa286ls6a")
     "remove_liquidity"
     Bucket("pool_units")
 ;

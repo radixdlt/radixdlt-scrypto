@@ -157,7 +157,7 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
         let info = api.get_object_info(proof.0.as_node_id())?;
 
         if info
-            .blueprint_id
+            .main_blueprint_id
             .blueprint_name
             .eq(FUNGIBLE_PROOF_BLUEPRINT)
         {
@@ -209,7 +209,7 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
     for proof in proofs {
         let info = api.get_object_info(proof.0.as_node_id())?;
         if info
-            .blueprint_id
+            .main_blueprint_id
             .blueprint_name
             .eq(NON_FUNGIBLE_PROOF_BLUEPRINT)
         {

@@ -17,8 +17,8 @@ use crate::kernel::call_frame::{
     CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError, OpenSubstateError,
     PassMessageError, ReadSubstateError, WriteSubstateError,
 };
-use crate::system::node_modules::access_rules::AccessRulesError;
 use crate::system::node_modules::metadata::MetadataPanicError;
+use crate::system::node_modules::role_assignment::RoleAssignmentError;
 use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
@@ -199,8 +199,9 @@ pub enum CallFrameError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemError {
+    NoBlueprintId,
+    NoPackageAddress,
     InvalidObjectHandle,
-    NodeIdNotExist,
     GlobalAddressDoesNotExist,
     NoParent,
     NotAnAddressReservation,
@@ -216,6 +217,7 @@ pub enum SystemError {
     MutatingImmutableSubstate,
     MutatingImmutableFieldSubstate(ObjectHandle, u8),
     NotAKeyValueStore,
+    ObjectModuleDoesNotExist(ObjectModuleId),
     CannotStoreOwnedInIterable,
     InvalidSubstateWrite(String),
     InvalidKeyValueStoreOwnership,
@@ -225,7 +227,6 @@ pub enum SystemError {
     InvalidKeyValueStoreSchema(SchemaValidationError),
     CannotGlobalize(CannotGlobalizeError),
     MissingModule(ObjectModuleId),
-    InvalidModuleSet(Box<InvalidModuleSet>),
     InvalidGlobalAddressReservation,
     InvalidChildObjectCreation,
     InvalidModuleType(Box<InvalidModuleType>),
@@ -261,6 +262,7 @@ pub enum SystemUpstreamError {
 
     FnNotFound(String),
     ReceiverNotMatch(String),
+    HookNotFound(BlueprintHook),
 
     InputDecodeError(DecodeError),
     InputSchemaNotMatch(String, String),
@@ -324,9 +326,6 @@ pub enum CannotGlobalizeError {
     AlreadyGlobalized,
     InvalidBlueprintId,
 }
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidModuleSet(pub BTreeSet<ObjectModuleId>);
 
 impl CanBeAbortion for SystemModuleError {
     fn abortion(&self) -> Option<&AbortReason> {
@@ -423,7 +422,7 @@ pub enum ApplicationError {
     //===================
     // Node module errors
     //===================
-    AccessRulesError(AccessRulesError),
+    RoleAssignmentError(RoleAssignmentError),
 
     MetadataError(MetadataPanicError),
 
@@ -491,9 +490,9 @@ impl From<FungibleResourceManagerError> for ApplicationError {
     }
 }
 
-impl From<AccessRulesError> for ApplicationError {
-    fn from(value: AccessRulesError) -> Self {
-        Self::AccessRulesError(value)
+impl From<RoleAssignmentError> for ApplicationError {
+    fn from(value: RoleAssignmentError) -> Self {
+        Self::RoleAssignmentError(value)
     }
 }
 

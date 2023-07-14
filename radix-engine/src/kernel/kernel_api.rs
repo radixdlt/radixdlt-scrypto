@@ -181,7 +181,7 @@ pub trait KernelInvokeApi {
 
 pub struct SystemState<'a, M: KernelCallbackObject> {
     pub system: &'a mut M,
-    pub current: &'a Actor,
+    pub current_actor: &'a Actor,
     pub caller: &'a Actor,
 }
 
