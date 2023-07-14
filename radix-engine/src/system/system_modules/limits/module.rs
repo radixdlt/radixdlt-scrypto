@@ -56,7 +56,7 @@ impl LimitsModule {
 
     pub fn process_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError> {
         match store_access {
-            StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound | StoreAccess::ScanInitialization => {}
+            StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
             StoreAccess::NewEntryInTrack => {
                 self.number_of_substates_in_track += 1;
             }
@@ -79,7 +79,7 @@ impl LimitsModule {
     ) -> Result<(), RuntimeError> {
         for access in store_access {
             match access {
-                StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound | StoreAccess::ScanInitialization => {}
+                StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
                 StoreAccess::NewEntryInTrack => {
                     self.number_of_substates_in_track += 1;
                 }
@@ -232,7 +232,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             .process_store_access_info(store_access)
     }
 
-    fn on_scan_substate(
+    fn on_store_access(
         store_access: &StoreAccess,
         system: &mut SystemConfig<V>,
     ) -> Result<(), RuntimeError> {

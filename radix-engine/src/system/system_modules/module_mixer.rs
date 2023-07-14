@@ -407,31 +407,38 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_scan_substate(
+    fn on_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_scan_sorted_substates(api))
+    }
+
+    #[trace_resources]
+    fn on_store_access(
         store_access: &StoreAccess,
         system: &mut SystemConfig<V>,
     ) -> Result<(), RuntimeError> {
         let modules: EnabledModules = system.modules.enabled_modules;
         if modules.contains(EnabledModules::KERNEL_TRACE) {
-            KernelTraceModule::on_scan_substate(store_access, system)?;
+            KernelTraceModule::on_store_access(store_access, system)?;
         }
         if modules.contains(EnabledModules::LIMITS) {
-            LimitsModule::on_scan_substate(store_access, system)?;
+            LimitsModule::on_store_access(store_access, system)?;
         }
         if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_scan_substate(store_access, system)?;
+            CostingModule::on_store_access(store_access, system)?;
         }
         if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_scan_substate(store_access, system)?;
+            AuthModule::on_store_access(store_access, system)?;
         }
         if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_scan_substate(store_access, system)?;
+            NodeMoveModule::on_store_access(store_access, system)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_scan_substate(store_access, system)?;
+            TransactionRuntimeModule::on_store_access(store_access, system)?;
         }
         if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_scan_substate(store_access, system)?;
+            ExecutionTraceModule::on_store_access(store_access, system)?;
         }
 
         Ok(())

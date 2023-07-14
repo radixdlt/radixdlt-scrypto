@@ -119,6 +119,12 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
+    fn on_scan_sorted_substates<Y>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelApi<Self>;
+
     fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;

@@ -191,7 +191,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn on_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError>
     {
-        SystemModuleMixer::on_scan_substate(store_access, self)
+        SystemModuleMixer::on_store_access(store_access, self)
     }
 
     fn on_set_substate<Y>(
@@ -210,6 +210,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<Self>,
     {
         SystemModuleMixer::on_take_substates(api, store_access)
+    }
+
+    fn on_scan_sorted_substates<Y>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelApi<Self> {
+        SystemModuleMixer::on_scan_sorted_substates(api)
     }
 
     fn after_create_node<Y>(

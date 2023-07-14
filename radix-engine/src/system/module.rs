@@ -193,7 +193,14 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_scan_substate(
+    fn on_scan_sorted_substates<Y: KernelApi<M>>(
+        _api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn on_store_access(
         _store_access: &StoreAccess,
         _system: &mut M,
     ) -> Result<(), RuntimeError> {
