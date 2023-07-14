@@ -37,8 +37,8 @@ mod big_vault {
             }
         }
 
-        pub fn non_fungibles(&mut self) {
-            self.vault.as_non_fungible().non_fungible_local_ids();
+        pub fn non_fungibles(&mut self, count: u32) {
+            self.vault.as_non_fungible().non_fungible_local_ids(count);
         }
     }
 }

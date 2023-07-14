@@ -27,7 +27,7 @@ fn get_non_fungibles_on_big_vault_should_not_fail() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_method(component_address, "non_fungibles", manifest_args!())
+        .call_method(component_address, "non_fungibles", manifest_args!(100u32))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
