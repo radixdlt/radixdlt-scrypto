@@ -44,15 +44,6 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_move_modules<Y>(
-        src_node_id: &NodeId,
-        dest_node_id: &NodeId,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
     fn before_open_substate<Y>(
         node_id: &NodeId,
         partition_num: &PartitionNumber,
@@ -67,7 +58,6 @@ pub trait KernelCallbackObject: Sized {
         handle: LockHandle,
         node_id: &NodeId,
         size: usize,
-        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -75,7 +65,6 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_close_substate<Y>(
         lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -84,7 +73,6 @@ pub trait KernelCallbackObject: Sized {
     fn on_read_substate<Y>(
         lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -93,7 +81,6 @@ pub trait KernelCallbackObject: Sized {
     fn on_write_substate<Y>(
         lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -106,14 +93,12 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_set_substate<Y>(
         value_size: usize,
-        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
     fn on_remove_substate<Y>(
-        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

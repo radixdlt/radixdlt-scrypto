@@ -132,7 +132,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         api: &mut Y,
         handle: LockHandle,
         node_id: &NodeId,
-        _store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
         log!(
@@ -148,7 +147,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         api: &mut Y,
         lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
@@ -163,7 +161,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         api: &mut Y,
         lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(
             api,
@@ -177,7 +174,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         log!(api, "Dropping lock: handle = {} ", lock_handle);
         Ok(())

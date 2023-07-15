@@ -112,16 +112,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn after_move_modules<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _src_node_id: &NodeId,
-        _dest_node_id: &NodeId,
-        _store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
     fn before_drop_node<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
@@ -157,7 +147,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
         _api: &mut Y,
         _lock_handle: LockHandle,
         _node_id: &NodeId,
-        _store_access: &StoreAccessInfo,
         _size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -168,7 +157,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
         _api: &mut Y,
         _lock_handle: LockHandle,
         _value_size: usize,
-        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -178,7 +166,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
         _api: &mut Y,
         _lock_handle: LockHandle,
         _value_size: usize,
-        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -187,7 +174,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn on_close_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
-        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -196,7 +182,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn on_set_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _value_size: usize,
-        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -204,7 +189,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_remove_substate<Y: KernelApi<M>>(
         _api: &mut Y,
-        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

@@ -315,19 +315,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        src_node_id: &NodeId,
-        dest_node_id: &NodeId,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            after_move_modules(api, src_node_id, dest_node_id, store_access)
-        )
-    }
-
-    #[trace_resources]
     fn before_drop_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
@@ -362,12 +349,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         handle: LockHandle,
         node_id: &NodeId,
-        store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api,
-            after_open_substate(api, handle, node_id, store_access, size)
+            after_open_substate(api, handle, node_id, size)
         )
     }
 
@@ -376,11 +362,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api,
-            on_read_substate(api, lock_handle, value_size, store_access)
+            on_read_substate(api, lock_handle, value_size)
         )
     }
 
@@ -389,11 +374,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api,
-            on_write_substate(api, lock_handle, value_size, store_access)
+            on_write_substate(api, lock_handle, value_size)
         )
     }
 
@@ -401,26 +385,23 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_close_substate(api, lock_handle, store_access))
+        internal_call_dispatch!(api, on_close_substate(api, lock_handle))
     }
 
     #[trace_resources]
     fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         value_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_set_substate(api, value_size, store_access))
+        internal_call_dispatch!(api, on_set_substate(api, value_size))
     }
 
     #[trace_resources]
     fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_remove_substate(api, store_access))
+        internal_call_dispatch!(api, on_remove_substate(api))
     }
 
     #[trace_resources]

@@ -226,54 +226,50 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn move_modules_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, self.store_access_info_cost(store_access))
+    pub fn move_modules_cost(&self) -> u32 {
+        500
     }
 
     #[inline]
-    pub fn open_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
+    pub fn open_substate_cost(&self, size: usize) -> u32 {
+        add(
             500,
             Self::data_processing_cost(size),
-            self.store_access_info_cost(store_access),
         )
     }
 
     #[inline]
-    pub fn read_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
+    pub fn read_substate_cost(&self, size: usize) -> u32 {
+        add(
             500,
             Self::data_processing_cost(size),
-            self.store_access_info_cost(store_access),
         )
     }
 
     #[inline]
-    pub fn write_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
+    pub fn write_substate_cost(&self, size: usize) -> u32 {
+        add(
             500,
             Self::data_processing_cost(size),
-            self.store_access_info_cost(store_access),
         )
     }
 
     #[inline]
-    pub fn close_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, self.store_access_info_cost(store_access))
+    pub fn close_substate_cost(&self) -> u32 {
+        500
     }
 
     #[inline]
-    pub fn set_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
+    pub fn set_substate_cost(&self, size: usize) -> u32 {
+        add(
             500,
             Self::data_processing_cost(size),
-            self.store_access_info_cost(store_access),
         )
     }
 
     #[inline]
-    pub fn remove_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, self.store_access_info_cost(store_access))
+    pub fn remove_substate_base_cost(&self) -> u32 {
+        500
     }
 
     #[inline]
