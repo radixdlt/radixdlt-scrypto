@@ -25,7 +25,6 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
@@ -582,20 +581,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 version: BlueprintVersion::default(),
             },
         )?;
-        if let Some(export) = definition
+        if definition
             .hook_exports
-            .get(&BlueprintHook::OnVirtualize)
-            .cloned()
+            .contains_key(&BlueprintHook::OnVirtualize)
         {
             let rtn: Vec<u8> = api
                 .kernel_invoke(Box::new(KernelInvocation {
                     actor: Actor::BlueprintHook(BlueprintHookActor {
                         blueprint_id: blueprint_id.clone(),
                         hook: BlueprintHook::OnVirtualize,
-                        export,
-                        node_id: None,
-                        module_id: None,
-                        object_info: None,
+                        receiver: None,
                     }),
                     args: IndexedScryptoValue::from_typed(&OnVirtualizeInput {
                         variant_id,
@@ -643,15 +638,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         version: BlueprintVersion::default(),
                     },
                 )?;
-                if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnDrop).cloned() {
+                if definition.hook_exports.contains_key(&BlueprintHook::OnDrop) {
                     api.kernel_invoke(Box::new(KernelInvocation {
                         actor: Actor::BlueprintHook(BlueprintHookActor {
                             blueprint_id: node_object_info.main_blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnDrop,
-                            export,
-                            node_id: Some(node_id.clone()),
-                            module_id: Some(ObjectModuleId::Main),
-                            object_info: Some(node_object_info),
+                            receiver: Some(node_id.clone()),
                         }),
                         args: IndexedScryptoValue::from_typed(&OnDropInput {}),
                     }))
