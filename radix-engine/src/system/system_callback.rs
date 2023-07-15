@@ -15,23 +15,26 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
+use crate::system::system::FieldSubstate;
+use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
-use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeOutput;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
-use radix_engine_interface::blueprints::resource::{
-    Proof, ProofDropInput, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_PROOF_BLUEPRINT, PROOF_DROP_IDENT,
-};
+use radix_engine_interface::hooks::OnDropInput;
+use radix_engine_interface::hooks::OnDropOutput;
+use radix_engine_interface::hooks::OnMoveOutput;
+use radix_engine_interface::hooks::OnPersistOutput;
+use radix_engine_interface::hooks::OnVirtualizeInput;
+use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::schema::{InstanceSchema, RefTypes};
 
 #[derive(Clone)]
@@ -305,9 +308,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         let mut system = SystemService::new(api);
         let actor = system.current_actor();
-        let receiver = actor
-            .try_as_method()
-            .map(|x| (x.node_id.clone(), x.is_direct_access));
+        let node_id = actor.node_id();
+        let is_direct_access = actor.is_direct_access();
 
         // Make dependent resources/components visible
         if let Some(blueprint_id) = actor.blueprint_id() {
@@ -336,7 +338,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         match actor {
             Actor::Root => panic!("Root is invoked"),
             Actor::Method(MethodActor {
-                module_object_info:
+                object_info:
                     ObjectInfo {
                         main_blueprint_id: blueprint_id,
                         ..
@@ -350,7 +352,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 ..
             }) => {
                 //  Validate input
-                let definition = system.get_blueprint_definition(
+                let definition = system.load_blueprint_definition(
                     blueprint_id.package_address,
                     &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
                 )?;
@@ -374,9 +376,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     .functions
                     .get(&ident)
                     .expect("Should exist due to schema check");
-                match (&function_schema.receiver, receiver) {
-                    (Some(receiver_info), Some((_, direct_access))) => {
-                        if direct_access
+                match (&function_schema.receiver, node_id) {
+                    (Some(receiver_info), Some(_)) => {
+                        if is_direct_access
                             != receiver_info.ref_types.contains(RefTypes::DIRECT_ACCESS)
                         {
                             return Err(RuntimeError::SystemUpstreamError(
@@ -413,20 +415,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?;
                 Ok(output)
             }
-            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, hook }) => {
-                // Find the export
-                let definition = system.get_blueprint_definition(
-                    blueprint_id.package_address,
-                    &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-                )?;
-                let export =
-                    definition
-                        .hook_exports
-                        .get(&hook)
-                        .ok_or(RuntimeError::SystemUpstreamError(
-                            SystemUpstreamError::HookNotFound(hook),
-                        ))?;
-
+            Actor::BlueprintHook(BlueprintHookActor {
+                blueprint_id,
+                hook,
+                export,
+                ..
+            }) => {
                 // Input is not validated as they're created by system.
 
                 // Invoke the export
@@ -440,10 +434,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 // Check output against well-known schema
                 match hook {
                     BlueprintHook::OnVirtualize => {
-                        scrypto_decode::<OnVirtualizeOutput>(output.as_slice())
+                        scrypto_decode::<OnVirtualizeOutput>(output.as_slice()).map(|_| ())
                     }
-                    BlueprintHook::OnMove | BlueprintHook::OnDrop | BlueprintHook::OnPersist => {
-                        todo!("FIXME add other hook implementations")
+                    BlueprintHook::OnDrop => {
+                        scrypto_decode::<OnDropOutput>(output.as_slice()).map(|_| ())
+                    }
+                    BlueprintHook::OnMove => {
+                        scrypto_decode::<OnMoveOutput>(output.as_slice()).map(|_| ())
+                    }
+                    BlueprintHook::OnPersist => {
+                        scrypto_decode::<OnPersistOutput>(output.as_slice()).map(|_| ())
                     }
                 }
                 .map_err(|e| {
@@ -455,11 +455,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
     }
 
+    // Note: we check dangling nodes, in kernel, after auto-drop
     fn auto_drop<Y>(nodes: Vec<NodeId>, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        // Note: this function is not responsible for checking if all nodes are dropped!
+        // Round 1 - drop all proofs
         for node_id in nodes {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
@@ -505,11 +506,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             }
         }
 
+        // Round 2 - drop the auth zone
+        //
         // Note that we destroy frame's auth zone at the very end of the `auto_drop` process
         // to make sure the auth zone stack is in good state for the proof dropping above.
-
-        // Detach proofs from the auth zone
+        //
         if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
+            // Detach proofs from the auth zone
             let handle = api.kernel_open_substate(
                 &auth_zone_id,
                 MAIN_BASE_PARTITION,
@@ -517,18 +520,15 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 LockFlags::MUTABLE,
                 SystemLockData::Default,
             )?;
-            let mut auth_zone_substate: FieldSubstate<AuthZone> =
+            let mut substate: FieldSubstate<AuthZone> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let proofs = core::mem::replace(&mut auth_zone_substate.value.0.proofs, Vec::new());
-            api.kernel_write_substate(
-                handle,
-                IndexedScryptoValue::from_typed(&auth_zone_substate),
-            )?;
+            let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
+            api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
             api.kernel_close_substate(handle)?;
 
-            // Drop the proofs
-            let mut system = SystemService::new(api);
+            // Drop all proofs (previously) owned by the auth zone
             for proof in proofs {
+                let mut system = SystemService::new(api);
                 let object_info = system.get_object_info(proof.0.as_node_id())?;
                 system.call_function(
                     RESOURCE_PACKAGE,
@@ -574,25 +574,92 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             _ => return Ok(false),
         };
 
-        let rtn: Vec<u8> = api
-            .kernel_invoke(Box::new(KernelInvocation {
-                actor: Actor::blueprint_hook(blueprint_id.clone(), BlueprintHook::OnVirtualize),
-                args: IndexedScryptoValue::from_typed(&OnVirtualizeInput {
-                    variant_id,
-                    rid: copy_u8_array(&node_id.as_bytes()[1..]),
-                }),
-            }))?
-            .into();
+        let mut service = SystemService::new(api);
+        let definition = service.load_blueprint_definition(
+            blueprint_id.package_address,
+            &BlueprintVersionKey {
+                blueprint: blueprint_id.blueprint_name.clone(),
+                version: BlueprintVersion::default(),
+            },
+        )?;
+        if let Some(export) = definition
+            .hook_exports
+            .get(&BlueprintHook::OnVirtualize)
+            .cloned()
+        {
+            let rtn: Vec<u8> = api
+                .kernel_invoke(Box::new(KernelInvocation {
+                    actor: Actor::BlueprintHook(BlueprintHookActor {
+                        blueprint_id: blueprint_id.clone(),
+                        hook: BlueprintHook::OnVirtualize,
+                        export,
+                        node_id: None,
+                        module_id: None,
+                        object_info: None,
+                    }),
+                    args: IndexedScryptoValue::from_typed(&OnVirtualizeInput {
+                        variant_id,
+                        rid: copy_u8_array(&node_id.as_bytes()[1..]),
+                    }),
+                }))?
+                .into();
 
-        let modules: OnVirtualizeOutput =
-            scrypto_decode(&rtn).expect("`on_virtualize` output should've been validated");
-        let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-        let address = GlobalAddress::new_or_panic(node_id.into());
+            let modules: OnVirtualizeOutput =
+                scrypto_decode(&rtn).expect("`on_virtualize` output should've been validated");
+            let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
+            let address = GlobalAddress::new_or_panic(node_id.into());
 
-        let mut system = SystemService::new(api);
-        let address_reservation = system.allocate_virtual_global_address(blueprint_id, address)?;
-        system.globalize(modules, Some(address_reservation))?;
+            let mut system = SystemService::new(api);
+            let address_reservation =
+                system.allocate_virtual_global_address(blueprint_id, address)?;
+            system.globalize(modules, Some(address_reservation))?;
 
-        Ok(true)
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => {
+                let mut service = SystemService::new(api);
+                let definition = service.load_blueprint_definition(
+                    object_info.main_blueprint_id.package_address,
+                    &BlueprintVersionKey {
+                        blueprint: object_info.main_blueprint_id.blueprint_name.clone(),
+                        version: BlueprintVersion::default(),
+                    },
+                )?;
+                if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnDrop).cloned() {
+                    let object_info = service.get_object_info(node_id)?;
+                    api.kernel_invoke(Box::new(KernelInvocation {
+                        actor: Actor::BlueprintHook(BlueprintHookActor {
+                            blueprint_id: object_info.main_blueprint_id.clone(),
+                            hook: BlueprintHook::OnDrop,
+                            export,
+                            node_id: Some(node_id.clone()),
+                            module_id: Some(ObjectModuleId::Main),
+                            object_info: Some(object_info),
+                        }),
+                        args: IndexedScryptoValue::from_typed(&OnDropInput {}),
+                    }))
+                    .map(|_| ())
+                } else {
+                    Ok(())
+                }
+            }
+            TypeInfoSubstate::KeyValueStore(_)
+            | TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => {
+                // There is no way to drop a non-object through system API, triggering `NotAnObject` error.
+                Ok(())
+            }
+        }
     }
 }

@@ -207,10 +207,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 Actor::Method(MethodActor {
                     node_id,
                     ident,
-                    module_object_info,
+                    object_info,
                     ..
                 }) => {
-                    if module_object_info
+                    if object_info
                         .module_versions
                         .contains_key(&ObjectModuleId::Royalty)
                     {

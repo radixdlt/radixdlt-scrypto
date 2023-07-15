@@ -224,7 +224,7 @@ impl VmPackageValidation {
                         ));
                     }
 
-                    if !hooks.is_empty() {
+                    if !hooks.hooks.is_empty() {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::PackageError(PackageError::WasmUnsupported(
                                 "Hooks not supported".to_string(),

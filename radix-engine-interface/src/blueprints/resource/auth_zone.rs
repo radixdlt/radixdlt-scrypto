@@ -15,16 +15,12 @@ pub const AUTH_ZONE_BLUEPRINT: &str = "AuthZone";
 
 pub const AUTH_ZONE_POP_IDENT: &str = "pop";
 
-pub const AUTH_ZONE_POP_EXPORT_NAME: &str = "AuthZone_pop";
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZonePopInput {}
 
 pub type AuthZonePopOutput = Proof;
 
 pub const AUTH_ZONE_PUSH_IDENT: &str = "push";
-
-pub const AUTH_ZONE_PUSH_EXPORT_NAME: &str = "AuthZone_push";
 
 #[derive(Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZonePushInput {
@@ -43,8 +39,6 @@ pub type AuthZonePushOutput = ();
 
 pub const AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_IDENT: &str = "create_proof_of_amount";
 
-pub const AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str = "AuthZone_create_proof_of_amount";
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneCreateProofOfAmountInput {
     pub amount: Decimal,
@@ -54,9 +48,6 @@ pub struct AuthZoneCreateProofOfAmountInput {
 pub type AuthZoneCreateProofOfAmountOutput = Proof;
 
 pub const AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT: &str = "create_proof_of_non_fungibles";
-
-pub const AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME: &str =
-    "AuthZone_create_proof_of_non_fungibles";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneCreateProofOfNonFungiblesInput {
@@ -68,8 +59,6 @@ pub type AuthZoneCreateProofOfNonFungiblesOutput = Proof;
 
 pub const AUTH_ZONE_CREATE_PROOF_OF_ALL_IDENT: &str = "create_proof_of_all";
 
-pub const AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str = "AuthZone_create_proof_of_all";
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneCreateProofOfAllInput {
     pub resource_address: ResourceAddress,
@@ -79,16 +68,12 @@ pub type AuthZoneCreateProofOfAllOutput = Proof;
 
 pub const AUTH_ZONE_CLEAR_IDENT: &str = "clear";
 
-pub const AUTH_ZONE_CLEAR_EXPORT_NAME: &str = "AuthZone_clear";
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneClearInput {}
 
 pub type AuthZoneClearOutput = ();
 
 pub const AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT: &str = "clear_signature_proofs";
-
-pub const AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME: &str = "AuthZone_clear_signature_proofs";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneClearVirtualProofsInput {}
@@ -97,24 +82,10 @@ pub type AuthZoneClearVirtualProofsOutput = ();
 
 pub const AUTH_ZONE_DRAIN_IDENT: &str = "drain";
 
-pub const AUTH_ZONE_DRAIN_EXPORT_NAME: &str = "AuthZone_drain";
-
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneDrainInput {}
 
 pub type AuthZoneDrainOutput = Vec<Proof>;
-
-pub const AUTH_ZONE_DROP_IDENT: &str = "drop";
-
-pub const AUTH_ZONE_DROP_EXPORT_NAME: &str = "AuthZone_drop";
-
-#[derive(Debug, Eq, PartialEq, ScryptoSbor)]
-pub struct AuthZoneDropInput {
-    pub auth_zone: OwnedAuthZone,
-}
-
-pub type AuthZoneDropOutput = ();
-
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 #[sbor(transparent)]
 pub struct OwnedAuthZone(pub Own);

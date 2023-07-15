@@ -15,7 +15,7 @@ pub trait ClientActorApi<E: Debug> {
     ) -> Result<LockHandle, E>;
 
     // TODO: do we need more granular interfaces for this?
-    fn actor_get_info(&mut self) -> Result<ObjectInfo, E>;
+    fn actor_get_object_info(&mut self) -> Result<ObjectInfo, E>;
 
     fn actor_get_node_id(&mut self) -> Result<NodeId, E>;
 
