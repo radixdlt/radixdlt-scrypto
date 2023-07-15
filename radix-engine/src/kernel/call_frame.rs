@@ -493,16 +493,17 @@ impl<L: Clone> CallFrame<L> {
         Ok((lock_handle, substate_value.len()))
     }
 
-    pub fn close_substate<S: SubstateStore>(
+    pub fn close_substate<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
         lock_handle: LockHandle,
-    ) -> Result<(), CloseSubstateError> {
+        on_store_access: &mut F,
+    ) -> Result<(), CallbackError<CloseSubstateError, E>> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
-            .ok_or_else(|| CloseSubstateError::LockNotFound(lock_handle))?;
+            .ok_or_else(|| CallbackError::Error(CloseSubstateError::LockNotFound(lock_handle)))?;
 
         let node_id = &substate_lock.node_id;
         let partition_num = substate_lock.partition_num;
@@ -523,19 +524,21 @@ impl<L: Clone> CallFrame<L> {
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
             for own in substate.owned_nodes() {
                 if !new_owned_nodes.insert(own.clone()) {
-                    return Err(CloseSubstateError::ContainsDuplicatedOwns);
+                    return Err(CallbackError::Error(CloseSubstateError::ContainsDuplicatedOwns));
                 }
             }
             for own in &new_owned_nodes {
                 if !substate_lock.owned_nodes.contains(own) {
                     // Node no longer owned by frame
                     self.take_node_internal(own)
-                        .map_err(CloseSubstateError::TakeNodeError)?;
+                        .map_err(|e| CallbackError::Error(CloseSubstateError::TakeNodeError(e)))?;
 
                     // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
-                        Self::move_node_to_store(heap, store, own)
-                            .map_err(CloseSubstateError::PersistNodeError)?;
+                        Self::move_node_to_store(heap, store, own, on_store_access)
+                            .map_err(|e| {
+                                e.map(CloseSubstateError::PersistNodeError)
+                            })?;
                     }
                 }
             }
@@ -543,7 +546,7 @@ impl<L: Clone> CallFrame<L> {
                 if !new_owned_nodes.contains(own) {
                     // Node detached
                     if !heap.contains_node(node_id) {
-                        return Err(CloseSubstateError::CantDropNodeInStore(own.clone()));
+                        return Err(CallbackError::Error(CloseSubstateError::CantDropNodeInStore(own.clone())));
                     }
                     // Owned nodes discarded by the substate go back to the call frame,
                     // and must be explicitly dropped.
@@ -569,11 +572,11 @@ impl<L: Clone> CallFrame<L> {
                         .get_node_visibility(reference)
                         .can_be_referenced_in_substate()
                     {
-                        return Err(CloseSubstateError::RefNotFound(reference.clone()));
+                        return Err(CallbackError::Error(CloseSubstateError::RefNotFound(reference.clone())));
                     }
 
                     if !heap.contains_node(node_id) && !reference.is_global() {
-                        return Err(CloseSubstateError::NonGlobalRefNotAllowed(*reference));
+                        return Err(CallbackError::Error(CloseSubstateError::NonGlobalRefNotAllowed(*reference)));
                     }
 
                     if heap.contains_node(reference) {
@@ -690,14 +693,15 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn create_node<'f, S: SubstateStore>(
+    pub fn create_node<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
+        on_store_access: &mut F,
         heap: &mut Heap,
         store: &'f mut S,
         push_to_store: bool,
-    ) -> Result<StoreAccessInfo, CreateNodeError> {
+    ) -> Result<(), CallbackError<CreateNodeError, E>> {
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
                 //==============
@@ -705,10 +709,10 @@ impl<L: Clone> CallFrame<L> {
                 //==============
                 for own in substate_value.owned_nodes() {
                     self.take_node_internal(own)
-                        .map_err(CreateNodeError::TakeNodeError)?;
+                        .map_err(|e| CallbackError::Error(CreateNodeError::TakeNodeError(e)))?;
                     if push_to_store {
-                        Self::move_node_to_store(heap, store, own)
-                            .map_err(CreateNodeError::PersistNodeError)?;
+                        Self::move_node_to_store(heap, store, own, on_store_access)
+                            .map_err(|e| e.map(CreateNodeError::PersistNodeError))?;
                     }
                 }
 
@@ -720,11 +724,11 @@ impl<L: Clone> CallFrame<L> {
                         .get_node_visibility(reference)
                         .can_be_referenced_in_substate()
                     {
-                        return Err(CreateNodeError::RefNotFound(reference.clone()));
+                        return Err(CallbackError::Error(CreateNodeError::RefNotFound(reference.clone())));
                     }
 
                     if push_to_store && !reference.is_global() {
-                        return Err(CreateNodeError::NonGlobalRefNotAllowed(*reference));
+                        return Err(CallbackError::Error(CreateNodeError::NonGlobalRefNotAllowed(*reference)));
                     }
 
                     if heap.contains_node(reference) {
@@ -736,17 +740,16 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        let store_access = if push_to_store {
+        if push_to_store {
             self.stable_references
                 .insert(node_id, StableReferenceType::Global);
-            store.create_node(node_id, node_substates)
+            store.create_node(node_id, node_substates, on_store_access).map_err(CallbackError::CallbackError)?;
         } else {
             heap.create_node(node_id, node_substates);
             self.owned_root_nodes.insert(node_id, 0);
-            StoreAccessInfo::new()
         };
 
-        Ok(store_access)
+        Ok(())
     }
 
     /// Removes node from call frame and owned nodes will be possessed by this call frame.
@@ -838,8 +841,8 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, own)
-                        .map_err(|e| CallbackError::Error(MoveModuleError::PersistNodeError(e)))?;
+                    Self::move_node_to_store(heap, store, own, &mut on_store_access)
+                        .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
 
                 for reference in substate_value.references() {
@@ -1050,15 +1053,16 @@ impl<L: Clone> CallFrame<L> {
         Ok(substates)
     }
 
-    pub fn drop_all_locks<S: SubstateStore>(
+    pub fn drop_all_locks<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
+        on_store_access: &mut F,
         heap: &mut Heap,
         store: &mut S,
-    ) -> Result<(), CloseSubstateError> {
+    ) -> Result<(), CallbackError<CloseSubstateError, E>> {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
         for lock_handle in lock_handles {
-            self.close_substate(heap, store, lock_handle)?;
+            self.close_substate(heap, store, lock_handle, on_store_access)?;
         }
 
         Ok(())
@@ -1083,11 +1087,12 @@ impl<L: Clone> CallFrame<L> {
         self.owned_root_nodes.keys().cloned().collect()
     }
 
-    pub fn move_node_to_store<S: SubstateStore>(
+    pub fn move_node_to_store<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         heap: &mut Heap,
         store: &mut S,
         node_id: &NodeId,
-    ) -> Result<(), PersistNodeError> {
+        on_store_access: &mut F,
+    ) -> Result<(), CallbackError<PersistNodeError, E>> {
         // FIXME: Use unified approach to node configuration
         let can_be_stored = if node_id.is_global() {
             true
@@ -1114,7 +1119,7 @@ impl<L: Clone> CallFrame<L> {
             }
         };
         if !can_be_stored {
-            return Err(PersistNodeError::CantBeStored(node_id.clone()));
+            return Err(CallbackError::Error(PersistNodeError::CantBeStored(node_id.clone())));
         }
 
         let node_substates = match heap.remove_node(node_id) {
@@ -1123,24 +1128,24 @@ impl<L: Clone> CallFrame<L> {
                 panic!("Frame owned node {:?} not found in heap", node_id)
             }
             Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
-                return Err(PersistNodeError::NodeBorrowed(node_id, count));
+                return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(node_id, count)));
             }
         };
         for (_partition_number, module_substates) in &node_substates {
             for (_substate_key, substate_value) in module_substates {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        return Err(PersistNodeError::NonGlobalRefNotAllowed(*reference));
+                        return Err(CallbackError::Error(PersistNodeError::NonGlobalRefNotAllowed(*reference)));
                     }
                 }
 
                 for node in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, node)?;
+                    Self::move_node_to_store(heap, store, node, on_store_access)?;
                 }
             }
         }
 
-        store.create_node(node_id.clone(), node_substates);
+        store.create_node(node_id.clone(), node_substates, on_store_access).map_err(CallbackError::CallbackError)?;
 
         Ok(())
     }

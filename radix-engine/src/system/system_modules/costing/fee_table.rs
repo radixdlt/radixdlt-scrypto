@@ -211,12 +211,10 @@ impl FeeTable {
         &self,
         _node_id: &NodeId,
         total_substate_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> u32 {
-        add3(
+        add(
             500,
             Self::data_processing_cost(total_substate_size),
-            self.store_access_info_cost(store_access),
         )
     }
 

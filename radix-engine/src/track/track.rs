@@ -661,38 +661,38 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
 }
 
 impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, S, M> {
-    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) -> StoreAccessInfo {
-        let mut store_access = Vec::new();
+    fn create_node<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: NodeId,
+        node_substates: NodeSubstates,
+        on_store_access: &mut F,
+    ) -> Result<(), E> {
+        let mut tracked_partitions = IndexMap::new();
 
-        let tracked_partitions = node_substates
-            .into_iter()
-            .map(|(partition_num, partition)| {
-                let partition_substates = partition
-                    .into_iter()
-                    .map(|(substate_key, value)| {
-                        store_access.push(StoreAccess::NewEntryInTrack);
-                        let db_sort_key = M::to_db_sort_key(&substate_key);
-                        let tracked = TrackedSubstate {
-                            substate_key,
-                            substate_value: TrackedSubstateValue::New(RuntimeSubstate::new(value)),
-                        };
-                        (db_sort_key, tracked)
-                    })
-                    .collect();
-                let tracked_partition = TrackedPartition::new_with_substates(partition_substates);
-                (partition_num, tracked_partition)
-            })
-            .collect();
+        for (partition_num, partition) in node_substates {
+            let mut partition_substates = BTreeMap::new();
+            for (substate_key, value) in partition {
+                on_store_access(StoreAccess::NewEntryInTrack)?;
+                let db_sort_key = M::to_db_sort_key(&substate_key);
+                let tracked = TrackedSubstate {
+                    substate_key,
+                    substate_value: TrackedSubstateValue::New(RuntimeSubstate::new(value)),
+                };
+                partition_substates.insert(db_sort_key, tracked);
+            }
+            let tracked_partition = TrackedPartition::new_with_substates(partition_substates);
+            tracked_partitions.insert(partition_num, tracked_partition);
+        }
 
         self.tracked_nodes.insert(
             node_id,
             TrackedNode {
-                tracked_partitions: tracked_partitions,
+                tracked_partitions,
                 is_new: true,
             },
         );
 
-        store_access
+        Ok(())
     }
 
     fn set_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(

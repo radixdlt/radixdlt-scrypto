@@ -8,7 +8,7 @@ use crate::system::module::SystemModule;
 use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::{StoreAccess, StoreAccessInfo, StoreCommit};
+use crate::track::interface::{NodeSubstates, StoreAccess, StoreAccessInfo, StoreCommit};
 use crate::types::*;
 use crate::{
     errors::{CanBeAbortion, RuntimeError, SystemModuleError},
@@ -258,19 +258,18 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        node_id: &NodeId,
-        total_substate_size: usize,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
+    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y, node_id: &NodeId, node_substates: &NodeSubstates) -> Result<(), RuntimeError> {
+        let total_substate_size = node_substates
+            .values()
+            .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+            .sum::<usize>();
+
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(CostingEntry::CreateNode {
                 node_id,
                 total_substate_size,
-                store_access: store_access,
             })?;
 
         Ok(())

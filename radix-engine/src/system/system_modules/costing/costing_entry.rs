@@ -44,7 +44,6 @@ pub enum CostingEntry<'a> {
     CreateNode {
         node_id: &'a NodeId,
         total_substate_size: usize,
-        store_access: &'a StoreAccessInfo,
     },
     DropNode {
         total_substate_size: usize,
@@ -134,8 +133,7 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::CreateNode {
                 node_id,
                 total_substate_size,
-                store_access,
-            } => ft.create_node_cost(node_id, *total_substate_size, store_access),
+            } => ft.create_node_cost(node_id, *total_substate_size),
             CostingEntry::DropNode {
                 total_substate_size,
             } => ft.drop_node_cost(*total_substate_size),

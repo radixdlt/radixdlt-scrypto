@@ -305,12 +305,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        total_substate_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api,
-            after_create_node(api, node_id, total_substate_size, store_access)
+            after_create_node(api, node_id)
         )
     }
 

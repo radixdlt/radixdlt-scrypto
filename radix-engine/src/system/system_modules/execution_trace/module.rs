@@ -302,8 +302,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        _total_substate_size: usize,
-        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_node_id(api, node_id);

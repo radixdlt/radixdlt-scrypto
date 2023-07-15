@@ -1,6 +1,7 @@
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
+use crate::errors::RuntimeError;
 
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -27,6 +28,15 @@ pub enum CallbackError<E, C> {
     CallbackError(C),
 }
 
+impl<E> CallbackError<E, RuntimeError> {
+    pub fn to_runtime_error<F: FnOnce(E) -> RuntimeError>(self, f: F) -> RuntimeError {
+        match self {
+            CallbackError::Error(e) => f(e),
+            CallbackError::CallbackError(c) => c,
+        }
+    }
+}
+
 impl<E, C> CallbackError<E, C> {
     pub fn map<N, F: FnOnce(E) -> N>(self, f: F) -> CallbackError<N, C> {
         match self {
@@ -50,7 +60,12 @@ pub trait SubstateStore {
     ///
     /// # Panics
     /// - If the partition is invalid
-    fn create_node(&mut self, node_id: NodeId, node_substates: NodeSubstates) -> StoreAccessInfo;
+    fn create_node<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: NodeId,
+        node_substates: NodeSubstates,
+        on_store_access: &mut F,
+    ) -> Result<(), E>;
 
     /// Inserts a substate into the substate store.
     ///
@@ -161,6 +176,7 @@ pub trait SubstateStore {
     fn get_commit_info(&mut self) -> StoreCommitInfo;
 }
 
+// FIXME: Remove
 pub type StoreAccessInfo = Vec<StoreAccess>;
 
 #[derive(Debug, Clone, Copy)]

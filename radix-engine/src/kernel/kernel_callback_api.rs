@@ -37,8 +37,6 @@ pub trait KernelCallbackObject: Sized {
 
     fn after_create_node<Y>(
         node_id: &NodeId,
-        total_substate_size: usize,
-        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

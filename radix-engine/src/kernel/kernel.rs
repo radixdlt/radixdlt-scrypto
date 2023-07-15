@@ -256,9 +256,16 @@ where
 
             // Auto drop locks
             self.current_frame
-                .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::CloseSubstateError)
-                .map_err(KernelError::CallFrameError)?;
+                .drop_all_locks(
+                    &mut |store_access| {
+                        self.callback.on_store_access(&store_access)
+                    },
+                    &mut self.heap,
+                    self.store,
+                )
+                .map_err(|e| {
+                    e.to_runtime_error(|e| RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::CloseSubstateError(e))))
+                })?;
 
             // Run
             let output = M::invoke_upstream(args, self)?;
@@ -266,9 +273,16 @@ where
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
-                .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::CloseSubstateError)
-                .map_err(KernelError::CallFrameError)?;
+                .drop_all_locks(
+                    &mut |store_access| {
+                        self.callback.on_store_access(&store_access)
+                    },
+                    &mut self.heap,
+                    self.store,
+                )
+                .map_err(|e| {
+                    e.to_runtime_error(|e| RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::CloseSubstateError(e))))
+                })?;
 
             // Handle execution finish
             M::on_execution_finish(&mut message, self)?;
@@ -350,24 +364,28 @@ where
     ) -> Result<(), RuntimeError> {
         M::before_create_node(&node_id, &node_substates, self)?;
 
-        let total_substate_size = node_substates
-            .values()
-            .map(|x| x.values().map(|x| x.len()).sum::<usize>())
-            .sum::<usize>();
-
-        let store_access = self
+        self
             .current_frame
             .create_node(
                 node_id,
                 node_substates,
+                &mut |store_access| {
+                    self.callback.on_store_access(&store_access)
+                },
                 &mut self.heap,
                 self.store,
                 node_id.is_global(),
             )
-            .map_err(CallFrameError::CreateNodeError)
-            .map_err(KernelError::CallFrameError)?;
+            .map_err(|e| {
+                match e {
+                    CallbackError::Error(e) => {
+                        RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::CreateNodeError(e)))
+                    }
+                    CallbackError::CallbackError(e) => e
+                }
+            })?;
 
-        M::after_create_node(&node_id, total_substate_size, &store_access, self)?;
+        M::after_create_node(&node_id, self)?;
 
         Ok(())
     }
@@ -705,9 +723,22 @@ where
     fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         self
             .current_frame
-            .close_substate(&mut self.heap, self.store, lock_handle)
-            .map_err(CallFrameError::CloseSubstateError)
-            .map_err(KernelError::CallFrameError)?;
+            .close_substate(
+                &mut self.heap,
+                self.store,
+                lock_handle,
+                &mut |store_access| {
+                    self.callback.on_store_access(&store_access)
+                },
+            )
+            .map_err(|e| {
+                match e {
+                    CallbackError::Error(e) => {
+                        RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::CloseSubstateError(e)))
+                    }
+                    CallbackError::CallbackError(e) => e
+                }
+            })?;
 
         M::on_close_substate(lock_handle, self)?;
 

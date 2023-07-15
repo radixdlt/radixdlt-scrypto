@@ -105,8 +105,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn after_create_node<Y: KernelApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
-        _total_substate_size: usize,
-        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
