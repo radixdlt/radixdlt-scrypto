@@ -112,7 +112,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_take_substates<Y>(
+    fn on_remove_substate<Y>(
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -126,6 +126,12 @@ pub trait KernelCallbackObject: Sized {
             Y: KernelApi<Self>;
 
     fn on_scan_sorted_substates<Y>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelApi<Self>;
+
+    fn on_take_substates<Y>(
         api: &mut Y,
     ) -> Result<(), RuntimeError>
         where

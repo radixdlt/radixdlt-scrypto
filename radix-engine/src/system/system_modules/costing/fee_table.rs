@@ -205,37 +205,6 @@ impl FeeTable {
         500
     }
 
-    #[inline]
-    pub fn scan_substates_base_cost(&self) -> u32 {
-        500
-    }
-
-    #[inline]
-    pub fn scan_sorted_substates_base_cost(&self) -> u32 {
-        500
-    }
-
-    #[inline]
-    pub fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
-        match store_access {
-            StoreAccess::ReadFromDb(size) => {
-                // Execution time (µs): 0.0009622109 * size + 389.5155
-                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
-                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                add(cast(*size) / 10, 40_000)
-            }
-            StoreAccess::ReadFromDbNotFound => {
-                // Execution time (µs): varies, using max 1,600
-                // Execution cost: 1,600 * 100
-                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                160_000
-            }
-            StoreAccess::NewEntryInTrack => {
-                // The max number of entries is limited by limits module.
-                0
-            }
-        }
-    }
 
     #[inline]
     pub fn create_node_cost(
@@ -308,8 +277,40 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn take_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, self.store_access_info_cost(store_access))
+    pub fn scan_substates_base_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn scan_sorted_substates_base_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn take_substates_base_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
+        match store_access {
+            StoreAccess::ReadFromDb(size) => {
+                // Execution time (µs): 0.0009622109 * size + 389.5155
+                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                add(cast(*size) / 10, 40_000)
+            }
+            StoreAccess::ReadFromDbNotFound => {
+                // Execution time (µs): varies, using max 1,600
+                // Execution cost: 1,600 * 100
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                160_000
+            }
+            StoreAccess::NewEntryInTrack => {
+                // The max number of entries is limited by limits module.
+                0
+            }
+        }
     }
 
     //======================

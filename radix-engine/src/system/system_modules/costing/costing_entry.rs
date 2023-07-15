@@ -68,8 +68,7 @@ pub enum CostingEntry<'a> {
     CloseSubstate {
         store_access: &'a StoreAccessInfo,
     },
-    ScanSortedSubstatesBase,
-    ScanSubstatesBase,
+
 
     /* unstable node apis */
     SetSubstate {
@@ -79,12 +78,11 @@ pub enum CostingEntry<'a> {
     RemoveSubstate {
         store_access: &'a StoreAccessInfo,
     },
+    ScanSortedSubstatesBase,
+    ScanSubstatesBase,
+    TakeSubstatesBase,
     StoreAccess {
         store_access: &'a StoreAccess,
-    },
-
-    TakeSubstate {
-        store_access: &'a StoreAccessInfo,
     },
 
     /* commit */
@@ -171,10 +169,10 @@ impl<'a> CostingEntry<'a> {
                 store_access,
             } => ft.set_substate_cost(*value_size, store_access),
             CostingEntry::RemoveSubstate { store_access } => ft.remove_substate_cost(store_access),
-            CostingEntry::StoreAccess { store_access } => ft.store_access_cost(store_access),
             CostingEntry::ScanSubstatesBase => ft.scan_substates_base_cost(),
             CostingEntry::ScanSortedSubstatesBase => ft.scan_sorted_substates_base_cost(),
-            CostingEntry::TakeSubstate { store_access } => ft.take_substates_cost(store_access),
+            CostingEntry::TakeSubstatesBase => ft.take_substates_base_cost(),
+            CostingEntry::StoreAccess { store_access } => ft.store_access_cost(store_access),
             CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),
             CostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),

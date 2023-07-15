@@ -771,7 +771,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(&store_access, self)?;
+        M::on_remove_substate(&store_access, self)?;
 
         Ok(substate)
     }
@@ -848,6 +848,8 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+        M::on_take_substates(self)?;
+
         let substates = self
             .current_frame
             .take_substates(

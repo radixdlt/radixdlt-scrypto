@@ -407,6 +407,23 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
+    fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        value_size: usize,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_set_substate(api, value_size, store_access))
+    }
+
+    #[trace_resources]
+    fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_remove_substate(api, store_access))
+    }
+
+    #[trace_resources]
     fn on_scan_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
@@ -418,6 +435,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, on_scan_sorted_substates(api))
+    }
+
+    #[trace_resources]
+    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_take_substates(api))
     }
 
     #[trace_resources]
@@ -449,23 +473,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         }
 
         Ok(())
-    }
-
-    #[trace_resources]
-    fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        value_size: usize,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_set_substate(api, value_size, store_access))
-    }
-
-    #[trace_resources]
-    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_take_substates(api, store_access))
     }
 }
 
