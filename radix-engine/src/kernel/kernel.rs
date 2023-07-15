@@ -287,9 +287,10 @@ where
             M::auto_drop(owned_nodes, self)?;
 
             // Now, check if any own has been left!
-            if let Some(node_id) = self.current_frame.owned_nodes().into_iter().next() {
-                return Err(RuntimeError::KernelError(KernelError::NodeOrphaned(
-                    node_id,
+            let owned_nodes = self.current_frame.owned_nodes();
+            if !owned_nodes.is_empty() {
+                return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
+                    owned_nodes,
                 )));
             }
         }
@@ -316,6 +317,7 @@ where
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         M::before_drop_node(node_id, self)?;
 
+        M::on_drop_node(node_id, self)?;
         let node = self
             .current_frame
             .drop_node(&mut self.heap, node_id)
@@ -411,7 +413,7 @@ where
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
-        let caller = match self.prev_frame_stack.last() {
+        let caller_actor = match self.prev_frame_stack.last() {
             Some(call_frame) => call_frame.actor(),
             None => {
                 // This will only occur on initialization
@@ -420,8 +422,8 @@ where
         };
         SystemState {
             system: &mut self.callback,
-            caller,
             current_actor: self.current_frame.actor(),
+            caller_actor,
         }
     }
 

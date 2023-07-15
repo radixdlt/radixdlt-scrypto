@@ -458,7 +458,9 @@ PUBLISH_PACKAGE_ADVANCED
                             )
                         )
                     ),
-                    Enum<0u8>()
+                    Tuple(
+                        Map<Enum, String>()
+                    )
                 ),
                 Enum<0u8>(),
                 Tuple(

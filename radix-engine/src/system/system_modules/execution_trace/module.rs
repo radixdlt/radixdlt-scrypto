@@ -368,7 +368,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
 
         let system_state = api.kernel_get_system_state();
 
-        let caller = TraceActor::from_actor(system_state.caller);
+        let caller = TraceActor::from_actor(system_state.caller_actor);
 
         system_state
             .system
@@ -398,18 +398,19 @@ impl ExecutionTraceModule {
     }
 
     fn handle_before_create_node(&mut self) {
-        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let instruction_index = self.instruction_index();
-
-            let traced_input = (
-                ResourceSummary::default(),
-                TraceOrigin::CreateNode,
-                instruction_index,
-            );
-            self.traced_kernel_call_inputs_stack.push(traced_input);
+        // Important to always update the counter (even if we're over the depth limit).
+        self.current_kernel_call_depth += 1;
+        if self.current_kernel_call_depth - 1 > self.max_kernel_call_depth_traced {
+            return;
         }
 
-        self.current_kernel_call_depth += 1;
+        let instruction_index = self.instruction_index();
+        let traced_input = (
+            ResourceSummary::default(),
+            TraceOrigin::CreateNode,
+            instruction_index,
+        );
+        self.traced_kernel_call_inputs_stack.push(traced_input);
     }
 
     fn handle_after_create_node(
@@ -420,9 +421,7 @@ impl ExecutionTraceModule {
     ) {
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
-
         if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
-            // Nothing to trace at this depth, exit.
             return;
         }
 
@@ -431,27 +430,25 @@ impl ExecutionTraceModule {
     }
 
     fn handle_before_drop_node(&mut self, resource_summary: ResourceSummary) {
-        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let instruction_index = self.instruction_index();
-
-            let traced_input = (resource_summary, TraceOrigin::DropNode, instruction_index);
-            self.traced_kernel_call_inputs_stack.push(traced_input);
+        // Important to always update the counter (even if we're over the depth limit).
+        self.current_kernel_call_depth += 1;
+        if self.current_kernel_call_depth - 1 > self.max_kernel_call_depth_traced {
+            return;
         }
 
-        self.current_kernel_call_depth += 1;
+        let instruction_index = self.instruction_index();
+        let traced_input = (resource_summary, TraceOrigin::DropNode, instruction_index);
+        self.traced_kernel_call_inputs_stack.push(traced_input);
     }
 
     fn handle_after_drop_node(&mut self, current_actor: &Actor, current_depth: usize) {
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
-
         if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
-            // Nothing to trace at this depth, exit.
             return;
         }
 
         let traced_output = ResourceSummary::default();
-
         let current_actor = TraceActor::from_actor(current_actor);
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
@@ -463,35 +460,36 @@ impl ExecutionTraceModule {
         resource_summary: ResourceSummary,
         args: &IndexedScryptoValue,
     ) {
-        if self.current_kernel_call_depth <= self.max_kernel_call_depth_traced {
-            let origin = match &callee {
-                Actor::Method(actor @ MethodActor { ident, .. }) => {
-                    TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                        blueprint_id: actor.get_blueprint_id(),
-                        ident: ident.clone(),
-                    })
-                }
-                Actor::Function(FunctionActor {
-                    blueprint_id,
-                    ident,
-                }) => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
-                    blueprint_id: blueprint_id.clone(),
-                    ident: ident.clone(),
-                }),
-                Actor::BlueprintHook(..) | Actor::Root => {
-                    return;
-                }
-            };
-            let instruction_index = self.instruction_index();
-
-            self.traced_kernel_call_inputs_stack.push((
-                resource_summary.clone(),
-                origin,
-                instruction_index,
-            ));
+        // Important to always update the counter (even if we're over the depth limit).
+        self.current_kernel_call_depth += 1;
+        if self.current_kernel_call_depth - 1 > self.max_kernel_call_depth_traced {
+            return;
         }
 
-        self.current_kernel_call_depth += 1;
+        let origin = match &callee {
+            Actor::Method(actor @ MethodActor { ident, .. }) => {
+                TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
+                    blueprint_id: actor.get_blueprint_id(),
+                    ident: ident.clone(),
+                })
+            }
+            Actor::Function(FunctionActor {
+                blueprint_id,
+                ident,
+            }) => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
+                blueprint_id: blueprint_id.clone(),
+                ident: ident.clone(),
+            }),
+            Actor::BlueprintHook(..) | Actor::Root => {
+                return;
+            }
+        };
+        let instruction_index = self.instruction_index();
+        self.traced_kernel_call_inputs_stack.push((
+            resource_summary.clone(),
+            origin,
+            instruction_index,
+        ));
 
         match &callee {
             Actor::Method(actor @ MethodActor { node_id, ident, .. })
@@ -517,23 +515,22 @@ impl ExecutionTraceModule {
         caller: &TraceActor,
         resource_summary: ResourceSummary,
     ) {
-        match current_actor {
-            Actor::Method(actor @ MethodActor { node_id, ident, .. })
-                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
-                    && ident.eq(VAULT_TAKE_IDENT) =>
-            {
-                self.handle_vault_take_output(&resource_summary, &caller, node_id)
-            }
-            Actor::BlueprintHook(..) => return,
-            _ => {}
-        }
-
         // Important to always update the counter (even if we're over the depth limit).
         self.current_kernel_call_depth -= 1;
-
         if self.current_kernel_call_depth > self.max_kernel_call_depth_traced {
-            // Nothing to trace at this depth, exit.
             return;
+        }
+
+        match current_actor {
+            Actor::Method(actor @ MethodActor { node_id, ident, .. }) => {
+                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
+                    && ident.eq(VAULT_TAKE_IDENT)
+                {
+                    self.handle_vault_take_output(&resource_summary, &caller, node_id)
+                }
+            }
+            Actor::Function(_) => {}
+            Actor::BlueprintHook(..) | Actor::Root => return,
         }
 
         let current_actor = TraceActor::from_actor(current_actor);

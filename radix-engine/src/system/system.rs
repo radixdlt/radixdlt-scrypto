@@ -508,11 +508,11 @@ where
     ) -> Result<BlueprintInterface, RuntimeError> {
         let bp_version_key = BlueprintVersionKey::new_default(blueprint_id.blueprint_name);
         Ok(self
-            .get_blueprint_definition(blueprint_id.package_address, &bp_version_key)?
+            .load_blueprint_definition(blueprint_id.package_address, &bp_version_key)?
             .interface)
     }
 
-    pub fn get_blueprint_definition(
+    pub fn load_blueprint_definition(
         &mut self,
         package_address: PackageAddress,
         bp_version_key: &BlueprintVersionKey,
@@ -640,7 +640,7 @@ where
         let object_features: BTreeSet<String> =
             features.into_iter().map(|s| s.to_string()).collect();
 
-        let (blueprint_type, outer_object_features) = if let BlueprintType::Inner {
+        let (outer_obj_info, outer_object_features) = if let BlueprintType::Inner {
             outer_blueprint,
         } = &expected_outer_blueprint
         {
@@ -763,14 +763,14 @@ where
         actor_object_type: ActorObjectType,
     ) -> Result<(NodeId, ObjectModuleId), RuntimeError> {
         let actor = self.current_actor();
-        let method_actor = actor
-            .try_as_method()
-            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAMethod))?;
+        let object_id = actor
+            .get_object_id()
+            .ok_or_else(|| RuntimeError::SystemError(SystemError::NotAnObject))?;
 
         let object_id = match actor_object_type {
             ActorObjectType::OuterObject => {
-                let node_id = method_actor.node_id;
-                let module_id = method_actor.module_id;
+                let node_id = object_id.0;
+                let module_id = object_id.1;
                 let object_info = self.get_node_object_info(&node_id)?;
                 let address = object_info.try_get_outer_object(module_id).ok_or_else(|| {
                     RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist)
@@ -779,11 +779,7 @@ where
                 // TODO: This is currently assuming all outer objects are under the main module
                 (address.into_node_id(), ObjectModuleId::Main)
             }
-            ActorObjectType::SELF => {
-                let node_id = method_actor.node_id;
-                let object_module_id = method_actor.module_id;
-                (node_id, object_module_id)
-            }
+            ActorObjectType::SELF => object_id,
         };
 
         Ok(object_id)
@@ -2282,10 +2278,14 @@ where
             .modules
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
-        self.current_actor()
-            .try_as_method()
-            .map(|x| x.node_id)
-            .ok_or(RuntimeError::SystemError(SystemError::NotAMethod))
+        let node_id = self
+            .current_actor()
+            .node_id()
+            .ok_or(RuntimeError::SystemError(
+                SystemError::ActorNodeIdDoesNotExist,
+            ))?;
+
+        Ok(node_id)
     }
 
     #[trace_resources]

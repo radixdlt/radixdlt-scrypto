@@ -1150,17 +1150,21 @@ impl PackageNativePackage {
                     },
                     function_exports,
                     hook_exports: {
-                        let mut hook_exports = btreemap!();
-                        if let Some(export_name) = definition_init.schema.hooks.on_virtualize {
-                            hook_exports.insert(
-                                BlueprintHook::OnVirtualize,
-                                PackageExport {
-                                    code_hash,
-                                    export_name,
-                                },
-                            );
-                        }
-                        hook_exports
+                        definition_init
+                            .schema
+                            .hooks
+                            .hooks
+                            .into_iter()
+                            .map(|(k, v)| {
+                                (
+                                    k,
+                                    PackageExport {
+                                        code_hash,
+                                        export_name: v,
+                                    },
+                                )
+                            })
+                            .collect()
                     },
                 };
                 definitions.insert(blueprint.clone(), definition);

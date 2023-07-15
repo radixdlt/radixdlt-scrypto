@@ -23,6 +23,7 @@ impl Default for OuterObjectInfo {
     }
 }
 
+/// Core object state, persisted in `TypeInfoSubstate`.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintObjectInfo {
     pub blueprint_id: BlueprintId,
@@ -80,14 +81,6 @@ pub struct KeyValueStoreInfo {
 pub struct BlueprintId {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
-}
-
-#[derive(Copy, Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoSbor, ManifestSbor)]
-pub enum BlueprintHook {
-    OnVirtualize,
-    OnMove,
-    OnDrop,
-    OnPersist,
 }
 
 impl BlueprintId {
