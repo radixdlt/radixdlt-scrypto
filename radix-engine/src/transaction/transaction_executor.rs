@@ -364,7 +364,7 @@ where
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
-            |a| -> Result<(), ()> {
+            |_| -> Result<(), ()> {
                 Ok(())
             },
         ) {
@@ -411,7 +411,7 @@ where
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::read_only(),
-                |a| -> Result<(), ()> {
+                |_| -> Result<(), ()> {
                     Ok(())
                 },
             )
@@ -432,7 +432,7 @@ where
                 PartitionNumber(partition_number),
                 &SubstateKey::Map(intent_hash.to_vec()),
                 LockFlags::read_only(),
-                |a| -> Result<(), ()> {
+                |_| -> Result<(), ()> {
                     Ok(())
                 },
                 || {
@@ -615,7 +615,7 @@ where
                     MAIN_BASE_PARTITION,
                     &substate_key,
                     LockFlags::MUTABLE,
-                    |a| -> Result<(), ()> {
+                    |_| -> Result<(), ()> {
                         Ok(())
                     },
                 )
@@ -658,7 +658,7 @@ where
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
                     LockFlags::MUTABLE,
-                    |a| -> Result<(), ()> {
+                    |_| -> Result<(), ()> {
                         Ok(())
                     },
                 )
@@ -694,7 +694,7 @@ where
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ConsensusManager.into(),
                     LockFlags::read_only(),
-                    |a| -> Result<(), ()> {
+                    |_| -> Result<(), ()> {
                         Ok(())
                     },
                 )
@@ -711,7 +711,7 @@ where
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ValidatorRewards.into(),
                     LockFlags::MUTABLE,
-                    |a| -> Result<(), ()> {
+                    |_| -> Result<(), ()> {
                         Ok(())
                     },
                 )
@@ -747,7 +747,7 @@ where
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
                     LockFlags::MUTABLE,
-                    |a| -> Result<(), ()> {
+                    |_| -> Result<(), ()> {
                         Ok(())
                     },
                 )
@@ -779,7 +779,7 @@ where
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::MUTABLE,
-                |a| -> Result<(), ()> {
+                |_| -> Result<(), ()> {
                     Ok(())
                 },
             )
@@ -804,7 +804,7 @@ where
                         PartitionNumber(partition_number),
                         &SubstateKey::Map(intent_hash.to_vec()),
                         LockFlags::MUTABLE,
-                        |a| -> Result<(), ()> {
+                        |_| -> Result<(), ()> {
                             Ok(())
                         },
                         || {

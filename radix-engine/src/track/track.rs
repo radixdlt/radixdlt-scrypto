@@ -1065,7 +1065,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             &node_id,
             partition_num,
             substate_key.clone(),
-            &mut |access| -> Result<(), ()> {
+            &mut |_| -> Result<(), ()> {
                 Err(())
             }
         ).expect("Should not need to go into store on close substate.");
@@ -1116,7 +1116,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             &node_id,
             partition_num,
             substate_key.clone(),
-            &mut |access| -> Result<(), ()> {
+            &mut |_| -> Result<(), ()> {
                 Err(())
             }
         ).expect("Should not need to go into store on read substate.");
@@ -1148,7 +1148,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             &node_id,
             partition_num,
             substate_key.clone(),
-            &mut |access| -> Result<(), ()> {
+            &mut |_| -> Result<(), ()> {
                 Err(())
             }
         ).expect("Should not need to go into store on update substate.");

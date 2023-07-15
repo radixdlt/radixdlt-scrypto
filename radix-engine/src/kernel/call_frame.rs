@@ -370,10 +370,9 @@ impl<L: Clone> CallFrame<L> {
     }
 
     // TODO: Remove
-    fn get_heap_type_info<S: SubstateStore>(
+    fn get_heap_type_info(
         node_id: &NodeId,
         heap: &mut Heap,
-        store: &mut S,
     ) -> Option<TypeInfoSubstate> {
         if let Some(substate) = heap.get_substate(
             node_id,
@@ -1097,7 +1096,7 @@ impl<L: Clone> CallFrame<L> {
         let can_be_stored = if node_id.is_global() {
             true
         } else {
-            let type_info = Self::get_heap_type_info(node_id, heap, store);
+            let type_info = Self::get_heap_type_info(node_id, heap);
 
             if let Some(type_info) = type_info {
                 match type_info {

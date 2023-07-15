@@ -101,7 +101,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
                     LockFlags::read_only(),
-                    |a| -> Result<(), ()> {
+                    |_| -> Result<(), ()> {
                         Ok(())
                     }
                 )
