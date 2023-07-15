@@ -248,10 +248,6 @@ fn test_instruction_traces() {
         let input_resource = worktop_put_trace.input.buckets.values().nth(0).unwrap();
         assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
-
-        // We're tracking up to depth "1" (default), so no more child traces
-        assert!(free_trace.children.is_empty());
-        assert!(worktop_put_trace.children.is_empty());
     }
 
     {

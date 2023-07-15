@@ -1,34 +1,34 @@
-Total Cost (XRD)                                                           ,   0.6045868285,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.51687317,     85.5%
-+ Tipping Cost (XRD)                                                       ,   0.0258436585,      4.3%
-+ State Expansion Cost (XRD)                                               ,        0.06187,     10.2%
+Total Cost (XRD)                                                           ,    0.603068645,    100.0%
++ Execution Cost (XRD)                                                     ,      0.5156749,     85.5%
++ Tipping Cost (XRD)                                                       ,    0.025783745,      4.3%
++ State Expansion Cost (XRD)                                               ,        0.06161,     10.2%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       51687317,    100.0%
+Total Cost Units Consumed                                                  ,       51567490,    100.0%
 AfterInvoke                                                                ,            494,      0.0%
 AllocateNodeId                                                             ,          10500,      0.0%
-BeforeInvoke                                                               ,          15440,      0.0%
-CloseSubstate                                                              ,         211500,      0.4%
+BeforeInvoke                                                               ,          15408,      0.0%
+CloseSubstate                                                              ,         221000,      0.4%
 Commit::GlobalAccount                                                      ,         200012,      0.4%
 Commit::GlobalGenericComponent                                             ,         100018,      0.2%
-Commit::GlobalNonFungibleResourceManager                                   ,       22700752,     43.9%
+Commit::GlobalNonFungibleResourceManager                                   ,       22600749,     43.8%
 Commit::InternalFungibleVault                                              ,         100010,      0.2%
-Commit::InternalNonFungibleVault                                           ,       21300464,     41.2%
-CreateNode                                                                 ,          30640,      0.1%
-DropNode                                                                   ,          21342,      0.0%
-EmitEvent                                                                  ,           9344,      0.0%
+Commit::InternalNonFungibleVault                                           ,       21200462,     41.1%
+CreateNode                                                                 ,          30592,      0.1%
+DropNode                                                                   ,          21142,      0.0%
+EmitEvent                                                                  ,           9308,      0.0%
 LockFee                                                                    ,            500,      0.0%
 OpenSubstate::GlobalAccount                                                ,           7310,      0.0%
 OpenSubstate::GlobalFungibleResourceManager                                ,           2624,      0.0%
 OpenSubstate::GlobalGenericComponent                                       ,           2852,      0.0%
 OpenSubstate::GlobalNonFungibleResourceManager                             ,          15016,      0.0%
-OpenSubstate::GlobalPackage                                                ,         855582,      1.7%
+OpenSubstate::GlobalPackage                                                ,         859500,      1.7%
 OpenSubstate::InternalFungibleVault                                        ,           7242,      0.0%
-OpenSubstate::InternalGenericComponent                                     ,          57656,      0.1%
+OpenSubstate::InternalGenericComponent                                     ,          70648,      0.1%
 OpenSubstate::InternalKeyValueStore                                        ,            706,      0.0%
-OpenSubstate::InternalNonFungibleVault                                     ,         162998,      0.3%
+OpenSubstate::InternalNonFungibleVault                                     ,         162252,      0.3%
 PrepareWasmCode                                                            ,         701202,      1.4%
 QueryActor                                                                 ,           2000,      0.0%
-ReadSubstate                                                               ,        1115554,      2.2%
+ReadSubstate                                                               ,        1131718,      2.2%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.0%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.0%
 RunNativeCode::Worktop_put                                                 ,          24411,      0.0%
@@ -41,9 +41,9 @@ RunNativeCode::lock_fee                                                    ,    
 RunNativeCode::put_NonFungibleVault                                        ,          17297,      0.0%
 RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      0.1%
 RunWasmCode::Faucet_lock_fee                                               ,          17987,      0.0%
-SetSubstate                                                                ,         109098,      0.2%
-StoreAccess                                                                ,        3120593,      6.0%
+SetSubstate                                                                ,         108576,      0.2%
+StoreAccess                                                                ,        3160763,      6.1%
 TxBaseCost                                                                 ,          50000,      0.1%
-TxPayloadCost                                                              ,         193000,      0.4%
+TxPayloadCost                                                              ,         192200,      0.4%
 TxSignatureVerification                                                    ,              0,      0.0%
-WriteSubstate                                                              ,          15662,      0.0%
+WriteSubstate                                                              ,          15480,      0.0%

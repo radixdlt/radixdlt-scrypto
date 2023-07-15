@@ -292,9 +292,9 @@ impl<L: Clone> CallFrame<L> {
             .map_err(CreateFrameError::PassMessageError)?;
 
         // Make sure actor isn't part of the owned nodes
-        if let Actor::Method(method_actor) = &frame.actor {
-            if frame.owned_root_nodes.contains_key(&method_actor.node_id) {
-                return Err(CreateFrameError::ActorBeingMoved(method_actor.node_id));
+        if let Some(node_id) = frame.actor.node_id() {
+            if frame.owned_root_nodes.contains_key(&node_id) {
+                return Err(CreateFrameError::ActorBeingMoved(node_id));
             }
         }
 
@@ -1204,12 +1204,8 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Actor
-        if let Actor::Method(MethodActor {
-            node_id: actor_node_id,
-            ..
-        }) = &self.actor
-        {
-            if actor_node_id == node_id {
+        if let Some(actor_node_id) = self.actor.node_id() {
+            if actor_node_id == *node_id {
                 visibilities.insert(Visibility::Actor);
             }
         }

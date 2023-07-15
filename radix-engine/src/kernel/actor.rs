@@ -10,7 +10,6 @@ pub struct InstanceContext {
     pub info: BlueprintObjectInfo,
 }
 
-/// No method acting here!
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
     /// Global Address exists if: (1) NOT a direct access and (2) the object has been stored
@@ -72,8 +71,11 @@ impl FunctionActor {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct BlueprintHookActor {
-    pub blueprint_id: BlueprintId,
+    pub receiver: Option<NodeId>,
     pub hook: BlueprintHook,
+
+    // Cached info
+    pub blueprint_id: BlueprintId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -85,10 +87,21 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn get_object_id(self) -> Option<(NodeId, ObjectModuleId)> {
+        match self {
+            Actor::Method(method_actor) => Some((method_actor.node_id, method_actor.module_id)),
+            Actor::BlueprintHook(BlueprintHookActor {
+                receiver: Some(node_id),
+                ..
+            }) => Some((node_id, ObjectModuleId::Main)),
+            Actor::BlueprintHook(..) | Actor::Root | Actor::Function(..) => None,
+        }
+    }
+
     pub fn len(&self) -> usize {
         match self {
             Actor::Root => 1,
-            Actor::Method(MethodActor { node_id, ident, .. }) => {
+            Actor::Method(MethodActor { ident, node_id, .. }) => {
                 node_id.as_ref().len() + ident.len()
             }
             Actor::Function(FunctionActor {
@@ -169,10 +182,22 @@ impl Actor {
         }
     }
 
-    pub fn try_as_method(&self) -> Option<&MethodActor> {
+    pub fn node_id(&self) -> Option<NodeId> {
         match self {
-            Actor::Method(actor) => Some(actor),
+            Actor::Method(MethodActor { node_id, .. }) => Some(*node_id),
+            Actor::BlueprintHook(BlueprintHookActor {
+                receiver: node_id, ..
+            }) => node_id.clone(),
             _ => None,
+        }
+    }
+
+    pub fn is_direct_access(&self) -> bool {
+        match self {
+            Actor::Method(MethodActor {
+                is_direct_access, ..
+            }) => *is_direct_access,
+            _ => false,
         }
     }
 
@@ -247,9 +272,5 @@ impl Actor {
             blueprint_id,
             ident,
         })
-    }
-
-    pub fn blueprint_hook(blueprint_id: BlueprintId, hook: BlueprintHook) -> Self {
-        Self::BlueprintHook(BlueprintHookActor { blueprint_id, hook })
     }
 }

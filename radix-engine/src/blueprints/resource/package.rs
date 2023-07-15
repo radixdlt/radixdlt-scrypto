@@ -13,6 +13,7 @@ use radix_engine_interface::blueprints::package::{
     PackageDefinition, RoleSpecification, StaticRoles,
 };
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintSchemaInit, FieldSchema, Generic,
 };
@@ -127,12 +128,24 @@ const FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_FungibleProof";
 const FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_FungibleProof";
 const FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str = "get_resource_address_FungibleProof";
 const FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_FungibleProof";
+const FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME: &str = "on_drop_FungibleProof";
 
 const NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME: &str = "clone_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_GET_AMOUNT_EXPORT_NAME: &str = "get_amount_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_GET_RESOURCE_ADDRESS_EXPORT_NAME: &str =
     "get_resource_address_NonFungibleProof";
 const NON_FUNGIBLE_PROOF_DROP_EXPORT_NAME: &str = "drop_NonFungibleProof";
+const NON_FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME: &str = "on_drop_NonFungibleProof";
+
+pub const AUTH_ZONE_POP_EXPORT_NAME: &str = "AuthZone_pop";
+pub const AUTH_ZONE_PUSH_EXPORT_NAME: &str = "AuthZone_push";
+pub const AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str = "AuthZone_create_proof_of_amount";
+pub const AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME: &str =
+    "AuthZone_create_proof_of_non_fungibles";
+pub const AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str = "AuthZone_create_proof_of_all";
+pub const AUTH_ZONE_CLEAR_EXPORT_NAME: &str = "AuthZone_clear";
+pub const AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_EXPORT_NAME: &str = "AuthZone_clear_signature_proofs";
+pub const AUTH_ZONE_DRAIN_EXPORT_NAME: &str = "AuthZone_drain";
 
 pub struct ResourceNativePackage;
 
@@ -1706,7 +1719,9 @@ impl ResourceNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
-                    hooks: BlueprintHooksInit::default(),
+                    hooks: BlueprintHooksInit {
+                        hooks: btreemap!(BlueprintHook::OnDrop => FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME.to_string()),
+                    },
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -1817,7 +1832,9 @@ impl ResourceNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit { functions },
-                    hooks: BlueprintHooksInit::default(),
+                    hooks: BlueprintHooksInit {
+                        hooks: btreemap!(BlueprintHook::OnDrop => NON_FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME.to_string()),
+                    },
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -2692,6 +2709,13 @@ impl ResourceNativePackage {
                 let rtn = FungibleProofBlueprint::drop(input.proof, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME => {
+                let _input: OnDropInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = FungibleProofBlueprint::on_drop(api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             NON_FUNGIBLE_PROOF_CLONE_EXPORT_NAME => {
                 let _input: ProofCloneInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -2727,6 +2751,13 @@ impl ResourceNativePackage {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
                 let rtn = NonFungibleProofBlueprint::drop(input.proof, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            NON_FUNGIBLE_PROOF_ON_DROP_EXPORT_NAME => {
+                let _input: OnDropInput = input.as_typed().map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                })?;
+                let rtn = NonFungibleProofBlueprint::on_drop(api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
 
@@ -2989,7 +3020,6 @@ impl ResourceNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&proofs))
             }
-            AUTH_ZONE_DROP_EXPORT_NAME => AuthZoneBlueprint::drop(input, api),
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),

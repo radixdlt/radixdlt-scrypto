@@ -287,43 +287,4 @@ impl AuthZoneBlueprint {
 
         Ok(proofs)
     }
-
-    pub(crate) fn drop<Y>(
-        input: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<IndexedScryptoValue, RuntimeError>
-    where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
-    {
-        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
-
-        let input: AuthZoneDropInput = input
-            .as_typed()
-            .map_err(|e| RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e)))?;
-
-        // Detach proofs from the auth zone
-        let handle = api.kernel_open_substate(
-            input.auth_zone.0.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &AuthZoneField::AuthZone.into(),
-            LockFlags::MUTABLE,
-            SystemLockData::Default,
-        )?;
-        let mut auth_zone_substate: AuthZone =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let proofs = core::mem::replace(&mut auth_zone_substate.proofs, Vec::new());
-        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&auth_zone_substate))?;
-        api.kernel_close_substate(handle)?;
-
-        // Destroy all proofs
-        // Note: the current auth zone will be used for authentication; It's just empty.
-        for proof in proofs {
-            proof.drop(api)?;
-        }
-
-        // Drop self
-        api.drop_object(input.auth_zone.0.as_node_id())?;
-
-        Ok(IndexedScryptoValue::from_typed(&()))
-    }
 }

@@ -49,7 +49,7 @@ pub struct AuthModule {
     pub params: AuthZoneParams,
     /// Stack of auth zones
     /// Invariants:
-    /// - An auth zone is created for every non-frame.
+    /// - An auth zone is created for every non-root frame.
     /// - Auth zones are created by the caller frame and moved to the callee
     pub auth_zone_stack: Vec<NodeId>,
 }
@@ -342,15 +342,12 @@ impl AuthModule {
                     module_versions: btreemap!(
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),
-
                     main_blueprint_info: BlueprintObjectInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                         outer_obj_info: OuterObjectInfo::default(),
                         features: btreeset!(),
                         instance_schema: None,
                     }
-
-
                 }))
             ),
         )?;
