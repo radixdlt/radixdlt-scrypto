@@ -1,5 +1,5 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
-use radix_engine::errors::ApplicationError;
+use radix_engine::errors::{ApplicationError, PayloadValidationAgainstSchemaError, SystemError};
 use radix_engine::errors::RuntimeError;
 use radix_engine::errors::SystemModuleError;
 use radix_engine::system::system_modules::costing::CostingError;
@@ -60,8 +60,8 @@ fn test_many_current_auth_zone_call() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
-                CostingError::FeeReserveError(FeeReserveError::LimitExceeded { .. })
+            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                PayloadValidationAgainstSchemaError::PayloadValidationError(..)
             ))
         )
     });
