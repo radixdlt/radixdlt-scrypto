@@ -19,7 +19,7 @@ use crate::system::system::SystemService;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
-use crate::track::interface::{StoreAccess};
+use crate::track::interface::StoreAccess;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::system_modules::virtualization::OnVirtualizeInput;
@@ -153,10 +153,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_open_substate(api, handle, node_id, size)
     }
 
-    fn on_close_substate<Y>(
-        lock_handle: LockHandle,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_close_substate<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -185,15 +182,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_write_substate(api, lock_handle, value_size)
     }
 
-    fn on_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError>
-    {
+    fn on_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_store_access(store_access, self)
     }
 
-    fn on_set_substate<Y>(
-        value_size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_set_substate<Y>(value_size: usize, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -207,34 +200,28 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_remove_substate(api)
     }
 
-    fn on_scan_substates<Y>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self> {
+    fn on_scan_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
         SystemModuleMixer::on_scan_substates(api)
     }
 
-    fn on_scan_sorted_substates<Y>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self> {
+    fn on_scan_sorted_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
         SystemModuleMixer::on_scan_sorted_substates(api)
     }
 
-    fn on_take_substates<Y>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self> {
+    fn on_take_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
         SystemModuleMixer::on_take_substates(api)
     }
 
-    fn after_create_node<Y>(
-        node_id: &NodeId,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {

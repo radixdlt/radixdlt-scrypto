@@ -1,7 +1,7 @@
+use crate::errors::RuntimeError;
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
-use crate::errors::RuntimeError;
 
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -125,7 +125,7 @@ pub trait SubstateStore {
     /// Acquires a lock over a substate.
     /// Returns tuple of lock handle id and information if particular substate
     /// is locked for the first time during transaction execution.
-    fn open_substate<E, F: FnMut(StoreAccess) -> Result<(), E>, >(
+    fn open_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -133,10 +133,21 @@ pub trait SubstateStore {
         flags: LockFlags,
         on_store_access: F,
     ) -> Result<u32, CallbackError<TrackOpenSubstateError, E>> {
-        self.open_substate_virtualize(node_id, partition_num, substate_key, flags, on_store_access, || None)
+        self.open_substate_virtualize(
+            node_id,
+            partition_num,
+            substate_key,
+            flags,
+            on_store_access,
+            || None,
+        )
     }
 
-    fn open_substate_virtualize<E, F: FnMut(StoreAccess) -> Result<(), E>, V: FnOnce() -> Option<IndexedScryptoValue>>(
+    fn open_substate_virtualize<
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+        V: FnOnce() -> Option<IndexedScryptoValue>,
+    >(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -163,11 +174,7 @@ pub trait SubstateStore {
     /// # Panics
     /// - If the lock handle is invalid;
     /// - If the lock handle is not associated with WRITE permission
-    fn update_substate(
-        &mut self,
-        handle: u32,
-        substate_value: IndexedScryptoValue,
-    );
+    fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 
     /// Note: unstable interface, for intent transaction tracker only
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);

@@ -1,3 +1,4 @@
+use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelApi;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
@@ -7,7 +8,6 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::constants::*;
 use sbor::rust::prelude::*;
 use sbor::traversal::TerminalValueRef;
-use crate::errors::RuntimeError;
 
 use super::node_modules::type_info::TypeInfoSubstate;
 use super::system::SystemService;
@@ -264,6 +264,7 @@ fn resolve_type_info(
     node_id: &NodeId,
     lookup: &Lookup,
 ) -> Result<TypeInfoForValidation, PayloadValidationError<ScryptoCustomExtension>> {
-    lookup.get_node_type_info(node_id)
-        .map_err(|e| PayloadValidationError::ValidationError(ValidationError::CustomError(e.to_string())))
+    lookup.get_node_type_info(node_id).map_err(|e| {
+        PayloadValidationError::ValidationError(ValidationError::CustomError(e.to_string()))
+    })
 }

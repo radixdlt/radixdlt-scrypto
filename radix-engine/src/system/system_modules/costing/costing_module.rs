@@ -258,7 +258,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(api: &mut Y, node_id: &NodeId, node_substates: &NodeSubstates) -> Result<(), RuntimeError> {
+    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        node_id: &NodeId,
+        node_substates: &NodeSubstates,
+    ) -> Result<(), RuntimeError> {
         let total_substate_size = node_substates
             .values()
             .map(|x| x.values().map(|x| x.len()).sum::<usize>())
@@ -314,9 +318,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::ReadSubstate {
-                value_size,
-            })?;
+            .apply_execution_cost(CostingEntry::ReadSubstate { value_size })?;
 
         Ok(())
     }
@@ -329,9 +331,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::WriteSubstate {
-                value_size,
-            })?;
+            .apply_execution_cost(CostingEntry::WriteSubstate { value_size })?;
 
         Ok(())
     }
@@ -355,16 +355,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::SetSubstate {
-                value_size,
-            })?;
+            .apply_execution_cost(CostingEntry::SetSubstate { value_size })?;
 
         Ok(())
     }
 
-    fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
             .costing
@@ -373,10 +369,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-
-    fn on_scan_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_scan_substates<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
             .costing
@@ -385,7 +378,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
             .costing
@@ -410,9 +405,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::StoreAccess {
-                store_access,
-            })?;
+            .apply_execution_cost(CostingEntry::StoreAccess { store_access })?;
 
         Ok(())
     }

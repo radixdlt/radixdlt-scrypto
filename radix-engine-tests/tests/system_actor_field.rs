@@ -56,9 +56,9 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
             Ok(IndexedScryptoValue::from_typed(&()))
         }
     }
-    let mut test_runner = TestRunnerBuilder::new().with_custom_extension(
-        OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke),
-    ).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_extension(OverridePackageCode::new(CUSTOM_PACKAGE_CODE_ID, TestInvoke))
+        .build();
     let package_address = test_runner.publish_native_package(
         CUSTOM_PACKAGE_CODE_ID,
         PackageDefinition::new_functions_only_test_definition(

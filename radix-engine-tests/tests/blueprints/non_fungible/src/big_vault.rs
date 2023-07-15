@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, ScryptoSbor, NonFungibleData)]
 pub struct Sandwich {
-    name: String
+    name: String,
 }
 
 #[blueprint]
@@ -32,7 +32,9 @@ mod big_vault {
         pub fn mint(&mut self, count: usize) {
             let resource_manager = self.vault.resource_manager();
             for _ in 0..count {
-                let bucket = resource_manager.mint_ruid_non_fungible(Sandwich { name: "test".to_string() });
+                let bucket = resource_manager.mint_ruid_non_fungible(Sandwich {
+                    name: "test".to_string(),
+                });
                 self.vault.put(bucket);
             }
         }

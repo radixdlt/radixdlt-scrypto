@@ -603,7 +603,10 @@ where
         Ok(GlobalAddressReservation(Own(global_address_reservation)))
     }
 
-    pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Result<TypeInfoSubstate, RuntimeError> {
+    pub fn get_node_type_info(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<TypeInfoSubstate, RuntimeError> {
         self.api
             .kernel_open_substate(
                 node_id,

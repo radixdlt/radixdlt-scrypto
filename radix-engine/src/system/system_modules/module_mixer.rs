@@ -17,8 +17,8 @@ use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::node_move::NodeMoveModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
+use crate::track::interface::NodeSubstates;
 use crate::track::interface::{StoreAccess, StoreCommit};
-use crate::track::interface::{NodeSubstates};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
@@ -306,10 +306,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            after_create_node(api, node_id)
-        )
+        internal_call_dispatch!(api, after_create_node(api, node_id))
     }
 
     #[trace_resources]
@@ -349,10 +346,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         node_id: &NodeId,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            after_open_substate(api, handle, node_id, size)
-        )
+        internal_call_dispatch!(api, after_open_substate(api, handle, node_id, size))
     }
 
     #[trace_resources(log=value_size)]
@@ -361,10 +355,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         lock_handle: LockHandle,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            on_read_substate(api, lock_handle, value_size)
-        )
+        internal_call_dispatch!(api, on_read_substate(api, lock_handle, value_size))
     }
 
     #[trace_resources(log=value_size)]
@@ -373,10 +364,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         lock_handle: LockHandle,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            on_write_substate(api, lock_handle, value_size)
-        )
+        internal_call_dispatch!(api, on_write_substate(api, lock_handle, value_size))
     }
 
     #[trace_resources]
@@ -396,16 +384,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, on_remove_substate(api))
     }
 
     #[trace_resources]
-    fn on_scan_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_scan_substates<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, on_scan_substates(api))
     }
 
@@ -417,9 +401,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, on_take_substates(api))
     }
 

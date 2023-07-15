@@ -1,5 +1,8 @@
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::interface::{CallbackError, NodeSubstates, SetSubstateError, StoreAccess, SubstateStore, TakeSubstateError, TrackOpenSubstateError};
+use crate::track::interface::{
+    CallbackError, NodeSubstates, SetSubstateError, StoreAccess, SubstateStore, TakeSubstateError,
+    TrackOpenSubstateError,
+};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
@@ -370,10 +373,7 @@ impl<L: Clone> CallFrame<L> {
     }
 
     // TODO: Remove
-    fn get_heap_type_info(
-        node_id: &NodeId,
-        heap: &mut Heap,
-    ) -> Option<TypeInfoSubstate> {
+    fn get_heap_type_info(node_id: &NodeId, heap: &mut Heap) -> Option<TypeInfoSubstate> {
         if let Some(substate) = heap.get_substate(
             node_id,
             TYPE_INFO_FIELD_PARTITION,
@@ -400,7 +400,9 @@ impl<L: Clone> CallFrame<L> {
     ) -> Result<(LockHandle, usize), CallbackError<OpenSubstateError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallbackError::Error(OpenSubstateError::NodeNotVisible(node_id.clone())));
+            return Err(CallbackError::Error(OpenSubstateError::NodeNotVisible(
+                node_id.clone(),
+            )));
         }
 
         // Lock and read the substate
@@ -417,18 +419,25 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 heap.get_substate(node_id, partition_num, substate_key)
                     .ok_or_else(|| {
-                        CallbackError::Error(OpenSubstateError::HeapError(HeapOpenSubstateError::SubstateNotFound(
-                            node_id.clone(),
-                            partition_num,
-                            substate_key.clone(),
-                        )))
+                        CallbackError::Error(OpenSubstateError::HeapError(
+                            HeapOpenSubstateError::SubstateNotFound(
+                                node_id.clone(),
+                                partition_num,
+                                substate_key.clone(),
+                            ),
+                        ))
                     })?
             }
         } else {
             let handle = store
-                .open_substate_virtualize(node_id, partition_num, substate_key, flags, on_store_access, || {
-                    default.map(|f| f())
-                })
+                .open_substate_virtualize(
+                    node_id,
+                    partition_num,
+                    substate_key,
+                    flags,
+                    on_store_access,
+                    || default.map(|f| f()),
+                )
                 .map_err(|x| x.map(|e| OpenSubstateError::TrackError(Box::new(e))))?;
             store_handle = Some(handle);
             let value = store.read_substate(handle);
@@ -523,7 +532,9 @@ impl<L: Clone> CallFrame<L> {
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
             for own in substate.owned_nodes() {
                 if !new_owned_nodes.insert(own.clone()) {
-                    return Err(CallbackError::Error(CloseSubstateError::ContainsDuplicatedOwns));
+                    return Err(CallbackError::Error(
+                        CloseSubstateError::ContainsDuplicatedOwns,
+                    ));
                 }
             }
             for own in &new_owned_nodes {
@@ -535,9 +546,7 @@ impl<L: Clone> CallFrame<L> {
                     // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
                         Self::move_node_to_store(heap, store, own, on_store_access)
-                            .map_err(|e| {
-                                e.map(CloseSubstateError::PersistNodeError)
-                            })?;
+                            .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
                     }
                 }
             }
@@ -545,7 +554,9 @@ impl<L: Clone> CallFrame<L> {
                 if !new_owned_nodes.contains(own) {
                     // Node detached
                     if !heap.contains_node(node_id) {
-                        return Err(CallbackError::Error(CloseSubstateError::CantDropNodeInStore(own.clone())));
+                        return Err(CallbackError::Error(
+                            CloseSubstateError::CantDropNodeInStore(own.clone()),
+                        ));
                     }
                     // Owned nodes discarded by the substate go back to the call frame,
                     // and must be explicitly dropped.
@@ -571,11 +582,15 @@ impl<L: Clone> CallFrame<L> {
                         .get_node_visibility(reference)
                         .can_be_referenced_in_substate()
                     {
-                        return Err(CallbackError::Error(CloseSubstateError::RefNotFound(reference.clone())));
+                        return Err(CallbackError::Error(CloseSubstateError::RefNotFound(
+                            reference.clone(),
+                        )));
                     }
 
                     if !heap.contains_node(node_id) && !reference.is_global() {
-                        return Err(CallbackError::Error(CloseSubstateError::NonGlobalRefNotAllowed(*reference)));
+                        return Err(CallbackError::Error(
+                            CloseSubstateError::NonGlobalRefNotAllowed(*reference),
+                        ));
                     }
 
                     if heap.contains_node(reference) {
@@ -723,11 +738,15 @@ impl<L: Clone> CallFrame<L> {
                         .get_node_visibility(reference)
                         .can_be_referenced_in_substate()
                     {
-                        return Err(CallbackError::Error(CreateNodeError::RefNotFound(reference.clone())));
+                        return Err(CallbackError::Error(CreateNodeError::RefNotFound(
+                            reference.clone(),
+                        )));
                     }
 
                     if push_to_store && !reference.is_global() {
-                        return Err(CallbackError::Error(CreateNodeError::NonGlobalRefNotAllowed(*reference)));
+                        return Err(CallbackError::Error(
+                            CreateNodeError::NonGlobalRefNotAllowed(*reference),
+                        ));
                     }
 
                     if heap.contains_node(reference) {
@@ -742,7 +761,9 @@ impl<L: Clone> CallFrame<L> {
         if push_to_store {
             self.stable_references
                 .insert(node_id, StableReferenceType::Global);
-            store.create_node(node_id, node_substates, on_store_access).map_err(CallbackError::CallbackError)?;
+            store
+                .create_node(node_id, node_substates, on_store_access)
+                .map_err(CallbackError::CallbackError)?;
         } else {
             heap.create_node(node_id, node_substates);
             self.owned_root_nodes.insert(node_id, 0);
@@ -813,7 +834,9 @@ impl<L: Clone> CallFrame<L> {
     ) -> Result<(), CallbackError<MoveModuleError, E>> {
         // Check ownership (and visibility)
         if self.owned_root_nodes.get(src_node_id) != Some(&0) {
-            return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(src_node_id.clone())));
+            return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
+                src_node_id.clone(),
+            )));
         }
 
         // Check visibility
@@ -821,7 +844,9 @@ impl<L: Clone> CallFrame<L> {
             .get_node_visibility(dest_node_id)
             .can_be_read_or_write()
         {
-            return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(dest_node_id.clone())));
+            return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
+                dest_node_id.clone(),
+            )));
         }
 
         // Move
@@ -846,7 +871,9 @@ impl<L: Clone> CallFrame<L> {
 
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        return Err(CallbackError::Error(MoveModuleError::NonGlobalRefNotAllowed(reference.clone())));
+                        return Err(CallbackError::Error(
+                            MoveModuleError::NonGlobalRefNotAllowed(reference.clone()),
+                        ));
                     }
                 }
 
@@ -894,7 +921,9 @@ impl<L: Clone> CallFrame<L> {
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallbackError::Error(CallFrameSetSubstateError::NodeNotVisible(node_id.clone())));
+            return Err(CallbackError::Error(
+                CallFrameSetSubstateError::NodeNotVisible(node_id.clone()),
+            ));
         }
 
         if heap.contains_node(node_id) {
@@ -919,9 +948,9 @@ impl<L: Clone> CallFrame<L> {
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallbackError::Error(CallFrameRemoveSubstateError::NodeNotVisible(
-                node_id.clone(),
-            )));
+            return Err(CallbackError::Error(
+                CallFrameRemoveSubstateError::NodeNotVisible(node_id.clone()),
+            ));
         }
 
         let removed = if heap.contains_node(node_id) {
@@ -946,15 +975,16 @@ impl<L: Clone> CallFrame<L> {
     ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSubstatesError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(
-                CallbackError::Error(CallFrameScanSubstatesError::NodeNotVisible(node_id.clone()))
-            );
+            return Err(CallbackError::Error(
+                CallFrameScanSubstatesError::NodeNotVisible(node_id.clone()),
+            ));
         }
 
         let substates = if heap.contains_node(node_id) {
             heap.scan_substates(node_id, partition_num, count)
         } else {
-            store.scan_substates(node_id, partition_num, count, on_store_access)
+            store
+                .scan_substates(node_id, partition_num, count, on_store_access)
                 .map_err(|e| CallbackError::CallbackError(e))?
         };
 
@@ -980,19 +1010,19 @@ impl<L: Clone> CallFrame<L> {
         on_store_access: F,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameTakeSubstatesError, E>>
-    {
+    ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameTakeSubstatesError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallbackError::Error(CallFrameTakeSubstatesError::NodeNotVisible(
-                node_id.clone(),
-            )));
+            return Err(CallbackError::Error(
+                CallFrameTakeSubstatesError::NodeNotVisible(node_id.clone()),
+            ));
         }
 
         let substates = if heap.contains_node(node_id) {
             heap.take_substates(node_id, partition_num, count)
         } else {
-            store.take_substates(node_id, partition_num, count, on_store_access)
+            store
+                .take_substates(node_id, partition_num, count, on_store_access)
                 .map_err(|e| CallbackError::CallbackError(e))?
         };
 
@@ -1020,13 +1050,12 @@ impl<L: Clone> CallFrame<L> {
         on_store_access: F,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>>
-    {
+    ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallbackError::Error(CallFrameScanSortedSubstatesError::NodeNotVisible(
-                node_id.clone(),
-            )));
+            return Err(CallbackError::Error(
+                CallFrameScanSortedSubstatesError::NodeNotVisible(node_id.clone()),
+            ));
         }
 
         let substates = if heap.contains_node(node_id) {
@@ -1034,7 +1063,8 @@ impl<L: Clone> CallFrame<L> {
             // used by consensus manager only.
             panic!("Unexpected code path")
         } else {
-            store.scan_sorted_substates(node_id, partition_num, count, on_store_access)
+            store
+                .scan_sorted_substates(node_id, partition_num, count, on_store_access)
                 .map_err(|e| CallbackError::CallbackError(e))?
         };
 
@@ -1118,7 +1148,9 @@ impl<L: Clone> CallFrame<L> {
             }
         };
         if !can_be_stored {
-            return Err(CallbackError::Error(PersistNodeError::CantBeStored(node_id.clone())));
+            return Err(CallbackError::Error(PersistNodeError::CantBeStored(
+                node_id.clone(),
+            )));
         }
 
         let node_substates = match heap.remove_node(node_id) {
@@ -1127,14 +1159,18 @@ impl<L: Clone> CallFrame<L> {
                 panic!("Frame owned node {:?} not found in heap", node_id)
             }
             Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
-                return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(node_id, count)));
+                return Err(CallbackError::Error(PersistNodeError::NodeBorrowed(
+                    node_id, count,
+                )));
             }
         };
         for (_partition_number, module_substates) in &node_substates {
             for (_substate_key, substate_value) in module_substates {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        return Err(CallbackError::Error(PersistNodeError::NonGlobalRefNotAllowed(*reference)));
+                        return Err(CallbackError::Error(
+                            PersistNodeError::NonGlobalRefNotAllowed(*reference),
+                        ));
                     }
                 }
 
@@ -1144,7 +1180,9 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        store.create_node(node_id.clone(), node_substates, on_store_access).map_err(CallbackError::CallbackError)?;
+        store
+            .create_node(node_id.clone(), node_substates, on_store_access)
+            .map_err(CallbackError::CallbackError)?;
 
         Ok(())
     }

@@ -3,13 +3,13 @@ use sbor::rust::cmp::*;
 use sbor::rust::iter::*;
 
 /// An iterator overlaying a "change on a value" (coming from the [`overlaid`] iterator) over a
-/// "base value" (coming from the [`underlying`] iterator).
+/// "base value" (coming from the [`underlying`] iterator) which may error.
 /// The one is matched to another by a `K` part (of the iterated tuple `(K, V)`), which both
 /// iterators are assumed to be ordered by.
 pub struct OverlayingResultIterator<U, O>
-    where
-        U: Iterator,
-        O: Iterator,
+where
+    U: Iterator,
+    O: Iterator,
 {
     underlying: Peekable<U>,
     overlaid: Peekable<O>,
@@ -17,13 +17,13 @@ pub struct OverlayingResultIterator<U, O>
 }
 
 impl<K, V, U, O, E> OverlayingResultIterator<U, O>
-    where
-        K: Ord,
-        U: Iterator<Item = Result<(K, V), E>>,
-        O: Iterator<Item = (K, Option<V>)>,
+where
+    K: Ord,
+    U: Iterator<Item = Result<(K, V), E>>,
+    O: Iterator<Item = (K, Option<V>)>,
 {
     /// Creates an overlaying iterator.
-    /// The [`underlying`] iterator provides the "base values".
+    /// The [`underlying`] iterator provides the "base values" from some I/O.
     /// The [`overlaid`] one provides the "changes" to those values, represented as `Option<V>`:
     /// - A [`Some`] is an upsert, i.e. it may override an existing base value, or "insert" a
     ///   completely new one to the iterated results.
@@ -38,10 +38,10 @@ impl<K, V, U, O, E> OverlayingResultIterator<U, O>
 }
 
 impl<K, V, U, O, E> Iterator for OverlayingResultIterator<U, O>
-    where
-        K: Ord,
-        U: Iterator<Item = Result<(K, V), E>>,
-        O: Iterator<Item = (K, Option<V>)>,
+where
+    K: Ord,
+    U: Iterator<Item = Result<(K, V), E>>,
+    O: Iterator<Item = (K, Option<V>)>,
 {
     type Item = Result<(K, V), E>;
 

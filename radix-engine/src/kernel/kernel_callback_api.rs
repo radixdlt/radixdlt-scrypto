@@ -35,10 +35,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_create_node<Y>(
-        node_id: &NodeId,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -61,10 +58,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_close_substate<Y>(
-        lock_handle: LockHandle,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_close_substate<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -84,41 +78,27 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_store_access(
-        &mut self,
-        store_access: &StoreAccess,
-    ) -> Result<(), RuntimeError>;
+    fn on_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError>;
 
-    fn on_set_substate<Y>(
-        value_size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_set_substate<Y>(value_size: usize, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn on_remove_substate<Y>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_remove_substate<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn on_scan_substates<Y>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>;
+    fn on_scan_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
 
-    fn on_scan_sorted_substates<Y>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>;
+    fn on_scan_sorted_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
 
-    fn on_take_substates<Y>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>;
+    fn on_take_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
 
     fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
     where

@@ -194,17 +194,9 @@ impl FeeTable {
         500
     }
 
-
     #[inline]
-    pub fn create_node_cost(
-        &self,
-        _node_id: &NodeId,
-        total_substate_size: usize,
-    ) -> u32 {
-        add(
-            500,
-            Self::data_processing_cost(total_substate_size),
-        )
+    pub fn create_node_cost(&self, _node_id: &NodeId, total_substate_size: usize) -> u32 {
+        add(500, Self::data_processing_cost(total_substate_size))
     }
 
     #[inline]
@@ -219,26 +211,17 @@ impl FeeTable {
 
     #[inline]
     pub fn open_substate_cost(&self, size: usize) -> u32 {
-        add(
-            500,
-            Self::data_processing_cost(size),
-        )
+        add(500, Self::data_processing_cost(size))
     }
 
     #[inline]
     pub fn read_substate_cost(&self, size: usize) -> u32 {
-        add(
-            500,
-            Self::data_processing_cost(size),
-        )
+        add(500, Self::data_processing_cost(size))
     }
 
     #[inline]
     pub fn write_substate_cost(&self, size: usize) -> u32 {
-        add(
-            500,
-            Self::data_processing_cost(size),
-        )
+        add(500, Self::data_processing_cost(size))
     }
 
     #[inline]
@@ -248,10 +231,7 @@ impl FeeTable {
 
     #[inline]
     pub fn set_substate_cost(&self, size: usize) -> u32 {
-        add(
-            500,
-            Self::data_processing_cost(size),
-        )
+        add(500, Self::data_processing_cost(size))
     }
 
     #[inline]

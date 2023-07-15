@@ -61,7 +61,6 @@ pub enum CostingEntry<'a> {
     },
     CloseSubstate,
 
-
     /* unstable node apis */
     SetSubstate {
         value_size: usize,
@@ -142,16 +141,10 @@ impl<'a> CostingEntry<'a> {
                 node_id: _,
                 value_size,
             } => ft.open_substate_cost(*value_size),
-            CostingEntry::ReadSubstate {
-                value_size,
-            } => ft.read_substate_cost(*value_size),
-            CostingEntry::WriteSubstate {
-                value_size,
-            } => ft.write_substate_cost(*value_size),
+            CostingEntry::ReadSubstate { value_size } => ft.read_substate_cost(*value_size),
+            CostingEntry::WriteSubstate { value_size } => ft.write_substate_cost(*value_size),
             CostingEntry::CloseSubstate => ft.close_substate_cost(),
-            CostingEntry::SetSubstate {
-                value_size,
-            } => ft.set_substate_cost(*value_size),
+            CostingEntry::SetSubstate { value_size } => ft.set_substate_cost(*value_size),
             CostingEntry::RemoveSubstateBase => ft.remove_substate_base_cost(),
             CostingEntry::ScanSubstatesBase => ft.scan_substates_base_cost(),
             CostingEntry::ScanSortedSubstatesBase => ft.scan_sorted_substates_base_cost(),

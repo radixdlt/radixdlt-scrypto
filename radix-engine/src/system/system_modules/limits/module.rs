@@ -147,9 +147,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         store_access: &StoreAccess,
         system: &mut SystemConfig<V>,
     ) -> Result<(), RuntimeError> {
-        system
-            .modules
-            .limits
-            .process_store_access(store_access)
+        system.modules.limits.process_store_access(store_access)
     }
 }

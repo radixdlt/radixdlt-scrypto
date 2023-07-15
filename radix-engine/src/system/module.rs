@@ -185,38 +185,27 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_remove_substate<Y: KernelApi<M>>(
-        _api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_remove_substate<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_scan_substates<Y: KernelApi<M>>(
-        _api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_scan_substates<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_scan_sorted_substates<Y: KernelApi<M>>(
-        _api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_scan_sorted_substates<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_take_substates<Y: KernelApi<M>>(
-        _api: &mut Y,
-    ) -> Result<(), RuntimeError> {
+    fn on_take_substates<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
         Ok(())
     }
 
     #[inline(always)]
-    fn on_store_access(
-        _store_access: &StoreAccess,
-        _system: &mut M,
-    ) -> Result<(), RuntimeError> {
+    fn on_store_access(_store_access: &StoreAccess, _system: &mut M) -> Result<(), RuntimeError> {
         Ok(())
     }
 }

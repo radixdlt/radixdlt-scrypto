@@ -369,9 +369,7 @@ impl NativeNonFungibleVault for Vault {
         let rtn = api.call_method(
             self.0.as_node_id(),
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput {
-                count,
-            }).unwrap(),
+            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { count }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())
