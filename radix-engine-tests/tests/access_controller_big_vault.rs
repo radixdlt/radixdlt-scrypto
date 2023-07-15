@@ -173,7 +173,8 @@ fn arrange_access_controller_big_vault() -> (
             );
             let commit = receipt.expect_commit();
             if commit.outcome.is_success() {
-                let access_controller = receipt.expect_commit_success().new_component_addresses()[0];
+                let access_controller =
+                    receipt.expect_commit_success().new_component_addresses()[0];
                 return (test_runner, access_controller);
             }
             bucket_size -= 1;
