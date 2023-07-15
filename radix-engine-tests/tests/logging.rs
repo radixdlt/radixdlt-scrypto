@@ -37,7 +37,10 @@ fn test_emit_log() {
     {
         receipt.expect_commit_success();
 
-        let logs = receipt.expect_commit(true).application_logs.clone();
+        let logs = receipt
+            .expect_commit_with_success(true)
+            .application_logs
+            .clone();
         let expected_logs = vec![(Level::Info, message.to_owned())];
 
         assert_eq!(expected_logs, logs)
@@ -55,7 +58,10 @@ fn test_rust_panic() {
 
     // Assert
     {
-        let logs = receipt.expect_commit(false).application_logs.clone();
+        let logs = receipt
+            .expect_commit_with_success(false)
+            .application_logs
+            .clone();
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {
@@ -78,7 +84,10 @@ fn test_scrypto_panic() {
 
     // Assert
     {
-        let logs = receipt.expect_commit(false).application_logs.clone();
+        let logs = receipt
+            .expect_commit_with_success(false)
+            .application_logs
+            .clone();
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {
@@ -99,7 +108,10 @@ fn test_assert_length_5() {
 
     // Assert
     {
-        let logs = receipt.expect_commit(false).application_logs.clone();
+        let logs = receipt
+            .expect_commit_with_success(false)
+            .application_logs
+            .clone();
         assert!(logs.is_empty());
 
         receipt.expect_specific_failure(|e| match e {

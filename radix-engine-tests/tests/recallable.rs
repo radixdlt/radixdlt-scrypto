@@ -124,7 +124,7 @@ fn test_recall_on_internal_vault() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let (component_address, _): (ComponentAddress, ResourceAddress) =
-        receipt.expect_commit(true).output(1);
+        receipt.expect_commit_with_success(true).output(1);
 
     // Recall
     let receipt = test_runner.execute_manifest(
@@ -190,7 +190,7 @@ fn test_recall_on_received_direct_access_reference_which_is_same_as_self() {
         vec![],
     );
     let (component_address, recallable): (ComponentAddress, ResourceAddress) =
-        receipt.expect_commit(true).output(1);
+        receipt.expect_commit_with_success(true).output(1);
     let vault_id = test_runner.get_component_vaults(component_address, recallable)[0];
 
     // Act

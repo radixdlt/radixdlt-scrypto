@@ -119,7 +119,10 @@ fn check_if_validator_accepts_delegated_stake() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let ret = receipt.expect_commit(true).outcome.expect_success();
+    let ret = receipt
+        .expect_commit_with_success(true)
+        .outcome
+        .expect_success();
     assert_eq!(
         ret[1],
         InstructionOutput::CallReturn(scrypto_encode(&false).unwrap())

@@ -62,7 +62,9 @@ fn test_add_local_ref_to_stored_substate() {
         );
         receipt.expect_commit_success();
 
-        receipt.expect_commit(true).new_component_addresses()[0]
+        receipt
+            .expect_commit_with_success(true)
+            .new_component_addresses()[0]
     };
 
     // Call method

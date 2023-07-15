@@ -352,7 +352,7 @@ where
                 .get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
-        let commit_result = receipt.expect_commit(true);
+        let commit_result = receipt.expect_commit_with_success(true);
 
         self.substate_db
             .commit(&commit_result.state_updates.database_updates);
@@ -378,7 +378,7 @@ where
                 .get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
-        let commit_result = receipt.expect_commit(true);
+        let commit_result = receipt.expect_commit_with_success(true);
         self.substate_db
             .commit(&commit_result.state_updates.database_updates);
 
@@ -399,7 +399,7 @@ where
                 .get_executable(btreeset![AuthAddresses::system_role()]),
         );
 
-        let commit_result = receipt.expect_commit(true);
+        let commit_result = receipt.expect_commit_with_success(true);
         self.substate_db
             .commit(&commit_result.state_updates.database_updates);
 

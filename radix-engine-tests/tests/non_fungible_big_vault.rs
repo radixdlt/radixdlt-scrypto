@@ -3,7 +3,7 @@ use scrypto_unit::*;
 use transaction::prelude::*;
 
 #[test]
-fn get_non_fungibles_on_big_vault_should_not_fail() {
+fn get_non_fungibles_on_big_vault_with_constraint_should_not_fail() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");

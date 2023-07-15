@@ -48,7 +48,9 @@ fn non_existent_vault_in_committed_component_should_fail() {
         .call_function(package_address, "NonExistentVault", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -107,7 +109,9 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
         .call_function(package_address, "NonExistentVault", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -219,7 +223,9 @@ fn cannot_overwrite_vault_in_map() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -280,7 +286,9 @@ fn cannot_remove_vaults() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -315,7 +323,9 @@ fn can_push_vault_into_vector() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()

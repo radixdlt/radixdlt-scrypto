@@ -78,7 +78,9 @@ fn can_burn_non_fungible() {
         .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
+    let resource_address = receipt
+        .expect_commit_with_success(true)
+        .new_resource_addresses()[0];
     let vault_id = test_runner.get_component_vaults(account, resource_address)[0];
     let (_, first_id) = test_runner.inspect_non_fungible_vault(vault_id).unwrap();
 
@@ -474,8 +476,12 @@ fn test_mint_update_and_withdraw() {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let badge_resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
-    let nft_resource_address = receipt.expect_commit(true).new_resource_addresses()[1];
+    let badge_resource_address = receipt
+        .expect_commit_with_success(true)
+        .new_resource_addresses()[0];
+    let nft_resource_address = receipt
+        .expect_commit_with_success(true)
+        .new_resource_addresses()[1];
 
     // update data (the NFT is referenced within a Proof)
     let manifest = ManifestBuilder::new()
@@ -741,7 +747,9 @@ fn can_mint_ruid_non_fungible_in_manifest() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
+    let resource_address = receipt
+        .expect_commit_with_success(true)
+        .new_resource_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -782,7 +790,9 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
         .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
+    let resource_address = receipt
+        .expect_commit_with_success(true)
+        .new_resource_addresses()[0];
     let non_fungible_global_id =
         NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::ruid([0x11; 32]));
 

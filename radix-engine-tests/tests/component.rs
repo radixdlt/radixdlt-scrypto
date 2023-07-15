@@ -24,7 +24,9 @@ fn test_component() {
     receipt1.expect_commit_success();
 
     // Find the component address from receipt
-    let component = receipt1.expect_commit(true).new_component_addresses()[0];
+    let component = receipt1
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Call functions & methods
     let manifest2 = ManifestBuilder::new()

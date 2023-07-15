@@ -39,7 +39,7 @@ fn test_transaction_preview_cost_estimate() {
         FeeReserveConfig::default(),
         ExecutionConfig::for_preview(),
     );
-    let commit_result = receipt.expect_commit(true);
+    let commit_result = receipt.expect_commit_with_success(true);
     assert_eq!(
         commit_result.fee_summary.execution_cost_sum,
         commit_result.fee_summary.execution_cost_sum

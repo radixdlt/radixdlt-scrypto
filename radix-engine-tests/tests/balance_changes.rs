@@ -35,7 +35,9 @@ fn test_balance_changes_when_success() {
             owner_badge_addr.clone(),
         ],
     );
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Call the put method
     let receipt = test_runner.execute_manifest(
@@ -54,7 +56,7 @@ fn test_balance_changes_when_success() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let result = receipt.expect_commit(true);
+    let result = receipt.expect_commit_with_success(true);
 
     assert_eq!(result.balance_changes().len(), 5usize);
     assert_eq!(
@@ -111,7 +113,9 @@ fn test_balance_changes_when_failure() {
             owner_badge_addr.clone(),
         ],
     );
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Call the put method
     let receipt = test_runner.execute_manifest(
@@ -130,7 +134,7 @@ fn test_balance_changes_when_failure() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
 
-    let result = receipt.expect_commit(false);
+    let result = receipt.expect_commit_with_success(false);
     assert!(result.direct_vault_updates().is_empty());
     assert_eq!(
         result.balance_changes(),
@@ -168,7 +172,7 @@ fn test_balance_changes_when_recall() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let result = receipt.expect_commit(true);
+    let result = receipt.expect_commit_with_success(true);
     assert_eq!(
         result.balance_changes(),
         &indexmap!(
@@ -212,7 +216,7 @@ fn test_balance_changes_when_transferring_non_fungibles() {
         test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
 
     // Assert
-    let result = receipt.expect_commit(true);
+    let result = receipt.expect_commit_with_success(true);
 
     assert_eq!(
         result

@@ -72,9 +72,10 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
                     vault.create_proof_of_amount(vault.amount(api)?, api)
                 } else {
                     let vault = Vault(self.controlled_asset);
-                    // FIXME: Is this correct?
-                    let count = 100;
-                    let non_fungible_local_ids = vault.non_fungible_local_ids(count, api)?;
+
+                    // u32::MAX is used as vault size is limited to maximum bucket size which is constrained
+                    // by same costing mechanism so we should never be in any danger of never being able to produce proofs
+                    let non_fungible_local_ids = vault.non_fungible_local_ids(u32::MAX, api)?;
                     vault.create_proof_of_non_fungibles(non_fungible_local_ids, api)
                 }
             }

@@ -19,7 +19,9 @@ fn get_global_address_in_local_in_function_should_fail() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let called_component = receipt.expect_commit(true).new_component_addresses()[0];
+    let called_component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -57,7 +59,9 @@ fn get_global_address_in_local_in_method_should_fail() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let called_component = receipt.expect_commit(true).new_component_addresses()[0];
+    let called_component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -69,7 +73,9 @@ fn get_global_address_in_local_in_method_should_fail() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let component = receipt.expect_commit(true).new_component_addresses()[0];
+    let component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -106,7 +112,9 @@ fn get_global_address_in_parent_should_succeed() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let called_component = receipt.expect_commit(true).new_component_addresses()[0];
+    let called_component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -118,7 +126,9 @@ fn get_global_address_in_parent_should_succeed() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let component = receipt.expect_commit(true).new_component_addresses()[0];
+    let component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -126,7 +136,8 @@ fn get_global_address_in_parent_should_succeed() {
         .call_method(component, "get_global_address_in_parent", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let get_global_address_component: ComponentAddress = receipt.expect_commit(true).output(1);
+    let get_global_address_component: ComponentAddress =
+        receipt.expect_commit_with_success(true).output(1);
 
     // Assert
     receipt.expect_commit_success();
@@ -148,7 +159,9 @@ fn get_global_address_in_child_should_succeed() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let called_component = receipt.expect_commit(true).new_component_addresses()[0];
+    let called_component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -160,7 +173,9 @@ fn get_global_address_in_child_should_succeed() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let component = receipt.expect_commit(true).new_component_addresses()[0];
+    let component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -168,7 +183,8 @@ fn get_global_address_in_child_should_succeed() {
         .call_method(component, "get_global_address_in_owned", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let get_global_address_component: ComponentAddress = receipt.expect_commit(true).output(1);
+    let get_global_address_component: ComponentAddress =
+        receipt.expect_commit_with_success(true).output(1);
 
     // Assert
     receipt.expect_commit_success();
@@ -189,7 +205,9 @@ fn test_call_component_address_protected_method(caller_child: bool, callee_child
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let called_component = receipt.expect_commit(true).new_component_addresses()[0];
+    let called_component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -201,7 +219,9 @@ fn test_call_component_address_protected_method(caller_child: bool, callee_child
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let component = receipt.expect_commit(true).new_component_addresses()[0];
+    let component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -259,7 +279,9 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let called_component = receipt.expect_commit(true).new_component_addresses()[0];
+    let called_component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -271,7 +293,9 @@ fn test_assert(package: AssertAgainst, child: bool, should_succeed: bool) {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let component = receipt.expect_commit(true).new_component_addresses()[0];
+    let component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     let (method_name, args) = match package {
         AssertAgainst::SelfPackage => (
@@ -386,7 +410,9 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let called_component = receipt.expect_commit(true).new_component_addresses()[0];
+    let called_component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_function(
@@ -398,7 +424,9 @@ fn call_component_address_protected_method_in_parent_with_wrong_address_should_f
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
-    let component = receipt.expect_commit(true).new_component_addresses()[0];
+    let component = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
