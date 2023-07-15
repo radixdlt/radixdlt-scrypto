@@ -2,7 +2,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::{NodeSubstates, StoreAccess, StoreAccessInfo};
+use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
 
@@ -59,30 +59,6 @@ impl LimitsModule {
             StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
             StoreAccess::NewEntryInTrack => {
                 self.number_of_substates_in_track += 1;
-            }
-        }
-
-        if self.number_of_substates_in_track > self.config.max_number_of_substates_in_track {
-            Err(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::TooManyEntriesInTrack,
-                ),
-            ))
-        } else {
-            Ok(())
-        }
-    }
-
-    pub fn process_store_access_info(
-        &mut self,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        for access in store_access {
-            match access {
-                StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
-                StoreAccess::NewEntryInTrack => {
-                    self.number_of_substates_in_track += 1;
-                }
             }
         }
 

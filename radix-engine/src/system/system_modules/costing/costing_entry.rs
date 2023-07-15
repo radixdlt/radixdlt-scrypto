@@ -1,6 +1,6 @@
 use super::FeeTable;
 use crate::kernel::actor::Actor;
-use crate::track::interface::{StoreAccess, StoreAccessInfo, StoreCommit};
+use crate::track::interface::{StoreAccess, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
 

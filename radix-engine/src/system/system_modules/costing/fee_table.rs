@@ -1,7 +1,7 @@
 use crate::{
     blueprints::package::*,
     kernel::actor::Actor,
-    track::interface::{StoreAccess, StoreAccessInfo, StoreCommit},
+    track::interface::{StoreAccess, StoreCommit},
     types::*,
 };
 use lazy_static::lazy_static;
@@ -76,17 +76,6 @@ impl FeeTable {
         // Time for processing a byte: 10.075 µs / 1169 = 0.00861847733
 
         mul(cast(size), 2)
-    }
-
-
-
-    fn store_access_info_cost(&self, info: &StoreAccessInfo) -> u32 {
-        let mut sum = 0;
-        for store_access in info {
-            let cost = self.store_access_cost(store_access);
-            sum = add(sum, cost);
-        }
-        sum
     }
 
     //======================
@@ -376,11 +365,6 @@ fn cast(a: usize) -> u32 {
 #[inline]
 fn add(a: u32, b: u32) -> u32 {
     a.checked_add(b).unwrap_or(u32::MAX)
-}
-
-#[inline]
-fn add3(a: u32, b: u32, c: u32) -> u32 {
-    add(add(a, b), c)
 }
 
 #[inline]

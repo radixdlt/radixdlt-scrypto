@@ -17,7 +17,7 @@ use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::track::interface::{TrackOpenSubstateError, NodeSubstates, StoreAccessInfo, SubstateStore, CallbackError};
+use crate::track::interface::{TrackOpenSubstateError, NodeSubstates, SubstateStore, CallbackError};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;

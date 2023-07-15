@@ -176,9 +176,6 @@ pub trait SubstateStore {
     fn get_commit_info(&mut self) -> StoreCommitInfo;
 }
 
-// FIXME: Remove
-pub type StoreAccessInfo = Vec<StoreAccess>;
-
 #[derive(Debug, Clone, Copy)]
 pub enum StoreAccess {
     /// Some substate was read from database.

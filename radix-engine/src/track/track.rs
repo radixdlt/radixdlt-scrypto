@@ -1,4 +1,4 @@
-use crate::track::interface::{TrackOpenSubstateError, NodeSubstates, SetSubstateError, StoreAccess, StoreAccessInfo, SubstateStore, TakeSubstateError, CallbackError};
+use crate::track::interface::{TrackOpenSubstateError, NodeSubstates, SetSubstateError, StoreAccess, SubstateStore, TakeSubstateError, CallbackError};
 use crate::track::utils::{OverlayingIterator, OverlayingResultIterator};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -424,17 +424,15 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
     fn list_entries_from_db<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
         substate_db: &'x S,
         partition_key: &DbPartitionKey,
-        store_access: &'x mut StoreAccessInfo,
         on_store_access: F,
     ) -> Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>> + 'x> {
-        struct TracedIterator<'a, 'b, E, F: FnMut(StoreAccess) -> Result<(), E>> {
+        struct TracedIterator<'a, E, F: FnMut(StoreAccess) -> Result<(), E>> {
             iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
-            store_access: &'b mut StoreAccessInfo,
             on_store_access: F,
             errored_out: bool,
         }
 
-        impl<'a, 'b, E, F: FnMut(StoreAccess) -> Result<(), E>> Iterator for TracedIterator<'a, 'b, E, F> {
+        impl<'a, E, F: FnMut(StoreAccess) -> Result<(), E>> Iterator for TracedIterator<'a, E, F> {
             type Item = Result<(DbSortKey, IndexedScryptoValue), E>;
 
             fn next(&mut self) -> Option<Self::Item> {
@@ -445,9 +443,8 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                 let result = self.iterator.next();
                 if let Some(x) = result {
                     let store_access = StoreAccess::ReadFromDb(x.1.len());
-                    self.store_access.push(store_access.clone());
 
-                    let result = (self.on_store_access)(store_access.clone());
+                    let result = (self.on_store_access)(store_access);
                     match result {
                         Ok(()) => {
                             Some(Ok((
@@ -461,7 +458,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
                         }
                     }
                 } else {
-                    self.store_access.push(StoreAccess::ReadFromDbNotFound);
                     let result = (self.on_store_access)(StoreAccess::ReadFromDbNotFound);
                     match result {
                         Ok(()) => None,
@@ -476,7 +472,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
 
         Box::new(TracedIterator {
             iterator: substate_db.list_entries(partition_key),
-            store_access,
             on_store_access,
             errored_out: false,
         })
@@ -807,12 +802,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             return Ok(items);
         }
 
-        let mut tmp_info = StoreAccessInfo::new();
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
         let mut tracked_iter = TrackedIter::new(Self::list_entries_from_db(
             self.substate_db,
             &db_partition_key,
-            &mut tmp_info,
             on_store_access,
         ));
 
@@ -880,12 +873,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         }
 
         // Read from database
-        let mut tmp_info = StoreAccessInfo::new();
         let db_partition_key = M::to_db_partition_key(node_id, partition_num);
         let mut tracked_iter = TrackedIter::new(Self::list_entries_from_db(
             self.substate_db,
             &db_partition_key,
-            &mut tmp_info,
             on_store_access,
         ));
         let new_updates = {
@@ -964,7 +955,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         // initialize the "from db" iterator: use `dyn`, since we want to skip it altogether if the node is marked as `is_new` in our track
         let mut db_values_count = 0u32;
-        let mut tmp_info = StoreAccessInfo::new();
         let raw_db_entries: Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>>> =
             if tracked_node.is_new {
                 Box::new(empty()) // optimization: avoid touching the database altogether
@@ -973,7 +963,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 Box::new(Self::list_entries_from_db(
                     self.substate_db,
                     &partition_key,
-                    &mut tmp_info,
                     on_store_access,
                 ))
             };

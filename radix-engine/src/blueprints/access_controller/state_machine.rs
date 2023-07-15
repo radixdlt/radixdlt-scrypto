@@ -72,7 +72,10 @@ impl Transition<AccessControllerCreateProofStateMachineInput> for AccessControll
                     vault.create_proof_of_amount(vault.amount(api)?, api)
                 } else {
                     let vault = Vault(self.controlled_asset);
-                    vault.create_proof_of_non_fungibles(vault.non_fungible_local_ids(api)?, api)
+                    // FIXME: Is this correct?
+                    let count = 100;
+                    let non_fungible_local_ids = vault.non_fungible_local_ids(count, api)?;
+                    vault.create_proof_of_non_fungibles(non_fungible_local_ids, api)
                 }
             }
             _ => access_controller_runtime_error!(OperationRequiresUnlockedPrimaryRole),
