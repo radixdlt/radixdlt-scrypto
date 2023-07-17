@@ -20,12 +20,11 @@ use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
-use crate::track::interface::StoreAccessInfo;
+use crate::track::interface::StoreAccess;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
@@ -148,85 +147,87 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         handle: LockHandle,
         node_id: &NodeId,
         size: usize,
-        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_open_substate(api, handle, node_id, store_access, size)
+        SystemModuleMixer::after_open_substate(api, handle, node_id, size)
     }
 
-    fn on_close_substate<Y>(
-        lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_close_substate<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_close_substate(api, lock_handle, store_access)
+        SystemModuleMixer::on_close_substate(api, lock_handle)
     }
 
     fn on_read_substate<Y>(
         lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_read_substate(api, lock_handle, value_size, store_access)
+        SystemModuleMixer::on_read_substate(api, lock_handle, value_size)
     }
 
     fn on_write_substate<Y>(
         lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_write_substate(api, lock_handle, value_size, store_access)
+        SystemModuleMixer::on_write_substate(api, lock_handle, value_size)
     }
 
-    fn on_scan_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError> {
+        SystemModuleMixer::on_store_access(store_access, self)
+    }
+
+    fn on_set_substate<Y>(value_size: usize, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_scan_substate(api, store_access)
+        SystemModuleMixer::on_set_substate(api, value_size)
     }
 
-    fn on_set_substate<Y>(
-        value_size: usize,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_remove_substate<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_set_substate(api, value_size, store_access)
+        SystemModuleMixer::on_remove_substate(api)
     }
 
-    fn on_take_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_scan_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_take_substates(api, store_access)
+        SystemModuleMixer::on_scan_substates(api)
     }
 
-    fn after_create_node<Y>(
-        node_id: &NodeId,
-        total_substate_size: usize,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_scan_sorted_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_create_node(api, node_id, total_substate_size, store_access)
+        SystemModuleMixer::on_scan_sorted_substates(api)
+    }
+
+    fn on_take_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_take_substates(api)
+    }
+
+    fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_create_node(api, node_id)
     }
 
     fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
@@ -283,18 +284,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_allocate_node_id(api, entity_type)
     }
 
-    fn after_move_modules<Y>(
-        src_node_id: &NodeId,
-        dest_node_id: &NodeId,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_move_modules(api, src_node_id, dest_node_id, store_access)
-    }
-
     //--------------------------------------------------------------------------
     // Note that the following logic doesn't go through mixer and is not costed
     //--------------------------------------------------------------------------
@@ -335,22 +324,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             system.kernel_close_substate(handle)?;
         }
 
-        match actor {
+        match &actor {
             Actor::Root => panic!("Root is invoked"),
-            Actor::Method(MethodActor {
-                object_info:
-                    ObjectInfo {
-                        main_blueprint_id: blueprint_id,
-                        ..
-                    },
-                ident,
-                ..
-            })
-            | Actor::Function(FunctionActor {
-                blueprint_id,
-                ident,
-                ..
-            }) => {
+            actor @ Actor::Method(MethodActor { ident, .. })
+            | actor @ Actor::Function(FunctionActor { ident, .. }) => {
+                let blueprint_id = actor.blueprint_id().unwrap();
+
                 //  Validate input
                 let definition = system.load_blueprint_definition(
                     blueprint_id.package_address,
@@ -374,7 +353,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 let function_schema = definition
                     .interface
                     .functions
-                    .get(&ident)
+                    .get(ident)
                     .expect("Should exist due to schema check");
                 match (&function_schema.receiver, node_id) {
                     (Some(receiver_info), Some(_)) => {
@@ -397,7 +376,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 // Execute
                 let export = definition
                     .function_exports
-                    .get(&ident)
+                    .get(ident)
                     .expect("Schema should have validated this exists")
                     .clone();
                 let output =
@@ -416,11 +395,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 Ok(output)
             }
             Actor::BlueprintHook(BlueprintHookActor {
-                blueprint_id,
-                hook,
-                export,
-                ..
+                blueprint_id, hook, ..
             }) => {
+                // Find the export
+                let definition = system.load_blueprint_definition(
+                    blueprint_id.package_address,
+                    &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                )?;
+                let export =
+                    definition
+                        .hook_exports
+                        .get(&hook)
+                        .ok_or(RuntimeError::SystemUpstreamError(
+                            SystemUpstreamError::HookNotFound(hook.clone()),
+                        ))?;
+
                 // Input is not validated as they're created by system.
 
                 // Invoke the export
@@ -465,8 +454,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
             match type_info {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    main_blueprint_id: blueprint_id,
+                TypeInfoSubstate::Object(NodeObjectInfo {
+                    main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
                     ..
                 }) => {
                     match (
@@ -529,10 +518,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Drop all proofs (previously) owned by the auth zone
             for proof in proofs {
                 let mut system = SystemService::new(api);
-                let object_info = system.get_object_info(proof.0.as_node_id())?;
+                let object_info = system.get_node_object_info(proof.0.as_node_id())?;
                 system.call_function(
                     RESOURCE_PACKAGE,
-                    &object_info.main_blueprint_id.blueprint_name,
+                    &object_info.main_blueprint_info.blueprint_id.blueprint_name,
                     PROOF_DROP_IDENT,
                     scrypto_encode(&ProofDropInput { proof }).unwrap(),
                 )?;
@@ -582,20 +571,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 version: BlueprintVersion::default(),
             },
         )?;
-        if let Some(export) = definition
+        if definition
             .hook_exports
-            .get(&BlueprintHook::OnVirtualize)
-            .cloned()
+            .contains_key(&BlueprintHook::OnVirtualize)
         {
             let rtn: Vec<u8> = api
                 .kernel_invoke(Box::new(KernelInvocation {
                     actor: Actor::BlueprintHook(BlueprintHookActor {
                         blueprint_id: blueprint_id.clone(),
                         hook: BlueprintHook::OnVirtualize,
-                        export,
-                        node_id: None,
-                        module_id: None,
-                        object_info: None,
+                        receiver: None,
                     }),
                     args: IndexedScryptoValue::from_typed(&OnVirtualizeInput {
                         variant_id,
@@ -627,25 +612,28 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
         match type_info {
-            TypeInfoSubstate::Object(object_info) => {
+            TypeInfoSubstate::Object(node_object_info) => {
                 let mut service = SystemService::new(api);
                 let definition = service.load_blueprint_definition(
-                    object_info.main_blueprint_id.package_address,
+                    node_object_info
+                        .main_blueprint_info
+                        .blueprint_id
+                        .package_address,
                     &BlueprintVersionKey {
-                        blueprint: object_info.main_blueprint_id.blueprint_name.clone(),
+                        blueprint: node_object_info
+                            .main_blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .clone(),
                         version: BlueprintVersion::default(),
                     },
                 )?;
-                if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnDrop).cloned() {
-                    let object_info = service.get_object_info(node_id)?;
+                if definition.hook_exports.contains_key(&BlueprintHook::OnDrop) {
                     api.kernel_invoke(Box::new(KernelInvocation {
                         actor: Actor::BlueprintHook(BlueprintHookActor {
-                            blueprint_id: object_info.main_blueprint_id.clone(),
+                            blueprint_id: node_object_info.main_blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnDrop,
-                            export,
-                            node_id: Some(node_id.clone()),
-                            module_id: Some(ObjectModuleId::Main),
-                            object_info: Some(object_info),
+                            receiver: Some(node_id.clone()),
                         }),
                         args: IndexedScryptoValue::from_typed(&OnDropInput {}),
                     }))

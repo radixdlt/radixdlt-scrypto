@@ -612,17 +612,20 @@ pub fn create_bootstrap_package_partitions(
     {
         partitions.insert(
             TYPE_INFO_FIELD_PARTITION,
-            type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+            type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
                 global: true,
-                main_blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
                 module_versions: btreemap!(
                     ObjectModuleId::Main => BlueprintVersion::default(),
                     ObjectModuleId::Metadata => BlueprintVersion::default(),
                     ObjectModuleId::RoleAssignment => BlueprintVersion::default(),
                 ),
-                outer_object: OuterObjectInfo::default(),
-                features: btreeset!(),
-                instance_schema: None,
+
+                main_blueprint_info: BlueprintObjectInfo {
+                    blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
+                    outer_obj_info: OuterObjectInfo::default(),
+                    features: btreeset!(),
+                    instance_schema: None,
+                },
             })),
         );
     }
@@ -1298,8 +1301,12 @@ impl PackageRoyaltyNativeBlueprint {
     {
         {
             let mut service = SystemService::new(api);
-            let object_info = service.get_object_info(receiver)?;
-            if !object_info.features.contains(PACKAGE_ROYALTY_FEATURE) {
+            let object_info = service.get_node_object_info(receiver)?;
+            if !object_info
+                .main_blueprint_info
+                .features
+                .contains(PACKAGE_ROYALTY_FEATURE)
+            {
                 return Ok(());
             }
         }
@@ -1363,13 +1370,13 @@ impl PackageRoyaltyNativeBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_SELF, PACKAGE_ROYALTY_FEATURE)? {
+        if !api.method_actor_is_feature_enabled(OBJECT_HANDLE_SELF, PACKAGE_ROYALTY_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::PackageError(PackageError::RoyaltiesNotEnabled),
             ));
         }
 
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             PackageField::Royalty.into(),
             LockFlags::read_only(),

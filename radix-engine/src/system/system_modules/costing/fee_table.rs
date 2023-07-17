@@ -1,7 +1,7 @@
 use crate::{
     blueprints::package::*,
     kernel::actor::Actor,
-    track::interface::{StoreAccess, StoreAccessInfo, StoreCommit},
+    track::interface::{StoreAccess, StoreCommit},
     types::*,
 };
 use lazy_static::lazy_static;
@@ -75,32 +75,6 @@ impl FeeTable {
         // Time for processing a byte: 10.075 µs / 1169 = 0.00861847733
 
         mul(cast(size), 2)
-    }
-
-    fn store_access_cost(store_access: &StoreAccessInfo) -> u32 {
-        let mut sum = 0;
-        for info in store_access {
-            let cost = match info {
-                StoreAccess::ReadFromDb(size) => {
-                    // Execution time (µs): 0.0009622109 * size + 389.5155
-                    // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
-                    // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                    add(cast(*size) / 10, 40_000)
-                }
-                StoreAccess::ReadFromDbNotFound => {
-                    // Execution time (µs): varies, using max 1,600
-                    // Execution cost: 1,600 * 100
-                    // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
-                    160_000
-                }
-                StoreAccess::NewEntryInTrack => {
-                    // The max number of entries is limited by limits module.
-                    0
-                }
-            };
-            sum = add(sum, cost);
-        }
-        sum
     }
 
     //======================
@@ -220,17 +194,8 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn create_node_cost(
-        &self,
-        _node_id: &NodeId,
-        total_substate_size: usize,
-        store_access: &StoreAccessInfo,
-    ) -> u32 {
-        add3(
-            500,
-            Self::data_processing_cost(total_substate_size),
-            Self::store_access_cost(store_access),
-        )
+    pub fn create_node_cost(&self, _node_id: &NodeId, total_substate_size: usize) -> u32 {
+        add(500, Self::data_processing_cost(total_substate_size))
     }
 
     #[inline]
@@ -239,69 +204,75 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn move_modules_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
+    pub fn move_modules_cost(&self) -> u32 {
+        500
     }
 
     #[inline]
-    pub fn open_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
-            500,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
+    pub fn open_substate_cost(&self, size: usize) -> u32 {
+        add(500, Self::data_processing_cost(size))
     }
 
     #[inline]
-    pub fn read_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
-            500,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
+    pub fn read_substate_cost(&self, size: usize) -> u32 {
+        add(500, Self::data_processing_cost(size))
     }
 
     #[inline]
-    pub fn write_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
-            500,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
+    pub fn write_substate_cost(&self, size: usize) -> u32 {
+        add(500, Self::data_processing_cost(size))
     }
 
     #[inline]
-    pub fn close_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
+    pub fn close_substate_cost(&self) -> u32 {
+        500
     }
 
     #[inline]
-    pub fn set_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        add3(
-            500,
-            Self::data_processing_cost(size),
-            Self::store_access_cost(store_access),
-        )
+    pub fn set_substate_cost(&self, size: usize) -> u32 {
+        add(500, Self::data_processing_cost(size))
     }
 
     #[inline]
-    pub fn remove_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
+    pub fn remove_substate_base_cost(&self) -> u32 {
+        500
     }
 
     #[inline]
-    pub fn scan_sorted_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
+    pub fn scan_substates_base_cost(&self) -> u32 {
+        500
     }
 
     #[inline]
-    pub fn scan_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
+    pub fn scan_sorted_substates_base_cost(&self) -> u32 {
+        500
     }
 
     #[inline]
-    pub fn take_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
+    pub fn take_substates_base_cost(&self) -> u32 {
+        500
+    }
+
+    #[inline]
+    pub fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
+        match store_access {
+            StoreAccess::ReadFromDb(size) => {
+                // Execution time (µs): 0.0009622109 * size + 389.5155
+                // Execution cost: (0.0009622109 * size + 389.5155) * 100 = 0.1 * size + 40,000
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                add(cast(*size) / 10, 40_000)
+            }
+            StoreAccess::ReadFromDbNotFound => {
+                // Execution time (µs): varies, using max 1,600
+                // Execution cost: 1,600 * 100
+                // See: https://radixdlt.atlassian.net/wiki/spaces/S/pages/3091562563/RocksDB+metrics
+                160_000
+            }
+            StoreAccess::NewEntryInTrack => {
+                // The max number of entries is limited by limits module.
+                0
+            }
+        }
     }
 
     //======================
@@ -373,11 +344,6 @@ fn cast(a: usize) -> u32 {
 #[inline]
 fn add(a: u32, b: u32) -> u32 {
     a.checked_add(b).unwrap_or(u32::MAX)
-}
-
-#[inline]
-fn add3(a: u32, b: u32, c: u32) -> u32 {
-    add(add(a, b), c)
 }
 
 #[inline]

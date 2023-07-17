@@ -1,6 +1,6 @@
 use super::FeeTable;
 use crate::kernel::actor::Actor;
-use crate::track::interface::{StoreAccessInfo, StoreCommit};
+use crate::track::interface::{StoreAccess, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
 
@@ -44,47 +44,33 @@ pub enum CostingEntry<'a> {
     CreateNode {
         node_id: &'a NodeId,
         total_substate_size: usize,
-        store_access: &'a StoreAccessInfo,
     },
     DropNode {
         total_substate_size: usize,
     },
-    MoveModules {
-        store_access: &'a StoreAccessInfo,
-    },
+    MoveModules,
     OpenSubstate {
         node_id: &'a NodeId,
         value_size: usize,
-        store_access: &'a StoreAccessInfo,
     },
     ReadSubstate {
         value_size: usize,
-        store_access: &'a StoreAccessInfo,
     },
     WriteSubstate {
         value_size: usize,
-        store_access: &'a StoreAccessInfo,
     },
-    CloseSubstate {
-        store_access: &'a StoreAccessInfo,
-    },
+    CloseSubstate,
 
     /* unstable node apis */
     SetSubstate {
         value_size: usize,
-        store_access: &'a StoreAccessInfo,
     },
-    RemoveSubstate {
-        store_access: &'a StoreAccessInfo,
-    },
-    ScanSortedSubstates {
-        store_access: &'a StoreAccessInfo,
-    },
-    ScanSubstates {
-        store_access: &'a StoreAccessInfo,
-    },
-    TakeSubstate {
-        store_access: &'a StoreAccessInfo,
+    RemoveSubstateBase,
+    ScanSortedSubstatesBase,
+    ScanSubstatesBase,
+    TakeSubstatesBase,
+    StoreAccess {
+        store_access: &'a StoreAccess,
     },
 
     /* commit */
@@ -146,36 +132,24 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::CreateNode {
                 node_id,
                 total_substate_size,
-                store_access,
-            } => ft.create_node_cost(node_id, *total_substate_size, store_access),
+            } => ft.create_node_cost(node_id, *total_substate_size),
             CostingEntry::DropNode {
                 total_substate_size,
             } => ft.drop_node_cost(*total_substate_size),
-            CostingEntry::MoveModules { store_access } => ft.move_modules_cost(store_access),
+            CostingEntry::MoveModules => ft.move_modules_cost(),
             CostingEntry::OpenSubstate {
                 node_id: _,
                 value_size,
-                store_access,
-            } => ft.open_substate_cost(*value_size, store_access),
-            CostingEntry::ReadSubstate {
-                value_size,
-                store_access,
-            } => ft.read_substate_cost(*value_size, store_access),
-            CostingEntry::WriteSubstate {
-                value_size,
-                store_access,
-            } => ft.write_substate_cost(*value_size, store_access),
-            CostingEntry::CloseSubstate { store_access } => ft.close_substate_cost(store_access),
-            CostingEntry::SetSubstate {
-                value_size,
-                store_access,
-            } => ft.set_substate_cost(*value_size, store_access),
-            CostingEntry::RemoveSubstate { store_access } => ft.remove_substate_cost(store_access),
-            CostingEntry::ScanSortedSubstates { store_access } => {
-                ft.scan_sorted_substates_cost(store_access)
-            }
-            CostingEntry::ScanSubstates { store_access } => ft.scan_substates_cost(store_access),
-            CostingEntry::TakeSubstate { store_access } => ft.take_substates_cost(store_access),
+            } => ft.open_substate_cost(*value_size),
+            CostingEntry::ReadSubstate { value_size } => ft.read_substate_cost(*value_size),
+            CostingEntry::WriteSubstate { value_size } => ft.write_substate_cost(*value_size),
+            CostingEntry::CloseSubstate => ft.close_substate_cost(),
+            CostingEntry::SetSubstate { value_size } => ft.set_substate_cost(*value_size),
+            CostingEntry::RemoveSubstateBase => ft.remove_substate_base_cost(),
+            CostingEntry::ScanSubstatesBase => ft.scan_substates_base_cost(),
+            CostingEntry::ScanSortedSubstatesBase => ft.scan_sorted_substates_base_cost(),
+            CostingEntry::TakeSubstatesBase => ft.take_substates_base_cost(),
+            CostingEntry::StoreAccess { store_access } => ft.store_access_cost(store_access),
             CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),
             CostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),

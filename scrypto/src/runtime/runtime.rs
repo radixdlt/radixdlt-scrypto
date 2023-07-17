@@ -38,22 +38,22 @@ impl Runtime {
     }
 
     pub fn global_component() -> Global<AnyComponent> {
-        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
+        let address: GlobalAddress = ScryptoEnv.method_actor_get_global_address().unwrap();
         Global(AnyComponent(ObjectStubHandle::Global(address)))
     }
 
     pub fn global_address() -> ComponentAddress {
-        let address: GlobalAddress = ScryptoEnv.actor_get_global_address().unwrap();
+        let address: GlobalAddress = ScryptoEnv.method_actor_get_global_address().unwrap();
         ComponentAddress::new_or_panic(address.into())
     }
 
     /// Returns the running entity.
     pub fn blueprint_id() -> BlueprintId {
-        ScryptoEnv.actor_get_blueprint().unwrap()
+        ScryptoEnv.actor_get_blueprint_id().unwrap()
     }
 
     pub fn node_id() -> NodeId {
-        ScryptoEnv.actor_get_node_id().unwrap()
+        ScryptoEnv.method_actor_get_node_id().unwrap()
     }
 
     /// Returns the current package address.

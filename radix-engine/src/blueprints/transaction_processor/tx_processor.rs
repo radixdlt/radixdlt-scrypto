@@ -106,15 +106,17 @@ impl TransactionProcessorBlueprint {
                     WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(WorktopSubstate::new()))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
-                    TypeInfoSubstate::Object(ObjectInfo {
+                    TypeInfoSubstate::Object(NodeObjectInfo {
                         global: false,
-                        main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                         module_versions: btreemap!(
                             ObjectModuleId::Main => BlueprintVersion::default(),
                         ),
-                        instance_schema: None,
-                        outer_object: OuterObjectInfo::default(),
-                        features: btreeset!(),
+                        main_blueprint_info: BlueprintObjectInfo {
+                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
+                            instance_schema: None,
+                            outer_obj_info: OuterObjectInfo::default(),
+                            features: btreeset!(),
+                        }
                     })
                 )
             ),
@@ -607,8 +609,11 @@ impl TransactionProcessor {
             let info = TypeInfoBlueprint::get_type(node_id, api)?;
             match info {
                 TypeInfoSubstate::Object(info) => match (
-                    info.main_blueprint_id.package_address,
-                    info.main_blueprint_id.blueprint_name.as_str(),
+                    info.main_blueprint_info.blueprint_id.package_address,
+                    info.main_blueprint_info
+                        .blueprint_id
+                        .blueprint_name
+                        .as_str(),
                 ) {
                     (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                     | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {

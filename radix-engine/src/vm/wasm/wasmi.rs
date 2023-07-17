@@ -110,7 +110,6 @@ fn consume_buffer(
 
 fn actor_call_module_method(
     mut caller: Caller<'_, HostState>,
-    object_handle: u32,
     module_id: u32,
     ident_ptr: u32,
     ident_len: u32,
@@ -123,7 +122,7 @@ fn actor_call_module_method(
     let args = read_memory(caller.as_context_mut(), memory, args_ptr, args_len)?;
 
     runtime
-        .actor_call_module_method(object_handle, module_id, ident, args)
+        .actor_call_module_method(module_id, ident, args)
         .map(|buffer| buffer.0)
 }
 
@@ -576,7 +575,6 @@ impl WasmiModule {
         let host_actor_call_module_method = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
-             object_handle: u32,
              module_id: u32,
              ident_ptr: u32,
              ident_len: u32,
@@ -584,13 +582,7 @@ impl WasmiModule {
              args_len: u32|
              -> Result<u64, Trap> {
                 actor_call_module_method(
-                    caller,
-                    object_handle,
-                    module_id,
-                    ident_ptr,
-                    ident_len,
-                    args_ptr,
-                    args_len,
+                    caller, module_id, ident_ptr, ident_len, args_ptr, args_len,
                 )
                 .map_err(|e| e.into())
             },

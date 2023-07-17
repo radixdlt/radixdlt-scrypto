@@ -271,7 +271,7 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
 
         let resource_address = match type_info {
             TypeInfoSubstate::Object(info) => {
-                ResourceAddress::new_or_panic(info.get_outer_object().into())
+                ResourceAddress::new_or_panic(info.get_main_outer_object().into())
             }
             _ => panic!("Unexpected"),
         };

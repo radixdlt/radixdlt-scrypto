@@ -42,7 +42,6 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
 
     fn actor_call_module_method(
         &mut self,
-        object_handle: u32,
         module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,

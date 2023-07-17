@@ -2,7 +2,7 @@ use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::{NodeSubstates, StoreAccess, StoreAccessInfo};
+use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
 
@@ -54,16 +54,11 @@ impl LimitsModule {
         &self.config
     }
 
-    pub fn process_store_access(
-        &mut self,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        for access in store_access {
-            match access {
-                StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
-                StoreAccess::NewEntryInTrack => {
-                    self.number_of_substates_in_track += 1;
-                }
+    pub fn process_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError> {
+        match store_access {
+            StoreAccess::ReadFromDb(_) | StoreAccess::ReadFromDbNotFound => {}
+            StoreAccess::NewEntryInTrack => {
+                self.number_of_substates_in_track += 1;
             }
         }
 
@@ -130,61 +125,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _node_id: &NodeId,
-        _total_substate_size: usize,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    #[inline(always)]
-    fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _src_node_id: &NodeId,
-        _dest_node_id: &NodeId,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _handle: LockHandle,
-        _node_id: &NodeId,
-        store_access: &StoreAccessInfo,
-        _value_size: usize,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _lock_handle: LockHandle,
-        _value_size: usize,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let limits = &mut api.kernel_get_system().modules.limits.config;
 
@@ -196,51 +140,13 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             ));
         }
 
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
+        Ok(())
     }
 
-    fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
+    fn on_store_access(
+        store_access: &StoreAccess,
+        system: &mut SystemConfig<V>,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _value_size: usize,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
+        system.modules.limits.process_store_access(store_access)
     }
 }

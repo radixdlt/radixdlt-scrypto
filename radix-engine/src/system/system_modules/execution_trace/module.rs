@@ -7,7 +7,7 @@ use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::{NodeSubstates, StoreAccessInfo};
+use crate::track::interface::NodeSubstates;
 use crate::transaction::{FeeLocks, TransactionExecutionTrace};
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::*;
@@ -302,8 +302,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        _total_substate_size: usize,
-        _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_node_id(api, node_id);
@@ -467,12 +465,12 @@ impl ExecutionTraceModule {
         }
 
         let origin = match &callee {
-            Actor::Method(MethodActor {
-                object_info, ident, ..
-            }) => TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                blueprint_id: object_info.main_blueprint_id.clone(),
-                ident: ident.clone(),
-            }),
+            Actor::Method(actor @ MethodActor { ident, .. }) => {
+                TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
+                    blueprint_id: actor.get_blueprint_id(),
+                    ident: ident.clone(),
+                })
+            }
             Actor::Function(FunctionActor {
                 blueprint_id,
                 ident,
@@ -492,23 +490,15 @@ impl ExecutionTraceModule {
         ));
 
         match &callee {
-            Actor::Method(MethodActor {
-                node_id,
-                object_info,
-                ident,
-                ..
-            }) if VaultUtil::is_vault_blueprint(&object_info.main_blueprint_id)
-                && ident.eq(VAULT_PUT_IDENT) =>
+            Actor::Method(actor @ MethodActor { node_id, ident, .. })
+                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
+                    && ident.eq(VAULT_PUT_IDENT) =>
             {
                 self.handle_vault_put_input(&resource_summary, current_actor, node_id)
             }
-            Actor::Method(MethodActor {
-                node_id,
-                object_info,
-                ident,
-                ..
-            }) if VaultUtil::is_vault_blueprint(&object_info.main_blueprint_id)
-                && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
+            Actor::Method(actor @ MethodActor { node_id, ident, .. })
+                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
+                    && ident.eq(FUNGIBLE_VAULT_LOCK_FEE_IDENT) =>
             {
                 self.handle_vault_lock_fee_input(current_actor, node_id, args)
             }
@@ -530,16 +520,11 @@ impl ExecutionTraceModule {
         }
 
         match current_actor {
-            Actor::Method(MethodActor {
-                object_info,
-                node_id,
-                ident,
-                ..
-            }) => {
-                if VaultUtil::is_vault_blueprint(&object_info.main_blueprint_id)
+            Actor::Method(actor @ MethodActor { node_id, ident, .. }) => {
+                if VaultUtil::is_vault_blueprint(&actor.get_blueprint_id())
                     && ident.eq(VAULT_TAKE_IDENT)
                 {
-                    self.handle_vault_take_output(&resource_summary, &caller, &node_id);
+                    self.handle_vault_take_output(&resource_summary, &caller, node_id)
                 }
             }
             Actor::Function(_) => {}

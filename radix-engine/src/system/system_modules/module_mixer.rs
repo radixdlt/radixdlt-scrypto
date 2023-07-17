@@ -17,8 +17,8 @@ use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
 use crate::system::system_modules::node_move::NodeMoveModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
-use crate::track::interface::StoreCommit;
-use crate::track::interface::{NodeSubstates, StoreAccessInfo};
+use crate::track::interface::NodeSubstates;
+use crate::track::interface::{StoreAccess, StoreCommit};
 use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
@@ -305,26 +305,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
-        total_substate_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            after_create_node(api, node_id, total_substate_size, store_access)
-        )
-    }
-
-    #[trace_resources]
-    fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        src_node_id: &NodeId,
-        dest_node_id: &NodeId,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            after_move_modules(api, src_node_id, dest_node_id, store_access)
-        )
+        internal_call_dispatch!(api, after_create_node(api, node_id))
     }
 
     #[trace_resources]
@@ -362,13 +344,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         handle: LockHandle,
         node_id: &NodeId,
-        store_access: &StoreAccessInfo,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            after_open_substate(api, handle, node_id, store_access, size)
-        )
+        internal_call_dispatch!(api, after_open_substate(api, handle, node_id, size))
     }
 
     #[trace_resources(log=value_size)]
@@ -376,12 +354,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            on_read_substate(api, lock_handle, value_size, store_access)
-        )
+        internal_call_dispatch!(api, on_read_substate(api, lock_handle, value_size))
     }
 
     #[trace_resources(log=value_size)]
@@ -389,46 +363,77 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         lock_handle: LockHandle,
         value_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api,
-            on_write_substate(api, lock_handle, value_size, store_access)
-        )
+        internal_call_dispatch!(api, on_write_substate(api, lock_handle, value_size))
     }
 
     #[trace_resources]
     fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_close_substate(api, lock_handle, store_access))
-    }
-
-    #[trace_resources]
-    fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_scan_substate(api, store_access))
+        internal_call_dispatch!(api, on_close_substate(api, lock_handle))
     }
 
     #[trace_resources]
     fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         value_size: usize,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_set_substate(api, value_size, store_access))
+        internal_call_dispatch!(api, on_set_substate(api, value_size))
     }
 
     #[trace_resources]
-    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
+    fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_remove_substate(api))
+    }
+
+    #[trace_resources]
+    fn on_scan_substates<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_scan_substates(api))
+    }
+
+    #[trace_resources]
+    fn on_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_take_substates(api, store_access))
+        internal_call_dispatch!(api, on_scan_sorted_substates(api))
+    }
+
+    #[trace_resources]
+    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_take_substates(api))
+    }
+
+    #[trace_resources]
+    fn on_store_access(
+        store_access: &StoreAccess,
+        system: &mut SystemConfig<V>,
+    ) -> Result<(), RuntimeError> {
+        let modules: EnabledModules = system.modules.enabled_modules;
+        if modules.contains(EnabledModules::KERNEL_TRACE) {
+            KernelTraceModule::on_store_access(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::LIMITS) {
+            LimitsModule::on_store_access(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::COSTING) {
+            CostingModule::on_store_access(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::AUTH) {
+            AuthModule::on_store_access(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::NODE_MOVE) {
+            NodeMoveModule::on_store_access(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
+            TransactionRuntimeModule::on_store_access(store_access, system)?;
+        }
+        if modules.contains(EnabledModules::EXECUTION_TRACE) {
+            ExecutionTraceModule::on_store_access(store_access, system)?;
+        }
+
+        Ok(())
     }
 }
 

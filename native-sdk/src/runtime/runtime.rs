@@ -98,6 +98,6 @@ impl Runtime {
         Y: ClientApi<E>,
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
-        api.actor_get_node_id()
+        api.method_actor_get_node_id()
     }
 }

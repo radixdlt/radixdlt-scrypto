@@ -18,7 +18,7 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::{BlueprintId, GlobalAddress};
 use radix_engine_interface::types::{Level, LockHandle, NodeId};
-use radix_engine_interface::types::{ObjectInfo, PackageAddress};
+use radix_engine_interface::types::{NodeObjectInfo, PackageAddress};
 use radix_engine_interface::*;
 use sbor::rust::prelude::*;
 use sbor::*;
@@ -171,7 +171,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         Ok(return_data)
     }
 
-    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, ClientApiError> {
+    fn get_node_object_info(&mut self, node_id: &NodeId) -> Result<NodeObjectInfo, ClientApiError> {
         let bytes = copy_buffer(unsafe {
             get_object_info(node_id.as_ref().as_ptr(), node_id.as_ref().len())
         });
@@ -354,7 +354,7 @@ impl ClientFieldApi<ClientApiError> for ScryptoEnv {
 }
 
 impl ClientActorApi<ClientApiError> for ScryptoEnv {
-    fn actor_open_field(
+    fn method_actor_open_field(
         &mut self,
         object_handle: u32,
         field: u8,
@@ -365,7 +365,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         Ok(handle)
     }
 
-    fn actor_is_feature_enabled(
+    fn method_actor_is_feature_enabled(
         &mut self,
         _: ObjectHandle,
         _feature: &str,
@@ -373,38 +373,36 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn actor_get_object_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
-        unimplemented!("Not available for Scrypto")
-    }
-
-    fn actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {
+    fn method_actor_get_node_id(&mut self) -> Result<NodeId, ClientApiError> {
         let node_id = copy_buffer(unsafe { get_node_id() });
 
         scrypto_decode(&node_id).map_err(ClientApiError::DecodeError)
     }
 
-    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
+    fn method_actor_get_global_address(&mut self) -> Result<GlobalAddress, ClientApiError> {
         let global_address = copy_buffer(unsafe { get_global_address() });
 
         scrypto_decode(&global_address).map_err(ClientApiError::DecodeError)
     }
 
-    fn actor_get_blueprint(&mut self) -> Result<BlueprintId, ClientApiError> {
+    fn method_actor_get_outer_object(&mut self) -> Result<GlobalAddress, ClientApiError> {
+        unimplemented!("Not available for Scrypto")
+    }
+
+    fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, ClientApiError> {
         let actor = copy_buffer(unsafe { get_blueprint() });
 
         scrypto_decode(&actor).map_err(ClientApiError::DecodeError)
     }
 
-    fn actor_call_module_method(
+    fn method_actor_call_module(
         &mut self,
-        object_handle: ObjectHandle,
         module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
         let return_data = copy_buffer(unsafe {
             actor_call_module_method(
-                object_handle,
                 module_id as u8 as u32,
                 method_name.as_ptr(),
                 method_name.len(),

@@ -21,7 +21,9 @@ fn cannot_set_package_metadata_with_no_owner() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let package_address = receipt.expect_commit(true).new_package_addresses()[0];
+    let package_address = receipt
+        .expect_commit_with_success(true)
+        .new_package_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -59,7 +61,9 @@ fn can_set_package_metadata_with_owner() {
         .try_deposit_batch_or_abort(account)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let package_address = receipt.expect_commit(true).new_package_addresses()[0];
+    let package_address = receipt
+        .expect_commit_with_success(true)
+        .new_package_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()

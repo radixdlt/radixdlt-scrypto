@@ -120,7 +120,9 @@ fn cannot_remove_kv_stores() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -155,7 +157,9 @@ fn cannot_overwrite_kv_stores() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()

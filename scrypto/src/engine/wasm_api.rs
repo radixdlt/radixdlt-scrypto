@@ -136,7 +136,6 @@ extern "C" {
     pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
 
     pub fn actor_call_module_method(
-        _object_handle: u32,
         _module_id: u32,
         _ident_ptr: *const u8,
         _ident_len: usize,
@@ -371,7 +370,6 @@ pub unsafe fn get_blueprint() -> Buffer {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn actor_call_module_method(
-    _object_handle: u32,
     _module_id: u32,
     _ident_ptr: *const u8,
     _ident_len: usize,

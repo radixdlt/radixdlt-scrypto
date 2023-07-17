@@ -258,8 +258,8 @@ impl NativeBucket for Bucket {
         E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         let resource_address = ResourceAddress::new_or_panic(
-            api.get_object_info(self.0.as_node_id())?
-                .get_outer_object()
+            api.get_node_object_info(self.0.as_node_id())?
+                .get_main_outer_object()
                 .into(),
         );
 

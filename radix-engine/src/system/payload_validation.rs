@@ -1,3 +1,4 @@
+use crate::errors::RuntimeError;
 use crate::kernel::kernel_api::KernelApi;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::{
@@ -26,7 +27,7 @@ use super::system_callback_api::SystemCallbackObject;
 
 /// We use a trait here so it can be implemented either by the System API (mid-execution) or by off-ledger systems
 pub trait TypeInfoLookup {
-    fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfoForValidation>;
+    fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, RuntimeError>;
 
     fn schema_origin(&self) -> &SchemaOrigin;
 }
@@ -69,14 +70,14 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>
 impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLookup
     for SystemServiceTypeInfoLookup<'s, 'a, Y, V>
 {
-    fn get_node_type_info(&self, node_id: &NodeId) -> Option<TypeInfoForValidation> {
+    fn get_node_type_info(&self, node_id: &NodeId) -> Result<TypeInfoForValidation, RuntimeError> {
         let type_info = self
             .system_service
             .borrow_mut()
             .get_node_type_info(&node_id)?;
         let mapped = match type_info {
-            TypeInfoSubstate::Object(ObjectInfo {
-                main_blueprint_id: blueprint_id,
+            TypeInfoSubstate::Object(NodeObjectInfo {
+                main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
                 ..
             }) => TypeInfoForValidation::Object {
                 package: blueprint_id.package_address,
@@ -91,7 +92,7 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
                 blueprint: info.blueprint_id.blueprint_name,
             },
         };
-        Some(mapped)
+        Ok(mapped)
     }
 
     fn schema_origin(&self) -> &SchemaOrigin {
@@ -263,10 +264,7 @@ fn resolve_type_info(
     node_id: &NodeId,
     lookup: &Lookup,
 ) -> Result<TypeInfoForValidation, PayloadValidationError<ScryptoCustomExtension>> {
-    lookup.get_node_type_info(node_id).ok_or_else(|| {
-        PayloadValidationError::ValidationError(ValidationError::CustomError(format!(
-            "Node doesn't exist - could not lookup type info: {:?}",
-            node_id
-        )))
+    lookup.get_node_type_info(node_id).map_err(|e| {
+        PayloadValidationError::ValidationError(ValidationError::CustomError(e.to_string()))
     })
 }

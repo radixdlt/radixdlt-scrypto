@@ -72,7 +72,6 @@ where
 
     fn actor_call_module_method(
         &mut self,
-        object_handle: u32,
         module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
@@ -84,9 +83,9 @@ where
             .and_then(|x| ObjectModuleId::from_repr(x))
             .ok_or(WasmRuntimeError::InvalidModuleId(module_id))?;
 
-        let return_data =
-            self.api
-                .actor_call_module_method(object_handle, module_id, ident.as_str(), args)?;
+        let return_data = self
+            .api
+            .method_actor_call_module(module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
@@ -288,7 +287,9 @@ where
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self.api.actor_open_field(object_handle, field, flags)?;
+        let handle = self
+            .api
+            .method_actor_open_field(object_handle, field, flags)?;
 
         Ok(handle)
     }
@@ -322,21 +323,21 @@ where
     }
 
     fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node_id = self.api.actor_get_node_id()?;
+        let node_id = self.api.method_actor_get_node_id()?;
 
         let buffer = scrypto_encode(&node_id).expect("Failed to encode node id");
         self.allocate_buffer(buffer)
     }
 
     fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let address = self.api.actor_get_global_address()?;
+        let address = self.api.method_actor_get_global_address()?;
 
         let buffer = scrypto_encode(&address).expect("Failed to encode address");
         self.allocate_buffer(buffer)
     }
 
     fn get_blueprint(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let actor = self.api.actor_get_blueprint()?;
+        let actor = self.api.actor_get_blueprint_id()?;
 
         let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
         self.allocate_buffer(buffer)
@@ -390,7 +391,7 @@ where
             TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
                 .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
         );
-        let type_info = self.api.get_object_info(&node_id)?;
+        let type_info = self.api.get_node_object_info(&node_id)?;
 
         let buffer = scrypto_encode(&type_info).expect("Failed to encode type_info");
         self.allocate_buffer(buffer)

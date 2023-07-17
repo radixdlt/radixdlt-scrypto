@@ -707,7 +707,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let receipt = self.execute_manifest_ignoring_fee(manifest, vec![]);
         receipt.expect_commit_success();
 
-        let account = receipt.expect_commit(true).new_component_addresses()[0];
+        let account = receipt
+            .expect_commit_with_success(true)
+            .new_component_addresses()[0];
 
         let manifest = ManifestBuilder::new()
             .get_free_xrd_from_faucet()
@@ -798,7 +800,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 .build();
             let receipt = self.execute_manifest(manifest, vec![]);
             receipt.expect_commit_success();
-            let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+            let component_address = receipt
+                .expect_commit_with_success(true)
+                .new_component_addresses()[0];
 
             component_address
         }
@@ -812,7 +816,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
-        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+        let component_address = receipt
+            .expect_commit_with_success(true)
+            .new_component_addresses()[0];
 
         component_address
     }
@@ -830,7 +836,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        let address = receipt.expect_commit(true).new_component_addresses()[0];
+        let address = receipt
+            .expect_commit_with_success(true)
+            .new_component_addresses()[0];
         address
     }
 
@@ -853,7 +861,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             }],
             btreeset!(AuthAddresses::system_role()),
         );
-        let package_address: PackageAddress = receipt.expect_commit(true).output(0);
+        let package_address: PackageAddress = receipt.expect_commit_with_success(true).output(0);
         package_address
     }
 
@@ -912,7 +920,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit(true).new_package_addresses()[0]
+        receipt
+            .expect_commit_with_success(true)
+            .new_package_addresses()[0]
     }
 
     pub fn publish_package_with_owner(
@@ -927,7 +937,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit(true).new_package_addresses()[0]
+        receipt
+            .expect_commit_with_success(true)
+            .new_package_addresses()[0]
     }
 
     pub fn compile<P: AsRef<Path>>(&mut self, package_dir: P) -> (Vec<u8>, PackageDefinition) {
@@ -1227,7 +1239,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .try_deposit_batch_or_abort(to)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit(true).new_resource_addresses()[0]
+        receipt
+            .expect_commit_with_success(true)
+            .new_resource_addresses()[0]
     }
 
     pub fn create_restricted_token(
@@ -1340,7 +1354,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                 .build(),
             vec![],
         );
-        receipt.expect_commit(true).new_resource_addresses()[0]
+        receipt
+            .expect_commit_with_success(true)
+            .new_resource_addresses()[0]
     }
 
     pub fn create_freezeable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
@@ -1469,7 +1485,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit(true).new_resource_addresses()[0]
+        receipt
+            .expect_commit_with_success(true)
+            .new_resource_addresses()[0]
     }
 
     pub fn create_fungible_resource(
@@ -1491,7 +1509,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit(true).new_resource_addresses()[0]
+        receipt
+            .expect_commit_with_success(true)
+            .new_resource_addresses()[0]
     }
 
     pub fn create_mintable_burnable_fungible_resource(
@@ -1523,7 +1543,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
+        let resource_address = receipt
+            .expect_commit_with_success(true)
+            .new_resource_addresses()[0];
         (admin_auth, resource_address)
     }
 
@@ -1553,7 +1575,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit(true).new_resource_addresses()[0]
+        receipt
+            .expect_commit_with_success(true)
+            .new_resource_addresses()[0]
     }
 
     pub fn create_freely_mintable_and_burnable_fungible_resource(
@@ -1586,7 +1610,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .try_deposit_batch_or_abort(account)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.expect_commit(true).new_resource_addresses()[0]
+        receipt
+            .expect_commit_with_success(true)
+            .new_resource_addresses()[0]
     }
 
     pub fn new_component<F>(
@@ -1603,7 +1629,9 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
 
         let receipt = self.execute_manifest(manifest, initial_proofs);
-        receipt.expect_commit(true).new_component_addresses()[0]
+        receipt
+            .expect_commit_with_success(true)
+            .new_component_addresses()[0]
     }
 
     pub fn set_current_epoch(&mut self, epoch: Epoch) {
@@ -1633,7 +1661,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             }],
             btreeset![AuthAddresses::validator_role()],
         );
-        receipt.expect_commit(true).output(0)
+        receipt.expect_commit_with_success(true).output(0)
     }
 
     pub fn get_state_hash(&self) -> Hash {
@@ -1791,7 +1819,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             }],
             btreeset![AuthAddresses::validator_role()],
         );
-        receipt.expect_commit(true).output(0)
+        receipt.expect_commit_with_success(true).output(0)
     }
 
     pub fn event_schema(
@@ -1817,8 +1845,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                             .unwrap();
 
                         match type_info {
-                            TypeInfoSubstate::Object(ObjectInfo {
-                                main_blueprint_id: blueprint_id,
+                            TypeInfoSubstate::Object(NodeObjectInfo {
+                                main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
                                 ..
                             }) => (blueprint_id.package_address, *schema_pointer),
                             _ => {

@@ -158,7 +158,7 @@ fn transfer_test(c: &mut Criterion) {
                     .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
-            .expect_commit(true)
+            .expect_commit_with_success(true)
             .new_component_addresses()[0];
 
             let manifest = ManifestBuilder::new()
@@ -176,7 +176,7 @@ fn transfer_test(c: &mut Criterion) {
                     .unwrap()
                     .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
             )
-            .expect_commit(true);
+            .expect_commit_with_success(true);
 
             account
         })
@@ -203,7 +203,7 @@ fn transfer_test(c: &mut Criterion) {
                 .unwrap()
                 .get_executable(btreeset![NonFungibleGlobalId::from_public_key(&public_key)]),
         )
-        .expect_commit(true);
+        .expect_commit_with_success(true);
     }
 
     // Create a transfer manifest

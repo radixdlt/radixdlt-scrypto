@@ -250,7 +250,7 @@ fn run_basic_transfer(mode: Mode) {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
-    let commit_result = receipt.expect_commit(true);
+    let commit_result = receipt.expect_commit_with_success(true);
 
     mode.run(&commit_result.fee_summary);
 }
@@ -275,7 +275,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
-    let commit_result = receipt.expect_commit(true);
+    let commit_result = receipt.expect_commit_with_success(true);
 
     mode.run(&commit_result.fee_summary);
 }
@@ -315,7 +315,7 @@ fn run_radiswap(mode: Mode) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
-        .expect_commit(true)
+        .expect_commit_with_success(true)
         .output(1);
 
     // Contributing an initial amount to radiswap
@@ -340,7 +340,7 @@ fn run_radiswap(mode: Mode) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
-        .expect_commit(true);
+        .expect_commit_with_success(true);
 
     // Transfer `10,000 BTC` from `account2` to `account3`
     let btc_amount = Decimal::from(10_000);
@@ -375,7 +375,7 @@ fn run_radiswap(mode: Mode) {
     let eth_received = test_runner.account_balance(account3, eth).unwrap();
     assert_eq!(remaining_btc, btc_amount - btc_to_swap);
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
-    let commit_result = receipt.expect_commit(true);
+    let commit_result = receipt.expect_commit_with_success(true);
 
     mode.run(&commit_result.fee_summary);
 }
@@ -418,7 +418,7 @@ fn run_flash_loan(mode: Mode) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
-        .expect_commit(true)
+        .expect_commit_with_success(true)
         .output::<(ComponentAddress, ResourceAddress)>(3);
 
     // Take loan
@@ -443,7 +443,7 @@ fn run_flash_loan(mode: Mode) {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    let commit_result = receipt.expect_commit(true);
+    let commit_result = receipt.expect_commit_with_success(true);
     let new_balance = test_runner.account_balance(account3, XRD).unwrap();
     assert!(test_runner
         .account_balance(account3, promise_token_address)
@@ -610,7 +610,7 @@ fn can_run_large_manifest() {
     );
 
     // Assert
-    receipt.expect_commit(true);
+    receipt.expect_commit_with_success(true);
 }
 
 #[test]
@@ -634,7 +634,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     );
 
     // Assert
-    receipt.expect_commit(true);
+    receipt.expect_commit_with_success(true);
 }
 
 fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, ComponentAddress) {
@@ -660,7 +660,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, Compo
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let commit_result = receipt1.expect_commit(true);
+    let commit_result = receipt1.expect_commit_with_success(true);
     let component_address = commit_result.new_component_addresses()[0];
 
     (test_runner, component_address)

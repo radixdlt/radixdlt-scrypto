@@ -69,7 +69,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk)],
         )
-        .expect_commit(true)
+        .expect_commit_with_success(true)
         .output(1);
 
     // Contribute to radiswap
@@ -106,7 +106,7 @@ fn bench_radiswap(c: &mut Criterion) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk)],
         )
-        .expect_commit(true);
+        .expect_commit_with_success(true);
 
     let mut accounts = Vec::new();
     for i in 0..NUM_OF_PRE_FILLED_ACCOUNTS {
@@ -134,7 +134,7 @@ fn bench_radiswap(c: &mut Criterion) {
                     .build(),
                 vec![NonFungibleGlobalId::from_public_key(&pk)],
             )
-            .expect_commit(true);
+            .expect_commit_with_success(true);
         accounts.push((pk2, account2));
     }
 

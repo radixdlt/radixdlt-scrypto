@@ -4,8 +4,8 @@ use crate::runtime::*;
 use crate::*;
 use radix_engine_derive::ScryptoSbor;
 use radix_engine_interface::api::object_api::ObjectModuleId;
+use radix_engine_interface::api::ClientActorApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::{ClientActorApi, OBJECT_HANDLE_SELF};
 use radix_engine_interface::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::types::NodeId;
 use radix_engine_interface::types::*;
@@ -88,7 +88,7 @@ pub trait Attachable: Sized {
             }
             ModuleHandle::SELF(module_id) => {
                 let output = ScryptoEnv
-                    .actor_call_module_method(OBJECT_HANDLE_SELF, *module_id, method, args)
+                    .method_actor_call_module(*module_id, method, args)
                     .unwrap();
                 output
             }
@@ -116,7 +116,7 @@ pub trait Attachable: Sized {
             }
             ModuleHandle::SELF(module_id) => {
                 ScryptoEnv
-                    .actor_call_module_method(OBJECT_HANDLE_SELF, *module_id, method, args)
+                    .method_actor_call_module(*module_id, method, args)
                     .unwrap();
             }
         }

@@ -74,7 +74,7 @@ impl FungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let moveable = {
-            let handle = api.actor_open_field(
+            let handle = api.method_actor_open_field(
                 OBJECT_HANDLE_SELF,
                 FungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
@@ -85,7 +85,7 @@ impl FungibleProofBlueprint {
             moveable
         };
 
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -109,7 +109,7 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
@@ -124,8 +124,7 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let address =
-            ResourceAddress::new_or_panic(api.actor_get_object_info()?.get_outer_object().into());
+        let address = ResourceAddress::new_or_panic(api.method_actor_get_outer_object()?.into());
         Ok(address)
     }
 
@@ -142,7 +141,7 @@ impl FungibleProofBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleProofField::ProofRefs.into(),
             LockFlags::MUTABLE,

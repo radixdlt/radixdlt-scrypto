@@ -17,7 +17,9 @@ fn can_get_from_scrypto() {
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .call_method(
@@ -49,7 +51,9 @@ fn can_set_from_scrypto() {
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -106,7 +110,9 @@ fn cannot_set_metadata_if_key_too_long() {
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -170,7 +176,9 @@ fn cannot_set_metadata_if_value_too_long() {
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -204,7 +212,9 @@ fn cannot_set_metadata_if_initialized_empty_locked() {
         .call_function(package_address, "MetadataTest", "new", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
+    let component_address = receipt
+        .expect_commit_with_success(true)
+        .new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()

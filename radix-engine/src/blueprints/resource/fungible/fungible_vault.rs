@@ -21,7 +21,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_OUTER_OBJECT,
             FungibleResourceManagerField::Divisibility.into(),
             LockFlags::read_only(),
@@ -103,7 +103,7 @@ impl FungibleVaultBlueprint {
 
         // Check resource address and amount
         let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_object_info()?.get_outer_object().into());
+            ResourceAddress::new_or_panic(api.method_actor_get_outer_object()?.into());
         if resource_address != XRD {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),
@@ -118,7 +118,7 @@ impl FungibleVaultBlueprint {
         }
 
         // Lock the substate (with special flags)
-        let vault_handle = api.actor_open_field(
+        let vault_handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE | LockFlags::UNMODIFIED_BASE | LockFlags::FORCE_WRITE,
@@ -178,7 +178,7 @@ impl FungibleVaultBlueprint {
     {
         Self::assert_freezable(api)?;
 
-        let frozen_flag_handle = api.actor_open_field(
+        let frozen_flag_handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::MUTABLE,
@@ -197,7 +197,7 @@ impl FungibleVaultBlueprint {
     {
         Self::assert_freezable(api)?;
 
-        let frozen_flag_handle = api.actor_open_field(
+        let frozen_flag_handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::MUTABLE,
@@ -267,7 +267,7 @@ impl FungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LockedFungible.into(),
             LockFlags::MUTABLE,
@@ -294,7 +294,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LockedFungible.into(),
             LockFlags::MUTABLE,
@@ -324,11 +324,11 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
+        if !api.method_actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
             return Ok(());
         }
 
-        let frozen_flag_handle = api.actor_open_field(
+        let frozen_flag_handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::read_only(),
@@ -349,7 +349,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
+        if !api.method_actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotFreezable),
             ));
@@ -362,7 +362,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_RECALL_FEATURE)? {
+        if !api.method_actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_RECALL_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotRecallable),
             ));
@@ -375,7 +375,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::read_only(),
@@ -390,7 +390,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LockedFungible.into(),
             LockFlags::read_only(),
@@ -408,7 +408,7 @@ impl FungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE,
@@ -437,7 +437,7 @@ impl FungibleVaultBlueprint {
 
         let event = DepositResourceEvent::Amount(resource.amount());
 
-        let handle = api.actor_open_field(
+        let handle = api.method_actor_open_field(
             OBJECT_HANDLE_SELF,
             FungibleVaultField::LiquidFungible.into(),
             LockFlags::MUTABLE,

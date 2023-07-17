@@ -3,7 +3,7 @@ use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
 use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::heap::HeapOpenSubstateError;
-use radix_engine::track::interface::AcquireLockError;
+use radix_engine::track::interface::TrackOpenSubstateError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -46,7 +46,7 @@ fn setup_test_runner() -> (DefaultTestRunner, ComponentAddress) {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let commit_result = receipt1.expect_commit(true);
+    let commit_result = receipt1.expect_commit_with_success(true);
     let component_address = commit_result.new_component_addresses()[0];
 
     (test_runner, component_address)
@@ -192,7 +192,7 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
                 OpenSubstateError::TrackError(err),
             )),
         )) => {
-            if let AcquireLockError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
+            if let TrackOpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
                 return true;
             } else {
                 return false;
@@ -246,7 +246,7 @@ fn test_fee_accounting_success() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit(true);
+    let commit_result = receipt.expect_commit_with_success(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -307,7 +307,7 @@ fn test_fee_accounting_failure() {
             ))
         )
     });
-    let commit_result = receipt.expect_commit(false);
+    let commit_result = receipt.expect_commit_with_success(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -389,7 +389,7 @@ fn test_contingent_fee_accounting_success() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit(true);
+    let commit_result = receipt.expect_commit_with_success(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -454,7 +454,7 @@ fn test_contingent_fee_accounting_failure() {
             ))
         )
     });
-    let commit_result = receipt.expect_commit(false);
+    let commit_result = receipt.expect_commit_with_success(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
