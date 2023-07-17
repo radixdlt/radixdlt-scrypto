@@ -254,12 +254,17 @@ where
     }
 
     #[trace_resources]
-    fn validate_schema_wrapper<S: CustomSchema>(schema: &Schema<S>) -> Result<(), SchemaValidationError> {
+    fn validate_schema_wrapper<S: CustomSchema>(
+        schema: &Schema<S>,
+    ) -> Result<(), SchemaValidationError> {
         validate_schema(schema)
     }
 
     #[trace_resources]
-    fn validate_instance_schema_wrapper(blueprint_interface: &BlueprintInterface, instance_schema: &Option<InstanceSchema>) -> bool {
+    fn validate_instance_schema_wrapper(
+        blueprint_interface: &BlueprintInterface,
+        instance_schema: &Option<InstanceSchema>,
+    ) -> bool {
         blueprint_interface
             .state
             .validate_instance_schema(instance_schema)
@@ -283,8 +288,7 @@ where
                 Self::validate_schema_wrapper(&instance_schema.schema)
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
             }
-            if !Self::validate_instance_schema_wrapper(blueprint_interface, instance_schema)
-            {
+            if !Self::validate_instance_schema_wrapper(blueprint_interface, instance_schema) {
                 return Err(RuntimeError::SystemError(
                     SystemError::InvalidInstanceSchema,
                 ));

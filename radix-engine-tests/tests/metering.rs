@@ -697,8 +697,8 @@ impl NonFungibleData for TestNonFungibleData {
 }
 
 #[test]
-/// The large_package blueprint combines toogether two other packages just to provide meaningful content for 
-/// a large package of size as close as possible to current limit: 1048576 bytes minus the size of 
+/// The large_package blueprint combines toogether two other packages just to provide meaningful content for
+/// a large package of size as close as possible to current limit: 1048576 bytes minus the size of
 /// SCRYPTO_SBOR_V1_PAYLOAD_PREFIX and the actor size.
 /// If this test fails with an error TransactionLimitsError::MaxInvokePayloadSizeExceeded,
 /// go to `blueprints/large_package/Cargo.toml` file and change `package2` reference package name and path
@@ -706,7 +706,6 @@ impl NonFungibleData for TestNonFungibleData {
 /// done by checking TxPayloadCost from cost breakdown table divided by payload byte cost, which can be taken
 /// from fee_table.rs tx_payload_cost() function).
 fn publish_package_1mib() {
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     test_runner.compile_and_publish("./tests/blueprints/large_package");
 }
-

@@ -10,12 +10,12 @@ use radix_engine::{
 };
 use radix_engine_queries::typed_substate_layout::PackageDefinition;
 use sbor::rust::iter;
+use scrypto_unit::TestRunner;
 use transaction::{
     prelude::Secp256k1PrivateKey,
     validation::{recover_secp256k1, verify_secp256k1},
 };
 use wabt::wat2wasm;
-use scrypto_unit::TestRunner;
 
 fn bench_decode_sbor(c: &mut Criterion) {
     let payload = include_bytes!("../../assets/radiswap.rpd");
@@ -144,7 +144,8 @@ fn bench_prepare_wasm(c: &mut Criterion) {
     #[cfg(not(feature = "rocksdb"))]
     let mut test_runner = TestRunner::builder().without_trace().build();
     let code = include_bytes!("../../assets/radiswap.wasm").to_vec();
-    let package_definition: PackageDefinition = manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+    let package_definition: PackageDefinition =
+        manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
 
     c.bench_function("costing::bench_prepare_wasm", |b| {
         b.iter(|| {
@@ -157,9 +158,7 @@ fn bench_prepare_wasm(c: &mut Criterion) {
             );
         })
     });
-
 }
-
 
 criterion_group!(
     costing,

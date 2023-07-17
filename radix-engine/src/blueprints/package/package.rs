@@ -24,8 +24,8 @@ use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, TypeRef,
 };
-use sbor::LocalTypeIndex;
 use resources_tracker_macro::trace_resources;
+use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
 use crate::roles_template;
