@@ -101,7 +101,7 @@ mod tests {
                 .0,
         )
         .unwrap();
-        println!("instrumented_code = {}", instrumented_code);
+
         assert_eq!(
             instrumented_code,
             r#"(module
