@@ -10,7 +10,7 @@ use radix_engine::{
 };
 use radix_engine_queries::typed_substate_layout::PackageDefinition;
 use sbor::rust::iter;
-use scrypto_unit::TestRunner;
+use scrypto_unit::TestRunnerBuilder;
 use transaction::{
     prelude::Secp256k1PrivateKey,
     validation::{recover_secp256k1, verify_secp256k1},
@@ -136,13 +136,7 @@ fn bench_validate_wasm(c: &mut Criterion) {
 }
 
 fn bench_prepare_wasm(c: &mut Criterion) {
-    #[cfg(feature = "rocksdb")]
-    let mut test_runner = {
-        std::fs::remove_dir_all("/tmp/radiswap").unwrap();
-        BasicRocksdbTestRunner::new(PathBuf::from("/tmp/radiswap"), false)
-    };
-    #[cfg(not(feature = "rocksdb"))]
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let code = include_bytes!("../../assets/radiswap.wasm").to_vec();
     let package_definition: PackageDefinition =
         manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();

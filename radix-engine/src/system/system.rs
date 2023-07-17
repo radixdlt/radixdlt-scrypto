@@ -234,7 +234,6 @@ where
         Ok(())
     }
 
-    #[trace_resources]
     pub fn validate_payload_against_blueprint_schema<'s>(
         &'s mut self,
         blueprint_id: &BlueprintId,
@@ -253,24 +252,6 @@ where
         Ok(())
     }
 
-    #[trace_resources]
-    fn validate_schema_wrapper<S: CustomSchema>(
-        schema: &Schema<S>,
-    ) -> Result<(), SchemaValidationError> {
-        validate_schema(schema)
-    }
-
-    #[trace_resources]
-    fn validate_instance_schema_wrapper(
-        blueprint_interface: &BlueprintInterface,
-        instance_schema: &Option<InstanceSchema>,
-    ) -> bool {
-        blueprint_interface
-            .state
-            .validate_instance_schema(instance_schema)
-    }
-
-    #[trace_resources]
     fn validate_instance_schema_and_state(
         &mut self,
         blueprint_id: &BlueprintId,
@@ -285,10 +266,13 @@ where
         // Validate instance schema
         {
             if let Some(instance_schema) = instance_schema {
-                Self::validate_schema_wrapper(&instance_schema.schema)
+                validate_schema(&instance_schema.schema)
                     .map_err(|_| RuntimeError::SystemError(SystemError::InvalidInstanceSchema))?;
             }
-            if !Self::validate_instance_schema_wrapper(blueprint_interface, instance_schema) {
+            if !blueprint_interface
+                .state
+                .validate_instance_schema(instance_schema)
+            {
                 return Err(RuntimeError::SystemError(
                     SystemError::InvalidInstanceSchema,
                 ));
@@ -642,7 +626,6 @@ where
             .ok()
     }
 
-    #[trace_resources]
     fn new_object_internal(
         &mut self,
         blueprint_id: &BlueprintId,

@@ -24,7 +24,6 @@ use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, TypeRef,
 };
-use resources_tracker_macro::trace_resources;
 use sbor::LocalTypeIndex;
 
 // Import and re-export substate types
@@ -246,7 +245,6 @@ fn validate_package_event_schema<'a, I: Iterator<Item = &'a BlueprintDefinitionI
     Ok(())
 }
 
-#[trace_resources]
 fn validate_royalties<Y>(definition: &PackageDefinition, api: &mut Y) -> Result<(), RuntimeError>
 where
     Y: ClientApi<RuntimeError>,
@@ -632,7 +630,6 @@ pub fn create_bootstrap_package_partitions(
     partitions
 }
 
-#[trace_resources]
 fn globalize_package<Y>(
     package_address_reservation: Option<GlobalAddressReservation>,
     package_structure: PackageStructure,
@@ -979,7 +976,6 @@ impl PackageNativePackage {
         PackageDefinition { blueprints }
     }
 
-    #[trace_resources(info="blueprint-package", log=export_name)]
     pub fn invoke_export<Y>(
         export_name: &str,
         input: &IndexedScryptoValue,
@@ -1042,7 +1038,6 @@ impl PackageNativePackage {
         }
     }
 
-    #[trace_resources]
     pub fn validate_and_build_package_structure(
         definition: PackageDefinition,
         vm_type: VmType,
