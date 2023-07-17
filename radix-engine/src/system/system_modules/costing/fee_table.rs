@@ -134,10 +134,10 @@ impl FeeTable {
         // Rational:
         // Transaction payload is propagated over a P2P network.
         // Larger size may slows down the network performance.
-        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 50 = 20,000 cost units
-        // The max size of a transaction is 1 MiB, and the cost will be 1,000,000 * 50 = 50,000,000 cost units
-        // This is roughly 1/20 of storing data in substate store per current setup.
-        mul(cast(size), 50)
+        // The size of a typical transfer transaction is 400 bytes, and the cost will be 400 * 40 = 16,000 cost units
+        // The max size of a transaction is 1 MiB, and the cost will be 1,048,576 * 40 = 41,943,040 cost units
+        // This is roughly 1/24 of storing data in substate store per current setup.
+        mul(cast(size), 40)
     }
 
     #[inline]
