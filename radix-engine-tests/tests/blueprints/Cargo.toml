@@ -19,6 +19,7 @@ members = [
     "fee_reserve_states",
     "kernel",
     "kv_store",
+    "large_package",
     "leaks",
     "local_component",
     "local_recursion",

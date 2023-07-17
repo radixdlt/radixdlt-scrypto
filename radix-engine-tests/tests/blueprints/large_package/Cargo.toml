@@ -1,0 +1,19 @@
+[package]
+name = "large_package"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../../../../sbor" }
+scrypto = { path = "../../../../scrypto" }
+
+package1 = { package = "non_fungible", path = "../non_fungible" }
+
+# If needed change package and path parameters
+package2 = { package = "stored_resource", path = "../stored_resource" }
+
+[dev-dependencies]
+radix-engine = { path = "../../../../radix-engine" }
+
+[lib]
+crate-type = ["cdylib", "lib"]
