@@ -30,7 +30,6 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     });
 }
 
-
 #[test]
 fn should_not_be_able_to_open_mut_substate_twice_if_object_in_heap() {
     should_not_be_able_to_open_mut_substate_twice(true);
@@ -40,7 +39,6 @@ fn should_not_be_able_to_open_mut_substate_twice_if_object_in_heap() {
 fn should_not_be_able_to_open_mut_substate_twice_if_object_globalized() {
     should_not_be_able_to_open_mut_substate_twice(false);
 }
-
 
 fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
     // Arrange
@@ -61,11 +59,11 @@ fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(e)))) => {
-            match e.as_ref() {
-                TrackOpenSubstateError::SubstateLocked(..) => true,
-                _ => false,
-            }
+        RuntimeError::KernelError(KernelError::CallFrameError(
+            CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(e)),
+        )) => match e.as_ref() {
+            TrackOpenSubstateError::SubstateLocked(..) => true,
+            _ => false,
         },
         _ => false,
     });

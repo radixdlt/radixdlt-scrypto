@@ -9,7 +9,10 @@ mod scrypto_env_test {
     impl ScryptoEnvTest {
         pub fn create_node_with_invalid_blueprint() {
             ScryptoEnv
-                .new_simple_object("invalid_blueprint", vec![FieldValue::new(&ScryptoEnvTest {})])
+                .new_simple_object(
+                    "invalid_blueprint",
+                    vec![FieldValue::new(&ScryptoEnvTest {})],
+                )
                 .unwrap();
         }
 
@@ -25,17 +28,13 @@ mod scrypto_env_test {
         }
 
         pub fn open_mut_substate_twice(&mut self) {
-            ScryptoEnv.actor_open_field(
-                OBJECT_HANDLE_SELF,
-                0u8,
-                LockFlags::MUTABLE,
-            ).unwrap();
+            ScryptoEnv
+                .method_actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::MUTABLE)
+                .unwrap();
 
-            ScryptoEnv.actor_open_field(
-                OBJECT_HANDLE_SELF,
-                0u8,
-                LockFlags::MUTABLE,
-            ).unwrap();
+            ScryptoEnv
+                .method_actor_open_field(OBJECT_HANDLE_SELF, 0u8, LockFlags::MUTABLE)
+                .unwrap();
         }
     }
 }

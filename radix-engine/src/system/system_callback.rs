@@ -534,7 +534,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(())
     }
 
-
     fn on_substate_lock_fault<Y>(
         node_id: NodeId,
         partition_num: PartitionNumber,
@@ -547,8 +546,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         // As currently implemented, this should always be called with partition_num=0 and offset=0
         // since all nodes are access by accessing their type info first
         // This check is simply a sanity check that this invariant remain true
-        if !partition_num.eq(&TYPE_INFO_FIELD_PARTITION) || !offset.eq(&TypeInfoField::TypeInfo.into()) {
-            panic!("Open substate fault on non type info substate key");
+        if !partition_num.eq(&TYPE_INFO_FIELD_PARTITION)
+            || !offset.eq(&TypeInfoField::TypeInfo.into())
+        {
+            return Ok(false);
         }
 
         let (blueprint_id, variant_id) = match node_id.entity_type() {

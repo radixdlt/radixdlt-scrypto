@@ -1,6 +1,7 @@
 use crate::blueprints::resource::*;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
+use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
     LockedNonFungibleResource,
@@ -15,6 +16,7 @@ pub struct HeapNode {
 
 pub struct Heap {
     nodes: NonIterMap<NodeId, HeapNode>,
+    locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -39,6 +41,7 @@ impl Heap {
     pub fn new() -> Self {
         Self {
             nodes: NonIterMap::new(),
+            locks: IndexMap::new(),
         }
     }
 
@@ -68,13 +71,13 @@ impl Heap {
         }
     }
 
-    pub fn get_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
+    pub fn open_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         virtualize: F,
-    ) -> Option<&IndexedScryptoValue> {
+    ) -> Result<&IndexedScryptoValue, HeapOpenSubstateError> {
         let entry = self
             .nodes
             .entry(*node_id)
@@ -86,14 +89,34 @@ impl Heap {
         if let Entry::Vacant(e) = entry {
             if let Some(value) = virtualize() {
                 e.insert(value);
+            } else {
+                return Err(HeapOpenSubstateError::SubstateNotFound(
+                    *node_id,
+                    partition_num,
+                    substate_key.clone(),
+                ));
             }
         }
 
-        self.nodes
+        let value = self
+            .nodes
             .get(node_id)
             .and_then(|node| node.substates.get(&partition_num))
             .and_then(|module_substates| module_substates.get(substate_key))
+            .unwrap();
+
+        Ok(value)
     }
+
+    /*
+    pub fn read_substate(&self, handle: u32) -> &IndexedScryptoValue {
+        //let (node_id, partition_num, key) = self.locks.get(handle).unwrap();
+        let value = self.nodes
+            .get(node_id)
+            .and_then(|node| node.substates.get(&partition_num))
+            .and_then(|module_substates| module_substates.get(substate_key));
+    }
+     */
 
     /// Reads a substate
     pub fn get_substate(
