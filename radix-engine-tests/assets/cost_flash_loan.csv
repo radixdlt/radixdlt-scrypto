@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,    0.199942236,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.19007832,     95.1%
-+ Tipping Cost (XRD)                                                       ,    0.009503916,      4.8%
+Total Cost (XRD)                                                           ,    0.199888266,    100.0%
++ Execution Cost (XRD)                                                     ,     0.19002692,     95.1%
++ Tipping Cost (XRD)                                                       ,    0.009501346,      4.8%
 + State Expansion Cost (XRD)                                               ,        0.00036,      0.2%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       19007832,    100.0%
+Total Cost Units Consumed                                                  ,       19002692,    100.0%
 AfterInvoke                                                                ,           1960,      0.0%
 AllocateNodeId                                                             ,          27500,      0.1%
 BeforeInvoke                                                               ,          29840,      0.2%
@@ -58,6 +58,6 @@ RunNativeCode::withdraw                                                    ,    
 RunWasmCode::BasicFlashLoan_repay_loan                                     ,          75596,      0.4%
 RunWasmCode::BasicFlashLoan_take_loan                                      ,         124214,      0.7%
 TxBaseCost                                                                 ,          50000,      0.3%
-TxPayloadCost                                                              ,          25700,      0.1%
+TxPayloadCost                                                              ,          20560,      0.1%
 TxSignatureVerification                                                    ,           7000,      0.0%
 WriteSubstate                                                              ,          58318,      0.3%
