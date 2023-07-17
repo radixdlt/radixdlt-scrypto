@@ -83,7 +83,7 @@ pub enum CostingEntry<'a> {
     ScanSubstates {
         store_access: &'a StoreAccessInfo,
     },
-    TakeSubstate {
+    TakeSubstates {
         store_access: &'a StoreAccessInfo,
     },
 
@@ -175,7 +175,7 @@ impl<'a> CostingEntry<'a> {
                 ft.scan_sorted_substates_cost(store_access)
             }
             CostingEntry::ScanSubstates { store_access } => ft.scan_substates_cost(store_access),
-            CostingEntry::TakeSubstate { store_access } => ft.take_substates_cost(store_access),
+            CostingEntry::TakeSubstates { store_access } => ft.take_substates_cost(store_access),
             CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),
             CostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),

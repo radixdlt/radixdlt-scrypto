@@ -369,20 +369,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn after_scan_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
-            .apply_execution_cost(CostingEntry::ScanSubstates {
-                store_access: store_access,
-            })?;
-
-        Ok(())
-    }
-
     fn after_set_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         value_size: usize,
@@ -406,7 +392,49 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::TakeSubstate {
+            .apply_execution_cost(CostingEntry::RemoveSubstate {
+                store_access: store_access,
+            })?;
+
+        Ok(())
+    }
+
+    fn after_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(CostingEntry::ScanSortedSubstates {
+                store_access: store_access,
+            })?;
+
+        Ok(())
+    }
+
+    fn after_scan_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(CostingEntry::ScanSubstates {
+                store_access: store_access,
+            })?;
+
+        Ok(())
+    }
+
+    fn after_take_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(CostingEntry::TakeSubstates {
                 store_access: store_access,
             })?;
 
