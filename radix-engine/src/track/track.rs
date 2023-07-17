@@ -1150,7 +1150,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         value
     }
 
-    fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {
+    fn write_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {
         // Sanity check flag
         let (node_id, partition_num, substate_key, flags) = self
             .locks

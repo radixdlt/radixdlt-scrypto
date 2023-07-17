@@ -174,7 +174,7 @@ pub trait SubstateStore {
     /// # Panics
     /// - If the lock handle is invalid;
     /// - If the lock handle is not associated with WRITE permission
-    fn update_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
+    fn write_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue);
 
     /// Note: unstable interface, for intent transaction tracker only
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber);

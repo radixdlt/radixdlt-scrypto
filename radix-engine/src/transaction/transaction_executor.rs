@@ -616,7 +616,7 @@ where
             let mut substate: FieldSubstate<LiquidFungibleResource> =
                 substate_value.as_typed().unwrap();
             substate.value.0.put(LiquidFungibleResource::new(amount));
-            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+            track.write_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
         }
 
@@ -657,7 +657,7 @@ where
             let mut substate: FieldSubstate<LiquidFungibleResource> =
                 substate_value.as_typed().unwrap();
             substate.value.0.put(locked);
-            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+            track.write_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
 
             // Record final payments
@@ -723,7 +723,7 @@ where
                     + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
             };
             let vault_node_id = substate.value.0.rewards_vault.0 .0;
-            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+            track.write_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
 
             // Put validator rewards into the vault
@@ -743,7 +743,7 @@ where
                     .take_by_amount(proposer_rewards + validator_set_rewards)
                     .unwrap(),
             );
-            track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
+            track.write_substate(handle, IndexedScryptoValue::from_typed(&substate));
             track.close_substate(handle);
         }
 
@@ -795,7 +795,7 @@ where
                         },
                     )
                     .unwrap();
-                track.update_substate(
+                track.write_substate(
                     handle,
                     IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
                         value: Some(if is_success {
@@ -830,7 +830,7 @@ where
                 PartitionNumber(discarded_partition),
             );
         }
-        track.update_substate(
+        track.write_substate(
             handle,
             IndexedScryptoValue::from_typed(&FieldSubstate::new_field(transaction_tracker.value.0)),
         );
