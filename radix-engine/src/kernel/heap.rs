@@ -68,13 +68,13 @@ impl Heap {
         }
     }
 
-    pub fn get_substate_virtualize<F: FnOnce() -> IndexedScryptoValue>(
+    pub fn get_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         virtualize: F,
-    ) -> &IndexedScryptoValue {
+    ) -> Option<&IndexedScryptoValue> {
         let entry = self
             .nodes
             .entry(*node_id)
@@ -84,15 +84,15 @@ impl Heap {
             .or_insert(BTreeMap::new())
             .entry(substate_key.clone());
         if let Entry::Vacant(e) = entry {
-            let value = virtualize();
-            e.insert(value);
+            if let Some(value) = virtualize() {
+                e.insert(value);
+            }
         }
 
         self.nodes
             .get(node_id)
             .and_then(|node| node.substates.get(&partition_num))
             .and_then(|module_substates| module_substates.get(substate_key))
-            .unwrap()
     }
 
     /// Reads a substate

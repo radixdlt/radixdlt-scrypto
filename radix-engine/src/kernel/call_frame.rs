@@ -418,38 +418,38 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Lock and read the substate
-        let mut store_handle = None;
         let mut store_access = StoreAccessInfo::new();
-        let substate_value = if heap.contains_node(node_id) {
+
+        let (substate_value, store_handle) = if heap.contains_node(node_id) {
             // FIXME: we will have to move locking logic to heap because references moves between frames.
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 return Err(OpenSubstateError::HeapError(
                     HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode,
                 ));
             }
-            if let Some(compute_default) = default {
-                heap.get_substate_virtualize(node_id, partition_num, substate_key, compute_default)
-            } else {
-                heap.get_substate(node_id, partition_num, substate_key)
-                    .ok_or_else(|| {
-                        OpenSubstateError::HeapError(HeapOpenSubstateError::SubstateNotFound(
-                            node_id.clone(),
-                            partition_num,
-                            substate_key.clone(),
-                        ))
-                    })?
-            }
+
+            let value = heap.get_substate_virtualize(node_id, partition_num, substate_key, || {
+                default.map(|f| f())
+            })
+            .ok_or_else(|| {
+                OpenSubstateError::HeapError(HeapOpenSubstateError::SubstateNotFound(
+                    node_id.clone(),
+                    partition_num,
+                    substate_key.clone(),
+                ))
+            })?;
+
+            (value, None)
         } else {
             let (handle, store_access_info) = store
                 .acquire_lock_virtualize(node_id, partition_num, substate_key, flags, || {
                     default.map(|f| f())
                 })
                 .map_err(|x| OpenSubstateError::TrackError(Box::new(x)))?;
-            store_handle = Some(handle);
             store_access = store_access_info;
             let (value, read_store_access_info) = store.read_substate(handle);
             store_access.extend(&read_store_access_info);
-            value
+            (value, Some(handle))
         };
 
         // Analyze owns and references in the substate
