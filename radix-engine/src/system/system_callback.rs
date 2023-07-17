@@ -5,6 +5,7 @@ use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
+use crate::errors::SystemError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
@@ -33,6 +34,7 @@ use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::hooks::OnDropOutput;
 use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::hooks::OnMoveOutput;
+use radix_engine_interface::hooks::OnPersistInput;
 use radix_engine_interface::hooks::OnPersistOutput;
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
@@ -788,7 +790,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
     }
 
-    // TODO: provide Kernel API abstraction?
     fn on_persist_node<S: crate::track::interface::SubstateStore>(
         heap: &mut crate::kernel::heap::Heap,
         store: &mut S,

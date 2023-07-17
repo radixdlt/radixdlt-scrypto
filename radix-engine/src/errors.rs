@@ -254,6 +254,7 @@ pub enum SystemError {
     TransactionRuntimeModuleNotEnabled,
     PayloadValidationAgainstSchemaError(PayloadValidationAgainstSchemaError),
     EventError(EventError),
+    CantPersistNonObject,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
