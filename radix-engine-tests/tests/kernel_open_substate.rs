@@ -40,7 +40,7 @@ pub fn test_open_substate_of_invisible_package_address() {
     };
     Bootstrapper::new(&mut database, vm, false);
 
-    // Create kernel
+    // Create scrypto_env
     let mut id_allocator = IdAllocator::new(executable.intent_hash().to_hash());
     let mut system = SystemConfig {
         blueprint_cache: NonIterMap::new(),
