@@ -5,7 +5,6 @@ use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
-use crate::errors::SystemError;
 use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
@@ -34,8 +33,6 @@ use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::hooks::OnDropOutput;
 use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::hooks::OnMoveOutput;
-use radix_engine_interface::hooks::OnPersistInput;
-use radix_engine_interface::hooks::OnPersistOutput;
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::schema::{InstanceSchema, RefTypes};
@@ -525,9 +522,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     BlueprintHook::OnMove => {
                         scrypto_decode::<OnMoveOutput>(output.as_slice()).map(|_| ())
                     }
-                    BlueprintHook::OnPersist => {
-                        scrypto_decode::<OnPersistOutput>(output.as_slice()).map(|_| ())
-                    }
                 }
                 .map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
@@ -815,7 +809,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             None
         };
 
-        // FIXME implement hook
+        // FIXME replace with blueprint definition lookup
         let is_persist_allowed = if let Some(type_info) = maybe_type_info {
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
