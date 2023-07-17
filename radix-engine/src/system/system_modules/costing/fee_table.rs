@@ -28,15 +28,14 @@ lazy_static! {
     pub static ref NATIVE_FUNCTION_BASE_COSTS_SIZE_DEPENDENT: IndexMap<PackageAddress, IndexMap<&'static str, (u32, u32)>> = {
         let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, (u32, u32)>> =
             index_map_new();
-        // FIXME: investigate the coefficients more, as it's blocking package publishing within 100M cost units
         costs
             .entry(PACKAGE_PACKAGE)
             .or_default()
-            .insert(PACKAGE_PUBLISH_NATIVE_IDENT, (1 /*1001*/, 7424624));
+            .insert(PACKAGE_PUBLISH_NATIVE_IDENT, (1001, 7424624));
         costs
             .entry(PACKAGE_PACKAGE)
             .or_default()
-            .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (1 /*1055*/, 14305886));
+            .insert(PACKAGE_PUBLISH_WASM_ADVANCED_IDENT, (1055, 14305886));
         costs
     };
 }
