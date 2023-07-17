@@ -752,4 +752,57 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
+
+    // TODO: provide Kernel API abstraction?
+    fn on_persist_node<S: crate::track::interface::SubstateStore>(
+        heap: &mut crate::kernel::heap::Heap,
+        store: &mut S,
+        node_id: &NodeId,
+    ) -> Result<(), String> {
+        let maybe_type_info = if let Some(substate) = heap.get_substate(
+            node_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+        ) {
+            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
+            Some(type_info)
+        } else if let Ok((handle, _)) = store.acquire_lock(
+            node_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+            LockFlags::read_only(),
+        ) {
+            let type_info: TypeInfoSubstate = store.read_substate(handle).0.as_typed().unwrap();
+            store.close_substate(handle);
+            Some(type_info)
+        } else {
+            None
+        };
+
+        // FIXME implement hook
+        let is_persist_allowed = if let Some(type_info) = maybe_type_info {
+            match type_info {
+                TypeInfoSubstate::Object(ObjectInfo {
+                    main_blueprint_id: blueprint_id,
+                    ..
+                }) if blueprint_id.package_address == RESOURCE_PACKAGE
+                    && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                        || blueprint_id.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
+                        || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
+                        || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
+                {
+                    false
+                }
+                _ => true,
+            }
+        } else {
+            false
+        };
+
+        if is_persist_allowed {
+            Ok(())
+        } else {
+            Err("Persistence not allowed".to_owned())
+        }
+    }
 }

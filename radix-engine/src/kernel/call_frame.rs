@@ -1,14 +1,9 @@
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
     AcquireLockError, NodeSubstates, SetSubstateError, StoreAccess, StoreAccessInfo, SubstateStore,
     TakeSubstateError,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::blueprints::resource::{
-    FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT,
-    NON_FUNGIBLE_PROOF_BLUEPRINT,
-};
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
 use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
@@ -190,8 +185,8 @@ pub enum DropNodeError {
 /// Represents an error when persisting a node into store.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistNodeError {
-    CantBeStored(NodeId),
-    NonGlobalRefNotAllowed(NodeId),
+    NotAllowedToPersist(NodeId, String),
+    ContainsNonGlobalRef(NodeId),
     NodeBorrowed(NodeId, usize),
 }
 
@@ -374,33 +369,6 @@ impl<L: Clone> CallFrame<L> {
         &self.actor
     }
 
-    // TODO: Remove
-    fn get_type_info<S: SubstateStore>(
-        node_id: &NodeId,
-        heap: &mut Heap,
-        store: &mut S,
-    ) -> Option<TypeInfoSubstate> {
-        if let Some(substate) = heap.get_substate(
-            node_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        ) {
-            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
-            Some(type_info)
-        } else if let Ok((handle, _)) = store.acquire_lock(
-            node_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-            LockFlags::read_only(),
-        ) {
-            let type_info: TypeInfoSubstate = store.read_substate(handle).0.as_typed().unwrap();
-            store.close_substate(handle);
-            Some(type_info)
-        } else {
-            None
-        }
-    }
-
     pub fn acquire_lock<S: SubstateStore>(
         &mut self,
         heap: &mut Heap,
@@ -509,12 +477,16 @@ impl<L: Clone> CallFrame<L> {
         Ok((lock_handle, substate_value.len(), store_access))
     }
 
-    pub fn close_substate<S: SubstateStore>(
+    pub fn close_substate<S: SubstateStore, F>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
+        filter: &F,
         lock_handle: LockHandle,
-    ) -> Result<StoreAccessInfo, CloseSubstateError> {
+    ) -> Result<StoreAccessInfo, CloseSubstateError>
+    where
+        F: Fn(&mut Heap, &mut S, &NodeId) -> Result<(), String>,
+    {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
@@ -553,7 +525,7 @@ impl<L: Clone> CallFrame<L> {
 
                     // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
-                        Self::move_node_to_store(heap, store, own)
+                        Self::move_node_to_store(heap, store, own, filter)
                             .map_err(CloseSubstateError::PersistNodeError)?;
                     }
                 }
@@ -709,14 +681,18 @@ impl<L: Clone> CallFrame<L> {
         }
     }
 
-    pub fn create_node<'f, S: SubstateStore>(
+    pub fn create_node<'f, S: SubstateStore, F>(
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
         heap: &mut Heap,
         store: &'f mut S,
+        filter: &F,
         push_to_store: bool,
-    ) -> Result<StoreAccessInfo, CreateNodeError> {
+    ) -> Result<StoreAccessInfo, CreateNodeError>
+    where
+        F: Fn(&mut Heap, &mut S, &NodeId) -> Result<(), String>,
+    {
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
                 //==============
@@ -726,7 +702,7 @@ impl<L: Clone> CallFrame<L> {
                     self.take_node_internal(own)
                         .map_err(CreateNodeError::TakeNodeError)?;
                     if push_to_store {
-                        Self::move_node_to_store(heap, store, own)
+                        Self::move_node_to_store(heap, store, own, filter)
                             .map_err(CreateNodeError::PersistNodeError)?;
                     }
                 }
@@ -818,7 +794,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(node_substates)
     }
 
-    pub fn move_module<'f, S: SubstateStore>(
+    pub fn move_module<'f, S: SubstateStore, F>(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
@@ -826,7 +802,11 @@ impl<L: Clone> CallFrame<L> {
         dest_partition_number: PartitionNumber,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<StoreAccessInfo, MoveModuleError> {
+        filter: &F,
+    ) -> Result<StoreAccessInfo, MoveModuleError>
+    where
+        F: Fn(&mut Heap, &mut S, &NodeId) -> Result<(), String>,
+    {
         // Check ownership (and visibility)
         if self.owned_root_nodes.get(src_node_id) != Some(&0) {
             return Err(MoveModuleError::NodeNotAvailable(src_node_id.clone()));
@@ -858,7 +838,7 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, own)
+                    Self::move_node_to_store(heap, store, own, filter)
                         .map_err(MoveModuleError::PersistNodeError)?;
                 }
 
@@ -1071,15 +1051,19 @@ impl<L: Clone> CallFrame<L> {
         Ok((substates, store_access))
     }
 
-    pub fn drop_all_locks<S: SubstateStore>(
+    pub fn drop_all_locks<S: SubstateStore, F>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
-    ) -> Result<(), CloseSubstateError> {
+        filter: &F,
+    ) -> Result<(), CloseSubstateError>
+    where
+        F: Fn(&mut Heap, &mut S, &NodeId) -> Result<(), String>,
+    {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
         for lock_handle in lock_handles {
-            self.close_substate(heap, store, lock_handle)?;
+            self.close_substate(heap, store, filter, lock_handle)?;
         }
 
         Ok(())
@@ -1104,37 +1088,17 @@ impl<L: Clone> CallFrame<L> {
         self.owned_root_nodes.keys().cloned().collect()
     }
 
-    pub fn move_node_to_store<S: SubstateStore>(
+    pub fn move_node_to_store<S: SubstateStore, F>(
         heap: &mut Heap,
         store: &mut S,
         node_id: &NodeId,
-    ) -> Result<(), PersistNodeError> {
-        // FIXME: Use unified approach to node configuration
-        let can_be_stored = if node_id.is_global() {
-            true
-        } else {
-            if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
-                match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        main_blueprint_id: blueprint_id,
-                        ..
-                    }) if blueprint_id.package_address == RESOURCE_PACKAGE
-                        && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint_id.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
-                            || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
-                    {
-                        false
-                    }
-                    _ => true,
-                }
-            } else {
-                false
-            }
-        };
-        if !can_be_stored {
-            return Err(PersistNodeError::CantBeStored(node_id.clone()));
-        }
+        filter: &F,
+    ) -> Result<(), PersistNodeError>
+    where
+        F: Fn(&mut Heap, &mut S, &NodeId) -> Result<(), String>,
+    {
+        filter(heap, store, node_id)
+            .map_err(|e| PersistNodeError::NotAllowedToPersist(node_id.clone(), e))?;
 
         let node_substates = match heap.remove_node(node_id) {
             Ok(substates) => substates,
@@ -1149,12 +1113,12 @@ impl<L: Clone> CallFrame<L> {
             for (_substate_key, substate_value) in module_substates {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
-                        return Err(PersistNodeError::NonGlobalRefNotAllowed(*reference));
+                        return Err(PersistNodeError::ContainsNonGlobalRef(*reference));
                     }
                 }
 
                 for node in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, node)?;
+                    Self::move_node_to_store(heap, store, node, filter)?;
                 }
             }
         }

@@ -1,12 +1,13 @@
+use super::actor::Actor;
+use super::call_frame::Message;
+use super::heap::Heap;
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
+use crate::track::interface::SubstateStore;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-
-use super::actor::Actor;
-use super::call_frame::Message;
 
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
@@ -189,4 +190,10 @@ pub trait KernelCallbackObject: Sized {
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
+
+    fn on_persist_node<S: SubstateStore>(
+        heap: &mut Heap,
+        store: &mut S,
+        node_id: &NodeId,
+    ) -> Result<(), String>;
 }

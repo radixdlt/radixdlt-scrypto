@@ -251,7 +251,7 @@ where
 
             // Auto drop locks
             self.current_frame
-                .drop_all_locks(&mut self.heap, self.store)?;
+                .drop_all_locks(&mut self.heap, self.store, &M::on_persist_node)?;
 
             // Run
             let output = M::invoke_upstream(args, self)?;
@@ -259,7 +259,7 @@ where
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
-                .drop_all_locks(&mut self.heap, self.store)?;
+                .drop_all_locks(&mut self.heap, self.store, &M::on_persist_node)?;
 
             // Handle execution finish
             M::on_execution_finish(&message, self)?;
@@ -347,6 +347,7 @@ where
             node_substates,
             &mut self.heap,
             self.store,
+            &M::on_persist_node,
             node_id.is_global(),
         )?;
 
@@ -370,6 +371,7 @@ where
             dest_partition_number,
             &mut self.heap,
             self.store,
+            &M::on_persist_node,
         )?;
 
         M::after_move_modules(src_node_id, dest_node_id, &store_access, self)?;
@@ -639,9 +641,12 @@ where
 
     #[trace_resources]
     fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        let store_access =
-            self.current_frame
-                .close_substate(&mut self.heap, self.store, lock_handle)?;
+        let store_access = self.current_frame.close_substate(
+            &mut self.heap,
+            self.store,
+            &M::on_persist_node,
+            lock_handle,
+        )?;
 
         M::on_close_substate(lock_handle, &store_access, self)?;
 
