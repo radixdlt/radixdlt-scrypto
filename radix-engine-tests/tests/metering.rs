@@ -702,9 +702,10 @@ impl NonFungibleData for TestNonFungibleData {
 /// SCRYPTO_SBOR_V1_PAYLOAD_PREFIX and the actor size.
 /// If this test fails with an error TransactionLimitsError::MaxInvokePayloadSizeExceeded,
 /// go to `blueprints/large_package/Cargo.toml` file and change `package2` reference package name and path
-/// some other package, but verify transaction payload size if it is close enough to the limit (it can be
+/// some other blueprint, but verify transaction payload size if it is close enough to the limit (it can be
 /// done by checking TxPayloadCost from cost breakdown table divided by payload byte cost, which can be taken
-/// from fee_table.rs tx_payload_cost() function).
+/// from fee_table.rs tx_payload_cost() function). List of blueprints and its size can be displayed using command
+/// `ls -lSk ./radix-engine-tests/tests/blueprints/target/wasm32-unknown-unknown/release/*.wasm`
 fn publish_package_1mib() {
     let mut test_runner = TestRunnerBuilder::new().build();
     test_runner.compile_and_publish("./tests/blueprints/large_package");
