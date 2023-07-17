@@ -414,17 +414,18 @@ impl<L: Clone> CallFrame<L> {
         // Lock and read the substate
         let (substate_value, substate_store_handle) = if heap.contains_node(node_id) {
             // FIXME: we will have to move locking logic to heap because references moves between frames.
-            if flags.contains(LockFlags::UNMODIFIED_BASE) {
-                return Err(CallbackError::Error(OpenSubstateError::HeapError(
-                    HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode,
-                )));
-            }
-
-            let value = heap
-                .open_substate_virtualize(node_id, partition_num, substate_key, || {
-                    default.map(|f| f())
-                })
+            let handle = heap
+                .open_substate_virtualize(
+                    node_id,
+                    partition_num,
+                    substate_key,
+                    flags,
+                    || {
+                        default.map(|f| f())
+                    },
+                )
                 .map_err(|e| CallbackError::Error(OpenSubstateError::HeapError(e)))?;
+            let value = heap.read_substate(handle);
 
             (value, SubstateStoreHandle::Heap)
         } else {

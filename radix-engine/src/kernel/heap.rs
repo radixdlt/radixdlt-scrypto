@@ -17,6 +17,7 @@ pub struct HeapNode {
 pub struct Heap {
     nodes: NonIterMap<NodeId, HeapNode>,
     locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,
+    next_lock_id: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -42,6 +43,7 @@ impl Heap {
         Self {
             nodes: NonIterMap::new(),
             locks: IndexMap::new(),
+            next_lock_id: 0u32,
         }
     }
 
@@ -71,13 +73,34 @@ impl Heap {
         }
     }
 
+    fn new_lock_handle(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+        flags: LockFlags,
+    ) -> u32 {
+        let new_lock = self.next_lock_id;
+        self.locks.insert(
+            new_lock,
+            (*node_id, partition_num, substate_key.clone(), flags),
+        );
+        self.next_lock_id += 1;
+        new_lock
+    }
+
     pub fn open_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
+        flags: LockFlags,
         virtualize: F,
-    ) -> Result<&IndexedScryptoValue, HeapOpenSubstateError> {
+    ) -> Result<u32, HeapOpenSubstateError> {
+        if flags.contains(LockFlags::UNMODIFIED_BASE) {
+            return Err(HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode);
+        }
+
         let entry = self
             .nodes
             .entry(*node_id)
@@ -98,25 +121,20 @@ impl Heap {
             }
         }
 
-        let value = self
-            .nodes
-            .get(node_id)
-            .and_then(|node| node.substates.get(&partition_num))
-            .and_then(|module_substates| module_substates.get(substate_key))
-            .unwrap();
+        let handle = self.new_lock_handle(node_id, partition_num, substate_key, flags);
 
-        Ok(value)
+        Ok(handle)
     }
 
-    /*
     pub fn read_substate(&self, handle: u32) -> &IndexedScryptoValue {
-        //let (node_id, partition_num, key) = self.locks.get(handle).unwrap();
+        let (node_id, partition_num, substate_key, _lock_flags) = self.locks.get(&handle).expect("Invalid lock handle.");
         let value = self.nodes
             .get(node_id)
-            .and_then(|node| node.substates.get(&partition_num))
-            .and_then(|module_substates| module_substates.get(substate_key));
+            .and_then(|node| node.substates.get(partition_num))
+            .and_then(|module_substates| module_substates.get(substate_key)).unwrap();
+
+        value
     }
-     */
 
     /// Reads a substate
     pub fn get_substate(
