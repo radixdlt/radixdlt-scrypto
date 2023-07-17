@@ -6,6 +6,7 @@ use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoBlueprint;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system::FieldSubstate;
 use crate::types::*;
 use native_sdk::resource::NativeFungibleBucket;
 use native_sdk::resource::NativeNonFungibleBucket;
@@ -74,8 +75,8 @@ macro_rules! handle_call_method {
 
         let rtn = $api.call_method_advanced(
             $node_id,
-            $direct_access,
             $module_id,
+            $direct_access,
             &$method_name,
             scrypto_encode(&scrypto_value).unwrap(),
         )?;
@@ -102,17 +103,17 @@ impl TransactionProcessorBlueprint {
             worktop_node_id,
             btreemap!(
                 MAIN_BASE_PARTITION => btreemap!(
-                    WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&WorktopSubstate::new())
+                    WorktopField::Worktop.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(WorktopSubstate::new()))
                 ),
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(
                     TypeInfoSubstate::Object(ObjectInfo {
                         global: false,
-
-                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
-                        version: BlueprintVersion::default(),
-
+                        main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
+                        module_versions: btreemap!(
+                            ObjectModuleId::Main => BlueprintVersion::default(),
+                        ),
                         instance_schema: None,
-                        blueprint_info: ObjectBlueprintInfo::default(),
+                        outer_object: OuterObjectInfo::default(),
                         features: btreeset!(),
                     })
                 )
@@ -343,14 +344,14 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
-                InstructionV1::CallAccessRulesMethod {
+                InstructionV1::CallRoleAssignmentMethod {
                     address,
                     method_name,
                     args,
                 } => {
                     let address = processor.resolve_global_address(address)?;
                     handle_call_method!(
-                        ObjectModuleId::AccessRules,
+                        ObjectModuleId::RoleAssignment,
                         address.as_node_id(),
                         false,
                         method_name,
@@ -606,8 +607,8 @@ impl TransactionProcessor {
             let info = TypeInfoBlueprint::get_type(node_id, api)?;
             match info {
                 TypeInfoSubstate::Object(info) => match (
-                    info.blueprint_id.package_address,
-                    info.blueprint_id.blueprint_name.as_str(),
+                    info.main_blueprint_id.package_address,
+                    info.main_blueprint_id.blueprint_name.as_str(),
                 ) {
                     (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                     | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {

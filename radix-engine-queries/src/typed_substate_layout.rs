@@ -10,10 +10,11 @@ pub use radix_engine::blueprints::pool::one_resource_pool;
 pub use radix_engine::blueprints::pool::two_resource_pool;
 pub use radix_engine::blueprints::resource::*;
 pub use radix_engine::blueprints::transaction_tracker::*;
-pub use radix_engine::system::node_modules::access_rules::*;
 pub use radix_engine::system::node_modules::metadata::*;
+pub use radix_engine::system::node_modules::role_assignment::*;
 pub use radix_engine::system::node_modules::royalty::*;
 pub use radix_engine::system::node_modules::type_info::*;
+use radix_engine::system::system::FieldSubstate;
 pub use radix_engine::system::system::KeyValueEntrySubstate;
 pub use radix_engine_interface::api::node_modules::royalty::*;
 use transaction::prelude::IntentHash;
@@ -67,7 +68,7 @@ use transaction::prelude::IntentHash;
 #[derive(Debug, Clone)]
 pub enum TypedSubstateKey {
     TypeInfoModule(TypedTypeInfoModuleSubstateKey),
-    AccessRulesModule(TypedAccessRulesSubstateKey),
+    RoleAssignmentModule(TypedRoleAssignmentSubstateKey),
     RoyaltyModule(TypedRoyaltyModuleSubstateKey),
     MetadataModule(TypedMetadataModuleSubstateKey),
     MainModule(TypedMainModuleSubstateKey),
@@ -96,8 +97,8 @@ pub enum TypedTypeInfoModuleSubstateKey {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedAccessRulesSubstateKey {
-    AccessRulesField(AccessRulesField),
+pub enum TypedRoleAssignmentSubstateKey {
+    RoleAssignmentField(RoleAssignmentField),
     Rule(ModuleRoleKey),
 }
 
@@ -208,16 +209,17 @@ pub fn to_typed_substate_key(
                 .map_err(|_| error("string RoyaltyConfigEntryFnIdent key"))?,
             ),
         ),
-        ACCESS_RULES_FIELDS_PARTITION => {
-            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::AccessRulesField(
-                AccessRulesField::try_from(substate_key).map_err(|_| error("AccessRulesField"))?,
-            ))
-        }
-        ACCESS_RULES_ROLE_DEF_PARTITION => {
+        ROLE_ASSIGNMENT_FIELDS_PARTITION => TypedSubstateKey::RoleAssignmentModule(
+            TypedRoleAssignmentSubstateKey::RoleAssignmentField(
+                RoleAssignmentField::try_from(substate_key)
+                    .map_err(|_| error("RoleAssignmentField"))?,
+            ),
+        ),
+        ROLE_ASSIGNMENT_ROLE_DEF_PARTITION => {
             let key = substate_key
                 .for_map()
                 .ok_or_else(|| error("Access Rules key"))?;
-            TypedSubstateKey::AccessRulesModule(TypedAccessRulesSubstateKey::Rule(
+            TypedSubstateKey::RoleAssignmentModule(TypedRoleAssignmentSubstateKey::Rule(
                 scrypto_decode(&key).map_err(|_| error("Access Rules key"))?,
             ))
         }
@@ -441,7 +443,7 @@ fn to_typed_object_substate_key_internal(
 #[derive(Debug, Clone)]
 pub enum TypedSubstateValue {
     TypeInfoModule(TypedTypeInfoModuleSubstateValue),
-    AccessRulesModule(TypedAccessRulesModuleSubstateValue),
+    RoleAssignmentModule(TypedRoleAssignmentModuleSubstateValue),
     RoyaltyModule(TypedRoyaltyModuleSubstateValue),
     MetadataModule(TypedMetadataModuleSubstateValue),
     MainModule(TypedMainModuleSubstateValue),
@@ -453,14 +455,14 @@ pub enum TypedTypeInfoModuleSubstateValue {
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedAccessRulesModuleSubstateValue {
-    OwnerRole(OwnerRoleSubstate),
+pub enum TypedRoleAssignmentModuleSubstateValue {
+    OwnerRole(FieldSubstate<OwnerRoleSubstate>),
     Rule(KeyValueEntrySubstate<AccessRule>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedRoyaltyModuleSubstateValue {
-    ComponentRoyalty(ComponentRoyaltySubstate),
+    ComponentRoyalty(FieldSubstate<ComponentRoyaltySubstate>),
     ComponentMethodRoyalty(ComponentMethodRoyaltySubstate),
 }
 
@@ -507,89 +509,84 @@ pub enum TypedMainModuleSubstateValue {
 
 #[derive(Debug, Clone)]
 pub enum TypedPackageFieldValue {
-    Royalty(PackageRoyaltyAccumulatorSubstate),
+    Royalty(FieldSubstate<PackageRoyaltyAccumulatorSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedFungibleResourceManagerFieldValue {
-    Divisibility(FungibleResourceManagerDivisibilitySubstate),
-    TotalSupply(FungibleResourceManagerTotalSupplySubstate),
+    Divisibility(FieldSubstate<FungibleResourceManagerDivisibilitySubstate>),
+    TotalSupply(FieldSubstate<FungibleResourceManagerTotalSupplySubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleResourceManagerFieldValue {
-    IdType(NonFungibleResourceManagerIdTypeSubstate),
-    MutableFields(NonFungibleResourceManagerMutableFieldsSubstate),
-    TotalSupply(NonFungibleResourceManagerTotalSupplySubstate),
+    IdType(FieldSubstate<NonFungibleResourceManagerIdTypeSubstate>),
+    MutableFields(FieldSubstate<NonFungibleResourceManagerMutableFieldsSubstate>),
+    TotalSupply(FieldSubstate<NonFungibleResourceManagerTotalSupplySubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedFungibleVaultFieldValue {
-    Balance(FungibleVaultBalanceSubstate),
-    VaultFrozenFlag(VaultFrozenFlag),
+    Balance(FieldSubstate<FungibleVaultBalanceSubstate>),
+    VaultFrozenFlag(FieldSubstate<VaultFrozenFlag>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedNonFungibleVaultFieldValue {
-    Balance(NonFungibleVaultBalanceSubstate),
-    VaultFrozenFlag(VaultFrozenFlag),
+    Balance(FieldSubstate<NonFungibleVaultBalanceSubstate>),
+    VaultFrozenFlag(FieldSubstate<VaultFrozenFlag>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedConsensusManagerFieldValue {
-    Config(ConsensusManagerConfigSubstate),
-    ConsensusManager(ConsensusManagerSubstate),
-    ValidatorRewards(ValidatorRewardsSubstate),
-    CurrentValidatorSet(CurrentValidatorSetSubstate),
-    CurrentProposalStatistic(CurrentProposalStatisticSubstate),
-    CurrentTimeRoundedToMinutes(ProposerMinuteTimestampSubstate),
-    CurrentTime(ProposerMilliTimestampSubstate),
+    Config(FieldSubstate<ConsensusManagerConfigSubstate>),
+    ConsensusManager(FieldSubstate<ConsensusManagerSubstate>),
+    ValidatorRewards(FieldSubstate<ValidatorRewardsSubstate>),
+    CurrentValidatorSet(FieldSubstate<CurrentValidatorSetSubstate>),
+    CurrentProposalStatistic(FieldSubstate<CurrentProposalStatisticSubstate>),
+    CurrentTimeRoundedToMinutes(FieldSubstate<ProposerMinuteTimestampSubstate>),
+    CurrentTime(FieldSubstate<ProposerMilliTimestampSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedValidatorFieldValue {
-    Validator(ValidatorSubstate),
-    ProtocolUpdateReadinessSignal(ValidatorProtocolUpdateReadinessSignalSubstate),
+    Validator(FieldSubstate<ValidatorSubstate>),
+    ProtocolUpdateReadinessSignal(FieldSubstate<ValidatorProtocolUpdateReadinessSignalSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedAccessControllerFieldValue {
-    AccessController(AccessControllerSubstate),
+    AccessController(FieldSubstate<AccessControllerSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum GenericScryptoComponentFieldValue {
-    State(GenericScryptoSborPayload),
+    State(FieldSubstate<ScryptoValue>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedAccountFieldValue {
-    Account(AccountSubstate),
+    Account(FieldSubstate<AccountSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedOneResourcePoolFieldValue {
-    OneResourcePool(one_resource_pool::OneResourcePoolSubstate),
+    OneResourcePool(FieldSubstate<one_resource_pool::OneResourcePoolSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedTwoResourcePoolFieldValue {
-    TwoResourcePool(two_resource_pool::TwoResourcePoolSubstate),
+    TwoResourcePool(FieldSubstate<two_resource_pool::TwoResourcePoolSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedMultiResourcePoolFieldValue {
-    MultiResourcePool(multi_resource_pool::MultiResourcePoolSubstate),
+    MultiResourcePool(FieldSubstate<multi_resource_pool::MultiResourcePoolSubstate>),
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedTransactionTrackerFieldValue {
-    TransactionTracker(TransactionTrackerSubstate),
-}
-
-#[derive(Debug, Clone)]
-pub struct GenericScryptoSborPayload {
-    pub data: Vec<u8>,
+    TransactionTracker(FieldSubstate<TransactionTrackerSubstate>),
 }
 
 pub fn to_typed_substate_value(
@@ -616,16 +613,16 @@ fn to_typed_substate_value_internal(
                 }
             })
         }
-        TypedSubstateKey::AccessRulesModule(access_rules_key) => match access_rules_key {
-            TypedAccessRulesSubstateKey::AccessRulesField(access_rules_field_offset) => {
-                match access_rules_field_offset {
-                    AccessRulesField::OwnerRole => TypedSubstateValue::AccessRulesModule(
-                        TypedAccessRulesModuleSubstateValue::OwnerRole(scrypto_decode(data)?),
+        TypedSubstateKey::RoleAssignmentModule(role_assignment_key) => match role_assignment_key {
+            TypedRoleAssignmentSubstateKey::RoleAssignmentField(role_assignment_field_offset) => {
+                match role_assignment_field_offset {
+                    RoleAssignmentField::OwnerRole => TypedSubstateValue::RoleAssignmentModule(
+                        TypedRoleAssignmentModuleSubstateValue::OwnerRole(scrypto_decode(data)?),
                     ),
                 }
             }
-            TypedAccessRulesSubstateKey::Rule(_) => TypedSubstateValue::AccessRulesModule(
-                TypedAccessRulesModuleSubstateValue::Rule(scrypto_decode(data)?),
+            TypedRoleAssignmentSubstateKey::Rule(_) => TypedSubstateValue::RoleAssignmentModule(
+                TypedRoleAssignmentModuleSubstateValue::Rule(scrypto_decode(data)?),
             ),
         },
         TypedSubstateKey::RoyaltyModule(royalty_module_key) => {
@@ -802,9 +799,7 @@ fn to_typed_object_substate_value(
         TypedMainModuleSubstateKey::GenericScryptoComponentField(offset) => {
             TypedMainModuleSubstateValue::GenericScryptoComponent(match offset {
                 ComponentField::State0 => {
-                    GenericScryptoComponentFieldValue::State(GenericScryptoSborPayload {
-                        data: data.to_vec(),
-                    })
+                    GenericScryptoComponentFieldValue::State(scrypto_decode(data)?)
                 }
             })
         }

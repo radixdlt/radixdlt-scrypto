@@ -10,7 +10,7 @@ use transaction::validation::{TransactionValidator, ValidationConfig};
 #[test]
 fn test_transaction_preview_cost_estimate() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -50,7 +50,7 @@ fn test_transaction_preview_cost_estimate() {
 fn test_assume_all_signature_proofs_flag_method_authorization() {
     // Arrange
     // Create an account component that requires a key auth for withdrawal
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let network = NetworkDefinition::simulator();
 
     let public_key = Secp256k1PrivateKey::from_u64(99).unwrap().public_key();
@@ -86,7 +86,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 }
 
 fn prepare_matching_test_tx_and_preview_intent(
-    test_runner: &mut TestRunner,
+    test_runner: &mut DefaultTestRunner,
     network: &NetworkDefinition,
     manifest: TransactionManifestV1,
     flags: &PreviewFlags,

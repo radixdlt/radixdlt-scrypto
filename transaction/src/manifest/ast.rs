@@ -124,7 +124,7 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
-    CallAccessRulesMethod {
+    CallRoleAssignmentMethod {
         address: Value,
         method_name: Value,
         args: Vec<Value>,

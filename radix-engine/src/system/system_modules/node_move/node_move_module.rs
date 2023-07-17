@@ -1,11 +1,12 @@
 use crate::blueprints::resource::ProofMoveableSubstate;
 use crate::errors::{RuntimeError, SystemModuleError};
-use crate::kernel::actor::{Actor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
+use crate::system::system::FieldSubstate;
 use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
@@ -32,21 +33,21 @@ impl NodeMoveModule {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
         match type_info {
             TypeInfoSubstate::Object(info)
-                if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                     && info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if  node_id.eq(info.get_outer_object().as_node_id()))
                 {
                     return Ok(());
                 }
 
-                if matches!(callee, Actor::Function { .. })
-                    && callee.blueprint_id().eq(&info.blueprint_id)
-                {
-                    return Ok(());
+                if let Actor::Function(FunctionActor { blueprint_id, .. }) = callee {
+                    if blueprint_id.eq(&info.main_blueprint_id) {
+                        return Ok(());
+                    }
                 }
 
                 // Change to restricted unless it's moved to auth zone.
@@ -58,10 +59,10 @@ impl NodeMoveModule {
                         LockFlags::MUTABLE,
                         SystemLockData::default(),
                     )?;
-                    let mut proof: ProofMoveableSubstate =
+                    let mut proof: FieldSubstate<ProofMoveableSubstate> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-                    if proof.restricted {
+                    if proof.value.0.restricted {
                         return Err(RuntimeError::SystemModuleError(
                             SystemModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
                                 node_id,
@@ -69,7 +70,7 @@ impl NodeMoveModule {
                         ));
                     }
 
-                    proof.change_to_restricted();
+                    proof.value.0.change_to_restricted();
                     api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
                     api.kernel_close_substate(handle)?;
                 } else if callee.is_auth_zone() {
@@ -80,10 +81,10 @@ impl NodeMoveModule {
                         LockFlags::read_only(),
                         SystemLockData::default(),
                     )?;
-                    let proof: ProofMoveableSubstate =
+                    let proof: FieldSubstate<ProofMoveableSubstate> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-                    if proof.restricted {
+                    if proof.value.0.restricted {
                         return Err(RuntimeError::SystemModuleError(
                             SystemModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
                                 node_id,
@@ -94,21 +95,21 @@ impl NodeMoveModule {
                 }
             }
             TypeInfoSubstate::Object(info)
-                if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                     && info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor {  node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
                 {
                     return Ok(());
                 }
 
-                if matches!(callee, Actor::Function { .. })
-                    && callee.blueprint_id().eq(&info.blueprint_id)
-                {
-                    return Ok(());
+                if let Actor::Function(FunctionActor { blueprint_id, .. }) = callee {
+                    if blueprint_id.eq(&info.main_blueprint_id) {
+                        return Ok(());
+                    }
                 }
 
                 // Change to restricted unless it's moved to auth zone.
@@ -120,10 +121,10 @@ impl NodeMoveModule {
                         LockFlags::MUTABLE,
                         SystemLockData::default(),
                     )?;
-                    let mut proof: ProofMoveableSubstate =
+                    let mut proof: FieldSubstate<ProofMoveableSubstate> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-                    if proof.restricted {
+                    if proof.value.0.restricted {
                         return Err(RuntimeError::SystemModuleError(
                             SystemModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
                                 node_id,
@@ -131,7 +132,7 @@ impl NodeMoveModule {
                         ));
                     }
 
-                    proof.change_to_restricted();
+                    proof.value.0.change_to_restricted();
                     api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&proof))?;
                     api.kernel_close_substate(handle)?;
                 } else if callee.is_auth_zone() {
@@ -142,10 +143,10 @@ impl NodeMoveModule {
                         LockFlags::read_only(),
                         SystemLockData::default(),
                     )?;
-                    let proof: ProofMoveableSubstate =
+                    let proof: FieldSubstate<ProofMoveableSubstate> =
                         api.kernel_read_substate(handle)?.as_typed().unwrap();
 
-                    if proof.restricted {
+                    if proof.value.0.restricted {
                         return Err(RuntimeError::SystemModuleError(
                             SystemModuleError::NodeMoveError(NodeMoveError::CantMoveDownstream(
                                 node_id,

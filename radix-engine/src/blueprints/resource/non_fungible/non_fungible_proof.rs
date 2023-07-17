@@ -1,10 +1,8 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::system_callback::SystemLockData;
 use crate::types::*;
-use radix_engine_interface::api::field_lock_api::LockFlags;
-use radix_engine_interface::api::{ClientApi, OBJECT_HANDLE_SELF};
+use radix_engine_interface::api::field_api::LockFlags;
+use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::resource::*;
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -50,7 +48,7 @@ impl NonFungibleProofSubstate {
         })
     }
 
-    pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
+    pub fn teardown<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
         for (container, locked_ids) in &self.evidence {
             api.call_method(
                 container.as_node_id(),
@@ -86,9 +84,9 @@ impl NonFungibleProofBlueprint {
                 NonFungibleProofField::Moveable.into(),
                 LockFlags::read_only(),
             )?;
-            let substate_ref: ProofMoveableSubstate = api.field_lock_read_typed(handle)?;
+            let substate_ref: ProofMoveableSubstate = api.field_read_typed(handle)?;
             let moveable = substate_ref.clone();
-            api.field_lock_release(handle)?;
+            api.field_close(handle)?;
             moveable
         };
         let handle = api.actor_open_field(
@@ -96,20 +94,17 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
         let proof = substate_ref.clone();
         let clone = proof.clone_proof(api)?;
 
         let proof_id = api.new_simple_object(
             NON_FUNGIBLE_PROOF_BLUEPRINT,
-            vec![
-                scrypto_encode(&moveable).unwrap(),
-                scrypto_encode(&clone).unwrap(),
-            ],
+            vec![FieldValue::new(&moveable), FieldValue::new(&clone)],
         )?;
 
         // Drop after object creation to keep the reference alive
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(Proof(Own(proof_id)))
     }
@@ -123,9 +118,9 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
         let amount = substate_ref.amount();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -140,9 +135,9 @@ impl NonFungibleProofBlueprint {
             NonFungibleProofField::ProofRefs.into(),
             LockFlags::read_only(),
         )?;
-        let substate_ref: NonFungibleProofSubstate = api.field_lock_read_typed(handle)?;
+        let substate_ref: NonFungibleProofSubstate = api.field_read_typed(handle)?;
         let ids = substate_ref.non_fungible_local_ids().clone();
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(ids)
     }
 
@@ -151,31 +146,31 @@ impl NonFungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
+            ResourceAddress::new_or_panic(api.actor_get_object_info()?.get_outer_object().into());
         Ok(address)
     }
 
     pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
-
-        // Notify underlying buckets/vaults
-        let handle = api.kernel_open_substate(
-            proof.0.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &NonFungibleProofField::ProofRefs.into(),
-            LockFlags::read_only(),
-            SystemLockData::Default,
-        )?;
-        let proof_substate: NonFungibleProofSubstate =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        proof_substate.drop_proof(api)?;
-        api.kernel_close_substate(handle)?;
-
-        // Drop self
         api.drop_object(proof.0.as_node_id())?;
+
+        Ok(())
+    }
+
+    pub(crate) fn on_drop<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            NonFungibleProofField::ProofRefs.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let proof_substate: NonFungibleProofSubstate = api.field_read_typed(handle)?;
+        proof_substate.teardown(api)?;
+        api.field_close(handle)?;
 
         Ok(())
     }

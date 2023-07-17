@@ -7,10 +7,10 @@ mod deep_auth_rules_on_create {
     impl DeepAuthRulesOnCreate {
         pub fn new(
             resource_address: ResourceAddress,
-            access_rules_depth: usize,
+            role_assignment_depth: usize,
         ) -> Global<DeepAuthRulesOnCreate> {
             let component = Self {}.instantiate();
-            let roles = generate_deep_access_rules(resource_address, access_rules_depth);
+            let roles = generate_deep_access_rules(resource_address, role_assignment_depth);
             component
                 .prepare_to_globalize(OwnerRole::None)
                 .roles(roles)

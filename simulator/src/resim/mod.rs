@@ -58,7 +58,7 @@ use radix_engine::blueprints::consensus_manager::{
 };
 use radix_engine::system::bootstrap::Bootstrapper;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
@@ -67,7 +67,7 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::vm::wasm::*;
-use radix_engine::vm::ScryptoVm;
+use radix_engine::vm::{DefaultNativeVm, ScryptoVm, Vm};
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintDefinition, BlueprintInterface, BlueprintVersionKey, TypePointer,
@@ -171,9 +171,11 @@ pub fn handle_system_transaction<O: std::io::Write>(
     print_receipt: bool,
     out: &mut O,
 ) -> Result<TransactionReceipt, Error> {
-    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+    Bootstrapper::new(&mut substate_db, vm.clone(), false).bootstrap_test_default();
 
     let nonce = get_nonce()?;
     let transaction = SystemTransactionV1 {
@@ -187,7 +189,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 
     let receipt = execute_and_commit_transaction(
         &mut substate_db,
-        &scrypto_interpreter,
+        vm,
         &FeeReserveConfig::default(),
         &ExecutionConfig::for_system_transaction().with_kernel_trace(trace),
         &transaction
@@ -243,10 +245,11 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+            let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+            let native_vm = DefaultNativeVm::new();
+            let vm = Vm::new(&scrypto_vm, native_vm);
             let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-            Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false)
-                .bootstrap_test_default();
+            Bootstrapper::new(&mut substate_db, vm.clone(), false).bootstrap_test_default();
 
             let sks = get_signing_keys(signing_keys)?;
             let initial_proofs = sks
@@ -258,7 +261,7 @@ pub fn handle_manifest<O: std::io::Write>(
 
             let receipt = execute_and_commit_transaction(
                 &mut substate_db,
-                &scrypto_interpreter,
+                vm,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig::for_test_transaction().with_kernel_trace(trace),
                 &transaction
@@ -327,9 +330,11 @@ pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<Secp256k1Pr
 pub fn export_package_schema(
     package_address: PackageAddress,
 ) -> Result<BTreeMap<BlueprintVersionKey, BlueprintDefinition>, Error> {
-    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
     let entries = substate_db
         .list_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<BlueprintDefinition>, MapKey>(
@@ -351,9 +356,11 @@ pub fn export_package_schema(
 }
 
 pub fn export_object_info(component_address: ComponentAddress) -> Result<ObjectInfo, Error> {
-    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
     let type_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
@@ -372,9 +379,11 @@ pub fn export_schema(
     package_address: PackageAddress,
     schema_hash: Hash,
 ) -> Result<ScryptoSchema, Error> {
-    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
     let schema = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, KeyValueEntrySubstate<ScryptoSchema>>(
@@ -407,9 +416,11 @@ pub fn export_blueprint_interface(
 }
 
 pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<BlueprintId, Error> {
-    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
     let type_info = substate_db
         .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
@@ -421,9 +432,8 @@ pub fn get_blueprint_id(component_address: ComponentAddress) -> Result<Blueprint
 
     match type_info {
         TypeInfoSubstate::Object(ObjectInfo {
-            blueprint_id: blueprint,
-            ..
-        }) => Ok(blueprint.clone()),
+            main_blueprint_id, ..
+        }) => Ok(main_blueprint_id.clone()),
         _ => panic!("Unexpected"),
     }
 }
@@ -435,7 +445,7 @@ pub fn get_event_schema<S: SubstateDatabase>(
     let (package_address, schema_pointer) = match event_type_identifier {
         EventTypeIdentifier(Emitter::Method(node_id, node_module), schema_pointer) => {
             match node_module {
-                ObjectModuleId::AccessRules => (ACCESS_RULES_MODULE_PACKAGE, *schema_pointer),
+                ObjectModuleId::RoleAssignment => (ROLE_ASSIGNMENT_MODULE_PACKAGE, *schema_pointer),
                 ObjectModuleId::Royalty => (ROYALTY_MODULE_PACKAGE, *schema_pointer),
                 ObjectModuleId::Metadata => (METADATA_MODULE_PACKAGE, *schema_pointer),
                 ObjectModuleId::Main => {
@@ -447,9 +457,10 @@ pub fn get_event_schema<S: SubstateDatabase>(
                         )
                         .unwrap();
                     match type_info {
-                        TypeInfoSubstate::Object(ObjectInfo { blueprint_id, .. }) => {
-                            (blueprint_id.package_address, *schema_pointer)
-                        }
+                        TypeInfoSubstate::Object(ObjectInfo {
+                            main_blueprint_id: blueprint_id,
+                            ..
+                        }) => (blueprint_id.package_address, *schema_pointer),
                         _ => return None,
                     }
                 }
@@ -487,48 +498,54 @@ pub fn db_upsert_timestamps(
     milli_timestamp: ProposerMilliTimestampSubstate,
     minute_timestamp: ProposerMinuteTimestampSubstate,
 ) -> Result<(), Error> {
-    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
         MAIN_BASE_PARTITION,
         &ConsensusManagerField::CurrentTime.into(),
-        &milli_timestamp,
+        &FieldSubstate::new_field(milli_timestamp),
     );
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),
         MAIN_BASE_PARTITION,
         &ConsensusManagerField::CurrentTimeRoundedToMinutes.into(),
-        &minute_timestamp,
+        &FieldSubstate::new_field(minute_timestamp),
     );
 
     Ok(())
 }
 
 pub fn db_upsert_epoch(epoch: Epoch) -> Result<(), Error> {
-    let scrypto_interpreter = ScryptoVm::<DefaultWasmEngine>::default();
+    let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    let native_vm = DefaultNativeVm::new();
+    let vm = Vm::new(&scrypto_vm, native_vm);
     let mut substate_db = RocksdbSubstateStore::standard(get_data_dir()?);
-    Bootstrapper::new(&mut substate_db, &scrypto_interpreter, false).bootstrap_test_default();
+    Bootstrapper::new(&mut substate_db, vm, false).bootstrap_test_default();
 
     let mut consensus_manager_substate = substate_db
-        .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerSubstate>(
+        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerSubstate>>(
             &CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
         )
-        .unwrap_or_else(|| ConsensusManagerSubstate {
-            epoch: Epoch::zero(),
-            effective_epoch_start_milli: 0,
-            actual_epoch_start_milli: 0,
-            round: Round::zero(),
-            current_leader: Some(0),
-            started: true,
+        .unwrap_or_else(|| {
+            FieldSubstate::new_field(ConsensusManagerSubstate {
+                epoch: Epoch::zero(),
+                effective_epoch_start_milli: 0,
+                actual_epoch_start_milli: 0,
+                round: Round::zero(),
+                current_leader: Some(0),
+                started: true,
+            })
         });
 
-    consensus_manager_substate.epoch = epoch;
+    consensus_manager_substate.value.0.epoch = epoch;
 
     substate_db.put_mapped::<SpreadPrefixKeyMapper, _>(
         &CONSENSUS_MANAGER.as_node_id(),

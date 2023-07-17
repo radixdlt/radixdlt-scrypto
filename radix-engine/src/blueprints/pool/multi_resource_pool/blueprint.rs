@@ -2,8 +2,8 @@ use crate::blueprints::pool::multi_resource_pool::*;
 use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
 use crate::kernel::kernel_api::*;
-use native_sdk::modules::access_rules::*;
 use native_sdk::modules::metadata::*;
+use native_sdk::modules::role_assignment::*;
 use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
 use native_sdk::runtime::Runtime;
@@ -83,7 +83,7 @@ impl MultiResourcePoolBlueprint {
         };
 
         // Creating the pool nodes
-        let access_rules = AccessRules::create(
+        let role_assignment = RoleAssignment::create(
             owner_role,
             btreemap! {
                 ObjectModuleId::Main => roles_init! {
@@ -114,14 +114,14 @@ impl MultiResourcePoolBlueprint {
             };
             api.new_simple_object(
                 MULTI_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![scrypto_encode(&substate).unwrap()],
+                vec![FieldValue::immutable(&substate)],
             )?
         };
 
         api.globalize(
             btreemap!(
                 ObjectModuleId::Main => object_id,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
@@ -381,7 +381,7 @@ impl MultiResourcePoolBlueprint {
             )
         };
 
-        api.field_lock_release(lock_handle)?;
+        api.field_close(lock_handle)?;
         Ok((pool_units, change))
     }
 
@@ -451,7 +451,7 @@ impl MultiResourcePoolBlueprint {
             .collect::<Result<Vec<Bucket>, _>>()?;
 
         bucket.burn(api)?;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(api, event)?;
 
@@ -474,7 +474,7 @@ impl MultiResourcePoolBlueprint {
                 resource_address,
             };
             vault.put(bucket, api)?;
-            api.field_lock_release(handle)?;
+            api.field_close(handle)?;
             Runtime::emit_event(api, event)?;
             Ok(())
         } else {
@@ -496,7 +496,7 @@ impl MultiResourcePoolBlueprint {
 
         if let Some(vault) = vault {
             let bucket = vault.take_advanced(amount, withdraw_strategy, api)?;
-            api.field_lock_release(handle)?;
+            api.field_close(handle)?;
             let withdrawn_amount = bucket.amount(api)?;
 
             Runtime::emit_event(
@@ -551,7 +551,7 @@ impl MultiResourcePoolBlueprint {
         let amounts_owed =
             Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(amounts_owed)
     }
@@ -572,7 +572,7 @@ impl MultiResourcePoolBlueprint {
             })
             .collect::<Result<BTreeMap<_, _>, _>>()?;
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amounts)
     }
 
@@ -589,7 +589,7 @@ impl MultiResourcePoolBlueprint {
     {
         let substate_key = MultiResourcePoolField::MultiResourcePool.into();
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
-        let multi_resource_pool = api.field_lock_read_typed(handle)?;
+        let multi_resource_pool = api.field_read_typed(handle)?;
 
         Ok((multi_resource_pool, handle))
     }

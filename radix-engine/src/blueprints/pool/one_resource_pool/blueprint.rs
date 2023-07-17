@@ -2,8 +2,8 @@ use crate::blueprints::pool::one_resource_pool::*;
 use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
 use crate::kernel::kernel_api::*;
-use native_sdk::modules::access_rules::*;
 use native_sdk::modules::metadata::*;
+use native_sdk::modules::role_assignment::*;
 use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
 use native_sdk::runtime::Runtime;
@@ -70,7 +70,7 @@ impl OneResourcePoolBlueprint {
             )?
         };
 
-        let access_rules = AccessRules::create(
+        let role_assignment = RoleAssignment::create(
             owner_role,
             btreemap! {
                 ObjectModuleId::Main => roles_init! {
@@ -97,14 +97,14 @@ impl OneResourcePoolBlueprint {
             };
             api.new_simple_object(
                 ONE_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![scrypto_encode(&substate).unwrap()],
+                vec![FieldValue::immutable(&substate)],
             )?
         };
 
         api.globalize(
             btreemap!(
                 ObjectModuleId::Main => object_id,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
@@ -170,7 +170,7 @@ impl OneResourcePoolBlueprint {
         vault.put(bucket, api)?;
         let pool_units = pool_unit_resource_manager.mint_fungible(pool_units_to_mint, api)?;
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(
             api,
@@ -238,7 +238,7 @@ impl OneResourcePoolBlueprint {
         bucket.burn(api)?;
         let owed_resources = vault.take(amount_owed, api)?;
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(
             api,
@@ -265,7 +265,7 @@ impl OneResourcePoolBlueprint {
         };
 
         substate.vault.put(bucket, api)?;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(api, event)?;
 
@@ -285,7 +285,7 @@ impl OneResourcePoolBlueprint {
         let bucket = substate
             .vault
             .take_advanced(amount, withdraw_strategy, api)?;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         let withdrawn_amount = bucket.amount(api)?;
 
         Runtime::emit_event(
@@ -338,7 +338,7 @@ impl OneResourcePoolBlueprint {
             pool_resource_divisibility,
         );
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(amount_owed)
     }
@@ -351,7 +351,7 @@ impl OneResourcePoolBlueprint {
     {
         let (substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
         let amount = substate.vault.amount(api)?;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amount)
     }
 
@@ -383,7 +383,7 @@ impl OneResourcePoolBlueprint {
     {
         let substate_key = OneResourcePoolField::OneResourcePool.into();
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
-        let substate = api.field_lock_read_typed::<OneResourcePoolSubstate>(handle)?;
+        let substate = api.field_read_typed::<OneResourcePoolSubstate>(handle)?;
 
         Ok((substate, handle))
     }

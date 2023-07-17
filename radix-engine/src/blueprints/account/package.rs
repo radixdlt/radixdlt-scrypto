@@ -5,21 +5,20 @@ use crate::errors::RuntimeError;
 use crate::roles_template;
 use crate::types::*;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::system_modules::virtualization::VirtualLazyLoadInput;
 use radix_engine_interface::api::ClientApi;
 use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
 };
+use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::schema::{
     BlueprintCollectionSchema, BlueprintEventSchemaInit, BlueprintFunctionsSchemaInit,
     BlueprintKeyValueStoreSchema, BlueprintSchemaInit, BlueprintStateSchemaInit, FieldSchema,
     FunctionSchemaInit, ReceiverInfo, TypeRef,
 };
 
-const ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME: &str = "create_virtual_secp256k1";
-const ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME: &str = "create_virtual_ed25519";
+pub const ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME: &str = "on_virtualize";
 
 pub struct AccountNativePackage;
 
@@ -356,11 +355,6 @@ impl AccountNativePackage {
             },
         );
 
-        let virtual_lazy_load_functions = btreemap!(
-            ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID => ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME.to_string(),
-            ACCOUNT_CREATE_VIRTUAL_ED25519_ID => ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME.to_string(),
-        );
-
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -382,9 +376,9 @@ impl AccountNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions,
                         functions,
                     },
+                    hooks: BlueprintHooksInit { hooks: btreemap!(BlueprintHook::OnVirtualize => ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME.to_string()) }
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -434,20 +428,12 @@ impl AccountNativePackage {
         Y: ClientApi<RuntimeError>,
     {
         match export_name {
-            ACCOUNT_CREATE_VIRTUAL_SECP256K1_EXPORT_NAME => {
-                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
+            ACCOUNT_ON_VIRTUALIZE_EXPORT_NAME => {
+                let input: OnVirtualizeInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
 
-                let rtn = AccountBlueprint::create_virtual_secp256k1(input, api)?;
-
-                Ok(IndexedScryptoValue::from_typed(&rtn))
-            }
-            ACCOUNT_CREATE_VIRTUAL_ED25519_EXPORT_NAME => {
-                let input: VirtualLazyLoadInput = input.as_typed().map_err(|e| {
-                    RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
-                })?;
-                let rtn = AccountBlueprint::create_virtual_ed25519(input, api)?;
+                let rtn = AccountBlueprint::on_virtualize(input, api)?;
 
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }

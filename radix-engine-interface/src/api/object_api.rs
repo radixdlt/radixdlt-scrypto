@@ -1,11 +1,12 @@
-use crate::api::node_modules::auth::ACCESS_RULES_BLUEPRINT;
+use crate::api::node_modules::auth::ROLE_ASSIGNMENT_BLUEPRINT;
 use crate::api::node_modules::metadata::METADATA_BLUEPRINT;
 use crate::constants::{
-    ACCESS_RULES_MODULE_PACKAGE, METADATA_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
+    METADATA_MODULE_PACKAGE, ROLE_ASSIGNMENT_MODULE_PACKAGE, ROYALTY_MODULE_PACKAGE,
 };
 use crate::types::*;
 #[cfg(feature = "radix_engine_fuzzing")]
 use arbitrary::Arbitrary;
+use radix_engine_common::prelude::{scrypto_encode, ScryptoEncode};
 use radix_engine_common::types::*;
 use radix_engine_derive::{ManifestSbor, ScryptoSbor};
 use radix_engine_interface::api::node_modules::royalty::COMPONENT_ROYALTY_BLUEPRINT;
@@ -34,7 +35,7 @@ pub enum ObjectModuleId {
     Main,
     Metadata,
     Royalty,
-    AccessRules,
+    RoleAssignment,
 }
 
 impl ObjectModuleId {
@@ -43,7 +44,7 @@ impl ObjectModuleId {
             ObjectModuleId::Main => 0u8,
             ObjectModuleId::Metadata => 1u8,
             ObjectModuleId::Royalty => 2u8,
-            ObjectModuleId::AccessRules => 3u8,
+            ObjectModuleId::RoleAssignment => 3u8,
         }
     }
 
@@ -51,7 +52,7 @@ impl ObjectModuleId {
         match self {
             ObjectModuleId::Metadata => METADATA_KV_STORE_PARTITION,
             ObjectModuleId::Royalty => ROYALTY_BASE_PARTITION,
-            ObjectModuleId::AccessRules => ACCESS_RULES_BASE_PARTITION,
+            ObjectModuleId::RoleAssignment => ROLE_ASSIGNMENT_BASE_PARTITION,
             ObjectModuleId::Main => MAIN_BASE_PARTITION,
         }
     }
@@ -66,11 +67,34 @@ impl ObjectModuleId {
                 &ROYALTY_MODULE_PACKAGE,
                 COMPONENT_ROYALTY_BLUEPRINT,
             )),
-            ObjectModuleId::AccessRules => Some(BlueprintId::new(
-                &ACCESS_RULES_MODULE_PACKAGE,
-                ACCESS_RULES_BLUEPRINT,
+            ObjectModuleId::RoleAssignment => Some(BlueprintId::new(
+                &ROLE_ASSIGNMENT_MODULE_PACKAGE,
+                ROLE_ASSIGNMENT_BLUEPRINT,
             )),
             ObjectModuleId::Main => None,
+        }
+    }
+}
+
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ScryptoSbor)]
+pub struct FieldValue {
+    pub value: Vec<u8>,
+    pub locked: bool,
+}
+
+impl FieldValue {
+    pub fn new<E: ScryptoEncode>(value: E) -> Self {
+        Self {
+            value: scrypto_encode(&value).unwrap(),
+            locked: false,
+        }
+    }
+
+    pub fn immutable<E: ScryptoEncode>(value: E) -> Self {
+        Self {
+            value: scrypto_encode(&value).unwrap(),
+            locked: true,
         }
     }
 }
@@ -86,7 +110,7 @@ pub trait ClientObjectApi<E> {
     fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
-        fields: Vec<Vec<u8>>,
+        fields: Vec<FieldValue>,
     ) -> Result<NodeId, E> {
         self.new_object(blueprint_ident, vec![], None, fields, btreemap![])
     }
@@ -97,7 +121,7 @@ pub trait ClientObjectApi<E> {
         blueprint_ident: &str,
         features: Vec<&str>,
         schema: Option<InstanceSchema>,
-        fields: Vec<Vec<u8>>,
+        fields: Vec<FieldValue>,
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;
 
@@ -134,7 +158,7 @@ pub trait ClientObjectApi<E> {
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
-        inner_object_fields: Vec<Vec<u8>>,
+        inner_object_fields: Vec<FieldValue>,
     ) -> Result<(GlobalAddress, NodeId), E>;
 
     /// Calls a method on an object
@@ -144,7 +168,7 @@ pub trait ClientObjectApi<E> {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E> {
-        self.call_method_advanced(receiver, false, ObjectModuleId::Main, method_name, args)
+        self.call_method_advanced(receiver, ObjectModuleId::Main, false, method_name, args)
     }
 
     fn call_direct_access_method(
@@ -153,15 +177,15 @@ pub trait ClientObjectApi<E> {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E> {
-        self.call_method_advanced(receiver, true, ObjectModuleId::Main, method_name, args)
+        self.call_method_advanced(receiver, ObjectModuleId::Main, true, method_name, args)
     }
 
     /// Calls a method on an object module
     fn call_method_advanced(
         &mut self,
         receiver: &NodeId,
-        direct_access: bool, // May change to enum for other types of reference in future
         module_id: ObjectModuleId,
+        direct_access: bool, // May change to enum for other types of reference in future
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, E>;

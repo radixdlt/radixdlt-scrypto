@@ -1,6 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
-use crate::modules::{AccessRules, Attachable, HasMetadata, Royalty};
-use crate::prelude::{scrypto_encode, HasAccessRules, ObjectStub, ObjectStubHandle};
+use crate::modules::{Attachable, HasMetadata, RoleAssignment, Royalty};
+use crate::prelude::{scrypto_encode, HasRoleAssignment, ObjectStub, ObjectStubHandle};
 use crate::runtime::*;
 use crate::*;
 use radix_engine_common::prelude::well_known_scrypto_custom_types::{
@@ -15,7 +15,7 @@ use radix_engine_interface::api::node_modules::metadata::{
 };
 use radix_engine_interface::api::node_modules::ModuleConfig;
 use radix_engine_interface::api::object_api::ObjectModuleId;
-use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi};
+use radix_engine_interface::api::{ClientBlueprintApi, ClientObjectApi, FieldValue};
 use radix_engine_interface::blueprints::resource::{
     AccessRule, Bucket, MethodAccessibility, OwnerRole, RolesInit,
 };
@@ -43,7 +43,7 @@ pub trait HasTypeInfo {
 pub struct Blueprint<C: HasTypeInfo>(PhantomData<C>);
 
 impl<C: HasTypeInfo> Blueprint<C> {
-    pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: &A) -> T {
+    pub fn call_function<A: ScryptoEncode, T: ScryptoDecode>(function_name: &str, args: A) -> T {
         let package_address = C::PACKAGE_ADDRESS.unwrap_or(Runtime::package_address());
 
         let output = ScryptoEnv
@@ -51,7 +51,7 @@ impl<C: HasTypeInfo> Blueprint<C> {
                 package_address,
                 C::BLUEPRINT_NAME,
                 function_name,
-                scrypto_encode(args).unwrap(),
+                scrypto_encode(&args).unwrap(),
             )
             .unwrap();
         scrypto_decode(&output).unwrap()
@@ -80,7 +80,7 @@ pub trait ComponentState: HasMethods + HasStub + ScryptoEncode + ScryptoDecode {
 
     fn instantiate(self) -> Owned<Self> {
         let node_id = ScryptoEnv
-            .new_simple_object(Self::BLUEPRINT_NAME, vec![scrypto_encode(&self).unwrap()])
+            .new_simple_object(Self::BLUEPRINT_NAME, vec![FieldValue::new(&self)])
             .unwrap();
 
         let stub = Self::Stub::new(ObjectStubHandle::Own(Own(node_id)));
@@ -283,42 +283,51 @@ impl<C: HasStub + HasMethods> Globalizing<C> {
     }
 
     pub fn globalize(mut self) -> Global<C> {
-        let (metadata, metadata_roles) = {
+        let mut modules = BTreeMap::new();
+        let mut roles = BTreeMap::new();
+
+        // Main
+        {
+            modules.insert(
+                ObjectModuleId::Main,
+                self.stub.handle().as_node_id().clone(),
+            );
+            roles.insert(ObjectModuleId::Main, self.roles);
+        }
+
+        // Metadata
+        {
             let metadata_config = self
                 .metadata_config
                 .take()
                 .unwrap_or_else(|| Default::default());
 
-            (
-                Metadata::new_with_data(metadata_config.init),
-                metadata_config.roles,
-            )
+            let metadata = Metadata::new_with_data(metadata_config.init);
+            modules.insert(
+                ObjectModuleId::Metadata,
+                metadata.handle().as_node_id().clone(),
+            );
+            roles.insert(ObjectModuleId::Metadata, metadata_config.roles);
         };
 
-        let (royalty, royalty_roles) = {
-            let royalty_config = self
-                .royalty_config
-                .take()
-                .unwrap_or_else(|| Default::default());
+        // Royalties
+        if let Some(royalty_config) = self.royalty_config {
+            roles.insert(ObjectModuleId::Royalty, royalty_config.roles);
+            let royalty = Royalty::new(royalty_config.init);
+            modules.insert(
+                ObjectModuleId::Royalty,
+                royalty.handle().as_node_id().clone(),
+            );
+        }
 
-            (Royalty::new(royalty_config.init), royalty_config.roles)
-        };
-
-        let access_rules = AccessRules::new(
-            self.owner_role,
-            btreemap!(
-                ObjectModuleId::Main => self.roles,
-                ObjectModuleId::Metadata => metadata_roles,
-                ObjectModuleId::Royalty => royalty_roles,
-            ),
-        );
-
-        let modules = btreemap!(
-            ObjectModuleId::Main => self.stub.handle().as_node_id().clone(),
-            ObjectModuleId::AccessRules => access_rules.handle().as_node_id().clone(),
-            ObjectModuleId::Metadata => metadata.handle().as_node_id().clone(),
-            ObjectModuleId::Royalty => royalty.handle().as_node_id().clone(),
-        );
+        // Role Assignment
+        {
+            let role_assignment = RoleAssignment::new(self.owner_role, roles);
+            modules.insert(
+                ObjectModuleId::RoleAssignment,
+                role_assignment.handle().as_node_id().clone(),
+            );
+        }
 
         let address = ScryptoEnv
             .globalize(modules, self.address_reservation)
@@ -370,10 +379,10 @@ impl<O: HasStub> Global<O> {
         Attached(metadata, PhantomData::default())
     }
 
-    fn access_rules(&self) -> Attached<AccessRules> {
+    fn role_assignment(&self) -> Attached<RoleAssignment> {
         let address = GlobalAddress::new_or_panic(self.handle().as_node_id().0);
-        let access_rules = AccessRules::attached(address);
-        Attached(access_rules, PhantomData::default())
+        let role_assignment = RoleAssignment::attached(address);
+        Attached(role_assignment, PhantomData::default())
     }
 }
 
@@ -403,29 +412,30 @@ impl<O: HasStub> HasMetadata for Global<O> {
     }
 }
 
-impl<O: HasStub> HasAccessRules for Global<O> {
+impl<O: HasStub> HasRoleAssignment for Global<O> {
     fn set_owner_role<A: Into<AccessRule>>(&self, rule: A) {
-        self.access_rules().set_owner_role(rule)
+        self.role_assignment().set_owner_role(rule)
     }
 
     fn lock_owner_role<A: Into<AccessRule>>(&self) {
-        self.access_rules().lock_owner_role()
+        self.role_assignment().lock_owner_role()
     }
 
     fn set_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules().set_role(name, rule);
+        self.role_assignment().set_role(name, rule);
     }
 
     fn get_role(&self, name: &str) -> Option<AccessRule> {
-        self.access_rules().get_role(name)
+        self.role_assignment().get_role(name)
     }
 
     fn set_metadata_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules().set_metadata_role(name, rule);
+        self.role_assignment().set_metadata_role(name, rule);
     }
 
     fn set_component_royalties_role<A: Into<AccessRule>>(&self, name: &str, rule: A) {
-        self.access_rules().set_component_royalties_role(name, rule);
+        self.role_assignment()
+            .set_component_royalties_role(name, rule);
     }
 }
 

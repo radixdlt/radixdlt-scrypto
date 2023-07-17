@@ -10,7 +10,7 @@ use transaction::prelude::*;
 fn test_component_royalty() {
     // Arrange
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -60,7 +60,7 @@ fn test_component_royalty() {
 #[test]
 fn test_component_royalty_in_usd() {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -275,7 +275,7 @@ fn test_claim_royalty() {
 
 fn cannot_initialize_package_royalty_if_greater_than_allowed(royalty_amount: RoyaltyAmount) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (_public_key, _, account) = test_runner.new_allocated_account();
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr =
@@ -330,7 +330,7 @@ fn cannot_initialize_package_royalty_if_greater_usd_than_allowed() {
 #[test]
 fn cannot_initialize_component_royalty_if_greater_than_allowed() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr =
@@ -459,7 +459,7 @@ fn cannot_set_royalty_after_locking() {
 }
 
 fn set_up_package_and_component() -> (
-    TestRunner,
+    DefaultTestRunner,
     ComponentAddress,
     Secp256k1PublicKey,
     PackageAddress,
@@ -467,7 +467,7 @@ fn set_up_package_and_component() -> (
     ResourceAddress,
 ) {
     // Basic setup
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package

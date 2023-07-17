@@ -2,8 +2,8 @@ use crate::blueprints::pool::two_resource_pool::*;
 use crate::blueprints::pool::POOL_MANAGER_ROLE;
 use crate::errors::*;
 use crate::kernel::kernel_api::*;
-use native_sdk::modules::access_rules::*;
 use native_sdk::modules::metadata::*;
+use native_sdk::modules::role_assignment::*;
 use native_sdk::modules::royalty::*;
 use native_sdk::resource::*;
 use native_sdk::runtime::Runtime;
@@ -81,7 +81,7 @@ impl TwoResourcePoolBlueprint {
         };
 
         // Creating the pool nodes
-        let access_rules = AccessRules::create(
+        let role_assignment = RoleAssignment::create(
             owner_role,
             btreemap! {
                 ObjectModuleId::Main => roles_init! {
@@ -114,14 +114,14 @@ impl TwoResourcePoolBlueprint {
             };
             api.new_simple_object(
                 TWO_RESOURCE_POOL_BLUEPRINT_IDENT,
-                vec![scrypto_encode(&substate).unwrap()],
+                vec![FieldValue::immutable(&substate)],
             )?
         };
 
         api.globalize(
             btreemap!(
                 ObjectModuleId::Main => object_id,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
@@ -138,7 +138,7 @@ impl TwoResourcePoolBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::MUTABLE)?;
+        let (mut substate, handle) = Self::lock_and_read(api, LockFlags::read_only())?;
 
         let (resource_address1, resource_address2, mut vault1, mut vault2, bucket1, bucket2) = {
             // Getting the vaults of the two resource pool - before getting them we sort them according
@@ -281,8 +281,8 @@ impl TwoResourcePoolBlueprint {
         // Construct the event - this will be emitted once the resources are contributed to the pool
         let event = ContributionEvent {
             contributed_resources: btreemap! {
-                bucket1.resource_address(api)? => bucket1.amount(api)?,
-                bucket2.resource_address(api)? => bucket2.amount(api)?,
+                bucket1.resource_address(api)? => amount1,
+                bucket2.resource_address(api)? => amount2,
             },
             pool_units_minted: pool_units_to_mint,
         };
@@ -314,7 +314,7 @@ impl TwoResourcePoolBlueprint {
             None
         };
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(api, event)?;
 
@@ -386,7 +386,7 @@ impl TwoResourcePoolBlueprint {
         };
 
         bucket.burn(api)?;
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Runtime::emit_event(api, event)?;
 
@@ -409,7 +409,7 @@ impl TwoResourcePoolBlueprint {
                 resource_address,
             };
             vault.put(bucket, api)?;
-            api.field_lock_release(handle)?;
+            api.field_close(handle)?;
             Runtime::emit_event(api, event)?;
             Ok(())
         } else {
@@ -431,7 +431,7 @@ impl TwoResourcePoolBlueprint {
 
         if let Some(mut vault) = vault {
             let bucket = vault.take_advanced(amount, withdraw_strategy, api)?;
-            api.field_lock_release(handle)?;
+            api.field_close(handle)?;
             let withdrawn_amount = bucket.amount(api)?;
 
             Runtime::emit_event(
@@ -486,7 +486,7 @@ impl TwoResourcePoolBlueprint {
         let amounts_owed =
             Self::calculate_amount_owed(pool_units_to_redeem, pool_units_total_supply, reserves);
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
 
         Ok(amounts_owed)
     }
@@ -507,7 +507,7 @@ impl TwoResourcePoolBlueprint {
             })
             .collect::<Result<BTreeMap<_, _>, _>>()?;
 
-        api.field_lock_release(handle)?;
+        api.field_close(handle)?;
         Ok(amounts)
     }
 
@@ -524,8 +524,7 @@ impl TwoResourcePoolBlueprint {
     {
         let substate_key = TwoResourcePoolField::TwoResourcePool.into();
         let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, lock_flags)?;
-        let two_resource_pool_substate =
-            api.field_lock_read_typed::<TwoResourcePoolSubstate>(handle)?;
+        let two_resource_pool_substate = api.field_read_typed::<TwoResourcePoolSubstate>(handle)?;
 
         Ok((two_resource_pool_substate, handle))
     }

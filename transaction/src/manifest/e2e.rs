@@ -383,9 +383,9 @@ CALL_METADATA_METHOD
     "get"
     "HelloWorld"
 ;
-CALL_ACCESS_RULES_METHOD
+CALL_ROLE_ASSIGNMENT_METHOD
     Address("${component_address}")
-    "get_role"
+    "get"
     Enum<0u8>()
     "hello"
 ;
@@ -487,6 +487,13 @@ CALL_METHOD
 CALL_METHOD
     Address("${component_address}")
     "custom_types"
+    "normal text"
+    "with an escape\""
+    "with an escape\r"
+    "with an escape\t"
+    "with an escape\n"
+    "with an escape\""
+    "with an escape\\"
     Address("${package_address}")
     Address("${account_address}")
     Address("${consensusmanager_address}")
@@ -913,16 +920,13 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY
             Array<Enum>()
         ),
         Enum<0u8>(
-            64u8
+            66u8
         ),
         Array<String>()
     )
     Map<NonFungibleLocalId, Tuple>(
         NonFungibleLocalId("#12#") => Tuple(
-            Tuple(
-                "Hello World",
-                Decimal("12")
-            )
+            Tuple()
         )
     )
     Tuple(
@@ -1007,7 +1011,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
             Array<Enum>()
         ),
         Enum<0u8>(
-            64u8
+            66u8
         ),
         Array<String>()
     )

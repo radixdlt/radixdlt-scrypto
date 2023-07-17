@@ -4,6 +4,7 @@ version = "0.11.0"
 edition = "2021"
 
 [dependencies]
+native-sdk = { path = "../native-sdk", default-features = false }
 sbor = { path = "../sbor", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests"] }
 radix-engine-constants = { path = "../radix-engine-constants" }
@@ -40,10 +41,6 @@ name = "costing"
 harness = false
 
 [[bench]]
-name = "validation"
-harness = false
-
-[[bench]]
 name = "radiswap"
 harness = false
 
@@ -57,7 +54,11 @@ harness = false
 required-features = ["cpu_ram_metrics"]
 
 [[bench]]
-name = "transaction_decompilation"
+name = "transaction_processing"
+harness = false
+
+[[bench]]
+name = "transaction_validation"
 harness = false
 
 [features]

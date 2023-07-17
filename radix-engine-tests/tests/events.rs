@@ -40,7 +40,7 @@ use transaction::signing::secp256k1::Secp256k1PrivateKey;
 #[test]
 fn scrypto_cant_emit_unregistered_event() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
 
     let manifest = ManifestBuilder::new()
@@ -67,7 +67,7 @@ fn scrypto_cant_emit_unregistered_event() {
 #[test]
 fn scrypto_can_emit_registered_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/events");
 
     let manifest = ManifestBuilder::new()
@@ -114,7 +114,7 @@ fn scrypto_can_emit_registered_events() {
 #[test]
 fn cant_publish_a_package_with_non_struct_or_enum_event() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
     let (code, definition) = Compile::compile("./tests/blueprints/events_invalid");
     let manifest = ManifestBuilder::new()
@@ -139,7 +139,7 @@ fn cant_publish_a_package_with_non_struct_or_enum_event() {
 #[test]
 fn local_type_index_with_misleading_name_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
     let (code, mut definition) = Compile::compile("./tests/blueprints/events");
     let blueprint_setup = definition.blueprints.get_mut("ScryptoEvents").unwrap();
@@ -180,7 +180,7 @@ fn local_type_index_with_misleading_name_fails() {
 #[test]
 fn locking_fee_against_a_vault_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
     let manifest = ManifestBuilder::new().lock_fee(FAUCET, 500).build();
 
@@ -207,7 +207,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
 #[test]
 fn vault_fungible_recall_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let recallable_resource_address = test_runner.create_recallable_token(account);
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
@@ -273,7 +273,7 @@ fn vault_fungible_recall_emits_correct_events() {
 #[test]
 fn vault_non_fungible_recall_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let (recallable_resource_address, non_fungible_local_id) = {
         let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
@@ -368,7 +368,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
 #[test]
 fn resource_manager_new_vault_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let manifest = ManifestBuilder::new()
@@ -427,7 +427,7 @@ fn resource_manager_new_vault_emits_correct_events() {
 #[test]
 fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -513,7 +513,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 #[test]
 fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -604,7 +604,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 #[test]
 fn vault_take_non_fungibles_by_amount_emits_correct_event() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -754,7 +754,9 @@ fn consensus_manager_round_update_emits_correct_event() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
@@ -804,7 +806,9 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
             },
         ),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Prepare: skip a few rounds, right to the one just before epoch change
     test_runner.advance_to_round(Round::of(rounds_per_epoch - 1));
@@ -852,7 +856,9 @@ fn consensus_manager_epoch_update_emits_xrd_minting_event() {
             })
             .with_total_emission_xrd_per_epoch(emission_xrd),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
 
     // Act
     let receipt = test_runner.execute_validator_transaction(vec![InstructionV1::CallMethod {
@@ -893,7 +899,9 @@ fn validator_registration_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
     // Act
@@ -947,7 +955,9 @@ fn validator_unregistration_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
@@ -1016,7 +1026,9 @@ fn validator_staking_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let (account_pk, _, account) = test_runner.new_account(false);
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
@@ -1149,7 +1161,9 @@ fn validator_unstake_emits_correct_events() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
 
@@ -1293,7 +1307,9 @@ fn validator_claim_xrd_emits_correct_events() {
         CustomGenesis::default_consensus_manager_config()
             .with_num_unstake_epochs(num_unstake_epochs),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let validator_address = test_runner.get_active_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new()
@@ -1412,7 +1428,9 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
         initial_epoch,
         CustomGenesis::default_consensus_manager_config(),
     );
-    let mut test_runner = TestRunner::builder().with_custom_genesis(genesis).build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .with_custom_genesis(genesis)
+        .build();
     let (pub_key, _, account) = test_runner.new_account(false);
 
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account);
@@ -1499,7 +1517,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 #[test]
 fn setting_metadata_emits_correct_events() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let resource_address = create_all_allowed_resource(&mut test_runner);
 
     let manifest = ManifestBuilder::new()
@@ -1549,7 +1567,7 @@ fn setting_metadata_emits_correct_events() {
 #[test]
 fn create_account_events_can_be_looked_up() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -1582,7 +1600,7 @@ fn is_decoded_equal<T: ScryptoDecode + PartialEq>(expected: &T, actual: &[u8]) -
     scrypto_decode::<T>(&actual).unwrap() == *expected
 }
 
-fn create_all_allowed_resource(test_runner: &mut TestRunner) -> ResourceAddress {
+fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceAddress {
     let manifest = ManifestBuilder::new()
         .create_fungible_resource(
             OwnerRole::Fixed(AccessRule::AllowAll),

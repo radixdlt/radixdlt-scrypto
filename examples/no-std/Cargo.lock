@@ -253,7 +253,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-common"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bech32",
  "blake2",
@@ -274,11 +274,11 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-constants"
-version = "0.10.0"
+version = "0.11.0"
 
 [[package]]
 name = "radix-engine-derive"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -288,7 +288,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bitflags",
  "const-sha1",
@@ -318,7 +318,7 @@ checksum = "7b4b9743ed687d4b4bcedf9ff5eaa7398495ae14e61cba0a295704edbc7decde"
 
 [[package]]
 name = "sbor"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "const-sha1",
  "hex",
@@ -331,7 +331,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -339,7 +339,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive-common"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "const-sha1",
  "itertools",
@@ -350,7 +350,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bech32",
  "const-sha1",
@@ -370,7 +370,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-derive"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -384,7 +384,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-schema"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "bitflags",
  "radix-engine-common",
@@ -482,7 +482,7 @@ checksum = "84a22b9f218b40614adcb3f4ff08b703773ad44fa9423e4e0d346d5db86e4ebc"
 
 [[package]]
 name = "utils"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "hashbrown",
  "indexmap",

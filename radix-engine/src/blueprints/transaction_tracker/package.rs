@@ -1,11 +1,11 @@
 use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
-use native_sdk::modules::access_rules::AccessRules;
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::RoleAssignment;
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
-use radix_engine_interface::api::{ClientApi, ObjectModuleId};
+use radix_engine_interface::api::{ClientApi, FieldValue, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{
     AuthConfig, BlueprintDefinitionInit, BlueprintType, FunctionAuth, MethodAuthTemplate,
     PackageDefinition,
@@ -93,9 +93,9 @@ impl TransactionTrackerNativePackage {
                     },
                     events: BlueprintEventSchemaInit::default(),
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
                         functions,
                     },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -212,23 +212,22 @@ impl TransactionTrackerBlueprint {
         let current_epoch = Runtime::current_epoch(api)?;
         let intent_store = api.new_simple_object(
             TRANSACTION_TRACKER_BLUEPRINT,
-            vec![scrypto_encode(&TransactionTrackerSubstate {
+            vec![FieldValue::new(&TransactionTrackerSubstate {
                 start_epoch: current_epoch.number(),
                 start_partition: PARTITION_RANGE_START,
                 partition_range_start_inclusive: PARTITION_RANGE_START,
                 partition_range_end_inclusive: PARTITION_RANGE_END,
                 epochs_per_partition: EPOCHS_PER_PARTITION,
-            })
-            .unwrap()],
+            })],
         )?;
-        let access_rules = AccessRules::create(OwnerRole::None, btreemap!(), api)?.0;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, btreemap!(), api)?.0;
         let metadata = Metadata::create(api)?;
         let royalty = ComponentRoyalty::create(ComponentRoyaltyConfig::default(), api)?;
 
         let address = api.globalize(
             btreemap!(
                 ObjectModuleId::Main => intent_store,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),

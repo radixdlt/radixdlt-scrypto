@@ -120,7 +120,7 @@ macro_rules! bench_ops {
     ($t:ty, $ops:literal, "no_ref") => {
         paste::item! {
             pub fn [< bench_ $t:lower _ $ops >] (c: &mut Criterion) {
-                let group_name = concat!(stringify!($t), "::", $ops);
+                let group_name = concat!(stringify!([< $t:snake>]), "::", $ops);
                 let mut group = c.benchmark_group(group_name);
                 for (i, op) in [< $ops:upper _OPERANDS >].iter().enumerate() {
                     process_op!($t, i, op, bid, $ops);
@@ -139,7 +139,7 @@ macro_rules! bench_ops {
     ($t:ty, $ops:literal) => {
         paste::item! {
             pub fn [< bench_ $t:lower _ $ops >] (c: &mut Criterion) {
-                let group_name = concat!(stringify!($t), "::", $ops);
+                let group_name = concat!(stringify!([< $t:snake>]), "::", $ops);
                 let mut group = c.benchmark_group(group_name);
                 for (i, op) in [< $ops:upper _OPERANDS >].iter().enumerate() {
                     process_op!($t, i, op, bid, $ops);
@@ -158,7 +158,7 @@ macro_rules! bench_ops {
     ($t:ty, $ops:literal, $prim_t:ty) => {
         paste::item! {
             pub fn [< bench_ $t:lower _ $ops >] (c: &mut Criterion) {
-                let group_name = concat!(stringify!($t), "::", $ops);
+                let group_name = concat!(stringify!([< $t:snake>]), "::", $ops);
                 let mut group = c.benchmark_group(group_name);
                 for (i, op) in [< $ops:upper _OPERANDS >].iter().enumerate() {
                     process_op!($t, i, op, bid, $ops, $prim_t);

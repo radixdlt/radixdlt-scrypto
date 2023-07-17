@@ -23,7 +23,7 @@ use crate::transaction::ExecutionConfig;
 use crate::types::*;
 use bitflags::bitflags;
 use paste::paste;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
@@ -52,11 +52,11 @@ impl EnabledModules {
     /// The difference between genesis transaction and system transaction is "no auth".
     /// TODO: double check if this is the right assumption.
     pub fn for_genesis_transaction() -> Self {
-        Self::LIMITS | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
+        Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_system_transaction() -> Self {
-        Self::LIMITS | Self::AUTH | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
+        Self::AUTH | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_notarized_transaction() -> Self {

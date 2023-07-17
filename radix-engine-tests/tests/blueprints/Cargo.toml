@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "access_rules",
     "address",
     "allocated_address",
     "arguments",
@@ -38,6 +37,7 @@ members = [
     "reentrancy",
     "reference",
     "resource",
+    "role_assignment",
     "static_dependencies",
     "static_dependencies2",
     "stored_external_component",

@@ -1,4 +1,5 @@
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
+use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::{FieldKey, MapKey, ScryptoValue, SubstateKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
@@ -8,8 +9,8 @@ use radix_engine_interface::constants::{ACCOUNT_PACKAGE, RESOURCE_PACKAGE};
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::types::{
     AccountPartitionOffset, FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField,
-    PartitionNumber, PartitionOffset, ResourceAddress, TypeInfoField, ACCESS_RULES_BASE_PARTITION,
-    MAIN_BASE_PARTITION, METADATA_KV_STORE_PARTITION, ROYALTY_BASE_PARTITION,
+    PartitionNumber, PartitionOffset, ResourceAddress, TypeInfoField, MAIN_BASE_PARTITION,
+    METADATA_KV_STORE_PARTITION, ROLE_ASSIGNMENT_BASE_PARTITION, ROYALTY_BASE_PARTITION,
     TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
@@ -120,15 +121,15 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                 }
             }
             TypeInfoSubstate::Object(info) => {
-                if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                     && info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_VAULT_BLUEPRINT)
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, LiquidFungibleResource>(
+                        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidFungibleResource>>(
                             &node_id,
                             MAIN_BASE_PARTITION,
                             &FungibleVaultField::LiquidFungible.into(),
@@ -138,17 +139,17 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     self.visitor.visit_fungible_vault(
                         node_id,
                         &ResourceAddress::new_or_panic(info.get_outer_object().into()),
-                        &liquid,
+                        &liquid.value.0,
                     );
-                } else if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                } else if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                     && info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
                 {
                     let liquid = self
                         .substate_db
-                        .get_mapped::<SpreadPrefixKeyMapper, LiquidNonFungibleVault>(
+                        .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<LiquidNonFungibleVault>>(
                             &node_id,
                             MAIN_BASE_PARTITION,
                             &NonFungibleVaultField::LiquidNonFungible.into(),
@@ -158,7 +159,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     self.visitor.visit_non_fungible_vault(
                         node_id,
                         &ResourceAddress::new_or_panic(info.get_outer_object().into()),
-                        &liquid,
+                        &liquid.value.0,
                     );
 
                     let entries = self
@@ -178,7 +179,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     for partition_num in [
                         TYPE_INFO_FIELD_PARTITION,
                         ROYALTY_BASE_PARTITION,
-                        ACCESS_RULES_BASE_PARTITION,
+                        ROLE_ASSIGNMENT_BASE_PARTITION,
                     ] {
                         self.traverse_substates::<FieldKey>(node_id, partition_num, depth)
                     }
@@ -186,8 +187,8 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                         self.traverse_substates::<MapKey>(node_id, partition_num, depth)
                     }
 
-                    if info.blueprint_id.package_address.eq(&ACCOUNT_PACKAGE)
-                        && info.blueprint_id.blueprint_name.eq(ACCOUNT_BLUEPRINT)
+                    if info.main_blueprint_id.package_address.eq(&ACCOUNT_PACKAGE)
+                        && info.main_blueprint_id.blueprint_name.eq(ACCOUNT_BLUEPRINT)
                     {
                         self.traverse_substates::<MapKey>(
                             node_id,

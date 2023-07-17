@@ -4,13 +4,15 @@ use crate::errors::{ApplicationError, RuntimeError};
 use crate::kernel::kernel_api::KernelNodeApi;
 use crate::types::*;
 use crate::{event_schema, roles_template};
-use native_sdk::modules::access_rules::{AccessRules, AccessRulesObject, AttachedAccessRules};
 use native_sdk::modules::metadata::Metadata;
+use native_sdk::modules::role_assignment::{
+    AttachedRoleAssignment, RoleAssignment, RoleAssignmentObject,
+};
 use native_sdk::modules::royalty::ComponentRoyalty;
 use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeVault;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::field_lock_api::LockFlags;
+use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::auth::RoleDefinition;
 use radix_engine_interface::api::node_modules::auth::ToRoleEntry;
 use radix_engine_interface::api::node_modules::metadata::MetadataRoles;
@@ -443,9 +445,9 @@ impl AccessControllerNativePackage {
                     },
                     events,
                     functions: BlueprintFunctionsSchemaInit {
-                        virtual_lazy_load_functions: btreemap!(),
                         functions,
                     },
+                    hooks: BlueprintHooksInit::default(),
                 },
 
                 royalty_config: PackageRoyaltyConfig::default(),
@@ -652,12 +654,12 @@ impl AccessControllerNativePackage {
         );
         let object_id = api.new_simple_object(
             ACCESS_CONTROLLER_BLUEPRINT,
-            vec![scrypto_encode(&substate).unwrap()],
+            vec![FieldValue::new(&substate)],
         )?;
 
         let roles = init_roles_from_rule_set(input.rule_set);
         let roles = btreemap!(ObjectModuleId::Main => roles);
-        let access_rules = AccessRules::create(OwnerRole::None, roles, api)?.0;
+        let role_assignment = RoleAssignment::create(OwnerRole::None, roles, api)?.0;
 
         let metadata = Metadata::create_with_data(
             metadata_init! {
@@ -671,7 +673,7 @@ impl AccessControllerNativePackage {
         api.globalize(
             btreemap!(
                 ObjectModuleId::Main => object_id,
-                ObjectModuleId::AccessRules => access_rules.0,
+                ObjectModuleId::RoleAssignment => role_assignment.0,
                 ObjectModuleId::Metadata => metadata.0,
                 ObjectModuleId::Royalty => royalty.0,
             ),
@@ -838,7 +840,7 @@ impl AccessControllerNativePackage {
             },
         )?;
 
-        update_access_rules(api, receiver, recovery_proposal.rule_set)?;
+        update_role_assignment(api, receiver, recovery_proposal.rule_set)?;
 
         Runtime::emit_event(
             api,
@@ -874,7 +876,7 @@ impl AccessControllerNativePackage {
             },
         )?;
 
-        update_access_rules(api, receiver, recovery_proposal.rule_set)?;
+        update_role_assignment(api, receiver, recovery_proposal.rule_set)?;
 
         Runtime::emit_event(
             api,
@@ -904,7 +906,7 @@ impl AccessControllerNativePackage {
             AccessControllerQuickConfirmPrimaryRoleBadgeWithdrawAttemptStateMachineInput,
         )?;
 
-        update_access_rules(api, receiver, locked_access_rules())?;
+        update_role_assignment(api, receiver, locked_role_assignment())?;
 
         Runtime::emit_event(
             api,
@@ -933,7 +935,7 @@ impl AccessControllerNativePackage {
             AccessControllerQuickConfirmRecoveryRoleBadgeWithdrawAttemptStateMachineInput,
         )?;
 
-        update_access_rules(api, receiver, locked_access_rules())?;
+        update_role_assignment(api, receiver, locked_role_assignment())?;
 
         Runtime::emit_event(
             api,
@@ -969,7 +971,7 @@ impl AccessControllerNativePackage {
         )?;
 
         // Update the access rules
-        update_access_rules(api, receiver, recovery_proposal.rule_set)?;
+        update_role_assignment(api, receiver, recovery_proposal.rule_set)?;
 
         Runtime::emit_event(
             api,
@@ -1164,8 +1166,7 @@ impl AccessControllerNativePackage {
                 api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
 
             let access_controller = {
-                let access_controller: AccessControllerSubstate =
-                    api.field_lock_read_typed(handle)?;
+                let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
                 access_controller
             };
             access_controller.recovery_badge
@@ -1198,7 +1199,7 @@ impl AccessControllerNativePackage {
 // Helpers
 //=========
 
-fn locked_access_rules() -> RuleSet {
+fn locked_role_assignment() -> RuleSet {
     RuleSet {
         primary_role: AccessRule::DenyAll,
         recovery_role: AccessRule::DenyAll,
@@ -1227,13 +1228,13 @@ where
     let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
 
     let access_controller = {
-        let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;
+        let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
         access_controller
     };
 
     let rtn = access_controller.transition(api, input)?;
 
-    api.field_lock_release(handle)?;
+    api.field_close(handle)?;
 
     Ok(rtn)
 }
@@ -1250,22 +1251,22 @@ where
     let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
 
     let mut access_controller = {
-        let access_controller: AccessControllerSubstate = api.field_lock_read_typed(handle)?;
+        let access_controller: AccessControllerSubstate = api.field_read_typed(handle)?;
         access_controller
     };
 
     let rtn = access_controller.transition_mut(api, input)?;
 
     {
-        api.field_lock_write_typed(handle, &access_controller)?;
+        api.field_write_typed(handle, &access_controller)?;
     }
 
-    api.field_lock_release(handle)?;
+    api.field_close(handle)?;
 
     Ok(rtn)
 }
 
-fn update_access_rules<Y>(
+fn update_role_assignment<Y>(
     api: &mut Y,
     receiver: &NodeId,
     rule_set: RuleSet,
@@ -1273,7 +1274,7 @@ fn update_access_rules<Y>(
 where
     Y: ClientApi<RuntimeError>,
 {
-    let attached = AttachedAccessRules(receiver.clone());
+    let attached = AttachedRoleAssignment(receiver.clone());
     attached.set_role(
         ObjectModuleId::Main,
         RoleKey::new("primary"),

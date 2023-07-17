@@ -10,7 +10,7 @@ use transaction::prelude::*;
 #[test]
 fn package_burn_is_only_callable_within_resource_package() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let resource_address = {
         let manifest = ManifestBuilder::new()
             .create_fungible_resource(
@@ -52,7 +52,7 @@ fn package_burn_is_only_callable_within_resource_package() {
 #[test]
 fn can_burn_by_amount_from_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -114,7 +114,7 @@ fn can_burn_by_amount_from_fungible_vault() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -182,7 +182,7 @@ fn can_burn_by_amount_from_non_fungible_vault() {
 #[test]
 fn can_burn_by_ids_from_non_fungible_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -254,7 +254,7 @@ fn can_burn_by_ids_from_non_fungible_vault() {
 #[test]
 fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -320,7 +320,7 @@ fn can_burn_by_amount_from_fungible_vault_with_an_access_rule() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -392,7 +392,7 @@ fn can_burn_by_amount_from_non_fungible_vault_with_an_access_rule() {
 #[test]
 fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -468,7 +468,7 @@ fn can_burn_by_ids_from_non_fungible_vault_with_an_access_rule() {
 #[test]
 fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -533,7 +533,7 @@ fn cant_burn_by_amount_from_fungible_vault_with_an_access_rule_that_is_not_fulfi
 #[test]
 fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -604,7 +604,7 @@ fn cant_burn_by_amount_from_non_fungible_vault_with_an_access_rule_that_is_not_f
 #[test]
 fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulfilled() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let (public_key, _, _) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
@@ -679,7 +679,7 @@ fn cant_burn_by_ids_from_non_fungible_vault_with_an_access_rule_that_is_not_fulf
 #[test]
 fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -741,7 +741,7 @@ fn can_burn_by_amount_from_fungible_vault_of_a_locked_down_resource() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -809,7 +809,7 @@ fn can_burn_by_amount_from_non_fungible_vault_of_a_locked_down_resource() {
 #[test]
 fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let resource_address = {
         let manifest = ManifestBuilder::new()
@@ -881,7 +881,7 @@ fn can_burn_by_ids_from_non_fungible_vault_of_a_locked_down_resource() {
 #[test]
 fn can_burn_by_amount_from_fungible_account_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -930,7 +930,7 @@ fn can_burn_by_amount_from_fungible_account_vault() {
 #[test]
 fn can_burn_by_amount_from_non_fungible_account_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -978,7 +978,7 @@ fn can_burn_by_amount_from_non_fungible_account_vault() {
 #[test]
 fn can_burn_by_ids_from_non_fungible_account_vault() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_account(false);
     let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
     let virtual_signature_rule = rule!(require(virtual_signature_badge.clone()));
@@ -1027,7 +1027,10 @@ fn can_burn_by_ids_from_non_fungible_account_vault() {
     )
 }
 
-fn get_vault_id(test_runner: &mut TestRunner, component_address: ComponentAddress) -> NodeId {
+fn get_vault_id(
+    test_runner: &mut DefaultTestRunner,
+    component_address: ComponentAddress,
+) -> NodeId {
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "vault_id", manifest_args!())
         .build();

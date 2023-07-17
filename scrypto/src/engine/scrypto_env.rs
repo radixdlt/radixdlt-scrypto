@@ -1,6 +1,7 @@
 use crate::engine::wasm_api::*;
 use radix_engine_common::math::Decimal;
 use radix_engine_common::types::GlobalAddressReservation;
+use radix_engine_interface::api::field_api::FieldHandle;
 use radix_engine_interface::api::key_value_entry_api::{
     ClientKeyValueEntryApi, KeyValueEntryHandle,
 };
@@ -8,7 +9,7 @@ use radix_engine_interface::api::key_value_store_api::ClientKeyValueStoreApi;
 use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::system_modules::auth_api::ClientAuthApi;
 use radix_engine_interface::api::{
-    ClientActorApi, ClientCostingApi, ClientFieldLockApi, ClientObjectApi, ObjectHandle,
+    ClientActorApi, ClientCostingApi, ClientFieldApi, ClientObjectApi, FieldValue, ObjectHandle,
 };
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{KVEntry, LockFlags};
@@ -80,7 +81,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn new_simple_object(
         &mut self,
         blueprint_ident: &str,
-        object_states: Vec<Vec<u8>>,
+        object_states: Vec<FieldValue>,
     ) -> Result<NodeId, ClientApiError> {
         let object_states = scrypto_encode(&object_states).unwrap();
 
@@ -100,7 +101,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _blueprint_ident: &str,
         _features: Vec<&str>,
         _schema: Option<InstanceSchema>,
-        _fields: Vec<Vec<u8>>,
+        _fields: Vec<FieldValue>,
         _kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, ClientApiError> {
         unimplemented!("Not available for Scrypto")
@@ -141,7 +142,7 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         _modules: BTreeMap<ObjectModuleId, NodeId>,
         _address_reservation: GlobalAddressReservation,
         _inner_object_blueprint: &str,
-        _inner_object_fields: Vec<Vec<u8>>,
+        _inner_object_fields: Vec<FieldValue>,
     ) -> Result<(GlobalAddress, NodeId), ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
@@ -149,8 +150,8 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
     fn call_method_advanced(
         &mut self,
         receiver: &NodeId,
-        direct_access: bool,
         module_id: ObjectModuleId,
+        direct_access: bool,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, ClientApiError> {
@@ -229,17 +230,11 @@ impl ClientKeyValueEntryApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn key_value_entry_freeze(
-        &mut self,
-        _handle: KeyValueEntryHandle,
-    ) -> Result<(), ClientApiError> {
+    fn key_value_entry_lock(&mut self, _handle: KeyValueEntryHandle) -> Result<(), ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn key_value_entry_release(
-        &mut self,
-        handle: KeyValueEntryHandle,
-    ) -> Result<(), ClientApiError> {
+    fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), ClientApiError> {
         unsafe { kv_entry_release(handle) };
 
         Ok(())
@@ -330,14 +325,14 @@ impl ClientBlueprintApi<ClientApiError> for ScryptoEnv {
     }
 }
 
-impl ClientFieldLockApi<ClientApiError> for ScryptoEnv {
-    fn field_lock_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
+impl ClientFieldApi<ClientApiError> for ScryptoEnv {
+    fn field_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, ClientApiError> {
         let substate = copy_buffer(unsafe { field_lock_read(lock_handle) });
 
         Ok(substate)
     }
 
-    fn field_lock_write(
+    fn field_write(
         &mut self,
         lock_handle: LockHandle,
         buffer: Vec<u8>,
@@ -347,7 +342,11 @@ impl ClientFieldLockApi<ClientApiError> for ScryptoEnv {
         Ok(())
     }
 
-    fn field_lock_release(&mut self, lock_handle: LockHandle) -> Result<(), ClientApiError> {
+    fn field_lock(&mut self, _handle: FieldHandle) -> Result<(), ClientApiError> {
+        unimplemented!("Not available for Scrypto")
+    }
+
+    fn field_close(&mut self, lock_handle: LockHandle) -> Result<(), ClientApiError> {
         unsafe { field_lock_release(lock_handle) };
 
         Ok(())
@@ -374,7 +373,7 @@ impl ClientActorApi<ClientApiError> for ScryptoEnv {
         unimplemented!("Not available for Scrypto")
     }
 
-    fn actor_get_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
+    fn actor_get_object_info(&mut self) -> Result<ObjectInfo, ClientApiError> {
         unimplemented!("Not available for Scrypto")
     }
 

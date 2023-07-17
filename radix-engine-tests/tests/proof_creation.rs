@@ -8,7 +8,7 @@ use transaction::prelude::*;
 
 fn create_proof_internal(function_name: &str, error: Option<&str>) {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof_creation");
 
     // Act
@@ -41,7 +41,7 @@ fn can_create_proof_from_fungible_bucket() {
     create_proof_internal("create_proof_from_fungible_bucket_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_bucket_of_non_fungibles",
-        Some("assertion failed: self.resource_address().as_node_id().is_global_non_fungible_resource_manager()"),
+        Some("Not a non-fungible bucket"),
     );
     create_proof_internal("create_proof_from_fungible_bucket_of_all", None);
 }
@@ -60,7 +60,7 @@ fn can_create_proof_from_fungible_vault() {
     create_proof_internal("create_proof_from_fungible_vault_of_amount", None);
     create_proof_internal(
         "create_proof_from_fungible_vault_of_non_fungibles",
-        Some("assertion failed: self.0.as_node_id().is_internal_non_fungible_vault()"),
+        Some("Not a non-fungible vault"),
     );
 }
 
@@ -96,7 +96,7 @@ fn can_create_proof_from_non_fungible_auth_zone() {
 #[test]
 fn test_create_non_fungible_proof_with_large_amount() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _sk, account) = test_runner.new_account(false);
     let resource_address = test_runner.create_non_fungible_resource(account);
 

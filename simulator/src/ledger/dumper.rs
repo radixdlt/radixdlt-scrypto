@@ -3,7 +3,7 @@ use crate::utils::*;
 use colored::*;
 use radix_engine::blueprints::resource::*;
 use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
-use radix_engine::system::system::KeyValueEntrySubstate;
+use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::network::NetworkDefinition;
@@ -71,11 +71,10 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
                 &TypeInfoField::TypeInfo.into(),
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;
-        let blueprint = match type_info {
+        let blueprint_id = match type_info {
             TypeInfoSubstate::Object(ObjectInfo {
-                blueprint_id: blueprint,
-                ..
-            }) => blueprint,
+                main_blueprint_id, ..
+            }) => main_blueprint_id,
             _ => {
                 panic!("Unexpected")
             }
@@ -86,8 +85,8 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
         let resources = accounter.close();
 
         (
-            blueprint.package_address,
-            blueprint.blueprint_name,
+            blueprint_id.package_address,
+            blueprint_id.blueprint_name,
             resources,
         )
     };
@@ -150,7 +149,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 
     let info = match type_info {
         TypeInfoSubstate::Object(info)
-            if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE) =>
+            if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE) =>
         {
             info
         }
@@ -162,19 +161,21 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     };
 
     if info
-        .blueprint_id
+        .main_blueprint_id
         .blueprint_name
         .eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
     {
         let id_type = substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, NonFungibleIdType>(
+            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<NonFungibleIdType>>(
                 resource_address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &NonFungibleResourceManagerField::IdType.into(),
             )
             .ok_or(EntityDumpError::InvalidStore(
                 "Missing NonFungible IdType".to_string(),
-            ))?;
+            ))?
+            .value
+            .0;
 
         writeln!(
             output,
@@ -186,14 +187,16 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 
         if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
             let total_supply = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, Decimal>(
+                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<Decimal>>(
                     resource_address.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &NonFungibleResourceManagerField::TotalSupply.into(),
                 )
                 .ok_or(EntityDumpError::InvalidStore(
                     "Missing Total Supply".to_string(),
-                ))?;
+                ))?
+                .value
+                .0;
             writeln!(
                 output,
                 "{}: {}",
@@ -203,14 +206,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         }
     } else {
         let divisibility = substate_db
-            .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerDivisibilitySubstate>(
+            .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerDivisibilitySubstate>>(
                 resource_address.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &FungibleResourceManagerField::Divisibility.into(),
             )
             .ok_or(EntityDumpError::InvalidStore(
                 "Missing Divisibility".to_string(),
-            ))?;
+            ))?.value.0;
         writeln!(output, "{}: {}", "Resource Type".green().bold(), "Fungible");
         writeln!(
             output,
@@ -221,14 +224,14 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
 
         if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
             let total_supply = substate_db
-                .get_mapped::<SpreadPrefixKeyMapper, FungibleResourceManagerTotalSupplySubstate>(
+                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>(
                     resource_address.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &FungibleResourceManagerField::TotalSupply.into(),
                 )
                 .ok_or(EntityDumpError::InvalidStore(
                     "Missing Total Supply".to_string(),
-                ))?;
+                ))?.value.0;
             writeln!(
                 output,
                 "{}: {}",

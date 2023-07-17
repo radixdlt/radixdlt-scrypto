@@ -9,7 +9,7 @@ use transaction::prelude::*;
 #[test]
 fn test_trace_resource_transfers() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
     let transfer_amount = 10u8;
@@ -114,7 +114,7 @@ fn test_trace_resource_transfers() {
 #[test]
 fn test_trace_fee_payments() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     // Prepare the component that will pay the fee
@@ -170,7 +170,7 @@ fn test_trace_fee_payments() {
 #[test]
 fn test_instruction_traces() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manifest = ManifestBuilder::new()
@@ -237,8 +237,7 @@ fn test_instruction_traces() {
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                 ident: WORKTOP_PUT_IDENT.to_string(),
             }),
             worktop_put_trace.origin
@@ -249,10 +248,6 @@ fn test_instruction_traces() {
         let input_resource = worktop_put_trace.input.buckets.values().nth(0).unwrap();
         assert_eq!(XRD, input_resource.resource_address());
         assert_eq!(dec!("10000"), input_resource.amount());
-
-        // We're tracking up to depth "1" (default), so no more child traces
-        assert!(free_trace.children.is_empty());
-        assert!(worktop_put_trace.children.is_empty());
     }
 
     {
@@ -264,8 +259,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                 ident: WORKTOP_TAKE_ALL_IDENT.to_string(),
             }),
             trace.origin
@@ -287,8 +281,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: FUNGIBLE_BUCKET_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT),
                 ident: BUCKET_CREATE_PROOF_OF_ALL_IDENT.to_string(),
             }),
             trace.origin
@@ -310,8 +303,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: FUNGIBLE_PROOF_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
                 ident: PROOF_DROP_IDENT.to_string()
             }),
             trace.origin
@@ -333,8 +325,7 @@ fn test_instruction_traces() {
         let trace = traces.get(0).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                 ident: WORKTOP_PUT_IDENT.to_string(),
             }),
             trace.origin
@@ -357,8 +348,7 @@ fn test_instruction_traces() {
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
             TraceOrigin::ScryptoMethod(ApplicationFnIdentifier {
-                package_address: RESOURCE_PACKAGE,
-                blueprint_name: WORKTOP_BLUEPRINT.to_string(),
+                blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, WORKTOP_BLUEPRINT),
                 ident: WORKTOP_DRAIN_IDENT.to_string(),
             }),
             take_trace.origin
@@ -386,7 +376,7 @@ fn test_instruction_traces() {
 #[test]
 fn test_worktop_changes() {
     // Arrange
-    let mut test_runner = TestRunner::builder().build();
+    let mut test_runner = TestRunnerBuilder::new().build();
     let (pk, _, account) = test_runner.new_account(false);
 
     let fungible_resource = test_runner.create_fungible_resource(100.into(), 18, account);

@@ -124,7 +124,7 @@ fn bench_validate_wasm(c: &mut Criterion) {
     let definition: PackageDefinition =
         manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
 
-    c.bench_function("WASM::validate_wasm", |b| {
+    c.bench_function("costing::validate_wasm", |b| {
         b.iter(|| {
             WasmValidator::default()
                 .validate(code, definition.blueprints.values())

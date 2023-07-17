@@ -448,7 +448,7 @@ fn contributing_tokens_that_do_not_belong_to_the_pool_fails() {
 #[test]
 fn creating_a_pool_with_non_fungible_resources_fails() {
     // Arrange
-    let mut test_runner = TestRunner::builder().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let (_, _, account) = test_runner.new_account(false);
 
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
@@ -898,7 +898,7 @@ pub fn contribute_fails_without_proper_authority_present() {
 }
 
 struct TestEnvironment {
-    test_runner: TestRunner,
+    test_runner: DefaultTestRunner,
 
     pool_component_address: ComponentAddress,
     pool_unit_resource_address: ResourceAddress,
@@ -916,7 +916,7 @@ impl TestEnvironment {
     }
 
     pub fn new_with_owner((divisibility1, divisibility2): (u8, u8), owner_role: OwnerRole) -> Self {
-        let mut test_runner = TestRunner::builder().without_trace().build();
+        let mut test_runner = TestRunnerBuilder::new().without_trace().build();
         let (public_key, _, account) = test_runner.new_account(false);
         let virtual_signature_badge = NonFungibleGlobalId::from_public_key(&public_key);
 
