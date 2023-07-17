@@ -374,7 +374,14 @@ where
             &M::on_persist_node,
         )?;
 
-        M::after_move_modules(src_node_id, dest_node_id, &store_access, self)?;
+        M::after_move_modules(
+            src_node_id,
+            src_partition_number,
+            dest_node_id,
+            dest_partition_number,
+            &store_access,
+            self,
+        )?;
 
         Ok(())
     }
@@ -648,7 +655,7 @@ where
             lock_handle,
         )?;
 
-        M::on_close_substate(lock_handle, &store_access, self)?;
+        M::after_close_substate(lock_handle, &store_access, self)?;
 
         Ok(())
     }
@@ -657,20 +664,15 @@ where
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<&IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         let (value, store_access) =
             self.current_frame
                 .read_substate(&mut self.heap, self.store, lock_handle)?;
-        let value_size = value.len();
+        let value = value.clone();
 
-        M::on_read_substate(lock_handle, value_size, &store_access, self)?;
+        M::after_read_substate(lock_handle, value.len(), &store_access, self)?;
 
-        // Double read due to borrow chacker of self.
-        Ok(self
-            .current_frame
-            .read_substate(&mut self.heap, self.store, lock_handle)
-            .unwrap()
-            .0)
+        Ok(value)
     }
 
     #[trace_resources]
@@ -685,7 +687,7 @@ where
             self.current_frame
                 .write_substate(&mut self.heap, self.store, lock_handle, value)?;
 
-        M::on_write_substate(lock_handle, value_size, &store_access, self)
+        M::after_write_substate(lock_handle, value_size, &store_access, self)
     }
 
     #[trace_resources]
@@ -706,7 +708,7 @@ where
             self.store,
         )?;
 
-        M::on_set_substate(value_size, &store_access, self)?;
+        M::after_set_substate(value_size, &store_access, self)?;
 
         Ok(())
     }
@@ -726,7 +728,7 @@ where
             self.store,
         )?;
 
-        M::on_take_substates(&store_access, self)?;
+        M::after_remove_substate(&store_access, self)?;
 
         Ok(substate)
     }
@@ -746,7 +748,7 @@ where
             self.store,
         )?;
 
-        M::on_scan_substates(&store_access, self)?;
+        M::after_scan_sorted_substates(&store_access, self)?;
 
         Ok(substates)
     }
@@ -758,7 +760,7 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, store_access) = self.current_frame.scan_substates(
+        let (substates, store_access) = self.current_frame.scan_substates(
             node_id,
             partition_num,
             count,
@@ -766,9 +768,9 @@ where
             self.store,
         )?;
 
-        M::on_scan_substates(&store_access, self)?;
+        M::after_scan_substates(&store_access, self)?;
 
-        Ok(substeates)
+        Ok(substates)
     }
 
     #[trace_resources]
@@ -778,7 +780,7 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, store_access) = self.current_frame.take_substates(
+        let (substates, store_access) = self.current_frame.take_substates(
             node_id,
             partition_num,
             count,
@@ -786,9 +788,9 @@ where
             self.store,
         )?;
 
-        M::on_take_substates(&store_access, self)?;
+        M::after_take_substates(&store_access, self)?;
 
-        Ok(substeates)
+        Ok(substates)
     }
 }
 

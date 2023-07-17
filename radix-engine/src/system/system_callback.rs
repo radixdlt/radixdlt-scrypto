@@ -158,7 +158,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_open_substate(api, handle, node_id, store_access, size)
     }
 
-    fn on_close_substate<Y>(
+    fn after_close_substate<Y>(
         lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -166,22 +166,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_close_substate(api, lock_handle, store_access)
+        SystemModuleMixer::after_close_substate(api, lock_handle, store_access)
     }
 
-    fn on_read_substate<Y>(
-        lock_handle: LockHandle,
-        value_size: usize,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_read_substate(api, lock_handle, value_size, store_access)
-    }
-
-    fn on_write_substate<Y>(
+    fn after_read_substate<Y>(
         lock_handle: LockHandle,
         value_size: usize,
         store_access: &StoreAccessInfo,
@@ -190,17 +178,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_write_substate(api, lock_handle, value_size, store_access)
+        SystemModuleMixer::after_read_substate(api, lock_handle, value_size, store_access)
     }
 
-    fn on_scan_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_scan_substate(api, store_access)
-    }
-
-    fn on_set_substate<Y>(
+    fn after_write_substate<Y>(
+        lock_handle: LockHandle,
         value_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -208,14 +190,58 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_set_substate(api, value_size, store_access)
+        SystemModuleMixer::after_write_substate(api, lock_handle, value_size, store_access)
     }
 
-    fn on_take_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    fn after_scan_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_take_substates(api, store_access)
+        SystemModuleMixer::after_scan_substates(api, store_access)
+    }
+
+    fn after_scan_sorted_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_scan_sorted_substates(api, store_access)
+    }
+
+    fn after_take_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_take_substates(api, store_access)
+    }
+
+    fn after_set_substate<Y>(
+        value_size: usize,
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_set_substate(api, value_size, store_access)
+    }
+
+    fn after_remove_substate<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_remove_substate(api, store_access)
     }
 
     fn after_create_node<Y>(
@@ -331,14 +357,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn after_move_modules<Y>(
         src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_move_modules(api, src_node_id, dest_node_id, store_access)
+        SystemModuleMixer::after_move_modules(
+            api,
+            src_node_id,
+            src_partition_number,
+            dest_node_id,
+            dest_partition_number,
+            store_access,
+        )
     }
 
     //--------------------------------------------------------------------------
