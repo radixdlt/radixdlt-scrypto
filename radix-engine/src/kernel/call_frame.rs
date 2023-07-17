@@ -9,6 +9,7 @@ use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
+use super::kernel_callback_api::KernelCallbackObject;
 
 /// A message used for communication between call frames.
 ///
@@ -477,15 +478,17 @@ impl<L: Clone> CallFrame<L> {
         Ok((lock_handle, substate_value.len(), store_access))
     }
 
-    pub fn close_substate<S: SubstateStore, F>(
+    pub fn close_substate<S: SubstateStore, F, M>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
+        callback: &mut M,
         filter: &F,
         lock_handle: LockHandle,
     ) -> Result<StoreAccessInfo, CloseSubstateError>
     where
-        F: Fn(&mut Heap, &mut S, &NodeId) -> Result<(), String>,
+        M: KernelCallbackObject,
+        F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
     {
         let substate_lock = self
             .locks
@@ -525,7 +528,7 @@ impl<L: Clone> CallFrame<L> {
 
                     // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
-                        Self::move_node_to_store(heap, store, own, filter)
+                        Self::move_node_to_store(heap, store, callback, filter, own)
                             .map_err(CloseSubstateError::PersistNodeError)?;
                     }
                 }
@@ -681,18 +684,20 @@ impl<L: Clone> CallFrame<L> {
         }
     }
 
-    pub fn create_node<'f, S: SubstateStore, F>(
+    pub fn create_node<'f, S: SubstateStore, F, M>(
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
         heap: &mut Heap,
         store: &'f mut S,
+        callback: &mut M,
         filter: &F,
-        push_to_store: bool,
     ) -> Result<StoreAccessInfo, CreateNodeError>
     where
-        F: Fn(&mut Heap, &mut S, &NodeId) -> Result<(), String>,
+        M: KernelCallbackObject,
+        F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
     {
+        let push_to_store = node_id.is_global();
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
                 //==============
@@ -702,7 +707,7 @@ impl<L: Clone> CallFrame<L> {
                     self.take_node_internal(own)
                         .map_err(CreateNodeError::TakeNodeError)?;
                     if push_to_store {
-                        Self::move_node_to_store(heap, store, own, filter)
+                        Self::move_node_to_store(heap, store, callback, filter, own)
                             .map_err(CreateNodeError::PersistNodeError)?;
                     }
                 }
@@ -794,7 +799,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(node_substates)
     }
 
-    pub fn move_module<'f, S: SubstateStore, F>(
+    pub fn move_module<'f, S: SubstateStore, F, M>(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
@@ -802,10 +807,12 @@ impl<L: Clone> CallFrame<L> {
         dest_partition_number: PartitionNumber,
         heap: &'f mut Heap,
         store: &'f mut S,
+        callback: &mut M,
         filter: &F,
     ) -> Result<StoreAccessInfo, MoveModuleError>
     where
-        F: Fn(&mut Heap, &mut S, &NodeId) -> Result<(), String>,
+        M: KernelCallbackObject,
+        F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
     {
         // Check ownership (and visibility)
         if self.owned_root_nodes.get(src_node_id) != Some(&0) {
@@ -838,7 +845,7 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, own, filter)
+                    Self::move_node_to_store(heap, store, callback, filter, own)
                         .map_err(MoveModuleError::PersistNodeError)?;
                 }
 
@@ -1051,19 +1058,21 @@ impl<L: Clone> CallFrame<L> {
         Ok((substates, store_access))
     }
 
-    pub fn drop_all_locks<S: SubstateStore, F>(
+    pub fn drop_all_locks<S: SubstateStore, F, M>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
+        callback: &mut M,
         filter: &F,
     ) -> Result<(), CloseSubstateError>
     where
-        F: Fn(&mut Heap, &mut S, &NodeId) -> Result<(), String>,
+        M: KernelCallbackObject,
+        F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
     {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
         for lock_handle in lock_handles {
-            self.close_substate(heap, store, filter, lock_handle)?;
+            self.close_substate(heap, store, callback, filter, lock_handle)?;
         }
 
         Ok(())
@@ -1088,16 +1097,18 @@ impl<L: Clone> CallFrame<L> {
         self.owned_root_nodes.keys().cloned().collect()
     }
 
-    pub fn move_node_to_store<S: SubstateStore, F>(
+    pub fn move_node_to_store<S: SubstateStore, F, M>(
         heap: &mut Heap,
         store: &mut S,
-        node_id: &NodeId,
+        callback: &mut M,
         filter: &F,
+        node_id: &NodeId,
     ) -> Result<(), PersistNodeError>
     where
-        F: Fn(&mut Heap, &mut S, &NodeId) -> Result<(), String>,
+        M: KernelCallbackObject,
+        F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
     {
-        filter(heap, store, node_id)
+        filter(heap, store, callback, node_id)
             .map_err(|e| PersistNodeError::NotAllowedToPersist(node_id.clone(), e))?;
 
         let node_substates = match heap.remove_node(node_id) {
@@ -1117,8 +1128,8 @@ impl<L: Clone> CallFrame<L> {
                     }
                 }
 
-                for node in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, node, filter)?;
+                for node_id in substate_value.owned_nodes() {
+                    Self::move_node_to_store(heap, store, callback, filter, node_id)?;
                 }
             }
         }

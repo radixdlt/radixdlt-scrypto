@@ -11,6 +11,7 @@ use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
 use crate::kernel::call_frame::Message;
+use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -21,6 +22,7 @@ use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
+use crate::track::interface::SubstateStore;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -784,9 +786,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
     }
 
-    fn on_persist_node<S: crate::track::interface::SubstateStore>(
-        heap: &mut crate::kernel::heap::Heap,
+    fn on_persist_node<S: SubstateStore, M: KernelCallbackObject>(
+        heap: &mut Heap,
         store: &mut S,
+        callback: &mut M,
         node_id: &NodeId,
     ) -> Result<(), String> {
         let maybe_type_info = if let Some(substate) = heap.get_substate(
@@ -809,22 +812,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             None
         };
 
-        // FIXME replace with blueprint definition lookup
-        let is_persist_allowed = if let Some(type_info) = maybe_type_info {
-            match type_info {
-                TypeInfoSubstate::Object(ObjectInfo {
-                    main_blueprint_id: blueprint_id,
-                    ..
-                }) if blueprint_id.package_address == RESOURCE_PACKAGE
-                    && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                        || blueprint_id.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                        || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
-                        || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
-                {
-                    false
-                }
-                _ => true,
-            }
+        let is_persist_allowed = if let Some(TypeInfoSubstate::Object(ObjectInfo {
+            main_blueprint_id,
+            ..
+        })) = maybe_type_info
+        {
+            true
         } else {
             false
         };
