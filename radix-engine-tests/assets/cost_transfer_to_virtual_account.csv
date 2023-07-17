@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,   0.0754700395,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.06358099,     84.2%
-+ Tipping Cost (XRD)                                                       ,   0.0031790495,      4.2%
+Total Cost (XRD)                                                           ,   0.0754417945,    100.0%
++ Execution Cost (XRD)                                                     ,     0.06355409,     84.2%
++ Tipping Cost (XRD)                                                       ,   0.0031777045,      4.2%
 + State Expansion Cost (XRD)                                               ,        0.00871,     11.5%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        6358099,    100.0%
+Total Cost Units Consumed                                                  ,        6355409,    100.0%
 AfterInvoke                                                                ,            886,      0.0%
 AllocateNodeId                                                             ,          13000,      0.2%
 BeforeInvoke                                                               ,          10740,      0.2%
@@ -28,7 +28,7 @@ ReadSubstate                                                               ,    
 RunNativeCode::Worktop_drain                                               ,          22525,      0.4%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.3%
 RunNativeCode::Worktop_put                                                 ,          24411,      0.4%
-RunNativeCode::create                                                      ,          54027,      0.8%
+RunNativeCode::create                                                      ,          54027,      0.9%
 RunNativeCode::create_empty_vault_FungibleResourceManager                  ,          46810,      0.7%
 RunNativeCode::create_with_data                                            ,          26638,      0.4%
 RunNativeCode::get_amount_FungibleBucket                                   ,           7453,      0.1%
@@ -40,6 +40,6 @@ RunNativeCode::try_deposit_batch_or_abort                                  ,    
 RunNativeCode::withdraw                                                    ,          47564,      0.7%
 StoreAccess                                                                ,        3244165,     51.0%
 TxBaseCost                                                                 ,          50000,      0.8%
-TxPayloadCost                                                              ,          13450,      0.2%
+TxPayloadCost                                                              ,          10760,      0.2%
 TxSignatureVerification                                                    ,           7000,      0.1%
 WriteSubstate                                                              ,          18912,      0.3%
