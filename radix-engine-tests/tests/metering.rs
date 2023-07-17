@@ -698,7 +698,7 @@ impl NonFungibleData for TestNonFungibleData {
 
 #[test]
 /// The large_package blueprint combines toogether two other packages just to provide meaningful content for
-/// a large package of size as close as possible to current limit: 1048576 bytes minus the size of
+/// a large package of size as close as possible to current limit: 1,048,576 bytes minus the size of
 /// SCRYPTO_SBOR_V1_PAYLOAD_PREFIX and the actor size.
 /// If this test fails with an error TransactionLimitsError::MaxInvokePayloadSizeExceeded,
 /// go to `blueprints/large_package/Cargo.toml` file and change `package2` reference package name and path
@@ -708,5 +708,13 @@ impl NonFungibleData for TestNonFungibleData {
 /// `ls -lSk ./radix-engine-tests/tests/blueprints/target/wasm32-unknown-unknown/release/*.wasm`
 fn publish_package_1mib() {
     let mut test_runner = TestRunnerBuilder::new().build();
-    test_runner.compile_and_publish("./tests/blueprints/large_package");
+    // internally validates if publish succeeded
+    test_runner.publish_package(
+        include_bytes!("./assets/large_package.wasm").to_vec(),
+        PackageDefinition {
+            blueprints: btreemap!(),
+        },
+        btreemap!(),
+        OwnerRole::None,
+    );
 }
