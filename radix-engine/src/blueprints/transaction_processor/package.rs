@@ -55,9 +55,9 @@ impl TransactionProcessorNativePackage {
                     },
                     functions: BlueprintFunctionsSchemaInit {
                         functions,
-                        virtual_lazy_load_functions: btreemap!(),
                     },
                     events: BlueprintEventSchemaInit::default(),
+                    hooks: BlueprintHooksInit::default(),
                 },
                 royalty_config: PackageRoyaltyConfig::default(),
                 auth_config: AuthConfig {

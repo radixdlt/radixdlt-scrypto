@@ -191,6 +191,7 @@ impl VmPackageValidation {
                             generics,
                             state: BlueprintStateSchemaInit { collections, .. },
                             functions,
+                            hooks,
                             ..
                         },
                     ..
@@ -223,10 +224,10 @@ impl VmPackageValidation {
                         ));
                     }
 
-                    if !functions.virtual_lazy_load_functions.is_empty() {
+                    if !hooks.hooks.is_empty() {
                         return Err(RuntimeError::ApplicationError(
                             ApplicationError::PackageError(PackageError::WasmUnsupported(
-                                "Lazy load functions not supported".to_string(),
+                                "Hooks not supported".to_string(),
                             )),
                         ));
                     }

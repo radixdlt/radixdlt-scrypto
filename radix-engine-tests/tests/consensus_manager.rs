@@ -5,7 +5,6 @@ use radix_engine::blueprints::resource::BucketError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::*;
 use radix_engine::types::*;
-use radix_engine::vm::NoExtension;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -1567,7 +1566,7 @@ fn register_and_stake_new_validator(
     pub_key: Secp256k1PublicKey,
     account_address: ComponentAddress,
     stake_amount: Decimal,
-    test_runner: &mut TestRunner<NoExtension>,
+    test_runner: &mut DefaultTestRunner,
 ) -> ComponentAddress {
     let validator_address = test_runner.new_validator_with_pub_key(pub_key, account_address);
 
@@ -1695,6 +1694,19 @@ fn low_stakes_should_cause_no_problems() {
     for register_and_stake_type in RegisterAndStakeTransactionType::ALL_TYPES {
         registered_validator_test(register_and_stake_type, 1, 10, 1.into(), 1.into(), true, 2);
     }
+}
+
+#[test]
+fn one_hundred_validators_should_work() {
+    registered_validator_test(
+        RegisterAndStakeTransactionType::RegisterFirst,
+        100,
+        100,
+        1000000.into(),
+        1100000.into(),
+        true,
+        100,
+    );
 }
 
 #[test]

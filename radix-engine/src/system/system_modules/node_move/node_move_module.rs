@@ -1,6 +1,6 @@
 use crate::blueprints::resource::ProofMoveableSubstate;
 use crate::errors::{RuntimeError, SystemModuleError};
-use crate::kernel::actor::{Actor, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -33,21 +33,21 @@ impl NodeMoveModule {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
         match type_info {
             TypeInfoSubstate::Object(info)
-                if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                     && info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if  node_id.eq(info.get_outer_object().as_node_id()))
                 {
                     return Ok(());
                 }
 
-                if matches!(callee, Actor::Function { .. })
-                    && callee.blueprint_id().eq(&info.blueprint_id)
-                {
-                    return Ok(());
+                if let Actor::Function(FunctionActor { blueprint_id, .. }) = callee {
+                    if blueprint_id.eq(&info.main_blueprint_id) {
+                        return Ok(());
+                    }
                 }
 
                 // Change to restricted unless it's moved to auth zone.
@@ -95,21 +95,21 @@ impl NodeMoveModule {
                 }
             }
             TypeInfoSubstate::Object(info)
-                if info.blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
+                if info.main_blueprint_id.package_address.eq(&RESOURCE_PACKAGE)
                     && info
-                        .blueprint_id
+                        .main_blueprint_id
                         .blueprint_name
                         .eq(NON_FUNGIBLE_PROOF_BLUEPRINT) =>
             {
-                if matches!(callee, Actor::Method(MethodActor { node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
+                if matches!(callee, Actor::Method(MethodActor {  node_id, .. }) if node_id.eq(info.get_outer_object().as_node_id()))
                 {
                     return Ok(());
                 }
 
-                if matches!(callee, Actor::Function { .. })
-                    && callee.blueprint_id().eq(&info.blueprint_id)
-                {
-                    return Ok(());
+                if let Actor::Function(FunctionActor { blueprint_id, .. }) = callee {
+                    if blueprint_id.eq(&info.main_blueprint_id) {
+                        return Ok(());
+                    }
                 }
 
                 // Change to restricted unless it's moved to auth zone.

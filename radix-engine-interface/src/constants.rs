@@ -39,7 +39,7 @@ lazy_static! {
             TRANSACTION_PROCESSOR_PACKAGE.into(),
             METADATA_MODULE_PACKAGE.into(),
             ROYALTY_MODULE_PACKAGE.into(),
-            ACCESS_RULES_MODULE_PACKAGE.into(),
+            ROLE_ASSIGNMENT_MODULE_PACKAGE.into(),
             GENESIS_HELPER_PACKAGE.into(),
             FAUCET_PACKAGE.into(),
             POOL_PACKAGE.into(),

@@ -633,8 +633,10 @@ PUBLISH_PACKAGE_ADVANCED
                                 ),
                                 "Radiswap_swap"
                             )
-                        ),
-                        Map<U8, String>()
+                        )
+                    ),
+                    Tuple(
+                        Map<Enum, String>()
                     )
                 ),
                 Enum<0u8>(),
@@ -645,7 +647,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("3e4064bb5b24b1ecc89a3172cc80adc4daa3d47dae9a2d97913806874f1e9f6b")
+    Blob("ad0cd64f22e36057c4e0fd8f00cbd7d9cb70c46d2c3d2ff0ab54231ba3f8f2fd")
     Map<String, Tuple>(
         "description" => Tuple(
             Enum<1u8>(

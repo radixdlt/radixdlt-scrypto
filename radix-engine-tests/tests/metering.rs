@@ -1,7 +1,6 @@
 use radix_engine::system::system_modules::costing::FeeSummary;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine::vm::NoExtension;
 use radix_engine_interface::blueprints::package::PackageDefinition;
 use scrypto::api::node_modules::ModuleConfig;
 use scrypto::prelude::metadata;
@@ -30,8 +29,8 @@ fn update_expected_costs() {
     run_publish_large_package(Mode::OutputCosting(
         "./assets/cost_publish_large_package.csv".to_string(),
     ));
-    run_mint_mid_size_nfts_from_manifest(Mode::OutputCosting(
-        "./assets/cost_mint_mid_size_nfts_from_manifest.csv".to_string(),
+    run_mint_large_size_nfts_from_manifest(Mode::OutputCosting(
+        "./assets/cost_mint_large_size_nfts_from_manifest.csv".to_string(),
     ));
     run_mint_small_size_nfts_from_manifest(Mode::OutputCosting(
         "./assets/cost_mint_small_size_nfts_from_manifest.csv".to_string(),
@@ -74,9 +73,9 @@ fn test_publish_large_package() {
 }
 
 #[test]
-fn test_mint_mid_size_nfts_from_manifest() {
-    run_mint_mid_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_str!(
-        "../assets/cost_mint_mid_size_nfts_from_manifest.csv"
+fn test_mint_large_size_nfts_from_manifest() {
+    run_mint_large_size_nfts_from_manifest(Mode::AssertCosting(load_cost_breakdown(include_str!(
+        "../assets/cost_mint_large_size_nfts_from_manifest.csv"
     ))));
 }
 
@@ -89,7 +88,7 @@ fn test_mint_small_size_nfts_from_manifest() {
 
 #[cfg(feature = "std")]
 fn execute_with_time_logging(
-    test_runner: &mut TestRunner<NoExtension>,
+    test_runner: &mut DefaultTestRunner,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
@@ -105,7 +104,7 @@ fn execute_with_time_logging(
 
 #[cfg(feature = "alloc")]
 fn execute_with_time_logging(
-    test_runner: &mut TestRunner<NoExtension>,
+    test_runner: &mut DefaultTestRunner,
     manifest: TransactionManifestV1,
     proofs: Vec<NonFungibleGlobalId>,
 ) -> (TransactionReceipt, u32) {
@@ -502,19 +501,21 @@ fn run_mint_small_size_nfts_from_manifest(mode: Mode) {
     )
 }
 
-fn run_mint_mid_size_nfts_from_manifest(mode: Mode) {
+fn run_mint_large_size_nfts_from_manifest(mode: Mode) {
+    const N: usize = 50;
+
     run_mint_nfts_from_manifest(
         mode,
         TestNonFungibleData {
             metadata: btreemap!(
-                "Name".to_string() => "Type".to_string(),
-                "Abilities".to_string() => "Lightning Rod".to_string(),
-                "Egg Groups".to_string() => "Field and Fairy or No Eggs Discovered".to_string(),
-                "Hatch time".to_string() => "10 cycles".to_string(),
-                "Height".to_string() => "0.4 m".to_string(),
-                "Weight".to_string() => "6.0 kg".to_string(),
-                "Base experience yield".to_string() => "82".to_string(),
-                "Leveling rate".to_string() => "Medium Fast".to_string(),
+                "Name".to_string() => "Type".repeat(N),
+                "Abilities".to_string() => "Lightning Rod".repeat(N),
+                "Egg Groups".to_string() => "Field and Fairy or No Eggs Discovered".repeat(N),
+                "Hatch time".to_string() => "10 cycles".repeat(N),
+                "Height".to_string() => "0.4 m".repeat(N),
+                "Weight".to_string() => "6.0 kg".repeat(N),
+                "Base experience yield".to_string() => "82".repeat(N),
+                "Leveling rate".to_string() => "Medium Fast".repeat(N),
             ),
         },
     )
@@ -636,7 +637,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     receipt.expect_commit(true);
 }
 
-fn setup_test_runner_with_fee_blueprint_component() -> (TestRunner<NoExtension>, ComponentAddress) {
+fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, ComponentAddress) {
     // Basic setup
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -693,4 +694,27 @@ struct TestNonFungibleData {
 
 impl NonFungibleData for TestNonFungibleData {
     const MUTABLE_FIELDS: &'static [&'static str] = &["metadata"];
+}
+
+#[test]
+/// The large_package blueprint combines toogether two other packages just to provide meaningful content for
+/// a large package of size as close as possible to current limit: 1,048,576 bytes minus the size of
+/// SCRYPTO_SBOR_V1_PAYLOAD_PREFIX and the actor size.
+/// If this test fails with an error TransactionLimitsError::MaxInvokePayloadSizeExceeded,
+/// go to `blueprints/large_package/Cargo.toml` file and change `package2` reference package name and path
+/// some other blueprint, but verify transaction payload size if it is close enough to the limit (it can be
+/// done by checking TxPayloadCost from cost breakdown table divided by payload byte cost, which can be taken
+/// from fee_table.rs tx_payload_cost() function). List of blueprints and its size can be displayed using command
+/// `ls -lSk ./radix-engine-tests/tests/blueprints/target/wasm32-unknown-unknown/release/*.wasm`
+fn publish_package_1mib() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    // internally validates if publish succeeded
+    test_runner.publish_package(
+        include_bytes!("./assets/large_package.wasm").to_vec(),
+        PackageDefinition {
+            blueprints: btreemap!(),
+        },
+        btreemap!(),
+        OwnerRole::None,
+    );
 }

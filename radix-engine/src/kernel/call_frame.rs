@@ -11,7 +11,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
-use super::actor::{Actor, MethodActor};
+use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
 
@@ -292,44 +292,40 @@ impl<L: Clone> CallFrame<L> {
             .map_err(CreateFrameError::PassMessageError)?;
 
         // Make sure actor isn't part of the owned nodes
-        if let Actor::Method(method_actor) = &frame.actor {
-            if frame.owned_root_nodes.contains_key(&method_actor.node_id) {
-                return Err(CreateFrameError::ActorBeingMoved(method_actor.node_id));
+        if let Some(node_id) = frame.actor.node_id() {
+            if frame.owned_root_nodes.contains_key(&node_id) {
+                return Err(CreateFrameError::ActorBeingMoved(node_id));
             }
         }
 
         // Additional global references
         let mut additional_global_refs = Vec::new();
 
-        additional_global_refs.push(frame.actor.package_address().clone().into());
+        if let Some(address) = frame.actor.package_address() {
+            additional_global_refs.push(address.clone().into());
+        }
 
         match &frame.actor {
             Actor::Root => {}
             Actor::Method(MethodActor {
                 global_address,
-                module_object_info: object_info,
+                object_info,
                 instance_context,
                 ..
             }) => {
                 if let Some(global_address) = global_address {
                     additional_global_refs.push(global_address.clone());
                 }
-                if let ObjectBlueprintInfo::Inner { outer_object } = object_info.blueprint_info {
+                if let OuterObjectInfo::Some { outer_object } = object_info.outer_object {
                     additional_global_refs.push(outer_object.clone());
                 }
                 if let Some(instance_context) = instance_context {
                     additional_global_refs.push(instance_context.outer_object.clone());
                 }
             }
-            Actor::Function {
-                blueprint_id: blueprint,
-                ..
-            }
-            | Actor::VirtualLazyLoad {
-                blueprint_id: blueprint,
-                ..
-            } => {
-                additional_global_refs.push(blueprint.package_address.clone().into());
+            Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                additional_global_refs.push(blueprint_id.package_address.clone().into());
             }
         }
 
@@ -1120,13 +1116,13 @@ impl<L: Clone> CallFrame<L> {
             if let Some(type_info) = Self::get_type_info(node_id, heap, store) {
                 match type_info {
                     TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint_id: blueprint,
+                        main_blueprint_id: blueprint_id,
                         ..
-                    }) if blueprint.package_address == RESOURCE_PACKAGE
-                        && (blueprint.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
-                            || blueprint.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
+                    }) if blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint_id.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
+                            || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
+                            || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
                     {
                         false
                     }
@@ -1185,12 +1181,8 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Actor
-        if let Actor::Method(MethodActor {
-            node_id: actor_node_id,
-            ..
-        }) = &self.actor
-        {
-            if actor_node_id == node_id {
+        if let Some(actor_node_id) = self.actor.node_id() {
+            if actor_node_id == *node_id {
                 visibilities.insert(Visibility::Actor);
             }
         }

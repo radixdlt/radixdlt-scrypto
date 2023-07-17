@@ -10,6 +10,7 @@ use radix_engine::{
 };
 use radix_engine_queries::typed_substate_layout::PackageDefinition;
 use sbor::rust::iter;
+use scrypto_unit::TestRunnerBuilder;
 use transaction::{
     prelude::Secp256k1PrivateKey,
     validation::{recover_secp256k1, verify_secp256k1},
@@ -123,7 +124,7 @@ fn bench_validate_wasm(c: &mut Criterion) {
     let definition: PackageDefinition =
         manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
 
-    c.bench_function("WASM::validate_wasm", |b| {
+    c.bench_function("costing::validate_wasm", |b| {
         b.iter(|| {
             WasmValidator::default()
                 .validate(code, definition.blueprints.values())
@@ -134,6 +135,25 @@ fn bench_validate_wasm(c: &mut Criterion) {
     println!("Code length: {}", code.len());
 }
 
+fn bench_prepare_wasm(c: &mut Criterion) {
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let code = include_bytes!("../../assets/radiswap.wasm").to_vec();
+    let package_definition: PackageDefinition =
+        manifest_decode(include_bytes!("../../assets/radiswap.rpd")).unwrap();
+
+    c.bench_function("costing::bench_prepare_wasm", |b| {
+        b.iter(|| {
+            let (pk1, _, _) = test_runner.new_allocated_account();
+            test_runner.publish_package(
+                code.clone(),
+                package_definition.clone(),
+                btreemap!(),
+                OwnerRole::Updatable(rule!(require(NonFungibleGlobalId::from_public_key(&pk1)))),
+            );
+        })
+    });
+}
+
 criterion_group!(
     costing,
     bench_decode_sbor,
@@ -142,5 +162,6 @@ criterion_group!(
     bench_spin_loop,
     bench_instantiate_radiswap,
     bench_validate_wasm,
+    bench_prepare_wasm,
 );
 criterion_main!(costing);

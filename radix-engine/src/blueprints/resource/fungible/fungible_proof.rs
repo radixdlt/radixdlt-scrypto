@@ -1,8 +1,5 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
 use crate::errors::RuntimeError;
-use crate::kernel::kernel_api::KernelSubstateApi;
-use crate::system::system::FieldSubstate;
-use crate::system::system_callback::SystemLockData;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
@@ -50,7 +47,7 @@ impl FungibleProofSubstate {
         })
     }
 
-    pub fn drop_proof<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
+    pub fn teardown<Y: ClientApi<RuntimeError>>(self, api: &mut Y) -> Result<(), RuntimeError> {
         for (container, locked_amount) in &self.evidence {
             api.call_method(
                 container.as_node_id(),
@@ -128,31 +125,31 @@ impl FungibleProofBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let address =
-            ResourceAddress::new_or_panic(api.actor_get_info()?.get_outer_object().into());
+            ResourceAddress::new_or_panic(api.actor_get_object_info()?.get_outer_object().into());
         Ok(address)
     }
 
     pub(crate) fn drop<Y>(proof: Proof, api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
+        Y: ClientApi<RuntimeError>,
     {
-        // TODO: add `drop` callback for drop atomicity, which will remove the necessity of kernel api.
-
-        // Notify underlying buckets/vaults
-        let handle = api.kernel_open_substate(
-            proof.0.as_node_id(),
-            MAIN_BASE_PARTITION,
-            &NonFungibleProofField::ProofRefs.into(),
-            LockFlags::read_only(),
-            SystemLockData::Default,
-        )?;
-        let proof_substate: FieldSubstate<FungibleProofSubstate> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        proof_substate.value.0.drop_proof(api)?;
-        api.kernel_close_substate(handle)?;
-
-        // Drop self
         api.drop_object(proof.0.as_node_id())?;
+
+        Ok(())
+    }
+
+    pub(crate) fn on_drop<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let handle = api.actor_open_field(
+            OBJECT_HANDLE_SELF,
+            FungibleProofField::ProofRefs.into(),
+            LockFlags::MUTABLE,
+        )?;
+        let proof_substate: FungibleProofSubstate = api.field_read_typed(handle)?;
+        proof_substate.teardown(api)?;
+        api.field_close(handle)?;
 
         Ok(())
     }
