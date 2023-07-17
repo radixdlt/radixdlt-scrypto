@@ -239,9 +239,7 @@ where
 
         // Push call frame
         {
-            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, actor, message)
-                .map_err(CallFrameError::CreateFrameError)
-                .map_err(KernelError::CallFrameError)?;
+            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, actor, message)?;
             let parent = mem::replace(&mut self.current_frame, frame);
             self.prev_frame_stack.push(parent);
         }
@@ -253,9 +251,7 @@ where
 
             // Auto drop locks
             self.current_frame
-                .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::CloseSubstateError)
-                .map_err(KernelError::CallFrameError)?;
+                .drop_all_locks(&mut self.heap, self.store)?;
 
             // Run
             let output = M::invoke_upstream(args, self)?;
@@ -263,9 +259,7 @@ where
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
-                .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::CloseSubstateError)
-                .map_err(KernelError::CallFrameError)?;
+                .drop_all_locks(&mut self.heap, self.store)?;
 
             // Handle execution finish
             M::on_execution_finish(&message, self)?;
@@ -278,9 +272,7 @@ where
             let parent = self.prev_frame_stack.last_mut().unwrap();
 
             // Move resource
-            CallFrame::pass_message(&mut self.current_frame, parent, message)
-                .map_err(CallFrameError::PassMessageError)
-                .map_err(KernelError::CallFrameError)?;
+            CallFrame::pass_message(&mut self.current_frame, parent, message)?;
 
             // Auto-drop
             let owned_nodes = self.current_frame.owned_nodes();
@@ -318,11 +310,7 @@ where
         M::before_drop_node(node_id, self)?;
 
         M::on_drop_node(node_id, self)?;
-        let node = self
-            .current_frame
-            .drop_node(&mut self.heap, node_id)
-            .map_err(CallFrameError::DropNodeError)
-            .map_err(KernelError::CallFrameError)?;
+        let node = self.current_frame.drop_node(&mut self.heap, node_id)?;
 
         let total_substate_size = node
             .values()
@@ -354,17 +342,13 @@ where
             .map(|x| x.values().map(|x| x.len()).sum::<usize>())
             .sum::<usize>();
 
-        let store_access = self
-            .current_frame
-            .create_node(
-                node_id,
-                node_substates,
-                &mut self.heap,
-                self.store,
-                node_id.is_global(),
-            )
-            .map_err(CallFrameError::CreateNodeError)
-            .map_err(KernelError::CallFrameError)?;
+        let store_access = self.current_frame.create_node(
+            node_id,
+            node_substates,
+            &mut self.heap,
+            self.store,
+            node_id.is_global(),
+        )?;
 
         M::after_create_node(&node_id, total_substate_size, &store_access, self)?;
 
@@ -379,19 +363,14 @@ where
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        let store_access = self
-            .current_frame
-            .move_module(
-                src_node_id,
-                src_partition_number,
-                dest_node_id,
-                dest_partition_number,
-                &mut self.heap,
-                self.store,
-            )
-            .map_err(CallFrameError::MoveModuleError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+        let store_access = self.current_frame.move_module(
+            src_node_id,
+            src_partition_number,
+            dest_node_id,
+            dest_partition_number,
+            &mut self.heap,
+            self.store,
+        )?;
 
         M::after_move_modules(src_node_id, dest_node_id, &store_access, self)?;
 
@@ -617,38 +596,27 @@ where
                         )?;
 
                         if retry {
-                            self.current_frame
-                                .acquire_lock(
-                                    &mut self.heap,
-                                    self.store,
-                                    &node_id,
-                                    partition_num,
-                                    &substate_key,
-                                    flags,
-                                    None,
-                                    M::LockData::default(),
-                                )
-                                .map_err(CallFrameError::OpenSubstateError)
-                                .map_err(KernelError::CallFrameError)?
+                            self.current_frame.acquire_lock(
+                                &mut self.heap,
+                                self.store,
+                                &node_id,
+                                partition_num,
+                                &substate_key,
+                                flags,
+                                None,
+                                M::LockData::default(),
+                            )?
                         } else {
                             return maybe_lock_handle
                                 .map(|(lock_handle, _, _)| lock_handle)
-                                .map_err(CallFrameError::OpenSubstateError)
-                                .map_err(KernelError::CallFrameError)
-                                .map_err(RuntimeError::KernelError);
+                                .map_err(Into::into);
                         }
                     } else {
-                        return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                            CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(
-                                track_err.clone(),
-                            )),
-                        )));
+                        return Err(OpenSubstateError::TrackError(track_err.clone()).into());
                     }
                 }
                 Err(err) => {
-                    return Err(RuntimeError::KernelError(KernelError::CallFrameError(
-                        CallFrameError::OpenSubstateError(err.clone()),
-                    )));
+                    return Err(err.clone().into());
                 }
             };
 
@@ -671,11 +639,9 @@ where
 
     #[trace_resources]
     fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        let store_access = self
-            .current_frame
-            .close_substate(&mut self.heap, self.store, lock_handle)
-            .map_err(CallFrameError::CloseSubstateError)
-            .map_err(KernelError::CallFrameError)?;
+        let store_access =
+            self.current_frame
+                .close_substate(&mut self.heap, self.store, lock_handle)?;
 
         M::on_close_substate(lock_handle, &store_access, self)?;
 
@@ -687,11 +653,9 @@ where
         &mut self,
         lock_handle: LockHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
-        let (value, store_access) = self
-            .current_frame
-            .read_substate(&mut self.heap, self.store, lock_handle)
-            .map_err(CallFrameError::ReadSubstateError)
-            .map_err(KernelError::CallFrameError)?;
+        let (value, store_access) =
+            self.current_frame
+                .read_substate(&mut self.heap, self.store, lock_handle)?;
         let value_size = value.len();
 
         M::on_read_substate(lock_handle, value_size, &store_access, self)?;
@@ -712,12 +676,9 @@ where
     ) -> Result<(), RuntimeError> {
         let value_size = value.len();
 
-        let store_access = self
-            .current_frame
-            .write_substate(&mut self.heap, self.store, lock_handle, value)
-            .map_err(CallFrameError::WriteSubstateError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+        let store_access =
+            self.current_frame
+                .write_substate(&mut self.heap, self.store, lock_handle, value)?;
 
         M::on_write_substate(lock_handle, value_size, &store_access, self)
     }
@@ -731,19 +692,14 @@ where
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let value_size = value.len();
-        let store_access = self
-            .current_frame
-            .set_substate(
-                node_id,
-                partition_num,
-                substate_key,
-                value,
-                &mut self.heap,
-                self.store,
-            )
-            .map_err(CallFrameError::SetSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+        let store_access = self.current_frame.set_substate(
+            node_id,
+            partition_num,
+            substate_key,
+            value,
+            &mut self.heap,
+            self.store,
+        )?;
 
         M::on_set_substate(value_size, &store_access, self)?;
 
@@ -757,18 +713,13 @@ where
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        let (substate, store_access) = self
-            .current_frame
-            .remove_substate(
-                node_id,
-                partition_num,
-                &substate_key,
-                &mut self.heap,
-                self.store,
-            )
-            .map_err(CallFrameError::RemoveSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+        let (substate, store_access) = self.current_frame.remove_substate(
+            node_id,
+            partition_num,
+            &substate_key,
+            &mut self.heap,
+            self.store,
+        )?;
 
         M::on_take_substates(&store_access, self)?;
 
@@ -782,12 +733,13 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substates, store_access) = self
-            .current_frame
-            .scan_sorted(node_id, partition_num, count, &mut self.heap, self.store)
-            .map_err(CallFrameError::ScanSortedSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+        let (substates, store_access) = self.current_frame.scan_sorted(
+            node_id,
+            partition_num,
+            count,
+            &mut self.heap,
+            self.store,
+        )?;
 
         M::on_scan_substates(&store_access, self)?;
 
@@ -801,12 +753,13 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, store_access) = self
-            .current_frame
-            .scan_substates(node_id, partition_num, count, &mut self.heap, self.store)
-            .map_err(CallFrameError::ScanSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+        let (substeates, store_access) = self.current_frame.scan_substates(
+            node_id,
+            partition_num,
+            count,
+            &mut self.heap,
+            self.store,
+        )?;
 
         M::on_scan_substates(&store_access, self)?;
 
@@ -820,12 +773,13 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        let (substeates, store_access) = self
-            .current_frame
-            .take_substates(node_id, partition_num, count, &mut self.heap, self.store)
-            .map_err(CallFrameError::TakeSubstatesError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+        let (substeates, store_access) = self.current_frame.take_substates(
+            node_id,
+            partition_num,
+            count,
+            &mut self.heap,
+            self.store,
+        )?;
 
         M::on_take_substates(&store_access, self)?;
 

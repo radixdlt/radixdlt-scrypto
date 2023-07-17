@@ -553,3 +553,78 @@ impl From<PassMessageError> for CallFrameError {
         Self::PassMessageError(value)
     }
 }
+
+impl From<MoveModuleError> for CallFrameError {
+    fn from(value: MoveModuleError) -> Self {
+        Self::MoveModuleError(value)
+    }
+}
+
+impl From<ReadSubstateError> for CallFrameError {
+    fn from(value: ReadSubstateError) -> Self {
+        Self::ReadSubstateError(value)
+    }
+}
+
+impl From<WriteSubstateError> for CallFrameError {
+    fn from(value: WriteSubstateError) -> Self {
+        Self::WriteSubstateError(value)
+    }
+}
+
+impl From<CreateNodeError> for CallFrameError {
+    fn from(value: CreateNodeError) -> Self {
+        Self::CreateNodeError(value)
+    }
+}
+
+impl From<DropNodeError> for CallFrameError {
+    fn from(value: DropNodeError) -> Self {
+        Self::DropNodeError(value)
+    }
+}
+
+impl From<CreateFrameError> for CallFrameError {
+    fn from(value: CreateFrameError) -> Self {
+        Self::CreateFrameError(value)
+    }
+}
+
+impl From<CallFrameScanSubstateError> for CallFrameError {
+    fn from(value: CallFrameScanSubstateError) -> Self {
+        Self::ScanSubstatesError(value)
+    }
+}
+
+impl From<CallFrameTakeSortedSubstatesError> for CallFrameError {
+    fn from(value: CallFrameTakeSortedSubstatesError) -> Self {
+        Self::TakeSubstatesError(value)
+    }
+}
+
+impl From<CallFrameScanSortedSubstatesError> for CallFrameError {
+    fn from(value: CallFrameScanSortedSubstatesError) -> Self {
+        Self::ScanSortedSubstatesError(value)
+    }
+}
+
+impl From<CallFrameSetSubstateError> for CallFrameError {
+    fn from(value: CallFrameSetSubstateError) -> Self {
+        Self::SetSubstatesError(value)
+    }
+}
+
+impl From<CallFrameRemoveSubstateError> for CallFrameError {
+    fn from(value: CallFrameRemoveSubstateError) -> Self {
+        Self::RemoveSubstatesError(value)
+    }
+}
+
+impl<T> From<T> for RuntimeError
+where
+    T: Into<CallFrameError>,
+{
+    fn from(value: T) -> Self {
+        Self::KernelError(KernelError::CallFrameError(value.into()))
+    }
+}
