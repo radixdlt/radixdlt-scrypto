@@ -41,10 +41,11 @@ pub enum InstructionIdent {
 
     PopFromAuthZone,
     PushToAuthZone,
-    DropAuthZoneProofs,
     CreateProofFromAuthZoneOfAmount,
     CreateProofFromAuthZoneOfNonFungibles,
     CreateProofFromAuthZoneOfAll,
+    DropAuthZoneProofs,
+    DropAuthZoneRegularProofs,
     DropAuthZoneSignatureProofs,
     CreateProofFromBucketOfAmount,
     CreateProofFromBucketOfNonFungibles,
@@ -124,7 +125,6 @@ impl InstructionIdent {
 
             "POP_FROM_AUTH_ZONE" => InstructionIdent::PopFromAuthZone,
             "PUSH_TO_AUTH_ZONE" => InstructionIdent::PushToAuthZone,
-            "DROP_AUTH_ZONE_PROOFS" => InstructionIdent::DropAuthZoneProofs,
             "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT" => {
                 InstructionIdent::CreateProofFromAuthZoneOfAmount
             }
@@ -132,7 +132,9 @@ impl InstructionIdent {
                 InstructionIdent::CreateProofFromAuthZoneOfNonFungibles
             }
             "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL" => InstructionIdent::CreateProofFromAuthZoneOfAll,
+            "DROP_AUTH_ZONE_PROOFS" => InstructionIdent::DropAuthZoneProofs,
             "DROP_AUTH_ZONE_SIGNATURE_PROOFS" => InstructionIdent::DropAuthZoneSignatureProofs,
+            "DROP_AUTH_ZONE_REGULAR_PROOFS" => InstructionIdent::DropAuthZoneRegularProofs,
 
             "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT" => InstructionIdent::CreateProofFromBucketOfAmount,
             "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES" => {
@@ -519,6 +521,10 @@ impl Parser {
                 proof: self.parse_value()?,
             },
             InstructionIdent::DropAuthZoneProofs => Instruction::DropAuthZoneProofs,
+            InstructionIdent::DropAuthZoneRegularProofs => Instruction::DropAuthZoneRegularProofs,
+            InstructionIdent::DropAuthZoneSignatureProofs => {
+                Instruction::DropAuthZoneSignatureProofs
+            }
             InstructionIdent::CreateProofFromAuthZoneOfAmount => {
                 Instruction::CreateProofFromAuthZoneOfAmount {
                     resource_address: self.parse_value()?,
@@ -538,9 +544,6 @@ impl Parser {
                     resource_address: self.parse_value()?,
                     new_proof: self.parse_value()?,
                 }
-            }
-            InstructionIdent::DropAuthZoneSignatureProofs => {
-                Instruction::DropAuthZoneSignatureProofs
             }
 
             InstructionIdent::CreateProofFromBucketOfAmount => {

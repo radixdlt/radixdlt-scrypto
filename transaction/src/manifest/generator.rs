@@ -351,6 +351,8 @@ where
             InstructionV1::PushToAuthZone { proof_id }
         }
         ast::Instruction::DropAuthZoneProofs => InstructionV1::DropAuthZoneProofs,
+        ast::Instruction::DropAuthZoneRegularProofs => InstructionV1::DropAuthZoneRegularProofs,
+        ast::Instruction::DropAuthZoneSignatureProofs => InstructionV1::DropAuthZoneSignatureProofs,
 
         ast::Instruction::CreateProofFromAuthZoneOfAmount {
             resource_address,
@@ -400,12 +402,6 @@ where
             declare_proof(new_proof, resolver, proof_id)?;
 
             InstructionV1::CreateProofFromAuthZoneOfAll { resource_address }
-        }
-        ast::Instruction::DropAuthZoneSignatureProofs => {
-            id_validator
-                .drop_all_proofs()
-                .map_err(GeneratorError::IdValidationError)?;
-            InstructionV1::DropAuthZoneSignatureProofs
         }
 
         ast::Instruction::BurnResource { bucket } => {

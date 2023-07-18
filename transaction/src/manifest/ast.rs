@@ -48,8 +48,6 @@ pub enum Instruction {
         proof: Value,
     },
 
-    DropAuthZoneProofs,
-
     CreateProofFromAuthZoneOfAmount {
         resource_address: Value,
         amount: Value,
@@ -68,6 +66,10 @@ pub enum Instruction {
     },
 
     DropAuthZoneSignatureProofs,
+
+    DropAuthZoneRegularProofs,
+
+    DropAuthZoneProofs,
 
     CreateProofFromBucketOfAmount {
         bucket: Value,

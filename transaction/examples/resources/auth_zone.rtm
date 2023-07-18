@@ -24,10 +24,15 @@ CALL_METHOD Address("${account_address}") "create_proof_of_amount" Address("${re
 CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT Address("${resource_address}") Decimal("1") Proof("proof4");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES Address("${non_fungible_resource_address}") Array<NonFungibleLocalId>(NonFungibleLocalId("#123#")) Proof("proof5");
 CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL Address("${non_fungible_resource_address}") Proof("proof6");
-DROP_AUTH_ZONE_PROOFS;
 
-# Drop all virtual proofs in the auth zone.
+# Drop all signature proofs in the auth zone.
 DROP_AUTH_ZONE_SIGNATURE_PROOFS;
+
+# Drop all regular proofs in the auth zone.
+DROP_AUTH_ZONE_REGULAR_PROOFS;
+
+# Drop all proofs in the auth zone.
+DROP_AUTH_ZONE_PROOFS;
 
 # Drop all proofs, and move resources to account
 DROP_ALL_PROOFS;

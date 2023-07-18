@@ -200,6 +200,8 @@ impl NotarizedTransactionValidator {
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::DropAuthZoneProofs => {}
+                InstructionV1::DropAuthZoneRegularProofs => {}
+                InstructionV1::DropAuthZoneSignatureProofs => {}
                 InstructionV1::CreateProofFromAuthZoneOfAmount { .. } => {
                     let _ = id_validator
                         .new_proof(ProofKind::AuthZoneProof)
@@ -245,7 +247,6 @@ impl NotarizedTransactionValidator {
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::DropAuthZoneSignatureProofs => {}
                 InstructionV1::CallFunction { args, .. }
                 | InstructionV1::CallMethod { args, .. }
                 | InstructionV1::CallRoyaltyMethod { args, .. }
