@@ -135,7 +135,8 @@ impl Heap {
     }
 
     pub fn close_substate(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey) {
-        self.substate_locks.unlock(handle)
+        let (node_id, partition_num, substate_key, ..) = self.substate_locks.unlock(handle);
+        (node_id, partition_num, substate_key)
     }
 
     /// Reads a substate

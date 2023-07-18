@@ -17,6 +17,11 @@ impl SubstateLocks {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.locks.clear();
+        self.substate_lock_states.clear();
+    }
+
     fn new_lock_handle(
         &mut self,
         node_id: &NodeId,
@@ -33,6 +38,19 @@ impl SubstateLocks {
         new_lock
     }
 
+    pub fn is_locked(
+        &self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> bool {
+        if let Some(state) = self.substate_lock_states.get(&(node_id.clone(), partition_num, substate_key.clone())) {
+            state.is_locked()
+        } else {
+            false
+        }
+    }
+
     pub fn lock(
         &mut self,
         node_id: &NodeId,
@@ -41,7 +59,7 @@ impl SubstateLocks {
         flags: LockFlags,
     ) -> Option<u32> {
         let lock_state = self.substate_lock_states.entry((node_id.clone(), partition_num, substate_key.clone()))
-            .or_insert(SubstateLockState::Read(0));
+            .or_insert(SubstateLockState::no_lock());
         match lock_state.try_lock(flags) {
             Ok(()) => {},
             Err(_) => {
@@ -57,11 +75,11 @@ impl SubstateLocks {
         self.locks.get(&handle).unwrap()
     }
 
-    pub fn unlock(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey) {
-        let (node_id, partition_num, substate_key, _flags) = self.locks.remove(&handle).unwrap();
+    pub fn unlock(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey, LockFlags) {
+        let (node_id, partition_num, substate_key, flags) = self.locks.remove(&handle).unwrap();
         let full_key = (node_id, partition_num, substate_key);
         let lock_state = self.substate_lock_states.get_mut(&full_key).unwrap();
         lock_state.unlock();
-        full_key
+        (full_key.0, full_key.1, full_key.2, flags)
     }
 }

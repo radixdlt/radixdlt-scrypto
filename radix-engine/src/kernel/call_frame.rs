@@ -868,7 +868,9 @@ impl<L: Clone> CallFrame<L> {
                         substate_value,
                         &mut on_store_access,
                     )
-                    .map_err(|e| e.map(MoveModuleError::TrackSetSubstateError))?
+                    .map_err(|e| {
+                        e.map(MoveModuleError::TrackSetSubstateError)
+                    })?
             }
         }
 
