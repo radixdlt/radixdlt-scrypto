@@ -1,5 +1,4 @@
 use scrypto::api::ClientObjectApi;
-use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
 #[blueprint]

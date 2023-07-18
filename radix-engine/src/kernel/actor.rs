@@ -229,6 +229,10 @@ impl Actor {
         }
     }
 
+    pub fn package_address(&self) -> Option<PackageAddress> {
+        self.blueprint_id().map(|id| id.package_address)
+    }
+
     /// Proofs which exist only on the local call frame
     /// FIXME: Update abstractions such that it is based on local call frame
     pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
