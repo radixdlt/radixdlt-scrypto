@@ -151,7 +151,7 @@ EOF
 
     popd > /dev/null
 
-    ./group_crashes.sh $work_dir/$CRASH_INVENTORY_FILE | tee $work_dir/$CRASH_SUMMARY
+    ./process_crash_inventory.sh $work_dir/$CRASH_INVENTORY_FILE | tee $work_dir/$CRASH_SUMMARY
 
 cat <<EOF
 
