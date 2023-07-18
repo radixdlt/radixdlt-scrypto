@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,   0.1055170465,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.09225433,     87.4%
-+ Tipping Cost (XRD)                                                       ,   0.0046127165,      4.4%
+Total Cost (XRD)                                                           ,   0.1054888015,    100.0%
++ Execution Cost (XRD)                                                     ,     0.09222743,     87.4%
++ Tipping Cost (XRD)                                                       ,   0.0046113715,      4.4%
 + State Expansion Cost (XRD)                                               ,        0.00865,      8.2%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        9225433,    100.0%
+Total Cost Units Consumed                                                  ,        9222743,    100.0%
 AfterInvoke                                                                ,            626,      0.0%
 AllocateNodeId                                                             ,          13000,      0.1%
 BeforeInvoke                                                               ,          10802,      0.1%
@@ -19,7 +19,7 @@ MoveModules                                                                ,    
 OpenSubstate::GlobalAccount                                                ,         566302,      6.1%
 OpenSubstate::GlobalFungibleResourceManager                                ,         339152,      3.7%
 OpenSubstate::GlobalNonFungibleResourceManager                             ,          83278,      0.9%
-OpenSubstate::GlobalPackage                                                ,        4543322,     49.2%
+OpenSubstate::GlobalPackage                                                ,        4543322,     49.3%
 OpenSubstate::GlobalVirtualSecp256k1Account                                ,         644032,      7.0%
 OpenSubstate::InternalAccount                                              ,           1324,      0.0%
 OpenSubstate::InternalFungibleVault                                        ,         168400,      1.8%
@@ -40,6 +40,6 @@ RunNativeCode::take_FungibleVault                                          ,    
 RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      0.7%
 RunNativeCode::withdraw                                                    ,          47564,      0.5%
 TxBaseCost                                                                 ,          50000,      0.5%
-TxPayloadCost                                                              ,          13450,      0.1%
+TxPayloadCost                                                              ,          10760,      0.1%
 TxSignatureVerification                                                    ,           7000,      0.1%
 WriteSubstate                                                              ,          18912,      0.2%
