@@ -88,7 +88,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_scan_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn on_scan_keys<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -96,7 +96,9 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_take_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drain_substates<Y>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 

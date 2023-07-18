@@ -68,7 +68,7 @@ pub enum CostingEntry<'a> {
     RemoveSubstateBase,
     ScanSortedSubstatesBase,
     ScanSubstatesBase,
-    TakeSubstatesBase,
+    DrainSubstatesBase,
     StoreAccess {
         store_access: &'a StoreAccess,
     },
@@ -148,7 +148,7 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::RemoveSubstateBase => ft.remove_substate_base_cost(),
             CostingEntry::ScanSubstatesBase => ft.scan_substates_base_cost(),
             CostingEntry::ScanSortedSubstatesBase => ft.scan_sorted_substates_base_cost(),
-            CostingEntry::TakeSubstatesBase => ft.take_substates_base_cost(),
+            CostingEntry::DrainSubstatesBase => ft.drain_substates_base_cost(),
             CostingEntry::StoreAccess { store_access } => ft.store_access_cost(store_access),
             CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),

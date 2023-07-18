@@ -190,35 +190,39 @@ impl Heap {
             .and_then(|s| s.remove(substate_key))
     }
 
-    pub fn scan_substates(
+    /// Scans the keys of a node's partition. On an non-existing node/partition, this
+    /// will return an empty vector
+    pub fn scan_keys(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue> {
+    ) -> Vec<SubstateKey> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
             .and_then(|n| n.substates.get_mut(&partition_num));
         if let Some(substates) = node_substates {
-            let substates: Vec<IndexedScryptoValue> = substates
+            let substates: Vec<SubstateKey> = substates
                 .iter()
-                .map(|(_key, v)| v.clone())
+                .map(|(key, _value)| key.clone())
                 .take(count.try_into().unwrap())
                 .collect();
 
             substates
         } else {
-            vec![] // FIXME: should this just be an error instead?
+            vec![]
         }
     }
 
-    pub fn take_substates(
+    /// Drains the substates from a node's partition. On an non-existing node/partition, this
+    /// will return an empty vector
+    pub fn drain_substates(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Vec<IndexedScryptoValue> {
+    ) -> Vec<(SubstateKey, IndexedScryptoValue)> {
         let node_substates = self
             .nodes
             .get_mut(node_id)
@@ -234,12 +238,12 @@ impl Heap {
 
             for key in keys {
                 let value = substates.remove(&key).unwrap();
-                items.push(value);
+                items.push((key, value));
             }
 
             items
         } else {
-            vec![] // FIXME: should this just be an error instead?
+            vec![]
         }
     }
 

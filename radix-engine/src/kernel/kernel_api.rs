@@ -7,6 +7,7 @@ use crate::system::system_modules::execution_trace::ProofSnapshot;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 // Following the convention of Linux Kernel API, https://www.kernel.org/doc/htmldocs/kernel-api/,
 // all methods are prefixed by the subsystem of kernel.
@@ -128,19 +129,19 @@ pub trait KernelSubstateApi<L> {
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
 
-    fn kernel_scan_substates(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+    ) -> Result<Vec<SubstateKey>, RuntimeError>;
 
-    fn kernel_take_substates(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError>;
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError>;
 }
 
 #[derive(Debug)]
