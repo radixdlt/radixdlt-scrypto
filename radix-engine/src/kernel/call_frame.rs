@@ -13,7 +13,6 @@ use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 
 use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
-use super::kernel_api::LockInfo;
 
 /// A message used for communication between call frames.
 ///
@@ -631,10 +630,10 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<LockInfo<L>> {
-        self.locks.get(&lock_handle).map(|substate_lock| LockInfo {
-            data: substate_lock.data.clone(),
-        })
+    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<L> {
+        self.locks.get(&lock_handle).map(|substate_lock|
+            substate_lock.data.clone()
+        )
     }
 
     pub fn read_substate<'f, S: SubstateStore>(

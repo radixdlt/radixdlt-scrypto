@@ -43,11 +43,6 @@ pub trait KernelNodeApi {
     ) -> Result<(), RuntimeError>;
 }
 
-/// Info regarding the substate locked as well as what type of lock
-pub struct LockInfo<L> {
-    pub data: L,
-}
-
 /// API for managing substates within nodes
 pub trait KernelSubstateApi<L> {
     /// Locks a substate to make available for reading and/or writing
@@ -80,10 +75,10 @@ pub trait KernelSubstateApi<L> {
     }
 
     /// Retrieves info related to a lock
-    fn kernel_get_lock_info(
+    fn kernel_get_lock_data(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<LockInfo<L>, RuntimeError>;
+    ) -> Result<L, RuntimeError>;
 
     /// Drops a lock on some substate, if the lock is writable, updates are flushed to
     /// the store at this point.

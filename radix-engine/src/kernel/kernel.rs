@@ -3,7 +3,7 @@ use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
 use super::kernel_api::{
-    KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi, LockInfo,
+    KernelApi, KernelInternalApi, KernelInvokeApi, KernelNodeApi, KernelSubstateApi,
 };
 use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
@@ -693,10 +693,10 @@ where
     }
 
     #[trace_resources]
-    fn kernel_get_lock_info(
+    fn kernel_get_lock_data(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<LockInfo<M::LockData>, RuntimeError> {
+    ) -> Result<M::LockData, RuntimeError> {
         self.current_frame
             .get_lock_info(lock_handle)
             .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(

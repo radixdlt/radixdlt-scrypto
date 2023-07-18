@@ -1223,7 +1223,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_read(&mut self, handle: FieldHandle) -> Result<Vec<u8>, RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
@@ -1240,7 +1240,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_write(&mut self, handle: FieldHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
 
         match data {
             SystemLockData::Field(FieldLockData::Write {
@@ -1271,7 +1271,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_lock(&mut self, handle: FieldHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
 
         match data {
             SystemLockData::Field(FieldLockData::Write { .. }) => {}
@@ -1292,7 +1292,7 @@ where
     // Costing through kernel
     #[trace_resources]
     fn field_close(&mut self, handle: FieldHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::Field(..) => {}
             _ => {
@@ -1603,7 +1603,7 @@ where
         &mut self,
         handle: KeyValueEntryHandle,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::KeyValueEntry(..) => {}
             _ => {
@@ -1620,7 +1620,7 @@ where
     // Costing through kernel
     // FIXME: Should this release lock or continue allow to mutate entry until lock released?
     fn key_value_entry_lock(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         match data {
             SystemLockData::KeyValueEntry(
                 KeyValueEntryLockData::Write { .. } | KeyValueEntryLockData::BlueprintWrite { .. },
@@ -1667,7 +1667,7 @@ where
         handle: KeyValueEntryHandle,
         buffer: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
 
         let can_own = match data {
             SystemLockData::KeyValueEntry(KeyValueEntryLockData::BlueprintWrite {
@@ -1729,7 +1729,7 @@ where
 
     // Costing through kernel
     fn key_value_entry_close(&mut self, handle: KeyValueEntryHandle) -> Result<(), RuntimeError> {
-        let LockInfo { data, .. } = self.api.kernel_get_lock_info(handle)?;
+        let data = self.api.kernel_get_lock_data(handle)?;
         if !data.is_kv_entry() {
             return Err(RuntimeError::SystemError(SystemError::NotAKeyValueStore));
         }
@@ -2733,11 +2733,11 @@ where
         )
     }
 
-    fn kernel_get_lock_info(
+    fn kernel_get_lock_data(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<LockInfo<SystemLockData>, RuntimeError> {
-        self.api.kernel_get_lock_info(lock_handle)
+    ) -> Result<SystemLockData, RuntimeError> {
+        self.api.kernel_get_lock_data(lock_handle)
     }
 
     fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
