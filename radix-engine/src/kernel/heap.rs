@@ -7,7 +7,7 @@ use radix_engine_interface::blueprints::resource::{
     LockedNonFungibleResource,
 };
 use sbor::rust::collections::btree_map::Entry;
-use crate::track::SubstateLockState;
+use crate::kernel::substate_locks::SubstateLocks;
 
 #[derive(Debug, Default)]
 pub struct HeapNode {
@@ -17,9 +17,7 @@ pub struct HeapNode {
 
 pub struct Heap {
     nodes: NonIterMap<NodeId, HeapNode>,
-    locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,
-    substate_lock_states: NonIterMap<(NodeId, PartitionNumber, SubstateKey), SubstateLockState>,
-    next_lock_id: u32,
+    substate_locks: SubstateLocks,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -45,9 +43,7 @@ impl Heap {
     pub fn new() -> Self {
         Self {
             nodes: NonIterMap::new(),
-            locks: IndexMap::new(),
-            substate_lock_states: NonIterMap::new(),
-            next_lock_id: 0u32,
+            substate_locks: SubstateLocks::new(),
         }
     }
 
@@ -77,30 +73,6 @@ impl Heap {
         }
     }
 
-    fn new_lock_handle(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        substate_key: &SubstateKey,
-        flags: LockFlags,
-    ) -> u32 {
-        let new_lock = self.next_lock_id;
-        self.locks.insert(
-            new_lock,
-            (*node_id, partition_num, substate_key.clone(), flags),
-        );
-        self.next_lock_id += 1;
-        new_lock
-    }
-
-    pub fn close_substate(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey) {
-        let (node_id, partition_num, substate_key, _flags) = self.locks.remove(&handle).unwrap();
-        let full_key = (node_id, partition_num, substate_key);
-        let lock_state = self.substate_lock_states.get_mut(&full_key).unwrap();
-        lock_state.unlock();
-        full_key
-    }
-
     pub fn open_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
@@ -109,6 +81,10 @@ impl Heap {
         flags: LockFlags,
         virtualize: F,
     ) -> Result<u32, HeapOpenSubstateError> {
+        let handle = self.substate_locks.lock(node_id, partition_num, substate_key, flags).ok_or_else(|| {
+            HeapOpenSubstateError::SubstateLocked(node_id.clone(), partition_num, substate_key.clone())
+        })?;
+
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
             return Err(HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode);
         }
@@ -133,21 +109,11 @@ impl Heap {
             }
         }
 
-        let lock_state = self.substate_lock_states.entry((node_id.clone(), partition_num, substate_key.clone())).or_insert(SubstateLockState::Read(0));
-        match lock_state.try_lock(flags) {
-            Ok(()) => {},
-            Err(_) => {
-                return Err(HeapOpenSubstateError::SubstateLocked(node_id.clone(), partition_num, substate_key.clone()));
-            }
-        }
-
-        let handle = self.new_lock_handle(node_id, partition_num, substate_key, flags);
-
         Ok(handle)
     }
 
     pub fn read_substate(&self, handle: u32) -> &IndexedScryptoValue {
-        let (node_id, partition_num, substate_key, _lock_flags) = self.locks.get(&handle).expect("Invalid lock handle.");
+        let (node_id, partition_num, substate_key, _lock_flags) = self.substate_locks.get(handle);
         let value = self.nodes
             .get(node_id)
             .and_then(|node| node.substates.get(partition_num))
@@ -157,8 +123,7 @@ impl Heap {
     }
 
     pub fn write_substate(&mut self, handle: u32, substate: IndexedScryptoValue) {
-        let (node_id, partition_num, substate_key, _lock_flags) = self.locks.get(&handle)
-            .expect("Invalid lock handle.");
+        let (node_id, partition_num, substate_key, _lock_flags) = self.substate_locks.get(handle);
 
         self.nodes
             .entry(node_id.clone())
@@ -167,6 +132,10 @@ impl Heap {
             .entry(partition_num.clone())
             .or_default()
             .insert(substate_key.clone(), substate);
+    }
+
+    pub fn close_substate(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey) {
+        self.substate_locks.unlock(handle)
     }
 
     /// Reads a substate
