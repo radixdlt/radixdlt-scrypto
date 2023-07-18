@@ -1,7 +1,6 @@
 use scrypto::api::field_api::LockFlags;
 use scrypto::api::key_value_entry_api::ClientKeyValueEntryApi;
 use scrypto::api::key_value_store_api::ClientKeyValueStoreApi;
-use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
 #[blueprint]

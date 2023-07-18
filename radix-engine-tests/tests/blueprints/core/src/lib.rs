@@ -1,4 +1,56 @@
+use scrypto::api::object_api::ObjectModuleId;
+use scrypto::api::ClientBlueprintApi;
+use scrypto::api::ClientObjectApi;
 use scrypto::prelude::*;
+
+#[blueprint]
+mod globalize_test {
+    struct GlobalizeTest;
+
+    impl GlobalizeTest {
+        pub fn globalize_in_package(package_address: PackageAddress) {
+            let x = GlobalizeTest {}.instantiate();
+
+            ScryptoEnv
+                .call_function(
+                    package_address,
+                    "GlobalizeTest",
+                    "globalize",
+                    scrypto_args!(x),
+                )
+                .unwrap();
+        }
+
+        pub fn globalize(x: Own) {
+            let modules = btreemap!(
+                ObjectModuleId::Main => x.0,
+                ObjectModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
+                ObjectModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
+            );
+
+            let _ = ScryptoEnv.globalize(modules, None).unwrap();
+        }
+    }
+}
+
+#[blueprint]
+mod drop_test {
+    struct DropTest;
+
+    impl DropTest {
+        pub fn drop_in_package(package_address: PackageAddress) {
+            let x = DropTest {}.instantiate();
+
+            ScryptoEnv
+                .call_function(package_address, "DropTest", "drop", scrypto_args!(x))
+                .unwrap();
+        }
+
+        pub fn drop(x: Own) {
+            let _ = ScryptoEnv.drop_object(&x.0);
+        }
+    }
+}
 
 #[blueprint]
 mod move_test {
