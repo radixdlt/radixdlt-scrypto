@@ -824,7 +824,7 @@ where
         let (substates, store_access) = self
             .current_frame
             .drain_substates::<K, _>(node_id, partition_num, count, &mut self.heap, self.store)
-            .map_err(CallFrameError::TakeSubstatesError)
+            .map_err(CallFrameError::DrainSubstatesError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
