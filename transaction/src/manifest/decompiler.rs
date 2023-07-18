@@ -265,7 +265,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         InstructionV1::PushToAuthZone { proof_id } => {
             ("PUSH_TO_AUTH_ZONE", to_manifest_value(&(proof_id,))?)
         }
-        InstructionV1::ClearAuthZone => ("CLEAR_AUTH_ZONE", to_manifest_value_and_unwrap!(&())),
+        InstructionV1::DropAuthZoneProofs => ("DROP_AUTH_ZONE_PROOFS", to_manifest_value_and_unwrap!(&())),
         InstructionV1::CreateProofFromAuthZoneOfAmount {
             resource_address,
             amount,

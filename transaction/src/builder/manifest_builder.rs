@@ -367,8 +367,8 @@ impl ManifestBuilder {
     }
 
     /// Clears the auth zone.
-    pub fn clear_auth_zone(self) -> Self {
-        self.add_instruction(InstructionV1::ClearAuthZone)
+    pub fn drop_auth_zone_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneProofs)
     }
 
     /// Creates proof from the auth zone by amount.

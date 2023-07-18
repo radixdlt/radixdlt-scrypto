@@ -190,7 +190,7 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                InstructionV1::ClearAuthZone => {
+                InstructionV1::DropAuthZoneProofs => {
                     LocalAuthZone::clear(api)?;
                     InstructionOutput::None
                 }
@@ -378,7 +378,7 @@ impl TransactionProcessorBlueprint {
                     )
                 }
                 InstructionV1::DropAllProofs => {
-                    // NB: the difference between DROP_ALL_PROOFS and CLEAR_AUTH_ZONE is that
+                    // NB: the difference between DROP_ALL_PROOFS and DROP_AUTH_ZONE_PROOFS is that
                     // the former will drop all named proofs before clearing the auth zone.
 
                     for (_, real_id) in processor.proof_mapping.drain(..) {

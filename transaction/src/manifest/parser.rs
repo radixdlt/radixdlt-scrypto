@@ -41,7 +41,7 @@ pub enum InstructionIdent {
 
     PopFromAuthZone,
     PushToAuthZone,
-    ClearAuthZone,
+    DropAuthZoneProofs,
     CreateProofFromAuthZoneOfAmount,
     CreateProofFromAuthZoneOfNonFungibles,
     CreateProofFromAuthZoneOfAll,
@@ -124,7 +124,7 @@ impl InstructionIdent {
 
             "POP_FROM_AUTH_ZONE" => InstructionIdent::PopFromAuthZone,
             "PUSH_TO_AUTH_ZONE" => InstructionIdent::PushToAuthZone,
-            "CLEAR_AUTH_ZONE" => InstructionIdent::ClearAuthZone,
+            "DROP_AUTH_ZONE_PROOFS" => InstructionIdent::DropAuthZoneProofs,
             "CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT" => {
                 InstructionIdent::CreateProofFromAuthZoneOfAmount
             }
@@ -518,7 +518,7 @@ impl Parser {
             InstructionIdent::PushToAuthZone => Instruction::PushToAuthZone {
                 proof: self.parse_value()?,
             },
-            InstructionIdent::ClearAuthZone => Instruction::ClearAuthZone,
+            InstructionIdent::DropAuthZoneProofs => Instruction::DropAuthZoneProofs,
             InstructionIdent::CreateProofFromAuthZoneOfAmount => {
                 Instruction::CreateProofFromAuthZoneOfAmount {
                     resource_address: self.parse_value()?,

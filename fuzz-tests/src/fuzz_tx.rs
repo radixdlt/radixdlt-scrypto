@@ -300,8 +300,8 @@ impl TxFuzzer {
                         args: manifest_args!().into(),
                     })
                 }
-                // ClearAuthZone
-                12 => Some(InstructionV1::ClearAuthZone),
+                // DropAuthZoneProofs
+                12 => Some(InstructionV1::DropAuthZoneProofs),
                 // ClearSignatureProofs
                 13 => Some(InstructionV1::ClearSignatureProofs),
                 // CloneProof

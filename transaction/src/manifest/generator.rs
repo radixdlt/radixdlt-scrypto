@@ -350,7 +350,7 @@ where
                 .map_err(GeneratorError::IdValidationError)?;
             InstructionV1::PushToAuthZone { proof_id }
         }
-        ast::Instruction::ClearAuthZone => InstructionV1::ClearAuthZone,
+        ast::Instruction::DropAuthZoneProofs => InstructionV1::DropAuthZoneProofs,
 
         ast::Instruction::CreateProofFromAuthZoneOfAmount {
             resource_address,

@@ -48,7 +48,7 @@ pub enum Instruction {
         proof: Value,
     },
 
-    ClearAuthZone,
+    DropAuthZoneProofs,
 
     CreateProofFromAuthZoneOfAmount {
         resource_address: Value,

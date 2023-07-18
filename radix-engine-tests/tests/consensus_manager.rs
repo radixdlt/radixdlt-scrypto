@@ -2781,7 +2781,7 @@ fn test_tips_and_fee_distribution_single_validator() {
 
     // Do some transaction
     let receipt1 = test_runner
-        .execute_manifest_ignoring_fee(ManifestBuilder::new().clear_auth_zone().build(), vec![]);
+        .execute_manifest_ignoring_fee(ManifestBuilder::new().drop_auth_zone_proofs().build(), vec![]);
     let result1 = receipt1.expect_commit_success();
 
     // Advance epoch
@@ -2841,7 +2841,7 @@ fn test_tips_and_fee_distribution_two_validators() {
 
     // Do some transaction
     let receipt1 = test_runner
-        .execute_manifest_ignoring_fee(ManifestBuilder::new().clear_auth_zone().build(), vec![]);
+        .execute_manifest_ignoring_fee(ManifestBuilder::new().drop_auth_zone_proofs().build(), vec![]);
     let result1 = receipt1.expect_commit_success();
 
     // Advance epoch
