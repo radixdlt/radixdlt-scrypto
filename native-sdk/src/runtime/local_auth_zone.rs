@@ -28,7 +28,9 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn clear<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(api: &mut Y) -> Result<(), E>
+    pub fn drop_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        api: &mut Y,
+    ) -> Result<(), E>
     where
         Y: ClientApi<E>,
     {
@@ -36,7 +38,22 @@ impl LocalAuthZone {
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_DROP_PROOFS_IDENT,
-            scrypto_encode(&AuthZoneClearInput {}).unwrap(),
+            scrypto_encode(&AuthZoneDropProofsInput {}).unwrap(),
+        )?;
+        Ok(scrypto_decode(&rtn).unwrap())
+    }
+
+    pub fn drop_auth_zone_regular_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: ClientApi<E>,
+    {
+        let auth_zone = api.get_auth_zone()?;
+        let rtn = api.call_method(
+            &auth_zone,
+            AUTH_ZONE_DROP_REGULAR_PROOFS_IDENT,
+            scrypto_encode(&AuthZoneDropRegularProofsInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }
@@ -51,7 +68,7 @@ impl LocalAuthZone {
         let rtn = api.call_method(
             &auth_zone,
             AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT,
-            scrypto_encode(&AuthZoneClearVirtualProofsInput {}).unwrap(),
+            scrypto_encode(&AuthZoneDropSignatureProofsInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
     }

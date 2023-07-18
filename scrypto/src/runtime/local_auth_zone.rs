@@ -103,7 +103,7 @@ impl LocalAuthZone {
             .call_method(
                 &node_id,
                 AUTH_ZONE_DROP_PROOFS_IDENT,
-                scrypto_encode(&AuthZoneClearInput {}).unwrap(),
+                scrypto_encode(&AuthZoneDropProofsInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

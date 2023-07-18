@@ -191,7 +191,7 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 InstructionV1::DropAuthZoneProofs => {
-                    LocalAuthZone::clear(api)?;
+                    LocalAuthZone::drop_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::DropAuthZoneSignatureProofs => {
@@ -385,7 +385,7 @@ impl TransactionProcessorBlueprint {
                         let proof = Proof(Own(real_id));
                         proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
-                    LocalAuthZone::clear(api)?;
+                    LocalAuthZone::drop_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::AllocateGlobalAddress {
