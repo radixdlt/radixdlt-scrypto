@@ -902,7 +902,7 @@ where
             .map_err(|e| match e {
                 CallbackError::CallbackError(e) => e,
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::TakeSubstatesError(e),
+                    CallFrameError::DrainSubstatesError(e),
                 )),
             })?;
 
