@@ -411,15 +411,9 @@ impl<L: Clone> CallFrame<L> {
         let (substate_value, substate_store_handle) = if heap.contains_node(node_id) {
             // FIXME: we will have to move locking logic to heap because references moves between frames.
             let handle = heap
-                .open_substate_virtualize(
-                    node_id,
-                    partition_num,
-                    substate_key,
-                    flags,
-                    || {
-                        default.map(|f| f())
-                    },
-                )
+                .open_substate_virtualize(node_id, partition_num, substate_key, flags, || {
+                    default.map(|f| f())
+                })
                 .map_err(|e| CallbackError::Error(OpenSubstateError::HeapError(e)))?;
             let value = heap.read_substate(handle);
 
@@ -506,7 +500,10 @@ impl<L: Clone> CallFrame<L> {
             .ok_or_else(|| CallbackError::Error(CloseSubstateError::LockNotFound(lock_handle)))?;
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
-            let substate_is_in_store = matches!(substate_lock.substate_store_handle, SubstateStoreHandle::Store(..));
+            let substate_is_in_store = matches!(
+                substate_lock.substate_store_handle,
+                SubstateStoreHandle::Store(..)
+            );
             let substate = match substate_lock.substate_store_handle {
                 SubstateStoreHandle::Heap(handle) => heap.read_substate(handle),
                 SubstateStoreHandle::Store(handle) => store.read_substate(handle),
@@ -614,12 +611,8 @@ impl<L: Clone> CallFrame<L> {
 
         // Release track lock
         let (node_id, ..) = match substate_lock.substate_store_handle {
-            SubstateStoreHandle::Heap(handle) => {
-                heap.close_substate(handle)
-            }
-            SubstateStoreHandle::Store(handle) => {
-                store.close_substate(handle)
-            }
+            SubstateStoreHandle::Heap(handle) => heap.close_substate(handle),
+            SubstateStoreHandle::Store(handle) => store.close_substate(handle),
         };
 
         // Update node lock count
@@ -631,9 +624,9 @@ impl<L: Clone> CallFrame<L> {
     }
 
     pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<L> {
-        self.locks.get(&lock_handle).map(|substate_lock|
-            substate_lock.data.clone()
-        )
+        self.locks
+            .get(&lock_handle)
+            .map(|substate_lock| substate_lock.data.clone())
     }
 
     pub fn read_substate<'f, S: SubstateStore>(
@@ -679,9 +672,7 @@ impl<L: Clone> CallFrame<L> {
         }
 
         match substate_store_handle {
-            SubstateStoreHandle::Heap(handle) => {
-                heap.write_substate(*handle, substate)
-            }
+            SubstateStoreHandle::Heap(handle) => heap.write_substate(*handle, substate),
             SubstateStoreHandle::Store(handle) => {
                 store.write_substate(*handle, substate);
             }
@@ -868,9 +859,7 @@ impl<L: Clone> CallFrame<L> {
                         substate_value,
                         &mut on_store_access,
                     )
-                    .map_err(|e| {
-                        e.map(MoveModuleError::TrackSetSubstateError)
-                    })?
+                    .map_err(|e| e.map(MoveModuleError::TrackSetSubstateError))?
             }
         }
 

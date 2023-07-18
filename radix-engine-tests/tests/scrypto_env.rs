@@ -60,12 +60,21 @@ fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
 
     // Assert
     receipt.expect_specific_failure(|e| match e {
-        RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::OpenSubstateError(e))) => {
+        RuntimeError::KernelError(KernelError::CallFrameError(
+            CallFrameError::OpenSubstateError(e),
+        )) => {
             if heap {
-                matches!(e, OpenSubstateError::HeapError(HeapOpenSubstateError::SubstateLocked(..)))
+                matches!(
+                    e,
+                    OpenSubstateError::HeapError(HeapOpenSubstateError::SubstateLocked(..))
+                )
             } else {
                 match e {
-                    OpenSubstateError::TrackError(e) if matches!(e.as_ref(), TrackOpenSubstateError::SubstateLocked(..)) => true,
+                    OpenSubstateError::TrackError(e)
+                        if matches!(e.as_ref(), TrackOpenSubstateError::SubstateLocked(..)) =>
+                    {
+                        true
+                    }
                     _ => false,
                 }
             }

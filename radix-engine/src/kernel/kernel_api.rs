@@ -75,10 +75,7 @@ pub trait KernelSubstateApi<L> {
     }
 
     /// Retrieves info related to a lock
-    fn kernel_get_lock_data(
-        &mut self,
-        lock_handle: LockHandle,
-    ) -> Result<L, RuntimeError>;
+    fn kernel_get_lock_data(&mut self, lock_handle: LockHandle) -> Result<L, RuntimeError>;
 
     /// Drops a lock on some substate, if the lock is writable, updates are flushed to
     /// the store at this point.

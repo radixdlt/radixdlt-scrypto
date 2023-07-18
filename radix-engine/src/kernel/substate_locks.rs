@@ -1,6 +1,54 @@
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
-use crate::track::SubstateLockState;
+
+pub struct SubstateLockError;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Sbor)]
+pub enum SubstateLockState {
+    Read(usize),
+    Write,
+}
+
+impl SubstateLockState {
+    fn no_lock() -> Self {
+        Self::Read(0)
+    }
+
+    fn is_locked(&self) -> bool {
+        !matches!(self, SubstateLockState::Read(0usize))
+    }
+
+    fn try_lock(&mut self, flags: LockFlags) -> Result<(), SubstateLockError> {
+        match self {
+            SubstateLockState::Read(n) => {
+                if flags.contains(LockFlags::MUTABLE) {
+                    if *n != 0 {
+                        return Err(SubstateLockError);
+                    }
+                    *self = SubstateLockState::Write;
+                } else {
+                    *n = *n + 1;
+                }
+            }
+            SubstateLockState::Write => {
+                return Err(SubstateLockError);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn unlock(&mut self) {
+        match self {
+            SubstateLockState::Read(n) => {
+                *n = *n - 1;
+            }
+            SubstateLockState::Write => {
+                *self = SubstateLockState::no_lock();
+            }
+        }
+    }
+}
 
 pub struct SubstateLocks {
     locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,
@@ -44,7 +92,10 @@ impl SubstateLocks {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> bool {
-        if let Some(state) = self.substate_lock_states.get(&(node_id.clone(), partition_num, substate_key.clone())) {
+        if let Some(state) =
+            self.substate_lock_states
+                .get(&(node_id.clone(), partition_num, substate_key.clone()))
+        {
             state.is_locked()
         } else {
             false
@@ -58,10 +109,12 @@ impl SubstateLocks {
         substate_key: &SubstateKey,
         flags: LockFlags,
     ) -> Option<u32> {
-        let lock_state = self.substate_lock_states.entry((node_id.clone(), partition_num, substate_key.clone()))
+        let lock_state = self
+            .substate_lock_states
+            .entry((node_id.clone(), partition_num, substate_key.clone()))
             .or_insert(SubstateLockState::no_lock());
         match lock_state.try_lock(flags) {
-            Ok(()) => {},
+            Ok(()) => {}
             Err(_) => {
                 return None;
             }

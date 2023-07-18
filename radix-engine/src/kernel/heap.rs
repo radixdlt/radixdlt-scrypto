@@ -1,4 +1,5 @@
 use crate::blueprints::resource::*;
+use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
@@ -7,7 +8,6 @@ use radix_engine_interface::blueprints::resource::{
     LockedNonFungibleResource,
 };
 use sbor::rust::collections::btree_map::Entry;
-use crate::kernel::substate_locks::SubstateLocks;
 
 #[derive(Debug, Default)]
 pub struct HeapNode {
@@ -81,9 +81,16 @@ impl Heap {
         flags: LockFlags,
         virtualize: F,
     ) -> Result<u32, HeapOpenSubstateError> {
-        let handle = self.substate_locks.lock(node_id, partition_num, substate_key, flags).ok_or_else(|| {
-            HeapOpenSubstateError::SubstateLocked(node_id.clone(), partition_num, substate_key.clone())
-        })?;
+        let handle = self
+            .substate_locks
+            .lock(node_id, partition_num, substate_key, flags)
+            .ok_or_else(|| {
+                HeapOpenSubstateError::SubstateLocked(
+                    node_id.clone(),
+                    partition_num,
+                    substate_key.clone(),
+                )
+            })?;
 
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
             return Err(HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode);
@@ -114,10 +121,12 @@ impl Heap {
 
     pub fn read_substate(&self, handle: u32) -> &IndexedScryptoValue {
         let (node_id, partition_num, substate_key, _lock_flags) = self.substate_locks.get(handle);
-        let value = self.nodes
+        let value = self
+            .nodes
             .get(node_id)
             .and_then(|node| node.substates.get(partition_num))
-            .and_then(|module_substates| module_substates.get(substate_key)).unwrap();
+            .and_then(|module_substates| module_substates.get(substate_key))
+            .unwrap();
 
         value
     }
