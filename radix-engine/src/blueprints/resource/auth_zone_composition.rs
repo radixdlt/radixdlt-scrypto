@@ -154,15 +154,15 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
     // calculate the max locked amount of each container
     let mut max = BTreeMap::<LocalRef, Decimal>::new();
     for proof in proofs {
-        let info = api.get_node_object_info(proof.0.as_node_id())?;
+        let info = api.get_object_info(proof.0.as_node_id())?;
 
         if info
-            .main_blueprint_info
+            .blueprint_info
             .blueprint_id
             .blueprint_name
             .eq(FUNGIBLE_PROOF_BLUEPRINT)
         {
-            let proof_resource = ResourceAddress::new_or_panic(info.get_main_outer_object().into());
+            let proof_resource = ResourceAddress::new_or_panic(info.get_outer_object().into());
             if proof_resource == resource_address {
                 let handle = api.kernel_open_substate(
                     proof.0.as_node_id(),
@@ -208,14 +208,14 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
     // calculate the max locked non-fungibles of each container
     let mut per_container = NonIterMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
     for proof in proofs {
-        let info = api.get_node_object_info(proof.0.as_node_id())?;
+        let info = api.get_object_info(proof.0.as_node_id())?;
         if info
-            .main_blueprint_info
+            .blueprint_info
             .blueprint_id
             .blueprint_name
             .eq(NON_FUNGIBLE_PROOF_BLUEPRINT)
         {
-            let proof_resource = ResourceAddress::new_or_panic(info.get_main_outer_object().into());
+            let proof_resource = ResourceAddress::new_or_panic(info.get_outer_object().into());
             if proof_resource == resource_address {
                 let handle = api.kernel_open_substate(
                     proof.0.as_node_id(),

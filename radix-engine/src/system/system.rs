@@ -691,13 +691,13 @@ where
 
         let mut node_substates = btreemap!(
             TYPE_INFO_FIELD_PARTITION => type_info_partition(
-                TypeInfoSubstate::Object(NodeObjectInfo {
+                TypeInfoSubstate::Object(ObjectInfo {
                     global:false,
                     module_versions: btreemap!(
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),
 
-                    main_blueprint_info: BlueprintObjectInfo {
+                    blueprint_info: BlueprintInfo {
                         blueprint_id: blueprint_id.clone(),
                         outer_obj_info,
                         features: object_features,
@@ -741,14 +741,14 @@ where
         Ok(current_value)
     }
 
-    pub fn get_blueprint_object_info(
+    pub fn get_blueprint_info(
         &mut self,
         node_id: &NodeId,
         module_id: ObjectModuleId,
-    ) -> Result<BlueprintObjectInfo, RuntimeError> {
+    ) -> Result<BlueprintInfo, RuntimeError> {
         let info = match module_id {
-            ObjectModuleId::Main => self.get_node_object_info(node_id)?.main_blueprint_info,
-            _ => BlueprintObjectInfo {
+            ObjectModuleId::Main => self.get_object_info(node_id)?.blueprint_info,
+            _ => BlueprintInfo {
                 blueprint_id: module_id.static_blueprint().unwrap(),
                 outer_obj_info: OuterObjectInfo::Outer,
                 features: BTreeSet::default(),
@@ -770,15 +770,22 @@ where
 
         let object_id = match actor_object_type {
             ActorObjectType::OuterObject => {
-                let node_id = object_id.0;
                 let module_id = object_id.1;
-                let object_info = self.get_node_object_info(&node_id)?;
-                let address = object_info.try_get_outer_object(module_id).ok_or_else(|| {
-                    RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist)
-                })?;
 
-                // TODO: This is currently assuming all outer objects are under the main module
-                (address.into_node_id(), ObjectModuleId::Main)
+                match module_id {
+                    ObjectModuleId::Main => {
+                        let node_id = object_id.0;
+                        let object_info = self.get_object_info(&node_id)?;
+                        let address = object_info.try_get_outer_object().ok_or_else(|| {
+                            RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist)
+                        })?;
+
+                        (address.into_node_id(), ObjectModuleId::Main)
+                    }
+                    _ => {
+                        return Err(RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist));
+                    }
+                }
             }
             ActorObjectType::SELF => object_id,
         };
@@ -794,12 +801,12 @@ where
             NodeId,
             ObjectModuleId,
             BlueprintInterface,
-            BlueprintObjectInfo,
+            BlueprintInfo,
         ),
         RuntimeError,
     > {
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
-        let blueprint_info = self.get_blueprint_object_info(&node_id, module_id)?;
+        let blueprint_info = self.get_blueprint_info(&node_id, module_id)?;
         let blueprint_interface =
             self.get_blueprint_default_interface(blueprint_info.blueprint_id.clone())?;
 
@@ -960,8 +967,8 @@ where
             )))?;
 
         Ok(self
-            .get_node_object_info(node_id)?
-            .main_blueprint_info
+            .get_object_info(node_id)?
+            .blueprint_info
             .blueprint_id)
     }
 
@@ -1052,7 +1059,7 @@ where
             );
 
         // Read the type info
-        let mut node_object_info = self.get_node_object_info(&node_id)?;
+        let mut node_object_info = self.get_object_info(&node_id)?;
 
         // Verify can globalize with address
         {
@@ -1062,7 +1069,7 @@ where
                 )));
             }
             if !node_object_info
-                .main_blueprint_info
+                .blueprint_info
                 .blueprint_id
                 .eq(&reserved_blueprint_id)
             {
@@ -1084,7 +1091,7 @@ where
 
         let num_main_partitions = {
             let interface = self.get_blueprint_default_interface(
-                node_object_info.main_blueprint_info.blueprint_id.clone(),
+                node_object_info.blueprint_info.blueprint_id.clone(),
             )?;
             interface.state.num_partitions()
         };
@@ -1120,8 +1127,8 @@ where
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
                     let blueprint_id = self
-                        .get_node_object_info(&node_id)?
-                        .main_blueprint_info
+                        .get_object_info(&node_id)?
+                        .blueprint_info
                         .blueprint_id;
                     let expected_blueprint = module_id.static_blueprint().unwrap();
                     if !blueprint_id.eq(&expected_blueprint) {
@@ -1178,10 +1185,10 @@ where
             _ => return Ok(None),
         };
 
-        let instance_context = if method_actor.node_object_info.global {
+        let instance_context = if method_actor.object_info.global {
             let node_id = method_actor.node_id;
             let module_id = method_actor.module_id;
-            let info = self.get_blueprint_object_info(&node_id, module_id)?;
+            let info = self.get_blueprint_info(&node_id, module_id)?;
 
             Some(InstanceContext {
                 outer_object: GlobalAddress::new_or_panic(node_id.0),
@@ -1189,21 +1196,28 @@ where
                 info,
             })
         } else {
-            match method_actor.get_blueprint_info() {
-                OuterObjectInfo::Inner { outer_object } => {
-                    // TODO: do this recursively until global?
-                    let info = self.get_blueprint_object_info(
-                        outer_object.as_node_id(),
-                        ObjectModuleId::Main,
-                    )?;
+            match method_actor.module_id {
+                ObjectModuleId::Main => {
+                    match method_actor.object_info.blueprint_info.outer_obj_info {
+                        OuterObjectInfo::Inner { outer_object } => {
+                            // TODO: do this recursively until global?
+                            let info = self.get_blueprint_info(
+                                outer_object.as_node_id(),
+                                ObjectModuleId::Main,
+                            )?;
 
-                    Some(InstanceContext {
-                        outer_object,
-                        module_id: ObjectModuleId::Main,
-                        info,
-                    })
+                            Some(InstanceContext {
+                                outer_object,
+                                module_id: ObjectModuleId::Main,
+                                info,
+                            })
+                        }
+                        OuterObjectInfo::Outer { .. } => None,
+                    }
                 }
-                OuterObjectInfo::Outer { .. } => None,
+                _ => {
+                    None
+                }
             }
         };
 
@@ -1218,8 +1232,8 @@ where
     ) -> Result<bool, RuntimeError> {
         match module_id {
             ObjectModuleId::Main => {
-                let object_info = self.get_node_object_info(node_id)?;
-                let enabled = object_info.main_blueprint_info.features.contains(feature);
+                let object_info = self.get_object_info(node_id)?;
+                let enabled = object_info.blueprint_info.features.contains(feature);
                 Ok(enabled)
             }
             _ => Ok(false),
@@ -1423,7 +1437,7 @@ where
 
         let global_address = self.globalize_with_address_internal(modules, address_reservation)?;
         let outer_info =
-            self.get_blueprint_object_info(global_address.as_node_id(), ObjectModuleId::Main)?;
+            self.get_blueprint_info(global_address.as_node_id(), ObjectModuleId::Main)?;
 
         let blueprint_id =
             BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
@@ -1495,7 +1509,7 @@ where
         };
 
         // Key Value Stores do not have methods so we remove that possibility here
-        let object_info = self.get_node_object_info(&receiver)?;
+        let object_info = self.get_object_info(&receiver)?;
         if !object_info.module_versions.contains_key(&module_id) {
             return Err(RuntimeError::SystemError(
                 SystemError::ObjectModuleDoesNotExist(module_id),
@@ -1523,7 +1537,7 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn get_node_object_info(&mut self, node_id: &NodeId) -> Result<NodeObjectInfo, RuntimeError> {
+    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
             TypeInfoSubstate::Object(info) => info,
@@ -1531,6 +1545,14 @@ where
         };
 
         Ok(object_info)
+    }
+
+    #[trace_resources]
+    fn get_outer_object(&mut self, node_id: &NodeId) -> Result<GlobalAddress, RuntimeError> {
+        match self.get_object_info(node_id)?.try_get_outer_object() {
+            None => Err(RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist)),
+            Some(address) => Ok(address)
+        }
     }
 
     // Costing through kernel
@@ -1554,14 +1576,14 @@ where
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
         // For simplicity, a rule is enforced at system layer: only the package can drop a node
         // In the future, we may consider allowing customization at blueprint level.
-        let info = self.get_node_object_info(node_id)?;
+        let info = self.get_object_info(node_id)?;
         let actor = self.current_actor();
-        if Some(info.main_blueprint_info.blueprint_id.package_address) != actor.package_address() {
+        if Some(info.blueprint_info.blueprint_id.package_address) != actor.package_address() {
             return Err(RuntimeError::SystemError(SystemError::InvalidDropAccess(
                 Box::new(InvalidDropAccess {
                     node_id: node_id.clone(),
-                    package_address: info.main_blueprint_info.blueprint_id.package_address,
-                    blueprint_name: info.main_blueprint_info.blueprint_id.blueprint_name,
+                    package_address: info.blueprint_info.blueprint_id.package_address,
+                    blueprint_name: info.blueprint_info.blueprint_id.blueprint_name,
                     actor_package: actor.package_address(),
                 }),
             )));
@@ -2209,6 +2231,18 @@ where
     Y: KernelApi<SystemConfig<V>>,
     V: SystemCallbackObject,
 {
+    #[trace_resources]
+    fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::QueryActor)?;
+
+        self.current_actor()
+            .blueprint_id()
+            .ok_or(RuntimeError::SystemError(SystemError::NoBlueprintId))
+    }
+
     // Costing through kernel
     #[trace_resources]
     fn method_actor_open_field(
@@ -2309,25 +2343,18 @@ where
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
         let (node_id, module_id) = self.get_actor_object_id(ActorObjectType::SELF)?;
-        let info = self.get_blueprint_object_info(&node_id, module_id)?;
-        match info.outer_obj_info {
-            OuterObjectInfo::Inner { outer_object } => Ok(outer_object),
-            OuterObjectInfo::Outer => Err(RuntimeError::SystemError(
-                SystemError::OuterObjectDoesNotExist,
-            )),
+        match module_id {
+            ObjectModuleId::Main => {
+                let info = self.get_object_info(&node_id)?;
+                match info.blueprint_info.outer_obj_info {
+                    OuterObjectInfo::Inner { outer_object } => Ok(outer_object),
+                    OuterObjectInfo::Outer => Err(RuntimeError::SystemError(
+                        SystemError::OuterObjectDoesNotExist,
+                    )),
+                }
+            }
+            _ => Err(RuntimeError::SystemError(SystemError::ModulesDontHaveOuterObjects)),
         }
-    }
-
-    #[trace_resources]
-    fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(CostingEntry::QueryActor)?;
-
-        self.current_actor()
-            .blueprint_id()
-            .ok_or(RuntimeError::SystemError(SystemError::NoBlueprintId))
     }
 
     // Costing through kernel
@@ -2522,7 +2549,7 @@ where
                 Actor::Method(MethodActor {
                     node_id, module_id, ..
                 }) => {
-                    let blueprint_obj_info = self.get_blueprint_object_info(&node_id, module_id)?;
+                    let blueprint_obj_info = self.get_blueprint_info(&node_id, module_id)?;
                     (
                         blueprint_obj_info.instance_schema,
                         blueprint_obj_info.blueprint_id,

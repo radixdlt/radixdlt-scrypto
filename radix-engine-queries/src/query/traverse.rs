@@ -123,12 +123,12 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
             }
             TypeInfoSubstate::Object(info) => {
                 if info
-                    .main_blueprint_info
+                    .blueprint_info
                     .blueprint_id
                     .package_address
                     .eq(&RESOURCE_PACKAGE)
                     && info
-                        .main_blueprint_info
+                        .blueprint_info
                         .blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_VAULT_BLUEPRINT)
@@ -144,16 +144,16 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                     self.visitor.visit_fungible_vault(
                         node_id,
-                        &ResourceAddress::new_or_panic(info.get_main_outer_object().into()),
+                        &ResourceAddress::new_or_panic(info.get_outer_object().into()),
                         &liquid.value.0,
                     );
                 } else if info
-                    .main_blueprint_info
+                    .blueprint_info
                     .blueprint_id
                     .package_address
                     .eq(&RESOURCE_PACKAGE)
                     && info
-                        .main_blueprint_info
+                        .blueprint_info
                         .blueprint_id
                         .blueprint_name
                         .eq(NON_FUNGIBLE_VAULT_BLUEPRINT)
@@ -169,7 +169,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
 
                     self.visitor.visit_non_fungible_vault(
                         node_id,
-                        &ResourceAddress::new_or_panic(info.get_main_outer_object().into()),
+                        &ResourceAddress::new_or_panic(info.get_outer_object().into()),
                         &liquid.value.0,
                     );
 
@@ -184,7 +184,7 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             scrypto_decode(key.for_map().unwrap()).unwrap();
                         self.visitor.visit_non_fungible(
                             node_id,
-                            &ResourceAddress::new_or_panic(info.get_main_outer_object().into()),
+                            &ResourceAddress::new_or_panic(info.get_outer_object().into()),
                             &non_fungible_local_id,
                         );
                     }
@@ -201,12 +201,12 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                     }
 
                     if info
-                        .main_blueprint_info
+                        .blueprint_info
                         .blueprint_id
                         .package_address
                         .eq(&ACCOUNT_PACKAGE)
                         && info
-                            .main_blueprint_info
+                            .blueprint_info
                             .blueprint_id
                             .blueprint_name
                             .eq(ACCOUNT_BLUEPRINT)

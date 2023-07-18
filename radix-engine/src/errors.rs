@@ -215,6 +215,7 @@ pub enum SystemError {
     NoParent,
     NotAnAddressReservation,
     NotAnObject,
+    ModulesDontHaveOuterObjects,
     ActorNodeIdDoesNotExist,
     ActorModuleIdIdDoesNotExist,
     ActorObjectInfoDoesNotExist,

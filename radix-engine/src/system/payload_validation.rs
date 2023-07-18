@@ -75,8 +75,8 @@ impl<'s, 'a, Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject> TypeInfoLoo
             .borrow_mut()
             .get_node_type_info(&node_id)?;
         let mapped = match type_info {
-            TypeInfoSubstate::Object(NodeObjectInfo {
-                main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint_info: BlueprintInfo { blueprint_id, .. },
                 ..
             }) => TypeInfoForValidation::Object {
                 package: blueprint_id.package_address,

@@ -72,8 +72,8 @@ pub fn dump_component<T: SubstateDatabase, O: std::io::Write>(
             )
             .ok_or(EntityDumpError::ComponentNotFound)?;
         let blueprint_id = match type_info {
-            TypeInfoSubstate::Object(NodeObjectInfo {
-                main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
+            TypeInfoSubstate::Object(ObjectInfo {
+                blueprint_info: BlueprintInfo { blueprint_id, .. },
                 ..
             }) => blueprint_id,
             _ => {
@@ -151,7 +151,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     let info = match type_info {
         TypeInfoSubstate::Object(info)
             if info
-                .main_blueprint_info
+                .blueprint_info
                 .blueprint_id
                 .package_address
                 .eq(&RESOURCE_PACKAGE) =>
@@ -166,7 +166,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
     };
 
     if info
-        .main_blueprint_info
+        .blueprint_info
         .blueprint_id
         .blueprint_name
         .eq(NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT)
@@ -192,7 +192,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         writeln!(output, "{}: {:?}", "ID Type".green().bold(), id_type);
 
         if info
-            .get_main_features()
+            .get_features()
             .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply = substate_db
@@ -232,7 +232,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         );
 
         if info
-            .get_main_features()
+            .get_features()
             .contains(TRACK_TOTAL_SUPPLY_FEATURE)
         {
             let total_supply = substate_db

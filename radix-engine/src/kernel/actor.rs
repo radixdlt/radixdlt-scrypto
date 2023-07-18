@@ -7,7 +7,7 @@ use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCa
 pub struct InstanceContext {
     pub outer_object: GlobalAddress,
     pub module_id: ObjectModuleId,
-    pub info: BlueprintObjectInfo,
+    pub info: BlueprintInfo,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -20,29 +20,18 @@ pub struct MethodActor {
     pub is_direct_access: bool,
 
     // Cached info
-    pub node_object_info: NodeObjectInfo,
+    pub object_info: ObjectInfo,
 }
 
 impl MethodActor {
     pub fn get_blueprint_id(&self) -> BlueprintId {
         match self.module_id {
             ObjectModuleId::Main => self
-                .node_object_info
-                .main_blueprint_info
+                .object_info
+                .blueprint_info
                 .blueprint_id
                 .clone(),
             _ => self.module_id.static_blueprint().unwrap(),
-        }
-    }
-
-    pub fn get_blueprint_info(&self) -> OuterObjectInfo {
-        match self.module_id {
-            ObjectModuleId::Main => self
-                .node_object_info
-                .main_blueprint_info
-                .outer_obj_info
-                .clone(),
-            _ => OuterObjectInfo::Outer,
         }
     }
 
@@ -121,16 +110,16 @@ impl Actor {
     pub fn is_auth_zone(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                node_object_info: object_info,
+                object_info,
                 ..
             }) => {
                 object_info
-                    .main_blueprint_info
+                    .blueprint_info
                     .blueprint_id
                     .package_address
                     .eq(&RESOURCE_PACKAGE)
                     && object_info
-                        .main_blueprint_info
+                        .blueprint_info
                         .blueprint_id
                         .blueprint_name
                         .eq(AUTH_ZONE_BLUEPRINT)
@@ -144,7 +133,7 @@ impl Actor {
     pub fn is_barrier(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                node_object_info: object_info,
+                object_info,
                 ..
             }) => object_info.global,
             Actor::Function { .. } => true,
@@ -165,9 +154,9 @@ impl Actor {
         match self {
             Actor::Root => false,
             Actor::Method(MethodActor {
-                node_object_info:
-                    NodeObjectInfo {
-                        main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
+                object_info:
+                    ObjectInfo {
+                        blueprint_info: BlueprintInfo { blueprint_id, .. },
                         ..
                     },
                 ..
@@ -258,7 +247,7 @@ impl Actor {
         node_id: NodeId,
         module_id: ObjectModuleId,
         ident: String,
-        object_info: NodeObjectInfo,
+        object_info: ObjectInfo,
         is_direct_access: bool,
     ) -> Self {
         Self::Method(MethodActor {
@@ -266,7 +255,7 @@ impl Actor {
             node_id,
             module_id,
             ident,
-            node_object_info: object_info,
+            object_info: object_info,
             is_direct_access,
         })
     }

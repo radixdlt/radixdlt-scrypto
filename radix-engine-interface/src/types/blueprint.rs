@@ -25,7 +25,7 @@ impl Default for OuterObjectInfo {
 
 /// Core object state, persisted in `TypeInfoSubstate`.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct BlueprintObjectInfo {
+pub struct BlueprintInfo {
     pub blueprint_id: BlueprintId,
     pub outer_obj_info: OuterObjectInfo,
     pub features: BTreeSet<String>,
@@ -33,18 +33,18 @@ pub struct BlueprintObjectInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct NodeObjectInfo {
+pub struct ObjectInfo {
     /// Whether this node is global or not, ie. true, if this node has no parent, false otherwise
     pub global: bool,
     pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
 
     /// Main Blueprint Info
-    pub main_blueprint_info: BlueprintObjectInfo,
+    pub blueprint_info: BlueprintInfo,
 }
 
-impl NodeObjectInfo {
-    pub fn get_main_outer_object(&self) -> GlobalAddress {
-        match &self.main_blueprint_info.outer_obj_info {
+impl ObjectInfo {
+    pub fn get_outer_object(&self) -> GlobalAddress {
+        match &self.blueprint_info.outer_obj_info {
             OuterObjectInfo::Inner { outer_object } => outer_object.clone(),
             OuterObjectInfo::Outer { .. } => {
                 panic!("Broken Application logic: Expected to be an inner object but is an outer object");
@@ -52,17 +52,14 @@ impl NodeObjectInfo {
         }
     }
 
-    pub fn get_main_features(&self) -> BTreeSet<String> {
-        self.main_blueprint_info.features.clone()
+    pub fn get_features(&self) -> BTreeSet<String> {
+        self.blueprint_info.features.clone()
     }
 
-    pub fn try_get_outer_object(&self, module_id: ObjectModuleId) -> Option<GlobalAddress> {
-        match module_id {
-            ObjectModuleId::Main => match &self.main_blueprint_info.outer_obj_info {
-                OuterObjectInfo::Inner { outer_object } => Some(outer_object.clone()),
-                OuterObjectInfo::Outer { .. } => None,
-            },
-            _ => None,
+    pub fn try_get_outer_object(&self) -> Option<GlobalAddress> {
+        match &self.blueprint_info.outer_obj_info {
+            OuterObjectInfo::Inner { outer_object } => Some(outer_object.clone()),
+            OuterObjectInfo::Outer { .. } => None,
         }
     }
 }

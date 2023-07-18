@@ -98,8 +98,8 @@ impl NativeProof for Proof {
     where
         Y: ClientObjectApi<E> + ClientBlueprintApi<E>,
     {
-        let info = api.get_node_object_info(self.0.as_node_id())?;
-        let blueprint = info.main_blueprint_info.blueprint_id.blueprint_name;
+        let info = api.get_object_info(self.0.as_node_id())?;
+        let blueprint = info.blueprint_info.blueprint_id.blueprint_name;
         api.call_function(
             RESOURCE_PACKAGE,
             blueprint.as_str(),

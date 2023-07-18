@@ -1820,8 +1820,8 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
                             .unwrap();
 
                         match type_info {
-                            TypeInfoSubstate::Object(NodeObjectInfo {
-                                main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
+                            TypeInfoSubstate::Object(ObjectInfo {
+                                blueprint_info: BlueprintInfo { blueprint_id, .. },
                                 ..
                             }) => (blueprint_id.package_address, *schema_pointer),
                             _ => {
