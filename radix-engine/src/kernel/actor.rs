@@ -6,7 +6,6 @@ use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCa
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceContext {
     pub outer_object: GlobalAddress,
-    pub info: BlueprintInfo,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -75,6 +74,33 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn instance_context(&self) -> Option<InstanceContext> {
+        let method_actor = match self {
+            Actor::Method(method_actor) => method_actor,
+            _ => return None,
+        };
+
+        match method_actor.module_id {
+            ObjectModuleId::Main => {
+                if method_actor.object_info.global {
+                    Some(InstanceContext {
+                        outer_object: GlobalAddress::new_or_panic(method_actor.node_id.0),
+                    })
+                } else {
+                    match &method_actor.object_info.blueprint_info.outer_obj_info {
+                        OuterObjectInfo::Inner { outer_object } => {
+                            Some(InstanceContext {
+                                outer_object: outer_object.clone(),
+                            })
+                        }
+                        OuterObjectInfo::Outer { .. } => None,
+                    }
+                }
+            }
+            _ => None
+        }
+    }
+
     pub fn get_object_id(self) -> Option<(NodeId, ObjectModuleId)> {
         match self {
             Actor::Method(method_actor) => Some((method_actor.node_id, method_actor.module_id)),

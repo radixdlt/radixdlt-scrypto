@@ -646,12 +646,22 @@ where
         } = &expected_outer_blueprint
         {
             match instance_context {
-                Some(context) if context.info.blueprint_id.blueprint_name.eq(outer_blueprint) => (
-                    OuterObjectInfo::Inner {
-                        outer_object: context.outer_object,
-                    },
-                    context.info.features,
-                ),
+                Some(context) => {
+                    let info = self.get_object_info(context.outer_object.as_node_id())?;
+
+                    if !info.blueprint_info.blueprint_id.blueprint_name.eq(outer_blueprint) {
+                        return Err(RuntimeError::SystemError(
+                            SystemError::InvalidChildObjectCreation,
+                        ));
+                    }
+
+                    (
+                        OuterObjectInfo::Inner {
+                            outer_object: context.outer_object,
+                        },
+                        info.blueprint_info.features,
+                    )
+                },
                 _ => {
                     return Err(RuntimeError::SystemError(
                         SystemError::InvalidChildObjectCreation,
@@ -1174,44 +1184,6 @@ where
         self.api.kernel_get_system_state().current_actor.clone()
     }
 
-    pub fn actor_instance_context(&mut self) -> Result<Option<InstanceContext>, RuntimeError> {
-        let actor = self.api.kernel_get_system_state().current_actor;
-
-        let method_actor = match actor {
-            Actor::Method(method_actor) => method_actor,
-            _ => return Ok(None),
-        };
-
-        let instance_context = match method_actor.module_id {
-            ObjectModuleId::Main => {
-                if method_actor.object_info.global {
-                    Some(InstanceContext {
-                        outer_object: GlobalAddress::new_or_panic(method_actor.node_id.0),
-                        info: method_actor.object_info.blueprint_info.clone(),
-                    })
-                } else {
-                    match method_actor.object_info.blueprint_info.outer_obj_info {
-                        OuterObjectInfo::Inner { outer_object } => {
-                            // TODO: do this recursively until global?
-                            let info = self.get_object_info(
-                                outer_object.as_node_id(),
-                            )?;
-
-                            Some(InstanceContext {
-                                outer_object,
-                                info: info.blueprint_info,
-                            })
-                        }
-                        OuterObjectInfo::Outer { .. } => None,
-                    }
-                }
-            }
-            _ => None
-        };
-
-        Ok(instance_context)
-    }
-
     pub fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
         let object_info = match type_info {
@@ -1349,7 +1321,7 @@ where
             .map(|b| b.package_address)
             .ok_or(RuntimeError::SystemError(SystemError::NoPackageAddress))?;
         let blueprint_id = BlueprintId::new(&package_address, blueprint_ident);
-        let instance_context = self.actor_instance_context()?;
+        let instance_context = actor.instance_context();
 
         self.new_object_internal(
             &blueprint_id,
@@ -1434,7 +1406,6 @@ where
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
 
         let global_address = self.globalize_with_address_internal(modules, address_reservation)?;
-        let object_info = self.get_object_info(global_address.as_node_id())?;
 
         let blueprint_id =
             BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
@@ -1444,7 +1415,6 @@ where
             vec![],
             Some(InstanceContext {
                 outer_object: global_address,
-                info: object_info.blueprint_info,
             }),
             None,
             inner_object_fields,
