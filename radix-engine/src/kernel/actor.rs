@@ -6,7 +6,6 @@ use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCa
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct InstanceContext {
     pub outer_object: GlobalAddress,
-    pub module_id: ObjectModuleId,
     pub info: BlueprintInfo,
 }
 

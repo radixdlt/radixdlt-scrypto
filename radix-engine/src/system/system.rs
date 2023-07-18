@@ -1189,7 +1189,6 @@ where
 
             Some(InstanceContext {
                 outer_object: GlobalAddress::new_or_panic(node_id.0),
-                module_id,
                 info,
             })
         } else {
@@ -1205,7 +1204,6 @@ where
 
                             Some(InstanceContext {
                                 outer_object,
-                                module_id: ObjectModuleId::Main,
                                 info,
                             })
                         }
@@ -1454,7 +1452,6 @@ where
             vec![],
             Some(InstanceContext {
                 outer_object: global_address,
-                module_id: ObjectModuleId::Main,
                 info: outer_info,
             }),
             None,
