@@ -93,10 +93,12 @@ impl Heap {
         new_lock
     }
 
-    pub fn close_substate(&mut self, handle: u32) {
+    pub fn close_substate(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey) {
         let (node_id, partition_num, substate_key, _flags) = self.locks.remove(&handle).unwrap();
-        let lock_state = self.substate_lock_states.get_mut(&(node_id, partition_num, substate_key)).unwrap();
+        let full_key = (node_id, partition_num, substate_key);
+        let lock_state = self.substate_lock_states.get_mut(&full_key).unwrap();
         lock_state.unlock();
+        full_key
     }
 
     pub fn open_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
@@ -152,6 +154,19 @@ impl Heap {
             .and_then(|module_substates| module_substates.get(substate_key)).unwrap();
 
         value
+    }
+
+    pub fn write_substate(&mut self, handle: u32, substate: IndexedScryptoValue) {
+        let (node_id, partition_num, substate_key, _lock_flags) = self.locks.get(&handle)
+            .expect("Invalid lock handle.");
+
+        self.nodes
+            .entry(node_id.clone())
+            .or_insert_with(|| HeapNode::default())
+            .substates
+            .entry(partition_num.clone())
+            .or_default()
+            .insert(substate_key.clone(), substate);
     }
 
     /// Reads a substate

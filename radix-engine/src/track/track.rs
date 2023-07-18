@@ -1082,7 +1082,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         Ok(handle)
     }
 
-    fn close_substate(&mut self, handle: u32) {
+    fn close_substate(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey) {
         let (node_id, partition_num, substate_key, flags) =
             self.locks.remove(&handle).expect("Invalid lock handle");
 
@@ -1118,11 +1118,13 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 .insert(
                     db_sort_key,
                     TrackedSubstate {
-                        substate_key,
+                        substate_key: substate_key.clone(),
                         substate_value: cloned_track,
                     },
                 );
         }
+
+        (node_id, partition_num, substate_key)
     }
 
     fn read_substate(&mut self, handle: u32) -> &IndexedScryptoValue {

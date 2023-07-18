@@ -45,10 +45,6 @@ pub trait KernelNodeApi {
 
 /// Info regarding the substate locked as well as what type of lock
 pub struct LockInfo<L> {
-    pub node_id: NodeId,
-    pub partition_num: PartitionNumber,
-    pub substate_key: SubstateKey,
-    pub flags: LockFlags,
     pub data: L,
 }
 

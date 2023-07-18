@@ -50,9 +50,6 @@ pub enum SubstateStoreHandle {
 /// A lock on a substate controlled by a call frame
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpenedSubstate<L> {
-    pub node_id: NodeId,
-    pub partition_num: PartitionNumber,
-    pub substate_key: SubstateKey,
     pub non_global_references: IndexSet<NodeId>,
     pub owned_nodes: IndexSet<NodeId>,
     pub flags: LockFlags,
@@ -480,9 +477,6 @@ impl<L: Clone> CallFrame<L> {
         self.locks.insert(
             lock_handle,
             OpenedSubstate {
-                node_id: node_id.clone(),
-                partition_num,
-                substate_key: substate_key.clone(),
                 non_global_references,
                 owned_nodes,
                 flags,
@@ -512,15 +506,10 @@ impl<L: Clone> CallFrame<L> {
             .remove(&lock_handle)
             .ok_or_else(|| CallbackError::Error(CloseSubstateError::LockNotFound(lock_handle)))?;
 
-        let node_id = &substate_lock.node_id;
-        let partition_num = substate_lock.partition_num;
-        let substate_key = &substate_lock.substate_key;
-
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
+            let substate_is_in_store = matches!(substate_lock.substate_store_handle, SubstateStoreHandle::Store(..));
             let substate = match substate_lock.substate_store_handle {
-                SubstateStoreHandle::Heap(..) => heap
-                    .get_substate(node_id, partition_num, substate_key)
-                    .expect("Substate locked but missing"),
+                SubstateStoreHandle::Heap(handle) => heap.read_substate(handle),
                 SubstateStoreHandle::Store(handle) => store.read_substate(handle),
             }
             .clone();
@@ -543,7 +532,7 @@ impl<L: Clone> CallFrame<L> {
                         .map_err(|e| CallbackError::Error(CloseSubstateError::TakeNodeError(e)))?;
 
                     // Move the node to store, if its owner is already in store
-                    if !heap.contains_node(&node_id) {
+                    if substate_is_in_store {
                         Self::move_node_to_store(heap, store, own, on_store_access)
                             .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
                     }
@@ -552,7 +541,7 @@ impl<L: Clone> CallFrame<L> {
             for own in &substate_lock.owned_nodes {
                 if !new_owned_nodes.contains(own) {
                     // Node detached
-                    if !heap.contains_node(node_id) {
+                    if substate_is_in_store {
                         return Err(CallbackError::Error(
                             CloseSubstateError::CantDropNodeInStore(own.clone()),
                         ));
@@ -586,7 +575,7 @@ impl<L: Clone> CallFrame<L> {
                         )));
                     }
 
-                    if !heap.contains_node(node_id) && !reference.is_global() {
+                    if substate_is_in_store && !reference.is_global() {
                         return Err(CallbackError::Error(
                             CloseSubstateError::NonGlobalRefNotAllowed(*reference),
                         ));
@@ -624,19 +613,19 @@ impl<L: Clone> CallFrame<L> {
             }
         }
 
-        // Update node lock count
-        if let Some(counter) = self.owned_root_nodes.get_mut(&substate_lock.node_id) {
-            *counter -= 1;
-        }
-
         // Release track lock
-        match substate_lock.substate_store_handle {
+        let (node_id, ..) = match substate_lock.substate_store_handle {
             SubstateStoreHandle::Heap(handle) => {
-                heap.close_substate(handle);
+                heap.close_substate(handle)
             }
             SubstateStoreHandle::Store(handle) => {
-                store.close_substate(handle);
+                store.close_substate(handle)
             }
+        };
+
+        // Update node lock count
+        if let Some(counter) = self.owned_root_nodes.get_mut(&node_id) {
+            *counter -= 1;
         }
 
         Ok(())
@@ -644,10 +633,6 @@ impl<L: Clone> CallFrame<L> {
 
     pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<LockInfo<L>> {
         self.locks.get(&lock_handle).map(|substate_lock| LockInfo {
-            node_id: substate_lock.node_id,
-            partition_num: substate_lock.partition_num,
-            substate_key: substate_lock.substate_key.clone(),
-            flags: substate_lock.flags,
             data: substate_lock.data.clone(),
         })
     }
@@ -682,9 +667,6 @@ impl<L: Clone> CallFrame<L> {
         substate: IndexedScryptoValue,
     ) -> Result<(), WriteSubstateError> {
         let OpenedSubstate {
-            node_id,
-            partition_num,
-            substate_key,
             substate_store_handle,
             flags,
             ..
@@ -698,8 +680,8 @@ impl<L: Clone> CallFrame<L> {
         }
 
         match substate_store_handle {
-            SubstateStoreHandle::Heap(..) => {
-                heap.set_substate(*node_id, *partition_num, substate_key.clone(), substate);
+            SubstateStoreHandle::Heap(handle) => {
+                heap.write_substate(*handle, substate)
             }
             SubstateStoreHandle::Store(handle) => {
                 store.write_substate(*handle, substate);

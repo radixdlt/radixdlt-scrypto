@@ -161,7 +161,7 @@ pub trait SubstateStore {
     ///
     /// # Panics
     /// - If the lock handle is invalid.
-    fn close_substate(&mut self, handle: u32);
+    fn close_substate(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey);
 
     /// Reads a substate of the given node partition.
     ///
