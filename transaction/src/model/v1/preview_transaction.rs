@@ -69,13 +69,7 @@ impl ValidatedPreviewIntent {
                         end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
                     })
                 },
-                payload_size: self.encoded_instructions.len()
-                    + intent
-                        .blobs
-                        .blobs_by_hash
-                        .values()
-                        .map(|x| x.len())
-                        .sum::<usize>(),
+                payload_size: self.intent.summary.effective_length,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtual_resources,

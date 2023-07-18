@@ -1,3 +1,4 @@
+use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::FeeReserveConfig;
 use radix_engine::types::*;
@@ -27,22 +28,27 @@ fn test_transaction_preview_cost_estimate() {
         manifest,
         &preview_flags,
     );
+    let size_diff = manifest_encode(&notarized_transaction).unwrap().len()
+        - manifest_encode(&preview_intent.intent).unwrap().len();
 
     // Act & Assert: Execute the preview, followed by a normal execution.
     // Ensure that both succeed and that the preview result provides an accurate cost estimate
-    let preview_result = test_runner.preview(preview_intent, &network);
-    let preview_receipt = preview_result.unwrap();
-    preview_receipt.expect_commit_success();
-
-    let receipt = test_runner.execute_transaction(
+    let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
+    let preview_result = preview_receipt.expect_commit_success();
+    let actual_receipt = test_runner.execute_transaction(
         validate(&network, &notarized_transaction).get_executable(),
         FeeReserveConfig::default(),
-        ExecutionConfig::for_preview(),
+        ExecutionConfig::for_notarized_transaction()
+            .with_kernel_trace(true)
+            .with_cost_breakdown(true),
     );
-    let commit_result = receipt.expect_commit(true);
+    let actual_result = actual_receipt.expect_commit_success();
     assert_eq!(
-        commit_result.fee_summary.execution_cost_sum,
-        commit_result.fee_summary.execution_cost_sum
+        // TODO: better preview payload size estimate?
+        preview_result.fee_summary.total_cost()
+            + FeeReserveConfig::default().cost_unit_price
+                * FeeTable::new().tx_payload_cost(size_diff),
+        actual_result.fee_summary.total_cost(),
     );
 }
 

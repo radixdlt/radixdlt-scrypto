@@ -124,6 +124,7 @@ impl ExecutionConfig {
     pub fn for_preview() -> Self {
         Self {
             enabled_modules: EnabledModules::for_preview(),
+            enable_cost_breakdown: true,
             ..Self::default()
         }
     }
@@ -134,6 +135,11 @@ impl ExecutionConfig {
         } else {
             self.enabled_modules.remove(EnabledModules::KERNEL_TRACE);
         }
+        self
+    }
+
+    pub fn with_cost_breakdown(mut self, enabled: bool) -> Self {
+        self.enable_cost_breakdown = enabled;
         self
     }
 
