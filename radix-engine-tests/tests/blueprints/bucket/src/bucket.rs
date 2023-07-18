@@ -1,5 +1,4 @@
 use scrypto::api::*;
-use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
 #[derive(ScryptoSbor, NonFungibleData)]
