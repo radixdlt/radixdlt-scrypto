@@ -57,6 +57,10 @@ impl FeeSummary {
         self.fee_payments.values().cloned().sum::<Decimal>()
     }
 
+    pub fn used_free_credit(&self) -> Decimal {
+        self.total_cost() - self.total_payments()
+    }
+
     //===================
     // For testing only
     //===================
