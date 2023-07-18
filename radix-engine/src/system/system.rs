@@ -1182,38 +1182,31 @@ where
             _ => return Ok(None),
         };
 
-        let instance_context = if method_actor.object_info.global {
-            let node_id = method_actor.node_id;
-            let module_id = method_actor.module_id;
-            let info = self.get_blueprint_info(&node_id, module_id)?;
-
-            Some(InstanceContext {
-                outer_object: GlobalAddress::new_or_panic(node_id.0),
-                info,
-            })
-        } else {
-            match method_actor.module_id {
-                ObjectModuleId::Main => {
+        let instance_context = match method_actor.module_id {
+            ObjectModuleId::Main => {
+                if method_actor.object_info.global {
+                    Some(InstanceContext {
+                        outer_object: GlobalAddress::new_or_panic(method_actor.node_id.0),
+                        info: method_actor.object_info.blueprint_info.clone(),
+                    })
+                } else {
                     match method_actor.object_info.blueprint_info.outer_obj_info {
                         OuterObjectInfo::Inner { outer_object } => {
                             // TODO: do this recursively until global?
-                            let info = self.get_blueprint_info(
+                            let info = self.get_object_info(
                                 outer_object.as_node_id(),
-                                ObjectModuleId::Main,
                             )?;
 
                             Some(InstanceContext {
                                 outer_object,
-                                info,
+                                info: info.blueprint_info,
                             })
                         }
                         OuterObjectInfo::Outer { .. } => None,
                     }
                 }
-                _ => {
-                    None
-                }
             }
+            _ => None
         };
 
         Ok(instance_context)
@@ -1441,8 +1434,7 @@ where
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
 
         let global_address = self.globalize_with_address_internal(modules, address_reservation)?;
-        let outer_info =
-            self.get_blueprint_info(global_address.as_node_id(), ObjectModuleId::Main)?;
+        let object_info = self.get_object_info(global_address.as_node_id())?;
 
         let blueprint_id =
             BlueprintId::new(&actor_blueprint.package_address, inner_object_blueprint);
@@ -1452,7 +1444,7 @@ where
             vec![],
             Some(InstanceContext {
                 outer_object: global_address,
-                info: outer_info,
+                info: object_info.blueprint_info,
             }),
             None,
             inner_object_fields,
