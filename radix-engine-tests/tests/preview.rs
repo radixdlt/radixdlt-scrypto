@@ -58,7 +58,7 @@ fn test_transaction_preview_without_locking_fee() {
     let mut test_runner = TestRunner::builder().build();
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new()
-        //.lock_fee_from_faucet()
+        // Explicitly don't lock fee from faucet
         .clear_auth_zone()
         .build();
     let preview_flags = PreviewFlags {

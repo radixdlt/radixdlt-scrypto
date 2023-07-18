@@ -184,7 +184,7 @@ where
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let fee_credit = executable.fee_payment().free_credit_in_xrd;
+        let free_credit = executable.fee_payment().free_credit_in_xrd;
         let tip_percentage = executable.fee_payment().tip_percentage;
         let fee_reserve = SystemLoanFeeReserve::new(
             fee_reserve_config.cost_unit_price,
@@ -195,7 +195,7 @@ where
             fee_reserve_config.system_loan,
             execution_config.abort_when_loan_repaid,
         )
-        .with_free_credit(fee_credit);
+        .with_free_credit(free_credit);
         let fee_table = FeeTable::new();
 
         // Dump executable
@@ -282,7 +282,7 @@ where
                             &mut track,
                             costing_module.fee_reserve,
                             is_success,
-                            fee_credit,
+                            free_credit,
                         );
                         fee_summary.execution_cost_breakdown = costing_module
                             .costing_traces
