@@ -15,6 +15,13 @@ use radix_engine_interface::blueprints::account::*;
 use radix_engine_interface::blueprints::consensus_manager::*;
 use radix_engine_interface::blueprints::identity::*;
 
+/// Given an [`EventTypeIdentifier`] and the raw event data, this function attempts to convert the
+/// event data into a structured model provided that the event is registered to a native blueprint.
+///
+/// # Panics
+///
+/// This function panics if the even't [`TypePointer`] is of variant [`TypePointer::Instance`] as
+/// generics are not supported in events.
 pub fn to_typed_native_event(
     event_type_identifier: &EventTypeIdentifier,
     event_data: &[u8],
@@ -29,7 +36,7 @@ fn resolve_typed_event_key_from_event_type_identifier(
 ) -> Result<TypedNativeEventKey, TypedNativeEventError> {
     let local_type_index = match event_type_identifier.1 {
         TypePointer::Package(_, x) => x,
-        _ => panic!(""),
+        TypePointer::Instance(..) => panic!("An event can not be generic"),
     };
 
     match &event_type_identifier.0 {
