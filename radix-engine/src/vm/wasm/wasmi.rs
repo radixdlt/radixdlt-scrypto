@@ -300,6 +300,24 @@ fn get_object_info(
         .map(|buffer| buffer.0)
 }
 
+fn get_outer_object(
+    mut caller: Caller<'_, HostState>,
+    component_id_ptr: u32,
+    component_id_len: u32,
+) -> Result<u64, InvokeError<WasmRuntimeError>> {
+    let (memory, runtime) = grab_runtime!(caller);
+
+    runtime
+        .get_outer_object(read_memory(
+            caller.as_context_mut(),
+            memory,
+            component_id_ptr,
+            component_id_len,
+        )?)
+        .map(|buffer| buffer.0)
+}
+
+
 fn drop_object(
     mut caller: Caller<'_, HostState>,
     node_id_ptr: u32,
@@ -733,6 +751,16 @@ impl WasmiModule {
             },
         );
 
+        let host_get_outer_object = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>,
+             object_id_ptr: u32,
+             object_id_len: u32|
+             -> Result<u64, Trap> {
+                get_outer_object(caller, object_id_ptr, object_id_len).map_err(|e| e.into())
+            },
+        );
+
         let host_drop_node = Func::wrap(
             store.as_context_mut(),
             |caller: Caller<'_, HostState>,
@@ -954,6 +982,7 @@ impl WasmiModule {
         linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
         linker_define!(linker, GLOBALIZE_FUNCTION_NAME, host_globalize_object);
         linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
+        linker_define!(linker, GET_OUTER_OBJECT_FUNCTION_NAME, host_get_outer_object);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, ACTOR_OPEN_FIELD_FUNCTION_NAME, host_lock_field);
         linker_define!(

@@ -21,6 +21,7 @@ pub const GLOBALIZE_FUNCTION_NAME: &str = "globalize";
 pub const CALL_METHOD_FUNCTION_NAME: &str = "call_method";
 pub const CALL_FUNCTION_FUNCTION_NAME: &str = "call_function";
 pub const GET_OBJECT_INFO_FUNCTION_NAME: &str = "get_object_info";
+pub const GET_OUTER_OBJECT_FUNCTION_NAME: &str = "get_outer_object";
 pub const DROP_OBJECT_FUNCTION_NAME: &str = "drop_object";
 
 //=================

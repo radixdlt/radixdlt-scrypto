@@ -69,6 +69,8 @@ extern "C" {
 
     pub fn get_object_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
+    pub fn get_outer_object(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+
     pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
     pub fn kv_store_get_info(
@@ -246,6 +248,11 @@ pub unsafe fn globalize(
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_object_info(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_outer_object(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
     unreachable!()
 }
 

@@ -397,6 +397,20 @@ where
         self.allocate_buffer(buffer)
     }
 
+    fn get_outer_object(
+        &mut self,
+        node_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
+        let node_id = NodeId(
+            TryInto::<[u8; NodeId::LENGTH]>::try_into(node_id.as_ref())
+                .map_err(|_| WasmRuntimeError::InvalidNodeId)?,
+        );
+        let address = self.api.get_outer_object(&node_id)?;
+
+        let buffer = scrypto_encode(&address).expect("Failed to encode GlobalAddress");
+        self.allocate_buffer(buffer)
+    }
+
     fn emit_event(
         &mut self,
         event_name: Vec<u8>,

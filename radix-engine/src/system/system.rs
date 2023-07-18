@@ -775,10 +775,7 @@ where
                 match module_id {
                     ObjectModuleId::Main => {
                         let node_id = object_id.0;
-                        let object_info = self.get_object_info(&node_id)?;
-                        let address = object_info.try_get_outer_object().ok_or_else(|| {
-                            RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist)
-                        })?;
+                        let address = self.get_outer_object(&node_id)?;
 
                         (address.into_node_id(), ObjectModuleId::Main)
                     }

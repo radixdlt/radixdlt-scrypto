@@ -134,8 +134,6 @@ pub trait ClientObjectApi<E> {
     /// Get the outer object
     fn get_outer_object(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
-    fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
-
     /// Pre-allocates a global address, for a future globalization.
     fn allocate_global_address(
         &mut self,
@@ -147,6 +145,8 @@ pub trait ClientObjectApi<E> {
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
     ) -> Result<GlobalAddressReservation, E>;
+
+    fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all with the provided global address.

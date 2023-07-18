@@ -179,9 +179,12 @@ impl ClientObjectApi<ClientApiError> for ScryptoEnv {
         scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
-    fn get_outer_object(&mut self, _node_id: &NodeId) -> Result<GlobalAddress, ClientApiError> {
-        // FIXME: Implement this for Scrypto
-        todo!()
+    fn get_outer_object(&mut self, node_id: &NodeId) -> Result<GlobalAddress, ClientApiError> {
+        let bytes = copy_buffer(unsafe {
+            get_outer_object(node_id.as_ref().as_ptr(), node_id.as_ref().len())
+        });
+
+        scrypto_decode(&bytes).map_err(ClientApiError::DecodeError)
     }
 
     fn get_reservation_address(
