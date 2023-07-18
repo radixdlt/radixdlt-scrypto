@@ -200,7 +200,7 @@ pub enum CallFrameError {
     WriteSubstateError(WriteSubstateError),
 
     ScanSubstatesError(CallFrameScanKeysError),
-    TakeSubstatesError(CallFrameDrainSubstatesError),
+    DrainSubstatesError(CallFrameDrainSubstatesError),
     ScanSortedSubstatesError(CallFrameScanSortedSubstatesError),
     SetSubstatesError(CallFrameSetSubstateError),
     RemoveSubstatesError(CallFrameRemoveSubstateError),
