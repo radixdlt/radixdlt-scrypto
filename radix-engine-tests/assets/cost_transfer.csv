@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,   0.0556447125,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.05290925,     95.1%
-+ Tipping Cost (XRD)                                                       ,   0.0026454625,      4.8%
+Total Cost (XRD)                                                           ,   0.0556164675,    100.0%
++ Execution Cost (XRD)                                                     ,     0.05288235,     95.1%
++ Tipping Cost (XRD)                                                       ,   0.0026441175,      4.8%
 + State Expansion Cost (XRD)                                               ,        0.00009,      0.2%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        5290925,    100.0%
+Total Cost Units Consumed                                                  ,        5288235,    100.0%
 AfterInvoke                                                                ,            300,      0.0%
 AllocateNodeId                                                             ,           6500,      0.1%
 BeforeInvoke                                                               ,           6462,      0.1%
@@ -31,6 +31,6 @@ RunNativeCode::take_FungibleVault                                          ,    
 RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      1.2%
 RunNativeCode::withdraw                                                    ,          47564,      0.9%
 TxBaseCost                                                                 ,          50000,      0.9%
-TxPayloadCost                                                              ,          13450,      0.3%
+TxPayloadCost                                                              ,          10760,      0.2%
 TxSignatureVerification                                                    ,           7000,      0.1%
 WriteSubstate                                                              ,          12764,      0.2%

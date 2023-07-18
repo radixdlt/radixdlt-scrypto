@@ -1,16 +1,16 @@
-Total Cost (XRD)                                                           ,   1.1379288925,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.97236085,     85.5%
-+ Tipping Cost (XRD)                                                       ,   0.0486180425,      4.3%
+Total Cost (XRD)                                                           ,   1.1371674325,    100.0%
++ Execution Cost (XRD)                                                     ,     0.97163565,     85.4%
++ Tipping Cost (XRD)                                                       ,   0.0485817825,      4.3%
 + State Expansion Cost (XRD)                                               ,        0.11695,     10.3%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       97236085,    100.0%
+Total Cost Units Consumed                                                  ,       97163565,    100.0%
 AfterInvoke                                                                ,            494,      0.0%
 AllocateNodeId                                                             ,          10500,      0.0%
 BeforeInvoke                                                               ,          22224,      0.0%
 CloseSubstate                                                              ,         118000,      0.1%
 Commit::GlobalAccount                                                      ,         200012,      0.2%
 Commit::GlobalGenericComponent                                             ,         100018,      0.1%
-Commit::GlobalNonFungibleResourceManager                                   ,       43901388,     45.1%
+Commit::GlobalNonFungibleResourceManager                                   ,       43901388,     45.2%
 Commit::InternalFungibleVault                                              ,         100010,      0.1%
 Commit::InternalNonFungibleVault                                           ,       42500888,     43.7%
 CreateNode                                                                 ,          40736,      0.0%
@@ -44,6 +44,6 @@ RunNativeCode::try_deposit_batch_or_abort                                  ,    
 RunWasmCode::Faucet_lock_fee                                               ,          17654,      0.0%
 SetSubstate                                                                ,         219762,      0.2%
 TxBaseCost                                                                 ,          50000,      0.1%
-TxPayloadCost                                                              ,         362600,      0.4%
+TxPayloadCost                                                              ,         290080,      0.3%
 TxSignatureVerification                                                    ,              0,      0.0%
 WriteSubstate                                                              ,          15480,      0.0%

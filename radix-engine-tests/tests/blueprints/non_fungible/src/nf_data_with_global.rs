@@ -1,6 +1,6 @@
 use scrypto::prelude::*;
 
-use crate::nf_data_with_global::nf_data_with_global::NonFungibleWithGlobalTest;
+use self::nf_data_with_global::NonFungibleWithGlobalTest;
 
 #[derive(ScryptoSbor, NonFungibleData)]
 pub struct NFDataWithGlobal {
