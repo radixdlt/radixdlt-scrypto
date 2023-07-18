@@ -459,6 +459,9 @@ pub enum InstructionV1 {
     //==============
     // Complex
     //==============
+    #[sbor(discriminator(INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR))]
+    DropNamedProofs,
+
     /// Drops all proofs, both named proofs and auth zone proofs.
     #[sbor(discriminator(INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR))]
     DropAllProofs,
@@ -533,5 +536,6 @@ pub const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
 //==============
 // Complex
 //==============
+pub const INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR: u8 = 0x52;
 pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
 pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;

@@ -642,6 +642,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             (name, parameters)
         }
 
+        InstructionV1::DropNamedProofs => ("DROP_NAMED_PROOFS", to_manifest_value(&())?),
         InstructionV1::DropAllProofs => ("DROP_ALL_PROOFS", to_manifest_value(&())?),
         InstructionV1::AllocateGlobalAddress {
             package_address,

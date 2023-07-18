@@ -242,9 +242,14 @@ impl NotarizedTransactionValidator {
                         .drop_proof(&proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
+                InstructionV1::DropNamedProofs => {
+                    id_validator
+                        .drop_all_named_proofs()
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
                 InstructionV1::DropAllProofs => {
                     id_validator
-                        .drop_all_proofs()
+                        .drop_all_named_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 InstructionV1::CallFunction { args, .. }

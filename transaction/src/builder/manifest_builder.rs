@@ -501,9 +501,20 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::DropAllProofs)
     }
 
-    /// Drops all virtual proofs.
+    /// Drops named proofs.
+    pub fn drop_named_proofs(self) -> Self {
+        self.registrar.consume_all_proofs();
+        self.add_instruction(InstructionV1::DropNamedProofs)
+    }
+
+    /// Drops auth zone signature proofs.
     pub fn drop_auth_zone_signature_proofs(self) -> Self {
         self.add_instruction(InstructionV1::DropAuthZoneSignatureProofs)
+    }
+
+    /// Drops auth zone regular proofs.
+    pub fn drop_auth_zone_regular_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneRegularProofs)
     }
 
     /// Creates a fungible resource

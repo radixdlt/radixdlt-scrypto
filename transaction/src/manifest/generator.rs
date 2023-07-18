@@ -565,9 +565,16 @@ where
             }
         }
 
+        ast::Instruction::DropNamedProofs => {
+            id_validator
+                .drop_all_named_proofs()
+                .map_err(GeneratorError::IdValidationError)?;
+            InstructionV1::DropNamedProofs
+        }
+
         ast::Instruction::DropAllProofs => {
             id_validator
-                .drop_all_proofs()
+                .drop_all_named_proofs()
                 .map_err(GeneratorError::IdValidationError)?;
             InstructionV1::DropAllProofs
         }

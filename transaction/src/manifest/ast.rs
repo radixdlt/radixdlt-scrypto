@@ -132,6 +132,8 @@ pub enum Instruction {
         args: Vec<Value>,
     },
 
+    DropNamedProofs,
+
     DropAllProofs,
 
     AllocateGlobalAddress {

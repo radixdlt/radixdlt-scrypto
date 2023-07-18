@@ -34,6 +34,10 @@ DROP_AUTH_ZONE_REGULAR_PROOFS;
 # Drop all proofs in the auth zone.
 DROP_AUTH_ZONE_PROOFS;
 
-# Drop all proofs, and move resources to account
+# Drop all proofs
+DROP_NAMED_PROOFS;
+
+# Drop all proofs
 DROP_ALL_PROOFS;
+
 CALL_METHOD Address("${account_address}") "deposit_batch" Expression("ENTIRE_WORKTOP");
