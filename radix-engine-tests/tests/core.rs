@@ -1,4 +1,7 @@
-use radix_engine::types::*;
+use radix_engine::{
+    errors::{RuntimeError, SystemError},
+    types::*,
+};
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -33,4 +36,52 @@ fn test_call() {
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     receipt.expect_commit_success();
+}
+
+#[test]
+fn cant_globalize_in_another_package() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address1 = test_runner.compile_and_publish("./tests/blueprints/core");
+    let package_address2 = test_runner.compile_and_publish("./tests/blueprints/core");
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address1,
+            "GlobalizeTest",
+            "globalize_in_package",
+            manifest_args![package_address2],
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidGlobalizeAccess(..))
+        )
+    });
+}
+
+#[test]
+fn cant_drop_in_another_package() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address1 = test_runner.compile_and_publish("./tests/blueprints/core");
+    let package_address2 = test_runner.compile_and_publish("./tests/blueprints/core");
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address1,
+            "DropTest",
+            "drop_in_package",
+            manifest_args![package_address2],
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::SystemError(SystemError::InvalidDropAccess(..))
+        )
+    });
 }
