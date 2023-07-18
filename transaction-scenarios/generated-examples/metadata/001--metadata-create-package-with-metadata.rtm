@@ -29,6 +29,7 @@ PUBLISH_PACKAGE_ADVANCED
         Map<String, Tuple>(
             "MetadataTest" => Tuple(
                 Enum<0u8>(),
+                false,
                 Array<String>(),
                 Array<Address>(),
                 Tuple(
