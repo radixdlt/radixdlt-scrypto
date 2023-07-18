@@ -17,8 +17,8 @@ mod hello {
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
-                        "name" => "HelloToken".to_owned(), locked;
-                        "symbol" => "HT".to_owned(), locked;
+                        "name" => "HelloToken", locked;
+                        "symbol" => "HT", locked;
                     }
                 })
                 .mint_initial_supply(1000);
