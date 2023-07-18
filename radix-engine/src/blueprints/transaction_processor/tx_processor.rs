@@ -190,14 +190,6 @@ impl TransactionProcessorBlueprint {
                     processor.create_manifest_proof(proof)?;
                     InstructionOutput::None
                 }
-                InstructionV1::DropAuthZoneProofs => {
-                    LocalAuthZone::drop_proofs(api)?;
-                    InstructionOutput::None
-                }
-                InstructionV1::DropAuthZoneSignatureProofs => {
-                    LocalAuthZone::drop_auth_zone_signature_proofs(api)?;
-                    InstructionOutput::None
-                }
                 InstructionV1::PushToAuthZone { proof_id } => {
                     let proof = processor.take_proof(&proof_id)?;
                     LocalAuthZone::push(proof, api)?;
@@ -246,6 +238,18 @@ impl TransactionProcessorBlueprint {
                     let bucket = processor.get_bucket(&bucket_id)?;
                     let proof = bucket.create_proof_of_all(api)?;
                     processor.create_manifest_proof(proof)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneProofs => {
+                    LocalAuthZone::drop_proofs(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneRegularProofs => {
+                    LocalAuthZone::drop_auth_zone_regular_proofs(api)?;
+                    InstructionOutput::None
+                }
+                InstructionV1::DropAuthZoneSignatureProofs => {
+                    LocalAuthZone::drop_auth_zone_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::BurnResource { bucket_id } => {
@@ -377,10 +381,14 @@ impl TransactionProcessorBlueprint {
                         api
                     )
                 }
+                InstructionV1::DropNamedProofs => {
+                    for (_, real_id) in processor.proof_mapping.drain(..) {
+                        let proof = Proof(Own(real_id));
+                        proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
+                    }
+                    InstructionOutput::None
+                }
                 InstructionV1::DropAllProofs => {
-                    // NB: the difference between DROP_ALL_PROOFS and DROP_AUTH_ZONE_PROOFS is that
-                    // the former will drop all named proofs before clearing the auth zone.
-
                     for (_, real_id) in processor.proof_mapping.drain(..) {
                         let proof = Proof(Own(real_id));
                         proof.drop(api).map(|_| IndexedScryptoValue::unit())?;
