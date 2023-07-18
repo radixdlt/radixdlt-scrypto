@@ -209,11 +209,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_set_substate(api, value_size, store_access)
     }
 
-    fn on_take_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drain_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_take_substates(api, store_access)
+        SystemModuleMixer::on_drain_substates(api, store_access)
     }
 
     fn after_create_node<Y>(

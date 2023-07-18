@@ -1,7 +1,7 @@
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, StoreAccess, StoreAccessInfo, SubstateStore,
-    TakeSubstateError,
+    AcquireLockError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess,
+    StoreAccessInfo, SubstateStore,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -10,6 +10,7 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_PROOF_BLUEPRINT,
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
@@ -241,21 +242,22 @@ pub enum CallFrameSetSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameRemoveSubstateError {
     NodeNotVisible(NodeId),
-    StoreError(TakeSubstateError),
+    StoreError(RemoveSubstateError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum CallFrameScanSubstateError {
+pub enum CallFrameScanSubstatesError {
     NodeNotVisible(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CallFrameDrainSubstatesError {
+    NodeNotVisible(NodeId),
+    OwnedNodeNotSupported(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanSortedSubstatesError {
-    NodeNotVisible(NodeId),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum CallFrameTakeSortedSubstatesError {
     NodeNotVisible(NodeId),
 }
 
@@ -564,8 +566,12 @@ impl<L: Clone> CallFrame<L> {
                     }
                     // Owned nodes discarded by the substate go back to the call frame,
                     // and must be explicitly dropped.
-                    // FIXME: I suspect this is buggy as one can detach a locked non-root
+                    // FIXME(Yulong): I suspect this is buggy as one can detach a locked non-root
                     // node, move and drop; which will cause invalid lock handle in previous frames.
+                    // FIXME(Josh): Would prefer removing this case entirely as this edge case
+                    // means that a component's logic may or may not work depending on whether
+                    // it's in the store or the heap, which I think feels very unintuitive.
+                    // Rather, let's fix the specific worktop drop bucket issue
                     self.owned_root_nodes.insert(own.clone(), 0);
                 }
             }
@@ -942,86 +948,79 @@ impl<L: Clone> CallFrame<L> {
 
         let (removed, store_access) = if heap.contains_node(node_id) {
             (
-                heap.delete_substate(node_id, partition_num, key),
+                heap.remove_substate(node_id, partition_num, key),
                 StoreAccessInfo::new(),
             )
         } else {
             store
-                .take_substate(node_id, partition_num, key)
+                .remove_substate(node_id, partition_num, key)
                 .map_err(|e| CallFrameRemoveSubstateError::StoreError(e))?
         };
 
         Ok((removed, store_access))
     }
 
-    pub fn scan_substates<'f, S: SubstateStore>(
+    pub fn scan_keys<'f, K: SubstateKeyContent, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameScanSubstateError> {
+    ) -> Result<(Vec<SubstateKey>, StoreAccessInfo), CallFrameScanSubstatesError> {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallFrameScanSubstateError::NodeNotVisible(node_id.clone()));
+            return Err(CallFrameScanSubstatesError::NodeNotVisible(node_id.clone()));
         }
 
-        let (substates, store_access) = if heap.contains_node(node_id) {
+        let (keys, store_access) = if heap.contains_node(node_id) {
             (
-                heap.scan_substates(node_id, partition_num, count),
+                heap.scan_keys(node_id, partition_num, count),
                 StoreAccessInfo::new(),
             )
         } else {
-            store.scan_substates(node_id, partition_num, count)
+            store.scan_keys::<K>(node_id, partition_num, count)
         };
 
-        for substate in &substates {
-            for reference in substate.references() {
-                if reference.is_global() {
-                    self.stable_references
-                        .insert(reference.clone(), StableReferenceType::Global);
-                } else {
-                    // FIXME: check if non-global reference is needed
-                }
-            }
-        }
-
-        Ok((substates, store_access))
+        Ok((keys, store_access))
     }
 
-    pub fn take_substates<'f, S: SubstateStore>(
+    pub fn drain_substates<'f, K: SubstateKeyContent, S: SubstateStore>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameTakeSortedSubstatesError>
-    {
+    ) -> Result<
+        (Vec<(SubstateKey, IndexedScryptoValue)>, StoreAccessInfo),
+        CallFrameDrainSubstatesError,
+    > {
         // Check node visibility
         if !self.get_node_visibility(node_id).can_be_read_or_write() {
-            return Err(CallFrameTakeSortedSubstatesError::NodeNotVisible(
+            return Err(CallFrameDrainSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ));
         }
 
         let (substates, store_access) = if heap.contains_node(node_id) {
             (
-                heap.take_substates(node_id, partition_num, count),
+                heap.drain_substates(node_id, partition_num, count),
                 StoreAccessInfo::new(),
             )
         } else {
-            store.take_substates(node_id, partition_num, count)
+            store.drain_substates::<K>(node_id, partition_num, count)
         };
 
-        for substate in &substates {
+        for (_key, substate) in &substates {
             for reference in substate.references() {
                 if reference.is_global() {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    // FIXME: check if non-global reference is needed
+                    return Err(CallFrameDrainSubstatesError::OwnedNodeNotSupported(
+                        reference.clone(),
+                    ));
                 }
             }
         }
