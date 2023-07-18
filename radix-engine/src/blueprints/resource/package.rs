@@ -146,8 +146,8 @@ pub const AUTH_ZONE_CREATE_PROOF_OF_AMOUNT_EXPORT_NAME: &str = "AuthZone_create_
 pub const AUTH_ZONE_CREATE_PROOF_OF_NON_FUNGIBLES_EXPORT_NAME: &str =
     "AuthZone_create_proof_of_non_fungibles";
 pub const AUTH_ZONE_CREATE_PROOF_OF_ALL_EXPORT_NAME: &str = "AuthZone_create_proof_of_all";
-pub const AUTH_ZONE_CLEAR_EXPORT_NAME: &str = "AuthZone_clear";
-pub const AUTH_ZONE_DROP_AUTH_ZONE_SIGNATURE_PROOFS_EXPORT_NAME: &str = "AuthZone_drop_auth_zone_signature_proofs";
+pub const AUTH_ZONE_DROP_PROOFS_EXPORT_NAME: &str = "AuthZone_drop_proofs";
+pub const AUTH_ZONE_DROP_SIGNATURE_PROOFS_EXPORT_NAME: &str = "AuthZone_drop_signature_proofs";
 pub const AUTH_ZONE_DRAIN_EXPORT_NAME: &str = "AuthZone_drain";
 
 pub struct ResourceNativePackage;
@@ -2096,7 +2096,7 @@ impl ResourceNativePackage {
                 },
             );
             functions.insert(
-                AUTH_ZONE_CLEAR_IDENT.to_string(),
+                AUTH_ZONE_DROP_PROOFS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(
@@ -2105,11 +2105,11 @@ impl ResourceNativePackage {
                     output: TypeRef::Static(
                         aggregator.add_child_type_and_descendents::<AuthZoneClearOutput>(),
                     ),
-                    export: AUTH_ZONE_CLEAR_EXPORT_NAME.to_string(),
+                    export: AUTH_ZONE_DROP_PROOFS_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
-                AUTH_ZONE_DROP_AUTH_ZONE_SIGNATURE_PROOFS_IDENT.to_string(),
+                AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT.to_string(),
                 FunctionSchemaInit {
                     receiver: Some(ReceiverInfo::normal_ref_mut()),
                     input: TypeRef::Static(
@@ -2120,7 +2120,7 @@ impl ResourceNativePackage {
                         aggregator
                             .add_child_type_and_descendents::<AuthZoneClearVirtualProofsOutput>(),
                     ),
-                    export: AUTH_ZONE_DROP_AUTH_ZONE_SIGNATURE_PROOFS_EXPORT_NAME.to_string(),
+                    export: AUTH_ZONE_DROP_SIGNATURE_PROOFS_EXPORT_NAME.to_string(),
                 },
             );
             functions.insert(
@@ -3038,7 +3038,7 @@ impl ResourceNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&proof))
             }
-            AUTH_ZONE_CLEAR_EXPORT_NAME => {
+            AUTH_ZONE_DROP_PROOFS_EXPORT_NAME => {
                 let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;
@@ -3047,7 +3047,7 @@ impl ResourceNativePackage {
 
                 Ok(IndexedScryptoValue::from_typed(&()))
             }
-            AUTH_ZONE_DROP_AUTH_ZONE_SIGNATURE_PROOFS_EXPORT_NAME => {
+            AUTH_ZONE_DROP_SIGNATURE_PROOFS_EXPORT_NAME => {
                 let _input: AuthZoneClearInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                 })?;

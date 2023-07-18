@@ -35,7 +35,7 @@ impl LocalAuthZone {
         let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
-            AUTH_ZONE_CLEAR_IDENT,
+            AUTH_ZONE_DROP_PROOFS_IDENT,
             scrypto_encode(&AuthZoneClearInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())
@@ -50,7 +50,7 @@ impl LocalAuthZone {
         let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
-            AUTH_ZONE_DROP_AUTH_ZONE_SIGNATURE_PROOFS_IDENT,
+            AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT,
             scrypto_encode(&AuthZoneClearVirtualProofsInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())

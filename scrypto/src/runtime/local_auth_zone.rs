@@ -102,7 +102,7 @@ impl LocalAuthZone {
         let rtn = env
             .call_method(
                 &node_id,
-                AUTH_ZONE_CLEAR_IDENT,
+                AUTH_ZONE_DROP_PROOFS_IDENT,
                 scrypto_encode(&AuthZoneClearInput {}).unwrap(),
             )
             .unwrap();

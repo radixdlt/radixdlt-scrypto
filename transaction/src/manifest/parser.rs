@@ -539,7 +539,9 @@ impl Parser {
                     new_proof: self.parse_value()?,
                 }
             }
-            InstructionIdent::DropAuthZoneSignatureProofs => Instruction::DropAuthZoneSignatureProofs,
+            InstructionIdent::DropAuthZoneSignatureProofs => {
+                Instruction::DropAuthZoneSignatureProofs
+            }
 
             InstructionIdent::CreateProofFromBucketOfAmount => {
                 Instruction::CreateProofFromBucketOfAmount {

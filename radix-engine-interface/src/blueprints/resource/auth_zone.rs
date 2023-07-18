@@ -66,14 +66,14 @@ pub struct AuthZoneCreateProofOfAllInput {
 
 pub type AuthZoneCreateProofOfAllOutput = Proof;
 
-pub const AUTH_ZONE_CLEAR_IDENT: &str = "clear";
+pub const AUTH_ZONE_DROP_PROOFS_IDENT: &str = "drop_proofs";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneClearInput {}
 
 pub type AuthZoneClearOutput = ();
 
-pub const AUTH_ZONE_DROP_AUTH_ZONE_SIGNATURE_PROOFS_IDENT: &str = "drop_auth_zone_signature_proofs";
+pub const AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT: &str = "drop_signature_proofs";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneClearVirtualProofsInput {}

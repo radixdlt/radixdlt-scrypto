@@ -116,7 +116,10 @@ fn test_normal_transaction_flow() {
         {
             let mut builder = ManifestBuilder::new();
             builder.add_blob([123u8; 1023 * 1024].to_vec());
-            builder.lock_fee_from_faucet().drop_auth_zone_proofs().build()
+            builder
+                .lock_fee_from_faucet()
+                .drop_auth_zone_proofs()
+                .build()
         },
     )
     .to_raw()
