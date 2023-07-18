@@ -1,6 +1,5 @@
 use scrypto::api::*;
 use scrypto::blueprints::consensus_manager::*;
-use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
 #[blueprint]
