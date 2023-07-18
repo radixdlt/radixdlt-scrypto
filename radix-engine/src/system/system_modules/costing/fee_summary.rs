@@ -53,6 +53,10 @@ impl FeeSummary {
             + self.total_royalty_cost_xrd
     }
 
+    pub fn total_payments(&self) -> Decimal {
+        self.fee_payments.values().cloned().sum::<Decimal>()
+    }
+
     //===================
     // For testing only
     //===================
