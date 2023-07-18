@@ -789,7 +789,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     fn on_persist_node<S: SubstateStore, M: KernelCallbackObject>(
         heap: &mut Heap,
         store: &mut S,
-        callback: &mut M,
+        _callback: &mut M,
         node_id: &NodeId,
     ) -> Result<(), String> {
         let maybe_type_info = if let Some(substate) = heap.get_substate(
@@ -812,12 +812,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             None
         };
 
-        let is_persist_allowed = if let Some(TypeInfoSubstate::Object(ObjectInfo {
-            main_blueprint_id,
-            ..
-        })) = maybe_type_info
-        {
-            true
+        let is_persist_allowed = if let Some(type_info) = maybe_type_info {
+            match type_info {
+                TypeInfoSubstate::Object(_) => true,
+                TypeInfoSubstate::KeyValueStore(_) => true,
+                TypeInfoSubstate::GlobalAddressReservation(_) => false,
+                TypeInfoSubstate::GlobalAddressPhantom(_) => true,
+            }
         } else {
             false
         };
@@ -825,7 +826,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         if is_persist_allowed {
             Ok(())
         } else {
-            Err("Persistence not allowed".to_owned())
+            Err("Prohibited".to_owned())
         }
     }
 }

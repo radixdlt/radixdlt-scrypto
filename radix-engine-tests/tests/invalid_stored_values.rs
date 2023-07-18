@@ -28,7 +28,7 @@ fn stored_bucket_in_committed_component_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
                 CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
-                    PersistNodeError::NotAllowedToPersist(..)
+                    PersistNodeError::NotAllowed(..)
                 ))
             ))
         )
@@ -59,7 +59,7 @@ fn stored_bucket_in_owned_component_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
                 CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
-                    PersistNodeError::NotAllowedToPersist(..)
+                    PersistNodeError::NotAllowed(..)
                 ))
             ))
         )

@@ -186,7 +186,7 @@ pub enum DropNodeError {
 /// Represents an error when persisting a node into store.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistNodeError {
-    NotAllowedToPersist(NodeId, String),
+    NotAllowed(NodeId, String),
     ContainsNonGlobalRef(NodeId),
     NodeBorrowed(NodeId, usize),
 }
@@ -1109,7 +1109,7 @@ impl<L: Clone> CallFrame<L> {
         F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
     {
         filter(heap, store, callback, node_id)
-            .map_err(|e| PersistNodeError::NotAllowedToPersist(node_id.clone(), e))?;
+            .map_err(|e| PersistNodeError::NotAllowed(node_id.clone(), e))?;
 
         let node_substates = match heap.remove_node(node_id) {
             Ok(substates) => substates,
