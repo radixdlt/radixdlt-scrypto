@@ -43,7 +43,7 @@ impl Message {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SubstateStoreHandle {
-    Heap,
+    Heap(u32),
     Store(u32),
 }
 
@@ -427,7 +427,7 @@ impl<L: Clone> CallFrame<L> {
                 .map_err(|e| CallbackError::Error(OpenSubstateError::HeapError(e)))?;
             let value = heap.read_substate(handle);
 
-            (value, SubstateStoreHandle::Heap)
+            (value, SubstateStoreHandle::Heap(handle))
         } else {
             let handle = store
                 .open_substate_virtualize(
@@ -518,7 +518,7 @@ impl<L: Clone> CallFrame<L> {
 
         if substate_lock.flags.contains(LockFlags::MUTABLE) {
             let substate = match substate_lock.substate_store_handle {
-                SubstateStoreHandle::Heap => heap
+                SubstateStoreHandle::Heap(..) => heap
                     .get_substate(node_id, partition_num, substate_key)
                     .expect("Substate locked but missing"),
                 SubstateStoreHandle::Store(handle) => store.read_substate(handle),
@@ -631,7 +631,9 @@ impl<L: Clone> CallFrame<L> {
 
         // Release track lock
         match substate_lock.substate_store_handle {
-            SubstateStoreHandle::Heap => {}
+            SubstateStoreHandle::Heap(handle) => {
+                heap.close_substate(handle);
+            }
             SubstateStoreHandle::Store(handle) => {
                 store.close_substate(handle);
             }
@@ -657,9 +659,6 @@ impl<L: Clone> CallFrame<L> {
         lock_handle: LockHandle,
     ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
         let OpenedSubstate {
-            node_id,
-            partition_num,
-            substate_key,
             substate_store_handle,
             ..
         } = self
@@ -668,9 +667,7 @@ impl<L: Clone> CallFrame<L> {
             .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
 
         let substate = match substate_store_handle {
-            SubstateStoreHandle::Heap => heap
-                .get_substate(node_id, *partition_num, substate_key)
-                .expect("Substate missing in heap"),
+            SubstateStoreHandle::Heap(handle) => heap.read_substate(*handle),
             SubstateStoreHandle::Store(handle) => store.read_substate(*handle),
         };
 
@@ -701,7 +698,7 @@ impl<L: Clone> CallFrame<L> {
         }
 
         match substate_store_handle {
-            SubstateStoreHandle::Heap => {
+            SubstateStoreHandle::Heap(..) => {
                 heap.set_substate(*node_id, *partition_num, substate_key.clone(), substate);
             }
             SubstateStoreHandle::Store(handle) => {

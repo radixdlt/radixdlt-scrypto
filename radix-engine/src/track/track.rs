@@ -64,7 +64,7 @@ impl SubstateLockState {
         Ok(())
     }
 
-    fn unlock(&mut self) {
+    pub fn unlock(&mut self) {
         match self {
             SubstateLockState::Read(n) => {
                 *n = *n - 1;

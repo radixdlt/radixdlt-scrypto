@@ -7,6 +7,7 @@ use radix_engine_interface::blueprints::resource::{
     LockedNonFungibleResource,
 };
 use sbor::rust::collections::btree_map::Entry;
+use crate::track::SubstateLockState;
 
 #[derive(Debug, Default)]
 pub struct HeapNode {
@@ -17,6 +18,7 @@ pub struct HeapNode {
 pub struct Heap {
     nodes: NonIterMap<NodeId, HeapNode>,
     locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,
+    substate_lock_states: NonIterMap<(NodeId, PartitionNumber, SubstateKey), SubstateLockState>,
     next_lock_id: u32,
 }
 
@@ -35,6 +37,7 @@ pub enum HeapRemoveNodeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapOpenSubstateError {
     LockUnmodifiedBaseOnHeapNode,
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
     SubstateNotFound(NodeId, PartitionNumber, SubstateKey),
 }
 
@@ -43,6 +46,7 @@ impl Heap {
         Self {
             nodes: NonIterMap::new(),
             locks: IndexMap::new(),
+            substate_lock_states: NonIterMap::new(),
             next_lock_id: 0u32,
         }
     }
@@ -89,6 +93,12 @@ impl Heap {
         new_lock
     }
 
+    pub fn close_substate(&mut self, handle: u32) {
+        let (node_id, partition_num, substate_key, _flags) = self.locks.remove(&handle).unwrap();
+        let lock_state = self.substate_lock_states.get_mut(&(node_id, partition_num, substate_key)).unwrap();
+        lock_state.unlock();
+    }
+
     pub fn open_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
@@ -118,6 +128,14 @@ impl Heap {
                     partition_num,
                     substate_key.clone(),
                 ));
+            }
+        }
+
+        let lock_state = self.substate_lock_states.entry((node_id.clone(), partition_num, substate_key.clone())).or_insert(SubstateLockState::Read(0));
+        match lock_state.try_lock(flags) {
+            Ok(()) => {},
+            Err(_) => {
+                return Err(HeapOpenSubstateError::SubstateLocked(node_id.clone(), partition_num, substate_key.clone()));
             }
         }
 
