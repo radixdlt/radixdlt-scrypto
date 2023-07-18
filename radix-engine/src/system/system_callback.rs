@@ -621,10 +621,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             TypeInfoSubstate::Object(node_object_info) => {
                 let mut service = SystemService::new(api);
                 let definition = service.load_blueprint_definition(
-                    node_object_info
-                        .blueprint_info
-                        .blueprint_id
-                        .package_address,
+                    node_object_info.blueprint_info.blueprint_id.package_address,
                     &BlueprintVersionKey {
                         blueprint: node_object_info
                             .blueprint_info

@@ -187,9 +187,7 @@ impl ScryptoUncheckedProof for Proof {
         let blueprint_id = env.get_blueprint_id(self.0.as_node_id()).unwrap();
         env.call_function(
             RESOURCE_PACKAGE,
-                blueprint_id
-                .blueprint_name
-                .as_str(),
+            blueprint_id.blueprint_name.as_str(),
             PROOF_DROP_IDENT,
             scrypto_encode(&ProofDropInput {
                 proof: Proof(self.0),

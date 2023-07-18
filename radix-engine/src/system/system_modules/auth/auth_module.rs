@@ -257,28 +257,23 @@ impl AuthModule {
                     package_of_direct_caller(package)
                 ))))
             }
-            Some(MethodAccessibility::OuterObjectOnly) => {
-                match callee.module_id {
-                    ObjectModuleId::Main => {
-                        let outer_object_info = &callee
-                            .object_info
-                            .blueprint_info
-                            .outer_obj_info;
-                        match outer_object_info {
-                            OuterObjectInfo::Inner { outer_object } => Ok(ResolvedPermission::AccessRule(
-                                rule!(require(global_caller(*outer_object))),
-                            )),
-                            OuterObjectInfo::Outer { .. } => Err(RuntimeError::SystemModuleError(
-                                SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
-                            )),
+            Some(MethodAccessibility::OuterObjectOnly) => match callee.module_id {
+                ObjectModuleId::Main => {
+                    let outer_object_info = &callee.object_info.blueprint_info.outer_obj_info;
+                    match outer_object_info {
+                        OuterObjectInfo::Inner { outer_object } => {
+                            Ok(ResolvedPermission::AccessRule(rule!(require(
+                                global_caller(*outer_object)
+                            ))))
                         }
-                    }
-                    _ => {
-                        Err(RuntimeError::SystemModuleError(
+                        OuterObjectInfo::Outer { .. } => Err(RuntimeError::SystemModuleError(
                             SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
-                        ))
+                        )),
                     }
                 }
+                _ => Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
+                )),
             },
             Some(MethodAccessibility::RoleProtected(role_list)) => {
                 Ok(ResolvedPermission::RoleList {

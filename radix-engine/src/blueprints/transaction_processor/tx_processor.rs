@@ -610,10 +610,7 @@ impl TransactionProcessor {
             match info {
                 TypeInfoSubstate::Object(info) => match (
                     info.blueprint_info.blueprint_id.package_address,
-                    info.blueprint_info
-                        .blueprint_id
-                        .blueprint_name
-                        .as_str(),
+                    info.blueprint_info.blueprint_id.blueprint_name.as_str(),
                 ) {
                     (RESOURCE_PACKAGE, FUNGIBLE_BUCKET_BLUEPRINT)
                     | (RESOURCE_PACKAGE, NON_FUNGIBLE_BUCKET_BLUEPRINT) => {

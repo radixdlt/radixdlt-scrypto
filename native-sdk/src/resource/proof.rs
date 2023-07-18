@@ -71,12 +71,8 @@ impl NativeProof for Proof {
     where
         Y: ClientObjectApi<E>,
     {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            PROOF_GET_RESOURCE_ADDRESS_IDENT,
-            scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
-        )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let address = api.get_outer_object(self.0.as_node_id()).unwrap();
+        Ok(ResourceAddress::try_from(address).unwrap())
     }
 
     fn clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(

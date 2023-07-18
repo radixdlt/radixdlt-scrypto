@@ -317,7 +317,6 @@ fn get_outer_object(
         .map(|buffer| buffer.0)
 }
 
-
 fn drop_object(
     mut caller: Caller<'_, HostState>,
     node_id_ptr: u32,
@@ -982,7 +981,11 @@ impl WasmiModule {
         linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
         linker_define!(linker, GLOBALIZE_FUNCTION_NAME, host_globalize_object);
         linker_define!(linker, GET_BLUEPRINT_ID_FUNCTION_NAME, host_get_object_info);
-        linker_define!(linker, GET_OUTER_OBJECT_FUNCTION_NAME, host_get_outer_object);
+        linker_define!(
+            linker,
+            GET_OUTER_OBJECT_FUNCTION_NAME,
+            host_get_outer_object
+        );
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, ACTOR_OPEN_FIELD_FUNCTION_NAME, host_lock_field);
         linker_define!(

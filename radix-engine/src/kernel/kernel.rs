@@ -9,6 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
+use crate::kernel::actor::MethodType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -213,12 +214,12 @@ where
         let can_be_invoked = match &invocation.actor {
             Actor::Method(MethodActor {
                 node_id,
-                is_direct_access,
+                method_type,
                 ..
             }) => self
                 .current_frame
                 .get_node_visibility(&node_id)
-                .can_be_invoked(*is_direct_access),
+                .can_be_invoked(method_type.eq(&MethodType::DirectAccess)),
             Actor::Function(FunctionActor { blueprint_id, .. })
             | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
                 // FIXME: combine this with reference check of invocation
@@ -437,8 +438,7 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(info)
-                    if info.blueprint_info.blueprint_id.package_address
-                        == RESOURCE_PACKAGE
+                    if info.blueprint_info.blueprint_id.package_address == RESOURCE_PACKAGE
                         && (info.blueprint_info.blueprint_id.blueprint_name
                             == FUNGIBLE_BUCKET_BLUEPRINT
                             || info.blueprint_info.blueprint_id.blueprint_name

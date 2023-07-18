@@ -3,19 +3,27 @@ use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstanceContext {
     pub outer_object: GlobalAddress,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum MethodType {
+    DirectAccess,
+    /// This variant is never actually used but is added for completeness sake in case
+    /// a direct access method ever calls another method
+    DirectAccessChild,
+    OnHeapObject,
+    OnStoredObject(GlobalAddress),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
-    /// Global Address exists if: (1) NOT a direct access and (2) the object has been stored
-    pub global_address: Option<GlobalAddress>,
+    pub method_type: MethodType,
     pub node_id: NodeId,
     pub module_id: ObjectModuleId,
     pub ident: String,
-    pub is_direct_access: bool,
 
     // Cached info
     pub object_info: ObjectInfo,
@@ -24,11 +32,7 @@ pub struct MethodActor {
 impl MethodActor {
     pub fn get_blueprint_id(&self) -> BlueprintId {
         match self.module_id {
-            ObjectModuleId::Main => self
-                .object_info
-                .blueprint_info
-                .blueprint_id
-                .clone(),
+            ObjectModuleId::Main => self.object_info.blueprint_info.blueprint_id.clone(),
             _ => self.module_id.static_blueprint().unwrap(),
         }
     }
@@ -88,16 +92,14 @@ impl Actor {
                     })
                 } else {
                     match &method_actor.object_info.blueprint_info.outer_obj_info {
-                        OuterObjectInfo::Inner { outer_object } => {
-                            Some(InstanceContext {
-                                outer_object: outer_object.clone(),
-                            })
-                        }
+                        OuterObjectInfo::Inner { outer_object } => Some(InstanceContext {
+                            outer_object: outer_object.clone(),
+                        }),
                         OuterObjectInfo::Outer { .. } => None,
                     }
                 }
             }
-            _ => None
+            _ => None,
         }
     }
 
@@ -134,10 +136,7 @@ impl Actor {
 
     pub fn is_auth_zone(&self) -> bool {
         match self {
-            Actor::Method(MethodActor {
-                object_info,
-                ..
-            }) => {
+            Actor::Method(MethodActor { object_info, .. }) => {
                 object_info
                     .blueprint_info
                     .blueprint_id
@@ -157,10 +156,7 @@ impl Actor {
 
     pub fn is_barrier(&self) -> bool {
         match self {
-            Actor::Method(MethodActor {
-                object_info,
-                ..
-            }) => object_info.global,
+            Actor::Method(MethodActor { object_info, .. }) => object_info.global,
             Actor::Function { .. } => true,
             Actor::BlueprintHook { .. } => true,
             Actor::Root { .. } => false,
@@ -209,22 +205,26 @@ impl Actor {
     pub fn is_direct_access(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                is_direct_access, ..
-            }) => *is_direct_access,
+                method_type: MethodType::DirectAccess,
+                ..
+            }) => true,
             _ => false,
         }
     }
 
-    pub fn global_address(&self) -> Option<GlobalAddress> {
+    pub fn method_type(&self) -> Option<MethodType> {
         match self {
-            Actor::Method(MethodActor { global_address, .. }) => global_address.clone(),
+            Actor::Method(MethodActor { method_type, .. }) => Some(method_type.clone()),
             _ => None,
         }
     }
 
     pub fn as_global_caller(&self) -> Option<GlobalCaller> {
         match self {
-            Actor::Method(actor) => actor.global_address.map(|address| address.into()),
+            Actor::Method(actor) => match &actor.method_type {
+                MethodType::OnStoredObject(global_address) => Some(global_address.clone().into()),
+                _ => None,
+            },
             Actor::Function(FunctionActor { blueprint_id, .. }) => {
                 Some(blueprint_id.clone().into())
             }
@@ -268,20 +268,18 @@ impl Actor {
     }
 
     pub fn method(
-        global_address: Option<GlobalAddress>,
+        method_type: MethodType,
         node_id: NodeId,
         module_id: ObjectModuleId,
         ident: String,
         object_info: ObjectInfo,
-        is_direct_access: bool,
     ) -> Self {
         Self::Method(MethodActor {
-            global_address,
+            method_type,
             node_id,
             module_id,
             ident,
             object_info: object_info,
-            is_direct_access,
         })
     }
 

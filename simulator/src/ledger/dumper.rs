@@ -191,10 +191,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
         );
         writeln!(output, "{}: {:?}", "ID Type".green().bold(), id_type);
 
-        if info
-            .get_features()
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
             let total_supply = substate_db
                 .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<Decimal>>(
                     resource_address.as_node_id(),
@@ -231,10 +228,7 @@ pub fn dump_resource_manager<T: SubstateDatabase, O: std::io::Write>(
             divisibility
         );
 
-        if info
-            .get_features()
-            .contains(TRACK_TOTAL_SUPPLY_FEATURE)
-        {
+        if info.get_features().contains(TRACK_TOTAL_SUPPLY_FEATURE) {
             let total_supply = substate_db
                 .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<FungibleResourceManagerTotalSupplySubstate>>(
                     resource_address.as_node_id(),

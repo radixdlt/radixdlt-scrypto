@@ -1,4 +1,4 @@
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
+use radix_engine::errors::{CallFrameError, KernelError, RuntimeError, SystemError};
 use radix_engine::kernel::call_frame::{
     CloseSubstateError, CreateNodeError, OpenSubstateError, TakeNodeError,
 };
@@ -307,9 +307,7 @@ fn cannot_directly_reference_inserted_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
-            ))
+            RuntimeError::SystemError(SystemError::NodeNotVisibleForMethodCall)
         )
     });
 }
@@ -336,9 +334,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
-            ))
+            RuntimeError::SystemError(SystemError::NodeNotVisibleForMethodCall)
         )
     });
 }
@@ -365,9 +361,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(_))
-            ))
+            RuntimeError::SystemError(SystemError::NodeNotVisibleForMethodCall)
         )
     });
 }

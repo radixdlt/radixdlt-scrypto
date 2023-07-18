@@ -38,7 +38,7 @@ pub struct ObjectInfo {
     pub global: bool,
     pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
 
-    /// Main Blueprint Info
+    /// Blueprint Info of Object
     pub blueprint_info: BlueprintInfo,
 }
 

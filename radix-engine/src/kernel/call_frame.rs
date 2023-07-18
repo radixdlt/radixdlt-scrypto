@@ -1,3 +1,4 @@
+use crate::kernel::actor::MethodType;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
     AcquireLockError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess,
@@ -88,7 +89,7 @@ impl NodeVisibility {
     /// Note that system may enforce further constraints on this.
     /// For instance, system currently only allows substates of actor,
     /// actor's outer object, and any visible key value store.
-    pub fn can_be_read_or_write(&self) -> bool {
+    pub fn is_visible(&self) -> bool {
         !self.0.is_empty()
     }
 
@@ -310,11 +311,11 @@ impl<L: Clone> CallFrame<L> {
         match &frame.actor {
             Actor::Root => {}
             Actor::Method(MethodActor {
-                global_address,
+                method_type,
                 object_info,
                 ..
             }) => {
-                if let Some(global_address) = global_address {
+                if let MethodType::OnStoredObject(global_address) = method_type {
                     additional_global_refs.push(global_address.clone());
                 }
                 if let OuterObjectInfo::Inner { outer_object } =
@@ -413,7 +414,7 @@ impl<L: Clone> CallFrame<L> {
         data: L,
     ) -> Result<(LockHandle, usize, StoreAccessInfo), OpenSubstateError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(OpenSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -837,10 +838,7 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Check visibility
-        if !self
-            .get_node_visibility(dest_node_id)
-            .can_be_read_or_write()
-        {
+        if !self.get_node_visibility(dest_node_id).is_visible() {
             return Err(MoveModuleError::NodeNotAvailable(dest_node_id.clone()));
         }
 
@@ -915,7 +913,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<StoreAccessInfo, CallFrameSetSubstateError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallFrameSetSubstateError::NodeNotVisible(node_id.clone()));
         }
 
@@ -940,7 +938,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), CallFrameRemoveSubstateError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallFrameRemoveSubstateError::NodeNotVisible(
                 node_id.clone(),
             ));
@@ -969,7 +967,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<(Vec<SubstateKey>, StoreAccessInfo), CallFrameScanSubstatesError> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallFrameScanSubstatesError::NodeNotVisible(node_id.clone()));
         }
 
@@ -997,7 +995,7 @@ impl<L: Clone> CallFrame<L> {
         CallFrameDrainSubstatesError,
     > {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallFrameDrainSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ));
@@ -1040,7 +1038,7 @@ impl<L: Clone> CallFrame<L> {
     ) -> Result<(Vec<IndexedScryptoValue>, StoreAccessInfo), CallFrameScanSortedSubstatesError>
     {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallFrameScanSortedSubstatesError::NodeNotVisible(
                 node_id.clone(),
             ));

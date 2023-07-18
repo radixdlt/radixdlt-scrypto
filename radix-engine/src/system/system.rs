@@ -8,7 +8,7 @@ use crate::errors::{
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
+use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
 use crate::kernel::call_frame::{NodeVisibility, StableReferenceType, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
@@ -641,45 +641,48 @@ where
         let object_features: BTreeSet<String> =
             features.into_iter().map(|s| s.to_string()).collect();
 
-        let (outer_obj_info, outer_object_features) = if let BlueprintType::Inner {
-            outer_blueprint,
-        } = &expected_outer_blueprint
-        {
-            match instance_context {
-                Some(context) => {
-                    let info = self.get_object_info(context.outer_object.as_node_id())?;
+        let (outer_obj_info, outer_object_features) =
+            if let BlueprintType::Inner { outer_blueprint } = &expected_outer_blueprint {
+                match instance_context {
+                    Some(context) => {
+                        let info = self.get_object_info(context.outer_object.as_node_id())?;
 
-                    if !info.blueprint_info.blueprint_id.blueprint_name.eq(outer_blueprint) {
+                        if !info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .eq(outer_blueprint)
+                        {
+                            return Err(RuntimeError::SystemError(
+                                SystemError::InvalidChildObjectCreation,
+                            ));
+                        }
+
+                        (
+                            OuterObjectInfo::Inner {
+                                outer_object: context.outer_object,
+                            },
+                            info.blueprint_info.features,
+                        )
+                    }
+                    _ => {
                         return Err(RuntimeError::SystemError(
                             SystemError::InvalidChildObjectCreation,
                         ));
                     }
-
-                    (
-                        OuterObjectInfo::Inner {
-                            outer_object: context.outer_object,
-                        },
-                        info.blueprint_info.features,
-                    )
-                },
-                _ => {
-                    return Err(RuntimeError::SystemError(
-                        SystemError::InvalidChildObjectCreation,
-                    ));
                 }
-            }
-        } else {
-            // Validate features
-            for feature in &object_features {
-                if !blueprint_interface.feature_set.contains(feature) {
-                    return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
-                        feature.to_string(),
-                    )));
+            } else {
+                // Validate features
+                for feature in &object_features {
+                    if !blueprint_interface.feature_set.contains(feature) {
+                        return Err(RuntimeError::SystemError(SystemError::InvalidFeature(
+                            feature.to_string(),
+                        )));
+                    }
                 }
-            }
 
-            (OuterObjectInfo::Outer, BTreeSet::new())
-        };
+                (OuterObjectInfo::Outer, BTreeSet::new())
+            };
 
         let user_substates = self.validate_instance_schema_and_state(
             blueprint_id,
@@ -790,7 +793,9 @@ where
                         (address.into_node_id(), ObjectModuleId::Main)
                     }
                     _ => {
-                        return Err(RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist));
+                        return Err(RuntimeError::SystemError(
+                            SystemError::OuterObjectDoesNotExist,
+                        ));
                     }
                 }
             }
@@ -803,15 +808,7 @@ where
     fn get_actor_info(
         &mut self,
         actor_object_type: ActorObjectType,
-    ) -> Result<
-        (
-            NodeId,
-            ObjectModuleId,
-            BlueprintInterface,
-            BlueprintInfo,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<(NodeId, ObjectModuleId, BlueprintInterface, BlueprintInfo), RuntimeError> {
         let (node_id, module_id) = self.get_actor_object_id(actor_object_type)?;
         let blueprint_info = self.get_blueprint_info(&node_id, module_id)?;
         let blueprint_interface =
@@ -973,10 +970,7 @@ where
                 ObjectModuleId::Main,
             )))?;
 
-        Ok(self
-            .get_object_info(node_id)?
-            .blueprint_info
-            .blueprint_id)
+        Ok(self.get_object_info(node_id)?.blueprint_info.blueprint_id)
     }
 
     /// ASSUMPTIONS:
@@ -1133,10 +1127,7 @@ where
                 ObjectModuleId::RoleAssignment
                 | ObjectModuleId::Metadata
                 | ObjectModuleId::Royalty => {
-                    let blueprint_id = self
-                        .get_object_info(&node_id)?
-                        .blueprint_info
-                        .blueprint_id;
+                    let blueprint_id = self.get_object_info(&node_id)?.blueprint_info.blueprint_id;
                     let expected_blueprint = module_id.static_blueprint().unwrap();
                     if !blueprint_id.eq(&expected_blueprint) {
                         return Err(RuntimeError::SystemError(SystemError::InvalidModuleType(
@@ -1435,15 +1426,19 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         // Direct access methods should never have access to a global address
-        let global_address = if !direct_access {
+        let method_type = if direct_access {
+            MethodType::DirectAccess
+        } else {
             let node_visibility = self.api.kernel_get_node_visibility(receiver);
 
             // Retrieve the global address of the receiver node
-            let mut get_global_address = |node_visibility: NodeVisibility| {
+            let mut get_method_type = |node_visibility: NodeVisibility| {
                 for visibility in node_visibility.0 {
                     match visibility {
                         Visibility::StableReference(StableReferenceType::Global) => {
-                            return Some(GlobalAddress::new_or_panic(receiver.clone().into()))
+                            return Ok(MethodType::OnStoredObject(GlobalAddress::new_or_panic(
+                                receiver.clone().into(),
+                            )));
                         }
 
                         // Direct access references dont provide any info regarding global address so continue
@@ -1452,26 +1447,53 @@ where
                         }
 
                         // Anything frame owned does not have a global address
-                        Visibility::FrameOwned => return None,
+                        Visibility::FrameOwned => return Ok(MethodType::OnHeapObject),
 
                         // If borrowed or actor then we just use the current actor's global address
                         // e.g. if the parent to the node is frame owned then the current actor's global
                         // address would be None
                         Visibility::Borrowed | Visibility::Actor => {
-                            return self
-                                .api
-                                .kernel_get_system_state()
-                                .current_actor
-                                .global_address();
+                            match self.api.kernel_get_system_state().current_actor {
+                                Actor::Method(MethodActor { method_type, .. }) => {
+                                    let method_type = match method_type {
+                                        MethodType::DirectAccess
+                                        | MethodType::DirectAccessChild => {
+                                            MethodType::DirectAccessChild
+                                        }
+                                        MethodType::OnHeapObject => MethodType::OnHeapObject,
+                                        m @ MethodType::OnStoredObject(..) => m.clone(),
+                                    };
+                                    return Ok(method_type);
+                                }
+                                Actor::BlueprintHook(actor) => match actor.hook {
+                                    BlueprintHook::OnMove | BlueprintHook::OnDrop => {
+                                        return Ok(MethodType::OnHeapObject)
+                                    }
+                                    BlueprintHook::OnVirtualize => {
+                                        panic!("Function Actor should never be able to call a borrowed object method unless it's a direct access method.")
+                                    }
+                                    BlueprintHook::OnPersist => panic!("Unused"),
+                                },
+                                Actor::Function(..) => {
+                                    // This is currently a hack required since kernel modules call methods
+                                    // on objects without creating their own callframe/actor
+                                    // Otherwise, Function Actor should never be able to call a borrowed object method unless it's a direct access method.
+                                    return Ok(MethodType::OnHeapObject);
+                                }
+                                Actor::Root => {
+                                    panic!("Root should never be able to call a method")
+                                }
+                            }
                         }
                     }
                 }
-                None
+
+                Err(RuntimeError::SystemError(
+                    SystemError::NodeNotVisibleForMethodCall,
+                ))
             };
 
-            get_global_address(node_visibility)
-        } else {
-            None
+            get_method_type(node_visibility)?
         };
 
         // Key Value Stores do not have methods so we remove that possibility here
@@ -1484,12 +1506,11 @@ where
 
         let invocation = KernelInvocation {
             actor: Actor::method(
-                global_address,
+                method_type,
                 receiver.clone(),
                 module_id,
                 method_name.to_string(),
                 object_info,
-                direct_access,
             ),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -1511,8 +1532,10 @@ where
     #[trace_resources]
     fn get_outer_object(&mut self, node_id: &NodeId) -> Result<GlobalAddress, RuntimeError> {
         match self.get_object_info(node_id)?.try_get_outer_object() {
-            None => Err(RuntimeError::SystemError(SystemError::OuterObjectDoesNotExist)),
-            Some(address) => Ok(address)
+            None => Err(RuntimeError::SystemError(
+                SystemError::OuterObjectDoesNotExist,
+            )),
+            Some(address) => Ok(address),
         }
     }
 
@@ -2287,7 +2310,7 @@ where
         let actor = self.current_actor();
         match actor {
             Actor::Method(MethodActor {
-                global_address: Some(address),
+                method_type: MethodType::OnStoredObject(address),
                 ..
             }) => Ok(address.clone()),
             _ => Err(RuntimeError::SystemError(
@@ -2314,7 +2337,9 @@ where
                     )),
                 }
             }
-            _ => Err(RuntimeError::SystemError(SystemError::ModulesDontHaveOuterObjects)),
+            _ => Err(RuntimeError::SystemError(
+                SystemError::ModulesDontHaveOuterObjects,
+            )),
         }
     }
 
