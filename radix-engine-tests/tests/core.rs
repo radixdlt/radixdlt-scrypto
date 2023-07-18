@@ -85,3 +85,90 @@ fn cant_drop_in_another_package() {
         )
     });
 }
+
+fn call_function_and_assert_error(blueprint: &str, function: &str, expected_error: &str) {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(package_address, blueprint, function, manifest_args![])
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_specific_failure(|e| e.to_string().contains(expected_error));
+}
+
+#[test]
+fn cant_globalize_bucket() {
+    call_function_and_assert_error(
+        "GlobalizeTest",
+        "globalize_bucket",
+        "InvalidGlobalizeAccess",
+    )
+}
+
+#[test]
+fn cant_globalize_proof() {
+    call_function_and_assert_error("GlobalizeTest", "globalize_proof", "InvalidGlobalizeAccess")
+}
+
+#[test]
+fn cant_globalize_vault() {
+    call_function_and_assert_error("GlobalizeTest", "globalize_vault", "InvalidGlobalizeAccess")
+}
+
+#[test]
+fn cant_globalize_metadata() {
+    call_function_and_assert_error(
+        "GlobalizeTest",
+        "globalize_metadata",
+        "InvalidGlobalizeAccess",
+    )
+}
+
+#[test]
+fn cant_globalize_royalty() {
+    call_function_and_assert_error(
+        "GlobalizeTest",
+        "globalize_royalty",
+        "InvalidGlobalizeAccess",
+    )
+}
+
+#[test]
+fn cant_globalize_role_assignment() {
+    call_function_and_assert_error(
+        "GlobalizeTest",
+        "globalize_role_assignment",
+        "InvalidGlobalizeAccess",
+    )
+}
+
+#[test]
+fn cant_store_bucket() {
+    call_function_and_assert_error("GlobalizeTest", "store_bucket", "Persistence prohibited")
+}
+
+#[test]
+fn cant_store_proof() {
+    call_function_and_assert_error("GlobalizeTest", "store_proof", "Persistence prohibited")
+}
+
+#[test]
+fn cant_store_metadata() {
+    call_function_and_assert_error("GlobalizeTest", "store_metadata", "Persistence prohibited")
+}
+
+#[test]
+fn cant_store_royalty() {
+    call_function_and_assert_error("GlobalizeTest", "store_royalty", "Persistence prohibited")
+}
+
+#[test]
+fn cant_store_role_assignment() {
+    call_function_and_assert_error(
+        "GlobalizeTest",
+        "store_role_assignment",
+        "Persistence prohibited",
+    )
+}

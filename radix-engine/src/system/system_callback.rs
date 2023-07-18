@@ -841,7 +841,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         if is_persist_allowed {
             Ok(())
         } else {
-            Err("Prohibited".to_owned())
+            Err("Persistence prohibited".to_owned())
         }
     }
 }
