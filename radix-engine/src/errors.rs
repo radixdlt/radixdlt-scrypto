@@ -12,10 +12,10 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
-    CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
-    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CloseSubstateError,
-    CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError,
-    OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError,
+    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError,
+    CallFrameScanSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateFrameError,
+    CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError, OpenSubstateError,
+    PassMessageError, ReadSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::node_modules::role_assignment::RoleAssignmentError;
@@ -199,8 +199,8 @@ pub enum CallFrameError {
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
 
-    ScanSubstatesError(CallFrameScanSubstateError),
-    TakeSubstatesError(CallFrameTakeSortedSubstatesError),
+    ScanSubstatesError(CallFrameScanSubstatesError),
+    TakeSubstatesError(CallFrameDrainSubstatesError),
     ScanSortedSubstatesError(CallFrameScanSortedSubstatesError),
     SetSubstatesError(CallFrameSetSubstateError),
     RemoveSubstatesError(CallFrameRemoveSubstateError),
