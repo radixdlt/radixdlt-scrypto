@@ -67,7 +67,7 @@ pub enum Instruction {
         new_proof: Value,
     },
 
-    ClearSignatureProofs,
+    DropAuthZoneSignatureProofs,
 
     CreateProofFromBucketOfAmount {
         bucket: Value,

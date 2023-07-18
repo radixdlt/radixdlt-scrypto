@@ -401,11 +401,11 @@ where
 
             InstructionV1::CreateProofFromAuthZoneOfAll { resource_address }
         }
-        ast::Instruction::ClearSignatureProofs => {
+        ast::Instruction::DropAuthZoneSignatureProofs => {
             id_validator
                 .drop_all_proofs()
                 .map_err(GeneratorError::IdValidationError)?;
-            InstructionV1::ClearSignatureProofs
+            InstructionV1::DropAuthZoneSignatureProofs
         }
 
         ast::Instruction::BurnResource { bucket } => {

@@ -45,7 +45,7 @@ pub enum InstructionIdent {
     CreateProofFromAuthZoneOfAmount,
     CreateProofFromAuthZoneOfNonFungibles,
     CreateProofFromAuthZoneOfAll,
-    ClearSignatureProofs,
+    DropAuthZoneSignatureProofs,
     CreateProofFromBucketOfAmount,
     CreateProofFromBucketOfNonFungibles,
     CreateProofFromBucketOfAll,
@@ -132,7 +132,7 @@ impl InstructionIdent {
                 InstructionIdent::CreateProofFromAuthZoneOfNonFungibles
             }
             "CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL" => InstructionIdent::CreateProofFromAuthZoneOfAll,
-            "CLEAR_SIGNATURE_PROOFS" => InstructionIdent::ClearSignatureProofs,
+            "DROP_AUTH_ZONE_SIGNATURE_PROOFS" => InstructionIdent::DropAuthZoneSignatureProofs,
 
             "CREATE_PROOF_FROM_BUCKET_OF_AMOUNT" => InstructionIdent::CreateProofFromBucketOfAmount,
             "CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES" => {
@@ -539,7 +539,7 @@ impl Parser {
                     new_proof: self.parse_value()?,
                 }
             }
-            InstructionIdent::ClearSignatureProofs => Instruction::ClearSignatureProofs,
+            InstructionIdent::DropAuthZoneSignatureProofs => Instruction::DropAuthZoneSignatureProofs,
 
             InstructionIdent::CreateProofFromBucketOfAmount => {
                 Instruction::CreateProofFromBucketOfAmount {

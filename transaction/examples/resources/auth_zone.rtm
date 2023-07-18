@@ -27,7 +27,7 @@ CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL Address("${non_fungible_resource_address}") P
 DROP_AUTH_ZONE_PROOFS;
 
 # Drop all virtual proofs in the auth zone.
-CLEAR_SIGNATURE_PROOFS;
+DROP_AUTH_ZONE_SIGNATURE_PROOFS;
 
 # Drop all proofs, and move resources to account
 DROP_ALL_PROOFS;

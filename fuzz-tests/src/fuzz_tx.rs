@@ -302,8 +302,8 @@ impl TxFuzzer {
                 }
                 // DropAuthZoneProofs
                 12 => Some(InstructionV1::DropAuthZoneProofs),
-                // ClearSignatureProofs
-                13 => Some(InstructionV1::ClearSignatureProofs),
+                // DropAuthZoneSignatureProofs
+                13 => Some(InstructionV1::DropAuthZoneSignatureProofs),
                 // CloneProof
                 14 => {
                     let proof_id = *unstructured.choose(&proof_ids[..]).unwrap();

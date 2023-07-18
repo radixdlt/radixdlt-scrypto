@@ -374,8 +374,8 @@ pub enum InstructionV1 {
     CreateProofFromAuthZoneOfAll { resource_address: ResourceAddress },
 
     /// Drop all virtual proofs (can only be auth zone proofs).
-    #[sbor(discriminator(INSTRUCTION_CLEAR_SIGNATURE_PROOFS_DISCRIMINATOR))]
-    ClearSignatureProofs,
+    #[sbor(discriminator(INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR))]
+    DropAuthZoneSignatureProofs,
 
     //==============
     // Named bucket
@@ -502,7 +502,7 @@ pub const INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR: u8 = 0x12;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR: u8 = 0x14;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x15;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR: u8 = 0x16;
-pub const INSTRUCTION_CLEAR_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
+pub const INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
 
 //==============
 // Named bucket

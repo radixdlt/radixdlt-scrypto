@@ -295,7 +295,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             )
         }
 
-        InstructionV1::ClearSignatureProofs => ("CLEAR_SIGNATURE_PROOFS", to_manifest_value(&())?),
+        InstructionV1::DropAuthZoneSignatureProofs => ("DROP_AUTH_ZONE_SIGNATURE_PROOFS", to_manifest_value(&())?),
 
         InstructionV1::CreateProofFromBucketOfAmount { bucket_id, amount } => {
             let proof = context.new_proof();

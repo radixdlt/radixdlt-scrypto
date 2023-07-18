@@ -72,7 +72,7 @@ fn drop_all_proofs_should_drop_named_proofs() {
 }
 
 #[test]
-fn clear_signature_proofs_should_invalid_public_key_proof() {
+fn drop_auth_zone_signature_proofs_should_invalid_public_key_proof() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -83,7 +83,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
-        .clear_signature_proofs()
+        .drop_auth_zone_signature_proofs()
         .create_proof_from_account_of_amount(other_account, XRD, dec!(1))
         .build();
     let receipt = test_runner.execute_manifest(
@@ -103,7 +103,7 @@ fn clear_signature_proofs_should_invalid_public_key_proof() {
 }
 
 #[test]
-fn clear_signature_proofs_should_not_invalid_physical_proof() {
+fn drop_auth_zone_signature_proofs_should_not_invalid_physical_proof() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -114,7 +114,7 @@ fn clear_signature_proofs_should_not_invalid_physical_proof() {
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
         .create_proof_from_account_of_amount(account, XRD, dec!(5))
-        .clear_signature_proofs()
+        .drop_auth_zone_signature_proofs()
         .create_proof_from_account_of_amount(other_account, XRD, dec!(1))
         .build();
     let receipt = test_runner.execute_manifest(

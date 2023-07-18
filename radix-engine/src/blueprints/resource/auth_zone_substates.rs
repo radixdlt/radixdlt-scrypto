@@ -84,7 +84,7 @@ impl AuthZone {
         self.proofs.drain(0..).collect()
     }
 
-    pub fn clear_signature_proofs(&mut self) {
+    pub fn drop_auth_zone_signature_proofs(&mut self) {
         self.virtual_resources.retain(|x| {
             x != &SECP256K1_SIGNATURE_VIRTUAL_BADGE && x != &ED25519_SIGNATURE_VIRTUAL_BADGE
         });

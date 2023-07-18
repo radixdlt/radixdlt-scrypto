@@ -245,7 +245,7 @@ impl NotarizedTransactionValidator {
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                InstructionV1::ClearSignatureProofs => {}
+                InstructionV1::DropAuthZoneSignatureProofs => {}
                 InstructionV1::CallFunction { args, .. }
                 | InstructionV1::CallMethod { args, .. }
                 | InstructionV1::CallRoyaltyMethod { args, .. }

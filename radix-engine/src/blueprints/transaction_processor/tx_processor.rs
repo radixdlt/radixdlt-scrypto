@@ -194,8 +194,8 @@ impl TransactionProcessorBlueprint {
                     LocalAuthZone::clear(api)?;
                     InstructionOutput::None
                 }
-                InstructionV1::ClearSignatureProofs => {
-                    LocalAuthZone::clear_signature_proofs(api)?;
+                InstructionV1::DropAuthZoneSignatureProofs => {
+                    LocalAuthZone::drop_auth_zone_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::PushToAuthZone { proof_id } => {

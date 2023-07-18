@@ -41,7 +41,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn clear_signature_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn drop_auth_zone_signature_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         api: &mut Y,
     ) -> Result<(), E>
     where
@@ -50,7 +50,7 @@ impl LocalAuthZone {
         let auth_zone = api.get_auth_zone()?;
         let rtn = api.call_method(
             &auth_zone,
-            AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT,
+            AUTH_ZONE_DROP_AUTH_ZONE_SIGNATURE_PROOFS_IDENT,
             scrypto_encode(&AuthZoneClearVirtualProofsInput {}).unwrap(),
         )?;
         Ok(scrypto_decode(&rtn).unwrap())

@@ -502,8 +502,8 @@ impl ManifestBuilder {
     }
 
     /// Drops all virtual proofs.
-    pub fn clear_signature_proofs(self) -> Self {
-        self.add_instruction(InstructionV1::ClearSignatureProofs)
+    pub fn drop_auth_zone_signature_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneSignatureProofs)
     }
 
     /// Creates a fungible resource

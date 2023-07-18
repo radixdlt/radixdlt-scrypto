@@ -233,7 +233,7 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
-        auth_zone.clear_signature_proofs();
+        auth_zone.drop_auth_zone_signature_proofs();
         let proofs = auth_zone.drain();
         api.field_write_typed(handle, &auth_zone)?;
         api.field_close(handle)?;
@@ -245,7 +245,7 @@ impl AuthZoneBlueprint {
         Ok(())
     }
 
-    pub(crate) fn clear_signature_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    pub(crate) fn drop_auth_zone_signature_proofs<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
@@ -255,7 +255,7 @@ impl AuthZoneBlueprint {
             LockFlags::MUTABLE,
         )?;
         let mut auth_zone: AuthZone = api.field_read_typed(handle)?;
-        auth_zone.clear_signature_proofs();
+        auth_zone.drop_auth_zone_signature_proofs();
         api.field_write_typed(handle, &auth_zone)?;
         api.field_close(handle)?;
 

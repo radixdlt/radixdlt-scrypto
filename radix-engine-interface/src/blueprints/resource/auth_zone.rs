@@ -73,7 +73,7 @@ pub struct AuthZoneClearInput {}
 
 pub type AuthZoneClearOutput = ();
 
-pub const AUTH_ZONE_CLEAR_SIGNATURE_PROOFS_IDENT: &str = "clear_signature_proofs";
+pub const AUTH_ZONE_DROP_AUTH_ZONE_SIGNATURE_PROOFS_IDENT: &str = "drop_auth_zone_signature_proofs";
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct AuthZoneClearVirtualProofsInput {}
