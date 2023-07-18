@@ -249,7 +249,7 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn take_substates_base_cost(&self) -> u32 {
+    pub fn drain_substates_base_cost(&self) -> u32 {
         500
     }
 

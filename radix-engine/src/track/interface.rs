@@ -2,6 +2,7 @@ use crate::errors::RuntimeError;
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 /// Error when acquiring a lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -18,7 +19,7 @@ pub enum SetSubstateError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum TakeSubstateError {
+pub enum RemoveSubstateError {
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
 
@@ -87,31 +88,45 @@ pub trait SubstateStore {
     /// Otherwise, the behavior is undefined.
     ///
     /// Returns tuple of substate and boolean which is true for the first database access.
-    fn take_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn remove_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         on_store_access: F,
-    ) -> Result<Option<IndexedScryptoValue>, CallbackError<TakeSubstateError, E>>;
+    ) -> Result<Option<IndexedScryptoValue>, CallbackError<RemoveSubstateError, E>>;
 
-    /// Returns tuple of substate vector and boolean which is true for the first database access.
-    fn scan_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    /// Returns Substate Keys of maximum count for a given partition.
+    ///
+    /// Clients must ensure that the SubstateKeyContent which the partition is
+    /// associated with is passed in. The returned SubstateKeys are guaranteed to be of
+    /// this type.
+    /// Otherwise, behavior is undefined.
+    ///
+    /// Returns list of substate keys and database access info
+    fn scan_keys<K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: F,
-    ) -> Result<Vec<IndexedScryptoValue>, E>;
+    ) -> Result<Vec<SubstateKey>, E>;
 
-    /// Returns tuple of substate vector and boolean which is true for the first database access.
-    fn take_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    /// Removes substates of maximum count for a given partition.
+    ///
+    /// Clients must ensure that the SubstateKeyContent which the partition is
+    /// associated with is passed in. The returned SubstateKeys are guaranteed to be of
+    /// this type.
+    /// Otherwise, behavior is undefined.
+    ///
+    /// Returns list of removed substates with their associated keys and values, as well as database access info
+    fn drain_substates<K: SubstateKeyContent, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: F,
-    ) -> Result<Vec<IndexedScryptoValue>, E>;
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E>;
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
     fn scan_sorted_substates<E, F: FnMut(StoreAccess) -> Result<(), E>>(

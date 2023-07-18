@@ -202,11 +202,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_remove_substate(api)
     }
 
-    fn on_scan_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
+    fn on_scan_keys<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_scan_substates(api)
+        SystemModuleMixer::on_scan_keys(api)
     }
 
     fn on_scan_sorted_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -216,11 +216,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_scan_sorted_substates(api)
     }
 
-    fn on_take_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+    fn on_drain_substates<Y>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_take_substates(api)
+        SystemModuleMixer::on_drain_substates(api)
     }
 
     fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>

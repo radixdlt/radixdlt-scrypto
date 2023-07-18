@@ -237,6 +237,13 @@ impl SubstateKey {
         }
     }
 
+    pub fn into_map(self) -> MapKey {
+        match self {
+            SubstateKey::Map(key) => key,
+            _ => panic!("Not a Map Key"),
+        }
+    }
+
     pub fn for_sorted(&self) -> Option<&SortedU16Key> {
         match self {
             SubstateKey::Sorted(key) => Some(key),
