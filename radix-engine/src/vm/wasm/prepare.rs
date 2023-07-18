@@ -702,7 +702,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GET_OBJECT_INFO_FUNCTION_NAME => {
+                        GET_BLUEPRINT_ID_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -714,7 +714,7 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GET_OBJECT_INFO_FUNCTION_NAME.to_string(),
+                                        GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }

@@ -1221,6 +1221,16 @@ where
         Ok(instance_context)
     }
 
+    pub fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
+        let object_info = match type_info {
+            TypeInfoSubstate::Object(info) => info,
+            _ => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
+        };
+
+        Ok(object_info)
+    }
+
     pub fn is_feature_enabled(
         &mut self,
         node_id: &NodeId,
@@ -1534,14 +1544,9 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
-        let type_info = TypeInfoBlueprint::get_type(&node_id, self.api)?;
-        let object_info = match type_info {
-            TypeInfoSubstate::Object(info) => info,
-            _ => return Err(RuntimeError::SystemError(SystemError::NotAnObject)),
-        };
-
-        Ok(object_info)
+    fn get_blueprint_id(&mut self, node_id: &NodeId) -> Result<BlueprintId, RuntimeError> {
+        let blueprint_id = self.get_object_info(node_id)?.blueprint_info.blueprint_id;
+        Ok(blueprint_id)
     }
 
     #[trace_resources]

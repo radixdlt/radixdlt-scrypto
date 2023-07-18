@@ -67,7 +67,7 @@ extern "C" {
         _address_len: usize,
     ) -> Buffer;
 
-    pub fn get_object_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+    pub fn get_blueprint_id(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
     pub fn get_outer_object(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
@@ -247,7 +247,7 @@ pub unsafe fn globalize(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_object_info(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
+pub unsafe fn get_blueprint_id(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
     unreachable!()
 }
 

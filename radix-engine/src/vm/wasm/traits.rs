@@ -85,7 +85,7 @@ pub trait WasmRuntime {
         key: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_object_info(
+    fn get_blueprint_id(
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;

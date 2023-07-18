@@ -345,7 +345,7 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .get_object_info(read_memory(&instance, component_id_ptr, component_id_len)?)
+                .get_blueprint_id(read_memory(&instance, component_id_ptr, component_id_len)?)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -666,7 +666,7 @@ impl WasmerModule {
                 TIP_PERCENTAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), tip_percentage),
                 FEE_BALANCE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), fee_balance),
                 GLOBALIZE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
-                GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
+                GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
                 ACTOR_OPEN_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_open_field),
                 ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_call_module_method),

@@ -291,7 +291,7 @@ fn get_object_info(
     let (memory, runtime) = grab_runtime!(caller);
 
     runtime
-        .get_object_info(read_memory(
+        .get_blueprint_id(read_memory(
             caller.as_context_mut(),
             memory,
             component_id_ptr,
@@ -981,7 +981,7 @@ impl WasmiModule {
         linker_define!(linker, TIP_PERCENTAGE_FUNCTION_NAME, host_tip_percentage);
         linker_define!(linker, FEE_BALANCE_FUNCTION_NAME, host_fee_balance);
         linker_define!(linker, GLOBALIZE_FUNCTION_NAME, host_globalize_object);
-        linker_define!(linker, GET_OBJECT_INFO_FUNCTION_NAME, host_get_object_info);
+        linker_define!(linker, GET_BLUEPRINT_ID_FUNCTION_NAME, host_get_object_info);
         linker_define!(linker, GET_OUTER_OBJECT_FUNCTION_NAME, host_get_outer_object);
         linker_define!(linker, DROP_OBJECT_FUNCTION_NAME, host_drop_node);
         linker_define!(linker, ACTOR_OPEN_FIELD_FUNCTION_NAME, host_lock_field);
