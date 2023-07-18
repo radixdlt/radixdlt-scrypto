@@ -1,6 +1,7 @@
 use radix_engine::blueprints::native_schema::*;
 use radix_engine::system::bootstrap::{
-    Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisStakeAllocation,
+    Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
+    GenesisStakeAllocation,
 };
 use radix_engine::transaction::{CommitResult, TransactionResult};
 use radix_engine::types::*;
@@ -69,15 +70,54 @@ fn test_bootstrap_receipt_should_have_events_that_can_be_typed() {
     let staker_address = ComponentAddress::virtual_account_from_public_key(
         &Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
     );
+    let token_holder = ComponentAddress::virtual_account_from_public_key(&PublicKey::Secp256k1(
+        Secp256k1PrivateKey::from_u64(1).unwrap().public_key(),
+    ));
+    let resource_address = ResourceAddress::new_or_panic(
+        NodeId::new(
+            EntityType::GlobalFungibleResourceManager as u8,
+            &hash(vec![1, 2, 3]).lower_bytes(),
+        )
+        .0,
+    );
     let stake = GenesisStakeAllocation {
         account_index: 0,
         xrd_amount: Decimal::one(),
+    };
+    let mut xrd_balances = Vec::new();
+    let mut pub_key_accounts = Vec::new();
+
+    for i in 0..20 {
+        let pub_key = Secp256k1PrivateKey::from_u64((i + 1).try_into().unwrap())
+            .unwrap()
+            .public_key();
+        let account_address = ComponentAddress::virtual_account_from_public_key(&pub_key);
+        pub_key_accounts.push((pub_key, account_address));
+        xrd_balances.push((account_address, dec!("10")));
+    }
+    let genesis_resource = GenesisResource {
+        reserved_resource_address: resource_address,
+        metadata: vec![(
+            "symbol".to_string(),
+            MetadataValue::String("TST".to_string()),
+        )],
+        owner: None,
+    };
+    let resource_allocation = GenesisResourceAllocation {
+        account_index: 0,
+        amount: dec!("10"),
     };
     let genesis_data_chunks = vec![
         GenesisDataChunk::Validators(vec![validator_key.clone().into()]),
         GenesisDataChunk::Stakes {
             accounts: vec![staker_address],
             allocations: vec![(validator_key, vec![stake])],
+        },
+        GenesisDataChunk::XrdBalances(xrd_balances),
+        GenesisDataChunk::Resources(vec![genesis_resource]),
+        GenesisDataChunk::ResourceBalances {
+            accounts: vec![token_holder.clone()],
+            allocations: vec![(resource_address.clone(), vec![resource_allocation])],
         },
     ];
 
