@@ -678,11 +678,23 @@ where
         let fees_to_distribute = fee_summary.fees_to_distribute();
 
         // Sanity check
-        assert_eq!(required, Decimal::ZERO);
-        assert_eq!(fee_summary.total_bad_debt_xrd, Decimal::ZERO);
-        assert_eq!(
-            tips_to_distribute + fees_to_distribute,
-            collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */
+        assert!(
+            required == Decimal::ZERO,
+            "Locked fees do not cover transaction cost: {} required",
+            required
+        );
+        assert!(
+            fee_summary.total_bad_debt_xrd == Decimal::ZERO,
+            "Bad debt is non-zero: {}",
+            fee_summary.total_bad_debt_xrd
+        );
+        let to_distribute = tips_to_distribute + fees_to_distribute;
+        let remaining_collected_fees = collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */;
+        assert!(
+            to_distribute == remaining_collected_fees,
+            "To distribute amount does not equal to remaining collected fees: {} != {}",
+            to_distribute,
+            remaining_collected_fees
         );
 
         if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {

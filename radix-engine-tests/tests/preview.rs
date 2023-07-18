@@ -53,6 +53,32 @@ fn test_transaction_preview_cost_estimate() {
 }
 
 #[test]
+fn test_transaction_preview_without_locking_fee() {
+    // Arrange
+    let mut test_runner = TestRunner::builder().build();
+    let network = NetworkDefinition::simulator();
+    let manifest = ManifestBuilder::new()
+        //.lock_fee_from_faucet()
+        .clear_auth_zone()
+        .build();
+    let preview_flags = PreviewFlags {
+        use_free_credit: true,
+        assume_all_signature_proofs: false,
+        skip_epoch_check: false,
+    };
+    let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(
+        &mut test_runner,
+        &network,
+        manifest,
+        &preview_flags,
+    );
+
+    // Act
+    let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
+    println!("{:?}", preview_receipt);
+}
+
+#[test]
 fn test_assume_all_signature_proofs_flag_method_authorization() {
     // Arrange
     // Create an account component that requires a key auth for withdrawal
