@@ -207,10 +207,10 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_persist_node<S: SubstateStore, M: KernelCallbackObject>(
+    fn on_persist_node<S: SubstateStore>(
         heap: &mut Heap,
         store: &mut S,
-        callback: &mut M,
+        callback: &mut Self,
         node_id: &NodeId,
     ) -> Result<(), String>;
 }

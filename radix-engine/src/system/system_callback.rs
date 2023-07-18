@@ -786,12 +786,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
     }
 
-    fn on_persist_node<S: SubstateStore, M: KernelCallbackObject>(
+    fn on_persist_node<S: SubstateStore>(
         heap: &mut Heap,
         store: &mut S,
-        _callback: &mut M,
+        callback: &mut Self,
         node_id: &NodeId,
     ) -> Result<(), String> {
+        // Read type info
         let maybe_type_info = if let Some(substate) = heap.get_substate(
             node_id,
             TYPE_INFO_FIELD_PARTITION,
@@ -814,7 +815,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
         let is_persist_allowed = if let Some(type_info) = maybe_type_info {
             match type_info {
-                TypeInfoSubstate::Object(_) => true,
+                TypeInfoSubstate::Object(ObjectInfo {
+                    main_blueprint_id, ..
+                }) => {
+                    let canonical_id = CanonicalBlueprintId {
+                        address: main_blueprint_id.package_address,
+                        blueprint: main_blueprint_id.blueprint_name.clone(),
+                        version: BlueprintVersion::default(),
+                    };
+                    let maybe_definition = callback.blueprint_cache.get(&canonical_id);
+                    if let Some(definition) = maybe_definition {
+                        !definition.is_transient
+                    } else {
+                        panic!("Blueprint definition not available for heap node");
+                    }
+                }
                 TypeInfoSubstate::KeyValueStore(_) => true,
                 TypeInfoSubstate::GlobalAddressReservation(_) => false,
                 TypeInfoSubstate::GlobalAddressPhantom(_) => true,

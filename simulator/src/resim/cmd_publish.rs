@@ -210,6 +210,7 @@ impl Publish {
                         events,
                         state: IndexedStateSchema::from_schema(schema_hash, s.schema.state),
                     },
+                    is_transient: false,
                     function_exports,
                     hook_exports: BTreeMap::new(),
                 };
