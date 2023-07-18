@@ -87,7 +87,7 @@ pub trait SubstateStore {
     /// Otherwise, the behavior is undefined.
     ///
     /// Returns tuple of substate and boolean which is true for the first database access.
-    fn take_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn remove_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

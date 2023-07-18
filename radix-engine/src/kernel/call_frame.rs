@@ -937,10 +937,10 @@ impl<L: Clone> CallFrame<L> {
         }
 
         let removed = if heap.contains_node(node_id) {
-            heap.delete_substate(node_id, partition_num, key)
+            heap.remove_substate(node_id, partition_num, key)
         } else {
             store
-                .take_substate(node_id, partition_num, key, on_store_access)
+                .remove_substate(node_id, partition_num, key, on_store_access)
                 .map_err(|e| e.map(CallFrameRemoveSubstateError::StoreError))?
         };
 

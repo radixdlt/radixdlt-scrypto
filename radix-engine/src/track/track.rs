@@ -748,7 +748,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
     }
 
     // Should not use on virtualized substates
-    fn take_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn remove_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
