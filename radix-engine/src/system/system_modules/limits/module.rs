@@ -234,7 +234,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             .process_store_access(store_access)
     }
 
-    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
+    fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {

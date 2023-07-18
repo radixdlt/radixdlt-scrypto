@@ -771,7 +771,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(&store_access, self)?;
+        M::on_drain_substates(&store_access, self)?;
 
         Ok(substate)
     }
@@ -828,7 +828,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_take_substates(&store_access, self)?;
+        M::on_drain_substates(&store_access, self)?;
 
         Ok(substates)
     }

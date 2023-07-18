@@ -18,7 +18,7 @@ pub enum SetSubstateError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum TakeSubstateError {
+pub enum RemoveSubstateError {
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
 
@@ -62,7 +62,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), TakeSubstateError>;
+    ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), RemoveSubstateError>;
 
     /// Returns Substate Keys of maximum count for a given partition.
     ///

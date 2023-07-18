@@ -1,6 +1,6 @@
 use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, StoreAccess, StoreAccessInfo, SubstateStore,
-    TakeSubstateError,
+    AcquireLockError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess,
+    StoreAccessInfo, SubstateStore,
 };
 use crate::track::utils::OverlayingIterator;
 use crate::types::*;
@@ -732,7 +732,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-    ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), TakeSubstateError> {
+    ) -> Result<(Option<IndexedScryptoValue>, StoreAccessInfo), RemoveSubstateError> {
         let mut store_access = Vec::new();
 
         let tracked = self.get_tracked_substate(
@@ -743,7 +743,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         );
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
             if runtime.lock_state.is_locked() {
-                return Err(TakeSubstateError::SubstateLocked(
+                return Err(RemoveSubstateError::SubstateLocked(
                     *node_id,
                     partition_num,
                     substate_key.clone(),

@@ -1,7 +1,7 @@
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
-    AcquireLockError, NodeSubstates, SetSubstateError, StoreAccess, StoreAccessInfo, SubstateStore,
-    TakeSubstateError,
+    AcquireLockError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess,
+    StoreAccessInfo, SubstateStore,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -242,7 +242,7 @@ pub enum CallFrameSetSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameRemoveSubstateError {
     NodeNotVisible(NodeId),
-    StoreError(TakeSubstateError),
+    StoreError(RemoveSubstateError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -253,7 +253,7 @@ pub enum CallFrameScanSubstatesError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameDrainSubstatesError {
     NodeNotVisible(NodeId),
-    CantDropOwnedNode(NodeId),
+    OwnedNodeNotSupported(NodeId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -1020,7 +1020,7 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    return Err(CallFrameDrainSubstatesError::CantDropOwnedNode(
+                    return Err(CallFrameDrainSubstatesError::OwnedNodeNotSupported(
                         reference.clone(),
                     ));
                 }
