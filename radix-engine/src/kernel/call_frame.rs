@@ -1,6 +1,10 @@
 use crate::kernel::actor::MethodType;
+use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
+use crate::track::interface::{
+    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackGetSubstateError,
+    TrackedSubstateInfo,
+};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
@@ -9,7 +13,6 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use crate::kernel::substate_locks::SubstateLocks;
 
 use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
@@ -41,9 +44,9 @@ impl Message {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SubstateStoreHandle {
-    Heap(u32),
-    Store(u32),
+pub enum SubstateLocation {
+    Heap,
+    Store,
 }
 
 /// A lock on a substate controlled by a call frame
@@ -51,7 +54,8 @@ pub enum SubstateStoreHandle {
 pub struct OpenedSubstate<L> {
     pub non_global_references: IndexSet<NodeId>,
     pub owned_nodes: IndexSet<NodeId>,
-    pub substate_store_handle: SubstateStoreHandle,
+    pub global_lock_handle: u32,
+    pub substate_location: SubstateLocation,
     pub data: L,
 }
 
@@ -161,7 +165,7 @@ pub enum OpenSubstateError {
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
     LockUnmodifiedBaseOnHeapNode,
     LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
-    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey)
+    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey),
 }
 
 /// Represents an error when dropping a substate lock.
@@ -410,32 +414,43 @@ impl<L: Clone> CallFrame<L> {
             )));
         }
 
-        let handle = match substate_locks.lock(node_id, partition_num, substate_key, flags) {
-            Some(handle) => handle,
-            None => {
-                return Err(CallbackError::Error(OpenSubstateError::SubstateLocked(*node_id, partition_num, substate_key.clone())));
-            }
-        };
+        let global_lock_handle =
+            match substate_locks.lock(node_id, partition_num, substate_key, flags) {
+                Some(handle) => handle,
+                None => {
+                    return Err(CallbackError::Error(OpenSubstateError::SubstateLocked(
+                        *node_id,
+                        partition_num,
+                        substate_key.clone(),
+                    )));
+                }
+            };
 
         // Lock and read the substate
-        let (substate_value, substate_store_handle) = if heap.contains_node(node_id) {
+        let (substate_value, substate_location) = if heap.contains_node(node_id) {
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
-                return Err(CallbackError::Error(OpenSubstateError::LockUnmodifiedBaseOnHeapNode));
+                substate_locks.unlock(global_lock_handle);
+                return Err(CallbackError::Error(
+                    OpenSubstateError::LockUnmodifiedBaseOnHeapNode,
+                ));
             }
 
             let value = heap
                 .get_substate_or_default(node_id, partition_num, substate_key, || {
                     default.map(|f| f())
                 })
-                .map_err(|e| CallbackError::Error(OpenSubstateError::HeapError(e)))?;
+                .map_err(|e| {
+                    substate_locks.unlock(global_lock_handle);
+                    CallbackError::Error(OpenSubstateError::HeapError(e))
+                })?;
 
-            (value, SubstateStoreHandle::Heap(handle))
+            (value, SubstateLocation::Heap)
         } else {
-
             // Check substate state
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
                 match store.get_tracked_substate_info(node_id, partition_num, substate_key) {
                     TrackedSubstateInfo::New => {
+                        substate_locks.unlock(global_lock_handle);
                         return Err(CallbackError::Error(
                             OpenSubstateError::LockUnmodifiedBaseOnNewSubstate(
                                 node_id.clone(),
@@ -445,6 +460,7 @@ impl<L: Clone> CallFrame<L> {
                         ));
                     }
                     TrackedSubstateInfo::Updated => {
+                        substate_locks.unlock(global_lock_handle);
                         return Err(CallbackError::Error(
                             OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(
                                 node_id.clone(),
@@ -468,12 +484,11 @@ impl<L: Clone> CallFrame<L> {
                     || default.map(|f| f()),
                 )
                 .map_err(|x| {
-                    substate_locks.unlock(handle);
+                    substate_locks.unlock(global_lock_handle);
                     x.map(|e| OpenSubstateError::TrackError(Box::new(e)))
                 })?;
 
-
-            (value, SubstateStoreHandle::Store(handle))
+            (value, SubstateLocation::Store)
         };
 
         // Analyze owns and references in the substate
@@ -515,7 +530,8 @@ impl<L: Clone> CallFrame<L> {
             OpenedSubstate {
                 non_global_references,
                 owned_nodes,
-                substate_store_handle,
+                global_lock_handle,
+                substate_location,
                 data,
             },
         );
@@ -537,22 +553,17 @@ impl<L: Clone> CallFrame<L> {
         lock_handle: LockHandle,
         on_store_access: &mut F,
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
-        let substate_lock = self
+        let opened_substate = self
             .locks
             .remove(&lock_handle)
             .ok_or_else(|| CallbackError::Error(CloseSubstateError::LockNotFound(lock_handle)))?;
 
-        let handle = match substate_lock.substate_store_handle {
-            SubstateStoreHandle::Store(handle)
-            | SubstateStoreHandle::Heap(handle) => handle,
-        };
-        let (node_id, partion_num, substate_key, flags) = substate_locks.unlock(handle);
+        let (node_id, partion_num, substate_key, flags) =
+            substate_locks.unlock(opened_substate.global_lock_handle);
 
         if flags.contains(LockFlags::MUTABLE) {
-            let substate_is_in_store = matches!(
-                substate_lock.substate_store_handle,
-                SubstateStoreHandle::Store(..)
-            );
+            let substate_is_in_store =
+                matches!(opened_substate.substate_location, SubstateLocation::Store);
             let substate = if substate_is_in_store {
                 store.get_substate::<(), _>(
                     &node_id,
@@ -561,7 +572,9 @@ impl<L: Clone> CallFrame<L> {
                     &mut |store_access| panic!("Getting substate on handled substate should not incur a store access."),
                 ).unwrap().clone()
             } else {
-                heap.get_substate(&node_id, partion_num, &substate_key).unwrap().clone()
+                heap.get_substate(&node_id, partion_num, &substate_key)
+                    .unwrap()
+                    .clone()
             };
 
             //==============
@@ -576,7 +589,7 @@ impl<L: Clone> CallFrame<L> {
                 }
             }
             for own in &new_owned_nodes {
-                if !substate_lock.owned_nodes.contains(own) {
+                if !opened_substate.owned_nodes.contains(own) {
                     // Node no longer owned by frame
                     self.take_node_internal(own)
                         .map_err(|e| CallbackError::Error(CloseSubstateError::TakeNodeError(e)))?;
@@ -588,7 +601,7 @@ impl<L: Clone> CallFrame<L> {
                     }
                 }
             }
-            for own in &substate_lock.owned_nodes {
+            for own in &opened_substate.owned_nodes {
                 if !new_owned_nodes.contains(own) {
                     // Node detached
                     if substate_is_in_store {
@@ -617,7 +630,7 @@ impl<L: Clone> CallFrame<L> {
                 new_references.insert(own.clone());
             }
             for reference in &new_references {
-                if !substate_lock.non_global_references.contains(reference) {
+                if !opened_substate.non_global_references.contains(reference) {
                     // handle added references
 
                     if !self
@@ -642,7 +655,7 @@ impl<L: Clone> CallFrame<L> {
                     }
                 }
             }
-            for reference in &substate_lock.non_global_references {
+            for reference in &opened_substate.non_global_references {
                 if !new_references.contains(reference) {
                     // handle removed references
 
@@ -659,13 +672,13 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Shrink transient reference set
-        for reference in substate_lock.non_global_references {
+        for reference in opened_substate.non_global_references {
             let cnt = self.transient_references.remove(&reference).unwrap_or(0);
             if cnt > 1 {
                 self.transient_references.insert(reference, cnt - 1);
             }
         }
-        for own in substate_lock.owned_nodes {
+        for own in opened_substate.owned_nodes {
             let cnt = self.transient_references.remove(&own).unwrap_or(0);
             if cnt > 1 {
                 self.transient_references.insert(own, cnt - 1);
@@ -694,27 +707,25 @@ impl<L: Clone> CallFrame<L> {
         lock_handle: LockHandle,
     ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
         let OpenedSubstate {
-            substate_store_handle,
+            global_lock_handle,
+            substate_location,
             ..
         } = self
             .locks
             .get(&lock_handle)
             .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
 
-        let handle = match substate_store_handle {
-            SubstateStoreHandle::Store(handle)
-            | SubstateStoreHandle::Heap(handle) => handle,
-        };
-        let (node_id, partition_num, substate_key, _) = substate_locks.get(*handle);
+        let (node_id, partition_num, substate_key, _) = substate_locks.get(*global_lock_handle);
 
-        let substate = match substate_store_handle {
-            SubstateStoreHandle::Heap(handle) => heap.get_substate(node_id, *partition_num, substate_key).unwrap(),
-            SubstateStoreHandle::Store(handle) => store.get_substate::<(), _>(
-                node_id,
-                *partition_num,
-                substate_key,
-                &mut |store_access| panic!("Getting substate on handled substate should not incur a store access."),
-            ).unwrap(),
+        let substate = match substate_location {
+            SubstateLocation::Heap => heap
+                .get_substate(node_id, *partition_num, substate_key)
+                .unwrap(),
+            SubstateLocation::Store => store
+                .get_substate::<(), _>(node_id, *partition_num, substate_key, &mut |store_access| {
+                    panic!("Getting substate on handled substate should not incur a store access.")
+                })
+                .unwrap(),
         };
 
         Ok(substate)
@@ -729,36 +740,40 @@ impl<L: Clone> CallFrame<L> {
         substate: IndexedScryptoValue,
     ) -> Result<(), WriteSubstateError> {
         let OpenedSubstate {
-            substate_store_handle,
+            global_lock_handle,
+            substate_location,
             ..
         } = self
             .locks
             .get(&lock_handle)
             .ok_or(WriteSubstateError::LockNotFound(lock_handle))?;
 
-
-
-        let handle = match substate_store_handle {
-            SubstateStoreHandle::Store(handle)
-            | SubstateStoreHandle::Heap(handle) => handle,
-        };
-        let (node_id, partition_num, substate_key, flags) = substate_locks.get(*handle);
+        let (node_id, partition_num, substate_key, flags) = substate_locks.get(*global_lock_handle);
         if !flags.contains(LockFlags::MUTABLE) {
             return Err(WriteSubstateError::NoWritePermission);
         }
 
-        match substate_store_handle {
-            SubstateStoreHandle::Heap(..) => {
-                heap.set_substate(node_id.clone(), partition_num.clone(), substate_key.clone(), substate);
-            },
-            SubstateStoreHandle::Store(..) => {
-                store.set_substate(
+        match substate_location {
+            SubstateLocation::Heap => {
+                heap.set_substate(
                     node_id.clone(),
                     partition_num.clone(),
                     substate_key.clone(),
                     substate,
-                    &mut |_| Err(()),
-                ).expect("Setting substate on handled substate should not incur a store access.");
+                );
+            }
+            SubstateLocation::Store => {
+                store
+                    .set_substate(
+                        node_id.clone(),
+                        partition_num.clone(),
+                        substate_key.clone(),
+                        substate,
+                        &mut |_| Err(()),
+                    )
+                    .expect(
+                        "Setting substate on handled substate should not incur a store access.",
+                    );
             }
         }
 
@@ -898,10 +913,7 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Check visibility
-        if !self
-            .get_node_visibility(dest_node_id)
-            .is_visible()
-        {
+        if !self.get_node_visibility(dest_node_id).is_visible() {
             return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
                 dest_node_id.clone(),
             )));
@@ -1016,7 +1028,11 @@ impl<L: Clone> CallFrame<L> {
 
         if substate_locks.is_locked(node_id, partition_num, key) {
             return Err(CallbackError::Error(
-                CallFrameRemoveSubstateError::SubstateLocked(node_id.clone(), partition_num, key.clone())
+                CallFrameRemoveSubstateError::SubstateLocked(
+                    node_id.clone(),
+                    partition_num,
+                    key.clone(),
+                ),
             ));
         }
 
@@ -1031,7 +1047,13 @@ impl<L: Clone> CallFrame<L> {
         Ok(removed)
     }
 
-    pub fn scan_keys<'f, K: SubstateKeyContent, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn scan_keys<
+        'f,
+        K: SubstateKeyContent,
+        S: SubstateStore,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -1058,7 +1080,13 @@ impl<L: Clone> CallFrame<L> {
         Ok(keys)
     }
 
-    pub fn drain_substates<'f, K: SubstateKeyContent, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn drain_substates<
+        'f,
+        K: SubstateKeyContent,
+        S: SubstateStore,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -1066,7 +1094,10 @@ impl<L: Clone> CallFrame<L> {
         on_store_access: F,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, CallbackError<CallFrameDrainSubstatesError, E>> {
+    ) -> Result<
+        Vec<(SubstateKey, IndexedScryptoValue)>,
+        CallbackError<CallFrameDrainSubstatesError, E>,
+    > {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(
@@ -1088,9 +1119,9 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    return Err(CallbackError::Error(CallFrameDrainSubstatesError::OwnedNodeNotSupported(
-                        reference.clone(),
-                    )));
+                    return Err(CallbackError::Error(
+                        CallFrameDrainSubstatesError::OwnedNodeNotSupported(reference.clone()),
+                    ));
                 }
             }
         }

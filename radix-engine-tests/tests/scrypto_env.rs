@@ -59,7 +59,8 @@ fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::OpenSubstateError(OpenSubstateError::SubstateLocked(..)))) => true,
+            CallFrameError::OpenSubstateError(OpenSubstateError::SubstateLocked(..)),
+        )) => true,
         _ => false,
     });
 }

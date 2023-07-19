@@ -13,14 +13,13 @@ use crate::kernel::actor::MethodType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
-use crate::track::interface::{
-    CallbackError, NodeSubstates, SubstateStore, TrackGetSubstateError,
-};
+use crate::track::interface::{CallbackError, NodeSubstates, SubstateStore, TrackGetSubstateError};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -32,7 +31,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
-use crate::kernel::substate_locks::SubstateLocks;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
@@ -191,7 +189,6 @@ pub struct Kernel<
     // but keeping this call_frames stack may potentially prove useful if implementing
     // execution pause and/or for better debuggability
     prev_frame_stack: Vec<CallFrame<M::LockData>>,
-
 
     /// Heap
     heap: Heap,
@@ -712,7 +709,6 @@ where
             )))
     }
 
-
     #[trace_resources]
     fn kernel_read_substate(
         &mut self,
@@ -720,7 +716,12 @@ where
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         let value = self
             .current_frame
-            .read_substate(&mut self.heap, self.store, &mut self.substate_locks, lock_handle)
+            .read_substate(
+                &mut self.heap,
+                self.store,
+                &mut self.substate_locks,
+                lock_handle,
+            )
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
@@ -729,7 +730,12 @@ where
         // Double read due to borrow chacker of self.
         Ok(self
             .current_frame
-            .read_substate(&mut self.heap, self.store, &mut self.substate_locks, lock_handle)
+            .read_substate(
+                &mut self.heap,
+                self.store,
+                &mut self.substate_locks,
+                lock_handle,
+            )
             .unwrap())
     }
 

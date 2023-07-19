@@ -113,7 +113,12 @@ pub trait SubstateStore {
         on_store_access: &mut F,
     ) -> Result<(), E>;
 
-    fn force_write(&mut self, node_id: &NodeId, partition_num: &PartitionNumber, substate_key: &SubstateKey);
+    fn force_write(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: &PartitionNumber,
+        substate_key: &SubstateKey,
+    );
 
     /// Deletes a substate from the substate store.
     ///

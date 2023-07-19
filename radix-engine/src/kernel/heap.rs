@@ -95,7 +95,9 @@ impl Heap {
             }
         }
 
-        let value = self.get_substate(node_id, partition_num, substate_key).unwrap();
+        let value = self
+            .get_substate(node_id, partition_num, substate_key)
+            .unwrap();
 
         Ok(value)
     }

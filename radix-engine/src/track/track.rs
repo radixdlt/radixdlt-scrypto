@@ -1,4 +1,7 @@
-use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
+use crate::track::interface::{
+    CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackGetSubstateError,
+    TrackedSubstateInfo,
+};
 use crate::track::utils::OverlayingResultIterator;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -665,13 +668,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         substate_key: &SubstateKey,
         mut on_store_access: F,
     ) -> Result<Option<IndexedScryptoValue>, E> {
-        let tracked = self
-            .get_tracked_substate(
-                node_id,
-                partition_num,
-                substate_key.clone(),
-                &mut on_store_access,
-            )?;
+        let tracked = self.get_tracked_substate(
+            node_id,
+            partition_num,
+            substate_key.clone(),
+            &mut on_store_access,
+        )?;
         let value = tracked.take();
 
         Ok(value)
@@ -905,27 +907,24 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> TrackedSubstateInfo {
-        let info = self.tracked_nodes.get(node_id)
+        let info = self
+            .tracked_nodes
+            .get(node_id)
             .and_then(|n| n.tracked_partitions.get(&partition_num))
             .and_then(|p| {
                 let db_sort_key = M::to_db_sort_key(&substate_key);
                 p.substates.get(&db_sort_key)
             })
-            .map(|s| {
-                match s.substate_value {
-                    TrackedSubstateValue::New(..) | TrackedSubstateValue::Garbage => {
-                        TrackedSubstateInfo::New
-                    }
-                    TrackedSubstateValue::WriteOnly(..)
-                    | TrackedSubstateValue::ReadExistAndWrite(..)
-                    | TrackedSubstateValue::ReadNonExistAndWrite(..) => {
-                        TrackedSubstateInfo::Updated
-                    }
-                    TrackedSubstateValue::ReadOnly(..) => {
-                        TrackedSubstateInfo::Unmodified
-                    }
+            .map(|s| match s.substate_value {
+                TrackedSubstateValue::New(..) | TrackedSubstateValue::Garbage => {
+                    TrackedSubstateInfo::New
                 }
-            }).unwrap_or(TrackedSubstateInfo::Unmodified);
+                TrackedSubstateValue::WriteOnly(..)
+                | TrackedSubstateValue::ReadExistAndWrite(..)
+                | TrackedSubstateValue::ReadNonExistAndWrite(..) => TrackedSubstateInfo::Updated,
+                TrackedSubstateValue::ReadOnly(..) => TrackedSubstateInfo::Unmodified,
+            })
+            .unwrap_or(TrackedSubstateInfo::Unmodified);
 
         info
     }
@@ -957,7 +956,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         };
 
         let value = match tracked.get_runtime_substate_mut() {
-            Some(x) => {&x.value}
+            Some(x) => &x.value,
             None => {
                 return Err(CallbackError::Error(TrackGetSubstateError::NotFound(
                     node_id.clone(),
@@ -970,7 +969,12 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         Ok(value)
     }
 
-    fn force_write(&mut self, node_id: &NodeId, partition_num: &PartitionNumber, substate_key: &SubstateKey) {
+    fn force_write(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: &PartitionNumber,
+        substate_key: &SubstateKey,
+    ) {
         let tracked = self
             .get_tracked_substate(
                 node_id,

@@ -151,7 +151,7 @@ fn should_be_rejected_when_lock_fee_with_temp_vault() {
     receipt.expect_specific_rejection(|e| match e {
         RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::OpenSubstateError(
-                OpenSubstateError::HeapError(HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode),
+                OpenSubstateError::LockUnmodifiedBaseOnHeapNode,
             )),
         )) => true,
         _ => false,
