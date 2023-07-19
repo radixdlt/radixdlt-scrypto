@@ -260,8 +260,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         dropped_actor: &Actor,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_pop_frame(api, dropped_actor))
+        internal_call_dispatch!(api, after_pop_frame(api, dropped_actor, message))
     }
 
     #[trace_resources(log=output_size)]
@@ -404,30 +405,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn after_scan_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_scan_substates(api, store_access))
-    }
-
-    #[trace_resources]
-    fn after_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_scan_sorted_substates(api, store_access))
-    }
-
-    #[trace_resources]
-    fn after_take_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_take_substates(api, store_access))
-    }
-
-    #[trace_resources]
     fn after_set_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         value_size: usize,
@@ -442,6 +419,30 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, after_remove_substate(api, store_access))
+    }
+
+    #[trace_resources]
+    fn after_scan_keys<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, after_scan_keys(api, store_access))
+    }
+
+    #[trace_resources]
+    fn after_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, after_scan_sorted_substates(api, store_access))
+    }
+
+    #[trace_resources]
+    fn after_drain_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, after_drain_substates(api, store_access))
     }
 }
 

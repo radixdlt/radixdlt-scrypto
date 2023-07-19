@@ -59,7 +59,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_execution_finish<Y: KernelApi<M>>(
         _api: &mut Y,
-        _up_movement: &Message,
+        _message: &Message,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -68,6 +68,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn after_pop_frame<Y: KernelApi<M>>(
         _api: &mut Y,
         _dropped_actor: &Actor,
+        _message: &Message,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -195,7 +196,24 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn after_scan_substates<Y: KernelApi<M>>(
+    fn after_set_substate<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _value_size: usize,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn after_remove_substate<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn after_scan_keys<Y: KernelApi<M>>(
         _api: &mut Y,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
@@ -211,24 +229,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn after_take_substates<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn after_set_substate<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _value_size: usize,
-        _store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn after_remove_substate<Y: KernelApi<M>>(
+    fn after_drain_substates<Y: KernelApi<M>>(
         _api: &mut Y,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {

@@ -194,36 +194,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_write_substate(api, lock_handle, value_size, store_access)
     }
 
-    fn after_scan_substates<Y>(
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_scan_substates(api, store_access)
-    }
-
-    fn after_scan_sorted_substates<Y>(
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_scan_sorted_substates(api, store_access)
-    }
-
-    fn after_take_substates<Y>(
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_take_substates(api, store_access)
-    }
-
     fn after_set_substate<Y>(
         value_size: usize,
         store_access: &StoreAccessInfo,
@@ -243,6 +213,33 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Y: KernelApi<Self>,
     {
         SystemModuleMixer::after_remove_substate(api, store_access)
+    }
+
+    fn after_scan_keys<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_scan_keys(api, store_access)
+    }
+
+    fn after_scan_sorted_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_scan_sorted_substates(api, store_access)
+    }
+
+    fn after_drain_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_drain_substates(api, store_access)
     }
 
     fn after_create_node<Y>(
@@ -284,20 +281,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
         let is_to_barrier = callee.is_barrier();
         let is_to_auth_zone = callee.is_auth_zone();
-        let dest_blueprint_id = callee.blueprint_id();
+        let destination_blueprint_id = callee.blueprint_id().cloned();
         for node_id in &message.move_nodes {
-            let is_to_self_blueprint = if dest_blueprint_id.is_some() {
-                let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
-                type_info.blueprint_id() == dest_blueprint_id
-            } else {
-                false
-            };
             Self::on_move_node(
                 node_id,
                 true,
                 is_to_barrier,
                 is_to_auth_zone,
-                is_to_self_blueprint,
+                destination_blueprint_id.clone(),
                 api,
             )?;
         }
@@ -318,35 +309,35 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         SystemModuleMixer::on_execution_finish(api, message)?;
 
-        let caller_actor = api.kernel_get_system_state().caller_actor;
-        let is_to_barrier = caller_actor.is_barrier();
-        let is_to_auth_zone = caller_actor.is_auth_zone();
-        let dest_blueprint_id = caller_actor.blueprint_id().cloned();
+        Ok(())
+    }
+
+    fn after_pop_frame<Y>(
+        dropped_actor: &Actor,
+        message: &Message,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_pop_frame(api, dropped_actor, message)?;
+
+        let current_actor = api.kernel_get_system_state().current_actor;
+        let is_to_barrier = current_actor.is_barrier();
+        let is_to_auth_zone = current_actor.is_auth_zone();
+        let destination_blueprint_id = current_actor.blueprint_id().cloned();
         for node_id in &message.move_nodes {
-            let is_to_self_blueprint = if dest_blueprint_id.is_some() {
-                let type_info = TypeInfoBlueprint::get_type(node_id, api)?;
-                type_info.blueprint_id() == dest_blueprint_id.as_ref()
-            } else {
-                false
-            };
             Self::on_move_node(
                 node_id,
                 false,
                 is_to_barrier,
                 is_to_auth_zone,
-                is_to_self_blueprint,
+                destination_blueprint_id.clone(),
                 api,
             )?;
         }
 
         Ok(())
-    }
-
-    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_pop_frame(api, dropped_actor)
     }
 
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
@@ -740,7 +731,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         is_moving_down: bool,
         is_to_barrier: bool,
         is_to_auth_zone: bool,
-        is_to_self_blueprint: bool,
+        destination_blueprint_id: Option<BlueprintId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -772,7 +763,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                             is_moving_down,
                             is_to_barrier,
                             is_to_auth_zone,
-                            is_to_self_blueprint,
+                            destination_blueprint_id,
                         }),
                     }))
                     .map(|_| ())

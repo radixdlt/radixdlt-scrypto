@@ -22,7 +22,7 @@ pub use radix_engine_interface::blueprints::resource::LiquidNonFungibleVault as 
 
 pub const NON_FUNGIBLE_VAULT_CONTENTS_INDEX: CollectionIndex = 0u8;
 
-pub use crate::types::NonFungibleLocalId as NonFungibleVaultContentsEntry;
+pub type NonFungibleVaultContentsEntry = ();
 
 pub struct NonFungibleVaultBlueprint;
 
@@ -397,7 +397,7 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // FIXME: only allow a certain amount to be returned
-        let items: Vec<NonFungibleLocalId> = api.actor_index_scan_typed(
+        let items: Vec<NonFungibleLocalId> = api.actor_index_scan_keys_typed(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
             u32::MAX,
@@ -446,13 +446,13 @@ impl NonFungibleVaultBlueprint {
         substate_ref.amount -= Decimal::from(n);
 
         let taken = {
-            let ids: Vec<NonFungibleLocalId> = api.actor_index_take_typed(
+            let ids: Vec<(NonFungibleLocalId, ())> = api.actor_index_drain_typed(
                 OBJECT_HANDLE_SELF,
                 NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
                 n,
             )?;
             LiquidNonFungibleResource {
-                ids: ids.into_iter().collect(),
+                ids: ids.into_iter().map(|(key, _value)| key).collect(),
             }
         };
 
@@ -533,8 +533,8 @@ impl NonFungibleVaultBlueprint {
             api.actor_index_insert_typed(
                 OBJECT_HANDLE_SELF,
                 NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
-                scrypto_encode(&id).unwrap(),
                 id,
+                (),
             )?;
         }
 
