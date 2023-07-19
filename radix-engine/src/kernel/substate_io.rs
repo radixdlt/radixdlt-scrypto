@@ -22,13 +22,27 @@ pub enum SubstateLocation {
     Store,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct LockData {
+    flags: LockFlags,
+    location: SubstateLocation,
+}
+
 pub struct SubstateIO<'g, S: SubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
-    pub substate_locks: SubstateLocks,
+    pub substate_locks: SubstateLocks<LockData>,
 }
 
 impl<'g, S: SubstateStore> SubstateIO<'g, S> {
+    pub fn new(store: &'g mut S) -> Self {
+        Self {
+            heap: Heap::new(),
+            store,
+            substate_locks: SubstateLocks::new(),
+        }
+    }
+
     pub fn open_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
@@ -91,12 +105,16 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
             default,
         )?;
 
+        let lock_data = LockData {
+            flags, location: substate_location
+        };
+
         let global_lock_handle = match self.substate_locks.lock(
             node_id,
             partition_num,
             substate_key,
-            flags,
-            substate_location,
+            !flags.contains(LockFlags::MUTABLE),
+                lock_data,
         ) {
             Some(handle) => handle,
             None => {
@@ -112,10 +130,10 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
     }
 
     pub fn read_substate(&mut self, global_lock_handle: u32) -> &IndexedScryptoValue {
-        let (node_id, partition_num, substate_key, _, substate_location) =
+        let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get(global_lock_handle);
 
-        let substate = match substate_location {
+        let substate = match lock_data.location {
             SubstateLocation::Heap => self
                 .heap
                 .get_substate(node_id, *partition_num, substate_key)
@@ -136,13 +154,13 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
     ) -> Result<(), WriteSubstateError> {
-        let (node_id, partition_num, substate_key, flags, substate_location) =
+        let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.get(global_lock_handle);
-        if !flags.contains(LockFlags::MUTABLE) {
+        if !lock_data.flags.contains(LockFlags::MUTABLE) {
             return Err(WriteSubstateError::NoWritePermission);
         }
 
-        match substate_location {
+        match lock_data.location {
             SubstateLocation::Heap => {
                 self.heap.set_substate(
                     node_id.clone(),
@@ -179,15 +197,15 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         LockFlags,
         SubstateLocation,
     ) {
-        let (node_id, partition_num, substate_key, flags, location) =
+        let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.unlock(global_lock_handle);
 
-        if flags.contains(LockFlags::FORCE_WRITE) {
+        if lock_data.flags.contains(LockFlags::FORCE_WRITE) {
             self.store
                 .force_write(&node_id, &partition_num, &substate_key);
         }
 
-        (node_id, partition_num, substate_key, flags, location)
+        (node_id, partition_num, substate_key, lock_data.flags, lock_data.location)
     }
 
     pub fn set_substate<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(
@@ -331,8 +349,6 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
 
         Ok(substates)
     }
-
-
 
     pub fn move_node_to_store<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,

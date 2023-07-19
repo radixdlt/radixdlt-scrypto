@@ -510,7 +510,7 @@ impl<L: Clone> CallFrame<L> {
 
         if flags.contains(LockFlags::MUTABLE) {
             let substate_is_in_store = matches!(substate_location, SubstateLocation::Store);
-            let substate = if substate_is_in_store {
+            let updated_substate = if substate_is_in_store {
                 substate_io.store.get_substate::<(), _>(
                     &node_id,
                     partion_num,
@@ -529,7 +529,7 @@ impl<L: Clone> CallFrame<L> {
             // Process owns
             //==============
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
-            for own in substate.owned_nodes() {
+            for own in updated_substate.owned_nodes() {
                 if !new_owned_nodes.insert(own.clone()) {
                     return Err(CallbackError::Error(
                         CloseSubstateError::ContainsDuplicatedOwns,
@@ -574,7 +574,7 @@ impl<L: Clone> CallFrame<L> {
             // Process references
             //====================
             let mut new_references: IndexSet<NodeId> = index_set_new();
-            for own in substate.references() {
+            for own in updated_substate.references() {
                 // Deduplicate
                 new_references.insert(own.clone());
             }

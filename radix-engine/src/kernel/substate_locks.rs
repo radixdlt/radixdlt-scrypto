@@ -1,6 +1,4 @@
-use crate::kernel::substate_io::SubstateLocation;
 use crate::types::*;
-use radix_engine_interface::api::LockFlags;
 
 pub struct SubstateLockError;
 
@@ -19,16 +17,16 @@ impl SubstateLockState {
         !matches!(self, SubstateLockState::Read(0usize))
     }
 
-    fn try_lock(&mut self, flags: LockFlags) -> Result<(), SubstateLockError> {
+    fn try_lock(&mut self, read_only: bool) -> Result<(), SubstateLockError> {
         match self {
             SubstateLockState::Read(n) => {
-                if flags.contains(LockFlags::MUTABLE) {
+                if read_only {
+                    *n = *n + 1;
+                } else {
                     if *n != 0 {
                         return Err(SubstateLockError);
                     }
                     *self = SubstateLockState::Write;
-                } else {
-                    *n = *n + 1;
                 }
             }
             SubstateLockState::Write => {
@@ -51,22 +49,21 @@ impl SubstateLockState {
     }
 }
 
-pub struct SubstateLocks {
+pub struct SubstateLocks<D> {
     locks: IndexMap<
         u32,
         (
             NodeId,
             PartitionNumber,
             SubstateKey,
-            LockFlags,
-            SubstateLocation,
+            D,
         ),
     >,
     substate_lock_states: NonIterMap<(NodeId, PartitionNumber, SubstateKey), SubstateLockState>,
     next_lock_id: u32,
 }
 
-impl SubstateLocks {
+impl<D> SubstateLocks<D> {
     pub fn new() -> Self {
         Self {
             locks: IndexMap::new(),
@@ -80,8 +77,7 @@ impl SubstateLocks {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        flags: LockFlags,
-        location: SubstateLocation,
+        data: D,
     ) -> u32 {
         let new_lock = self.next_lock_id;
         self.locks.insert(
@@ -90,8 +86,7 @@ impl SubstateLocks {
                 *node_id,
                 partition_num,
                 substate_key.clone(),
-                flags,
-                location,
+                data,
             ),
         );
         self.next_lock_id += 1;
@@ -119,21 +114,21 @@ impl SubstateLocks {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        flags: LockFlags,
-        location: SubstateLocation,
+        read_only: bool,
+        data: D,
     ) -> Option<u32> {
         let lock_state = self
             .substate_lock_states
             .entry((node_id.clone(), partition_num, substate_key.clone()))
             .or_insert(SubstateLockState::no_lock());
-        match lock_state.try_lock(flags) {
+        match lock_state.try_lock(read_only) {
             Ok(()) => {}
             Err(_) => {
                 return None;
             }
         }
 
-        let handle = self.new_lock_handle(node_id, partition_num, substate_key, flags, location);
+        let handle = self.new_lock_handle(node_id, partition_num, substate_key, data);
         Some(handle)
     }
 
@@ -144,8 +139,7 @@ impl SubstateLocks {
         NodeId,
         PartitionNumber,
         SubstateKey,
-        LockFlags,
-        SubstateLocation,
+        D
     ) {
         self.locks.get(&handle).unwrap()
     }
@@ -157,14 +151,13 @@ impl SubstateLocks {
         NodeId,
         PartitionNumber,
         SubstateKey,
-        LockFlags,
-        SubstateLocation,
+        D,
     ) {
-        let (node_id, partition_num, substate_key, flags, location) =
+        let (node_id, partition_num, substate_key, data) =
             self.locks.remove(&handle).unwrap();
         let full_key = (node_id, partition_num, substate_key);
         let lock_state = self.substate_lock_states.get_mut(&full_key).unwrap();
         lock_state.unlock();
-        (full_key.0, full_key.1, full_key.2, flags, location)
+        (full_key.0, full_key.1, full_key.2, data)
     }
 }
