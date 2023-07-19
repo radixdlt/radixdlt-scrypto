@@ -76,7 +76,7 @@ impl Rules for WasmValidatorConfigV1 {
             I64Store8 { .. } => Some(self.weights.i64store),
             I64Store16 { .. } => Some(self.weights.i64store),
             I64Store32 { .. } => Some(self.weights.i64store),
-            //            CurrentMemory { .. } => Some(self.weights.memory_current),
+            MemorySize { .. } => Some(self.weights.memory_size),
             MemoryGrow { .. } => Some(self.weights.memory_grow),
             I32Const { .. } => Some(self.weights.i64const),
             I64Const { .. } => Some(self.weights.i64const),
