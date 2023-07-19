@@ -69,8 +69,6 @@ pub enum InvalidMemory {
     MemorySizeLimitExceeded,
     /// The wasm module does not have the `memory` export.
     MemoryNotExported,
-    /// The wasm module misses max memory definition.
-    MemoryMaxMissing,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Sbor)]
