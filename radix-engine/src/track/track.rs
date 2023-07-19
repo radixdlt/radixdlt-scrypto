@@ -1,5 +1,5 @@
 use crate::kernel::substate_locks::SubstateLocks;
-use crate::track::interface::{CallbackError, NodeSubstates, RemoveSubstateError, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
+use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
 use crate::track::utils::OverlayingResultIterator;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -670,26 +670,14 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         mut on_store_access: F,
-    ) -> Result<Option<IndexedScryptoValue>, CallbackError<RemoveSubstateError, E>> {
-        if self
-            .substate_locks
-            .is_locked(node_id, partition_num, substate_key)
-        {
-            return Err(CallbackError::Error(RemoveSubstateError::SubstateLocked(
-                *node_id,
-                partition_num,
-                substate_key.clone(),
-            )));
-        }
-
+    ) -> Result<Option<IndexedScryptoValue>, E> {
         let tracked = self
             .get_tracked_substate(
                 node_id,
                 partition_num,
                 substate_key.clone(),
                 &mut on_store_access,
-            )
-            .map_err(CallbackError::CallbackError)?;
+            )?;
         let value = tracked.take();
 
         Ok(value)

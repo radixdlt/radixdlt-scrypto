@@ -8,12 +8,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TrackGetSubstateError {
     NotFound(NodeId, PartitionNumber, SubstateKey),
-    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum RemoveSubstateError {
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -134,7 +128,7 @@ pub trait SubstateStore {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         on_store_access: F,
-    ) -> Result<Option<IndexedScryptoValue>, CallbackError<RemoveSubstateError, E>>;
+    ) -> Result<Option<IndexedScryptoValue>, E>;
 
     /// Returns Substate Keys of maximum count for a given partition.
     ///

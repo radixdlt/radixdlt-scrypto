@@ -1,6 +1,6 @@
 use crate::kernel::actor::MethodType;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::interface::{CallbackError, NodeSubstates, RemoveSubstateError, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
+use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
@@ -243,7 +243,7 @@ pub enum CallFrameSetSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameRemoveSubstateError {
     NodeNotVisible(NodeId),
-    StoreError(RemoveSubstateError),
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -1001,6 +1001,7 @@ impl<L: Clone> CallFrame<L> {
         on_store_access: F,
         heap: &'f mut Heap,
         store: &'f mut S,
+        substate_locks: &'f mut SubstateLocks,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
@@ -1009,14 +1010,18 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        // FIXME Add lock check
+        if substate_locks.is_locked(node_id, partition_num, key) {
+            return Err(CallbackError::Error(
+                CallFrameRemoveSubstateError::SubstateLocked(node_id.clone(), partition_num, key.clone())
+            ));
+        }
 
         let removed = if heap.contains_node(node_id) {
             heap.remove_substate(node_id, partition_num, key)
         } else {
             store
                 .remove_substate(node_id, partition_num, key, on_store_access)
-                .map_err(|e| e.map(CallFrameRemoveSubstateError::StoreError))?
+                .map_err(CallbackError::CallbackError)?
         };
 
         Ok(removed)

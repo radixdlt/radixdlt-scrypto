@@ -826,6 +826,7 @@ where
                 |store_access| self.callback.on_store_access(&store_access),
                 &mut self.heap,
                 self.store,
+                &mut self.substate_locks,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
