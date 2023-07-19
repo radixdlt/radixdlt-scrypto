@@ -1,7 +1,7 @@
 use super::types::{Nibble, NibblePath, Version, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crate::hash_tree::tree_store::{
-    SerializedInMemoryTreeStore, SubstatePayload, TreeChildEntry, TreeInternalNode, TreeLeafNode,
-    TreeNode, TypedInMemoryTreeStore,
+    SerializedInMemoryTreeStore, TreeChildEntry, TreeInternalNode, TreeLeafNode, TreeNode,
+    TypedInMemoryTreeStore,
 };
 use crate::hash_tree::types::{LeafKey, NodeKey};
 use crate::hash_tree::{put_at_next_version, SubstateHashChange};
@@ -11,7 +11,7 @@ use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_store_interface::interface::{
     DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
 };
-use utils::rust::collections::{hashmap, HashMap};
+use utils::rust::collections::{hashmap, hashset, HashMap, HashSet};
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
@@ -135,16 +135,11 @@ fn hash_of_different_re_nodes_is_same_when_contained_entries_are_same() {
         ],
     );
 
-    let nested_tree_hashes = store
-        .root_tree_nodes
-        .values()
-        .filter_map(|node| match node {
-            TreeNode::Leaf(TreeLeafNode { value_hash, .. }) => Some(value_hash.clone()),
-            _ => None,
-        })
-        .collect::<Vec<Hash>>();
-    assert_eq!(nested_tree_hashes.len(), 2);
-    assert_eq!(nested_tree_hashes[0], nested_tree_hashes[1])
+    let re_node_leaf_hashes = get_leafs_of_tier(&store, Tier::ReNode)
+        .into_values()
+        .collect::<Vec<_>>();
+    assert_eq!(re_node_leaf_hashes.len(), 2);
+    assert_eq!(re_node_leaf_hashes[0], re_node_leaf_hashes[1])
 }
 
 #[test]
@@ -187,66 +182,57 @@ fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
         ],
     );
 
-    // Assert on the keys of Node-tier leafs and their internal Partition-tier maps:
-    let node_tier_leaf_keys = store
-        .root_tree_nodes
-        .iter()
-        .filter_map(|(node_key, node)| match node {
-            TreeNode::Leaf(TreeLeafNode {
-                key_suffix,
-                payload,
-                ..
-            }) => Some((
-                leaf_key(node_key, key_suffix),
-                payload.partitions.keys().cloned().collect_vec(),
-            )),
-            _ => None,
-        })
-        .collect::<HashMap<_, _>>();
+    // Assert on the keys of Node-tier leafs:
+    let node_tier_leaf_keys = get_leafs_of_tier(&store, Tier::ReNode)
+        .into_keys()
+        .collect::<HashSet<_>>();
     assert_eq!(
         node_tier_leaf_keys,
-        hashmap!(
-            LeafKey { bytes: vec![1, 3, 3, 7] } => vec![99],
-            LeafKey { bytes: vec![123, 12, 1, 0] } => vec![66, 88],
+        hashset!(
+            LeafKey {
+                bytes: vec![1, 3, 3, 7]
+            },
+            LeafKey {
+                bytes: vec![123, 12, 1, 0]
+            },
+        )
+    );
+
+    // Assert on the keys of Partition-tier leafs:
+    let partition_tier_leaf_keys = get_leafs_of_tier(&store, Tier::Partition)
+        .into_keys()
+        .collect::<HashSet<_>>();
+    assert_eq!(
+        partition_tier_leaf_keys,
+        hashset!(
+            LeafKey {
+                bytes: vec![1, 3, 3, 7, TIER_SEPARATOR, 99]
+            },
+            LeafKey {
+                bytes: vec![123, 12, 1, 0, TIER_SEPARATOR, 66]
+            },
+            LeafKey {
+                bytes: vec![123, 12, 1, 0, TIER_SEPARATOR, 88]
+            },
         )
     );
 
     // Assert on the keys and hashes of the Substate-tier leaves:
-    let substate_tier_leaves = store
-        .sub_tree_nodes
-        .iter()
-        .filter_map(|(node_key, node)| match node {
-            TreeNode::Leaf(TreeLeafNode {
-                key_suffix,
-                value_hash,
-                ..
-            }) => Some((leaf_key(node_key, key_suffix), value_hash.clone())),
-            _ => None,
-        })
-        .collect::<HashMap<_, _>>();
+    let substate_tier_leaves = get_leafs_of_tier(&store, Tier::Substate);
     assert_eq!(
         substate_tier_leaves,
         hashmap!(
-            LeafKey { bytes: vec![1, 3, 3, 7, 99, 253] } => Hash([1; Hash::LENGTH]),
-            LeafKey { bytes: vec![1, 3, 3, 7, 99, 66] } => Hash([2; Hash::LENGTH]),
-            LeafKey { bytes: vec![123, 12, 1, 0, 88, 6, 6, 6] } => Hash([3; Hash::LENGTH]),
-            LeafKey { bytes: vec![123, 12, 1, 0, 88, 6, 6, 7] } => Hash([4; Hash::LENGTH]),
-            LeafKey { bytes: vec![123, 12, 1, 0, 66, 1, 2, 3, 4] } => Hash([5; Hash::LENGTH]),
+            LeafKey { bytes: vec![1, 3, 3, 7, TIER_SEPARATOR, 99, TIER_SEPARATOR, 253] } => Hash([1; Hash::LENGTH]),
+            LeafKey { bytes: vec![1, 3, 3, 7, TIER_SEPARATOR, 99, TIER_SEPARATOR, 66] } => Hash([2; Hash::LENGTH]),
+            LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEPARATOR, 88, TIER_SEPARATOR, 6, 6, 6] } => Hash([3; Hash::LENGTH]),
+            LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEPARATOR, 88, TIER_SEPARATOR, 6, 6, 7] } => Hash([4; Hash::LENGTH]),
+            LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEPARATOR, 66, TIER_SEPARATOR, 1, 2, 3, 4] } => Hash([5; Hash::LENGTH]),
         )
     );
 }
 
 #[test]
 fn deletes_node_tier_leaf_when_all_its_entries_deleted() {
-    fn count_current_re_node_leafs(store: &TypedInMemoryTreeStore) -> usize {
-        store
-            .root_tree_nodes
-            .iter()
-            .filter(|(key, _)| !store.stale_key_buffer.contains(key))
-            .filter(|(_, node)| matches!(node, TreeNode::Leaf(TreeLeafNode { .. })))
-            .count()
-    }
-
     let mut store = TypedInMemoryTreeStore::new();
     put_at_next_version(
         &mut store,
@@ -257,15 +243,15 @@ fn deletes_node_tier_leaf_when_all_its_entries_deleted() {
             change(2, 7, 3, Some(30)),
         ],
     );
-    assert_eq!(count_current_re_node_leafs(&store), 2);
+    assert_eq!(get_leafs_of_tier(&store, Tier::ReNode).len(), 2);
     put_at_next_version(
         &mut store,
         Some(1),
         vec![change(1, 6, 2, None), change(1, 6, 9, None)],
     );
-    assert_eq!(count_current_re_node_leafs(&store), 1);
+    assert_eq!(get_leafs_of_tier(&store, Tier::ReNode).len(), 1);
     put_at_next_version(&mut store, Some(2), vec![change(2, 7, 3, None)]);
-    assert_eq!(count_current_re_node_leafs(&store), 0);
+    assert_eq!(get_leafs_of_tier(&store, Tier::ReNode).len(), 0);
 }
 
 #[test]
@@ -301,7 +287,6 @@ fn sbor_uses_custom_direct_codecs_for_nibbles() {
     let direct_bytes = nibbles.bytes().to_vec();
     let node = TreeNode::Leaf(TreeLeafNode {
         key_suffix: nibbles,
-        payload: (),
         value_hash: Hash([7; 32]),
     });
     let encoded = scrypto_encode(&node).unwrap();
@@ -332,13 +317,12 @@ fn sbor_decodes_what_was_encoded() {
         }),
         TreeNode::Leaf(TreeLeafNode {
             key_suffix: nibbles("abc"),
-            payload: (),
             value_hash: Hash([7; 32]),
         }),
         TreeNode::Null,
     ];
     let encoded = scrypto_encode(&nodes).unwrap();
-    let decoded = scrypto_decode::<Vec<TreeNode<SubstatePayload>>>(&encoded).unwrap();
+    let decoded = scrypto_decode::<Vec<TreeNode>>(&encoded).unwrap();
     assert_eq!(nodes, decoded);
 }
 
@@ -346,15 +330,16 @@ fn sbor_decodes_what_was_encoded() {
 fn serialized_keys_are_strictly_increasing() {
     let mut store = SerializedInMemoryTreeStore::new();
     put_at_next_version(&mut store, None, vec![change(3, 6, 4, Some(90))]);
-    let previous_key = store.memory.keys().collect_vec()[0].clone();
+    let previous_keys = store.memory.keys().cloned().collect::<HashSet<_>>();
     put_at_next_version(&mut store, Some(1), vec![change(1, 7, 2, Some(80))]);
-    let next_key = store
+    let min_next_key = store
         .memory
         .keys()
-        .filter(|key| **key != previous_key)
-        .collect_vec()[0]
-        .clone();
-    assert!(next_key > previous_key);
+        .filter(|key| !previous_keys.contains(*key))
+        .max()
+        .unwrap();
+    let max_previous_key = previous_keys.iter().max().unwrap();
+    assert!(min_next_key > max_previous_key);
 }
 
 fn change(
@@ -402,4 +387,35 @@ fn db_partition_key(node_key: DbNodeKey, partition_num: DbPartitionNum) -> DbPar
         node_key,
         partition_num,
     }
+}
+
+enum Tier {
+    ReNode,
+    Partition,
+    Substate,
+}
+
+const TIER_SEPARATOR: u8 = b'_';
+
+fn get_leafs_of_tier(store: &TypedInMemoryTreeStore, tier: Tier) -> HashMap<LeafKey, Hash> {
+    let separator_count = tier as usize;
+    store
+        .tree_nodes
+        .iter()
+        .filter(|(key, _)| {
+            key.nibble_path()
+                .bytes()
+                .iter()
+                .filter(|byte| **byte == TIER_SEPARATOR)
+                .count()
+                == separator_count
+        })
+        .filter(|(key, _)| !store.stale_key_buffer.contains(key))
+        .filter_map(|(key, node)| match node {
+            TreeNode::Leaf(leaf) => {
+                Some((leaf_key(key, &leaf.key_suffix), leaf.value_hash.clone()))
+            }
+            _ => None,
+        })
+        .collect()
 }

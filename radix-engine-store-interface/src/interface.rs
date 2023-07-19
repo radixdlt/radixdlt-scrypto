@@ -3,8 +3,6 @@ use utils::rust::boxed::Box;
 use utils::rust::collections::IndexMap;
 use utils::rust::vec::Vec;
 
-// TODO(wip): adjust all rustdocs here to reflect the 3-Tier JMT
-
 pub type DbNodeKey = Vec<u8>;
 
 pub type DbPartitionNum = u8;
@@ -29,8 +27,7 @@ impl DbPartitionKey {
 
 /// A database-level key of a substate within a known partition.
 /// Seen from the higher-level API: it represents a local Substate Key.
-/// Seen from the lower-level implementation: it is used as a key in the lower-layer tree of our
-/// two-layered JMT.
+/// Seen from the lower-level implementation: it is used as a key in the Substate-Tier JMT.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Ord, PartialOrd, ScryptoSbor)]
 pub struct DbSortKey(pub Vec<u8>);
 

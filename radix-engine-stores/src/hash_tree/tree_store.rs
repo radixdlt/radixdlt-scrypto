@@ -2,20 +2,19 @@
 pub use super::types::{Nibble, NibblePath, NodeKey, Version};
 
 use radix_engine_common::crypto::Hash;
-use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode, ScryptoSbor};
+use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_derive::ScryptoSbor;
-use radix_engine_store_interface::interface::DbPartitionNum;
 use sbor::*;
-use utils::rust::collections::{hash_map_new, BTreeMap, HashMap};
+use utils::rust::collections::{hash_map_new, HashMap};
 use utils::rust::vec::Vec;
 
 /// A physical tree node, to be used in the storage.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
-pub enum TreeNode<P> {
+pub enum TreeNode {
     /// Internal node - always metadata-only, as per JMT design.
     Internal(TreeInternalNode),
     /// Leaf node.
-    Leaf(TreeLeafNode<P>),
+    Leaf(TreeLeafNode),
     /// An "empty tree" indicator, which may only be used as a root.
     Null,
 }
@@ -41,59 +40,23 @@ pub struct TreeChildEntry {
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
-pub struct TreeLeafNode<P> {
+pub struct TreeLeafNode {
     /// All the remaining nibbles in the _hashed_ payload's key.
     pub key_suffix: NibblePath,
-    /// Payload; contents depend on the layer.
-    pub payload: P,
     /// An externally-provided hash of the payload.
     pub value_hash: Hash,
 }
 
-/// A payload carried by a physical leaf.
-/// The top ReNodeModule tree carries an `ReNodeModulePayload` payload.
-/// The sub-trees carry  a `SubstateKey` payload.
-pub trait Payload:
-    Clone + PartialEq + Eq + rust::hash::Hash + rust::fmt::Debug + ScryptoSbor
-{
-}
-
-// TODO(wip): adjust all rustdocs here to reflect the 3-Tier JMT
-
-/// Payload of the leafs within the upper layer.
-/// Please note that an upper-layer leaf is conceptually identical to a lower-layer root (i.e. one
-/// exists if and only if the other exists). For this reason, this payload does _not_ just reference
-/// the lower-layer root, but actually contains it inside.
-/// This design decision also brings minor space and runtime benefits, and avoids special-casing
-/// the physical `NodeKey`s (no key clashes can occur between the layers).
-#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
-pub struct NodePayload {
-    pub partitions: BTreeMap<DbPartitionNum, PartitionPayload>,
-}
-impl Payload for NodePayload {}
-
-#[derive(Clone, PartialEq, Eq, Hash, Debug, ScryptoSbor)]
-pub struct PartitionPayload {
-    pub state_version: Version,
-    pub root_hash: Hash,
-}
-impl Payload for PartitionPayload {}
-
-/// Payload of the leafs within the lower layer.
-/// We do not need any extra information - the implicitly stored `NodeKey` is our value.
-pub type SubstatePayload = ();
-impl Payload for SubstatePayload {}
-
 /// The "read" part of a physical tree node storage SPI.
-pub trait ReadableTreeStore<P: Payload> {
+pub trait ReadableTreeStore {
     /// Gets node by key, if it exists.
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>>;
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode>;
 }
 
 /// The "write" part of a physical tree node storage SPI.
-pub trait WriteableTreeStore<P: Payload> {
+pub trait WriteableTreeStore {
     /// Inserts the node under a new, unique key (i.e. never an update).
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<P>);
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode);
 
     /// Marks the given node for a (potential) future removal by an arbitrary
     /// external pruning process.
@@ -101,14 +64,13 @@ pub trait WriteableTreeStore<P: Payload> {
 }
 
 /// A complete tree node storage SPI.
-pub trait TreeStore<P: Payload>: ReadableTreeStore<P> + WriteableTreeStore<P> {}
-impl<S: ReadableTreeStore<P> + WriteableTreeStore<P>, P: Payload> TreeStore<P> for S {}
+pub trait TreeStore: ReadableTreeStore + WriteableTreeStore {}
+impl<S: ReadableTreeStore + WriteableTreeStore> TreeStore for S {}
 
 /// A `TreeStore` based on memory object copies (i.e. no serialization).
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TypedInMemoryTreeStore {
-    pub root_tree_nodes: HashMap<NodeKey, TreeNode<NodePayload>>,
-    pub sub_tree_nodes: HashMap<NodeKey, TreeNode<SubstatePayload>>,
+    pub tree_nodes: HashMap<NodeKey, TreeNode>,
     pub stale_key_buffer: Vec<NodeKey>,
 }
 
@@ -116,38 +78,21 @@ impl TypedInMemoryTreeStore {
     /// A constructor of a newly-initialized, empty store.
     pub fn new() -> TypedInMemoryTreeStore {
         TypedInMemoryTreeStore {
-            root_tree_nodes: hash_map_new(),
-            sub_tree_nodes: hash_map_new(),
+            tree_nodes: hash_map_new(),
             stale_key_buffer: Vec::new(),
         }
     }
 }
 
-impl ReadableTreeStore<SubstatePayload> for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<SubstatePayload>> {
-        self.sub_tree_nodes.get(key).cloned()
+impl ReadableTreeStore for TypedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+        self.tree_nodes.get(key).cloned()
     }
 }
 
-impl WriteableTreeStore<SubstatePayload> for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<SubstatePayload>) {
-        self.sub_tree_nodes.insert(key, node);
-    }
-
-    fn record_stale_node(&mut self, key: NodeKey) {
-        self.stale_key_buffer.push(key);
-    }
-}
-
-impl ReadableTreeStore<NodePayload> for TypedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<NodePayload>> {
-        self.root_tree_nodes.get(key).cloned()
-    }
-}
-
-impl WriteableTreeStore<NodePayload> for TypedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<NodePayload>) {
-        self.root_tree_nodes.insert(key, node);
+impl WriteableTreeStore for TypedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
+        self.tree_nodes.insert(key, node);
     }
 
     fn record_stale_node(&mut self, key: NodeKey) {
@@ -172,16 +117,16 @@ impl SerializedInMemoryTreeStore {
     }
 }
 
-impl<P: Payload> ReadableTreeStore<P> for SerializedInMemoryTreeStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+impl ReadableTreeStore for SerializedInMemoryTreeStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.memory
             .get(&encode_key(key))
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 }
 
-impl<P: Payload> WriteableTreeStore<P> for SerializedInMemoryTreeStore {
-    fn insert_node(&mut self, key: NodeKey, node: TreeNode<P>) {
+impl WriteableTreeStore for SerializedInMemoryTreeStore {
+    fn insert_node(&mut self, key: NodeKey, node: TreeNode) {
         self.memory
             .insert(encode_key(&key), scrypto_encode(&node).unwrap());
     }
