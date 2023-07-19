@@ -15,7 +15,7 @@ use native_sdk::resource::ResourceManager;
 use radix_engine_interface::api::node_modules::auth::AuthAddresses;
 use radix_engine_interface::api::node_modules::metadata::MetadataInit;
 use radix_engine_interface::api::{
-    ClientApi, ClientObjectApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
+    ClientApi, FieldValue, KVEntry, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF,
 };
 pub use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::{require, Bucket};
@@ -612,7 +612,7 @@ pub fn create_bootstrap_package_partitions(
     {
         partitions.insert(
             TYPE_INFO_FIELD_PARTITION,
-            type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
+            type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                 global: true,
                 module_versions: btreemap!(
                     ObjectModuleId::Main => BlueprintVersion::default(),
@@ -620,7 +620,7 @@ pub fn create_bootstrap_package_partitions(
                     ObjectModuleId::RoleAssignment => BlueprintVersion::default(),
                 ),
 
-                main_blueprint_info: BlueprintObjectInfo {
+                blueprint_info: BlueprintInfo {
                     blueprint_id: BlueprintId::new(&PACKAGE_PACKAGE, PACKAGE_BLUEPRINT),
                     outer_obj_info: OuterObjectInfo::default(),
                     features: btreeset!(),
@@ -1301,12 +1301,11 @@ impl PackageRoyaltyNativeBlueprint {
     {
         {
             let mut service = SystemService::new(api);
-            let object_info = service.get_node_object_info(receiver)?;
-            if !object_info
-                .main_blueprint_info
-                .features
-                .contains(PACKAGE_ROYALTY_FEATURE)
-            {
+            if !service.is_feature_enabled(
+                receiver,
+                ObjectModuleId::Main,
+                PACKAGE_ROYALTY_FEATURE,
+            )? {
                 return Ok(());
             }
         }

@@ -112,7 +112,7 @@ impl CallMethod {
             }
             TypePointer::Instance(instance_index) => {
                 let object_info = export_object_info(component_address)?;
-                match object_info.main_blueprint_info.instance_schema {
+                match object_info.blueprint_info.instance_schema {
                     None => {
                         return Err(Error::InstanceSchemaNot(component_address, instance_index))
                     }

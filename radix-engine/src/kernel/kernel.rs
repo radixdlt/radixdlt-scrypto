@@ -9,6 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
+use crate::kernel::actor::MethodType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -111,8 +112,8 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
             kernel.store.close_substate(handle);
             match type_substate {
-                TypeInfoSubstate::Object(NodeObjectInfo {
-                    main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
                     global,
                     ..
                 }) => {
@@ -216,12 +217,12 @@ where
         let can_be_invoked = match &invocation.actor {
             Actor::Method(MethodActor {
                 node_id,
-                is_direct_access,
+                method_type,
                 ..
             }) => self
                 .current_frame
                 .get_node_visibility(&node_id)
-                .can_be_invoked(*is_direct_access),
+                .can_be_invoked(method_type.eq(&MethodType::DirectAccess)),
             Actor::Function(FunctionActor { blueprint_id, .. })
             | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
                 // FIXME: combine this with reference check of invocation
@@ -458,19 +459,18 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(info)
-                    if info.main_blueprint_info.blueprint_id.package_address
-                        == RESOURCE_PACKAGE
-                        && (info.main_blueprint_info.blueprint_id.blueprint_name
+                    if info.blueprint_info.blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (info.blueprint_info.blueprint_id.blueprint_name
                             == FUNGIBLE_BUCKET_BLUEPRINT
-                            || info.main_blueprint_info.blueprint_id.blueprint_name
+                            || info.blueprint_info.blueprint_id.blueprint_name
                                 == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                 {
                     let is_fungible = info
-                        .main_blueprint_info
+                        .blueprint_info
                         .blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_BUCKET_BLUEPRINT);
-                    let parent = info.get_main_outer_object();
+                    let parent = info.get_outer_object();
                     let resource_address: ResourceAddress =
                         ResourceAddress::new_or_panic(parent.as_ref().clone().try_into().unwrap());
                     (is_fungible, resource_address)
@@ -524,8 +524,8 @@ where
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
-                TypeInfoSubstate::Object(NodeObjectInfo {
-                    main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
                     ..
                 }) if blueprint_id.package_address == RESOURCE_PACKAGE
                     && (blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT

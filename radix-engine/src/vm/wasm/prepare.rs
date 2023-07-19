@@ -702,7 +702,7 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        GET_OBJECT_INFO_FUNCTION_NAME => {
+                        GET_BLUEPRINT_ID_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,
@@ -714,7 +714,24 @@ impl WasmModule {
                                 }
                                 return Err(PrepareError::InvalidImport(
                                     InvalidImport::InvalidFunctionType(
-                                        GET_OBJECT_INFO_FUNCTION_NAME.to_string(),
+                                        GET_BLUEPRINT_ID_FUNCTION_NAME.to_string(),
+                                    ),
+                                ));
+                            }
+                        }
+                        GET_OUTER_OBJECT_FUNCTION_NAME => {
+                            if let External::Function(type_index) = entry.external() {
+                                if Self::function_type_matches(
+                                    &self.module,
+                                    *type_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I64],
+                                ) {
+                                    continue;
+                                }
+                                return Err(PrepareError::InvalidImport(
+                                    InvalidImport::InvalidFunctionType(
+                                        GET_OUTER_OBJECT_FUNCTION_NAME.to_string(),
                                     ),
                                 ));
                             }

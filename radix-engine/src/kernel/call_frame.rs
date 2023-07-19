@@ -1,3 +1,4 @@
+use crate::kernel::actor::MethodType;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{CallbackError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess, SubstateStore, TrackOpenSubstateError};
 use crate::types::*;
@@ -87,7 +88,7 @@ impl NodeVisibility {
     /// Note that system may enforce further constraints on this.
     /// For instance, system currently only allows substates of actor,
     /// actor's outer object, and any visible key value store.
-    pub fn can_be_read_or_write(&self) -> bool {
+    pub fn is_visible(&self) -> bool {
         !self.0.is_empty()
     }
 
@@ -309,15 +310,15 @@ impl<L: Clone> CallFrame<L> {
         match &frame.actor {
             Actor::Root => {}
             Actor::Method(MethodActor {
-                global_address,
-                node_object_info: object_info,
+                method_type,
+                object_info,
                 ..
             }) => {
-                if let Some(global_address) = global_address {
+                if let MethodType::OnStoredObject(global_address) = method_type {
                     additional_global_refs.push(global_address.clone());
                 }
                 if let OuterObjectInfo::Inner { outer_object } =
-                    object_info.main_blueprint_info.outer_obj_info
+                    object_info.blueprint_info.outer_obj_info
                 {
                     additional_global_refs.push(outer_object.clone());
                 }
@@ -400,7 +401,7 @@ impl<L: Clone> CallFrame<L> {
         data: L,
     ) -> Result<(LockHandle, usize), CallbackError<OpenSubstateError, E>> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(OpenSubstateError::NodeNotVisible(
                 node_id.clone(),
             )));
@@ -819,7 +820,7 @@ impl<L: Clone> CallFrame<L> {
         // Check visibility
         if !self
             .get_node_visibility(dest_node_id)
-            .can_be_read_or_write()
+            .is_visible()
         {
             return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
                 dest_node_id.clone(),
@@ -897,7 +898,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(
                 CallFrameSetSubstateError::NodeNotVisible(node_id.clone()),
             ));
@@ -924,7 +925,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(
                 CallFrameRemoveSubstateError::NodeNotVisible(node_id.clone()),
             ));
@@ -951,7 +952,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(
                 CallFrameScanKeysError::NodeNotVisible(node_id.clone()),
             ));
@@ -978,7 +979,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, CallbackError<CallFrameDrainSubstatesError, E>> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(
                 CallFrameDrainSubstatesError::NodeNotVisible(node_id.clone()),
             ));
@@ -1020,7 +1021,7 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
         // Check node visibility
-        if !self.get_node_visibility(node_id).can_be_read_or_write() {
+        if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(
                 CallFrameScanSortedSubstatesError::NodeNotVisible(node_id.clone()),
             ));
@@ -1098,8 +1099,8 @@ impl<L: Clone> CallFrame<L> {
 
             if let Some(type_info) = type_info {
                 match type_info {
-                    TypeInfoSubstate::Object(NodeObjectInfo {
-                        main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
+                    TypeInfoSubstate::Object(ObjectInfo {
+                        blueprint_info: BlueprintInfo { blueprint_id, .. },
                         ..
                     }) if blueprint_id.package_address == RESOURCE_PACKAGE
                         && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
