@@ -1,5 +1,4 @@
 use crate::blueprints::resource::*;
-use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
@@ -17,7 +16,6 @@ pub struct HeapNode {
 
 pub struct Heap {
     nodes: NonIterMap<NodeId, HeapNode>,
-    substate_locks: SubstateLocks,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -34,7 +32,6 @@ pub enum HeapRemoveNodeError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapOpenSubstateError {
-    LockUnmodifiedBaseOnHeapNode,
     SubstateNotFound(NodeId, PartitionNumber, SubstateKey),
 }
 
@@ -42,7 +39,6 @@ impl Heap {
     pub fn new() -> Self {
         Self {
             nodes: NonIterMap::new(),
-            substate_locks: SubstateLocks::new(),
         }
     }
 
@@ -77,13 +73,8 @@ impl Heap {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        flags: LockFlags,
         virtualize: F,
     ) -> Result<&IndexedScryptoValue, HeapOpenSubstateError> {
-        if flags.contains(LockFlags::UNMODIFIED_BASE) {
-            return Err(HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode);
-        }
-
         let entry = self
             .nodes
             .entry(*node_id)

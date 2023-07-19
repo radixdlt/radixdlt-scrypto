@@ -159,6 +159,7 @@ pub enum OpenSubstateError {
     HeapError(HeapOpenSubstateError),
     TrackError(Box<TrackGetSubstateError>),
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+    LockUnmodifiedBaseOnHeapNode,
     LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
     LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey)
 }
@@ -418,9 +419,12 @@ impl<L: Clone> CallFrame<L> {
 
         // Lock and read the substate
         let (substate_value, substate_store_handle) = if heap.contains_node(node_id) {
-            // FIXME: we will have to move locking logic to heap because references moves between frames.
+            if flags.contains(LockFlags::UNMODIFIED_BASE) {
+                return Err(CallbackError::Error(OpenSubstateError::LockUnmodifiedBaseOnHeapNode));
+            }
+
             let value = heap
-                .get_substate_or_default(node_id, partition_num, substate_key, flags, || {
+                .get_substate_or_default(node_id, partition_num, substate_key, || {
                     default.map(|f| f())
                 })
                 .map_err(|e| CallbackError::Error(OpenSubstateError::HeapError(e)))?;
