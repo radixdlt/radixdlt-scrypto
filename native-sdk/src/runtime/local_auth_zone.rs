@@ -43,7 +43,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn drop_auth_zone_regular_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn drop_regular_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         api: &mut Y,
     ) -> Result<(), E>
     where
@@ -58,7 +58,7 @@ impl LocalAuthZone {
         Ok(scrypto_decode(&rtn).unwrap())
     }
 
-    pub fn drop_auth_zone_signature_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+    pub fn drop_signature_proofs<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         api: &mut Y,
     ) -> Result<(), E>
     where

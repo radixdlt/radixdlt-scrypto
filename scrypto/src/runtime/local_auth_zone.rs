@@ -96,7 +96,7 @@ impl LocalAuthZone {
         scrypto_decode(&rtn).unwrap()
     }
 
-    pub fn clear() {
+    pub fn drop_proofs() {
         let mut env = ScryptoEnv;
         let node_id = env.get_auth_zone().unwrap();
         let rtn = env
@@ -104,6 +104,32 @@ impl LocalAuthZone {
                 &node_id,
                 AUTH_ZONE_DROP_PROOFS_IDENT,
                 scrypto_encode(&AuthZoneDropProofsInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn drop_signature_proofs() {
+        let mut env = ScryptoEnv;
+        let node_id = env.get_auth_zone().unwrap();
+        let rtn = env
+            .call_method(
+                &node_id,
+                AUTH_ZONE_DROP_SIGNATURE_PROOFS_IDENT,
+                scrypto_encode(&AuthZoneDropSignatureProofsInput {}).unwrap(),
+            )
+            .unwrap();
+        scrypto_decode(&rtn).unwrap()
+    }
+
+    pub fn drop_regular_proofs() {
+        let mut env = ScryptoEnv;
+        let node_id = env.get_auth_zone().unwrap();
+        let rtn = env
+            .call_method(
+                &node_id,
+                AUTH_ZONE_DROP_REGULAR_PROOFS_IDENT,
+                scrypto_encode(&AuthZoneDropRegularProofsInput {}).unwrap(),
             )
             .unwrap();
         scrypto_decode(&rtn).unwrap()

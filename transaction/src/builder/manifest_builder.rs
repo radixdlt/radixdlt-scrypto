@@ -366,11 +366,6 @@ impl ManifestBuilder {
         self.add_instruction(InstructionV1::PushToAuthZone { proof_id: proof })
     }
 
-    /// Clears the auth zone.
-    pub fn drop_auth_zone_proofs(self) -> Self {
-        self.add_instruction(InstructionV1::DropAuthZoneProofs)
-    }
-
     /// Creates proof from the auth zone by amount.
     pub fn create_proof_from_auth_zone_of_amount(
         self,
@@ -515,6 +510,11 @@ impl ManifestBuilder {
     /// Drops auth zone regular proofs.
     pub fn drop_auth_zone_regular_proofs(self) -> Self {
         self.add_instruction(InstructionV1::DropAuthZoneRegularProofs)
+    }
+
+    /// Drop auth zone proofs.
+    pub fn drop_auth_zone_proofs(self) -> Self {
+        self.add_instruction(InstructionV1::DropAuthZoneProofs)
     }
 
     /// Creates a fungible resource

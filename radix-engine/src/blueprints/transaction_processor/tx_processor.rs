@@ -245,11 +245,11 @@ impl TransactionProcessorBlueprint {
                     InstructionOutput::None
                 }
                 InstructionV1::DropAuthZoneRegularProofs => {
-                    LocalAuthZone::drop_auth_zone_regular_proofs(api)?;
+                    LocalAuthZone::drop_regular_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::DropAuthZoneSignatureProofs => {
-                    LocalAuthZone::drop_auth_zone_signature_proofs(api)?;
+                    LocalAuthZone::drop_signature_proofs(api)?;
                     InstructionOutput::None
                 }
                 InstructionV1::BurnResource { bucket_id } => {
