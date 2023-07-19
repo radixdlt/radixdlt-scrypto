@@ -8,8 +8,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TrackGetSubstateError {
     NotFound(NodeId, PartitionNumber, SubstateKey),
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
-    LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
     LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey),
 }
 

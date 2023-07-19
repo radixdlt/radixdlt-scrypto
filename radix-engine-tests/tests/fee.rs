@@ -3,7 +3,6 @@ use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
 use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
 use radix_engine::kernel::heap::HeapOpenSubstateError;
-use radix_engine::track::interface::TrackGetSubstateError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -189,15 +188,9 @@ fn should_be_rejected_when_mutate_vault_and_lock_fee() {
     receipt.expect_specific_rejection(|e| match e {
         RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::KernelError(
             KernelError::CallFrameError(CallFrameError::OpenSubstateError(
-                OpenSubstateError::TrackError(err),
+                OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..),
             )),
-        )) => {
-            if let TrackGetSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(..) = **err {
-                return true;
-            } else {
-                return false;
-            }
-        }
+        )) => true,
         _ => false,
     });
 }

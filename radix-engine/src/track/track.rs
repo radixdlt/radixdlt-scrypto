@@ -972,24 +972,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         mut on_store_access: F,
         virtualize: V,
     ) -> Result<&IndexedScryptoValue, CallbackError<TrackGetSubstateError, E>> {
-        /*
-        let handle = match self
-            .substate_locks
-            .lock(node_id, partition_num, substate_key, flags)
-        {
-            None => {
-                return Err(CallbackError::Error(
-                    TrackOpenSubstateError::SubstateLocked(
-                        *node_id,
-                        partition_num,
-                        substate_key.clone(),
-                    ),
-                ))
-            }
-            Some(handle) => handle,
-        };
-         */
-
         // Load the substate from state track
         let tracked = match self.get_tracked_substate_virtualize(
             node_id,
@@ -1004,9 +986,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
         };
 
-
-
-        /*let substate = */
         let value = match tracked.get_runtime_substate_mut() {
             Some(x) => {&x.value}
             None => {

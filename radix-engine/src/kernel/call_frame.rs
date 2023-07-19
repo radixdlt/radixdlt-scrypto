@@ -159,7 +159,7 @@ pub enum OpenSubstateError {
     NodeNotVisible(NodeId),
     HeapError(HeapOpenSubstateError),
     TrackError(Box<TrackGetSubstateError>),
-    SubstateLocked,
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
     LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
     LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey)
 }
@@ -415,7 +415,7 @@ impl<L: Clone> CallFrame<L> {
         let handle = match substate_locks.lock(node_id, partition_num, substate_key, flags) {
             Some(handle) => handle,
             None => {
-                return Err(CallbackError::Error(OpenSubstateError::SubstateLocked));
+                return Err(CallbackError::Error(OpenSubstateError::SubstateLocked(*node_id, partition_num, substate_key.clone())));
             }
         };
 
@@ -984,6 +984,8 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
+        // FIXME Add lock check
+
         if heap.contains_node(node_id) {
             heap.set_substate(*node_id, partition_num, key, value);
         } else {
@@ -1010,6 +1012,8 @@ impl<L: Clone> CallFrame<L> {
                 CallFrameRemoveSubstateError::NodeNotVisible(node_id.clone()),
             ));
         }
+
+        // FIXME Add lock check
 
         let removed = if heap.contains_node(node_id) {
             heap.remove_substate(node_id, partition_num, key)

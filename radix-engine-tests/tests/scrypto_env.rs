@@ -1,7 +1,5 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError, SystemError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
-use radix_engine::kernel::heap::HeapOpenSubstateError;
-use radix_engine::track::interface::TrackGetSubstateError;
 use radix_engine::types::*;
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -61,8 +59,7 @@ fn should_not_be_able_to_open_mut_substate_twice(heap: bool) {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::OpenSubstateError(e),
-        )) => matches!(e, OpenSubstateError::SubstateLocked),
+            CallFrameError::OpenSubstateError(OpenSubstateError::SubstateLocked(..)))) => true,
         _ => false,
     });
 }

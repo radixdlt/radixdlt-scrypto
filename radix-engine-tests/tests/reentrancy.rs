@@ -39,7 +39,7 @@ fn mut_reentrancy_should_not_be_possible() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(_))
+                CallFrameError::OpenSubstateError(OpenSubstateError::SubstateLocked(..))
             ))
         )
     });
@@ -114,7 +114,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::OpenSubstateError(OpenSubstateError::TrackError(_))
+                CallFrameError::OpenSubstateError(OpenSubstateError::SubstateLocked(..))
             ))
         )
     });
