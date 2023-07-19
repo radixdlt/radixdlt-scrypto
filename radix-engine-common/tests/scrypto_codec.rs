@@ -1,3 +1,6 @@
+// This test module fails to compile if we do not increase the recursion limit.
+#![recursion_limit = "256"] 
+
 use radix_engine_common::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_common::data::scrypto::*;
 use radix_engine_common::*;
