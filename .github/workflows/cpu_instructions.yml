@@ -29,14 +29,11 @@ jobs:
              cd qemu-8.0.3
              ./configure --disable-system --enable-user --target-list=x86_64-linux-user --enable-plugins
              make
-             pwd
              cd ..
       - name: Compile Scrypto QEMU plugin
         run: |
-             pwd
              cd radix-engine-profiling/qemu-plugin
-             pwd
-             sed -i 's/^qemu_source_dir.*/qemu_source_dir=\x27\/home\/runner\/work\/radixdlt-scrypto\/qemu-8.0.3\/\x27/' ./meson.build 
+             sed -i 's/^qemu_source_dir.*/qemu_source_dir=\x27\/home\/runner\/work\/radixdlt-scrypto\/qemu-8.0.3\/\x27/' ./meson.build
              bash ./build.sh
       - name: Update paths in scripts
         run: |
@@ -48,10 +45,9 @@ jobs:
         run: |
              cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-common
              rm ./target/release/deps/transaction_multi_threaded-*
-      - name: Run tests using QEMU
+      - name: Run tests using QEMU and generate results
         run: |
              bash ./radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ./target/release/deps/
-             echo 'Generated XML files count:' && ls /tmp/scrypto-resources-usage/*.xml | wc -l
       - name: Results - table summary
         run: cat /tmp/_out_table.txt
       - name: Results - detailed table summary
