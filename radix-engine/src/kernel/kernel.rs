@@ -13,6 +13,7 @@ use crate::kernel::actor::MethodType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::substate_io::SubstateIO;
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
@@ -31,7 +32,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
-use crate::kernel::substate_io::SubstateIO;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
@@ -259,10 +259,9 @@ where
 
             // Auto drop locks
             self.current_frame
-                .drop_all_locks(
-                    &mut |store_access| self.callback.on_store_access(&store_access),
-                    &mut self.substate_io,
-                )
+                .drop_all_locks(&mut self.substate_io, &mut |store_access| {
+                    self.callback.on_store_access(&store_access)
+                })
                 .map_err(|e| {
                     e.to_runtime_error(|e| {
                         RuntimeError::KernelError(KernelError::CallFrameError(
@@ -277,10 +276,9 @@ where
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
-                .drop_all_locks(
-                    &mut |store_access| self.callback.on_store_access(&store_access),
-                    &mut self.substate_io,
-                )
+                .drop_all_locks(&mut self.substate_io, &mut |store_access| {
+                    self.callback.on_store_access(&store_access)
+                })
                 .map_err(|e| {
                     e.to_runtime_error(|e| {
                         RuntimeError::KernelError(KernelError::CallFrameError(
@@ -401,12 +399,12 @@ where
     ) -> Result<(), RuntimeError> {
         self.current_frame
             .move_module(
+                &mut self.substate_io,
                 src_node_id,
                 src_partition_number,
                 dest_node_id,
                 dest_partition_number,
                 |store_access| self.callback.on_store_access(&store_access),
-                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -448,11 +446,12 @@ where
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        let (is_fungible_bucket, resource_address) = if let Some(substate) = self.substate_io.heap.get_substate(
-            &bucket_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        ) {
+        let (is_fungible_bucket, resource_address) = if let Some(substate) =
+            self.substate_io.heap.get_substate(
+                &bucket_id,
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+            ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(info)
@@ -713,10 +712,7 @@ where
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         let value = self
             .current_frame
-            .read_substate(
-                &mut self.substate_io,
-                lock_handle,
-            )
+            .read_substate(&mut self.substate_io, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
@@ -725,10 +721,7 @@ where
         // Double read due to borrow chacker of self.
         Ok(self
             .current_frame
-            .read_substate(
-                &mut self.substate_io,
-                lock_handle,
-            )
+            .read_substate(&mut self.substate_io, lock_handle)
             .unwrap())
     }
 
@@ -741,11 +734,7 @@ where
         M::on_write_substate(lock_handle, value.len(), self)?;
 
         self.current_frame
-            .write_substate(
-                &mut self.substate_io,
-                lock_handle,
-                value,
-            )
+            .write_substate(&mut self.substate_io, lock_handle, value)
             .map_err(CallFrameError::WriteSubstateError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
@@ -756,11 +745,9 @@ where
     #[trace_resources]
     fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         self.current_frame
-            .close_substate(
-                &mut self.substate_io,
-                lock_handle,
-                &mut |store_access| self.callback.on_store_access(&store_access),
-            )
+            .close_substate(&mut self.substate_io, lock_handle, &mut |store_access| {
+                self.callback.on_store_access(&store_access)
+            })
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
                     CallFrameError::CloseSubstateError(e),
