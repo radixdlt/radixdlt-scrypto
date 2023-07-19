@@ -1,5 +1,5 @@
-name: CPU instructions
-run-name: CPU instructions, branch = ${{ github.ref_name }}
+name: QEMU costing - CPU instructions
+run-name: QEMU costing - CPU instructions, branch = ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
         run: |
              sudo apt-get update
              sudo apt-get install build-essential pkg-config ninja-build libglib2.0-dev meson
-             pip3 install lxml tabulate
+             pip3 install lxml tabulate numpy scikit-learn statsmodels
       - name: Setup QEMU v8.0.3
         run: |
              cd ..
@@ -52,7 +52,15 @@ jobs:
         run: |
              bash ./radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ./target/release/deps/
              echo 'Generated XML files count:' && ls /tmp/scrypto-resources-usage/*.xml | wc -l
-      - name: Table summary
-        run: cat /tmp/scrypto-resources-usage/_out_table.txt
-      - name: Native blueprints CSV
+#      - name: Upload XML files
+#        run: |
+#             tar -zcf /tmp/xml_files.tar.gz /tmp/scrypto-resources-usage/
+#             wget -SO- --method PUT --body-file=/tmp/xml_files.tar.gz https://transfer.sh/xml_file_001.tar.gz -O - -nv
+      - name: Results - table summary
+        run: cat /tmp/_out_table.txt
+      - name: Results - detailed table summary
+        run: cat /tmp/_out_table_detailed.txt
+      - name: Results - linear regression coefficients
+        run: cat /tmp/_out_linear_regression_coeff.txt
+      - name: Results - native blueprints CSV
         run: cat /tmp/native_function_base_costs.csv

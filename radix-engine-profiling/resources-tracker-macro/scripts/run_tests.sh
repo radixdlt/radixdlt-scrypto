@@ -24,4 +24,4 @@ for i in $list; do
 done
 
 echo -e "\nPreparing table\n"
-./radix-engine-profiling/resources-tracker-macro/scripts/convert.py /tmp/scrypto-resources-usage > /tmp/scrypto-resources-usage/_out_table.txt
+./radix-engine-profiling/resources-tracker-macro/scripts/convert.py /tmp/scrypto-resources-usage
