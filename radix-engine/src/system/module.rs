@@ -59,7 +59,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_execution_finish<Y: KernelApi<M>>(
         _api: &mut Y,
-        _up_movement: &Message,
+        _message: &Message,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -68,6 +68,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn after_pop_frame<Y: KernelApi<M>>(
         _api: &mut Y,
         _dropped_actor: &Actor,
+        _message: &Message,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -210,7 +211,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_take_substates<Y: KernelApi<M>>(
+    fn on_drain_substates<Y: KernelApi<M>>(
         _api: &mut Y,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {

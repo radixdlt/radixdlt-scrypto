@@ -397,14 +397,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
+    fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::TakeSubstate {
+            .apply_execution_cost(CostingEntry::DrainSubstates {
                 store_access: store_access,
             })?;
 

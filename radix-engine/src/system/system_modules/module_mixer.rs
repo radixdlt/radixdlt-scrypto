@@ -260,8 +260,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         dropped_actor: &Actor,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_pop_frame(api, dropped_actor))
+        internal_call_dispatch!(api, after_pop_frame(api, dropped_actor, message))
     }
 
     #[trace_resources(log=output_size)]
@@ -412,11 +413,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_take_substates<Y: KernelApi<SystemConfig<V>>>(
+    fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_take_substates(api, store_access))
+        internal_call_dispatch!(api, on_drain_substates(api, store_access))
     }
 }
 

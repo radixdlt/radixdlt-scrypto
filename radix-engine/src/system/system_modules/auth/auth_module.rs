@@ -381,6 +381,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _dropped_actor: &Actor,
+        _message: &Message,
     ) -> Result<(), RuntimeError> {
         // update internal state
         api.kernel_get_system().modules.auth.auth_zone_stack.pop();

@@ -211,11 +211,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_set_substate(api, value_size, store_access)
     }
 
-    fn on_take_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drain_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_take_substates(api, store_access)
+        SystemModuleMixer::on_drain_substates(api, store_access)
     }
 
     fn after_create_node<Y>(
@@ -285,10 +288,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         SystemModuleMixer::on_execution_finish(api, message)?;
 
-        let caller_actor = api.kernel_get_system_state().caller_actor;
-        let is_to_barrier = caller_actor.is_barrier();
-        let is_to_auth_zone = caller_actor.is_auth_zone();
-        let destination_blueprint_id = caller_actor.blueprint_id().cloned();
+        Ok(())
+    }
+
+    fn after_pop_frame<Y>(
+        dropped_actor: &Actor,
+        message: &Message,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_pop_frame(api, dropped_actor, message)?;
+
+        let current_actor = api.kernel_get_system_state().current_actor;
+        let is_to_barrier = current_actor.is_barrier();
+        let is_to_auth_zone = current_actor.is_auth_zone();
+        let destination_blueprint_id = current_actor.blueprint_id().cloned();
         for node_id in &message.move_nodes {
             Self::on_move_node(
                 node_id,
@@ -301,13 +317,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
 
         Ok(())
-    }
-
-    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_pop_frame(api, dropped_actor)
     }
 
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
