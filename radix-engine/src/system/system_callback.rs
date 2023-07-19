@@ -456,8 +456,8 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
             match type_info {
-                TypeInfoSubstate::Object(NodeObjectInfo {
-                    main_blueprint_info: BlueprintObjectInfo { blueprint_id, .. },
+                TypeInfoSubstate::Object(ObjectInfo {
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
                     ..
                 }) => {
                     match (
@@ -520,10 +520,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Drop all proofs (previously) owned by the auth zone
             for proof in proofs {
                 let mut system = SystemService::new(api);
-                let object_info = system.get_node_object_info(proof.0.as_node_id())?;
+                let object_info = system.get_object_info(proof.0.as_node_id())?;
                 system.call_function(
                     RESOURCE_PACKAGE,
-                    &object_info.main_blueprint_info.blueprint_id.blueprint_name,
+                    &object_info.blueprint_info.blueprint_id.blueprint_name,
                     PROOF_DROP_IDENT,
                     scrypto_encode(&ProofDropInput { proof }).unwrap(),
                 )?;
@@ -610,13 +610,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             TypeInfoSubstate::Object(node_object_info) => {
                 let mut service = SystemService::new(api);
                 let definition = service.load_blueprint_definition(
-                    node_object_info
-                        .main_blueprint_info
-                        .blueprint_id
-                        .package_address,
+                    node_object_info.blueprint_info.blueprint_id.package_address,
                     &BlueprintVersionKey {
                         blueprint: node_object_info
-                            .main_blueprint_info
+                            .blueprint_info
                             .blueprint_id
                             .blueprint_name
                             .clone(),
@@ -626,7 +623,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 if definition.hook_exports.contains_key(&BlueprintHook::OnDrop) {
                     api.kernel_invoke(Box::new(KernelInvocation {
                         actor: Actor::BlueprintHook(BlueprintHookActor {
-                            blueprint_id: node_object_info.main_blueprint_info.blueprint_id.clone(),
+                            blueprint_id: node_object_info.blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnDrop,
                             receiver: Some(node_id.clone()),
                         }),

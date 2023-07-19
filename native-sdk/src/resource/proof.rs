@@ -71,12 +71,8 @@ impl NativeProof for Proof {
     where
         Y: ClientObjectApi<E>,
     {
-        let rtn = api.call_method(
-            self.0.as_node_id(),
-            PROOF_GET_RESOURCE_ADDRESS_IDENT,
-            scrypto_encode(&ProofGetResourceAddressInput {}).unwrap(),
-        )?;
-        Ok(scrypto_decode(&rtn).unwrap())
+        let address = api.get_outer_object(self.0.as_node_id()).unwrap();
+        Ok(ResourceAddress::try_from(address).unwrap())
     }
 
     fn clone<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
@@ -98,11 +94,10 @@ impl NativeProof for Proof {
     where
         Y: ClientObjectApi<E> + ClientBlueprintApi<E>,
     {
-        let info = api.get_node_object_info(self.0.as_node_id())?;
-        let blueprint = info.main_blueprint_info.blueprint_id.blueprint_name;
+        let blueprint_id = api.get_blueprint_id(self.0.as_node_id())?;
         api.call_function(
             RESOURCE_PACKAGE,
-            blueprint.as_str(),
+            blueprint_id.blueprint_name.as_str(),
             PROOF_DROP_IDENT,
             scrypto_encode(&ProofDropInput {
                 proof: Proof(self.0),

@@ -14,7 +14,7 @@ use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
-use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
@@ -97,7 +97,7 @@ impl AuthModule {
                 Actor::Method(actor) => {
                     let resolved_permission =
                         Self::resolve_method_permission(actor, args, &mut system)?;
-                    let acting_location = if actor.node_object_info.global {
+                    let acting_location = if actor.object_info.global {
                         ActingLocation::AtBarrier
                     } else {
                         ActingLocation::AtLocalBarrier
@@ -214,7 +214,7 @@ impl AuthModule {
         }
 
         let blueprint_id = api
-            .get_blueprint_object_info(&callee.node_id, callee.module_id)?
+            .get_blueprint_info(&callee.node_id, callee.module_id)?
             .blueprint_id;
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
@@ -229,7 +229,7 @@ impl AuthModule {
                 let role_assignment_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module
-                        if !callee.node_object_info.global {
+                        if !callee.object_info.global {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 
@@ -237,9 +237,9 @@ impl AuthModule {
                     }
                     RoleSpecification::UseOuter => {
                         let node_id = callee.node_id;
-                        let info = api.get_node_object_info(&node_id)?;
+                        let info = api.get_object_info(&node_id)?;
 
-                        let role_assignment_of = info.get_main_outer_object();
+                        let role_assignment_of = info.get_outer_object();
                         role_assignment_of.into_node_id()
                     }
                 };
@@ -257,11 +257,21 @@ impl AuthModule {
                     package_of_direct_caller(package)
                 ))))
             }
-            Some(MethodAccessibility::OuterObjectOnly) => match callee.get_blueprint_info() {
-                OuterObjectInfo::Inner { outer_object } => Ok(ResolvedPermission::AccessRule(
-                    rule!(require(global_caller(outer_object))),
-                )),
-                OuterObjectInfo::Outer { .. } => Err(RuntimeError::SystemModuleError(
+            Some(MethodAccessibility::OuterObjectOnly) => match callee.module_id {
+                ObjectModuleId::Main => {
+                    let outer_object_info = &callee.object_info.blueprint_info.outer_obj_info;
+                    match outer_object_info {
+                        OuterObjectInfo::Inner { outer_object } => {
+                            Ok(ResolvedPermission::AccessRule(rule!(require(
+                                global_caller(*outer_object)
+                            ))))
+                        }
+                        OuterObjectInfo::Outer { .. } => Err(RuntimeError::SystemModuleError(
+                            SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
+                        )),
+                    }
+                }
+                _ => Err(RuntimeError::SystemModuleError(
                     SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
                 )),
             },
@@ -336,13 +346,13 @@ impl AuthModule {
                 MAIN_BASE_PARTITION => btreemap!(
                     AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
                 ),
-                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(NodeObjectInfo {
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
                     module_versions: btreemap!(
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),
-                    main_blueprint_info: BlueprintObjectInfo {
+                    blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                         outer_obj_info: OuterObjectInfo::default(),
                         features: btreeset!(),
