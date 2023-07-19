@@ -2,7 +2,6 @@ use sbor::*;
 use scrypto::api::key_value_entry_api::ClientKeyValueEntryApi;
 use scrypto::api::key_value_store_api::ClientKeyValueStoreApi;
 use scrypto::api::*;
-use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::wasm_api::kv_entry_set;
 use scrypto::prelude::*;
 

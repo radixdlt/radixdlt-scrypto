@@ -210,11 +210,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_set_substate(api, value_size, store_access)
     }
 
-    fn on_take_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drain_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_take_substates(api, store_access)
+        SystemModuleMixer::on_drain_substates(api, store_access)
     }
 
     fn after_create_node<Y>(
@@ -587,33 +590,26 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             .get(&BlueprintHook::OnVirtualize)
             .cloned()
         {
-            let rtn: Vec<u8> = api
-                .kernel_invoke(Box::new(KernelInvocation {
-                    actor: Actor::BlueprintHook(BlueprintHookActor {
-                        blueprint_id: blueprint_id.clone(),
-                        hook: BlueprintHook::OnVirtualize,
-                        export,
-                        node_id: None,
-                        module_id: None,
-                        object_info: None,
-                    }),
-                    args: IndexedScryptoValue::from_typed(&OnVirtualizeInput {
-                        variant_id,
-                        rid: copy_u8_array(&node_id.as_bytes()[1..]),
-                    }),
-                }))?
-                .into();
-
-            let modules: OnVirtualizeOutput =
-                scrypto_decode(&rtn).expect("`on_virtualize` output should've been validated");
-            let modules = modules.into_iter().map(|(id, own)| (id, own.0)).collect();
-            let address = GlobalAddress::new_or_panic(node_id.into());
-
             let mut system = SystemService::new(api);
+            let address = GlobalAddress::new_or_panic(node_id.into());
             let address_reservation =
-                system.allocate_virtual_global_address(blueprint_id, address)?;
-            system.globalize(modules, Some(address_reservation))?;
+                system.allocate_virtual_global_address(blueprint_id.clone(), address)?;
 
+            api.kernel_invoke(Box::new(KernelInvocation {
+                actor: Actor::BlueprintHook(BlueprintHookActor {
+                    blueprint_id: blueprint_id.clone(),
+                    hook: BlueprintHook::OnVirtualize,
+                    export,
+                    node_id: None,
+                    module_id: None,
+                    object_info: None,
+                }),
+                args: IndexedScryptoValue::from_typed(&OnVirtualizeInput {
+                    variant_id,
+                    rid: copy_u8_array(&node_id.as_bytes()[1..]),
+                    address_reservation,
+                }),
+            }))?;
             Ok(true)
         } else {
             Ok(false)

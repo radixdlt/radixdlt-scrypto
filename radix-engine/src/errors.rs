@@ -12,10 +12,10 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
-    CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
-    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CloseSubstateError,
-    CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError,
-    OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError,
+    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError,
+    CallFrameScanSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateFrameError,
+    CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError, OpenSubstateError,
+    PassMessageError, ReadSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::node_modules::role_assignment::RoleAssignmentError;
@@ -154,10 +154,18 @@ pub enum KernelError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct InvalidDropNodeAccess {
+pub struct InvalidDropAccess {
     pub node_id: NodeId,
     pub package_address: PackageAddress,
     pub blueprint_name: String,
+    pub actor_package: Option<PackageAddress>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct InvalidGlobalizeAccess {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub actor_package: Option<PackageAddress>,
 }
 
 impl CanBeAbortion for VmError {
@@ -191,8 +199,8 @@ pub enum CallFrameError {
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
 
-    ScanSubstatesError(CallFrameScanSubstateError),
-    TakeSubstatesError(CallFrameTakeSortedSubstatesError),
+    ScanSubstatesError(CallFrameScanSubstatesError),
+    DrainSubstatesError(CallFrameDrainSubstatesError),
     ScanSortedSubstatesError(CallFrameScanSortedSubstatesError),
     SetSubstatesError(CallFrameSetSubstateError),
     RemoveSubstatesError(CallFrameRemoveSubstateError),
@@ -239,7 +247,8 @@ pub enum SystemError {
     AssertAccessRuleFailed,
     BlueprintDoesNotExist(CanonicalBlueprintId),
     AuthTemplateDoesNotExist(CanonicalBlueprintId),
-    InvalidDropNodeAccess(Box<InvalidDropNodeAccess>),
+    InvalidGlobalizeAccess(Box<InvalidGlobalizeAccess>),
+    InvalidDropAccess(Box<InvalidDropAccess>),
     InvalidScryptoValue(DecodeError),
     CostingModuleNotEnabled,
     AuthModuleNotEnabled,

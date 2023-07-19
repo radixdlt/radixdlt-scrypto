@@ -114,7 +114,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_take_substates<Y>(
+    fn on_drain_substates<Y>(
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

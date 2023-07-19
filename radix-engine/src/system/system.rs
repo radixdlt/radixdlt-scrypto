@@ -3,9 +3,9 @@ use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingEntry;
 use crate::errors::{
-    ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropNodeAccess,
-    InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError, SystemError,
-    SystemModuleError,
+    ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
+    InvalidGlobalizeAccess, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
+    SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
@@ -35,6 +35,7 @@ use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, Condition, InstanceSchema, KeyValueStoreSchema,
 };
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -982,6 +983,19 @@ where
             }
         };
 
+        // For simplicity, a rule is enforced at system layer: only the package can globalize a node
+        // In the future, we may consider allowing customization at blueprint level.
+        let actor = self.current_actor();
+        if Some(&reserved_blueprint_id.package_address) != actor.package_address() {
+            return Err(RuntimeError::SystemError(
+                SystemError::InvalidGlobalizeAccess(Box::new(InvalidGlobalizeAccess {
+                    package_address: reserved_blueprint_id.package_address,
+                    blueprint_name: reserved_blueprint_id.blueprint_name,
+                    actor_package: actor.package_address().cloned(),
+                })),
+            ));
+        }
+
         // Check for required modules
         if !modules.contains_key(&ObjectModuleId::RoleAssignment) {
             return Err(RuntimeError::SystemError(SystemError::MissingModule(
@@ -1337,7 +1351,6 @@ where
     }
 
     // Costing through kernel
-    // FIXME: ensure that only the package actor can globalize its own blueprints
     #[trace_resources]
     fn globalize(
         &mut self,
@@ -1516,39 +1529,19 @@ where
     // Costing through kernel
     #[trace_resources]
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, RuntimeError> {
+        // For simplicity, a rule is enforced at system layer: only the package can drop a node
+        // In the future, we may consider allowing customization at blueprint level.
         let info = self.get_object_info(node_id)?;
         let actor = self.current_actor();
-        let mut is_drop_allowed = false;
-
-        // FIXME: what's the right model, trading off between flexibility and security?
-
-        // If the actor is the object's outer object
-        match info.outer_object {
-            OuterObjectInfo::Some { outer_object } => {
-                if let Some(instance_context) = actor.instance_context() {
-                    if instance_context.outer_object.eq(&outer_object) {
-                        is_drop_allowed = true;
-                    }
-                }
-            }
-            OuterObjectInfo::None { .. } => {}
-        }
-
-        // If the actor is a function within the same blueprint
-        if let Actor::Function(FunctionActor { blueprint_id, .. }) = actor {
-            if blueprint_id.eq(&info.main_blueprint_id) {
-                is_drop_allowed = true;
-            }
-        }
-
-        if !is_drop_allowed {
-            return Err(RuntimeError::SystemError(
-                SystemError::InvalidDropNodeAccess(Box::new(InvalidDropNodeAccess {
+        if Some(&info.main_blueprint_id.package_address) != actor.package_address() {
+            return Err(RuntimeError::SystemError(SystemError::InvalidDropAccess(
+                Box::new(InvalidDropAccess {
                     node_id: node_id.clone(),
                     package_address: info.main_blueprint_id.package_address,
                     blueprint_name: info.main_blueprint_id.blueprint_name,
-                })),
-            ));
+                    actor_package: actor.package_address().cloned(),
+                }),
+            )));
         }
 
         let mut node_substates = self.api.kernel_drop_node(&node_id)?;
@@ -1890,7 +1883,7 @@ where
     }
 
     // Costing through kernel
-    fn actor_index_scan(
+    fn actor_index_scan_keys(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
@@ -1902,30 +1895,30 @@ where
 
         let substates = self
             .api
-            .kernel_scan_substates(&node_id, partition_num, count)?
+            .kernel_scan_keys::<MapKey>(&node_id, partition_num, count)?
             .into_iter()
-            .map(|value| value.into())
+            .map(|key| key.into_map())
             .collect();
 
         Ok(substates)
     }
 
     // Costing through kernel
-    fn actor_index_take(
+    fn actor_index_drain(
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
         count: u32,
-    ) -> Result<Vec<Vec<u8>>, RuntimeError> {
+    ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num) = self.get_actor_index(actor_object_type, collection_index)?;
 
         let substates = self
             .api
-            .kernel_take_substates(&node_id, partition_num, count)?
+            .kernel_drain_substates::<MapKey>(&node_id, partition_num, count)?
             .into_iter()
-            .map(|value| value.into())
+            .map(|(key, value)| (key.into_map(), value.into()))
             .collect();
 
         Ok(substates)
@@ -2798,24 +2791,24 @@ where
             .kernel_scan_sorted_substates(node_id, partition_num, count)
     }
 
-    fn kernel_scan_substates(
+    fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Vec<SubstateKey>, RuntimeError> {
         self.api
-            .kernel_scan_substates(node_id, partition_num, count)
+            .kernel_scan_keys::<K>(node_id, partition_num, count)
     }
 
-    fn kernel_take_substates(
+    fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api
-            .kernel_take_substates(node_id, partition_num, count)
+            .kernel_drain_substates::<K>(node_id, partition_num, count)
     }
 }
 
