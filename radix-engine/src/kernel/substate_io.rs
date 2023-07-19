@@ -1,4 +1,4 @@
-use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, OpenSubstateError, PersistNodeError, ReadSubstateError, WriteSubstateError};
+use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, OpenSubstateError, PersistNodeError, ReadSubstateError, WriteSubstateError};
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -11,10 +11,12 @@ use radix_engine_interface::blueprints::resource::{
     NON_FUNGIBLE_PROOF_BLUEPRINT,
 };
 use radix_engine_interface::prelude::{BlueprintInfo, ObjectInfo};
+use radix_engine_interface::prelude::indexmap::IndexSet;
 use radix_engine_interface::types::{
     IndexedScryptoValue, TypeInfoField, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use utils::prelude::{index_set_new, NonIterMap};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubstateLocation {
@@ -22,10 +24,12 @@ pub enum SubstateLocation {
     Store,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LockData {
     flags: LockFlags,
     location: SubstateLocation,
+    owned_nodes: IndexSet<NodeId>,
+    non_global_references: IndexSet<NodeId>,
 }
 
 pub struct SubstateIO<'g, S: SubstateStore> {
@@ -105,8 +109,22 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
             default,
         )?;
 
+        let mut owned_nodes: IndexSet<NodeId> = index_set_new();
+        for node_id in substate_value.owned_nodes() {
+            owned_nodes.insert(*node_id);
+        }
+        let mut non_global_references: IndexSet<NodeId> = index_set_new(); // du-duplicated
+        for node_id in substate_value.references() {
+            if !node_id.is_global() {
+                non_global_references.insert(*node_id);
+            }
+        }
+
         let lock_data = LockData {
-            flags, location: substate_location
+            flags,
+            location: substate_location,
+            owned_nodes,
+            non_global_references,
         };
 
         let global_lock_handle = match self.substate_locks.lock(
@@ -187,25 +205,79 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         Ok(())
     }
 
-    pub fn close_substate(
+    pub fn close_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         global_lock_handle: u32,
-    ) -> (
+        on_store_access: &mut F,
+    ) -> Result<(
         NodeId,
         PartitionNumber,
         SubstateKey,
         LockFlags,
-        SubstateLocation,
-    ) {
-        let (node_id, partition_num, substate_key, lock_data) =
-            self.substate_locks.unlock(global_lock_handle);
+    ), CallbackError<CloseSubstateError, E>> {
+        let updated_substate = self.read_substate(global_lock_handle);
+
+        let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
+        for own in updated_substate.owned_nodes() {
+            if !new_owned_nodes.insert(own.clone()) {
+                return Err(CallbackError::Error(
+                    CloseSubstateError::ContainsDuplicatedOwns,
+                ));
+            }
+        }
+        let mut new_references: IndexSet<NodeId> = index_set_new();
+        for own in updated_substate.references() {
+            // Deduplicate
+            new_references.insert(own.clone());
+        }
+
+        let (node_id, partition_num, substate_key, lock_data) = self.substate_locks.unlock(global_lock_handle);
+
+        // Process owned
+        {
+            for own in &new_owned_nodes {
+                if !lock_data.owned_nodes.contains(own) {
+                    // Move the node to store, if its owner is already in store
+                    if lock_data.location.eq(&SubstateLocation::Store) {
+                        self
+                            .move_node_to_store(own, on_store_access)
+                            .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
+                    }
+                }
+            }
+        }
+
+        // Process references
+        {
+            for reference in &new_references {
+                if !lock_data.non_global_references.contains(reference) {
+                    if lock_data.location.eq(&SubstateLocation::Store) && !reference.is_global() {
+                        return Err(CallbackError::Error(
+                            CloseSubstateError::NonGlobalRefNotAllowed(*reference),
+                        ));
+                    }
+
+                    if self.heap.contains_node(reference) {
+                        self.heap.increase_borrow_count(reference);
+                    }
+                }
+            }
+            for reference in &lock_data.non_global_references {
+                if !new_references.contains(reference) {
+                    // handle removed references
+                    if self.heap.contains_node(reference) {
+                        self.heap.decrease_borrow_count(reference);
+                    }
+                }
+            }
+        }
 
         if lock_data.flags.contains(LockFlags::FORCE_WRITE) {
             self.store
                 .force_write(&node_id, &partition_num, &substate_key);
         }
 
-        (node_id, partition_num, substate_key, lock_data.flags, lock_data.location)
+        Ok((node_id, partition_num, substate_key, lock_data.flags))
     }
 
     pub fn set_substate<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(

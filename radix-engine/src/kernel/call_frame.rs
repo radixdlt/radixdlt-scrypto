@@ -50,6 +50,8 @@ pub struct OpenedSubstate<L> {
     pub non_global_references: IndexSet<NodeId>,
     pub owned_nodes: IndexSet<NodeId>,
     pub global_lock_handle: u32,
+    pub updated: bool,
+    pub location: SubstateLocation,
     pub data: L,
 }
 
@@ -442,6 +444,8 @@ impl<L: Clone> CallFrame<L> {
                 non_global_references,
                 owned_nodes,
                 global_lock_handle,
+                updated: false,
+                location: substate_location,
                 data,
             },
         );
@@ -478,12 +482,15 @@ impl<L: Clone> CallFrame<L> {
         substate: IndexedScryptoValue,
     ) -> Result<(), WriteSubstateError> {
         let OpenedSubstate {
-            global_lock_handle, ..
+            global_lock_handle,
+            updated,
+            ..
         } = self
             .locks
-            .get(&lock_handle)
+            .get_mut(&lock_handle)
             .ok_or(WriteSubstateError::LockNotFound(lock_handle))?;
 
+        *updated = true;
         substate_io.write_substate(*global_lock_handle, substate)?;
 
         Ok(())
@@ -495,65 +502,38 @@ impl<L: Clone> CallFrame<L> {
         lock_handle: LockHandle,
         on_store_access: &mut F,
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
+
         let OpenedSubstate {
             global_lock_handle,
             owned_nodes,
             non_global_references,
+            updated,
+            location,
             ..
         } = self
             .locks
             .remove(&lock_handle)
             .ok_or_else(|| CallbackError::Error(CloseSubstateError::LockNotFound(lock_handle)))?;
 
-        let (node_id, partion_num, substate_key, flags, substate_location) =
-            substate_io.close_substate(global_lock_handle);
-
-        if flags.contains(LockFlags::MUTABLE) {
-            let substate_is_in_store = matches!(substate_location, SubstateLocation::Store);
-            let updated_substate = if substate_is_in_store {
-                substate_io.store.get_substate::<(), _>(
-                    &node_id,
-                    partion_num,
-                    &substate_key,
-                    &mut |store_access| panic!("Getting substate on handled substate should not incur a store access."),
-                ).unwrap().clone()
-            } else {
-                substate_io
-                    .heap
-                    .get_substate(&node_id, partion_num, &substate_key)
-                    .unwrap()
-                    .clone()
-            };
-
-            //==============
-            // Process owns
-            //==============
+        if updated {
+            let updated_substate = substate_io.read_substate(global_lock_handle);
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
-            for own in updated_substate.owned_nodes() {
-                if !new_owned_nodes.insert(own.clone()) {
-                    return Err(CallbackError::Error(
-                        CloseSubstateError::ContainsDuplicatedOwns,
-                    ));
-                }
+            for node_id in updated_substate.owned_nodes() {
+                new_owned_nodes.insert(*node_id);
             }
+
             for own in &new_owned_nodes {
                 if !owned_nodes.contains(own) {
                     // Node no longer owned by frame
                     self.take_node_internal(own)
                         .map_err(|e| CallbackError::Error(CloseSubstateError::TakeNodeError(e)))?;
-
-                    // Move the node to store, if its owner is already in store
-                    if substate_is_in_store {
-                        substate_io
-                            .move_node_to_store(own, on_store_access)
-                            .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
-                    }
                 }
             }
+
             for own in &owned_nodes {
                 if !new_owned_nodes.contains(own) {
                     // Node detached
-                    if substate_is_in_store {
+                    if location.eq(&SubstateLocation::Store) {
                         return Err(CallbackError::Error(
                             CloseSubstateError::CantDropNodeInStore(own.clone()),
                         ));
@@ -581,7 +561,6 @@ impl<L: Clone> CallFrame<L> {
             for reference in &new_references {
                 if !non_global_references.contains(reference) {
                     // handle added references
-
                     if !self
                         .get_node_visibility(reference)
                         .can_be_referenced_in_substate()
@@ -590,30 +569,11 @@ impl<L: Clone> CallFrame<L> {
                             reference.clone(),
                         )));
                     }
-
-                    if substate_is_in_store && !reference.is_global() {
-                        return Err(CallbackError::Error(
-                            CloseSubstateError::NonGlobalRefNotAllowed(*reference),
-                        ));
-                    }
-
-                    if substate_io.heap.contains_node(reference) {
-                        substate_io.heap.increase_borrow_count(reference);
-                    } else {
-                        // No op
-                    }
-                }
-            }
-            for reference in &non_global_references {
-                if !new_references.contains(reference) {
-                    // handle removed references
-
-                    if substate_io.heap.contains_node(reference) {
-                        substate_io.heap.decrease_borrow_count(reference);
-                    }
                 }
             }
         }
+
+        let (node_id, ..) = substate_io.close_substate(global_lock_handle, on_store_access)?;
 
         // Shrink transient reference set
         for reference in non_global_references {
