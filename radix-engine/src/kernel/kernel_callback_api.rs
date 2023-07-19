@@ -184,7 +184,7 @@ pub trait KernelCallbackObject: Sized {
         is_moving_down: bool,
         is_to_barrier: bool,
         is_to_auth_zone: bool,
-        is_to_self_blueprint: bool,
+        destination_blueprint_id: Option<BlueprintId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

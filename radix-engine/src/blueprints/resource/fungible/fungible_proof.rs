@@ -158,14 +158,18 @@ impl FungibleProofBlueprint {
         is_moving_down: bool,
         is_to_barrier: bool,
         is_to_auth_zone: bool,
-        is_to_self_blueprint: bool,
+        destination_blueprint_id: Option<BlueprintId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
         if is_moving_down {
-            if !is_to_self_blueprint && (is_to_barrier || is_to_auth_zone) {
+            let is_to_self = destination_blueprint_id.eq(&Some(BlueprintId::new(
+                &RESOURCE_PACKAGE,
+                FUNGIBLE_PROOF_BLUEPRINT,
+            )));
+            if !is_to_self && (is_to_barrier || is_to_auth_zone) {
                 let handle = api.actor_open_field(
                     OBJECT_HANDLE_SELF,
                     FungibleProofField::Moveable.into(),
