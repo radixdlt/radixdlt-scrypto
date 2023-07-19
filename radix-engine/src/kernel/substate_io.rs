@@ -1,6 +1,4 @@
-use crate::kernel::call_frame::{
-    OpenSubstateError, PersistNodeError, ReadSubstateError, WriteSubstateError,
-};
+use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, OpenSubstateError, PersistNodeError, ReadSubstateError, WriteSubstateError};
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -16,6 +14,7 @@ use radix_engine_interface::prelude::{BlueprintInfo, ObjectInfo};
 use radix_engine_interface::types::{
     IndexedScryptoValue, TypeInfoField, TYPE_INFO_FIELD_PARTITION,
 };
+use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubstateLocation {
@@ -190,6 +189,150 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
 
         (node_id, partition_num, substate_key, flags, location)
     }
+
+    pub fn set_substate<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: SubstateKey,
+        value: IndexedScryptoValue,
+        on_store_access: &mut F,
+    ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
+        if self.substate_locks.is_locked(
+            node_id,
+            partition_num,
+            &substate_key,
+        ) {
+            return Err(CallbackError::Error(CallFrameSetSubstateError::SubstateLocked(node_id.clone(), partition_num, substate_key)));
+        }
+
+        if self.heap.contains_node(node_id) {
+            self
+                .heap
+                .set_substate(*node_id, partition_num, substate_key, value);
+        } else {
+            self
+                .store
+                .set_substate(*node_id, partition_num, substate_key, value, on_store_access)
+                .map_err(CallbackError::CallbackError)?
+        };
+
+        Ok(())
+    }
+
+    pub fn remove_substate<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        key: &SubstateKey,
+        on_store_access: F,
+    ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
+        if self
+            .substate_locks
+            .is_locked(node_id, partition_num, key)
+        {
+            return Err(CallbackError::Error(
+                CallFrameRemoveSubstateError::SubstateLocked(
+                    node_id.clone(),
+                    partition_num,
+                    key.clone(),
+                ),
+            ));
+        }
+
+        let removed = if self.heap.contains_node(node_id) {
+            self.heap.remove_substate(node_id, partition_num, key)
+        } else {
+            self
+                .store
+                .remove_substate(node_id, partition_num, key, on_store_access)
+                .map_err(CallbackError::CallbackError)?
+        };
+
+        Ok(removed)
+    }
+
+    pub fn scan_keys<
+        'f,
+        K: SubstateKeyContent,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        count: u32,
+        on_store_access: F,
+    ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
+        let keys = if self.heap.contains_node(node_id) {
+            self.heap.scan_keys(node_id, partition_num, count)
+        } else {
+            self
+                .store
+                .scan_keys::<K, E, F>(node_id, partition_num, count, on_store_access)
+                .map_err(|e| CallbackError::CallbackError(e))?
+        };
+
+        Ok(keys)
+    }
+
+    pub fn drain_substates<
+        'f,
+        K: SubstateKeyContent,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        count: u32,
+        on_store_access: F,
+    ) -> Result<
+        Vec<(SubstateKey, IndexedScryptoValue)>,
+        CallbackError<CallFrameDrainSubstatesError, E>,
+    > {
+        let substates = if self.heap.contains_node(node_id) {
+            self
+                .heap
+                .drain_substates(node_id, partition_num, count)
+        } else {
+            self
+                .store
+                .drain_substates::<K, E, F>(node_id, partition_num, count, on_store_access)
+                .map_err(|e| CallbackError::CallbackError(e))?
+        };
+
+        // TODO: Should check if any substate is locked
+
+        Ok(substates)
+    }
+
+    // Substate Virtualization does not apply to this call
+    // Should this be prevented at this layer?
+    pub fn scan_sorted<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        count: u32,
+        on_store_access: F,
+    ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
+        let substates = if self.heap.contains_node(node_id) {
+            // This should never be triggered because sorted index store is
+            // used by consensus manager only.
+            panic!("Unexpected code path")
+        } else {
+            self
+                .store
+                .scan_sorted_substates(node_id, partition_num, count, on_store_access)
+                .map_err(|e| CallbackError::CallbackError(e))?
+        };
+
+        // TODO: Should check if any substate is locked
+
+        Ok(substates)
+    }
+
+
 
     pub fn move_node_to_store<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,

@@ -371,11 +371,11 @@ where
 
         self.current_frame
             .create_node(
+                &mut self.substate_io,
                 node_id,
                 node_substates,
-                &mut |store_access| self.callback.on_store_access(&store_access),
-                &mut self.substate_io,
                 node_id.is_global(),
+                &mut |store_access| self.callback.on_store_access(&store_access),
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -772,12 +772,12 @@ where
 
         self.current_frame
             .set_substate(
+                &mut self.substate_io,
                 node_id,
                 partition_num,
                 substate_key,
                 value,
                 &mut |store_access| self.callback.on_store_access(&store_access),
-                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -801,11 +801,11 @@ where
         let substate = self
             .current_frame
             .remove_substate(
+                &mut self.substate_io,
                 node_id,
                 partition_num,
                 &substate_key,
                 |store_access| self.callback.on_store_access(&store_access),
-                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -829,11 +829,11 @@ where
         let substates = self
             .current_frame
             .scan_sorted(
+                &mut self.substate_io,
                 node_id,
                 partition_num,
                 count,
                 |store_access| self.callback.on_store_access(&store_access),
-                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -857,11 +857,11 @@ where
         let keys = self
             .current_frame
             .scan_keys::<K, _, _, _>(
+                &mut self.substate_io,
                 node_id,
                 partition_num,
                 count,
                 |store_access| self.callback.on_store_access(&store_access),
-                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -885,11 +885,11 @@ where
         let substates = self
             .current_frame
             .drain_substates::<K, _, _, _>(
+                &mut self.substate_io,
                 node_id,
                 partition_num,
                 count,
                 |store_access| self.callback.on_store_access(&store_access),
-                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::CallbackError(e) => e,

@@ -237,6 +237,7 @@ pub enum WriteSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameSetSubstateError {
     NodeNotVisible(NodeId),
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -644,11 +645,11 @@ impl<L: Clone> CallFrame<L> {
 
     pub fn create_node<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
+        substate_io: &mut SubstateIO<S>,
         node_id: NodeId,
         node_substates: NodeSubstates,
-        on_store_access: &mut F,
-        substate_io: &mut SubstateIO<S>,
         push_to_store: bool,
+        on_store_access: &mut F,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
@@ -846,12 +847,12 @@ impl<L: Clone> CallFrame<L> {
     // Should this be prevented at this layer?
     pub fn set_substate<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
+        substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: SubstateKey,
         value: IndexedScryptoValue,
         on_store_access: &mut F,
-        kernel_io: &'f mut SubstateIO<S>,
     ) -> Result<(), CallbackError<CallFrameSetSubstateError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
@@ -860,29 +861,18 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        // FIXME Add lock check
-
-        if kernel_io.heap.contains_node(node_id) {
-            kernel_io
-                .heap
-                .set_substate(*node_id, partition_num, key, value);
-        } else {
-            kernel_io
-                .store
-                .set_substate(*node_id, partition_num, key, value, on_store_access)
-                .map_err(CallbackError::CallbackError)?
-        };
+        substate_io.set_substate(node_id, partition_num, key, value, on_store_access)?;
 
         Ok(())
     }
 
     pub fn remove_substate<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
+        substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: &SubstateKey,
         on_store_access: F,
-        kernel_io: &'f mut SubstateIO<S>,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
@@ -891,27 +881,7 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        if kernel_io
-            .substate_locks
-            .is_locked(node_id, partition_num, key)
-        {
-            return Err(CallbackError::Error(
-                CallFrameRemoveSubstateError::SubstateLocked(
-                    node_id.clone(),
-                    partition_num,
-                    key.clone(),
-                ),
-            ));
-        }
-
-        let removed = if kernel_io.heap.contains_node(node_id) {
-            kernel_io.heap.remove_substate(node_id, partition_num, key)
-        } else {
-            kernel_io
-                .store
-                .remove_substate(node_id, partition_num, key, on_store_access)
-                .map_err(CallbackError::CallbackError)?
-        };
+        let removed = substate_io.remove_substate(node_id, partition_num, key, on_store_access)?;
 
         Ok(removed)
     }
@@ -924,11 +894,11 @@ impl<L: Clone> CallFrame<L> {
         F: FnMut(StoreAccess) -> Result<(), E>,
     >(
         &mut self,
+        substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: F,
-        kernel_io: &'f mut SubstateIO<S>,
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
@@ -937,14 +907,7 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        let keys = if kernel_io.heap.contains_node(node_id) {
-            kernel_io.heap.scan_keys(node_id, partition_num, count)
-        } else {
-            kernel_io
-                .store
-                .scan_keys::<K, E, F>(node_id, partition_num, count, on_store_access)
-                .map_err(|e| CallbackError::CallbackError(e))?
-        };
+        let keys = substate_io.scan_keys::<K, E, F>(node_id, partition_num, count, on_store_access)?;
 
         Ok(keys)
     }
@@ -957,11 +920,11 @@ impl<L: Clone> CallFrame<L> {
         F: FnMut(StoreAccess) -> Result<(), E>,
     >(
         &mut self,
+        substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: F,
-        kernel_io: &'f mut SubstateIO<S>,
     ) -> Result<
         Vec<(SubstateKey, IndexedScryptoValue)>,
         CallbackError<CallFrameDrainSubstatesError, E>,
@@ -973,16 +936,7 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        let substates = if kernel_io.heap.contains_node(node_id) {
-            kernel_io
-                .heap
-                .drain_substates(node_id, partition_num, count)
-        } else {
-            kernel_io
-                .store
-                .drain_substates::<K, E, F>(node_id, partition_num, count, on_store_access)
-                .map_err(|e| CallbackError::CallbackError(e))?
-        };
+        let substates = substate_io.drain_substates::<K, E, F>(node_id, partition_num, count, on_store_access)?;
 
         for (_key, substate) in &substates {
             for reference in substate.references() {
@@ -1004,11 +958,11 @@ impl<L: Clone> CallFrame<L> {
     // Should this be prevented at this layer?
     pub fn scan_sorted<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
+        substate_io: &'f mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
         on_store_access: F,
-        kernel_io: &'f mut SubstateIO<S>,
     ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
@@ -1017,16 +971,12 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        let substates = if kernel_io.heap.contains_node(node_id) {
-            // This should never be triggered because sorted index store is
-            // used by consensus manager only.
-            panic!("Unexpected code path")
-        } else {
-            kernel_io
-                .store
-                .scan_sorted_substates(node_id, partition_num, count, on_store_access)
-                .map_err(|e| CallbackError::CallbackError(e))?
-        };
+        let substates = substate_io.scan_sorted(
+            node_id,
+            partition_num,
+            count,
+            on_store_access,
+        )?;
 
         for substate in &substates {
             for reference in substate.references() {
