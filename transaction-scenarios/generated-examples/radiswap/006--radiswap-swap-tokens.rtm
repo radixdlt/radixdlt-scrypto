@@ -14,7 +14,7 @@ TAKE_ALL_FROM_WORKTOP
     Bucket("input")
 ;
 CALL_METHOD
-    Address("component_sim1crusl45jn6k89npu45amygdja6055ggc7wev2hnfkv4raexcvfxlrn")
+    Address("component_sim1cpu4404rq7hvh6a75r946a7ry3ke2qv9whcs5au5zj62nwwkpvc8p0")
     "swap"
     Bucket("input")
 ;

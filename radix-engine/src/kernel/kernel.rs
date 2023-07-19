@@ -31,6 +31,7 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
+use crate::kernel::kernel_io::SubstateIO;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
@@ -42,9 +43,11 @@ pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
 impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
     pub fn create_kernel_for_test_only(&mut self) -> Kernel<SystemConfig<V>, S> {
         Kernel {
-            heap: Heap::new(),
-            store: self.store,
-            substate_locks: SubstateLocks::new(),
+            substate_io: SubstateIO {
+                heap: Heap::new(),
+                store: self.store,
+                substate_locks: SubstateLocks::new(),
+            },
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
             prev_frame_stack: vec![],
@@ -66,10 +69,12 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         });
 
         let mut kernel = Kernel {
-            heap: Heap::new(),
-            store: self.store,
+            substate_io: SubstateIO {
+                heap: Heap::new(),
+                store: self.store,
+                substate_locks: SubstateLocks::new(),
+            },
             id_allocator: self.id_allocator,
-            substate_locks: SubstateLocks::new(),
             current_frame: CallFrame::new_root(Actor::Root),
             prev_frame_stack: vec![],
             callback: self.callback,
@@ -100,6 +105,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             // let's validate it as such
 
             let substate_ref = kernel
+                .substate_io
                 .store
                 .get_substate(
                     node_id,
@@ -190,12 +196,7 @@ pub struct Kernel<
     // execution pause and/or for better debuggability
     prev_frame_stack: Vec<CallFrame<M::LockData>>,
 
-    /// Heap
-    heap: Heap,
-    /// Store
-    store: &'g mut S,
-
-    substate_locks: SubstateLocks,
+    substate_io: SubstateIO<'g, S>,
 
     /// ID allocator
     id_allocator: &'g mut IdAllocator,
@@ -260,9 +261,7 @@ where
             self.current_frame
                 .drop_all_locks(
                     &mut |store_access| self.callback.on_store_access(&store_access),
-                    &mut self.heap,
-                    self.store,
-                    &mut self.substate_locks,
+                    &mut self.substate_io,
                 )
                 .map_err(|e| {
                     e.to_runtime_error(|e| {
@@ -280,9 +279,7 @@ where
             self.current_frame
                 .drop_all_locks(
                     &mut |store_access| self.callback.on_store_access(&store_access),
-                    &mut self.heap,
-                    self.store,
-                    &mut self.substate_locks,
+                    &mut self.substate_io,
                 )
                 .map_err(|e| {
                     e.to_runtime_error(|e| {
@@ -345,7 +342,7 @@ where
         M::on_drop_node(node_id, self)?;
         let node = self
             .current_frame
-            .drop_node(&mut self.heap, node_id)
+            .drop_node(&mut self.substate_io.heap, node_id)
             .map_err(CallFrameError::DropNodeError)
             .map_err(KernelError::CallFrameError)?;
 
@@ -379,8 +376,7 @@ where
                 node_id,
                 node_substates,
                 &mut |store_access| self.callback.on_store_access(&store_access),
-                &mut self.heap,
-                self.store,
+                &mut self.substate_io,
                 node_id.is_global(),
             )
             .map_err(|e| match e {
@@ -410,8 +406,7 @@ where
                 dest_node_id,
                 dest_partition_number,
                 |store_access| self.callback.on_store_access(&store_access),
-                &mut self.heap,
-                self.store,
+                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -453,7 +448,7 @@ where
     }
 
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
-        let (is_fungible_bucket, resource_address) = if let Some(substate) = self.heap.get_substate(
+        let (is_fungible_bucket, resource_address) = if let Some(substate) = self.substate_io.heap.get_substate(
             &bucket_id,
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
@@ -487,6 +482,7 @@ where
 
         if is_fungible_bucket {
             let substate = self
+                .substate_io
                 .heap
                 .get_substate(
                     bucket_id,
@@ -502,6 +498,7 @@ where
             })
         } else {
             let substate = self
+                .substate_io
                 .heap
                 .get_substate(
                     bucket_id,
@@ -519,7 +516,7 @@ where
     }
 
     fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
-        let is_fungible = if let Some(substate) = self.heap.get_substate(
+        let is_fungible = if let Some(substate) = self.substate_io.heap.get_substate(
             &proof_id,
             TYPE_INFO_FIELD_PARTITION,
             &TypeInfoField::TypeInfo.into(),
@@ -545,6 +542,7 @@ where
 
         if is_fungible {
             let substate = self
+                .substate_io
                 .heap
                 .get_substate(
                     proof_id,
@@ -557,6 +555,7 @@ where
                 ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
 
             let substate = self
+                .substate_io
                 .heap
                 .get_substate(
                     proof_id,
@@ -572,6 +571,7 @@ where
             })
         } else {
             let substate = self
+                .substate_io
                 .heap
                 .get_substate(
                     proof_id,
@@ -584,6 +584,7 @@ where
                 ResourceAddress::new_or_panic(info.outer_object().unwrap().into());
 
             let substate = self
+                .substate_io
                 .heap
                 .get_substate(
                     proof_id,
@@ -619,9 +620,7 @@ where
         M::before_open_substate(&node_id, &partition_num, substate_key, &flags, self)?;
 
         let maybe_lock_handle = self.current_frame.open_substate(
-            &mut self.heap,
-            self.store,
-            &mut self.substate_locks,
+            &mut self.substate_io,
             node_id,
             partition_num,
             substate_key,
@@ -642,9 +641,7 @@ where
                     if retry {
                         self.current_frame
                             .open_substate(
-                                &mut self.heap,
-                                self.store,
-                                &mut self.substate_locks,
+                                &mut self.substate_io,
                                 &node_id,
                                 partition_num,
                                 &substate_key,
@@ -717,9 +714,7 @@ where
         let value = self
             .current_frame
             .read_substate(
-                &mut self.heap,
-                self.store,
-                &mut self.substate_locks,
+                &mut self.substate_io,
                 lock_handle,
             )
             .map_err(CallFrameError::ReadSubstateError)
@@ -731,9 +726,7 @@ where
         Ok(self
             .current_frame
             .read_substate(
-                &mut self.heap,
-                self.store,
-                &mut self.substate_locks,
+                &mut self.substate_io,
                 lock_handle,
             )
             .unwrap())
@@ -749,9 +742,7 @@ where
 
         self.current_frame
             .write_substate(
-                &mut self.heap,
-                self.store,
-                &mut self.substate_locks,
+                &mut self.substate_io,
                 lock_handle,
                 value,
             )
@@ -766,9 +757,7 @@ where
     fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         self.current_frame
             .close_substate(
-                &mut self.heap,
-                self.store,
-                &mut self.substate_locks,
+                &mut self.substate_io,
                 lock_handle,
                 &mut |store_access| self.callback.on_store_access(&store_access),
             )
@@ -801,8 +790,7 @@ where
                 substate_key,
                 value,
                 &mut |store_access| self.callback.on_store_access(&store_access),
-                &mut self.heap,
-                self.store,
+                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -830,9 +818,7 @@ where
                 partition_num,
                 &substate_key,
                 |store_access| self.callback.on_store_access(&store_access),
-                &mut self.heap,
-                self.store,
-                &mut self.substate_locks,
+                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -860,8 +846,7 @@ where
                 partition_num,
                 count,
                 |store_access| self.callback.on_store_access(&store_access),
-                &mut self.heap,
-                self.store,
+                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -889,8 +874,7 @@ where
                 partition_num,
                 count,
                 |store_access| self.callback.on_store_access(&store_access),
-                &mut self.heap,
-                self.store,
+                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -918,8 +902,7 @@ where
                 partition_num,
                 count,
                 |store_access| self.callback.on_store_access(&store_access),
-                &mut self.heap,
-                self.store,
+                &mut self.substate_io,
             )
             .map_err(|e| match e {
                 CallbackError::CallbackError(e) => e,
