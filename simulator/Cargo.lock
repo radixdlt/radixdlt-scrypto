@@ -1486,6 +1486,7 @@ dependencies = [
  "radix-engine-interface",
  "sbor",
  "secp256k1",
+ "strum",
  "utils",
 ]
 
