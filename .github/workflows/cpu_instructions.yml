@@ -52,10 +52,6 @@ jobs:
         run: |
              bash ./radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ./target/release/deps/
              echo 'Generated XML files count:' && ls /tmp/scrypto-resources-usage/*.xml | wc -l
-#      - name: Upload XML files
-#        run: |
-#             tar -zcf /tmp/xml_files.tar.gz /tmp/scrypto-resources-usage/
-#             wget -SO- --method PUT --body-file=/tmp/xml_files.tar.gz https://transfer.sh/xml_file_001.tar.gz -O - -nv
       - name: Results - table summary
         run: cat /tmp/_out_table.txt
       - name: Results - detailed table summary
