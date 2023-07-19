@@ -669,11 +669,14 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         let mut substate_iter = self
             .substate_db()
-            .list_mapped::<SpreadPrefixKeyMapper, NonFungibleLocalId, MapKey>(
+            .list_mapped::<SpreadPrefixKeyMapper, (), MapKey>(
                 &vault_id,
                 MAIN_BASE_PARTITION.at_offset(PartitionOffset(1u8)).unwrap(),
             );
-        let id = substate_iter.next().map(|(_key, id)| id);
+        let id = substate_iter.next().map(|(key, _value)| {
+            let id: NonFungibleLocalId = scrypto_decode(key.for_map().unwrap()).unwrap();
+            id
+        });
 
         amount.map(|amount| (amount, id))
     }

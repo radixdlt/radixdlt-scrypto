@@ -1,4 +1,5 @@
 use radix_engine_common::data::scrypto::ScryptoDecode;
+use radix_engine_common::prelude::scrypto_decode;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::data::scrypto::model::*;
 use radix_engine_interface::math::*;
@@ -319,22 +320,21 @@ impl<'a, S: SubstateDatabase> BalanceAccounter<'a, S> {
                 let mut removed = BTreeSet::new();
 
                 for tracked_key in tracked_module.substates.values() {
+                    let id: NonFungibleLocalId = scrypto_decode(tracked_key.substate_key.clone().for_map().unwrap()).unwrap();
+
                     match &tracked_key.substate_value {
-                        TrackedSubstateValue::New(substate)
-                        | TrackedSubstateValue::ReadNonExistAndWrite(substate) => {
-                            let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
+                        TrackedSubstateValue::New(..)
+                        | TrackedSubstateValue::ReadNonExistAndWrite(..) => {
                             added.insert(id);
                         }
-                        TrackedSubstateValue::ReadExistAndWrite(old, write) => match write {
+                        TrackedSubstateValue::ReadExistAndWrite(_, write) => match write {
                             Write::Update(..) => {}
                             Write::Delete => {
-                                let id: NonFungibleLocalId = old.as_typed().unwrap();
                                 removed.insert(id);
                             }
                         },
                         TrackedSubstateValue::WriteOnly(write) => match write {
-                            Write::Update(substate) => {
-                                let id: NonFungibleLocalId = substate.value.as_typed().unwrap();
+                            Write::Update(..) => {
                                 added.insert(id);
                             }
                             Write::Delete => {

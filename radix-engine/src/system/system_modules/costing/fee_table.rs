@@ -300,7 +300,7 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn take_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
+    pub fn drain_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
         add(500, Self::store_access_cost(store_access))
     }
 
