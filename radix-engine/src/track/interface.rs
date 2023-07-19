@@ -12,11 +12,6 @@ pub enum TrackGetSubstateError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum SetSubstateError {
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum RemoveSubstateError {
     SubstateLocked(NodeId, PartitionNumber, SubstateKey),
 }
@@ -122,7 +117,7 @@ pub trait SubstateStore {
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
         on_store_access: &mut F,
-    ) -> Result<(), CallbackError<SetSubstateError, E>>;
+    ) -> Result<(), E>;
 
     fn force_write(&mut self, node_id: &NodeId, partition_num: &PartitionNumber, substate_key: &SubstateKey);
 

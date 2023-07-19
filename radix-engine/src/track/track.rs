@@ -1,5 +1,5 @@
 use crate::kernel::substate_locks::SubstateLocks;
-use crate::track::interface::{CallbackError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
+use crate::track::interface::{CallbackError, NodeSubstates, RemoveSubstateError, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
 use crate::track::utils::OverlayingResultIterator;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -631,18 +631,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         substate_key: SubstateKey,
         substate_value: IndexedScryptoValue,
         on_store_access: &mut F,
-    ) -> Result<(), CallbackError<SetSubstateError, E>> {
-        if self
-            .substate_locks
-            .is_locked(&node_id, partition_num, &substate_key)
-        {
-            return Err(CallbackError::Error(SetSubstateError::SubstateLocked(
-                node_id,
-                partition_num,
-                substate_key,
-            )));
-        }
-
+    ) -> Result<(), E> {
         let db_sort_key = M::to_db_sort_key(&substate_key);
         let tracked_partition = self
             .tracked_nodes
@@ -656,8 +645,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         match entry {
             Entry::Vacant(e) => {
-                on_store_access(StoreAccess::NewEntryInTrack)
-                    .map_err(CallbackError::CallbackError)?;
+                on_store_access(StoreAccess::NewEntryInTrack)?;
                 let tracked = TrackedSubstate {
                     substate_key,
                     substate_value: TrackedSubstateValue::WriteOnly(Write::Update(

@@ -1,6 +1,6 @@
 use crate::kernel::actor::MethodType;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::interface::{CallbackError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
+use crate::track::interface::{CallbackError, NodeSubstates, RemoveSubstateError, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
@@ -51,7 +51,6 @@ pub enum SubstateStoreHandle {
 pub struct OpenedSubstate<L> {
     pub non_global_references: IndexSet<NodeId>,
     pub owned_nodes: IndexSet<NodeId>,
-    pub flags: LockFlags,
     pub substate_store_handle: SubstateStoreHandle,
     pub data: L,
 }
@@ -220,7 +219,6 @@ pub enum MoveModuleError {
     NodeNotAvailable(NodeId),
     HeapRemoveModuleErr(HeapRemoveModuleError),
     NonGlobalRefNotAllowed(NodeId),
-    TrackSetSubstateError(SetSubstateError),
     PersistNodeError(PersistNodeError),
 }
 
@@ -240,7 +238,6 @@ pub enum WriteSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameSetSubstateError {
     NodeNotVisible(NodeId),
-    StoreError(SetSubstateError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -514,7 +511,6 @@ impl<L: Clone> CallFrame<L> {
             OpenedSubstate {
                 non_global_references,
                 owned_nodes,
-                flags,
                 substate_store_handle,
                 data,
             },
@@ -546,9 +542,9 @@ impl<L: Clone> CallFrame<L> {
             SubstateStoreHandle::Store(handle)
             | SubstateStoreHandle::Heap(handle) => handle,
         };
-        let (node_id, partion_num, substate_key, _) = substate_locks.unlock(handle);
+        let (node_id, partion_num, substate_key, flags) = substate_locks.unlock(handle);
 
-        if substate_lock.flags.contains(LockFlags::MUTABLE) {
+        if flags.contains(LockFlags::MUTABLE) {
             let substate_is_in_store = matches!(
                 substate_lock.substate_store_handle,
                 SubstateStoreHandle::Store(..)
@@ -654,7 +650,7 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // TODO: Cleanup
-        if substate_lock.flags.contains(LockFlags::FORCE_WRITE) {
+        if flags.contains(LockFlags::FORCE_WRITE) {
             store.force_write(&node_id, &partion_num, &substate_key);
         }
 
@@ -730,22 +726,22 @@ impl<L: Clone> CallFrame<L> {
     ) -> Result<(), WriteSubstateError> {
         let OpenedSubstate {
             substate_store_handle,
-            flags,
             ..
         } = self
             .locks
             .get(&lock_handle)
             .ok_or(WriteSubstateError::LockNotFound(lock_handle))?;
 
-        if !flags.contains(LockFlags::MUTABLE) {
-            return Err(WriteSubstateError::NoWritePermission);
-        }
+
 
         let handle = match substate_store_handle {
             SubstateStoreHandle::Store(handle)
             | SubstateStoreHandle::Heap(handle) => handle,
         };
-        let (node_id, partition_num, substate_key, _) = substate_locks.get(*handle);
+        let (node_id, partition_num, substate_key, flags) = substate_locks.get(*handle);
+        if !flags.contains(LockFlags::MUTABLE) {
+            return Err(WriteSubstateError::NoWritePermission);
+        }
 
         match substate_store_handle {
             SubstateStoreHandle::Heap(..) => {
@@ -943,7 +939,7 @@ impl<L: Clone> CallFrame<L> {
                         substate_value,
                         &mut on_store_access,
                     )
-                    .map_err(|e| e.map(MoveModuleError::TrackSetSubstateError))?
+                    .map_err(CallbackError::CallbackError)?
             }
         }
 
@@ -991,7 +987,7 @@ impl<L: Clone> CallFrame<L> {
         } else {
             store
                 .set_substate(*node_id, partition_num, key, value, on_store_access)
-                .map_err(|e| e.map(CallFrameSetSubstateError::StoreError))?
+                .map_err(CallbackError::CallbackError)?
         };
 
         Ok(())
