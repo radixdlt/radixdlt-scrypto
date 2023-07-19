@@ -1,5 +1,6 @@
 use crate::types::*;
 use radix_engine_interface::api::LockFlags;
+use crate::kernel::call_frame::SubstateLocation;
 
 pub struct SubstateLockError;
 
@@ -51,7 +52,7 @@ impl SubstateLockState {
 }
 
 pub struct SubstateLocks {
-    locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags)>,
+    locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, LockFlags, SubstateLocation)>,
     substate_lock_states: NonIterMap<(NodeId, PartitionNumber, SubstateKey), SubstateLockState>,
     next_lock_id: u32,
 }
@@ -65,22 +66,18 @@ impl SubstateLocks {
         }
     }
 
-    pub fn reset(&mut self) {
-        self.locks.clear();
-        self.substate_lock_states.clear();
-    }
-
     fn new_lock_handle(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        location: SubstateLocation,
     ) -> u32 {
         let new_lock = self.next_lock_id;
         self.locks.insert(
             new_lock,
-            (*node_id, partition_num, substate_key.clone(), flags),
+            (*node_id, partition_num, substate_key.clone(), flags, location),
         );
         self.next_lock_id += 1;
         new_lock
@@ -108,6 +105,7 @@ impl SubstateLocks {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
+        location: SubstateLocation,
     ) -> Option<u32> {
         let lock_state = self
             .substate_lock_states
@@ -120,19 +118,19 @@ impl SubstateLocks {
             }
         }
 
-        let handle = self.new_lock_handle(node_id, partition_num, substate_key, flags);
+        let handle = self.new_lock_handle(node_id, partition_num, substate_key, flags, location);
         Some(handle)
     }
 
-    pub fn get(&self, handle: u32) -> &(NodeId, PartitionNumber, SubstateKey, LockFlags) {
+    pub fn get(&self, handle: u32) -> &(NodeId, PartitionNumber, SubstateKey, LockFlags, SubstateLocation) {
         self.locks.get(&handle).unwrap()
     }
 
-    pub fn unlock(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey, LockFlags) {
-        let (node_id, partition_num, substate_key, flags) = self.locks.remove(&handle).unwrap();
+    pub fn unlock(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey, LockFlags, SubstateLocation) {
+        let (node_id, partition_num, substate_key, flags, location) = self.locks.remove(&handle).unwrap();
         let full_key = (node_id, partition_num, substate_key);
         let lock_state = self.substate_lock_states.get_mut(&full_key).unwrap();
         lock_state.unlock();
-        (full_key.0, full_key.1, full_key.2, flags)
+        (full_key.0, full_key.1, full_key.2, flags, location)
     }
 }

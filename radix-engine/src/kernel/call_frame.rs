@@ -44,7 +44,7 @@ impl Message {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubstateLocation {
     Heap,
     Store,
@@ -56,7 +56,6 @@ pub struct OpenedSubstate<L> {
     pub non_global_references: IndexSet<NodeId>,
     pub owned_nodes: IndexSet<NodeId>,
     pub global_lock_handle: u32,
-    pub substate_location: SubstateLocation,
     pub data: L,
 }
 
@@ -456,7 +455,6 @@ impl<L: Clone> CallFrame<L> {
                 non_global_references,
                 owned_nodes,
                 global_lock_handle,
-                substate_location,
                 data,
             },
         );
@@ -478,14 +476,13 @@ impl<L: Clone> CallFrame<L> {
     ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
         let OpenedSubstate {
             global_lock_handle,
-            substate_location,
             ..
         } = self
             .locks
             .get(&lock_handle)
             .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
 
-        let (node_id, partition_num, substate_key, _) = kernel_io.substate_locks.get(*global_lock_handle);
+        let (node_id, partition_num, substate_key, _, substate_location) = kernel_io.substate_locks.get(*global_lock_handle);
 
         let substate = match substate_location {
             SubstateLocation::Heap => kernel_io.heap
@@ -509,14 +506,13 @@ impl<L: Clone> CallFrame<L> {
     ) -> Result<(), WriteSubstateError> {
         let OpenedSubstate {
             global_lock_handle,
-            substate_location,
             ..
         } = self
             .locks
             .get(&lock_handle)
             .ok_or(WriteSubstateError::LockNotFound(lock_handle))?;
 
-        let (node_id, partition_num, substate_key, flags) = kernel_io.substate_locks.get(*global_lock_handle);
+        let (node_id, partition_num, substate_key, flags, substate_location) = kernel_io.substate_locks.get(*global_lock_handle);
         if !flags.contains(LockFlags::MUTABLE) {
             return Err(WriteSubstateError::NoWritePermission);
         }
@@ -558,12 +554,12 @@ impl<L: Clone> CallFrame<L> {
             .remove(&lock_handle)
             .ok_or_else(|| CallbackError::Error(CloseSubstateError::LockNotFound(lock_handle)))?;
 
-        let (node_id, partion_num, substate_key, flags) =
+        let (node_id, partion_num, substate_key, flags, substate_location) =
             kernel_io.substate_locks.unlock(opened_substate.global_lock_handle);
 
         if flags.contains(LockFlags::MUTABLE) {
             let substate_is_in_store =
-                matches!(opened_substate.substate_location, SubstateLocation::Store);
+                matches!(substate_location, SubstateLocation::Store);
             let substate = if substate_is_in_store {
                 kernel_io.store.get_substate::<(), _>(
                     &node_id,
