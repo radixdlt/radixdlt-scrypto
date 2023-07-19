@@ -12,8 +12,8 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
-    CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError, CallFrameScanSubstateError,
-    CallFrameSetSubstateError, CallFrameTakeSortedSubstatesError, CloseSubstateError,
+    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
+    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
     CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError,
     OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError,
 };
@@ -198,8 +198,8 @@ pub enum CallFrameError {
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
 
-    ScanSubstatesError(CallFrameScanSubstateError),
-    TakeSubstatesError(CallFrameTakeSortedSubstatesError),
+    ScanSubstatesError(CallFrameScanKeysError),
+    DrainSubstatesError(CallFrameDrainSubstatesError),
     ScanSortedSubstatesError(CallFrameScanSortedSubstatesError),
     SetSubstatesError(CallFrameSetSubstateError),
     RemoveSubstatesError(CallFrameRemoveSubstateError),
@@ -590,21 +590,21 @@ impl From<CreateFrameError> for CallFrameError {
     }
 }
 
-impl From<CallFrameScanSubstateError> for CallFrameError {
-    fn from(value: CallFrameScanSubstateError) -> Self {
+impl From<CallFrameScanKeysError> for CallFrameError {
+    fn from(value: CallFrameScanKeysError) -> Self {
         Self::ScanSubstatesError(value)
-    }
-}
-
-impl From<CallFrameTakeSortedSubstatesError> for CallFrameError {
-    fn from(value: CallFrameTakeSortedSubstatesError) -> Self {
-        Self::TakeSubstatesError(value)
     }
 }
 
 impl From<CallFrameScanSortedSubstatesError> for CallFrameError {
     fn from(value: CallFrameScanSortedSubstatesError) -> Self {
         Self::ScanSortedSubstatesError(value)
+    }
+}
+
+impl From<CallFrameDrainSubstatesError> for CallFrameError {
+    fn from(value: CallFrameDrainSubstatesError) -> Self {
+        Self::DrainSubstatesError(value)
     }
 }
 
