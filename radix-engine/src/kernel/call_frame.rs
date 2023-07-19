@@ -1,6 +1,6 @@
 use crate::kernel::actor::MethodType;
 use crate::kernel::substate_io;
-use crate::kernel::substate_io::{SubstateIO, SubstateLocation};
+use crate::kernel::substate_io::{SubstateIO, SubstateDevice};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
@@ -51,7 +51,7 @@ pub struct OpenedSubstate<L> {
     pub owned_nodes: IndexSet<NodeId>,
     pub global_lock_handle: u32,
     pub updated: bool,
-    pub location: SubstateLocation,
+    pub location: SubstateDevice,
     pub data: L,
 }
 
@@ -169,18 +169,15 @@ pub enum OpenSubstateError {
 pub enum CloseSubstateError {
     LockNotFound(LockHandle),
     ContainsDuplicatedOwns,
-    TakeNodeError(TakeNodeError),
-    RefNotFound(NodeId),
+    ProcessSubstateError(ProcessSubstateError),
     NonGlobalRefNotAllowed(NodeId),
-    CantDropNodeInStore(NodeId),
     PersistNodeError(PersistNodeError),
 }
 
 /// Represents an error when creating a node.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateNodeError {
-    TakeNodeError(TakeNodeError),
-    RefNotFound(NodeId),
+    ProcessSubstateError(ProcessSubstateError),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
 }
@@ -262,6 +259,13 @@ pub enum CallFrameDrainSubstatesError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanSortedSubstatesError {
     NodeNotVisible(NodeId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum ProcessSubstateError {
+    TakeNodeError(TakeNodeError),
+    CantDropNodeInStore(NodeId),
+    RefNotFound(NodeId),
 }
 
 impl<L: Clone> CallFrame<L> {
@@ -375,6 +379,35 @@ impl<L: Clone> CallFrame<L> {
 
     pub fn actor(&self) -> &Actor {
         &self.actor
+    }
+
+    pub fn create_node<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+        on_store_access: &mut F,
+        node_id: NodeId,
+        node_substates: NodeSubstates,
+        destination_device: SubstateDevice,
+    ) -> Result<(), CallbackError<CreateNodeError, E>> {
+        for (_partition_number, module) in &node_substates {
+            for (_substate_key, substate_value) in module {
+                self.process_substate(substate_value, destination_device, None)
+                    .map_err(|e| CallbackError::Error(CreateNodeError::ProcessSubstateError(e)))?;
+            }
+        }
+
+        match destination_device {
+            SubstateDevice::Store => {
+                self.stable_references.insert(node_id, StableReferenceType::Global);
+            }
+            SubstateDevice::Heap => {
+                self.owned_root_nodes.insert(node_id, 0);
+            }
+        }
+
+        substate_io.create_node(on_store_access, node_id, node_substates, destination_device)?;
+
+        Ok(())
     }
 
     pub fn open_substate<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
@@ -515,62 +548,11 @@ impl<L: Clone> CallFrame<L> {
             .remove(&lock_handle)
             .ok_or_else(|| CallbackError::Error(CloseSubstateError::LockNotFound(lock_handle)))?;
 
+        // TODO: Move this logic into write_substate?
         if updated {
             let updated_substate = substate_io.read_substate(global_lock_handle);
-            let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
-            for node_id in updated_substate.owned_nodes() {
-                new_owned_nodes.insert(*node_id);
-            }
-
-            for own in &new_owned_nodes {
-                if !owned_nodes.contains(own) {
-                    // Node no longer owned by frame
-                    self.take_node_internal(own)
-                        .map_err(|e| CallbackError::Error(CloseSubstateError::TakeNodeError(e)))?;
-                }
-            }
-
-            for own in &owned_nodes {
-                if !new_owned_nodes.contains(own) {
-                    // Node detached
-                    if location.eq(&SubstateLocation::Store) {
-                        return Err(CallbackError::Error(
-                            CloseSubstateError::CantDropNodeInStore(own.clone()),
-                        ));
-                    }
-                    // Owned nodes discarded by the substate go back to the call frame,
-                    // and must be explicitly dropped.
-                    // FIXME(Yulong): I suspect this is buggy as one can detach a locked non-root
-                    // node, move and drop; which will cause invalid lock handle in previous frames.
-                    // FIXME(Josh): Would prefer removing this case entirely as this edge case
-                    // means that a component's logic may or may not work depending on whether
-                    // it's in the store or the heap, which I think feels very unintuitive.
-                    // Rather, let's fix the specific worktop drop bucket issue
-                    self.owned_root_nodes.insert(own.clone(), 0);
-                }
-            }
-
-            //====================
-            // Process references
-            //====================
-            let mut new_references: IndexSet<NodeId> = index_set_new();
-            for own in updated_substate.references() {
-                // Deduplicate
-                new_references.insert(own.clone());
-            }
-            for reference in &new_references {
-                if !non_global_references.contains(reference) {
-                    // handle added references
-                    if !self
-                        .get_node_visibility(reference)
-                        .can_be_referenced_in_substate()
-                    {
-                        return Err(CallbackError::Error(CloseSubstateError::RefNotFound(
-                            reference.clone(),
-                        )));
-                    }
-                }
-            }
+            self.process_substate(updated_substate, location, Some((&owned_nodes, &non_global_references)))
+                .map_err(|e| CallbackError::Error(CloseSubstateError::ProcessSubstateError(e)))?;
         }
 
         let (node_id, ..) = substate_io.close_substate(global_lock_handle, on_store_access)?;
@@ -601,72 +583,6 @@ impl<L: Clone> CallFrame<L> {
         self.locks
             .get(&lock_handle)
             .map(|substate_lock| substate_lock.data.clone())
-    }
-
-    pub fn create_node<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
-        &mut self,
-        substate_io: &mut SubstateIO<S>,
-        node_id: NodeId,
-        node_substates: NodeSubstates,
-        push_to_store: bool,
-        on_store_access: &mut F,
-    ) -> Result<(), CallbackError<CreateNodeError, E>> {
-        for (_partition_number, module) in &node_substates {
-            for (_substate_key, substate_value) in module {
-                //==============
-                // Process owns
-                //==============
-                for own in substate_value.owned_nodes() {
-                    self.take_node_internal(own)
-                        .map_err(|e| CallbackError::Error(CreateNodeError::TakeNodeError(e)))?;
-                    if push_to_store {
-                        substate_io
-                            .move_node_to_store(own, on_store_access)
-                            .map_err(|e| e.map(CreateNodeError::PersistNodeError))?;
-                    }
-                }
-
-                //===================
-                // Process reference
-                //===================
-                for reference in substate_value.references() {
-                    if !self
-                        .get_node_visibility(reference)
-                        .can_be_referenced_in_substate()
-                    {
-                        return Err(CallbackError::Error(CreateNodeError::RefNotFound(
-                            reference.clone(),
-                        )));
-                    }
-
-                    if push_to_store && !reference.is_global() {
-                        return Err(CallbackError::Error(
-                            CreateNodeError::NonGlobalRefNotAllowed(*reference),
-                        ));
-                    }
-
-                    if substate_io.heap.contains_node(reference) {
-                        substate_io.heap.increase_borrow_count(reference);
-                    } else {
-                        // No op
-                    }
-                }
-            }
-        }
-
-        if push_to_store {
-            self.stable_references
-                .insert(node_id, StableReferenceType::Global);
-            substate_io
-                .store
-                .create_node(node_id, node_substates, on_store_access)
-                .map_err(CallbackError::CallbackError)?;
-        } else {
-            substate_io.heap.create_node(node_id, node_substates);
-            self.owned_root_nodes.insert(node_id, 0);
-        };
-
-        Ok(())
     }
 
     /// Removes node from call frame and owned nodes will be possessed by this call frame.
@@ -966,21 +882,6 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
-        match self.owned_root_nodes.remove(node_id) {
-            None => {
-                return Err(TakeNodeError::OwnNotFound(node_id.clone()));
-            }
-            Some(lock_count) => {
-                if lock_count == 0 {
-                    Ok(())
-                } else {
-                    Err(TakeNodeError::OwnLocked(node_id.clone()))
-                }
-            }
-        }
-    }
-
     pub fn owned_nodes(&self) -> Vec<NodeId> {
         self.owned_root_nodes.keys().cloned().collect()
     }
@@ -1015,5 +916,90 @@ impl<L: Clone> CallFrame<L> {
         }
 
         NodeVisibility(visibilities)
+    }
+
+    fn process_substate(&mut self, updated_substate: &IndexedScryptoValue, device: SubstateDevice, prev: Option<(&IndexSet<NodeId>, &IndexSet<NodeId>)>) -> Result<(), ProcessSubstateError>{
+        // Process owned nodes
+        {
+            let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
+            for own in updated_substate.owned_nodes() {
+                let node_is_new = if let Some((old_owned_nodes, _)) = prev {
+                    !old_owned_nodes.contains(own)
+                } else { true };
+
+                if node_is_new {
+                    // Node no longer owned by frame
+                    self.take_node_internal(own)
+                        .map_err(ProcessSubstateError::TakeNodeError)?;
+                }
+
+                new_owned_nodes.insert(*own);
+            }
+
+            if let Some((old_owned_nodes, _)) = prev {
+                for own in old_owned_nodes {
+                    if !new_owned_nodes.contains(own) {
+                        // Node detached
+                        if device.eq(&SubstateDevice::Store) {
+                            return Err(ProcessSubstateError::CantDropNodeInStore(own.clone()));
+                        }
+                        // Owned nodes discarded by the substate go back to the call frame,
+                        // and must be explicitly dropped.
+                        // FIXME(Yulong): I suspect this is buggy as one can detach a locked non-root
+                        // node, move and drop; which will cause invalid lock handle in previous frames.
+                        // FIXME(Josh): Would prefer removing this case entirely as this edge case
+                        // means that a component's logic may or may not work depending on whether
+                        // it's in the store or the heap, which I think feels very unintuitive.
+                        // Rather, let's fix the specific worktop drop bucket issue
+                        self.owned_root_nodes.insert(own.clone(), 0);
+                    }
+                }
+            }
+        }
+
+        //====================
+        // Process references
+        //====================
+        {
+            let mut new_references: IndexSet<NodeId> = index_set_new();
+            for own in updated_substate.references() {
+                // Deduplicate
+                new_references.insert(own.clone());
+            }
+            for reference in &new_references {
+                let reference_is_new = if let Some((_, old_references)) = &prev {
+                    !old_references.contains(reference)
+                } else {
+                    true
+                };
+
+                if reference_is_new {
+                    // handle added references
+                    if !self
+                        .get_node_visibility(reference)
+                        .can_be_referenced_in_substate()
+                    {
+                        return Err(ProcessSubstateError::RefNotFound(reference.clone()));
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
+        match self.owned_root_nodes.remove(node_id) {
+            None => {
+                return Err(TakeNodeError::OwnNotFound(node_id.clone()));
+            }
+            Some(lock_count) => {
+                if lock_count == 0 {
+                    Ok(())
+                } else {
+                    Err(TakeNodeError::OwnLocked(node_id.clone()))
+                }
+            }
+        }
     }
 }

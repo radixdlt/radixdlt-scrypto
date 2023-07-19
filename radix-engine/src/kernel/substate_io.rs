@@ -1,8 +1,8 @@
-use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, OpenSubstateError, PersistNodeError, ReadSubstateError, WriteSubstateError};
+use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateNodeError, OpenSubstateError, PersistNodeError, ReadSubstateError, WriteSubstateError};
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::interface::{CallbackError, StoreAccess, SubstateStore, TrackedSubstateInfo};
+use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo};
 use radix_engine_common::prelude::{NodeId, PartitionNumber, RESOURCE_PACKAGE};
 use radix_engine_common::types::SubstateKey;
 use radix_engine_interface::api::LockFlags;
@@ -19,7 +19,7 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use utils::prelude::{index_set_new, NonIterMap};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum SubstateLocation {
+pub enum SubstateDevice {
     Heap,
     Store,
 }
@@ -27,7 +27,7 @@ pub enum SubstateLocation {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LockData {
     flags: LockFlags,
-    location: SubstateLocation,
+    location: SubstateDevice,
     owned_nodes: IndexSet<NodeId>,
     non_global_references: IndexSet<NodeId>,
 }
@@ -47,6 +47,51 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         }
     }
 
+    pub fn create_node<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        on_store_access: &mut F,
+        node_id: NodeId,
+        node_substates: NodeSubstates,
+        substate_device: SubstateDevice,
+    ) -> Result<(), CallbackError<CreateNodeError, E>> {
+        for (_partition_number, module) in &node_substates {
+            for (_substate_key, substate_value) in module {
+                for own in substate_value.owned_nodes() {
+                    if substate_device.eq(&SubstateDevice::Store) {
+                        self
+                            .move_node_to_store(own, on_store_access)
+                            .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
+                    }
+                }
+                for reference in substate_value.references() {
+                    if substate_device.eq(&SubstateDevice::Store) && !reference.is_global() {
+                        return Err(CallbackError::Error(
+                            CreateNodeError::NonGlobalRefNotAllowed(*reference),
+                        ));
+                    }
+
+                    if self.heap.contains_node(reference) {
+                        self.heap.increase_borrow_count(reference);
+                    }
+                }
+            }
+        }
+
+        match substate_device {
+            SubstateDevice::Store => {
+                self
+                    .store
+                    .create_node(node_id, node_substates, on_store_access)
+                    .map_err(CallbackError::CallbackError)?;
+            }
+            SubstateDevice::Heap => {
+                self.heap.create_node(node_id, node_substates);
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn open_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
@@ -55,7 +100,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         flags: LockFlags,
         on_store_access: F,
         default: Option<fn() -> IndexedScryptoValue>,
-    ) -> Result<(u32, &IndexedScryptoValue, SubstateLocation), CallbackError<OpenSubstateError, E>>
+    ) -> Result<(u32, &IndexedScryptoValue, SubstateDevice), CallbackError<OpenSubstateError, E>>
     {
         let substate_location = if self.heap.contains_node(node_id) {
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -64,7 +109,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
                 ));
             }
 
-            SubstateLocation::Heap
+            SubstateDevice::Heap
         } else {
             // Check substate state
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
@@ -95,7 +140,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
                     }
                 }
             }
-            SubstateLocation::Store
+            SubstateDevice::Store
         };
 
         let substate_value = Self::get_substate_internal(
@@ -152,11 +197,11 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
             self.substate_locks.get(global_lock_handle);
 
         let substate = match lock_data.location {
-            SubstateLocation::Heap => self
+            SubstateDevice::Heap => self
                 .heap
                 .get_substate(node_id, *partition_num, substate_key)
                 .unwrap(),
-            SubstateLocation::Store => self
+            SubstateDevice::Store => self
                 .store
                 .get_substate::<(), _>(node_id, *partition_num, substate_key, &mut |store_access| {
                     panic!("Getting substate on handled substate should not incur a store access.")
@@ -179,7 +224,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         }
 
         match lock_data.location {
-            SubstateLocation::Heap => {
+            SubstateDevice::Heap => {
                 self.heap.set_substate(
                     node_id.clone(),
                     partition_num.clone(),
@@ -187,7 +232,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
                     substate,
                 );
             }
-            SubstateLocation::Store => {
+            SubstateDevice::Store => {
                 self.store
                     .set_substate(
                         node_id.clone(),
@@ -238,7 +283,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
             for own in &new_owned_nodes {
                 if !lock_data.owned_nodes.contains(own) {
                     // Move the node to store, if its owner is already in store
-                    if lock_data.location.eq(&SubstateLocation::Store) {
+                    if lock_data.location.eq(&SubstateDevice::Store) {
                         self
                             .move_node_to_store(own, on_store_access)
                             .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
@@ -251,7 +296,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         {
             for reference in &new_references {
                 if !lock_data.non_global_references.contains(reference) {
-                    if lock_data.location.eq(&SubstateLocation::Store) && !reference.is_global() {
+                    if lock_data.location.eq(&SubstateDevice::Store) && !reference.is_global() {
                         return Err(CallbackError::Error(
                             CloseSubstateError::NonGlobalRefNotAllowed(*reference),
                         ));
@@ -509,7 +554,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
     fn get_substate_internal<'a, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         heap: &'a mut Heap,
         store: &'a mut S,
-        location: SubstateLocation,
+        location: SubstateDevice,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
@@ -517,12 +562,12 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<&'a IndexedScryptoValue, CallbackError<OpenSubstateError, E>> {
         let value = match location {
-            SubstateLocation::Heap => heap
+            SubstateDevice::Heap => heap
                 .get_substate_or_default(node_id, partition_num, substate_key, || {
                     default.map(|f| f())
                 })
                 .map_err(|e| CallbackError::Error(OpenSubstateError::HeapError(e)))?,
-            SubstateLocation::Store => store
+            SubstateDevice::Store => store
                 .get_substate_or_default(
                     node_id,
                     partition_num,

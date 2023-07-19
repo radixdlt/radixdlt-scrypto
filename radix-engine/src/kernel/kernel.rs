@@ -13,7 +13,7 @@ use crate::kernel::actor::MethodType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
-use crate::kernel::substate_io::SubstateIO;
+use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
@@ -372,10 +372,14 @@ where
         self.current_frame
             .create_node(
                 &mut self.substate_io,
+                &mut |store_access| self.callback.on_store_access(&store_access),
                 node_id,
                 node_substates,
-                node_id.is_global(),
-                &mut |store_access| self.callback.on_store_access(&store_access),
+                if node_id.is_global() {
+                    SubstateDevice::Store
+                } else {
+                    SubstateDevice::Heap
+                }
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
