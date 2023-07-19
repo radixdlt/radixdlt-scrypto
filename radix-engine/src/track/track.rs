@@ -1,5 +1,5 @@
 use crate::kernel::substate_locks::SubstateLocks;
-use crate::track::interface::{CallbackError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess, SubstateStore, TrackOpenSubstateError};
+use crate::track::interface::{CallbackError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
 use crate::track::utils::OverlayingResultIterator;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -929,7 +929,38 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         Ok(items)
     }
 
-    fn open_substate_virtualize<
+    fn get_substate_info(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        substate_key: &SubstateKey,
+    ) -> TrackedSubstateInfo {
+        let info = self.tracked_nodes.get(node_id)
+            .and_then(|n| n.tracked_partitions.get(&partition_num))
+            .and_then(|p| {
+                let db_sort_key = M::to_db_sort_key(&substate_key);
+                p.substates.get(&db_sort_key)
+            })
+            .map(|s| {
+                match s.substate_value {
+                    TrackedSubstateValue::New(..) | TrackedSubstateValue::Garbage => {
+                        TrackedSubstateInfo::New
+                    }
+                    TrackedSubstateValue::WriteOnly(..)
+                    | TrackedSubstateValue::ReadExistAndWrite(..)
+                    | TrackedSubstateValue::ReadNonExistAndWrite(..) => {
+                        TrackedSubstateInfo::Updated
+                    }
+                    TrackedSubstateValue::ReadOnly(..) => {
+                        TrackedSubstateInfo::Unmodified
+                    }
+                }
+            }).unwrap_or(TrackedSubstateInfo::Unmodified);
+
+        info
+    }
+
+    fn get_substate_or_default<
         E,
         F: FnMut(StoreAccess) -> Result<(), E>,
         V: FnOnce() -> Option<IndexedScryptoValue>,
@@ -938,10 +969,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        flags: LockFlags,
         mut on_store_access: F,
         virtualize: V,
-    ) -> Result<u32, CallbackError<TrackOpenSubstateError, E>> {
+    ) -> Result<&IndexedScryptoValue, CallbackError<TrackGetSubstateError, E>> {
+        /*
         let handle = match self
             .substate_locks
             .lock(node_id, partition_num, substate_key, flags)
@@ -957,6 +988,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             }
             Some(handle) => handle,
         };
+         */
 
         // Load the substate from state track
         let tracked = match self.get_tracked_substate_virtualize(
@@ -968,161 +1000,57 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         ) {
             Ok(tracked) => tracked,
             Err(e) => {
-                self.substate_locks.unlock(handle);
                 return Err(CallbackError::CallbackError(e));
             }
         };
 
-        // Check substate state
-        if flags.contains(LockFlags::UNMODIFIED_BASE) {
-            match tracked {
-                TrackedSubstateValue::New(..) | TrackedSubstateValue::Garbage => {
-                    let (node_id, partition_num, substate_key, ..) =
-                        self.substate_locks.unlock(handle);
-                    return Err(CallbackError::Error(
-                        TrackOpenSubstateError::LockUnmodifiedBaseOnNewSubstate(
-                            node_id,
-                            partition_num,
-                            substate_key,
-                        ),
-                    ));
-                }
-                TrackedSubstateValue::WriteOnly(..)
-                | TrackedSubstateValue::ReadExistAndWrite(..)
-                | TrackedSubstateValue::ReadNonExistAndWrite(..) => {
-                    let (node_id, partition_num, substate_key, ..) =
-                        self.substate_locks.unlock(handle);
-                    return Err(CallbackError::Error(
-                        TrackOpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(
-                            node_id,
-                            partition_num,
-                            substate_key,
-                        ),
-                    ));
-                }
-                TrackedSubstateValue::ReadOnly(..) => {
-                    // Okay
-                }
-            }
-        }
+
 
         /*let substate = */
-        match tracked.get_runtime_substate_mut() {
-            Some(..) => {} //x,
+        let value = match tracked.get_runtime_substate_mut() {
+            Some(x) => {&x.value}
             None => {
-                let (node_id, partition_num, substate_key, ..) = self.substate_locks.unlock(handle);
-                return Err(CallbackError::Error(TrackOpenSubstateError::NotFound(
-                    node_id,
+                return Err(CallbackError::Error(TrackGetSubstateError::NotFound(
+                    node_id.clone(),
                     partition_num,
-                    substate_key,
+                    substate_key.clone(),
                 )));
             }
         };
 
-        Ok(handle)
+        Ok(value)
     }
 
-    fn close_substate(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey) {
-        let (node_id, partition_num, substate_key, flags) = self.substate_locks.unlock(handle);
-
+    fn force_write(&mut self, node_id: &NodeId, partition_num: &PartitionNumber, substate_key: &SubstateKey) {
         let tracked = self
             .get_tracked_substate(
-                &node_id,
-                partition_num,
+                node_id,
+                *partition_num,
                 substate_key.clone(),
                 &mut |_| -> Result<(), ()> { Err(()) },
             )
             .expect("Should not need to go into store on close substate.");
 
-        if flags.contains(LockFlags::FORCE_WRITE) {
-            let db_sort_key = M::to_db_sort_key(&substate_key);
-            let cloned_track = tracked.clone();
+        let db_sort_key = M::to_db_sort_key(&substate_key);
+        let cloned_track = tracked.clone();
 
-            self.force_write_tracked_nodes
-                .entry(node_id)
-                .or_insert(TrackedNode {
-                    tracked_partitions: index_map_new(),
-                    is_new: false,
-                })
-                .tracked_partitions
-                .entry(partition_num)
-                .or_insert(TrackedPartition::new())
-                .substates
-                .insert(
-                    db_sort_key,
-                    TrackedSubstate {
-                        substate_key: substate_key.clone(),
-                        substate_value: cloned_track,
-                    },
-                );
-        }
-
-        (node_id, partition_num, substate_key)
-    }
-
-    fn read_substate(&mut self, handle: u32) -> &IndexedScryptoValue {
-        let (node_id, partition_num, substate_key, _flags) =
-            self.substate_locks.get(handle).clone();
-
-        // Read substate
-        let tracked = self
-            .get_tracked_substate(&node_id, partition_num, substate_key, &mut |_| -> Result<
-                (),
-                (),
-            > {
-                Err(())
+        self.force_write_tracked_nodes
+            .entry(*node_id)
+            .or_insert(TrackedNode {
+                tracked_partitions: index_map_new(),
+                is_new: false,
             })
-            .expect("Should not need to go into store on read substate.");
-
-        let value = tracked
-            .get()
-            .expect("Could not have created lock on non existent substate");
-
-        value
-    }
-
-    fn write_substate(&mut self, handle: u32, substate_value: IndexedScryptoValue) {
-        let (node_id, partition_num, substate_key, flags) = self.substate_locks.get(handle).clone();
-        if !flags.contains(LockFlags::MUTABLE) {
-            panic!("No write permission for {}", handle);
-        }
-
-        // Update substate
-        let tracked = self
-            .get_tracked_substate(&node_id, partition_num, substate_key, &mut |_| -> Result<
-                (),
-                (),
-            > {
-                Err(())
-            })
-            .expect("Should not need to go into store on update substate.");
-
-        match tracked {
-            TrackedSubstateValue::New(substate)
-            | TrackedSubstateValue::WriteOnly(Write::Update(substate))
-            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Update(substate))
-            | TrackedSubstateValue::ReadNonExistAndWrite(substate) => {
-                substate.value = substate_value;
-            }
-            TrackedSubstateValue::ReadOnly(ReadOnly::NonExistent) => {
-                let new_tracked = TrackedSubstateValue::ReadNonExistAndWrite(RuntimeSubstate::new(
-                    substate_value,
-                ));
-                *tracked = new_tracked;
-            }
-            TrackedSubstateValue::ReadOnly(ReadOnly::Existent(substate)) => {
-                let new_tracked = TrackedSubstateValue::ReadExistAndWrite(
-                    substate.value.clone(),
-                    Write::Update(RuntimeSubstate::new(substate_value)),
-                );
-                *tracked = new_tracked;
-            }
-            TrackedSubstateValue::WriteOnly(Write::Delete)
-            | TrackedSubstateValue::ReadExistAndWrite(_, Write::Delete)
-            | TrackedSubstateValue::Garbage => {
-                panic!("Could not have created lock on non existent substate")
-            }
-        };
+            .tracked_partitions
+            .entry(*partition_num)
+            .or_insert(TrackedPartition::new())
+            .substates
+            .insert(
+                db_sort_key,
+                TrackedSubstate {
+                    substate_key: substate_key.clone(),
+                    substate_value: cloned_track,
+                },
+            );
     }
 
     fn delete_partition(&mut self, node_id: &NodeId, partition_num: PartitionNumber) {

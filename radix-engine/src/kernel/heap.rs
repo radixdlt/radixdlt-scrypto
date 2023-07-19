@@ -35,7 +35,6 @@ pub enum HeapRemoveNodeError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum HeapOpenSubstateError {
     LockUnmodifiedBaseOnHeapNode,
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
     SubstateNotFound(NodeId, PartitionNumber, SubstateKey),
 }
 
@@ -73,25 +72,14 @@ impl Heap {
         }
     }
 
-    pub fn open_substate_virtualize<F: FnOnce() -> Option<IndexedScryptoValue>>(
+    pub fn get_substate_or_default<F: FnOnce() -> Option<IndexedScryptoValue>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
         virtualize: F,
-    ) -> Result<u32, HeapOpenSubstateError> {
-        let handle = self
-            .substate_locks
-            .lock(node_id, partition_num, substate_key, flags)
-            .ok_or_else(|| {
-                HeapOpenSubstateError::SubstateLocked(
-                    node_id.clone(),
-                    partition_num,
-                    substate_key.clone(),
-                )
-            })?;
-
+    ) -> Result<&IndexedScryptoValue, HeapOpenSubstateError> {
         if flags.contains(LockFlags::UNMODIFIED_BASE) {
             return Err(HeapOpenSubstateError::LockUnmodifiedBaseOnHeapNode);
         }
@@ -116,36 +104,9 @@ impl Heap {
             }
         }
 
-        Ok(handle)
-    }
+        let value = self.get_substate(node_id, partition_num, substate_key).unwrap();
 
-    pub fn read_substate(&self, handle: u32) -> &IndexedScryptoValue {
-        let (node_id, partition_num, substate_key, _lock_flags) = self.substate_locks.get(handle);
-        let value = self
-            .nodes
-            .get(node_id)
-            .and_then(|node| node.substates.get(partition_num))
-            .and_then(|module_substates| module_substates.get(substate_key))
-            .unwrap();
-
-        value
-    }
-
-    pub fn write_substate(&mut self, handle: u32, substate: IndexedScryptoValue) {
-        let (node_id, partition_num, substate_key, _lock_flags) = self.substate_locks.get(handle);
-
-        self.nodes
-            .entry(node_id.clone())
-            .or_insert_with(|| HeapNode::default())
-            .substates
-            .entry(partition_num.clone())
-            .or_default()
-            .insert(substate_key.clone(), substate);
-    }
-
-    pub fn close_substate(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey) {
-        let (node_id, partition_num, substate_key, ..) = self.substate_locks.unlock(handle);
-        (node_id, partition_num, substate_key)
+        Ok(value)
     }
 
     /// Reads a substate

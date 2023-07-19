@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,    0.585879747,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.51515214,     87.9%
-+ Tipping Cost (XRD)                                                       ,    0.025757607,      4.4%
+Total Cost (XRD)                                                           ,   0.5856498075,    100.0%
++ Execution Cost (XRD)                                                     ,     0.51493315,     87.9%
++ Tipping Cost (XRD)                                                       ,   0.0257466575,      4.4%
 + State Expansion Cost (XRD)                                               ,        0.04497,      7.7%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       51515214,    100.0%
+Total Cost Units Consumed                                                  ,       51493315,    100.0%
 AfterInvoke                                                                ,            494,      0.0%
 AllocateNodeId                                                             ,          10500,      0.0%
 BeforeInvoke                                                               ,          15408,      0.0%
@@ -21,14 +21,14 @@ OpenSubstate::GlobalAccount                                                ,    
 OpenSubstate::GlobalFungibleResourceManager                                ,           2624,      0.0%
 OpenSubstate::GlobalGenericComponent                                       ,           2852,      0.0%
 OpenSubstate::GlobalNonFungibleResourceManager                             ,          13950,      0.0%
-OpenSubstate::GlobalPackage                                                ,         857054,      1.7%
+OpenSubstate::GlobalPackage                                                ,         849874,      1.7%
 OpenSubstate::InternalFungibleVault                                        ,           7242,      0.0%
 OpenSubstate::InternalGenericComponent                                     ,          70648,      0.1%
 OpenSubstate::InternalKeyValueStore                                        ,            706,      0.0%
 OpenSubstate::InternalNonFungibleVault                                     ,         162252,      0.3%
-PrepareWasmCode                                                            ,         698756,      1.4%
+PrepareWasmCode                                                            ,         691576,      1.3%
 QueryActor                                                                 ,           2000,      0.0%
-ReadSubstate                                                               ,        1128206,      2.2%
+ReadSubstate                                                               ,        1121026,      2.2%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.0%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.0%
 RunNativeCode::Worktop_put                                                 ,          24411,      0.0%
@@ -42,7 +42,7 @@ RunNativeCode::put_NonFungibleVault                                        ,    
 RunNativeCode::try_deposit_batch_or_abort                                  ,          63706,      0.1%
 RunWasmCode::Faucet_lock_fee                                               ,          17987,      0.0%
 SetSubstate                                                                ,         105248,      0.2%
-StoreAccess                                                                ,        3160641,      6.1%
+StoreAccess                                                                ,        3160282,      6.1%
 TxBaseCost                                                                 ,          50000,      0.1%
 TxPayloadCost                                                              ,         153760,      0.3%
 TxSignatureVerification                                                    ,              0,      0.0%

@@ -359,21 +359,17 @@ where
     fn read_epoch(track: &mut Track<S, SpreadPrefixKeyMapper>) -> Option<Epoch> {
         // TODO - Instead of doing a check of the exact epoch, we could do a check in range [X, Y]
         //        Which could allow for better caching of transaction validity over epoch boundaries
-        let handle = match track.open_substate(
+        let substate: FieldSubstate<ConsensusManagerSubstate> = match track.get_substate(
             CONSENSUS_MANAGER.as_node_id(),
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
-            LockFlags::read_only(),
             |_| -> Result<(), ()> { Ok(()) },
         ) {
             Ok(x) => x,
             Err(_) => {
                 return None;
             }
-        };
-        let substate: FieldSubstate<ConsensusManagerSubstate> =
-            track.read_substate(handle).as_typed().unwrap();
-        track.close_substate(handle);
+        }.as_typed().unwrap();
         Some(substate.value.0.epoch)
     }
 
@@ -403,18 +399,14 @@ where
         intent_hash: Hash,
         expiry_epoch: Epoch,
     ) -> Result<(), RejectionError> {
-        let handle = track
-            .open_substate(
+        let substate: FieldSubstate<TransactionTrackerSubstate> = track
+            .get_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
-                LockFlags::read_only(),
                 |_| -> Result<(), ()> { Ok(()) },
             )
-            .unwrap();
-        let substate: FieldSubstate<TransactionTrackerSubstate> =
-            track.read_substate(handle).as_typed().unwrap();
-        track.close_substate(handle);
+            .unwrap().as_typed().unwrap();
 
         let partition_number = substate
             .value
@@ -422,12 +414,11 @@ where
             .partition_for_expiry_epoch(expiry_epoch)
             .expect("Transaction tracker should cover all valid epoch ranges");
 
-        let handle = track
-            .open_substate_virtualize(
+        let substate: KeyValueEntrySubstate<TransactionStatus> = track
+            .get_substate_or_default(
                 TRANSACTION_TRACKER.as_node_id(),
                 PartitionNumber(partition_number),
                 &SubstateKey::Map(intent_hash.to_vec()),
-                LockFlags::read_only(),
                 |_| -> Result<(), ()> { Ok(()) },
                 || {
                     Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
@@ -436,10 +427,7 @@ where
                     }))
                 },
             )
-            .unwrap();
-        let substate: KeyValueEntrySubstate<TransactionStatus> =
-            track.read_substate(handle).as_typed().unwrap();
-        track.close_substate(handle);
+            .unwrap().as_typed().unwrap();
 
         match substate.value {
             Some(status) => match status {
@@ -603,21 +591,22 @@ where
         for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
             let node_id = recipient_vault_id;
             let substate_key = FungibleVaultField::LiquidFungible.into();
-            let handle = track
-                .open_substate(
+            let mut substate: FieldSubstate<LiquidFungibleResource> = track
+                .get_substate(
                     &node_id,
                     MAIN_BASE_PARTITION,
                     &substate_key,
-                    LockFlags::MUTABLE,
                     |_| -> Result<(), ()> { Ok(()) },
                 )
-                .unwrap();
-            let substate_value = track.read_substate(handle);
-            let mut substate: FieldSubstate<LiquidFungibleResource> =
-                substate_value.as_typed().unwrap();
+                .unwrap().as_typed().unwrap();
             substate.value.0.put(LiquidFungibleResource::new(amount));
-            track.write_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.close_substate(handle);
+            track.set_substate(
+                node_id,
+                MAIN_BASE_PARTITION,
+                substate_key,
+                IndexedScryptoValue::from_typed(&substate),
+                &mut |_| -> Result<(), ()> { Ok(()) },
+            ).unwrap();
         }
 
         // Take fee payments
@@ -644,21 +633,22 @@ where
             required -= amount;
 
             // Refund overpayment
-            let handle = track
-                .open_substate(
+            let mut substate: FieldSubstate<LiquidFungibleResource> = track
+                .get_substate(
                     &vault_id,
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
-                    LockFlags::MUTABLE,
                     |_| -> Result<(), ()> { Ok(()) },
                 )
-                .unwrap();
-            let substate_value = track.read_substate(handle);
-            let mut substate: FieldSubstate<LiquidFungibleResource> =
-                substate_value.as_typed().unwrap();
+                .unwrap().as_typed().unwrap();
             substate.value.0.put(locked);
-            track.write_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.close_substate(handle);
+            track.set_substate(
+                vault_id,
+                MAIN_BASE_PARTITION,
+                FungibleVaultField::LiquidFungible.into(),
+                IndexedScryptoValue::from_typed(&substate),
+                &mut |_| -> Result<(), ()> { Ok(()) },
+            ).unwrap();
 
             // Record final payments
             *fee_payments.entry(vault_id).or_default() += amount;
@@ -678,32 +668,25 @@ where
         if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
             // Fetch current leader
             // TODO: maybe we should move current leader into validator rewards?
-            let handle = track
-                .open_substate(
+            let substate: FieldSubstate<ConsensusManagerSubstate> = track
+                .get_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ConsensusManager.into(),
-                    LockFlags::read_only(),
                     |_| -> Result<(), ()> { Ok(()) },
                 )
-                .unwrap();
-            let substate: FieldSubstate<ConsensusManagerSubstate> =
-                track.read_substate(handle).as_typed().unwrap();
+                .unwrap().as_typed().unwrap();
             let current_leader = substate.value.0.current_leader;
-            track.close_substate(handle);
 
             // Update validator rewards
-            let handle = track
-                .open_substate(
+            let mut substate: FieldSubstate<ValidatorRewardsSubstate> = track
+                .get_substate(
                     CONSENSUS_MANAGER.as_node_id(),
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ValidatorRewards.into(),
-                    LockFlags::MUTABLE,
                     |_| -> Result<(), ()> { Ok(()) },
                 )
-                .unwrap();
-            let mut substate: FieldSubstate<ValidatorRewardsSubstate> =
-                track.read_substate(handle).as_typed().unwrap();
+                .unwrap().as_typed().unwrap();
             let proposer_rewards = if let Some(current_leader) = current_leader {
                 let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
                     + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
@@ -723,28 +706,34 @@ where
                     + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
             };
             let vault_node_id = substate.value.0.rewards_vault.0 .0;
-            track.write_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.close_substate(handle);
+
+            track.set_substate(
+                CONSENSUS_MANAGER.into_node_id(),
+                MAIN_BASE_PARTITION,
+                ConsensusManagerField::ValidatorRewards.into(),
+                IndexedScryptoValue::from_typed(&substate),
+                &mut |_| -> Result<(), ()> { Ok(()) },
+            ).unwrap();
 
             // Put validator rewards into the vault
-            let handle = track
-                .open_substate(
+            let mut substate: FieldSubstate<LiquidFungibleResource> = track
+                .get_substate(
                     &vault_node_id,
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
-                    LockFlags::MUTABLE,
                     |_| -> Result<(), ()> { Ok(()) },
                 )
-                .unwrap();
-            let mut substate: FieldSubstate<LiquidFungibleResource> =
-                track.read_substate(handle).as_typed().unwrap();
+                .unwrap().as_typed().unwrap();
             substate.value.0.put(
                 collected_fees
                     .take_by_amount(proposer_rewards + validator_set_rewards)
                     .unwrap(),
             );
-            track.write_substate(handle, IndexedScryptoValue::from_typed(&substate));
-            track.close_substate(handle);
+            track.set_substate(
+                vault_node_id, MAIN_BASE_PARTITION, FungibleVaultField::LiquidFungible.into(),
+                IndexedScryptoValue::from_typed(&substate),
+                &mut |_| -> Result<(), ()> { Ok(()) },
+            ).unwrap();
         }
 
         (fee_summary, fee_payments)
@@ -757,17 +746,14 @@ where
         is_success: bool,
     ) {
         // Read the intent hash store
-        let handle = track
-            .open_substate(
+        let mut transaction_tracker: FieldSubstate<TransactionTrackerSubstate> = track
+            .get_substate(
                 TRANSACTION_TRACKER.as_node_id(),
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
-                LockFlags::MUTABLE,
                 |_| -> Result<(), ()> { Ok(()) },
             )
-            .unwrap();
-        let mut transaction_tracker: FieldSubstate<TransactionTrackerSubstate> =
-            track.read_substate(handle).as_typed().unwrap();
+            .unwrap().as_typed().unwrap();
 
         // Update the status of the intent hash
         if let TransactionIntentHash::ToCheck {
@@ -780,23 +766,10 @@ where
                 .0
                 .partition_for_expiry_epoch(*expiry_epoch)
             {
-                let handle = track
-                    .open_substate_virtualize(
-                        TRANSACTION_TRACKER.as_node_id(),
-                        PartitionNumber(partition_number),
-                        &SubstateKey::Map(intent_hash.to_vec()),
-                        LockFlags::MUTABLE,
-                        |_| -> Result<(), ()> { Ok(()) },
-                        || {
-                            Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
-                                value: Option::<TransactionStatus>::None,
-                                mutability: SubstateMutability::Mutable,
-                            }))
-                        },
-                    )
-                    .unwrap();
-                track.write_substate(
-                    handle,
+                track.set_substate(
+                    TRANSACTION_TRACKER.into_node_id(),
+                    PartitionNumber(partition_number),
+                    SubstateKey::Map(intent_hash.to_vec()),
                     IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
                         value: Some(if is_success {
                             TransactionStatus::CommittedSuccess
@@ -806,8 +779,8 @@ where
                         // TODO: maybe make it immutable, but how does this affect partition deletion?
                         mutability: SubstateMutability::Mutable,
                     }),
-                );
-                track.close_substate(handle);
+                    &mut |_| -> Result<(), ()> { Ok(()) },
+                ).unwrap();
             } else {
                 panic!("No partition for an expiry epoch")
             }
@@ -830,11 +803,13 @@ where
                 PartitionNumber(discarded_partition),
             );
         }
-        track.write_substate(
-            handle,
+        track.set_substate(
+            TRANSACTION_TRACKER.into_node_id(),
+            MAIN_BASE_PARTITION,
+            TransactionTrackerField::TransactionTracker.into(),
             IndexedScryptoValue::from_typed(&FieldSubstate::new_field(transaction_tracker.value.0)),
-        );
-        track.close_substate(handle);
+            &mut |_| -> Result<(), ()> { Ok(()) },
+        ).unwrap();
     }
 
     #[cfg(not(feature = "alloc"))]

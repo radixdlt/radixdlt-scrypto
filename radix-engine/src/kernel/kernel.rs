@@ -19,7 +19,7 @@ use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::{
-    CallbackError, NodeSubstates, SubstateStore, TrackOpenSubstateError,
+    CallbackError, NodeSubstates, SubstateStore, TrackGetSubstateError,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -32,6 +32,7 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::mem;
 use transaction::prelude::PreAllocatedAddress;
+use crate::kernel::substate_locks::SubstateLocks;
 
 /// Organizes the radix engine stack to make a function entrypoint available for execution
 pub struct KernelBoot<'g, V: SystemCallbackObject, S: SubstateStore> {
@@ -45,6 +46,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
         Kernel {
             heap: Heap::new(),
             store: self.store,
+            substate_locks: SubstateLocks::new(),
             id_allocator: self.id_allocator,
             current_frame: CallFrame::new_root(Actor::Root),
             prev_frame_stack: vec![],
@@ -69,6 +71,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             heap: Heap::new(),
             store: self.store,
             id_allocator: self.id_allocator,
+            substate_locks: SubstateLocks::new(),
             current_frame: CallFrame::new_root(Actor::Root),
             prev_frame_stack: vec![],
             callback: self.callback,
@@ -98,19 +101,16 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             // We have a reference to a node which can't be invoked - so it must be a direct access,
             // let's validate it as such
 
-            let handle = kernel
+            let substate_ref = kernel
                 .store
-                .open_substate(
+                .get_substate(
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
-                    LockFlags::read_only(),
                     |_| -> Result<(), ()> { Ok(()) },
                 )
                 .map_err(|_| KernelError::InvalidReference(*node_id))?;
-            let substate_ref = kernel.store.read_substate(handle);
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
-            kernel.store.close_substate(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
                     blueprint_info: BlueprintInfo { blueprint_id, .. },
@@ -192,10 +192,13 @@ pub struct Kernel<
     // execution pause and/or for better debuggability
     prev_frame_stack: Vec<CallFrame<M::LockData>>,
 
+
     /// Heap
     heap: Heap,
     /// Store
     store: &'g mut S,
+
+    substate_locks: SubstateLocks,
 
     /// ID allocator
     id_allocator: &'g mut IdAllocator,
@@ -262,6 +265,7 @@ where
                     &mut |store_access| self.callback.on_store_access(&store_access),
                     &mut self.heap,
                     self.store,
+                    &mut self.substate_locks,
                 )
                 .map_err(|e| {
                     e.to_runtime_error(|e| {
@@ -281,6 +285,7 @@ where
                     &mut |store_access| self.callback.on_store_access(&store_access),
                     &mut self.heap,
                     self.store,
+                    &mut self.substate_locks,
                 )
                 .map_err(|e| {
                     e.to_runtime_error(|e| {
@@ -619,6 +624,7 @@ where
         let maybe_lock_handle = self.current_frame.open_substate(
             &mut self.heap,
             self.store,
+            &mut self.substate_locks,
             node_id,
             partition_num,
             substate_key,
@@ -632,7 +638,7 @@ where
             Ok((lock_handle, value_size)) => (*lock_handle, *value_size),
             Err(CallbackError::CallbackError(e)) => return Err(e.clone()),
             Err(CallbackError::Error(OpenSubstateError::TrackError(track_err))) => {
-                if matches!(track_err.as_ref(), TrackOpenSubstateError::NotFound(..)) {
+                if matches!(track_err.as_ref(), TrackGetSubstateError::NotFound(..)) {
                     let retry =
                         M::on_substate_lock_fault(*node_id, partition_num, &substate_key, self)?;
 
@@ -641,6 +647,7 @@ where
                             .open_substate(
                                 &mut self.heap,
                                 self.store,
+                                &mut self.substate_locks,
                                 &node_id,
                                 partition_num,
                                 &substate_key,
@@ -705,26 +712,6 @@ where
             )))
     }
 
-    #[trace_resources]
-    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        self.current_frame
-            .close_substate(
-                &mut self.heap,
-                self.store,
-                lock_handle,
-                &mut |store_access| self.callback.on_store_access(&store_access),
-            )
-            .map_err(|e| match e {
-                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::CloseSubstateError(e),
-                )),
-                CallbackError::CallbackError(e) => e,
-            })?;
-
-        M::on_close_substate(lock_handle, self)?;
-
-        Ok(())
-    }
 
     #[trace_resources]
     fn kernel_read_substate(
@@ -733,7 +720,7 @@ where
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         let value = self
             .current_frame
-            .read_substate(&mut self.heap, self.store, lock_handle)
+            .read_substate(&mut self.heap, self.store, &mut self.substate_locks, lock_handle)
             .map_err(CallFrameError::ReadSubstateError)
             .map_err(KernelError::CallFrameError)?;
 
@@ -742,7 +729,7 @@ where
         // Double read due to borrow chacker of self.
         Ok(self
             .current_frame
-            .read_substate(&mut self.heap, self.store, lock_handle)
+            .read_substate(&mut self.heap, self.store, &mut self.substate_locks, lock_handle)
             .unwrap())
     }
 
@@ -755,10 +742,38 @@ where
         M::on_write_substate(lock_handle, value.len(), self)?;
 
         self.current_frame
-            .write_substate(&mut self.heap, self.store, lock_handle, value)
+            .write_substate(
+                &mut self.heap,
+                self.store,
+                &mut self.substate_locks,
+                lock_handle,
+                value,
+            )
             .map_err(CallFrameError::WriteSubstateError)
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
+
+        Ok(())
+    }
+
+    #[trace_resources]
+    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+        self.current_frame
+            .close_substate(
+                &mut self.heap,
+                self.store,
+                &mut self.substate_locks,
+                lock_handle,
+                &mut |store_access| self.callback.on_store_access(&store_access),
+            )
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::CloseSubstateError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
+
+        M::on_close_substate(lock_handle, self)?;
 
         Ok(())
     }
