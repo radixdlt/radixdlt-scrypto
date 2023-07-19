@@ -61,7 +61,7 @@ pub trait SubstateStore {
         on_store_access: &mut F,
     ) -> Result<(), E>;
 
-    fn get_substate_info(
+    fn get_tracked_substate_info(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,

@@ -430,7 +430,7 @@ impl<L: Clone> CallFrame<L> {
 
             // Check substate state
             if flags.contains(LockFlags::UNMODIFIED_BASE) {
-                match store.get_substate_info(node_id, partition_num, substate_key) {
+                match store.get_tracked_substate_info(node_id, partition_num, substate_key) {
                     TrackedSubstateInfo::New => {
                         return Err(CallbackError::Error(
                             OpenSubstateError::LockUnmodifiedBaseOnNewSubstate(

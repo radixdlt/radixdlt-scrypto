@@ -1,4 +1,3 @@
-use crate::kernel::substate_locks::SubstateLocks;
 use crate::track::interface::{CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo, TrackGetSubstateError};
 use crate::track::utils::OverlayingResultIterator;
 use crate::types::*;
@@ -333,8 +332,6 @@ pub struct Track<'s, S: SubstateDatabase, M: DatabaseKeyMapper> {
     /// TODO: if time allows, consider merging into tracked nodes.
     deleted_partitions: IndexSet<(NodeId, PartitionNumber)>,
 
-    substate_locks: SubstateLocks,
-
     phantom_data: PhantomData<M>,
 }
 
@@ -345,7 +342,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
             force_write_tracked_nodes: index_map_new(),
             tracked_nodes: index_map_new(),
             deleted_partitions: index_set_new(),
-            substate_locks: SubstateLocks::new(),
             phantom_data: PhantomData::default(),
         }
     }
@@ -425,8 +421,6 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
     ///
     /// Note that dependencies will never be reverted.
     pub fn revert_non_force_write_changes(&mut self) {
-        self.substate_locks.reset();
-
         self.tracked_nodes
             .retain(|_, tracked_node| !tracked_node.is_new);
         for (_, tracked_node) in &mut self.tracked_nodes {
@@ -905,7 +899,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         Ok(items)
     }
 
-    fn get_substate_info(
+    fn get_tracked_substate_info(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
