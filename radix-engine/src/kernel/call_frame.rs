@@ -13,7 +13,7 @@ use radix_engine_interface::blueprints::resource::{
 };
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use crate::kernel::kernel_io::SubstateIO;
+use crate::kernel::substate_io::SubstateIO;
 
 use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
@@ -397,7 +397,7 @@ impl<L: Clone> CallFrame<L> {
 
     pub fn open_substate<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
-        kernel_io: &mut SubstateIO<S>,
+        substate_io: &mut SubstateIO<S>,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
@@ -413,82 +413,8 @@ impl<L: Clone> CallFrame<L> {
             )));
         }
 
-        let global_lock_handle =
-            match kernel_io.substate_locks.lock(node_id, partition_num, substate_key, flags) {
-                Some(handle) => handle,
-                None => {
-                    return Err(CallbackError::Error(OpenSubstateError::SubstateLocked(
-                        *node_id,
-                        partition_num,
-                        substate_key.clone(),
-                    )));
-                }
-            };
-
-        // Lock and read the substate
-        let (substate_value, substate_location) = if kernel_io.heap.contains_node(node_id) {
-            if flags.contains(LockFlags::UNMODIFIED_BASE) {
-                kernel_io.substate_locks.unlock(global_lock_handle);
-                return Err(CallbackError::Error(
-                    OpenSubstateError::LockUnmodifiedBaseOnHeapNode,
-                ));
-            }
-
-            let value = kernel_io.heap
-                .get_substate_or_default(node_id, partition_num, substate_key, || {
-                    default.map(|f| f())
-                })
-                .map_err(|e| {
-                    kernel_io.substate_locks.unlock(global_lock_handle);
-                    CallbackError::Error(OpenSubstateError::HeapError(e))
-                })?;
-
-            (value, SubstateLocation::Heap)
-        } else {
-            // Check substate state
-            if flags.contains(LockFlags::UNMODIFIED_BASE) {
-                match kernel_io.store.get_tracked_substate_info(node_id, partition_num, substate_key) {
-                    TrackedSubstateInfo::New => {
-                        kernel_io.substate_locks.unlock(global_lock_handle);
-                        return Err(CallbackError::Error(
-                            OpenSubstateError::LockUnmodifiedBaseOnNewSubstate(
-                                node_id.clone(),
-                                partition_num,
-                                substate_key.clone(),
-                            ),
-                        ));
-                    }
-                    TrackedSubstateInfo::Updated => {
-                        kernel_io.substate_locks.unlock(global_lock_handle);
-                        return Err(CallbackError::Error(
-                            OpenSubstateError::LockUnmodifiedBaseOnOnUpdatedSubstate(
-                                node_id.clone(),
-                                partition_num,
-                                substate_key.clone(),
-                            ),
-                        ));
-                    }
-                    TrackedSubstateInfo::Unmodified => {
-                        // Okay
-                    }
-                }
-            }
-
-            let value = kernel_io.store
-                .get_substate_or_default(
-                    node_id,
-                    partition_num,
-                    substate_key,
-                    on_store_access,
-                    || default.map(|f| f()),
-                )
-                .map_err(|x| {
-                    kernel_io.substate_locks.unlock(global_lock_handle);
-                    x.map(|e| OpenSubstateError::TrackError(Box::new(e)))
-                })?;
-
-            (value, SubstateLocation::Store)
-        };
+        let (global_lock_handle, substate_value, substate_location)
+            = substate_io.open_substate(node_id, partition_num, substate_key, flags, on_store_access, default)?;
 
         // Analyze owns and references in the substate
         let mut non_global_references = index_set_new(); // du-duplicated
@@ -544,6 +470,83 @@ impl<L: Clone> CallFrame<L> {
         Ok((lock_handle, substate_value.len()))
     }
 
+
+    pub fn read_substate<'f, S: SubstateStore>(
+        &mut self,
+        kernel_io: &'f mut SubstateIO<S>,
+        lock_handle: LockHandle,
+    ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
+        let OpenedSubstate {
+            global_lock_handle,
+            substate_location,
+            ..
+        } = self
+            .locks
+            .get(&lock_handle)
+            .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
+
+        let (node_id, partition_num, substate_key, _) = kernel_io.substate_locks.get(*global_lock_handle);
+
+        let substate = match substate_location {
+            SubstateLocation::Heap => kernel_io.heap
+                .get_substate(node_id, *partition_num, substate_key)
+                .unwrap(),
+            SubstateLocation::Store => kernel_io.store
+                .get_substate::<(), _>(node_id, *partition_num, substate_key, &mut |store_access| {
+                    panic!("Getting substate on handled substate should not incur a store access.")
+                })
+                .unwrap(),
+        };
+
+        Ok(substate)
+    }
+
+    pub fn write_substate<'f, S: SubstateStore>(
+        &mut self,
+        kernel_io: &'f mut SubstateIO<S>,
+        lock_handle: LockHandle,
+        substate: IndexedScryptoValue,
+    ) -> Result<(), WriteSubstateError> {
+        let OpenedSubstate {
+            global_lock_handle,
+            substate_location,
+            ..
+        } = self
+            .locks
+            .get(&lock_handle)
+            .ok_or(WriteSubstateError::LockNotFound(lock_handle))?;
+
+        let (node_id, partition_num, substate_key, flags) = kernel_io.substate_locks.get(*global_lock_handle);
+        if !flags.contains(LockFlags::MUTABLE) {
+            return Err(WriteSubstateError::NoWritePermission);
+        }
+
+        match substate_location {
+            SubstateLocation::Heap => {
+                kernel_io.heap.set_substate(
+                    node_id.clone(),
+                    partition_num.clone(),
+                    substate_key.clone(),
+                    substate,
+                );
+            }
+            SubstateLocation::Store => {
+                kernel_io.store
+                    .set_substate(
+                        node_id.clone(),
+                        partition_num.clone(),
+                        substate_key.clone(),
+                        substate,
+                        &mut |_| Err(()),
+                    )
+                    .expect(
+                        "Setting substate on handled substate should not incur a store access.",
+                    );
+            }
+        }
+
+        Ok(())
+    }
     pub fn close_substate<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         kernel_io: &mut SubstateIO<S>,
@@ -696,82 +699,7 @@ impl<L: Clone> CallFrame<L> {
             .map(|substate_lock| substate_lock.data.clone())
     }
 
-    pub fn read_substate<'f, S: SubstateStore>(
-        &mut self,
-        kernel_io: &'f mut SubstateIO<S>,
-        lock_handle: LockHandle,
-    ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
-        let OpenedSubstate {
-            global_lock_handle,
-            substate_location,
-            ..
-        } = self
-            .locks
-            .get(&lock_handle)
-            .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
 
-        let (node_id, partition_num, substate_key, _) = kernel_io.substate_locks.get(*global_lock_handle);
-
-        let substate = match substate_location {
-            SubstateLocation::Heap => kernel_io.heap
-                .get_substate(node_id, *partition_num, substate_key)
-                .unwrap(),
-            SubstateLocation::Store => kernel_io.store
-                .get_substate::<(), _>(node_id, *partition_num, substate_key, &mut |store_access| {
-                    panic!("Getting substate on handled substate should not incur a store access.")
-                })
-                .unwrap(),
-        };
-
-        Ok(substate)
-    }
-
-    pub fn write_substate<'f, S: SubstateStore>(
-        &mut self,
-        kernel_io: &'f mut SubstateIO<S>,
-        lock_handle: LockHandle,
-        substate: IndexedScryptoValue,
-    ) -> Result<(), WriteSubstateError> {
-        let OpenedSubstate {
-            global_lock_handle,
-            substate_location,
-            ..
-        } = self
-            .locks
-            .get(&lock_handle)
-            .ok_or(WriteSubstateError::LockNotFound(lock_handle))?;
-
-        let (node_id, partition_num, substate_key, flags) = kernel_io.substate_locks.get(*global_lock_handle);
-        if !flags.contains(LockFlags::MUTABLE) {
-            return Err(WriteSubstateError::NoWritePermission);
-        }
-
-        match substate_location {
-            SubstateLocation::Heap => {
-                kernel_io.heap.set_substate(
-                    node_id.clone(),
-                    partition_num.clone(),
-                    substate_key.clone(),
-                    substate,
-                );
-            }
-            SubstateLocation::Store => {
-                kernel_io.store
-                    .set_substate(
-                        node_id.clone(),
-                        partition_num.clone(),
-                        substate_key.clone(),
-                        substate,
-                        &mut |_| Err(()),
-                    )
-                    .expect(
-                        "Setting substate on handled substate should not incur a store access.",
-                    );
-            }
-        }
-
-        Ok(())
-    }
 
     pub fn create_node<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,

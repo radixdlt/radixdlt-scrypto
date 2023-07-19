@@ -2,7 +2,6 @@ use radix_engine::blueprints::resource::WorktopError;
 use radix_engine::errors::{ApplicationError, CallFrameError, KernelError};
 use radix_engine::errors::{RejectionError, RuntimeError};
 use radix_engine::kernel::call_frame::OpenSubstateError;
-use radix_engine::kernel::heap::HeapOpenSubstateError;
 use radix_engine::transaction::{FeeLocks, TransactionReceipt};
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
