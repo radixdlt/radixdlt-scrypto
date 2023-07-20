@@ -1,6 +1,9 @@
-use crate::kernel::actor::MethodType;
+use crate::kernel::actor::ReceiverType;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::track::interface::{CallbackError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess, SubstateStore, TrackOpenSubstateError};
+use crate::track::interface::{
+    CallbackError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess,
+    SubstateStore, TrackOpenSubstateError,
+};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
@@ -308,14 +311,14 @@ impl<L: Clone> CallFrame<L> {
         match &frame.actor {
             Actor::Root => {}
             Actor::Method(MethodActor {
-                method_type,
+                receiver_type: method_type,
                 object_info,
                 ..
             }) => {
-                if let MethodType::OnStoredObject(global_address) = method_type {
+                if let ReceiverType::OnStoredObject(global_address) = method_type {
                     additional_global_refs.push(global_address.clone());
                 }
-                if let OuterObjectInfo::Inner { outer_object } =
+                if let OuterObjectInfo::Some { outer_object } =
                     object_info.blueprint_info.outer_obj_info
                 {
                     additional_global_refs.push(outer_object.clone());
@@ -844,10 +847,7 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Check visibility
-        if !self
-            .get_node_visibility(dest_node_id)
-            .is_visible()
-        {
+        if !self.get_node_visibility(dest_node_id).is_visible() {
             return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
                 dest_node_id.clone(),
             )));
@@ -968,7 +968,13 @@ impl<L: Clone> CallFrame<L> {
         Ok(removed)
     }
 
-    pub fn scan_keys<'f, K: SubstateKeyContent, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn scan_keys<
+        'f,
+        K: SubstateKeyContent,
+        S: SubstateStore,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -995,7 +1001,13 @@ impl<L: Clone> CallFrame<L> {
         Ok(keys)
     }
 
-    pub fn drain_substates<'f, K: SubstateKeyContent, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn drain_substates<
+        'f,
+        K: SubstateKeyContent,
+        S: SubstateStore,
+        E,
+        F: FnMut(StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -1003,7 +1015,10 @@ impl<L: Clone> CallFrame<L> {
         on_store_access: F,
         heap: &'f mut Heap,
         store: &'f mut S,
-    ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, CallbackError<CallFrameDrainSubstatesError, E>> {
+    ) -> Result<
+        Vec<(SubstateKey, IndexedScryptoValue)>,
+        CallbackError<CallFrameDrainSubstatesError, E>,
+    > {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(
@@ -1025,9 +1040,9 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    return Err(CallbackError::Error(CallFrameDrainSubstatesError::OwnedNodeNotSupported(
-                        reference.clone(),
-                    )));
+                    return Err(CallbackError::Error(
+                        CallFrameDrainSubstatesError::OwnedNodeNotSupported(reference.clone()),
+                    ));
                 }
             }
         }

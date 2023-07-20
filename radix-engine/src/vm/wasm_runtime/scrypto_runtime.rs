@@ -85,7 +85,7 @@ where
 
         let return_data = self
             .api
-            .method_actor_call_module(module_id, ident.as_str(), args)?;
+            .actor_call_module(module_id, ident.as_str(), args)?;
 
         self.allocate_buffer(return_data)
     }
@@ -287,9 +287,7 @@ where
         flags: u32,
     ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
         let flags = LockFlags::from_bits(flags).ok_or(WasmRuntimeError::InvalidLockFlags)?;
-        let handle = self
-            .api
-            .method_actor_open_field(object_handle, field, flags)?;
+        let handle = self.api.actor_open_field(object_handle, field, flags)?;
 
         Ok(handle)
     }
@@ -323,14 +321,14 @@ where
     }
 
     fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let node_id = self.api.method_actor_get_node_id()?;
+        let node_id = self.api.actor_get_node_id()?;
 
         let buffer = scrypto_encode(&node_id).expect("Failed to encode node id");
         self.allocate_buffer(buffer)
     }
 
     fn get_global_address(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>> {
-        let address = self.api.method_actor_get_global_address()?;
+        let address = self.api.actor_get_global_address()?;
 
         let buffer = scrypto_encode(&address).expect("Failed to encode address");
         self.allocate_buffer(buffer)

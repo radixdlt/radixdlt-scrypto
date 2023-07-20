@@ -96,9 +96,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_drain_substates<Y>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
+    fn on_drain_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 

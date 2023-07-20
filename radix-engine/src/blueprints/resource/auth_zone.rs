@@ -25,7 +25,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.method_actor_open_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -45,7 +45,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.method_actor_open_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -68,7 +68,7 @@ impl AuthZoneBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.method_actor_open_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::read_only(),
@@ -96,7 +96,7 @@ impl AuthZoneBlueprint {
 
                             blueprint_info: BlueprintInfo {
                                 blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, FUNGIBLE_PROOF_BLUEPRINT),
-                                outer_obj_info: OuterObjectInfo::Inner {
+                                outer_obj_info: OuterObjectInfo::Some {
                                     outer_object: resource_address.into(),
                                 },
                                 features: btreeset!(),
@@ -120,7 +120,7 @@ impl AuthZoneBlueprint {
 
                         blueprint_info: BlueprintInfo {
                             blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                            outer_obj_info: OuterObjectInfo::Inner {
+                            outer_obj_info: OuterObjectInfo::Some {
                                 outer_object: resource_address.into(),
                             },
                             features: btreeset!(),
@@ -142,7 +142,7 @@ impl AuthZoneBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.method_actor_open_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -168,7 +168,7 @@ impl AuthZoneBlueprint {
 
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, NON_FUNGIBLE_PROOF_BLUEPRINT),
-                        outer_obj_info: OuterObjectInfo::Inner {
+                        outer_obj_info: OuterObjectInfo::Some {
                             outer_object: resource_address.into(),
                         },
                         features: btreeset!(),
@@ -188,7 +188,7 @@ impl AuthZoneBlueprint {
     where
         Y: KernelNodeApi + KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.method_actor_open_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -218,7 +218,7 @@ impl AuthZoneBlueprint {
 
                     blueprint_info: BlueprintInfo {
                         blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, blueprint_name),
-                        outer_obj_info: OuterObjectInfo::Inner {
+                        outer_obj_info: OuterObjectInfo::Some {
                             outer_object: resource_address.into(),
                         },
                         features: btreeset!(),
@@ -235,7 +235,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.method_actor_open_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -257,7 +257,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.method_actor_open_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,
@@ -274,7 +274,7 @@ impl AuthZoneBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let auth_zone_handle = api.method_actor_open_field(
+        let auth_zone_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             AuthZoneField::AuthZone.into(),
             LockFlags::MUTABLE,

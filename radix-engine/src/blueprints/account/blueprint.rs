@@ -552,8 +552,7 @@ impl AccountBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         let substate_key = AccountField::Account.into();
-        let handle =
-            api.method_actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
+        let handle = api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::MUTABLE)?;
         let mut account = api.field_read_typed::<AccountSubstate>(handle)?;
 
         account.default_deposit_rule = default_deposit_rule;
@@ -609,7 +608,7 @@ impl AccountBlueprint {
     {
         let substate_key = AccountField::Account.into();
         let handle =
-            api.method_actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
+            api.actor_open_field(OBJECT_HANDLE_SELF, substate_key, LockFlags::read_only())?;
         let account = api.field_read_typed::<AccountSubstate>(handle)?;
         let default_deposit_rule = account.default_deposit_rule;
         api.field_close(handle)?;
