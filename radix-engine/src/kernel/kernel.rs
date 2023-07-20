@@ -580,7 +580,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type(), log=partition_num)]
+    #[trace_resources(log=node_id.entity_type(), log=partition_num, log={format!("{:?}", substate_key)})]
     fn kernel_open_substate_with_default(
         &mut self,
         node_id: &NodeId,
@@ -683,7 +683,7 @@ where
         Ok(())
     }
 
-    #[trace_resources]
+    #[trace_resources(log_after={ret.clone().unwrap_or(&IndexedScryptoValue::from_vec(vec![]).unwrap()).len()})]
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
@@ -705,7 +705,7 @@ where
             .0)
     }
 
-    #[trace_resources]
+    #[trace_resources(log=value.len())]
     fn kernel_write_substate(
         &mut self,
         lock_handle: LockHandle,
