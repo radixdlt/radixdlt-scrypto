@@ -9,6 +9,7 @@ use native_sdk::resource::NativeBucket;
 use native_sdk::resource::NativeFungibleVault;
 use native_sdk::resource::NativeNonFungibleVault;
 use native_sdk::resource::NativeVault;
+use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::node_modules::metadata::*;
 use radix_engine_interface::api::object_api::ObjectModuleId;
@@ -43,6 +44,9 @@ pub enum AccountError {
         resource_address: ResourceAddress,
     },
     NotAllBucketsCouldBeDeposited,
+    NotAnAuthorizedDepositor {
+        depositor: ResourceOrNonFungible,
+    },
 }
 
 impl From<AccountError> for RuntimeError {
@@ -69,8 +73,8 @@ pub type AccountVaultIndexEntry = Option<Own>;
 pub const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
 pub type AccountResourceDepositRuleEntry = Option<ResourceDepositRule>;
 
-pub const ACCOUNT_ALLOWED_DEPOSITORS_INDEX: CollectionIndex = 2u8;
-pub type AccountAllowedDepositorsEntry = Option<()>;
+pub const ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX: CollectionIndex = 2u8;
+pub type AccountAuthorizedDepositorsEntry = Option<()>;
 
 pub struct AccountBlueprint;
 
@@ -401,6 +405,124 @@ impl AccountBlueprint {
         }
     }
 
+    pub fn try_authorized_deposit_or_refund<Y>(
+        bucket: Bucket,
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<Option<Bucket>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // Check whether the passed badge is in the authorized depositors list, if not, return all
+        // of the passed resources back to the caller.
+        if Self::validate_badge_is_authorized_depositor(&badge, api)?.is_err() {
+            return Ok(Some(bucket));
+        } else {
+            // Validate that the badge is actually present in the auth zone.
+            Self::validate_badge_is_present(badge, api)?;
+
+            // Perform the deposit.
+            Self::deposit(bucket, api)?;
+            Ok(None)
+        }
+    }
+
+    pub fn try_authorized_deposit_batch_or_refund<Y>(
+        buckets: Vec<Bucket>,
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<Vec<Bucket>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // Check whether the passed badge is in the authorized depositors list, if not, return all
+        // of the passed resources back to the caller.
+        if Self::validate_badge_is_authorized_depositor(&badge, api)?.is_err() {
+            return Ok(buckets);
+        } else {
+            // Validate that the badge is actually present in the auth zone.
+            Self::validate_badge_is_present(badge, api)?;
+
+            // Perform the deposit.
+            Self::deposit_batch(buckets, api)?;
+            Ok(vec![])
+        }
+    }
+
+    pub fn try_authorized_deposit_or_abort<Y>(
+        bucket: Bucket,
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::validate_badge_is_authorized_depositor(&badge, api)??;
+        Self::validate_badge_is_present(badge, api)?;
+        Self::deposit(bucket, api)?;
+        Ok(())
+    }
+
+    pub fn try_authorized_deposit_batch_or_abort<Y>(
+        buckets: Vec<Bucket>,
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        Self::validate_badge_is_authorized_depositor(&badge, api)??;
+        Self::validate_badge_is_present(badge, api)?;
+        Self::deposit_batch(buckets, api)?;
+        Ok(())
+    }
+
+    // Returns a result of a result. The outer result's error type is [`RuntimeError`] and it's for
+    // cases when something about the process fails, e.g., reading the KVStore fails for some reason
+    // or other cases. The inner result is for whether the validation succeeded or not.
+    fn validate_badge_is_authorized_depositor<Y>(
+        badge: &ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<Result<(), AccountError>, RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // Read the account's authorized depositors to ensure that this badge is on the list of
+        // permitted depositors
+        let encoded_key =
+            scrypto_encode(badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX,
+            &encoded_key,
+            LockFlags::read_only(),
+        )?;
+        let entry: AccountAuthorizedDepositorsEntry =
+            api.key_value_entry_get_typed(kv_store_entry_lock_handle)?;
+        if entry.is_none() {
+            Ok(Err(AccountError::NotAnAuthorizedDepositor {
+                depositor: badge.clone(),
+            }))
+        } else {
+            Ok(Ok(()))
+        }
+    }
+
+    fn validate_badge_is_present<Y>(
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        // At this point we know that the badge is in the set of allowed depositors, so, we create
+        // an access rule and assert against it.
+        let access_rule =
+            AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(badge)));
+        Runtime::assert_access_rule(access_rule, api)?;
+        Ok(())
+    }
+
     pub fn withdraw<Y>(
         resource_address: ResourceAddress,
         amount: Decimal,
@@ -614,7 +736,7 @@ impl AccountBlueprint {
             scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_ALLOWED_DEPOSITORS_INDEX,
+            ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX,
             &encoded_key,
             LockFlags::MUTABLE,
         )?;
@@ -634,7 +756,7 @@ impl AccountBlueprint {
             scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
         api.actor_remove_key_value_entry(
             OBJECT_HANDLE_SELF,
-            ACCOUNT_ALLOWED_DEPOSITORS_INDEX,
+            ACCOUNT_AUTHORIZED_DEPOSITORS_INDEX,
             &encoded_key,
         )?;
         Ok(())

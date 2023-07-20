@@ -1,7 +1,7 @@
 use radix_engine::blueprints::resource::NonFungibleResourceManagerError;
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::transaction::{BalanceChange, TransactionReceipt};
+use radix_engine::transaction::BalanceChange;
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::metadata::MetadataValue;
 use radix_engine_interface::blueprints::account::*;
@@ -311,97 +311,6 @@ fn account_created_with_create_advanced_has_an_empty_owner_badge() {
 
     // Assert
     assert!(is_metadata_empty(&metadata))
-}
-
-#[test]
-fn account_add_authorized_depositor_without_owner_auth_fails() {
-    test_depositors_operation_method_auth(
-        DepositorsOperation::Add {
-            badge: ResourceOrNonFungible::Resource(XRD),
-        },
-        false,
-        |receipt| receipt.expect_auth_failure(),
-    )
-}
-
-#[test]
-fn account_add_authorized_depositor_with_owner_auth_succeeds() {
-    test_depositors_operation_method_auth(
-        DepositorsOperation::Add {
-            badge: ResourceOrNonFungible::Resource(XRD),
-        },
-        true,
-        |receipt| {
-            receipt.expect_commit_success();
-        },
-    )
-}
-
-#[test]
-fn account_remove_authorized_depositor_without_owner_auth_fails() {
-    test_depositors_operation_method_auth(
-        DepositorsOperation::Remove {
-            badge: ResourceOrNonFungible::Resource(XRD),
-        },
-        false,
-        |receipt| receipt.expect_auth_failure(),
-    )
-}
-
-#[test]
-fn account_remove_authorized_depositor_with_owner_auth_succeeds() {
-    test_depositors_operation_method_auth(
-        DepositorsOperation::Remove {
-            badge: ResourceOrNonFungible::Resource(XRD),
-        },
-        true,
-        |receipt| {
-            receipt.expect_commit_success();
-        },
-    )
-}
-
-fn test_depositors_operation_method_auth(
-    operation: DepositorsOperation,
-    sign: bool,
-    assertion: impl FnOnce(&TransactionReceipt),
-) {
-    // Arrange
-    let mut test_runner = TestRunnerBuilder::new().build();
-    let (pk, _, account) = test_runner.new_account(true);
-
-    let initial_proofs = if sign {
-        vec![NonFungibleGlobalId::from_public_key(&pk)]
-    } else {
-        vec![]
-    };
-
-    // Act
-    let manifest = {
-        let mut builder = ManifestBuilder::new();
-        builder = match operation {
-            DepositorsOperation::Add { badge } => builder.call_method(
-                account,
-                ACCOUNT_ADD_AUTHORIZED_DEPOSITOR,
-                AccountAddAuthorizedDepositorInput { badge },
-            ),
-            DepositorsOperation::Remove { badge } => builder.call_method(
-                account,
-                ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR,
-                AccountRemoveAuthorizedDepositorInput { badge },
-            ),
-        };
-        builder.build()
-    };
-    let receipt = test_runner.execute_manifest_ignoring_fee(manifest, initial_proofs);
-
-    // Assert
-    assertion(&receipt)
-}
-
-enum DepositorsOperation {
-    Add { badge: ResourceOrNonFungible },
-    Remove { badge: ResourceOrNonFungible },
 }
 
 fn is_metadata_empty(metadata_value: &Option<MetadataValue>) -> bool {
