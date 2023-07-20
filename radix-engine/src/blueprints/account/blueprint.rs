@@ -69,6 +69,9 @@ pub type AccountVaultIndexEntry = Option<Own>;
 pub const ACCOUNT_RESOURCE_DEPOSIT_CONFIGURATION_INDEX: CollectionIndex = 1u8;
 pub type AccountResourceDepositRuleEntry = Option<ResourceDepositRule>;
 
+pub const ACCOUNT_ALLOWED_DEPOSITORS_INDEX: CollectionIndex = 2u8;
+pub type AccountAllowedDepositorsEntry = Option<()>;
+
 pub struct AccountBlueprint;
 
 impl AccountBlueprint {
@@ -597,6 +600,43 @@ impl AccountBlueprint {
                 )?;
             }
         };
+        Ok(())
+    }
+
+    pub fn add_authorized_depositor<Y>(
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let encoded_key =
+            scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
+        let kv_store_entry_lock_handle = api.actor_open_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_ALLOWED_DEPOSITORS_INDEX,
+            &encoded_key,
+            LockFlags::MUTABLE,
+        )?;
+        api.key_value_entry_set_typed(kv_store_entry_lock_handle, &())?;
+        api.key_value_entry_close(kv_store_entry_lock_handle)?;
+        Ok(())
+    }
+
+    pub fn remove_authorized_depositor<Y>(
+        badge: ResourceOrNonFungible,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        let encoded_key =
+            scrypto_encode(&badge).expect("Failed to SBOR encode a `ResourceOrNonFungible`.");
+        api.actor_remove_key_value_entry(
+            OBJECT_HANDLE_SELF,
+            ACCOUNT_ALLOWED_DEPOSITORS_INDEX,
+            &encoded_key,
+        )?;
         Ok(())
     }
 

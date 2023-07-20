@@ -143,6 +143,8 @@ extern_blueprint_internal! {
         fn try_deposit_or_refund(&mut self, bucket: Bucket) -> Option<Bucket>;
         fn withdraw(&mut self, resource_address: ResourceAddress, amount: Decimal) -> Bucket;
         fn withdraw_non_fungibles(&mut self, resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>) -> Bucket;
+        fn add_authorized_depositor(&mut self, badge: ResourceOrNonFungible);
+        fn remove_authorized_depositor(&mut self, badge: ResourceOrNonFungible);
     }
 }
 

@@ -50,9 +50,9 @@ pub struct AccountCreateAdvancedInput {
 
 pub type AccountCreateAdvancedOutput = ComponentAddress;
 
-//=============
+//================
 // Account Create
-//=============
+//================
 
 pub const ACCOUNT_CREATE_IDENT: &str = "create";
 
@@ -291,9 +291,9 @@ pub struct AccountTryDepositBatchOrAbortInput {
 
 pub type AccountTryDepositBatchOrAbortOutput = ();
 
-//============================
+//==============
 // Account Burn
-//============================
+//==============
 
 pub const ACCOUNT_BURN_IDENT: &str = "burn";
 
@@ -305,9 +305,9 @@ pub struct AccountBurnInput {
 
 pub type AccountBurnOutput = ();
 
-//=========================
+//=====================
 // Account Burn By Ids
-//=========================
+//=====================
 
 pub const ACCOUNT_BURN_NON_FUNGIBLES_IDENT: &str = "burn_non_fungibles";
 
@@ -318,3 +318,29 @@ pub struct AccountBurnNonFungiblesInput {
 }
 
 pub type AccountBurnNonFungiblesOutput = ();
+
+//==================================
+// Account Add Authorized Depositor
+//==================================
+
+pub const ACCOUNT_ADD_AUTHORIZED_DEPOSITOR: &str = "add_authorized_depositor";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountAddAuthorizedDepositorInput {
+    pub badge: ResourceOrNonFungible,
+}
+
+pub type AccountAddAuthorizedDepositorOutput = ();
+
+//=====================================
+// Account Remove Authorized Depositor
+//=====================================
+
+pub const ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR: &str = "remove_authorized_depositor";
+
+#[derive(Debug, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
+pub struct AccountRemoveAuthorizedDepositorInput {
+    pub badge: ResourceOrNonFungible,
+}
+
+pub type AccountRemoveAuthorizedDepositorOutput = ();
