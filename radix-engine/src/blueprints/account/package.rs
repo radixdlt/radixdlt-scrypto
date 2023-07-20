@@ -52,6 +52,15 @@ impl AccountNativePackage {
                 can_own: false,
             },
         ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ResourceOrNonFungible>(),
+                ),
+                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
+                can_own: false,
+            },
+        ));
 
         let mut functions = BTreeMap::new();
 
