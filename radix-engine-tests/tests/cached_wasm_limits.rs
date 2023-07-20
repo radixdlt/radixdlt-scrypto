@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine::vm::wasm::WASM_ENGINE_CACHE_SIZE;
 use scrypto_unit::*;
 use transaction::prelude::*;
 

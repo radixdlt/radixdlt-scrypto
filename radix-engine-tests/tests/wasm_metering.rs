@@ -1,7 +1,7 @@
 use radix_engine::{
     errors::{RuntimeError, VmError},
     types::*,
-    vm::wasm::{WasmRuntimeError, MAX_MEMORY_SIZE_IN_PAGES},
+    vm::wasm::WasmRuntimeError,
 };
 use scrypto_unit::*;
 use transaction::prelude::*;
