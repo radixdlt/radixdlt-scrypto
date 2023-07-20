@@ -75,7 +75,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<&IndexedScryptoValue, CallbackError<TrackGetSubstateError, E>> {
         self.get_substate_or_default(
             node_id,
@@ -95,7 +95,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: F,
+        on_store_access: &mut F,
         virtualize: V,
     ) -> Result<&IndexedScryptoValue, CallbackError<TrackGetSubstateError, E>>;
 
@@ -131,7 +131,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Option<IndexedScryptoValue>, E>;
 
     /// Returns Substate Keys of maximum count for a given partition.
@@ -147,7 +147,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<SubstateKey>, E>;
 
     /// Removes substates of maximum count for a given partition.
@@ -163,7 +163,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E>;
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
@@ -172,7 +172,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<IndexedScryptoValue>, E>;
 
     /// Note: unstable interface, for intent transaction tracker only

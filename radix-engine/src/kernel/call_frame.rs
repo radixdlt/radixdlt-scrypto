@@ -309,11 +309,11 @@ impl<L: Clone> CallFrame<L> {
         match &frame.actor {
             Actor::Root => {}
             Actor::Method(MethodActor {
-                receiver_type: method_type,
+                receiver_type,
                 object_info,
                 ..
             }) => {
-                if let ReceiverType::OnStoredObject(global_address) = method_type {
+                if let ReceiverType::OnStoredObject(global_address) = receiver_type {
                     additional_global_refs.push(global_address.clone());
                 }
                 if let OuterObjectInfo::Some { outer_object } =
@@ -485,7 +485,7 @@ impl<L: Clone> CallFrame<L> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        on_store_access: F,
+        on_store_access: &mut F,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
     ) -> Result<(OpenSubstateHandle, usize), CallbackError<OpenSubstateError, E>> {
@@ -700,7 +700,7 @@ impl<L: Clone> CallFrame<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: &SubstateKey,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
@@ -726,7 +726,7 @@ impl<L: Clone> CallFrame<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
@@ -753,7 +753,7 @@ impl<L: Clone> CallFrame<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<
         Vec<(SubstateKey, IndexedScryptoValue)>,
         CallbackError<CallFrameDrainSubstatesError, E>,
@@ -796,7 +796,7 @@ impl<L: Clone> CallFrame<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {

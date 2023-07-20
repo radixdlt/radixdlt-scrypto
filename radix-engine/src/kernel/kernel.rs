@@ -111,7 +111,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
-                    |_| -> Result<(), ()> { Ok(()) },
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .map_err(|_| KernelError::InvalidReference(*node_id))?;
             let type_substate: TypeInfoSubstate = substate_ref.as_typed().unwrap();
@@ -218,12 +218,12 @@ where
         let can_be_invoked = match &invocation.actor {
             Actor::Method(MethodActor {
                 node_id,
-                receiver_type: method_type,
+                receiver_type,
                 ..
             }) => self
                 .current_frame
                 .get_node_visibility(&node_id)
-                .can_be_invoked(method_type.eq(&ReceiverType::DirectAccess)),
+                .can_be_invoked(receiver_type.eq(&ReceiverType::DirectAccess)),
             Actor::Function(FunctionActor { blueprint_id, .. })
             | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
                 // FIXME: combine this with reference check of invocation
@@ -628,7 +628,7 @@ where
             partition_num,
             substate_key,
             flags,
-            |store_access| self.callback.on_store_access(&store_access),
+            &mut |store_access| self.callback.on_store_access(&store_access),
             default,
             data,
         );
@@ -649,7 +649,7 @@ where
                                 partition_num,
                                 &substate_key,
                                 flags,
-                                |store_access| self.callback.on_store_access(&store_access),
+                                &mut |store_access| self.callback.on_store_access(&store_access),
                                 None,
                                 M::LockData::default(),
                             )
@@ -812,7 +812,7 @@ where
                 node_id,
                 partition_num,
                 &substate_key,
-                |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_store_access(&store_access),
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -840,7 +840,7 @@ where
                 node_id,
                 partition_num,
                 count,
-                |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_store_access(&store_access),
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -868,7 +868,7 @@ where
                 node_id,
                 partition_num,
                 count,
-                |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_store_access(&store_access),
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -896,7 +896,7 @@ where
                 node_id,
                 partition_num,
                 count,
-                |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_store_access(&store_access),
             )
             .map_err(|e| match e {
                 CallbackError::CallbackError(e) => e,

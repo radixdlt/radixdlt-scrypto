@@ -15,7 +15,7 @@ sbor = { path = "../sbor", default-features = false }
 scrypto-schema = { path = "../scrypto-schema", default-features = false }
 scrypto-derive = { path = "../scrypto-derive", default-features = false }
 utils = { path = "../utils", default-features = false }
-paste = { version = "1.0.7"}
+paste = { version = "1.0.13" }
 serde = { version = "1.0.144", default-features = false, optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies

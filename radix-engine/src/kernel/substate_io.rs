@@ -180,7 +180,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        on_store_access: F,
+        on_store_access: &mut F,
         default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<(u32, &IndexedScryptoValue, SubstateDevice), CallbackError<OpenSubstateError, E>>
     {
@@ -447,7 +447,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: &SubstateKey,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
         if self.substate_locks.is_locked(node_id, partition_num, key) {
             return Err(CallbackError::Error(
@@ -475,7 +475,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
         let keys = if self.heap.contains_node(node_id) {
             self.heap.scan_keys(node_id, partition_num, count)
@@ -493,7 +493,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<
         Vec<(SubstateKey, IndexedScryptoValue)>,
         CallbackError<CallFrameDrainSubstatesError, E>,
@@ -518,7 +518,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {
         let substates = if self.heap.contains_node(node_id) {
             // This should never be triggered because sorted index store is
@@ -626,7 +626,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: F,
+        on_store_access: &mut F,
         default: Option<fn() -> IndexedScryptoValue>,
     ) -> Result<&'a IndexedScryptoValue, CallbackError<OpenSubstateError, E>> {
         let value = match location {
