@@ -5,7 +5,7 @@ use crate::internal_prelude::TransactionManifestV1;
 use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
-use radix_engine_common::native_addresses::PACKAGE_PACKAGE;
+use radix_engine_common::constants::PACKAGE_PACKAGE;
 use radix_engine_common::prelude::CONSENSUS_MANAGER;
 use radix_engine_common::types::NodeId;
 use radix_engine_common::types::PackageAddress;
@@ -1484,8 +1484,8 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::{Parser, ParserError, PARSER_MAX_DEPTH};
     use crate::signing::secp256k1::Secp256k1PrivateKey;
+    use radix_engine_common::constants::CONSENSUS_MANAGER;
     use radix_engine_common::manifest_args;
-    use radix_engine_common::native_addresses::CONSENSUS_MANAGER;
     use radix_engine_common::types::{ComponentAddress, PackageAddress};
     use radix_engine_interface::address::AddressBech32Decoder;
     use radix_engine_interface::api::node_modules::metadata::MetadataValue;
