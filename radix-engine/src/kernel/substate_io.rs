@@ -1,4 +1,4 @@
-use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateNodeError, OpenSubstateError, PersistNodeError, ReadSubstateError, WriteSubstateError};
+use crate::kernel::call_frame::{CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError, CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateNodeError, DropNodeError, OpenSubstateError, PersistNodeError, ReadSubstateError, WriteSubstateError};
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -90,6 +90,33 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         }
 
         Ok(())
+    }
+
+    pub fn drop_node(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<NodeSubstates, DropNodeError> {
+        let node_substates = match self.heap.remove_node(node_id) {
+            Ok(substates) => substates,
+            Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
+                panic!("Frame owned node {:?} not found in heap", node_id)
+            }
+            Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
+                return Err(DropNodeError::NodeBorrowed(node_id, count));
+            }
+        };
+        for (_, module) in &node_substates {
+            for (_, substate_value) in module {
+                for reference in substate_value.references() {
+                    if !reference.is_global() {
+                        if self.heap.contains_node(reference) {
+                            self.heap.decrease_borrow_count(reference);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(node_substates)
     }
 
     pub fn open_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(

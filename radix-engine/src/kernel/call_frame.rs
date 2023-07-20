@@ -381,7 +381,7 @@ impl<L: Clone> CallFrame<L> {
         &self.actor
     }
 
-    pub fn create_node<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn create_node<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
         on_store_access: &mut F,
@@ -408,6 +408,46 @@ impl<L: Clone> CallFrame<L> {
         substate_io.create_node(on_store_access, node_id, node_substates, destination_device)?;
 
         Ok(())
+    }
+
+    /// Removes node from call frame and owned nodes will be possessed by this call frame.
+    pub fn drop_node<S: SubstateStore>(
+        &mut self,
+        substate_io: &mut SubstateIO<S>,
+        node_id: &NodeId,
+    ) -> Result<NodeSubstates, DropNodeError> {
+        self.take_node_internal(node_id)
+            .map_err(DropNodeError::TakeNodeError)?;
+
+        let node_substates = substate_io.drop_node(node_id)?;
+
+        for (_, module) in &node_substates {
+            for (_, substate_value) in module {
+                //=============
+                // Process own
+                //=============
+                for own in substate_value.owned_nodes() {
+                    // FIXME: This is problematic, as owned node must have been locked
+                    // In general, we'd like to move node locking/borrowing to heap.
+                    self.owned_root_nodes.insert(own.clone(), 0);
+                }
+
+                //====================
+                // Process references
+                //====================
+                for reference in substate_value.references() {
+                    if reference.is_global() {
+                        // Expand stable references
+                        // We keep all global references even if the owning substates are dropped.
+                        // Revisit this if the reference model is changed.
+                        self.stable_references
+                            .insert(reference.clone(), StableReferenceType::Global);
+                    }
+                }
+            }
+        }
+
+        Ok(node_substates)
     }
 
     pub fn open_substate<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
@@ -585,55 +625,7 @@ impl<L: Clone> CallFrame<L> {
             .map(|substate_lock| substate_lock.data.clone())
     }
 
-    /// Removes node from call frame and owned nodes will be possessed by this call frame.
-    pub fn drop_node(
-        &mut self,
-        heap: &mut Heap,
-        node_id: &NodeId,
-    ) -> Result<NodeSubstates, DropNodeError> {
-        self.take_node_internal(node_id)
-            .map_err(DropNodeError::TakeNodeError)?;
-        let node_substates = match heap.remove_node(node_id) {
-            Ok(substates) => substates,
-            Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
-                panic!("Frame owned node {:?} not found in heap", node_id)
-            }
-            Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
-                return Err(DropNodeError::NodeBorrowed(node_id, count));
-            }
-        };
-        for (_, module) in &node_substates {
-            for (_, substate_value) in module {
-                //=============
-                // Process own
-                //=============
-                for own in substate_value.owned_nodes() {
-                    // FIXME: This is problematic, as owned node must have been locked
-                    // In general, we'd like to move node locking/borrowing to heap.
-                    self.owned_root_nodes.insert(own.clone(), 0);
-                }
 
-                //====================
-                // Process references
-                //====================
-                for reference in substate_value.references() {
-                    if reference.is_global() {
-                        // Expand stable references
-                        // We keep all global references even if the owning substates are dropped.
-                        // Revisit this if the reference model is changed.
-                        self.stable_references
-                            .insert(reference.clone(), StableReferenceType::Global);
-                    } else {
-                        if heap.contains_node(reference) {
-                            // This substate is dropped and no longer borrows the heap node.
-                            heap.decrease_borrow_count(reference);
-                        }
-                    }
-                }
-            }
-        }
-        Ok(node_substates)
-    }
 
     pub fn move_module<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,

@@ -340,7 +340,7 @@ where
         M::on_drop_node(node_id, self)?;
         let node = self
             .current_frame
-            .drop_node(&mut self.substate_io.heap, node_id)
+            .drop_node(&mut self.substate_io, node_id)
             .map_err(CallFrameError::DropNodeError)
             .map_err(KernelError::CallFrameError)?;
 
