@@ -6,6 +6,7 @@ use radix_engine_store_interface::interface::{
 };
 use tree_store::{ReadableTreeStore, TreeNode, TreeStore, WriteableTreeStore};
 use types::{NibblePath, NodeKey, Version};
+use utils::prelude::vec;
 use utils::rust::collections::{index_map_new, IndexMap};
 use utils::rust::vec::Vec;
 
