@@ -1,0 +1,58 @@
+name: QEMU costing - CPU instructions
+run-name: QEMU costing - CPU instructions, branch = ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  cpu-instructions:
+    name: Run CPU instruction
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Setup dependencies
+        run: |
+             sudo apt-get update
+             sudo apt-get install build-essential pkg-config ninja-build libglib2.0-dev meson
+             pip3 install lxml tabulate numpy scikit-learn statsmodels
+      - name: Setup QEMU v8.0.3
+        run: |
+             cd ..
+             wget -nv https://download.qemu.org/qemu-8.0.3.tar.xz
+             tar xJf qemu-8.0.3.tar.xz
+             cd qemu-8.0.3
+             ./configure --disable-system --enable-user --target-list=x86_64-linux-user --enable-plugins
+             make
+             cd ..
+      - name: Compile Scrypto QEMU plugin
+        run: |
+             cd radix-engine-profiling/qemu-plugin
+             sed -i 's/^qemu_source_dir.*/qemu_source_dir=\x27\/home\/runner\/work\/radixdlt-scrypto\/qemu-8.0.3\/\x27/' ./meson.build
+             bash ./build.sh
+      - name: Update paths in scripts
+        run: |
+             cd radix-engine-profiling/resources-tracker-macro/scripts
+             sed -i 's/^qemu_app.*/qemu_app=\/home\/runner\/work\/radixdlt-scrypto\/qemu-8.0.3\/build\/qemu-x86_64/' ./run_tests.sh
+             sed -i 's/^qemu_plugin.*/qemu_plugin=\/home\/runner\/work\/radixdlt-scrypto\/radixdlt-scrypto\/radix-engine-profiling\/qemu-plugin\/build\/libscrypto-qemu-plugin.so/' ./run_tests.sh
+             cat ./run_tests.sh
+      - name: Build tests
+        run: |
+             cargo test --release --no-run --features resource_tracker --workspace --exclude radix-engine-common
+             rm ./target/release/deps/transaction_multi_threaded-*
+      - name: Run tests using QEMU and generate results
+        run: |
+             bash ./radix-engine-profiling/resources-tracker-macro/scripts/run_tests.sh ./target/release/deps/
+      - name: Results - table summary
+        run: cat /tmp/_out_table.txt
+      - name: Results - detailed table summary
+        run: cat /tmp/_out_table_detailed.txt
+      - name: Results - linear regression coefficients
+        run: cat /tmp/_out_linear_regression_coeff.txt
+      - name: Results - native blueprints CSV
+        run: cat /tmp/native_function_base_costs.csv

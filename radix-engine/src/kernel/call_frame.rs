@@ -311,11 +311,11 @@ impl<L: Clone> CallFrame<L> {
         match &frame.actor {
             Actor::Root => {}
             Actor::Method(MethodActor {
-                receiver_type: method_type,
+                receiver_type,
                 object_info,
                 ..
             }) => {
-                if let ReceiverType::OnStoredObject(global_address) = method_type {
+                if let ReceiverType::OnStoredObject(global_address) = receiver_type {
                     additional_global_refs.push(global_address.clone());
                 }
                 if let OuterObjectInfo::Some { outer_object } =

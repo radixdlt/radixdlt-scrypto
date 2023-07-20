@@ -123,6 +123,7 @@ impl ExecutionConfig {
     pub fn for_preview() -> Self {
         Self {
             enabled_modules: EnabledModules::for_preview(),
+            enable_cost_breakdown: true,
             ..Self::default()
         }
     }
@@ -133,6 +134,11 @@ impl ExecutionConfig {
         } else {
             self.enabled_modules.remove(EnabledModules::KERNEL_TRACE);
         }
+        self
+    }
+
+    pub fn with_cost_breakdown(mut self, enabled: bool) -> Self {
+        self.enable_cost_breakdown = enabled;
         self
     }
 
@@ -169,31 +175,24 @@ where
 
     pub fn execute(
         &mut self,
-        transaction: &Executable,
+        executable: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
+        let free_credit = executable.fee_payment().free_credit_in_xrd;
+        let tip_percentage = executable.fee_payment().tip_percentage;
         let fee_reserve = SystemLoanFeeReserve::new(
             fee_reserve_config.cost_unit_price,
             fee_reserve_config.usd_price,
             fee_reserve_config.state_expansion_price,
-            transaction.fee_payment().tip_percentage,
+            tip_percentage,
             execution_config.cost_unit_limit,
             fee_reserve_config.system_loan,
             execution_config.abort_when_loan_repaid,
         )
-        .with_free_credit(transaction.fee_payment().free_credit_in_xrd);
+        .with_free_credit(free_credit);
+        let fee_table = FeeTable::new();
 
-        self.execute_with_fee_reserve(transaction, execution_config, fee_reserve, FeeTable::new())
-    }
-
-    fn execute_with_fee_reserve(
-        &mut self,
-        executable: &Executable,
-        execution_config: &ExecutionConfig,
-        fee_reserve: SystemLoanFeeReserve,
-        fee_table: FeeTable,
-    ) -> TransactionReceipt {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if execution_config
@@ -274,8 +273,12 @@ where
                         }
 
                         // Distribute fees
-                        let (mut fee_summary, fee_payments) =
-                            Self::finalize_fees(&mut track, costing_module.fee_reserve, is_success);
+                        let (mut fee_summary, fee_payments) = Self::finalize_fees(
+                            &mut track,
+                            costing_module.fee_reserve,
+                            is_success,
+                            free_credit,
+                        );
                         fee_summary.execution_cost_breakdown = costing_module
                             .costing_traces
                             .into_iter()
@@ -598,6 +601,7 @@ where
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         fee_reserve: SystemLoanFeeReserve,
         is_success: bool,
+        free_credit: Decimal,
     ) -> (FeeSummary, IndexMap<NodeId, Decimal>) {
         // Distribute royalty
         for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
@@ -663,16 +667,34 @@ where
             // Record final payments
             *fee_payments.entry(vault_id).or_default() += amount;
         }
+        // Free credit is locked first and thus used last
+        if free_credit.is_positive() {
+            let amount = Decimal::min(free_credit, required);
+            collected_fees.put(LiquidFungibleResource::new(amount));
+            required -= amount;
+        }
 
         let tips_to_distribute = fee_summary.tips_to_distribute();
         let fees_to_distribute = fee_summary.fees_to_distribute();
 
-        // Sanity check
-        assert_eq!(required, Decimal::ZERO);
-        assert_eq!(fee_summary.total_bad_debt_xrd, Decimal::ZERO);
-        assert_eq!(
-            tips_to_distribute + fees_to_distribute,
-            collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */
+        // Sanity checks
+        assert!(
+            fee_summary.total_bad_debt_xrd == Decimal::ZERO,
+            "Bad debt is non-zero: {}",
+            fee_summary.total_bad_debt_xrd
+        );
+        assert!(
+            required == Decimal::ZERO,
+            "Locked fee does not cover transaction cost: {} required",
+            required
+        );
+        let remaining_collected_fees = collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */;
+        let to_distribute = tips_to_distribute + fees_to_distribute;
+        assert!(
+            to_distribute == remaining_collected_fees,
+            "Remaining collected fee isn't equal to amount to distribute: {} != {}",
+            remaining_collected_fees,
+            to_distribute,
         );
 
         if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
