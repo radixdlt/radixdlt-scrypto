@@ -16,7 +16,6 @@ pub trait WasmRuntime {
 
     fn actor_call_module_method(
         &mut self,
-        object_handle: u32,
         module_id: u32,
         ident: Vec<u8>,
         args: Vec<u8>,
@@ -86,7 +85,12 @@ pub trait WasmRuntime {
         key: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_object_info(
+    fn get_blueprint_id(
+        &mut self,
+        component_id: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
+
+    fn get_outer_object(
         &mut self,
         component_id: Vec<u8>,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
