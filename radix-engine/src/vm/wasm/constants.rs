@@ -67,25 +67,3 @@ pub const PANIC_FUNCTION_NAME: &str = "panic";
 
 pub const MODULE_ENV_NAME: &str = "env";
 pub const EXPORT_MEMORY: &str = "memory";
-
-//=================
-// LIMITS
-//=================
-
-/// The maximum memory size (per call frame): 64 * 64KiB = 4MiB
-pub const DEFAULT_MAX_MEMORY_SIZE_IN_PAGES: u32 = 64;
-
-/// The maximum initial table size
-pub const DEFAULT_MAX_INITIAL_TABLE_SIZE: u32 = 1024;
-
-/// The max number of labels of a table jump, excluding the default
-pub const DEFAULT_MAX_NUMBER_OF_BR_TABLE_TARGETS: u32 = 256;
-
-/// The max number of global variables
-pub const DEFAULT_MAX_NUMBER_OF_GLOBALS: u32 = 512;
-
-/// The max number of functions
-pub const DEFAULT_MAX_NUMBER_OF_FUNCTIONS: u32 = 64 * 1024;
-
-/// The default number of entries in the engine cache
-pub const DEFAULT_WASM_ENGINE_CACHE_SIZE: usize = 1000;

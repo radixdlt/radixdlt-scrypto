@@ -771,7 +771,7 @@ pub struct WasmerEngineOptions {
 impl Default for WasmerEngine {
     fn default() -> Self {
         Self::new(WasmerEngineOptions {
-            max_cache_size: DEFAULT_WASM_ENGINE_CACHE_SIZE,
+            max_cache_size: WASM_ENGINE_CACHE_SIZE,
         })
     }
 }
