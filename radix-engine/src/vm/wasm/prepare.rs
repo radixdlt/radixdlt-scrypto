@@ -43,6 +43,7 @@ impl WasmModule {
             .module
             .import_section()
             .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .unwrap_or(vec![])
         {
             if entry.module == MODULE_ENV_NAME {
                 match entry.name {
@@ -669,12 +670,15 @@ impl WasmModule {
         let memory_section = self
             .module
             .memory_section()
-            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .ok_or(PrepareError::InvalidMemory(
+                InvalidMemory::MissingMemorySection,
+            ))?;
 
         // Check if there is only one memory definition
         let mut memory = match memory_section.len() {
             0 => Err(PrepareError::InvalidMemory(
-                InvalidMemory::MissingMemorySection,
+                InvalidMemory::NoMemoryDefinition,
             )),
             1 => Ok(memory_section[0]),
             _ => Err(PrepareError::InvalidMemory(
@@ -706,6 +710,7 @@ impl WasmModule {
             .module
             .export_section()
             .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .unwrap_or(vec![])
             .iter()
             .any(|e| e.kind == ExternalKind::Memory && e.name == EXPORT_MEMORY)
         {
@@ -723,16 +728,18 @@ impl WasmModule {
             .table_section()
             .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
 
-        if section.len() > 1 {
-            // Sanity check MVP rule
-            return Err(PrepareError::InvalidTable(InvalidTable::MoreThanOneTable));
-        }
+        if let Some(section) = section {
+            if section.len() > 1 {
+                // Sanity check MVP rule
+                return Err(PrepareError::InvalidTable(InvalidTable::MoreThanOneTable));
+            }
 
-        if let Some(table) = section.get(0) {
-            if table.ty.initial > max_initial_table_size {
-                return Err(PrepareError::InvalidTable(
-                    InvalidTable::InitialTableSizeLimitExceeded,
-                ));
+            if let Some(table) = section.get(0) {
+                if table.ty.initial > max_initial_table_size {
+                    return Err(PrepareError::InvalidTable(
+                        InvalidTable::InitialTableSizeLimitExceeded,
+                    ));
+                }
             }
         }
 
@@ -747,6 +754,7 @@ impl WasmModule {
             .module
             .code_section()
             .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .unwrap_or(vec![])
         {
             let reader = fb
                 .get_operators_reader()
@@ -793,38 +801,39 @@ impl WasmModule {
         self,
         blueprints: I,
     ) -> Result<Self, PrepareError> {
-        if self.module.exports_count == 0 {
-            return Err(PrepareError::NoExportSection);
-        }
         let exports = self
             .module
             .export_section()
             .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
 
-        for blueprint_def_init in blueprints {
-            for export_name in blueprint_def_init.schema.exports() {
-                if !exports.iter().any(|x| {
-                    x.name.eq(&export_name) && {
-                        if let ExternalKind::Func = x.kind {
-                            Self::function_matches(
-                                &self.module,
-                                x.index as usize,
-                                vec![ValType::I64],
-                                vec![ValType::I64],
-                            )
-                        } else {
-                            false
+        if let Some(exports) = exports {
+            for blueprint_def_init in blueprints {
+                for export_name in blueprint_def_init.schema.exports() {
+                    if !exports.iter().any(|x| {
+                        x.name.eq(&export_name) && {
+                            if let ExternalKind::Func = x.kind {
+                                Self::function_matches(
+                                    &self.module,
+                                    x.index as usize,
+                                    vec![ValType::I64],
+                                    vec![ValType::I64],
+                                )
+                            } else {
+                                false
+                            }
                         }
+                    }) {
+                        return Err(PrepareError::MissingExport {
+                            export_name: export_name.to_string(),
+                        });
                     }
-                }) {
-                    return Err(PrepareError::MissingExport {
-                        export_name: export_name.to_string(),
-                    });
                 }
             }
-        }
 
-        Ok(self)
+            Ok(self)
+        } else {
+            Err(PrepareError::NoExportSection)
+        }
     }
 
     pub fn inject_instruction_metering<R: Rules>(
@@ -891,6 +900,7 @@ impl WasmModule {
             .module
             .export_section()
             .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .unwrap_or(vec![])
         {
             if let wasmparser::ExternalKind::Func = export.kind {
                 function_exports.push(export.name.to_string());
@@ -936,6 +946,7 @@ impl WasmModule {
             .code_section()
             .map_err(|err| PrepareError::WasmParserError(err.to_string()))
             .unwrap()
+            .expect("no code section")
         {
             let reader = func_body
                 .get_operators_reader()
