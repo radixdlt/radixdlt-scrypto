@@ -2,7 +2,7 @@ use crate::kernel::call_frame::{
     CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
     CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
     CreateNodeError, DropNodeError, MoveModuleError, OpenSubstateError, PersistNodeError,
-    ReadSubstateError, WriteSubstateError,
+    WriteSubstateError,
 };
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
@@ -23,7 +23,7 @@ use radix_engine_interface::types::{
     IndexedScryptoValue, TypeInfoField, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use utils::prelude::{index_set_new, NonIterMap};
+use utils::prelude::index_set_new;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubstateDevice {
@@ -285,10 +285,8 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
                 .unwrap(),
             SubstateDevice::Store => self
                 .store
-                .get_substate::<(), _>(node_id, *partition_num, substate_key, &mut |store_access| {
-                    panic!("Getting substate on handled substate should not incur a store access.")
-                })
-                .unwrap(),
+                .get_substate(node_id, *partition_num, substate_key, &mut |_| Err(()))
+                .expect("Getting substate on handled substate should not incur a store access."),
         };
 
         substate

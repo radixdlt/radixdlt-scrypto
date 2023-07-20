@@ -1,6 +1,5 @@
 use crate::errors::RuntimeError;
 use crate::types::*;
-use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 

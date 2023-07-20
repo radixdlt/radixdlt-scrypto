@@ -127,7 +127,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
 
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _lock_handle: LockHandle,
+        _lock_handle: OpenSubstateHandle,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
         let limits = &mut api.kernel_get_system().modules.limits.config;

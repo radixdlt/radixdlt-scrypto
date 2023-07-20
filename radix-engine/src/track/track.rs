@@ -4,7 +4,6 @@ use crate::track::interface::{
 };
 use crate::track::utils::OverlayingResultIterator;
 use crate::types::*;
-use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::*;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use radix_engine_store_interface::interface::DbPartitionKey;

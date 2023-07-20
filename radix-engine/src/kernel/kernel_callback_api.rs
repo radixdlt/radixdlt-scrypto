@@ -50,7 +50,7 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn after_open_substate<Y>(
-        handle: LockHandle,
+        handle: OpenSubstateHandle,
         node_id: &NodeId,
         size: usize,
         api: &mut Y,
@@ -58,12 +58,15 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_close_substate<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_close_substate<Y>(
+        lock_handle: OpenSubstateHandle,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
     fn on_read_substate<Y>(
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         value_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -71,7 +74,7 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn on_write_substate<Y>(
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         value_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

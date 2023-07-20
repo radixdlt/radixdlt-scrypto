@@ -295,7 +295,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _handle: LockHandle,
+        _handle: OpenSubstateHandle,
         node_id: &NodeId,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
@@ -312,7 +312,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _lock_handle: LockHandle,
+        _lock_handle: OpenSubstateHandle,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
@@ -325,7 +325,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _lock_handle: LockHandle,
+        _lock_handle: OpenSubstateHandle,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
@@ -338,7 +338,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        _lock_handle: LockHandle,
+        _lock_handle: OpenSubstateHandle,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules

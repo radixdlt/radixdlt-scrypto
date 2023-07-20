@@ -144,7 +144,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn after_open_substate<Y>(
-        handle: LockHandle,
+        handle: OpenSubstateHandle,
         node_id: &NodeId,
         size: usize,
         api: &mut Y,
@@ -155,7 +155,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_open_substate(api, handle, node_id, size)
     }
 
-    fn on_close_substate<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_close_substate<Y>(
+        lock_handle: OpenSubstateHandle,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -163,7 +166,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn on_read_substate<Y>(
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         value_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -174,7 +177,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn on_write_substate<Y>(
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         value_size: usize,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

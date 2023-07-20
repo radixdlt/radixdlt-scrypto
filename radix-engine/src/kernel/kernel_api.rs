@@ -55,7 +55,7 @@ pub trait KernelSubstateApi<L> {
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         lock_data: L,
-    ) -> Result<LockHandle, RuntimeError>;
+    ) -> Result<OpenSubstateHandle, RuntimeError>;
 
     fn kernel_open_substate(
         &mut self,
@@ -64,7 +64,7 @@ pub trait KernelSubstateApi<L> {
         substate_key: &SubstateKey,
         flags: LockFlags,
         lock_data: L,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<OpenSubstateHandle, RuntimeError> {
         self.kernel_open_substate_with_default(
             node_id,
             partition_num,
@@ -76,22 +76,25 @@ pub trait KernelSubstateApi<L> {
     }
 
     /// Retrieves info related to a lock
-    fn kernel_get_lock_data(&mut self, lock_handle: LockHandle) -> Result<L, RuntimeError>;
+    fn kernel_get_lock_data(&mut self, lock_handle: OpenSubstateHandle) -> Result<L, RuntimeError>;
 
     /// Drops a lock on some substate, if the lock is writable, updates are flushed to
     /// the store at this point.
-    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
+    fn kernel_close_substate(
+        &mut self,
+        lock_handle: OpenSubstateHandle,
+    ) -> Result<(), RuntimeError>;
 
     /// Reads the value of the substate locked by the given lock handle
     fn kernel_read_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError>;
 
     /// Writes a value to the substate locked by the given lock handle
     fn kernel_write_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError>;
 

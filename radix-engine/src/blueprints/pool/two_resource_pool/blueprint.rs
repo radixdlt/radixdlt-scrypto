@@ -518,7 +518,7 @@ impl TwoResourcePoolBlueprint {
     fn lock_and_read<Y>(
         api: &mut Y,
         lock_flags: LockFlags,
-    ) -> Result<(TwoResourcePoolSubstate, LockHandle), RuntimeError>
+    ) -> Result<(TwoResourcePoolSubstate, OpenSubstateHandle), RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {

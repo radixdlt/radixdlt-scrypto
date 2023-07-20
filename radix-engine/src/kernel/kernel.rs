@@ -619,7 +619,7 @@ where
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: M::LockData,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<OpenSubstateHandle, RuntimeError> {
         M::before_open_substate(&node_id, &partition_num, substate_key, &flags, self)?;
 
         let maybe_lock_handle = self.current_frame.open_substate(
@@ -700,10 +700,10 @@ where
     #[trace_resources]
     fn kernel_get_lock_data(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
     ) -> Result<M::LockData, RuntimeError> {
         self.current_frame
-            .get_lock_info(lock_handle)
+            .get_handle_info(lock_handle)
             .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(
                 lock_handle,
             )))
@@ -712,7 +712,7 @@ where
     #[trace_resources]
     fn kernel_read_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         let value = self
             .current_frame
@@ -732,7 +732,7 @@ where
     #[trace_resources]
     fn kernel_write_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         M::on_write_substate(lock_handle, value.len(), self)?;
@@ -747,7 +747,10 @@ where
     }
 
     #[trace_resources]
-    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+    fn kernel_close_substate(
+        &mut self,
+        lock_handle: OpenSubstateHandle,
+    ) -> Result<(), RuntimeError> {
         self.current_frame
             .close_substate(&mut self.substate_io, lock_handle, &mut |store_access| {
                 self.callback.on_store_access(&store_access)

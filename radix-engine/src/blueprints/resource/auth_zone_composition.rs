@@ -22,12 +22,12 @@ pub enum ComposedProof {
     Fungible(
         ProofMoveableSubstate,
         FungibleProofSubstate,
-        Vec<LockHandle>,
+        Vec<OpenSubstateHandle>,
     ),
     NonFungible(
         ProofMoveableSubstate,
         NonFungibleProofSubstate,
-        Vec<LockHandle>,
+        Vec<OpenSubstateHandle>,
     ),
 }
 
@@ -237,7 +237,7 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
     resource_address: ResourceAddress,
     amount: Option<Decimal>,
     api: &mut Y,
-) -> Result<(FungibleProofSubstate, Vec<LockHandle>), RuntimeError> {
+) -> Result<(FungibleProofSubstate, Vec<OpenSubstateHandle>), RuntimeError> {
     let (max_locked, mut per_container) = max_amount_locked(proofs, resource_address, api)?;
     let amount = amount.unwrap_or(max_locked);
 
@@ -305,7 +305,7 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
     resource_address: ResourceAddress,
     ids: NonFungiblesSpecification,
     api: &mut Y,
-) -> Result<(NonFungibleProofSubstate, Vec<LockHandle>), RuntimeError> {
+) -> Result<(NonFungibleProofSubstate, Vec<OpenSubstateHandle>), RuntimeError> {
     let (max_locked, mut per_container) = max_ids_locked(proofs, resource_address, api)?;
     let ids = match ids {
         NonFungiblesSpecification::All => max_locked.clone(),

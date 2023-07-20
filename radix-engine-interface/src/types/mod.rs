@@ -25,6 +25,6 @@ pub use strum::*;
 pub use traits::*;
 pub use wasm::*;
 
-pub type LockHandle = u32;
+pub type OpenSubstateHandle = u32;
 
 pub use radix_engine_common::types::*;

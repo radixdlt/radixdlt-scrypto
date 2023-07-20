@@ -2241,7 +2241,7 @@ where
         object_handle: ObjectHandle,
         field_index: u8,
         flags: LockFlags,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<OpenSubstateHandle, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
         let (node_id, partition_num, schema_pointer, blueprint_id) =
@@ -2734,7 +2734,7 @@ where
         flags: LockFlags,
         default: Option<fn() -> IndexedScryptoValue>,
         data: SystemLockData,
-    ) -> Result<LockHandle, RuntimeError> {
+    ) -> Result<OpenSubstateHandle, RuntimeError> {
         self.api.kernel_open_substate_with_default(
             node_id,
             partition_num,
@@ -2747,25 +2747,28 @@ where
 
     fn kernel_get_lock_data(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
     ) -> Result<SystemLockData, RuntimeError> {
         self.api.kernel_get_lock_data(lock_handle)
     }
 
-    fn kernel_close_substate(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
+    fn kernel_close_substate(
+        &mut self,
+        lock_handle: OpenSubstateHandle,
+    ) -> Result<(), RuntimeError> {
         self.api.kernel_close_substate(lock_handle)
     }
 
     fn kernel_read_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
     ) -> Result<&IndexedScryptoValue, RuntimeError> {
         self.api.kernel_read_substate(lock_handle)
     }
 
     fn kernel_write_substate(
         &mut self,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         self.api.kernel_write_substate(lock_handle, value)

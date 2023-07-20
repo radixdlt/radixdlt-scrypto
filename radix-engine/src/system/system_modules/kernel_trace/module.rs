@@ -8,7 +8,7 @@ use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
+use radix_engine_interface::types::{NodeId, OpenSubstateHandle, SubstateKey};
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
@@ -129,7 +129,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        handle: LockHandle,
+        handle: OpenSubstateHandle,
         node_id: &NodeId,
         size: usize,
     ) -> Result<(), RuntimeError> {
@@ -144,7 +144,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
         log!(
@@ -158,7 +158,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
         log!(
@@ -172,7 +172,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
     ) -> Result<(), RuntimeError> {
         log!(api, "Dropping lock: handle = {} ", lock_handle);
         Ok(())

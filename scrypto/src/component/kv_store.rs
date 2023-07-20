@@ -8,7 +8,7 @@ use radix_engine_interface::data::scrypto::well_known_scrypto_custom_types::{
     own_key_value_store_type_data, OWN_KEY_VALUE_STORE_ID,
 };
 use radix_engine_interface::data::scrypto::*;
-use radix_engine_interface::types::LockHandle;
+use radix_engine_interface::types::OpenSubstateHandle;
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::ops::{Deref, DerefMut};
@@ -234,7 +234,7 @@ impl<V: fmt::Display + ScryptoEncode> fmt::Display for KeyValueEntryRefMut<'_, V
 }
 
 impl<'a, V: ScryptoEncode> KeyValueEntryRefMut<'a, V> {
-    pub fn new(lock_handle: LockHandle, value: V) -> KeyValueEntryRefMut<'a, V> {
+    pub fn new(lock_handle: OpenSubstateHandle, value: V) -> KeyValueEntryRefMut<'a, V> {
         KeyValueEntryRefMut {
             handle: lock_handle,
             value,

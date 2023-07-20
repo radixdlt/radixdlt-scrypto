@@ -109,7 +109,7 @@ impl<'a> WasmRuntime for NoOpWasmRuntime<'a> {
         node_id: Vec<u8>,
         offset: Vec<u8>,
         flags: u32,
-    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>> {
+    ) -> Result<OpenSubstateHandle, InvokeError<WasmRuntimeError>> {
         Err(InvokeError::SelfError(WasmRuntimeError::NotImplemented))
     }
 

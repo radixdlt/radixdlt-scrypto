@@ -1,7 +1,6 @@
 use crate::blueprints::resource::*;
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
-use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::{
     LiquidFungibleResource, LiquidNonFungibleResource, LockedFungibleResource,
     LockedNonFungibleResource,

@@ -16,7 +16,6 @@ use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use radix_engine_constants::*;
-use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};

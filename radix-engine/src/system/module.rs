@@ -143,7 +143,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn after_open_substate<Y: KernelApi<M>>(
         _api: &mut Y,
-        _lock_handle: LockHandle,
+        _lock_handle: OpenSubstateHandle,
         _node_id: &NodeId,
         _size: usize,
     ) -> Result<(), RuntimeError> {
@@ -153,7 +153,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_read_substate<Y: KernelApi<M>>(
         _api: &mut Y,
-        _lock_handle: LockHandle,
+        _lock_handle: OpenSubstateHandle,
         _value_size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -162,7 +162,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_write_substate<Y: KernelApi<M>>(
         _api: &mut Y,
-        _lock_handle: LockHandle,
+        _lock_handle: OpenSubstateHandle,
         _value_size: usize,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -171,7 +171,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_close_substate<Y: KernelApi<M>>(
         _api: &mut Y,
-        _lock_handle: LockHandle,
+        _lock_handle: OpenSubstateHandle,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

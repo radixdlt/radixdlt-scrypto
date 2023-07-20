@@ -1,23 +1,15 @@
 use crate::kernel::actor::MethodType;
-use crate::kernel::substate_io;
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
-use crate::kernel::substate_locks::SubstateLocks;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
     CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackGetSubstateError,
-    TrackedSubstateInfo,
 };
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::blueprints::resource::{
-    FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT,
-    NON_FUNGIBLE_PROOF_BLUEPRINT,
-};
-use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
+use radix_engine_interface::types::{NodeId, OpenSubstateHandle, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
 use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
-use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
+use super::heap::{HeapOpenSubstateError, HeapRemoveModuleError};
 
 /// A message used for communication between call frames.
 ///
@@ -134,8 +126,8 @@ pub struct CallFrame<L> {
     /// Current two types: `GLOBAL` (root, stored) and `DirectAccess`.
     stable_references: NonIterMap<NodeId, StableReferenceType>,
 
-    next_lock_handle: LockHandle,
-    locks: IndexMap<LockHandle, OpenedSubstate<L>>,
+    next_handle: OpenSubstateHandle,
+    open_substates: IndexMap<OpenSubstateHandle, OpenedSubstate<L>>,
 }
 
 /// Represents an error when creating a new frame.
@@ -167,7 +159,7 @@ pub enum OpenSubstateError {
 /// Represents an error when dropping a substate lock.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CloseSubstateError {
-    LockNotFound(LockHandle),
+    LockNotFound(OpenSubstateHandle),
     ContainsDuplicatedOwns,
     ProcessSubstateError(ProcessSubstateError),
     NonGlobalRefNotAllowed(NodeId),
@@ -223,13 +215,13 @@ pub enum MoveModuleError {
 /// Represents an error when reading substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ReadSubstateError {
-    LockNotFound(LockHandle),
+    LockNotFound(OpenSubstateHandle),
 }
 
 /// Represents an error when writing substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WriteSubstateError {
-    LockNotFound(LockHandle),
+    LockNotFound(OpenSubstateHandle),
     NoWritePermission,
 }
 
@@ -276,8 +268,8 @@ impl<L: Clone> CallFrame<L> {
             stable_references: NonIterMap::new(),
             transient_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
-            next_lock_handle: 0u32,
-            locks: index_map_new(),
+            next_handle: 0u32,
+            open_substates: index_map_new(),
         }
     }
 
@@ -292,8 +284,8 @@ impl<L: Clone> CallFrame<L> {
             stable_references: NonIterMap::new(),
             transient_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
-            next_lock_handle: 0u32,
-            locks: index_map_new(),
+            next_handle: 0u32,
+            open_substates: index_map_new(),
         };
 
         // Copy references and move nodes
@@ -496,7 +488,7 @@ impl<L: Clone> CallFrame<L> {
         on_store_access: F,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
-    ) -> Result<(LockHandle, usize), CallbackError<OpenSubstateError, E>> {
+    ) -> Result<(OpenSubstateHandle, usize), CallbackError<OpenSubstateError, E>> {
         // Check node visibility
         if !self.get_node_visibility(node_id).is_visible() {
             return Err(CallbackError::Error(OpenSubstateError::NodeNotVisible(
@@ -546,8 +538,8 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Issue lock handle
-        let lock_handle = self.next_lock_handle;
-        self.locks.insert(
+        let lock_handle = self.next_handle;
+        self.open_substates.insert(
             lock_handle,
             OpenedSubstate {
                 non_global_references,
@@ -558,7 +550,7 @@ impl<L: Clone> CallFrame<L> {
                 data,
             },
         );
-        self.next_lock_handle = self.next_lock_handle + 1;
+        self.next_handle = self.next_handle + 1;
 
         // Update lock count on the node
         if let Some(counter) = self.owned_root_nodes.get_mut(node_id) {
@@ -571,12 +563,12 @@ impl<L: Clone> CallFrame<L> {
     pub fn read_substate<'f, S: SubstateStore>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
     ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
         let OpenedSubstate {
             global_lock_handle, ..
         } = self
-            .locks
+            .open_substates
             .get(&lock_handle)
             .ok_or(ReadSubstateError::LockNotFound(lock_handle))?;
 
@@ -587,7 +579,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn write_substate<'f, S: SubstateStore>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         substate: IndexedScryptoValue,
     ) -> Result<(), WriteSubstateError> {
         let OpenedSubstate {
@@ -595,7 +587,7 @@ impl<L: Clone> CallFrame<L> {
             updated,
             ..
         } = self
-            .locks
+            .open_substates
             .get_mut(&lock_handle)
             .ok_or(WriteSubstateError::LockNotFound(lock_handle))?;
 
@@ -608,7 +600,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn close_substate<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         substate_io: &mut SubstateIO<S>,
-        lock_handle: LockHandle,
+        lock_handle: OpenSubstateHandle,
         on_store_access: &mut F,
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
         let OpenedSubstate {
@@ -619,7 +611,7 @@ impl<L: Clone> CallFrame<L> {
             location,
             ..
         } = self
-            .locks
+            .open_substates
             .remove(&lock_handle)
             .ok_or_else(|| CallbackError::Error(CloseSubstateError::LockNotFound(lock_handle)))?;
 
@@ -658,8 +650,8 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn get_lock_info(&self, lock_handle: LockHandle) -> Option<L> {
-        self.locks
+    pub fn get_handle_info(&self, lock_handle: OpenSubstateHandle) -> Option<L> {
+        self.open_substates
             .get(&lock_handle)
             .map(|substate_lock| substate_lock.data.clone())
     }
@@ -834,7 +826,7 @@ impl<L: Clone> CallFrame<L> {
         substate_io: &mut SubstateIO<S>,
         on_store_access: &mut F,
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
-        let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
+        let lock_handles: Vec<OpenSubstateHandle> = self.open_substates.keys().cloned().collect();
 
         for lock_handle in lock_handles {
             self.close_substate(substate_io, lock_handle, on_store_access)?;

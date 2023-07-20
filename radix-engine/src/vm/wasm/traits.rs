@@ -65,7 +65,7 @@ pub trait WasmRuntime {
         node_id: Vec<u8>,
         key: Vec<u8>,
         flags: u32,
-    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
+    ) -> Result<OpenSubstateHandle, InvokeError<WasmRuntimeError>>;
 
     fn key_value_entry_get(&mut self, handle: u32)
         -> Result<Buffer, InvokeError<WasmRuntimeError>>;
@@ -102,22 +102,22 @@ pub trait WasmRuntime {
         object_handle: u32,
         field: u8,
         flags: u32,
-    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
+    ) -> Result<OpenSubstateHandle, InvokeError<WasmRuntimeError>>;
 
     fn field_lock_read(
         &mut self,
-        handle: LockHandle,
+        handle: OpenSubstateHandle,
     ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn field_lock_write(
         &mut self,
-        handle: LockHandle,
+        handle: OpenSubstateHandle,
         data: Vec<u8>,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn field_lock_release(
         &mut self,
-        handle: LockHandle,
+        handle: OpenSubstateHandle,
     ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn get_node_id(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
