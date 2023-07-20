@@ -2,9 +2,7 @@ use super::FeeSummary;
 use crate::{
     errors::CanBeAbortion, track::interface::StoreCommit, transaction::AbortReason, types::*,
 };
-use radix_engine_constants::{
-    DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE_IN_XRD, DEFAULT_SYSTEM_LOAN,
-};
+use radix_engine_common::constants::{COST_UNIT_LIMIT, COST_UNIT_PRICE_IN_XRD, SYSTEM_LOAN_AMOUNT};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use sbor::rust::cmp::min;
 
@@ -444,12 +442,12 @@ impl FeeReserve for SystemLoanFeeReserve {}
 impl Default for SystemLoanFeeReserve {
     fn default() -> Self {
         Self::new(
-            DEFAULT_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
-            DEFAULT_USD_PRICE_IN_XRD.try_into().unwrap(),
-            DEFAULT_STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
+            COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            USD_PRICE_IN_XRD.try_into().unwrap(),
+            STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
             0,
-            DEFAULT_COST_UNIT_LIMIT,
-            DEFAULT_SYSTEM_LOAN,
+            COST_UNIT_LIMIT,
+            SYSTEM_LOAN_AMOUNT,
             false,
         )
     }

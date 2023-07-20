@@ -14,7 +14,6 @@ pub mod validation;
 /// This makes refactors easier, and makes integration into the node less painful.
 pub mod prelude {
     // Exports from upstream crates
-    pub use radix_engine_constants::*;
     pub use radix_engine_interface::prelude::*;
 
     // Exports from this crate

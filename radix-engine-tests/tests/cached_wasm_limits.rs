@@ -34,7 +34,7 @@ fn publishing_many_packages_should_not_cause_system_failure() {
                     (export "Test_f" (func $Test_f))
                 )
             "#,
-        "i".repeat(DEFAULT_MAX_INVOKE_INPUT_SIZE - 1024)
+        "i".repeat(MAX_INVOKE_PAYLOAD_SIZE - 1024)
     ));
 
     // Act

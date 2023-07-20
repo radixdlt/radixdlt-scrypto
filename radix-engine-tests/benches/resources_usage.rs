@@ -5,7 +5,7 @@ use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig, ResourcesUsage};
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmValidatorConfig};
-use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
+use radix_engine_common::constants::COST_UNIT_LIMIT;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::rule;
