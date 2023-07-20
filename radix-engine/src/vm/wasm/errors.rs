@@ -16,8 +16,6 @@ pub enum PrepareError {
     SerializationError,
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
-    /// The wasm module uses float points.
-    FloatingPointNotAllowed,
     /// Invalid import section
     InvalidImport(InvalidImport),
     /// Invalid memory section

@@ -22,16 +22,9 @@ impl WasmModule {
         let mut features = WasmFeatures::default();
         features.floats = false;
 
-        module.validate(features).map_err(|err| {
-            let err = err.to_string();
-            if err.starts_with("floating-point support is disabled")
-                | err.starts_with("floating-point instruction disallowed")
-            {
-                PrepareError::FloatingPointNotAllowed
-            } else {
-                PrepareError::ValidationError(err)
-            }
-        })?;
+        module
+            .validate(features)
+            .map_err(|err| PrepareError::ValidationError(err.to_string()))?;
 
         Ok(Self { module })
     }
@@ -1003,7 +996,9 @@ mod tests {
                 )
             )
             "#,
-            PrepareError::FloatingPointNotAllowed
+            PrepareError::ValidationError(
+                "floating-point support is disabled (at offset 0xb)".to_string()
+            )
         );
         // input
         assert_invalid_wasm!(
@@ -1013,7 +1008,9 @@ mod tests {
                 )
             )
             "#,
-            PrepareError::FloatingPointNotAllowed
+            PrepareError::ValidationError(
+                "floating-point support is disabled (at offset 0xb)".to_string()
+            )
         );
         // instruction
         assert_invalid_wasm!(
@@ -1027,7 +1024,9 @@ mod tests {
                 )
             )
             "#,
-            PrepareError::FloatingPointNotAllowed
+            PrepareError::ValidationError(
+                "floating-point instruction disallowed (at offset 0x17)".to_string()
+            )
         );
         // global
         assert_invalid_wasm!(
@@ -1036,7 +1035,9 @@ mod tests {
                 (global $fp f32 (f32.const 10))
             )
             "#,
-            PrepareError::FloatingPointNotAllowed
+            PrepareError::ValidationError(
+                "floating-point support is disabled (at offset 0xb)".to_string()
+            )
         );
     }
 
