@@ -14,10 +14,11 @@ mod hello {
         pub fn instantiate_hello() -> Global<Hello> {
             // Create a new token called "HelloToken," with a fixed supply of 1000, and put that supply into a bucket
             let my_bucket: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
+                .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata(metadata! {
                     init {
-                        "name" => "HelloToken".to_owned(), locked;
-                        "symbol" => "HT".to_owned(), locked;
+                        "name" => "HelloToken", locked;
+                        "symbol" => "HT", locked;
                     }
                 })
                 .mint_initial_supply(1000);
