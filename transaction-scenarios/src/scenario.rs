@@ -56,8 +56,8 @@ impl NextTransaction {
         };
         let file_name = format!("{:03}--{}", self.stage_counter, self.logical_name);
         dump_manifest_to_file_system(
-            &self.manifest,
             self.naming.clone(),
+            &self.manifest,
             directory_path,
             Some(&file_name),
             &network,
