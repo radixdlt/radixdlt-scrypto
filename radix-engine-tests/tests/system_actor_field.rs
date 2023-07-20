@@ -31,11 +31,7 @@ fn opening_non_existent_outer_object_fields_should_not_panic() {
         {
             match export_name {
                 "test" => {
-                    api.method_actor_open_field(
-                        OBJECT_HANDLE_OUTER_OBJECT,
-                        0u8,
-                        LockFlags::read_only(),
-                    )?;
+                    api.actor_open_field(OBJECT_HANDLE_OUTER_OBJECT, 0u8, LockFlags::read_only())?;
                 }
                 "new" => {
                     let metadata = Metadata::create(api)?;

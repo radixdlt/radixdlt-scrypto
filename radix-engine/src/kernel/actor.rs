@@ -9,18 +9,15 @@ pub struct InstanceContext {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum MethodType {
+pub enum ReceiverType {
     DirectAccess,
-    /// This variant is never actually used but is added for completeness sake in case
-    /// a direct access method ever calls another method
-    DirectAccessChild,
     OnHeapObject,
     OnStoredObject(GlobalAddress),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
-    pub method_type: MethodType,
+    pub receiver_type: ReceiverType,
     pub node_id: NodeId,
     pub module_id: ObjectModuleId,
     pub ident: String,
@@ -64,8 +61,6 @@ impl FunctionActor {
 pub struct BlueprintHookActor {
     pub receiver: Option<NodeId>,
     pub hook: BlueprintHook,
-
-    // Cached info
     pub blueprint_id: BlueprintId,
 }
 
@@ -92,10 +87,10 @@ impl Actor {
                     })
                 } else {
                     match &method_actor.object_info.blueprint_info.outer_obj_info {
-                        OuterObjectInfo::Inner { outer_object } => Some(InstanceContext {
+                        OuterObjectInfo::Some { outer_object } => Some(InstanceContext {
                             outer_object: outer_object.clone(),
                         }),
-                        OuterObjectInfo::Outer { .. } => None,
+                        OuterObjectInfo::None { .. } => None,
                     }
                 }
             }
@@ -205,24 +200,27 @@ impl Actor {
     pub fn is_direct_access(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                method_type: MethodType::DirectAccess,
+                receiver_type: ReceiverType::DirectAccess,
                 ..
             }) => true,
             _ => false,
         }
     }
 
-    pub fn method_type(&self) -> Option<MethodType> {
+    pub fn method_type(&self) -> Option<ReceiverType> {
         match self {
-            Actor::Method(MethodActor { method_type, .. }) => Some(method_type.clone()),
+            Actor::Method(MethodActor {
+                receiver_type: method_type,
+                ..
+            }) => Some(method_type.clone()),
             _ => None,
         }
     }
 
     pub fn as_global_caller(&self) -> Option<GlobalCaller> {
         match self {
-            Actor::Method(actor) => match &actor.method_type {
-                MethodType::OnStoredObject(global_address) => Some(global_address.clone().into()),
+            Actor::Method(actor) => match &actor.receiver_type {
+                ReceiverType::OnStoredObject(global_address) => Some(global_address.clone().into()),
                 _ => None,
             },
             Actor::Function(FunctionActor { blueprint_id, .. }) => {
@@ -268,14 +266,14 @@ impl Actor {
     }
 
     pub fn method(
-        method_type: MethodType,
+        method_type: ReceiverType,
         node_id: NodeId,
         module_id: ObjectModuleId,
         ident: String,
         object_info: ObjectInfo,
     ) -> Self {
         Self::Method(MethodActor {
-            method_type,
+            receiver_type: method_type,
             node_id,
             module_id,
             ident,

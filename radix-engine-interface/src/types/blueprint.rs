@@ -13,13 +13,13 @@ use utils::ContextualDisplay;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum OuterObjectInfo {
-    Inner { outer_object: GlobalAddress },
-    Outer,
+    Some { outer_object: GlobalAddress },
+    None,
 }
 
 impl Default for OuterObjectInfo {
     fn default() -> Self {
-        OuterObjectInfo::Outer
+        OuterObjectInfo::None
     }
 }
 
@@ -45,8 +45,8 @@ pub struct ObjectInfo {
 impl ObjectInfo {
     pub fn get_outer_object(&self) -> GlobalAddress {
         match &self.blueprint_info.outer_obj_info {
-            OuterObjectInfo::Inner { outer_object } => outer_object.clone(),
-            OuterObjectInfo::Outer { .. } => {
+            OuterObjectInfo::Some { outer_object } => outer_object.clone(),
+            OuterObjectInfo::None { .. } => {
                 panic!("Broken Application logic: Expected to be an inner object but is an outer object");
             }
         }
@@ -58,8 +58,8 @@ impl ObjectInfo {
 
     pub fn try_get_outer_object(&self) -> Option<GlobalAddress> {
         match &self.blueprint_info.outer_obj_info {
-            OuterObjectInfo::Inner { outer_object } => Some(outer_object.clone()),
-            OuterObjectInfo::Outer { .. } => None,
+            OuterObjectInfo::Some { outer_object } => Some(outer_object.clone()),
+            OuterObjectInfo::None { .. } => None,
         }
     }
 }

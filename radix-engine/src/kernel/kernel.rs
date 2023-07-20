@@ -9,7 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::actor::MethodType;
+use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -218,12 +218,12 @@ where
         let can_be_invoked = match &invocation.actor {
             Actor::Method(MethodActor {
                 node_id,
-                method_type,
+                receiver_type: method_type,
                 ..
             }) => self
                 .current_frame
                 .get_node_visibility(&node_id)
-                .can_be_invoked(method_type.eq(&MethodType::DirectAccess)),
+                .can_be_invoked(method_type.eq(&ReceiverType::DirectAccess)),
             Actor::Function(FunctionActor { blueprint_id, .. })
             | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
                 // FIXME: combine this with reference check of invocation

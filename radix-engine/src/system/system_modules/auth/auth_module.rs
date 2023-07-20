@@ -261,12 +261,12 @@ impl AuthModule {
                 ObjectModuleId::Main => {
                     let outer_object_info = &callee.object_info.blueprint_info.outer_obj_info;
                     match outer_object_info {
-                        OuterObjectInfo::Inner { outer_object } => {
+                        OuterObjectInfo::Some { outer_object } => {
                             Ok(ResolvedPermission::AccessRule(rule!(require(
                                 global_caller(*outer_object)
                             ))))
                         }
-                        OuterObjectInfo::Outer { .. } => Err(RuntimeError::SystemModuleError(
+                        OuterObjectInfo::None { .. } => Err(RuntimeError::SystemModuleError(
                             SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
                         )),
                     }

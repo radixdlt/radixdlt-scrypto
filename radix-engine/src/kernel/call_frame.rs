@@ -1,4 +1,4 @@
-use crate::kernel::actor::MethodType;
+use crate::kernel::actor::ReceiverType;
 use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::track::interface::{
     CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackGetSubstateError,
@@ -309,14 +309,14 @@ impl<L: Clone> CallFrame<L> {
         match &frame.actor {
             Actor::Root => {}
             Actor::Method(MethodActor {
-                method_type,
+                receiver_type: method_type,
                 object_info,
                 ..
             }) => {
-                if let MethodType::OnStoredObject(global_address) = method_type {
+                if let ReceiverType::OnStoredObject(global_address) = method_type {
                     additional_global_refs.push(global_address.clone());
                 }
-                if let OuterObjectInfo::Inner { outer_object } =
+                if let OuterObjectInfo::Some { outer_object } =
                     object_info.blueprint_info.outer_obj_info
                 {
                     additional_global_refs.push(outer_object.clone());

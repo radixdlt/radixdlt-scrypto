@@ -11,7 +11,7 @@ pub trait ClientActorApi<E: Debug> {
     fn actor_get_blueprint_id(&mut self) -> Result<BlueprintId, E>;
 
     /// Open a field in a given object for reading/writing
-    fn method_actor_open_field(
+    fn actor_open_field(
         &mut self,
         object_handle: ObjectHandle,
         field: FieldIndex,
@@ -19,23 +19,23 @@ pub trait ClientActorApi<E: Debug> {
     ) -> Result<FieldHandle, E>;
 
     /// Check if a feature is enabled for a given object
-    fn method_actor_is_feature_enabled(
+    fn actor_is_feature_enabled(
         &mut self,
         object_handle: ObjectHandle,
         feature: &str,
     ) -> Result<bool, E>;
 
     /// Retrieve the current method actor's node id
-    fn method_actor_get_node_id(&mut self) -> Result<NodeId, E>;
+    fn actor_get_node_id(&mut self) -> Result<NodeId, E>;
 
     /// Retrieve the current method actor's outer object
-    fn method_actor_get_outer_object(&mut self) -> Result<GlobalAddress, E>;
+    fn actor_get_outer_object(&mut self) -> Result<GlobalAddress, E>;
 
     /// Retrieve the current method actor's global address
-    fn method_actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
+    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, E>;
 
     /// Call a method on a module of the current method actor
-    fn method_actor_call_module(
+    fn actor_call_module(
         &mut self,
         module_id: ObjectModuleId,
         method_name: &str,
