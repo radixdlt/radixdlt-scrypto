@@ -105,7 +105,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                     TYPE_INFO_FIELD_PARTITION,
                     &TypeInfoField::TypeInfo.into(),
                     LockFlags::read_only(),
-                    |_| -> Result<(), ()> { Ok(()) },
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .map_err(|_| KernelError::InvalidReference(*node_id))?;
             let substate_ref = kernel.store.read_substate(handle);
@@ -407,7 +407,7 @@ where
                 src_partition_number,
                 dest_node_id,
                 dest_partition_number,
-                |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_store_access(&store_access),
                 &mut self.heap,
                 self.store,
             )
@@ -623,7 +623,7 @@ where
             partition_num,
             substate_key,
             flags,
-            |store_access| self.callback.on_store_access(&store_access),
+            &mut |store_access| self.callback.on_store_access(&store_access),
             default,
             data,
         );
@@ -645,7 +645,7 @@ where
                                 partition_num,
                                 &substate_key,
                                 flags,
-                                |store_access| self.callback.on_store_access(&store_access),
+                                &mut |store_access| self.callback.on_store_access(&store_access),
                                 None,
                                 M::LockData::default(),
                             )
@@ -808,7 +808,7 @@ where
                 node_id,
                 partition_num,
                 &substate_key,
-                |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_store_access(&store_access),
                 &mut self.heap,
                 self.store,
             )
@@ -837,7 +837,7 @@ where
                 node_id,
                 partition_num,
                 count,
-                |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_store_access(&store_access),
                 &mut self.heap,
                 self.store,
             )
@@ -866,7 +866,7 @@ where
                 node_id,
                 partition_num,
                 count,
-                |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_store_access(&store_access),
                 &mut self.heap,
                 self.store,
             )
@@ -895,7 +895,7 @@ where
                 node_id,
                 partition_num,
                 count,
-                |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_store_access(&store_access),
                 &mut self.heap,
                 self.store,
             )

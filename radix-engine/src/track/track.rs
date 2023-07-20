@@ -430,11 +430,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> Track<'s, S, M> {
     fn list_entries_from_db<'x, E: 'x, F: FnMut(StoreAccess) -> Result<(), E> + 'x>(
         substate_db: &'x S,
         partition_key: &DbPartitionKey,
-        on_store_access: F,
+        on_store_access: &'x mut F,
     ) -> Box<dyn Iterator<Item = Result<(DbSortKey, IndexedScryptoValue), E>> + 'x> {
         struct TracedIterator<'a, E, F: FnMut(StoreAccess) -> Result<(), E>> {
             iterator: Box<dyn Iterator<Item = PartitionEntry> + 'a>,
-            on_store_access: F,
+            on_store_access: &'a mut F,
             errored_out: bool,
         }
 
@@ -670,7 +670,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_substates: NodeSubstates,
         on_store_access: &mut F,
     ) -> Result<(), E> {
-        let mut tracked_partitions = IndexMap::new();
+        let mut tracked_partitions = index_map_new();
 
         for (partition_num, partition) in node_substates {
             let mut partition_substates = BTreeMap::new();
@@ -754,14 +754,14 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        mut on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<RemoveSubstateError, E>> {
         let tracked = self
             .get_tracked_substate(
                 node_id,
                 partition_num,
                 substate_key.clone(),
-                &mut on_store_access,
+                on_store_access,
             )
             .map_err(CallbackError::CallbackError)?;
         if let Some(runtime) = tracked.get_runtime_substate_mut() {
@@ -784,7 +784,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<SubstateKey>, E> {
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
@@ -853,7 +853,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E> {
         let count: usize = count.try_into().unwrap();
         let mut items = Vec::new();
@@ -944,7 +944,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<IndexedScryptoValue>, E> {
         // TODO: ensure we abort if any substates are write locked.
         let count: usize = count.try_into().unwrap();
@@ -1011,7 +1011,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        mut on_store_access: F,
+        on_store_access: &mut F,
         virtualize: V,
     ) -> Result<u32, CallbackError<TrackOpenSubstateError, E>> {
         // Load the substate from state track
@@ -1020,7 +1020,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
                 node_id,
                 partition_num,
                 substate_key.clone(),
-                &mut on_store_access,
+                on_store_access,
                 virtualize,
             )
             .map_err(CallbackError::CallbackError)?;

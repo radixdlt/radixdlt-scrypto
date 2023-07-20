@@ -397,7 +397,7 @@ impl<L: Clone> CallFrame<L> {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        on_store_access: F,
+        on_store_access: &mut F,
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
     ) -> Result<(LockHandle, usize), CallbackError<OpenSubstateError, E>> {
@@ -835,7 +835,7 @@ impl<L: Clone> CallFrame<L> {
         src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
-        mut on_store_access: F,
+        on_store_access: &mut F,
         heap: &'f mut Heap,
         store: &'f mut S,
     ) -> Result<(), CallbackError<MoveModuleError, E>> {
@@ -869,7 +869,7 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, own, &mut on_store_access)
+                    Self::move_node_to_store(heap, store, own, on_store_access)
                         .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
 
@@ -887,7 +887,7 @@ impl<L: Clone> CallFrame<L> {
                         dest_partition_number,
                         substate_key,
                         substate_value,
-                        &mut on_store_access,
+                        on_store_access,
                     )
                     .map_err(|e| e.map(MoveModuleError::TrackSetSubstateError))?
             }
@@ -946,7 +946,7 @@ impl<L: Clone> CallFrame<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         key: &SubstateKey,
-        on_store_access: F,
+        on_store_access: &mut F,
         heap: &'f mut Heap,
         store: &'f mut S,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<CallFrameRemoveSubstateError, E>> {
@@ -979,7 +979,7 @@ impl<L: Clone> CallFrame<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
         heap: &'f mut Heap,
         store: &'f mut S,
     ) -> Result<Vec<SubstateKey>, CallbackError<CallFrameScanKeysError, E>> {
@@ -1012,7 +1012,7 @@ impl<L: Clone> CallFrame<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
         heap: &'f mut Heap,
         store: &'f mut S,
     ) -> Result<
@@ -1057,7 +1057,7 @@ impl<L: Clone> CallFrame<L> {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
         heap: &'f mut Heap,
         store: &'f mut S,
     ) -> Result<Vec<IndexedScryptoValue>, CallbackError<CallFrameScanSortedSubstatesError, E>> {

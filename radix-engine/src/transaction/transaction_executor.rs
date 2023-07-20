@@ -367,7 +367,7 @@ where
             MAIN_BASE_PARTITION,
             &ConsensusManagerField::ConsensusManager.into(),
             LockFlags::read_only(),
-            |_| -> Result<(), ()> { Ok(()) },
+            &mut |_| -> Result<(), ()> { Ok(()) },
         ) {
             Ok(x) => x,
             Err(_) => {
@@ -412,7 +412,7 @@ where
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::read_only(),
-                |_| -> Result<(), ()> { Ok(()) },
+                &mut |_| -> Result<(), ()> { Ok(()) },
             )
             .unwrap();
         let substate: FieldSubstate<TransactionTrackerSubstate> =
@@ -431,7 +431,7 @@ where
                 PartitionNumber(partition_number),
                 &SubstateKey::Map(intent_hash.to_vec()),
                 LockFlags::read_only(),
-                |_| -> Result<(), ()> { Ok(()) },
+                &mut |_| -> Result<(), ()> { Ok(()) },
                 || {
                     Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
                         value: Option::<TransactionStatus>::None,
@@ -613,7 +613,7 @@ where
                     MAIN_BASE_PARTITION,
                     &substate_key,
                     LockFlags::MUTABLE,
-                    |_| -> Result<(), ()> { Ok(()) },
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
             let substate_value = track.read_substate(handle);
@@ -654,7 +654,7 @@ where
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
                     LockFlags::MUTABLE,
-                    |_| -> Result<(), ()> { Ok(()) },
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
             let substate_value = track.read_substate(handle);
@@ -706,7 +706,7 @@ where
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ConsensusManager.into(),
                     LockFlags::read_only(),
-                    |_| -> Result<(), ()> { Ok(()) },
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
             let substate: FieldSubstate<ConsensusManagerSubstate> =
@@ -721,7 +721,7 @@ where
                     MAIN_BASE_PARTITION,
                     &ConsensusManagerField::ValidatorRewards.into(),
                     LockFlags::MUTABLE,
-                    |_| -> Result<(), ()> { Ok(()) },
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
             let mut substate: FieldSubstate<ValidatorRewardsSubstate> =
@@ -755,7 +755,7 @@ where
                     MAIN_BASE_PARTITION,
                     &FungibleVaultField::LiquidFungible.into(),
                     LockFlags::MUTABLE,
-                    |_| -> Result<(), ()> { Ok(()) },
+                    &mut |_| -> Result<(), ()> { Ok(()) },
                 )
                 .unwrap();
             let mut substate: FieldSubstate<LiquidFungibleResource> =
@@ -785,7 +785,7 @@ where
                 MAIN_BASE_PARTITION,
                 &TransactionTrackerField::TransactionTracker.into(),
                 LockFlags::MUTABLE,
-                |_| -> Result<(), ()> { Ok(()) },
+                &mut |_| -> Result<(), ()> { Ok(()) },
             )
             .unwrap();
         let mut transaction_tracker: FieldSubstate<TransactionTrackerSubstate> =
@@ -808,7 +808,7 @@ where
                         PartitionNumber(partition_number),
                         &SubstateKey::Map(intent_hash.to_vec()),
                         LockFlags::MUTABLE,
-                        |_| -> Result<(), ()> { Ok(()) },
+                        &mut |_| -> Result<(), ()> { Ok(()) },
                         || {
                             Some(IndexedScryptoValue::from_typed(&KeyValueEntrySubstate {
                                 value: Option::<TransactionStatus>::None,

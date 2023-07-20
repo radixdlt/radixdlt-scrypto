@@ -93,7 +93,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Option<IndexedScryptoValue>, CallbackError<RemoveSubstateError, E>>;
 
     /// Returns Substate Keys of maximum count for a given partition.
@@ -109,7 +109,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<SubstateKey>, E>;
 
     /// Removes substates of maximum count for a given partition.
@@ -125,7 +125,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E>;
 
     /// Returns tuple of substate vector and boolean which is true for the first database access.
@@ -134,7 +134,7 @@ pub trait SubstateStore {
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<Vec<IndexedScryptoValue>, E>;
 
     /// Acquires a lock over a substate.
@@ -146,7 +146,7 @@ pub trait SubstateStore {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        on_store_access: F,
+        on_store_access: &mut F,
     ) -> Result<u32, CallbackError<TrackOpenSubstateError, E>> {
         self.open_substate_virtualize(
             node_id,
@@ -168,7 +168,7 @@ pub trait SubstateStore {
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
         flags: LockFlags,
-        on_store_access: F,
+        on_store_access: &mut F,
         virtualize: V,
     ) -> Result<u32, CallbackError<TrackOpenSubstateError, E>>;
 
