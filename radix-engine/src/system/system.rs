@@ -1112,7 +1112,7 @@ where
             let partition_number = MAIN_BASE_PARTITION
                 .at_offset(PartitionOffset(offset))
                 .unwrap();
-            self.kernel_move_module(
+            self.kernel_move_partition(
                 &node_id,
                 partition_number,
                 global_address.as_node_id(),
@@ -1162,7 +1162,12 @@ where
                             .at_offset(PartitionOffset(offset))
                             .unwrap();
 
-                        self.kernel_move_module(&node_id, src, global_address.as_node_id(), dest)?;
+                        self.kernel_move_partition(
+                            &node_id,
+                            src,
+                            global_address.as_node_id(),
+                            dest,
+                        )?;
                     }
 
                     self.kernel_drop_node(&node_id)?;
@@ -2700,14 +2705,14 @@ where
         self.api.kernel_create_node(node_id, node_substates)
     }
 
-    fn kernel_move_module(
+    fn kernel_move_partition(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        self.api.kernel_move_module(
+        self.api.kernel_move_partition(
             src_node_id,
             src_partition_number,
             dest_node_id,

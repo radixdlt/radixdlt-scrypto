@@ -379,7 +379,7 @@ where
                     SubstateDevice::Store
                 } else {
                     SubstateDevice::Heap
-                }
+                },
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -394,7 +394,7 @@ where
     }
 
     #[trace_resources]
-    fn kernel_move_module(
+    fn kernel_move_partition(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
@@ -402,13 +402,13 @@ where
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
         self.current_frame
-            .move_module(
+            .move_partition(
                 &mut self.substate_io,
+                &mut |store_access| self.callback.on_store_access(&store_access),
                 src_node_id,
                 src_partition_number,
                 dest_node_id,
                 dest_partition_number,
-                |store_access| self.callback.on_store_access(&store_access),
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(

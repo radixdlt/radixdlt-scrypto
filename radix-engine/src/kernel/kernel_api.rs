@@ -35,7 +35,7 @@ pub trait KernelNodeApi {
     /// The source node must be in heap and lock-free; otherwise a runtime error is returned.
     ///
     /// Note that implementation will not check if the destination already exists.
-    fn kernel_move_module(
+    fn kernel_move_partition(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,

@@ -50,15 +50,7 @@ impl SubstateLockState {
 }
 
 pub struct SubstateLocks<D> {
-    locks: IndexMap<
-        u32,
-        (
-            NodeId,
-            PartitionNumber,
-            SubstateKey,
-            D,
-        ),
-    >,
+    locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, D)>,
     substate_lock_states: NonIterMap<(NodeId, PartitionNumber, SubstateKey), SubstateLockState>,
     next_lock_id: u32,
 }
@@ -82,12 +74,7 @@ impl<D> SubstateLocks<D> {
         let new_lock = self.next_lock_id;
         self.locks.insert(
             new_lock,
-            (
-                *node_id,
-                partition_num,
-                substate_key.clone(),
-                data,
-            ),
+            (*node_id, partition_num, substate_key.clone(), data),
         );
         self.next_lock_id += 1;
         new_lock
@@ -132,29 +119,12 @@ impl<D> SubstateLocks<D> {
         Some(handle)
     }
 
-    pub fn get(
-        &self,
-        handle: u32,
-    ) -> &(
-        NodeId,
-        PartitionNumber,
-        SubstateKey,
-        D
-    ) {
+    pub fn get(&self, handle: u32) -> &(NodeId, PartitionNumber, SubstateKey, D) {
         self.locks.get(&handle).unwrap()
     }
 
-    pub fn unlock(
-        &mut self,
-        handle: u32,
-    ) -> (
-        NodeId,
-        PartitionNumber,
-        SubstateKey,
-        D,
-    ) {
-        let (node_id, partition_num, substate_key, data) =
-            self.locks.remove(&handle).unwrap();
+    pub fn unlock(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey, D) {
+        let (node_id, partition_num, substate_key, data) = self.locks.remove(&handle).unwrap();
         let full_key = (node_id, partition_num, substate_key);
         let lock_state = self.substate_lock_states.get_mut(&full_key).unwrap();
         lock_state.unlock();

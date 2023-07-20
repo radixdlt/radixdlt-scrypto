@@ -1,6 +1,6 @@
 use crate::kernel::actor::MethodType;
 use crate::kernel::substate_io;
-use crate::kernel::substate_io::{SubstateIO, SubstateDevice};
+use crate::kernel::substate_io::{SubstateDevice, SubstateIO};
 use crate::kernel::substate_locks::SubstateLocks;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
@@ -398,7 +398,8 @@ impl<L: Clone> CallFrame<L> {
 
         match destination_device {
             SubstateDevice::Store => {
-                self.stable_references.insert(node_id, StableReferenceType::Global);
+                self.stable_references
+                    .insert(node_id, StableReferenceType::Global);
             }
             SubstateDevice::Heap => {
                 self.owned_root_nodes.insert(node_id, 0);
@@ -448,6 +449,41 @@ impl<L: Clone> CallFrame<L> {
         }
 
         Ok(node_substates)
+    }
+
+    pub fn move_partition<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        &mut self,
+        substate_io: &'f mut SubstateIO<S>,
+        on_store_access: &'f mut F,
+        src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
+        dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
+    ) -> Result<(), CallbackError<MoveModuleError, E>> {
+        // Check ownership (and visibility)
+        if self.owned_root_nodes.get(src_node_id) != Some(&0) {
+            return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
+                src_node_id.clone(),
+            )));
+        }
+
+        // Check visibility
+        if !self.get_node_visibility(dest_node_id).is_visible() {
+            return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
+                dest_node_id.clone(),
+            )));
+        }
+
+        // Move
+        substate_io.move_partition(
+            on_store_access,
+            src_node_id,
+            src_partition_number,
+            dest_node_id,
+            dest_partition_number,
+        )?;
+
+        Ok(())
     }
 
     pub fn open_substate<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
@@ -575,7 +611,6 @@ impl<L: Clone> CallFrame<L> {
         lock_handle: LockHandle,
         on_store_access: &mut F,
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
-
         let OpenedSubstate {
             global_lock_handle,
             owned_nodes,
@@ -591,8 +626,12 @@ impl<L: Clone> CallFrame<L> {
         // TODO: Move this logic into write_substate?
         if updated {
             let updated_substate = substate_io.read_substate(global_lock_handle);
-            self.process_substate(updated_substate, location, Some((&owned_nodes, &non_global_references)))
-                .map_err(|e| CallbackError::Error(CloseSubstateError::ProcessSubstateError(e)))?;
+            self.process_substate(
+                updated_substate,
+                location,
+                Some((&owned_nodes, &non_global_references)),
+            )
+            .map_err(|e| CallbackError::Error(CloseSubstateError::ProcessSubstateError(e)))?;
         }
 
         let (node_id, ..) = substate_io.close_substate(global_lock_handle, on_store_access)?;
@@ -623,77 +662,6 @@ impl<L: Clone> CallFrame<L> {
         self.locks
             .get(&lock_handle)
             .map(|substate_lock| substate_lock.data.clone())
-    }
-
-
-
-    pub fn move_module<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
-        &mut self,
-        substate_io: &'f mut SubstateIO<S>,
-        src_node_id: &NodeId,
-        src_partition_number: PartitionNumber,
-        dest_node_id: &NodeId,
-        dest_partition_number: PartitionNumber,
-        mut on_store_access: F,
-    ) -> Result<(), CallbackError<MoveModuleError, E>> {
-        // Check ownership (and visibility)
-        if self.owned_root_nodes.get(src_node_id) != Some(&0) {
-            return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
-                src_node_id.clone(),
-            )));
-        }
-
-        // Check visibility
-        if !self.get_node_visibility(dest_node_id).is_visible() {
-            return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
-                dest_node_id.clone(),
-            )));
-        }
-
-        // Move
-        let module = substate_io
-            .heap
-            .remove_module(src_node_id, src_partition_number)
-            .map_err(|e| CallbackError::Error(MoveModuleError::HeapRemoveModuleErr(e)))?;
-        let to_heap = substate_io.heap.contains_node(dest_node_id);
-        for (substate_key, substate_value) in module {
-            if to_heap {
-                substate_io.heap.set_substate(
-                    *dest_node_id,
-                    dest_partition_number,
-                    substate_key,
-                    substate_value,
-                );
-            } else {
-                // Recursively move nodes to store
-                for own in substate_value.owned_nodes() {
-                    substate_io
-                        .move_node_to_store(own, &mut on_store_access)
-                        .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
-                }
-
-                for reference in substate_value.references() {
-                    if !reference.is_global() {
-                        return Err(CallbackError::Error(
-                            MoveModuleError::NonGlobalRefNotAllowed(reference.clone()),
-                        ));
-                    }
-                }
-
-                substate_io
-                    .store
-                    .set_substate(
-                        *dest_node_id,
-                        dest_partition_number,
-                        substate_key,
-                        substate_value,
-                        &mut on_store_access,
-                    )
-                    .map_err(CallbackError::CallbackError)?
-            }
-        }
-
-        Ok(())
     }
 
     pub fn add_global_reference(&mut self, address: GlobalAddress) {
@@ -775,7 +743,8 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        let keys = substate_io.scan_keys::<K, E, F>(node_id, partition_num, count, on_store_access)?;
+        let keys =
+            substate_io.scan_keys::<K, E, F>(node_id, partition_num, count, on_store_access)?;
 
         Ok(keys)
     }
@@ -804,7 +773,12 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        let substates = substate_io.drain_substates::<K, E, F>(node_id, partition_num, count, on_store_access)?;
+        let substates = substate_io.drain_substates::<K, E, F>(
+            node_id,
+            partition_num,
+            count,
+            on_store_access,
+        )?;
 
         for (_key, substate) in &substates {
             for reference in substate.references() {
@@ -839,12 +813,7 @@ impl<L: Clone> CallFrame<L> {
             ));
         }
 
-        let substates = substate_io.scan_sorted(
-            node_id,
-            partition_num,
-            count,
-            on_store_access,
-        )?;
+        let substates = substate_io.scan_sorted(node_id, partition_num, count, on_store_access)?;
 
         for substate in &substates {
             for reference in substate.references() {
@@ -910,14 +879,21 @@ impl<L: Clone> CallFrame<L> {
         NodeVisibility(visibilities)
     }
 
-    fn process_substate(&mut self, updated_substate: &IndexedScryptoValue, device: SubstateDevice, prev: Option<(&IndexSet<NodeId>, &IndexSet<NodeId>)>) -> Result<(), ProcessSubstateError>{
+    fn process_substate(
+        &mut self,
+        updated_substate: &IndexedScryptoValue,
+        device: SubstateDevice,
+        prev: Option<(&IndexSet<NodeId>, &IndexSet<NodeId>)>,
+    ) -> Result<(), ProcessSubstateError> {
         // Process owned nodes
         {
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
             for own in updated_substate.owned_nodes() {
                 let node_is_new = if let Some((old_owned_nodes, _)) = prev {
                     !old_owned_nodes.contains(own)
-                } else { true };
+                } else {
+                    true
+                };
 
                 if node_is_new {
                     // Node no longer owned by frame
