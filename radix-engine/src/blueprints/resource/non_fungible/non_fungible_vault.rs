@@ -134,7 +134,7 @@ impl NonFungibleVaultBlueprint {
     {
         Self::assert_freezable(api)?;
 
-        let frozen_flag_handle = api.method_actor_open_field(
+        let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::MUTABLE,
@@ -153,7 +153,7 @@ impl NonFungibleVaultBlueprint {
     {
         Self::assert_freezable(api)?;
 
-        let frozen_flag_handle = api.method_actor_open_field(
+        let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::MUTABLE,
@@ -247,7 +247,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: KernelNodeApi + ClientApi<RuntimeError>,
     {
-        let handle = api.method_actor_open_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::MUTABLE,
@@ -280,7 +280,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.method_actor_open_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::MUTABLE,
@@ -313,11 +313,11 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.method_actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
             return Ok(());
         }
 
-        let frozen_flag_handle = api.method_actor_open_field(
+        let frozen_flag_handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::VaultFrozenFlag.into(),
             LockFlags::read_only(),
@@ -338,7 +338,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.method_actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_FREEZE_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotFreezable),
             ));
@@ -351,7 +351,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        if !api.method_actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_RECALL_FEATURE)? {
+        if !api.actor_is_feature_enabled(OBJECT_HANDLE_OUTER_OBJECT, VAULT_RECALL_FEATURE)? {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::NotRecallable),
             ));
@@ -364,7 +364,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.method_actor_open_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::read_only(),
@@ -379,7 +379,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.method_actor_open_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::read_only(),
@@ -412,7 +412,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.method_actor_open_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::LockedNonFungible.into(),
             LockFlags::read_only(),
@@ -431,7 +431,7 @@ impl NonFungibleVaultBlueprint {
         Y: ClientApi<RuntimeError>,
     {
         // deduct from liquidity pool
-        let handle = api.method_actor_open_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
@@ -471,7 +471,7 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let handle = api.method_actor_open_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::MUTABLE,
@@ -517,7 +517,7 @@ impl NonFungibleVaultBlueprint {
 
         let event = DepositResourceEvent::Ids(resource.ids().clone());
 
-        let handle = api.method_actor_open_field(
+        let handle = api.actor_open_field(
             OBJECT_HANDLE_SELF,
             NonFungibleVaultField::LiquidNonFungible.into(),
             LockFlags::MUTABLE,

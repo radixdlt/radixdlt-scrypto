@@ -88,7 +88,7 @@ pub trait Attachable: Sized {
             }
             ModuleHandle::SELF(module_id) => {
                 let output = ScryptoEnv
-                    .method_actor_call_module(*module_id, method, args)
+                    .actor_call_module(*module_id, method, args)
                     .unwrap();
                 output
             }
@@ -116,7 +116,7 @@ pub trait Attachable: Sized {
             }
             ModuleHandle::SELF(module_id) => {
                 ScryptoEnv
-                    .method_actor_call_module(*module_id, method, args)
+                    .actor_call_module(*module_id, method, args)
                     .unwrap();
             }
         }

@@ -35,7 +35,7 @@ fn global_address_access_from_frame_owned_object_should_not_succeed() {
                     Ok(IndexedScryptoValue::from_typed(&()))
                 }
                 "get_global_address" => {
-                    let _ = api.method_actor_get_global_address()?;
+                    let _ = api.actor_get_global_address()?;
                     Ok(IndexedScryptoValue::from_typed(&()))
                 }
                 _ => Ok(IndexedScryptoValue::from_typed(&())),
@@ -104,7 +104,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
             Y: ClientApi<RuntimeError> + KernelNodeApi + KernelSubstateApi<SystemLockData>,
         {
             if self.0.contains(export_name) {
-                api.method_actor_get_global_address()
+                api.actor_get_global_address()
                     .expect_err("Direct method calls should never have global address");
             }
             ResourceNativePackage::invoke_export(export_name, input, api)

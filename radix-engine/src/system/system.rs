@@ -8,7 +8,7 @@ use crate::errors::{
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor, MethodType};
+use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor, ReceiverType};
 use crate::kernel::call_frame::{NodeVisibility, StableReferenceType, Visibility};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
@@ -659,7 +659,7 @@ where
                         }
 
                         (
-                            OuterObjectInfo::Inner {
+                            OuterObjectInfo::Some {
                                 outer_object: context.outer_object,
                             },
                             info.blueprint_info.features,
@@ -681,7 +681,7 @@ where
                     }
                 }
 
-                (OuterObjectInfo::Outer, BTreeSet::new())
+                (OuterObjectInfo::None, BTreeSet::new())
             };
 
         let user_substates = self.validate_instance_schema_and_state(
@@ -763,7 +763,7 @@ where
             ObjectModuleId::Main => self.get_object_info(node_id)?.blueprint_info,
             _ => BlueprintInfo {
                 blueprint_id: module_id.static_blueprint().unwrap(),
-                outer_obj_info: OuterObjectInfo::Outer,
+                outer_obj_info: OuterObjectInfo::None,
                 features: BTreeSet::default(),
                 instance_schema: None,
             },
@@ -843,8 +843,8 @@ where
             }
             Condition::IfOuterFeature(feature) => {
                 let parent_id = match info.outer_obj_info {
-                    OuterObjectInfo::Inner { outer_object } => outer_object.into_node_id(),
-                    OuterObjectInfo::Outer => {
+                    OuterObjectInfo::Some { outer_object } => outer_object.into_node_id(),
+                    OuterObjectInfo::None => {
                         panic!("Outer object should not have IfOuterFeature.")
                     }
                 };
@@ -1427,7 +1427,7 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
         // Direct access methods should never have access to a global address
         let method_type = if direct_access {
-            MethodType::DirectAccess
+            ReceiverType::DirectAccess
         } else {
             let node_visibility = self.api.kernel_get_node_visibility(receiver);
 
@@ -1436,7 +1436,7 @@ where
                 for visibility in node_visibility.0 {
                     match visibility {
                         Visibility::StableReference(StableReferenceType::Global) => {
-                            return Ok(MethodType::OnStoredObject(GlobalAddress::new_or_panic(
+                            return Ok(ReceiverType::OnStoredObject(GlobalAddress::new_or_panic(
                                 receiver.clone().into(),
                             )));
                         }
@@ -1447,27 +1447,24 @@ where
                         }
 
                         // Anything frame owned does not have a global address
-                        Visibility::FrameOwned => return Ok(MethodType::OnHeapObject),
+                        Visibility::FrameOwned => return Ok(ReceiverType::OnHeapObject),
 
                         // If borrowed or actor then we just use the current actor's global address
                         // e.g. if the parent to the node is frame owned then the current actor's global
                         // address would be None
                         Visibility::Borrowed | Visibility::Actor => {
                             match self.api.kernel_get_system_state().current_actor {
-                                Actor::Method(MethodActor { method_type, .. }) => {
-                                    let method_type = match method_type {
-                                        MethodType::DirectAccess
-                                        | MethodType::DirectAccessChild => {
-                                            MethodType::DirectAccessChild
-                                        }
-                                        MethodType::OnHeapObject => MethodType::OnHeapObject,
-                                        m @ MethodType::OnStoredObject(..) => m.clone(),
+                                Actor::Method(MethodActor { receiver_type, .. }) => {
+                                    let method_type = match receiver_type {
+                                        ReceiverType::DirectAccess => ReceiverType::DirectAccess,
+                                        ReceiverType::OnHeapObject => ReceiverType::OnHeapObject,
+                                        m @ ReceiverType::OnStoredObject(..) => m.clone(),
                                     };
                                     return Ok(method_type);
                                 }
                                 Actor::BlueprintHook(actor) => match actor.hook {
                                     BlueprintHook::OnMove | BlueprintHook::OnDrop => {
-                                        return Ok(MethodType::OnHeapObject)
+                                        return Ok(ReceiverType::OnHeapObject)
                                     }
                                     BlueprintHook::OnVirtualize => {
                                         panic!("Function Actor should never be able to call a borrowed object method unless it's a direct access method.")
@@ -1478,7 +1475,7 @@ where
                                     // This is currently a hack required since kernel modules call methods
                                     // on objects without creating their own callframe/actor
                                     // Otherwise, Function Actor should never be able to call a borrowed object method unless it's a direct access method.
-                                    return Ok(MethodType::OnHeapObject);
+                                    return Ok(ReceiverType::OnHeapObject);
                                 }
                                 Actor::Root => {
                                     panic!("Root should never be able to call a method")
@@ -2229,7 +2226,7 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn method_actor_open_field(
+    fn actor_open_field(
         &mut self,
         object_handle: ObjectHandle,
         field_index: u8,
@@ -2284,7 +2281,7 @@ where
     }
 
     #[trace_resources]
-    fn method_actor_get_node_id(&mut self) -> Result<NodeId, RuntimeError> {
+    fn actor_get_node_id(&mut self) -> Result<NodeId, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
@@ -2301,7 +2298,7 @@ where
     }
 
     #[trace_resources]
-    fn method_actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
+    fn actor_get_global_address(&mut self) -> Result<GlobalAddress, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
@@ -2310,7 +2307,7 @@ where
         let actor = self.current_actor();
         match actor {
             Actor::Method(MethodActor {
-                method_type: MethodType::OnStoredObject(address),
+                receiver_type: ReceiverType::OnStoredObject(address),
                 ..
             }) => Ok(address.clone()),
             _ => Err(RuntimeError::SystemError(
@@ -2320,7 +2317,7 @@ where
     }
 
     #[trace_resources]
-    fn method_actor_get_outer_object(&mut self) -> Result<GlobalAddress, RuntimeError> {
+    fn actor_get_outer_object(&mut self) -> Result<GlobalAddress, RuntimeError> {
         self.api
             .kernel_get_system()
             .modules
@@ -2331,8 +2328,8 @@ where
             ObjectModuleId::Main => {
                 let info = self.get_object_info(&node_id)?;
                 match info.blueprint_info.outer_obj_info {
-                    OuterObjectInfo::Inner { outer_object } => Ok(outer_object),
-                    OuterObjectInfo::Outer => Err(RuntimeError::SystemError(
+                    OuterObjectInfo::Some { outer_object } => Ok(outer_object),
+                    OuterObjectInfo::None => Err(RuntimeError::SystemError(
                         SystemError::OuterObjectDoesNotExist,
                     )),
                 }
@@ -2345,18 +2342,18 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn method_actor_call_module(
+    fn actor_call_module(
         &mut self,
         module_id: ObjectModuleId,
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let node_id = self.method_actor_get_node_id()?;
+        let node_id = self.actor_get_node_id()?;
         self.call_method_advanced(&node_id, module_id, false, method_name, args)
     }
 
     #[trace_resources]
-    fn method_actor_is_feature_enabled(
+    fn actor_is_feature_enabled(
         &mut self,
         object_handle: ObjectHandle,
         feature: &str,
