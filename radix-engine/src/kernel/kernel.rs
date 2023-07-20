@@ -214,12 +214,12 @@ where
         let can_be_invoked = match &invocation.actor {
             Actor::Method(MethodActor {
                 node_id,
-                receiver_type: method_type,
+                receiver_type,
                 ..
             }) => self
                 .current_frame
                 .get_node_visibility(&node_id)
-                .can_be_invoked(method_type.eq(&ReceiverType::DirectAccess)),
+                .can_be_invoked(receiver_type.eq(&ReceiverType::DirectAccess)),
             Actor::Function(FunctionActor { blueprint_id, .. })
             | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
                 // FIXME: combine this with reference check of invocation

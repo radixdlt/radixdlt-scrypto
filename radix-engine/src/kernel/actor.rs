@@ -207,12 +207,9 @@ impl Actor {
         }
     }
 
-    pub fn method_type(&self) -> Option<ReceiverType> {
+    pub fn receiver_type(&self) -> Option<ReceiverType> {
         match self {
-            Actor::Method(MethodActor {
-                receiver_type: method_type,
-                ..
-            }) => Some(method_type.clone()),
+            Actor::Method(MethodActor { receiver_type, .. }) => Some(receiver_type.clone()),
             _ => None,
         }
     }
@@ -266,14 +263,14 @@ impl Actor {
     }
 
     pub fn method(
-        method_type: ReceiverType,
+        receiver_type: ReceiverType,
         node_id: NodeId,
         module_id: ObjectModuleId,
         ident: String,
         object_info: ObjectInfo,
     ) -> Self {
         Self::Method(MethodActor {
-            receiver_type: method_type,
+            receiver_type,
             node_id,
             module_id,
             ident,

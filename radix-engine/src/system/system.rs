@@ -1060,16 +1060,16 @@ where
             );
 
         // Read the type info
-        let mut node_object_info = self.get_object_info(&node_id)?;
+        let mut object_info = self.get_object_info(&node_id)?;
 
         // Verify can globalize with address
         {
-            if node_object_info.global {
+            if object_info.global {
                 return Err(RuntimeError::SystemError(SystemError::CannotGlobalize(
                     CannotGlobalizeError::AlreadyGlobalized,
                 )));
             }
-            if !node_object_info
+            if !object_info
                 .blueprint_info
                 .blueprint_id
                 .eq(&reserved_blueprint_id)
@@ -1082,18 +1082,17 @@ where
 
         // Update Object Info
         {
-            node_object_info.global = true;
+            object_info.global = true;
             for module_id in modules.keys() {
-                node_object_info
+                object_info
                     .module_versions
                     .insert(module_id.clone(), BlueprintVersion::default());
             }
         }
 
         let num_main_partitions = {
-            let interface = self.get_blueprint_default_interface(
-                node_object_info.blueprint_info.blueprint_id.clone(),
-            )?;
+            let interface = self
+                .get_blueprint_default_interface(object_info.blueprint_info.blueprint_id.clone())?;
             interface.state.num_partitions()
         };
 
@@ -1101,7 +1100,7 @@ where
         self.kernel_create_node(
             global_address.into(),
             btreemap!(
-                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(node_object_info))
+                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(object_info))
             ),
         )?;
 
@@ -1426,13 +1425,13 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         // Direct access methods should never have access to a global address
-        let method_type = if direct_access {
+        let receiver_type = if direct_access {
             ReceiverType::DirectAccess
         } else {
             let node_visibility = self.api.kernel_get_node_visibility(receiver);
 
             // Retrieve the global address of the receiver node
-            let mut get_method_type = |node_visibility: NodeVisibility| {
+            let mut get_receiver_type = |node_visibility: NodeVisibility| {
                 for visibility in node_visibility.0 {
                     match visibility {
                         Visibility::StableReference(StableReferenceType::Global) => {
@@ -1441,7 +1440,7 @@ where
                             )));
                         }
 
-                        // Direct access references dont provide any info regarding global address so continue
+                        // Direct access references dont provide any info regarding global address so continue:1458
                         Visibility::StableReference(StableReferenceType::DirectAccess) => {
                             continue;
                         }
@@ -1455,12 +1454,14 @@ where
                         Visibility::Borrowed | Visibility::Actor => {
                             match self.api.kernel_get_system_state().current_actor {
                                 Actor::Method(MethodActor { receiver_type, .. }) => {
-                                    let method_type = match receiver_type {
+                                    let receiver_type = match receiver_type {
+                                        // TODO: This isn't totally correct as a direct access actor may call a non-direct access method
+                                        // but we don't use this anywhere at the moment
                                         ReceiverType::DirectAccess => ReceiverType::DirectAccess,
                                         ReceiverType::OnHeapObject => ReceiverType::OnHeapObject,
                                         m @ ReceiverType::OnStoredObject(..) => m.clone(),
                                     };
-                                    return Ok(method_type);
+                                    return Ok(receiver_type);
                                 }
                                 Actor::BlueprintHook(actor) => match actor.hook {
                                     BlueprintHook::OnMove | BlueprintHook::OnDrop => {
@@ -1490,7 +1491,7 @@ where
                 ))
             };
 
-            get_method_type(node_visibility)?
+            get_receiver_type(node_visibility)?
         };
 
         // Key Value Stores do not have methods so we remove that possibility here
@@ -1503,7 +1504,7 @@ where
 
         let invocation = KernelInvocation {
             actor: Actor::method(
-                method_type,
+                receiver_type,
                 receiver.clone(),
                 module_id,
                 method_name.to_string(),
@@ -1526,6 +1527,7 @@ where
         Ok(blueprint_id)
     }
 
+    // Costing through kernel
     #[trace_resources]
     fn get_outer_object(&mut self, node_id: &NodeId) -> Result<GlobalAddress, RuntimeError> {
         match self.get_object_info(node_id)?.try_get_outer_object() {
