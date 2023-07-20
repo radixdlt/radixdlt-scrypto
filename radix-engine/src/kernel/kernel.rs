@@ -1,4 +1,4 @@
-use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
+use super::actor::Actor;
 use super::call_frame::{CallFrame, NodeVisibility, OpenSubstateError};
 use super::heap::Heap;
 use super::id_allocator::IdAllocator;
@@ -9,7 +9,6 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -210,29 +209,6 @@ where
         &mut self,
         invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
-        // Check actor visibility
-        let can_be_invoked = match &invocation.actor {
-            Actor::Method(MethodActor {
-                node_id,
-                receiver_type,
-                ..
-            }) => self
-                .current_frame
-                .get_node_visibility(&node_id)
-                .can_be_invoked(receiver_type.eq(&ReceiverType::DirectAccess)),
-            Actor::Function(FunctionActor { blueprint_id, .. })
-            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
-                // FIXME: combine this with reference check of invocation
-                self.current_frame
-                    .get_node_visibility(blueprint_id.package_address.as_node_id())
-                    .can_be_invoked(false)
-            }
-            Actor::Root => true,
-        };
-        if !can_be_invoked {
-            return Err(RuntimeError::KernelError(KernelError::InvalidInvokeAccess));
-        }
-
         // Before push call frame
         let mut message = Message::from_indexed_scrypto_value(&invocation.args);
         let actor = invocation.actor;

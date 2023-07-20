@@ -1424,12 +1424,17 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
+        let node_visibility = self.api.kernel_get_node_visibility(receiver);
+        if !node_visibility.can_be_invoked(direct_access) {
+            return Err(RuntimeError::SystemError(
+                SystemError::NodeNotVisibleForMethodCall,
+            ));
+        }
+
         // Direct access methods should never have access to a global address
         let receiver_type = if direct_access {
             ReceiverType::DirectAccess
         } else {
-            let node_visibility = self.api.kernel_get_node_visibility(receiver);
-
             // Retrieve the global address of the receiver node
             let mut get_receiver_type = |node_visibility: NodeVisibility| {
                 for visibility in node_visibility.0 {

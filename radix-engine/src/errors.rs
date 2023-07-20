@@ -147,9 +147,6 @@ pub enum KernelError {
     // Substate lock/read/write/unlock
     LockDoesNotExist(LockHandle),
 
-    // Invoke
-    InvalidInvokeAccess,
-
     OrphanedNodes(Vec<NodeId>),
 }
 

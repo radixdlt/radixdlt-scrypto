@@ -1,4 +1,6 @@
-use radix_engine::errors::{KernelError, RejectionError, RuntimeError, SystemModuleError};
+use radix_engine::errors::{
+    KernelError, RejectionError, RuntimeError, SystemError, SystemModuleError,
+};
 use radix_engine::system::system_modules::auth::AuthError;
 use radix_engine::types::*;
 use scrypto::prelude::FromPublicKey;
@@ -142,7 +144,7 @@ fn test_recall_on_internal_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::InvalidInvokeAccess)
+            RuntimeError::SystemError(SystemError::NodeNotVisibleForMethodCall)
         )
     });
 }
