@@ -67,7 +67,9 @@ extern "C" {
         _address_len: usize,
     ) -> Buffer;
 
-    pub fn get_object_info(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+    pub fn get_blueprint_id(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
+
+    pub fn get_outer_object(component_id_ptr: *const u8, component_id_len: usize) -> Buffer;
 
     pub fn kv_store_new(schema_ptr: *const u8, schema_len: usize) -> Buffer;
 
@@ -136,7 +138,6 @@ extern "C" {
     pub fn actor_open_field(object_handle: u32, field: u32, flags: u32) -> u32;
 
     pub fn actor_call_module_method(
-        _object_handle: u32,
         _module_id: u32,
         _ident_ptr: *const u8,
         _ident_len: usize,
@@ -246,7 +247,12 @@ pub unsafe fn globalize(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn get_object_info(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
+pub unsafe fn get_blueprint_id(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
+    unreachable!()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub unsafe fn get_outer_object(_component_id_ptr: *const u8, _component_id_len: usize) -> Buffer {
     unreachable!()
 }
 
@@ -371,7 +377,6 @@ pub unsafe fn get_blueprint() -> Buffer {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn actor_call_module_method(
-    _object_handle: u32,
     _module_id: u32,
     _ident_ptr: *const u8,
     _ident_len: usize,

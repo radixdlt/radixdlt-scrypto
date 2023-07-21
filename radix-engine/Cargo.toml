@@ -22,7 +22,7 @@ strum = { version = "0.24", default-features = false, features = ["derive"] }
 perfcnt = { version = "0.8.0", optional = true }
 radix-engine-profiling = { path = "../radix-engine-profiling", optional = true, features = ["resource_tracker"] }
 resources-tracker-macro = { path = "../radix-engine-profiling/resources-tracker-macro" }
-paste = "1.0.12"
+paste = { version = "1.0.13" }
 
 # WASM validation
 wasmparser = { version = "0.107.0", default-features = false }
