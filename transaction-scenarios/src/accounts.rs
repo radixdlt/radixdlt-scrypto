@@ -56,6 +56,22 @@ pub fn secp256k1_account_3() -> VirtualAccount {
     )
 }
 
+pub fn secp256k1_account_dashboard() -> VirtualAccount {
+    VirtualAccount::for_private_key(
+        Secp256k1PrivateKey::from_u64(53214)
+            .expect("Should be valid")
+            .into(),
+    )
+}
+
+pub fn secp256k1_account_sandbox() -> VirtualAccount {
+    VirtualAccount::for_private_key(
+        Secp256k1PrivateKey::from_u64(53215)
+            .expect("Should be valid")
+            .into(),
+    )
+}
+
 pub fn ed25519_account_1() -> VirtualAccount {
     VirtualAccount::for_private_key(
         Ed25519PrivateKey::from_u64(12451)
