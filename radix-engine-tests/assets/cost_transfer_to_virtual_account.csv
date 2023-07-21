@@ -1,7 +1,7 @@
-Total Cost (XRD)                                                           ,   0.1054888015,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.09222743,     87.4%
-+ Tipping Cost (XRD)                                                       ,   0.0046113715,      4.4%
-+ State Expansion Cost (XRD)                                               ,        0.00865,      8.2%
+Total Cost (XRD)                                                           ,     0.10087743,    100.0%
++ Execution Cost (XRD)                                                     ,     0.09222743,     91.4%
++ Tipping Cost (XRD)                                                       ,              0,      0.0%
++ State Expansion Cost (XRD)                                               ,        0.00865,      8.6%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
 Total Cost Units Consumed                                                  ,        9222743,    100.0%
 AfterInvoke                                                                ,            626,      0.0%
