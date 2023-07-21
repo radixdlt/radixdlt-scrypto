@@ -243,8 +243,7 @@ impl Actor {
     }
 
     /// Proofs which exist only on the local call frame
-    /// FIXME: Update abstractions such that it is based on local call frame
-    pub fn get_virtual_non_extending_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
+    pub fn get_local_call_frame_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
         if let Some(blueprint_id) = self.blueprint_id() {
             btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
                 blueprint_id.package_address
@@ -254,7 +253,7 @@ impl Actor {
         }
     }
 
-    pub fn get_virtual_non_extending_barrier_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
+    pub fn get_global_call_frame_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
         if let Some(global_caller) = self.as_global_caller() {
             btreeset!(NonFungibleGlobalId::global_caller_badge(global_caller))
         } else {
