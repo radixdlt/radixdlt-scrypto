@@ -12,7 +12,6 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
-use super::actor::Actor;
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
 
@@ -117,12 +116,11 @@ impl NodeVisibility {
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects and references by this function.
-pub struct CallFrame<L> {
+pub struct CallFrame<C, L> {
     /// The frame id
     depth: usize,
 
-    /// FIXME: redo actor generification
-    actor: Actor,
+    call_frame_data: C,
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node, to prevent locked node from moving.
@@ -264,11 +262,11 @@ pub enum CallFrameScanSortedSubstatesError {
     NodeNotVisible(NodeId),
 }
 
-impl<L: Clone> CallFrame<L> {
-    pub fn new_root(actor: Actor) -> Self {
+impl<C, L: Clone> CallFrame<C, L> {
+    pub fn new_root(call_frame_data: C) -> Self {
         Self {
             depth: 0,
-            actor,
+            call_frame_data,
             stable_references: NonIterMap::new(),
             transient_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
@@ -278,13 +276,13 @@ impl<L: Clone> CallFrame<L> {
     }
 
     pub fn new_child_from_parent(
-        parent: &mut CallFrame<L>,
-        actor: Actor,
+        parent: &mut CallFrame<C, L>,
+        call_frame_data: C,
         message: Message,
     ) -> Result<Self, CreateFrameError> {
         let mut frame = Self {
             depth: parent.depth + 1,
-            actor,
+            call_frame_data,
             stable_references: NonIterMap::new(),
             transient_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
@@ -300,8 +298,8 @@ impl<L: Clone> CallFrame<L> {
     }
 
     pub fn pass_message(
-        from: &mut CallFrame<L>,
-        to: &mut CallFrame<L>,
+        from: &mut CallFrame<C, L>,
+        to: &mut CallFrame<C, L>,
         message: Message,
     ) -> Result<(), PassMessageError> {
         for node_id in message.move_nodes {
@@ -348,8 +346,8 @@ impl<L: Clone> CallFrame<L> {
         self.depth
     }
 
-    pub fn actor(&self) -> &Actor {
-        &self.actor
+    pub fn data(&self) -> &C {
+        &self.call_frame_data
     }
 
     // TODO: Remove

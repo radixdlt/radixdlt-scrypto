@@ -182,11 +182,11 @@ pub struct Kernel<
     S: SubstateStore,
 {
     /// Stack
-    current_frame: CallFrame<M::LockData>,
+    current_frame: CallFrame<Actor, M::LockData>,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
     // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame<M::LockData>>,
+    prev_frame_stack: Vec<CallFrame<Actor, M::LockData>>,
 
     /// Heap
     heap: Heap,
@@ -293,7 +293,7 @@ where
 
             let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
 
-            M::after_pop_frame(self, dropped_frame.actor())?;
+            M::after_pop_frame(self, dropped_frame.data())?;
         }
 
         Ok(output)
@@ -406,15 +406,15 @@ where
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
         let caller_actor = match self.prev_frame_stack.last() {
-            Some(call_frame) => call_frame.actor(),
+            Some(call_frame) => call_frame.data(),
             None => {
                 // This will only occur on initialization
-                self.current_frame.actor()
+                self.current_frame.data()
             }
         };
         SystemState {
             system: &mut self.callback,
-            current_actor: self.current_frame.actor(),
+            current_actor: self.current_frame.data(),
             caller_actor,
         }
     }
