@@ -63,6 +63,11 @@ pub enum StableReferenceType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TransientReference {
+    ref_count: usize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Visibility {
     StableReference(StableReferenceType),
     FrameOwned,
@@ -128,7 +133,7 @@ pub struct CallFrame<C, L> {
 
     /// References to non-GLOBAL nodes, obtained from substate loading, ref counted.
     /// These references may NOT be passed between call frames as arguments
-    transient_references: NonIterMap<NodeId, usize>,
+    transient_references: NonIterMap<NodeId, TransientReference>,
 
     /// Stable references points to nodes in track, which can't moved/deleted.
     /// Current two types: `GLOBAL` (root, stored) and `DirectAccess`.
@@ -332,8 +337,10 @@ impl<C, L: Clone> CallFrame<C, L> {
             if from.get_node_visibility(&node_id).is_visible() {
                 to.transient_references
                     .entry(node_id.clone())
-                    .or_default()
-                    .add_assign(1);
+                    .or_insert(TransientReference {
+                        ref_count: 0usize,
+                    })
+                    .ref_count.add_assign(1);
             } else {
                 return Err(PassMessageError::ActorRefNotFound(node_id));
             }
@@ -450,14 +457,18 @@ impl<C, L: Clone> CallFrame<C, L> {
         for reference in &non_global_references {
             self.transient_references
                 .entry(reference.clone())
-                .or_default()
-                .add_assign(1);
+                .or_insert(TransientReference {
+                    ref_count: 0usize,
+                })
+                .ref_count.add_assign(1);
         }
         for own in &owned_nodes {
             self.transient_references
                 .entry(own.clone())
-                .or_default()
-                .add_assign(1);
+                .or_insert(TransientReference {
+                    ref_count: 0usize,
+                })
+                .ref_count.add_assign(1);
         }
 
         // Issue lock handle
@@ -595,15 +606,17 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         // Shrink transient reference set
         for reference in substate_lock.non_global_references {
-            let cnt = self.transient_references.remove(&reference).unwrap_or(0);
-            if cnt > 1 {
-                self.transient_references.insert(reference, cnt - 1);
+            let mut transient_ref = self.transient_references.remove(&reference).unwrap();
+            if transient_ref.ref_count > 1 {
+                transient_ref.ref_count -= 1;
+                self.transient_references.insert(reference, transient_ref);
             }
         }
         for own in substate_lock.owned_nodes {
-            let cnt = self.transient_references.remove(&own).unwrap_or(0);
-            if cnt > 1 {
-                self.transient_references.insert(own, cnt - 1);
+            let mut transient_ref = self.transient_references.remove(&own).unwrap();
+            if transient_ref.ref_count > 1 {
+                transient_ref.ref_count -= 1;
+                self.transient_references.insert(own, transient_ref);
             }
         }
 
