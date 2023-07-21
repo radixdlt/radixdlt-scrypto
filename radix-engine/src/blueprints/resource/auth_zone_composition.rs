@@ -232,7 +232,6 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
         ));
     }
 
-    // FIXME: make sure costing has taken this loop into account.
     let mut evidence = BTreeMap::new();
     let mut remaining = amount.clone();
     let mut lock_handles = Vec::new();
@@ -322,7 +321,6 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
         ));
     }
 
-    // FIXME: make sure costing has taken this loop into account.
     let mut evidence = BTreeMap::new();
     let mut remaining = ids.clone();
     let mut lock_handles = Vec::new();
