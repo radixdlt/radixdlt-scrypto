@@ -12,15 +12,8 @@ pub struct InstanceContext {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum ReceiverType {
-    DirectAccess,
-    OnHeapOrUnknownGlobalAddress,
-    OnStoredObject(GlobalAddress),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
-    pub receiver_type: ReceiverType,
+    pub direct_access: bool,
     pub node_id: NodeId,
     pub module_id: ObjectModuleId,
     pub ident: String,
@@ -225,17 +218,10 @@ impl Actor {
     pub fn is_direct_access(&self) -> bool {
         match self {
             Actor::Method(MethodActor {
-                receiver_type: ReceiverType::DirectAccess,
+                direct_access,
                 ..
-            }) => true,
+            }) => *direct_access,
             _ => false,
-        }
-    }
-
-    pub fn receiver_type(&self) -> Option<ReceiverType> {
-        match self {
-            Actor::Method(MethodActor { receiver_type, .. }) => Some(receiver_type.clone()),
-            _ => None,
         }
     }
 
@@ -285,14 +271,14 @@ impl Actor {
     }
 
     pub fn method(
-        receiver_type: ReceiverType,
+        direct_access: bool,
         node_id: NodeId,
         module_id: ObjectModuleId,
         ident: String,
         object_info: ObjectInfo,
     ) -> Self {
         Self::Method(MethodActor {
-            receiver_type,
+            direct_access,
             node_id,
             module_id,
             ident,

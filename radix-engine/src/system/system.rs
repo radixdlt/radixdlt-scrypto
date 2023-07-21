@@ -8,8 +8,8 @@ use crate::errors::{
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor, ReceiverType};
-use crate::kernel::call_frame::{NodeVisibility, StableReferenceType, Visibility};
+use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
+use crate::kernel::call_frame::NodeVisibility;
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
@@ -1431,23 +1431,6 @@ where
             ));
         }
 
-        // Direct access methods should never have access to a global address
-        let receiver_type = if direct_access {
-            ReceiverType::DirectAccess
-        } else {
-            if let Some(global_address) = node_visibility.as_transient_ref(*receiver) {
-                if let Some(global_address) = global_address {
-                    ReceiverType::OnStoredObject(global_address)
-                } else {
-                    ReceiverType::OnHeapOrUnknownGlobalAddress
-                }
-            } else {
-                return Err(RuntimeError::SystemError(
-                    SystemError::NodeNotVisibleForMethodCall,
-                ));
-            }
-        };
-
         // Key Value Stores do not have methods so we remove that possibility here
         let object_info = self.get_object_info(&receiver)?;
         if !object_info.module_versions.contains_key(&module_id) {
@@ -1458,7 +1441,7 @@ where
 
         let invocation = KernelInvocation {
             actor: Actor::method(
-                receiver_type,
+                direct_access,
                 receiver.clone(),
                 module_id,
                 method_name.to_string(),
