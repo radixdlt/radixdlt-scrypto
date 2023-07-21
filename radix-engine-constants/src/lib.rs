@@ -123,7 +123,7 @@ pub const DEFAULT_MAX_METADATA_KEY_STRING_LEN: usize = 100;
 pub const DEFAULT_MAX_METADATA_VALUE_SBOR_LEN: usize = 512;
 
 /// The max depth to support, per recursive move-to-store operation.
-pub const MAX_RECURSIVE_MOVE_DEPTH: usize = 16;
+pub const MAX_RECURSIVE_PERSIST_DEPTH: usize = 16;
 
 //==========================
 // TO BE DEFINED

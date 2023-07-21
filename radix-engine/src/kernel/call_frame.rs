@@ -1109,7 +1109,7 @@ impl<L: Clone> CallFrame<L> {
         M: KernelCallbackObject,
         F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
     {
-        if depth > MAX_RECURSIVE_MOVE_DEPTH {
+        if depth > MAX_RECURSIVE_PERSIST_DEPTH {
             return Err(PersistNodeError::NodeIsTooDeep(node_id.clone()));
         }
 

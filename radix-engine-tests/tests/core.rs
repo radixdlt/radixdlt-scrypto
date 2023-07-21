@@ -203,7 +203,7 @@ fn test_globalize_with_deep_own_around_limit() {
             package_address,
             "RecursiveTest",
             "create_own_at_depth",
-            manifest_args![MAX_RECURSIVE_MOVE_DEPTH as u32],
+            manifest_args![MAX_RECURSIVE_PERSIST_DEPTH as u32],
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -215,7 +215,7 @@ fn test_globalize_with_deep_own_around_limit() {
             package_address,
             "RecursiveTest",
             "create_own_at_depth",
-            manifest_args![MAX_RECURSIVE_MOVE_DEPTH as u32 + 1],
+            manifest_args![MAX_RECURSIVE_PERSIST_DEPTH as u32 + 1],
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
