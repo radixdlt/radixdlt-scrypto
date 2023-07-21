@@ -599,7 +599,6 @@ impl Rules for WasmValidatorConfigV1 {
             | I64AtomicRmw8CmpxchgU { .. }
             | I64AtomicRmw16CmpxchgU { .. }
             | I64AtomicRmw32CmpxchgU { .. } =>
-                // FIXME: add suport for other proposal instructions
                 todo!("instruction {:?} not covered", instruction),
         }
     }
