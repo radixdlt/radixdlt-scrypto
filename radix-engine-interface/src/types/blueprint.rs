@@ -25,20 +25,26 @@ impl Default for OuterObjectInfo {
 
 /// Core object state, persisted in `TypeInfoSubstate`.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct ObjectInfo {
-    pub global: bool,
-    pub main_blueprint_id: BlueprintId,
-    pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
-
-    // Blueprint arguments
-    pub outer_object: OuterObjectInfo,
+pub struct BlueprintInfo {
+    pub blueprint_id: BlueprintId,
+    pub outer_obj_info: OuterObjectInfo,
     pub features: BTreeSet<String>,
     pub instance_schema: Option<InstanceSchema>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct ObjectInfo {
+    /// Whether this node is global or not, ie. true, if this node has no parent, false otherwise
+    pub global: bool,
+    pub module_versions: BTreeMap<ObjectModuleId, BlueprintVersion>,
+
+    /// Blueprint Info of Object
+    pub blueprint_info: BlueprintInfo,
+}
+
 impl ObjectInfo {
     pub fn get_outer_object(&self) -> GlobalAddress {
-        match &self.outer_object {
+        match &self.blueprint_info.outer_obj_info {
             OuterObjectInfo::Some { outer_object } => outer_object.clone(),
             OuterObjectInfo::None { .. } => {
                 panic!("Broken Application logic: Expected to be an inner object but is an outer object");
@@ -47,7 +53,14 @@ impl ObjectInfo {
     }
 
     pub fn get_features(&self) -> BTreeSet<String> {
-        self.features.clone()
+        self.blueprint_info.features.clone()
+    }
+
+    pub fn try_get_outer_object(&self) -> Option<GlobalAddress> {
+        match &self.blueprint_info.outer_obj_info {
+            OuterObjectInfo::Some { outer_object } => Some(outer_object.clone()),
+            OuterObjectInfo::None { .. } => None,
+        }
     }
 }
 
