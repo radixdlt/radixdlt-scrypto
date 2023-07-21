@@ -259,14 +259,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_push_frame(api, callee, message, args)?;
 
         let is_to_barrier = callee.is_barrier();
-        let is_to_auth_zone = callee.is_auth_zone();
         let destination_blueprint_id = callee.blueprint_id().cloned();
         for node_id in &message.move_nodes {
             Self::on_move_node(
                 node_id,
                 true,
                 is_to_barrier,
-                is_to_auth_zone,
                 destination_blueprint_id.clone(),
                 api,
             )?;
@@ -303,14 +301,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
         let current_actor = api.kernel_get_system_state().current_actor;
         let is_to_barrier = current_actor.is_barrier();
-        let is_to_auth_zone = current_actor.is_auth_zone();
         let destination_blueprint_id = current_actor.blueprint_id().cloned();
         for node_id in &message.move_nodes {
             Self::on_move_node(
                 node_id,
                 false,
                 is_to_barrier,
-                is_to_auth_zone,
                 destination_blueprint_id.clone(),
                 api,
             )?;
@@ -703,7 +699,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         node_id: &NodeId,
         is_moving_down: bool,
         is_to_barrier: bool,
-        is_to_auth_zone: bool,
         destination_blueprint_id: Option<BlueprintId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -735,7 +730,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         args: IndexedScryptoValue::from_typed(&OnMoveInput {
                             is_moving_down,
                             is_to_barrier,
-                            is_to_auth_zone,
                             destination_blueprint_id,
                         }),
                     }))

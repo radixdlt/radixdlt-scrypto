@@ -17,7 +17,7 @@ pub struct OnDropInput {}
 
 pub type OnDropOutput = ();
 
-// TODO: expose generic information, but fully-detailed actor?
+// TODO: expose generic information, but fully-detailed actor? and then remove `is_to_barrier`.
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct OnMoveInput {
     /// True if the node moves from caller to callee, otherwise false.
@@ -25,9 +25,6 @@ pub struct OnMoveInput {
 
     /// True if the destination actor is a barrier, otherwise false.
     pub is_to_barrier: bool,
-
-    /// True if the destination actor is auth zone, otherwise false.
-    pub is_to_auth_zone: bool,
 
     /// The destination blueprint id.
     pub destination_blueprint_id: Option<BlueprintId>,

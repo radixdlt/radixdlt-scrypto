@@ -178,7 +178,6 @@ impl NonFungibleProofBlueprint {
     pub(crate) fn on_move<Y>(
         is_moving_down: bool,
         is_to_barrier: bool,
-        is_to_auth_zone: bool,
         destination_blueprint_id: Option<BlueprintId>,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -189,6 +188,10 @@ impl NonFungibleProofBlueprint {
             let is_to_self = destination_blueprint_id.eq(&Some(BlueprintId::new(
                 &RESOURCE_PACKAGE,
                 NON_FUNGIBLE_PROOF_BLUEPRINT,
+            )));
+            let is_to_auth_zone = destination_blueprint_id.eq(&Some(BlueprintId::new(
+                &RESOURCE_PACKAGE,
+                AUTH_ZONE_BLUEPRINT,
             )));
             if !is_to_self && (is_to_barrier || is_to_auth_zone) {
                 let handle = api.actor_open_field(

@@ -2732,7 +2732,6 @@ impl ResourceNativePackage {
                 let rtn = FungibleProofBlueprint::on_move(
                     input.is_moving_down,
                     input.is_to_barrier,
-                    input.is_to_auth_zone,
                     input.destination_blueprint_id,
                     api,
                 )?;
@@ -2789,7 +2788,6 @@ impl ResourceNativePackage {
                 let rtn = NonFungibleProofBlueprint::on_move(
                     input.is_moving_down,
                     input.is_to_barrier,
-                    input.is_to_auth_zone,
                     input.destination_blueprint_id,
                     api,
                 )?;
