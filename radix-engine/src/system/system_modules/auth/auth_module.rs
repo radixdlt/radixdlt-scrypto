@@ -299,8 +299,8 @@ impl AuthModule {
         message: &mut Message,
     ) -> Result<(), RuntimeError> {
         // Add Global Object and Package Actor Auth
-        let virtual_non_fungibles_non_extending = callee.get_local_call_frame_proofs();
-        let virtual_non_fungibles_non_extending_barrier =
+        let local_call_frame_proofs = callee.get_local_call_frame_proofs();
+        let global_call_frame_proofs =
             callee.get_global_call_frame_proofs();
 
         // Prepare a new auth zone
@@ -330,8 +330,8 @@ impl AuthModule {
             vec![],
             virtual_resources,
             virtual_non_fungibles,
-            virtual_non_fungibles_non_extending,
-            virtual_non_fungibles_non_extending_barrier,
+            local_call_frame_proofs,
+            global_call_frame_proofs,
             is_barrier,
             parent,
         );

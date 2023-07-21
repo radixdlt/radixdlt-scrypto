@@ -273,7 +273,7 @@ impl Actor {
             node_id,
             module_id,
             ident,
-            object_info: object_info,
+            object_info,
         })
     }
 
