@@ -362,6 +362,11 @@ impl<C, L: Clone> CallFrame<C, L> {
                         global_address,
                     })
                     .ref_count.add_assign(1);
+
+                if let Some(global_address) = global_address {
+                    to.stable_references.insert(global_address.into_node_id(), StableReferenceType::Global);
+                }
+
             } else {
                 return Err(PassMessageError::ActorRefNotFound(node_id));
             }

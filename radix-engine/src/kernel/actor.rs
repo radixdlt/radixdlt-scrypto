@@ -2,6 +2,9 @@ use crate::types::*;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
+use crate::kernel::kernel_api::KernelApi;
+use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback_api::SystemCallbackObject;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstanceContext {
@@ -81,14 +84,10 @@ impl Actor {
         }
 
         if let Actor::Method(MethodActor {
-            receiver_type,
             object_info,
             ..
         }) = self
         {
-            if let ReceiverType::OnStoredObject(global_address) = receiver_type {
-                global_refs.push(global_address.clone());
-            }
             if let OuterObjectInfo::Some { outer_object } =
                 object_info.blueprint_info.outer_obj_info
             {
@@ -240,19 +239,6 @@ impl Actor {
         }
     }
 
-    pub fn as_global_caller(&self) -> Option<GlobalCaller> {
-        match self {
-            Actor::Method(actor) => match &actor.receiver_type {
-                ReceiverType::OnStoredObject(global_address) => Some(global_address.clone().into()),
-                _ => None,
-            },
-            Actor::Function(FunctionActor { blueprint_id, .. }) => {
-                Some(blueprint_id.clone().into())
-            }
-            _ => None,
-        }
-    }
-
     pub fn blueprint_id(&self) -> Option<BlueprintId> {
         match self {
             Actor::Method(actor) => Some(actor.get_blueprint_id()),
@@ -279,8 +265,19 @@ impl Actor {
         }
     }
 
-    pub fn get_global_call_frame_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
-        if let Some(global_caller) = self.as_global_caller() {
+    pub fn get_global_call_frame_proofs<V: SystemCallbackObject, Y: KernelApi<SystemConfig<V>>>(&self, api: &mut Y) -> BTreeSet<NonFungibleGlobalId> {
+        let global_caller: Option<GlobalCaller> = match self {
+            Actor::Method(actor) => {
+                let node_visibility = api.kernel_get_node_visibility(&actor.node_id);
+                node_visibility.as_transient_ref(actor.node_id).unwrap().map(|e| e.into())
+            },
+            Actor::Function(FunctionActor { blueprint_id, .. }) => {
+                Some(blueprint_id.clone().into())
+            }
+            _ => None,
+        };
+
+        if let Some(global_caller) = global_caller {
             btreeset!(NonFungibleGlobalId::global_caller_badge(global_caller))
         } else {
             btreeset!()

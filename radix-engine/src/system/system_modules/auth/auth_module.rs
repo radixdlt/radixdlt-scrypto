@@ -300,7 +300,7 @@ impl AuthModule {
     ) -> Result<(), RuntimeError> {
         // Add Global Object and Package Actor Auth
         let local_call_frame_proofs = callee.get_local_call_frame_proofs();
-        let global_call_frame_proofs = callee.get_global_call_frame_proofs();
+        let global_call_frame_proofs = callee.get_global_call_frame_proofs(api);
 
         // Prepare a new auth zone
         let is_barrier = callee.is_barrier();

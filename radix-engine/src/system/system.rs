@@ -2261,15 +2261,16 @@ where
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
         let actor = self.current_actor();
-        match actor {
-            Actor::Method(MethodActor {
-                receiver_type: ReceiverType::OnStoredObject(address),
-                ..
-            }) => Ok(address.clone()),
-            _ => Err(RuntimeError::SystemError(
-                SystemError::GlobalAddressDoesNotExist,
-            )),
+        if let Some(node_id) = actor.node_id() {
+            let visibility = self.kernel_get_node_visibility(&node_id);
+            if let Some(address) = visibility.as_transient_ref(node_id).unwrap() {
+                return Ok(address)
+            }
         }
+
+        Err(RuntimeError::SystemError(
+            SystemError::GlobalAddressDoesNotExist,
+        ))
     }
 
     #[trace_resources]
