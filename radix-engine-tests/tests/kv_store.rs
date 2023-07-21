@@ -1,6 +1,6 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError, SystemError};
 use radix_engine::kernel::call_frame::{
-    CloseSubstateError, CreateNodeError, OpenSubstateError, ProcessSubstateError, TakeNodeError,
+    OpenSubstateError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
 };
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -97,7 +97,7 @@ fn self_cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
                     ProcessSubstateError::TakeNodeError(TakeNodeError::OwnLocked(_))
                 ))
             ))
@@ -136,7 +136,7 @@ fn cannot_remove_kv_stores() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CloseSubstateError(CloseSubstateError::ProcessSubstateError(
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
                     ProcessSubstateError::CantDropNodeInStore(..)
                 ))
             ))
@@ -175,7 +175,7 @@ fn cannot_overwrite_kv_stores() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CloseSubstateError(CloseSubstateError::ProcessSubstateError(
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
                     ProcessSubstateError::CantDropNodeInStore(..)
                 ))
             ))
@@ -498,7 +498,7 @@ fn remove_from_stored_map_when_contain_vault_should_not_work() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CloseSubstateError(CloseSubstateError::ProcessSubstateError(
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
                     ProcessSubstateError::CantDropNodeInStore(..)
                 ))
             ))

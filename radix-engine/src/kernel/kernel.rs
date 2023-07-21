@@ -738,10 +738,18 @@ where
         M::on_write_substate(lock_handle, value.len(), self)?;
 
         self.current_frame
-            .write_substate(&mut self.substate_io, lock_handle, value)
-            .map_err(CallFrameError::WriteSubstateError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+            .write_substate(
+                &mut self.substate_io,
+                &mut |store_access| self.callback.on_store_access(&store_access),
+                lock_handle,
+                value,
+            )
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::WriteSubstateError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
 
         Ok(())
     }

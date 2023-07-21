@@ -45,7 +45,7 @@ pub struct SubstateIO<'g, S: SubstateStore> {
     pub substate_locks: SubstateLocks<LockData>,
 }
 
-impl<'g, S: SubstateStore> SubstateIO<'g, S> {
+impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
     pub fn new(store: &'g mut S) -> Self {
         Self {
             heap: Heap::new(),
@@ -65,7 +65,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
             for (_substate_key, substate_value) in module {
                 for own in substate_value.owned_nodes() {
                     if substate_device.eq(&SubstateDevice::Store) {
-                        self.move_node_to_store(own, on_store_access)
+                        Self::move_node_to_store(&mut self.heap, self.store, own, on_store_access)
                             .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
                     }
                 }
@@ -147,7 +147,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    self.move_node_to_store(own, on_store_access)
+                    Self::move_node_to_store(&mut self.heap, self.store, own, on_store_access)
                         .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
 
@@ -292,15 +292,76 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         substate
     }
 
-    pub fn write_substate(
+    pub fn write_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
+        on_store_access: &mut F,
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
-    ) -> Result<(), WriteSubstateError> {
+    ) -> Result<(), CallbackError<WriteSubstateError, E>> {
+        let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
+        for own in substate.owned_nodes() {
+            if !new_owned_nodes.insert(own.clone()) {
+                return Err(CallbackError::Error(
+                    WriteSubstateError::ContainsDuplicatedOwns,
+                ));
+            }
+        }
+        let mut new_non_global_references: IndexSet<NodeId> = index_set_new();
+        let mut new_references: IndexSet<NodeId> = index_set_new();
+        for own in substate.references() {
+            // Deduplicate
+            new_references.insert(own.clone());
+            if !own.is_global() {
+                new_non_global_references.insert(own.clone());
+            }
+        }
+
         let (node_id, partition_num, substate_key, lock_data) =
-            self.substate_locks.get(global_lock_handle);
+            self.substate_locks.get_mut(global_lock_handle);
         if !lock_data.flags.contains(LockFlags::MUTABLE) {
-            return Err(WriteSubstateError::NoWritePermission);
+            return Err(CallbackError::Error(WriteSubstateError::NoWritePermission));
+        }
+
+        // Process owned
+        {
+            for own in &new_owned_nodes {
+                if !lock_data.owned_nodes.contains(own) {
+                    // Move the node to store, if its owner is already in store
+                    if lock_data.location.eq(&SubstateDevice::Store) {
+                        Self::move_node_to_store(&mut self.heap, self.store, own, on_store_access)
+                            .map_err(|e| e.map(WriteSubstateError::PersistNodeError))?;
+                    }
+                }
+            }
+
+            lock_data.owned_nodes = new_owned_nodes;
+        }
+
+        // Process references
+        {
+            for reference in &new_references {
+                if !lock_data.non_global_references.contains(reference) {
+                    if lock_data.location.eq(&SubstateDevice::Store) && !reference.is_global() {
+                        return Err(CallbackError::Error(
+                            WriteSubstateError::NonGlobalRefNotAllowed(*reference),
+                        ));
+                    }
+
+                    if self.heap.contains_node(reference) {
+                        self.heap.increase_borrow_count(reference);
+                    }
+                }
+            }
+            for reference in &lock_data.non_global_references {
+                if !new_references.contains(reference) {
+                    // handle removed references
+                    if self.heap.contains_node(reference) {
+                        self.heap.decrease_borrow_count(reference);
+                    }
+                }
+            }
+
+            lock_data.non_global_references = new_non_global_references;
         }
 
         match lock_data.location {
@@ -333,67 +394,13 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
     pub fn close_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         global_lock_handle: u32,
-        on_store_access: &mut F,
+        _on_store_access: &mut F,
     ) -> Result<
         (NodeId, PartitionNumber, SubstateKey, LockFlags),
         CallbackError<CloseSubstateError, E>,
     > {
-        let updated_substate = self.read_substate(global_lock_handle);
-
-        let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
-        for own in updated_substate.owned_nodes() {
-            if !new_owned_nodes.insert(own.clone()) {
-                return Err(CallbackError::Error(
-                    CloseSubstateError::ContainsDuplicatedOwns,
-                ));
-            }
-        }
-        let mut new_references: IndexSet<NodeId> = index_set_new();
-        for own in updated_substate.references() {
-            // Deduplicate
-            new_references.insert(own.clone());
-        }
-
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.unlock(global_lock_handle);
-
-        // Process owned
-        {
-            for own in &new_owned_nodes {
-                if !lock_data.owned_nodes.contains(own) {
-                    // Move the node to store, if its owner is already in store
-                    if lock_data.location.eq(&SubstateDevice::Store) {
-                        self.move_node_to_store(own, on_store_access)
-                            .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
-                    }
-                }
-            }
-        }
-
-        // Process references
-        {
-            for reference in &new_references {
-                if !lock_data.non_global_references.contains(reference) {
-                    if lock_data.location.eq(&SubstateDevice::Store) && !reference.is_global() {
-                        return Err(CallbackError::Error(
-                            CloseSubstateError::NonGlobalRefNotAllowed(*reference),
-                        ));
-                    }
-
-                    if self.heap.contains_node(reference) {
-                        self.heap.increase_borrow_count(reference);
-                    }
-                }
-            }
-            for reference in &lock_data.non_global_references {
-                if !new_references.contains(reference) {
-                    // handle removed references
-                    if self.heap.contains_node(reference) {
-                        self.heap.decrease_borrow_count(reference);
-                    }
-                }
-            }
-        }
 
         if lock_data.flags.contains(LockFlags::FORCE_WRITE) {
             self.store
@@ -535,8 +542,9 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         Ok(substates)
     }
 
-    pub fn move_node_to_store<E, F: FnMut(StoreAccess) -> Result<(), E>>(
-        &mut self,
+    fn move_node_to_store<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+        heap: &mut Heap,
+        store: &mut S,
         node_id: &NodeId,
         on_store_access: &mut F,
     ) -> Result<(), CallbackError<PersistNodeError, E>> {
@@ -544,7 +552,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
         let can_be_stored = if node_id.is_global() {
             true
         } else {
-            let type_info = Self::get_heap_type_info(node_id, &mut self.heap);
+            let type_info = Self::get_heap_type_info(node_id, heap);
 
             if let Some(type_info) = type_info {
                 match type_info {
@@ -571,7 +579,7 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
             )));
         }
 
-        let node_substates = match self.heap.remove_node(node_id) {
+        let node_substates = match heap.remove_node(node_id) {
             Ok(substates) => substates,
             Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
                 panic!("Frame owned node {:?} not found in heap", node_id)
@@ -593,12 +601,12 @@ impl<'g, S: SubstateStore> SubstateIO<'g, S> {
                 }
 
                 for node in substate_value.owned_nodes() {
-                    self.move_node_to_store(node, on_store_access)?;
+                    Self::move_node_to_store(heap, store, node, on_store_access)?;
                 }
             }
         }
 
-        self.store
+        store
             .create_node(node_id.clone(), node_substates, on_store_access)
             .map_err(CallbackError::CallbackError)?;
 

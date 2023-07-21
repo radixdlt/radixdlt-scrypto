@@ -1,6 +1,7 @@
+use radix_engine::kernel::call_frame::WriteSubstateError;
 use radix_engine::{
     errors::{CallFrameError, KernelError, RuntimeError},
-    kernel::call_frame::{CloseSubstateError, MoveModuleError},
+    kernel::call_frame::MoveModuleError,
     types::*,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -83,9 +84,9 @@ fn test_add_local_ref_to_stored_substate() {
     // Assert
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::KernelError(KernelError::CallFrameError(
-            CallFrameError::CloseSubstateError(x),
+            CallFrameError::WriteSubstateError(x),
         )) => {
-            matches!(x, CloseSubstateError::NonGlobalRefNotAllowed(_))
+            matches!(x, WriteSubstateError::NonGlobalRefNotAllowed(_))
         }
         _ => false,
     });

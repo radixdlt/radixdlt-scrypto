@@ -42,7 +42,6 @@ pub struct OpenedSubstate<L> {
     pub non_global_references: IndexSet<NodeId>,
     pub owned_nodes: IndexSet<NodeId>,
     pub global_lock_handle: u32,
-    pub updated: bool,
     pub location: SubstateDevice,
     pub data: L,
 }
@@ -144,28 +143,6 @@ pub enum PassMessageError {
     StableRefNotFound(NodeId),
 }
 
-/// Represents an error when attempting to lock a substate.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum OpenSubstateError {
-    NodeNotVisible(NodeId),
-    HeapError(HeapOpenSubstateError),
-    TrackError(Box<TrackGetSubstateError>),
-    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
-    LockUnmodifiedBaseOnHeapNode,
-    LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
-    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey),
-}
-
-/// Represents an error when dropping a substate lock.
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub enum CloseSubstateError {
-    LockNotFound(OpenSubstateHandle),
-    ContainsDuplicatedOwns,
-    ProcessSubstateError(ProcessSubstateError),
-    NonGlobalRefNotAllowed(NodeId),
-    PersistNodeError(PersistNodeError),
-}
-
 /// Represents an error when creating a node.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateNodeError {
@@ -212,6 +189,18 @@ pub enum MoveModuleError {
     PersistNodeError(PersistNodeError),
 }
 
+/// Represents an error when attempting to lock a substate.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum OpenSubstateError {
+    NodeNotVisible(NodeId),
+    HeapError(HeapOpenSubstateError),
+    TrackError(Box<TrackGetSubstateError>),
+    SubstateLocked(NodeId, PartitionNumber, SubstateKey),
+    LockUnmodifiedBaseOnHeapNode,
+    LockUnmodifiedBaseOnNewSubstate(NodeId, PartitionNumber, SubstateKey),
+    LockUnmodifiedBaseOnOnUpdatedSubstate(NodeId, PartitionNumber, SubstateKey),
+}
+
 /// Represents an error when reading substates.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ReadSubstateError {
@@ -222,7 +211,18 @@ pub enum ReadSubstateError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum WriteSubstateError {
     LockNotFound(OpenSubstateHandle),
+    ProcessSubstateError(ProcessSubstateError),
     NoWritePermission,
+    PersistNodeError(PersistNodeError),
+    NonGlobalRefNotAllowed(NodeId),
+    ContainsDuplicatedOwns,
+}
+
+/// Represents an error when dropping a substate lock.
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub enum CloseSubstateError {
+    LockNotFound(OpenSubstateHandle),
+    PersistNodeError(PersistNodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -545,7 +545,6 @@ impl<L: Clone> CallFrame<L> {
                 non_global_references,
                 owned_nodes,
                 global_lock_handle,
-                updated: false,
                 location: substate_location,
                 data,
             },
@@ -576,23 +575,59 @@ impl<L: Clone> CallFrame<L> {
         Ok(substate)
     }
 
-    pub fn write_substate<'f, S: SubstateStore>(
+    pub fn write_substate<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
         &mut self,
         substate_io: &'f mut SubstateIO<S>,
+        on_store_access: &mut F,
         lock_handle: OpenSubstateHandle,
         substate: IndexedScryptoValue,
-    ) -> Result<(), WriteSubstateError> {
-        let OpenedSubstate {
-            global_lock_handle,
-            updated,
-            ..
-        } = self
-            .open_substates
-            .get_mut(&lock_handle)
-            .ok_or(WriteSubstateError::LockNotFound(lock_handle))?;
+    ) -> Result<(), CallbackError<WriteSubstateError, E>> {
+        let mut opened_substate =
+            self.open_substates
+                .remove(&lock_handle)
+                .ok_or(CallbackError::Error(WriteSubstateError::LockNotFound(
+                    lock_handle,
+                )))?;
 
-        *updated = true;
-        substate_io.write_substate(*global_lock_handle, substate)?;
+        {
+            let (new_owned_nodes, new_non_global_references) = self
+                .process_substate(
+                    &substate,
+                    opened_substate.location,
+                    Some((
+                        &opened_substate.owned_nodes,
+                        &opened_substate.non_global_references,
+                    )),
+                )
+                .map_err(|e| CallbackError::Error(WriteSubstateError::ProcessSubstateError(e)))?;
+
+            for new_owned_node in &new_owned_nodes {
+                self.transient_references
+                    .entry(new_owned_node.clone())
+                    .or_default()
+                    .add_assign(1);
+            }
+
+            for new_non_global_reference in &new_non_global_references {
+                self.transient_references
+                    .entry(new_non_global_reference.clone())
+                    .or_default()
+                    .add_assign(1);
+            }
+
+            opened_substate.owned_nodes.extend(new_owned_nodes);
+            opened_substate
+                .non_global_references
+                .extend(new_non_global_references);
+        }
+
+        substate_io.write_substate(
+            on_store_access,
+            opened_substate.global_lock_handle,
+            substate,
+        )?;
+
+        self.open_substates.insert(lock_handle, opened_substate);
 
         Ok(())
     }
@@ -607,24 +642,11 @@ impl<L: Clone> CallFrame<L> {
             global_lock_handle,
             owned_nodes,
             non_global_references,
-            updated,
-            location,
             ..
         } = self
             .open_substates
             .remove(&lock_handle)
             .ok_or_else(|| CallbackError::Error(CloseSubstateError::LockNotFound(lock_handle)))?;
-
-        // TODO: Move this logic into write_substate?
-        if updated {
-            let updated_substate = substate_io.read_substate(global_lock_handle);
-            self.process_substate(
-                updated_substate,
-                location,
-                Some((&owned_nodes, &non_global_references)),
-            )
-            .map_err(|e| CallbackError::Error(CloseSubstateError::ProcessSubstateError(e)))?;
-        }
 
         let (node_id, ..) = substate_io.close_substate(global_lock_handle, on_store_access)?;
 
@@ -876,10 +898,11 @@ impl<L: Clone> CallFrame<L> {
         updated_substate: &IndexedScryptoValue,
         device: SubstateDevice,
         prev: Option<(&IndexSet<NodeId>, &IndexSet<NodeId>)>,
-    ) -> Result<(), ProcessSubstateError> {
+    ) -> Result<(IndexSet<NodeId>, IndexSet<NodeId>), ProcessSubstateError> {
         // Process owned nodes
-        {
+        let new_owned_nodes = {
             let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
+            let mut updated_owned_nodes: IndexSet<NodeId> = index_set_new();
             for own in updated_substate.owned_nodes() {
                 let node_is_new = if let Some((old_owned_nodes, _)) = prev {
                     !old_owned_nodes.contains(own)
@@ -891,14 +914,14 @@ impl<L: Clone> CallFrame<L> {
                     // Node no longer owned by frame
                     self.take_node_internal(own)
                         .map_err(ProcessSubstateError::TakeNodeError)?;
+                    new_owned_nodes.insert(*own);
                 }
-
-                new_owned_nodes.insert(*own);
+                updated_owned_nodes.insert(*own);
             }
 
             if let Some((old_owned_nodes, _)) = prev {
                 for own in old_owned_nodes {
-                    if !new_owned_nodes.contains(own) {
+                    if !updated_owned_nodes.contains(own) {
                         // Node detached
                         if device.eq(&SubstateDevice::Store) {
                             return Err(ProcessSubstateError::CantDropNodeInStore(own.clone()));
@@ -915,18 +938,22 @@ impl<L: Clone> CallFrame<L> {
                     }
                 }
             }
-        }
+
+            new_owned_nodes
+        };
 
         //====================
         // Process references
         //====================
-        {
-            let mut new_references: IndexSet<NodeId> = index_set_new();
-            for own in updated_substate.references() {
+        let new_non_global_references = {
+            let mut updated_references: IndexSet<NodeId> = index_set_new();
+            let mut new_non_global_references: IndexSet<NodeId> = index_set_new();
+            for node_id in updated_substate.references() {
                 // Deduplicate
-                new_references.insert(own.clone());
+                updated_references.insert(node_id.clone());
             }
-            for reference in &new_references {
+
+            for reference in &updated_references {
                 let reference_is_new = if let Some((_, old_references)) = &prev {
                     !old_references.contains(reference)
                 } else {
@@ -941,11 +968,17 @@ impl<L: Clone> CallFrame<L> {
                     {
                         return Err(ProcessSubstateError::RefNotFound(reference.clone()));
                     }
+
+                    if !reference.is_global() {
+                        new_non_global_references.insert(reference.clone());
+                    }
                 }
             }
-        }
 
-        Ok(())
+            new_non_global_references
+        };
+
+        Ok((new_owned_nodes, new_non_global_references))
     }
 
     fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {

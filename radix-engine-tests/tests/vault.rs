@@ -3,7 +3,7 @@ use radix_engine::errors::{
     ApplicationError, CallFrameError, KernelError, RuntimeError, SystemError,
 };
 use radix_engine::kernel::call_frame::{
-    CloseSubstateError, CreateNodeError, ProcessSubstateError, TakeNodeError,
+    CreateNodeError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
 };
 use radix_engine::types::*;
 use radix_engine_interface::api::node_modules::ModuleConfig;
@@ -245,7 +245,7 @@ fn cannot_overwrite_vault_in_map() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CloseSubstateError(CloseSubstateError::ProcessSubstateError(
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
                     ProcessSubstateError::CantDropNodeInStore(..)
                 ))
             ))
@@ -306,7 +306,7 @@ fn cannot_remove_vaults() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::CloseSubstateError(CloseSubstateError::ProcessSubstateError(
+                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
                     ProcessSubstateError::CantDropNodeInStore(..)
                 ))
             ))

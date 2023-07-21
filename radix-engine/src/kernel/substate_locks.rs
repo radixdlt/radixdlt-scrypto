@@ -123,6 +123,10 @@ impl<D> SubstateLocks<D> {
         self.locks.get(&handle).unwrap()
     }
 
+    pub fn get_mut(&mut self, handle: u32) -> &mut (NodeId, PartitionNumber, SubstateKey, D) {
+        self.locks.get_mut(&handle).unwrap()
+    }
+
     pub fn unlock(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey, D) {
         let (node_id, partition_num, substate_key, data) = self.locks.remove(&handle).unwrap();
         let full_key = (node_id, partition_num, substate_key);
