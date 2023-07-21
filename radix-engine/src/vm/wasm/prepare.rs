@@ -4,7 +4,7 @@ use radix_engine_interface::blueprints::package::BlueprintDefinitionInit;
 use wasm_instrument::{
     gas_metering::{self, Rules},
     inject_stack_limiter,
-    parser::ModuleInfo,
+    util::module_info::ModuleInfo,
 };
 use wasmparser::{ExternalKind, FuncType, Operator, Type, TypeRef, ValType, WasmFeatures};
 
