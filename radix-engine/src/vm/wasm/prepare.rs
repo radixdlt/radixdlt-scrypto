@@ -638,6 +638,11 @@ impl WasmModule {
                             ) {
                                 continue;
                             }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                 EMIT_EVENT_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
                         }
                     }
                     EMIT_LOG_FUNCTION_NAME => {
@@ -650,6 +655,11 @@ impl WasmModule {
                             ) {
                                 continue;
                             }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    EMIT_LOG_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
                         }
                     }
                     PANIC_FUNCTION_NAME => {
@@ -662,6 +672,11 @@ impl WasmModule {
                             ) {
                                 continue;
                             }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    PANIC_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
                         }
                     }
                     GET_TRANSACTION_HASH_FUNCTION_NAME => {
@@ -674,6 +689,11 @@ impl WasmModule {
                             ) {
                                 continue;
                             }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    GET_TRANSACTION_HASH_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
                         }
                     }
                     GENERATE_RUID_FUNCTION_NAME => {
@@ -686,6 +706,11 @@ impl WasmModule {
                             ) {
                                 continue;
                             }
+                            return Err(PrepareError::InvalidImport(
+                                InvalidImport::InvalidFunctionType(
+                                    GENERATE_RUID_FUNCTION_NAME.to_string(),
+                                ),
+                            ));
                         }
                     }
                     _ => {}
