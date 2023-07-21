@@ -11,7 +11,7 @@ pub struct InstanceContext {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum ReceiverType {
     DirectAccess,
-    OnHeapObject,
+    OnHeapOrUnknownGlobalAddress,
     OnStoredObject(GlobalAddress),
 }
 

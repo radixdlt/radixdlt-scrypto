@@ -65,13 +65,14 @@ pub enum StableReferenceType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TransientReference {
     ref_count: usize,
+    global_address: Option<GlobalAddress>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Visibility {
     StableReference(StableReferenceType),
     FrameOwned,
-    Borrowed,
+    Borrowed(Option<GlobalAddress>),
 }
 
 impl Visibility {
@@ -115,6 +116,24 @@ impl NodeVisibility {
                 return Some(t.clone());
             }
         }
+        return None;
+    }
+
+    pub fn as_transient_ref(&self, node_id: NodeId) -> Option<Option<GlobalAddress>> {
+        let mut found_direct_access = false;
+        for v in &self.0 {
+            match v {
+                Visibility::StableReference(StableReferenceType::Global) => return Some(Some(GlobalAddress::new_or_panic(node_id.0))),
+                Visibility::StableReference(StableReferenceType::DirectAccess) => found_direct_access = true,
+                Visibility::Borrowed(global_address) => return Some(global_address.clone()),
+                Visibility::FrameOwned => return Some(None),
+            }
+        }
+
+        if found_direct_access {
+            return Some(None);
+        }
+
         return None;
     }
 }
@@ -334,11 +353,13 @@ impl<C, L: Clone> CallFrame<C, L> {
             if from.depth >= to.depth {
                 panic!("Actor reference only supported for downstream calls.");
             }
-            if from.get_node_visibility(&node_id).is_visible() {
+
+            if let Some(global_address) = from.get_node_visibility(&node_id).as_transient_ref(node_id) {
                 to.transient_references
                     .entry(node_id.clone())
                     .or_insert(TransientReference {
                         ref_count: 0usize,
+                        global_address,
                     })
                     .ref_count.add_assign(1);
             } else {
@@ -395,10 +416,13 @@ impl<C, L: Clone> CallFrame<C, L> {
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
     ) -> Result<(LockHandle, usize, StoreAccessInfo), OpenSubstateError> {
-        // Check node visibility
-        if !self.get_node_visibility(node_id).is_visible() {
+        let node_visibility = self.get_node_visibility(node_id);
+        let global_address = if let Some(global_address) = node_visibility
+            .as_transient_ref(node_id.clone()) {
+            global_address
+        } else {
             return Err(OpenSubstateError::NodeNotVisible(node_id.clone()));
-        }
+        };
 
         // Lock and read the substate
         let mut store_handle = None;
@@ -459,6 +483,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 .entry(reference.clone())
                 .or_insert(TransientReference {
                     ref_count: 0usize,
+                    global_address,
                 })
                 .ref_count.add_assign(1);
         }
@@ -467,6 +492,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 .entry(own.clone())
                 .or_insert(TransientReference {
                     ref_count: 0usize,
+                    global_address,
                 })
                 .ref_count.add_assign(1);
         }
@@ -1164,8 +1190,8 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         // Borrowed from substate loading
-        if self.transient_references.contains_key(node_id) {
-            visibilities.insert(Visibility::Borrowed);
+        if let Some(transient_ref) = self.transient_references.get(node_id) {
+            visibilities.insert(Visibility::Borrowed(transient_ref.global_address));
         }
 
         NodeVisibility(visibilities)

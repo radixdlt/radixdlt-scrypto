@@ -1435,68 +1435,17 @@ where
         let receiver_type = if direct_access {
             ReceiverType::DirectAccess
         } else {
-            // Retrieve the global address of the receiver node
-            let mut get_receiver_type = |node_visibility: NodeVisibility| {
-                for visibility in node_visibility.0 {
-                    match visibility {
-                        Visibility::StableReference(StableReferenceType::Global) => {
-                            return Ok(ReceiverType::OnStoredObject(GlobalAddress::new_or_panic(
-                                receiver.clone().into(),
-                            )));
-                        }
-
-                        // Direct access references dont provide any info regarding global address so continue:1458
-                        Visibility::StableReference(StableReferenceType::DirectAccess) => {
-                            continue;
-                        }
-
-                        // Anything frame owned does not have a global address
-                        Visibility::FrameOwned => return Ok(ReceiverType::OnHeapObject),
-
-                        // If borrowed or actor then we just use the current actor's global address
-                        // e.g. if the parent to the node is frame owned then the current actor's global
-                        // address would be None
-                        Visibility::Borrowed => {
-                            match self.api.kernel_get_system_state().current_actor {
-                                Actor::Method(MethodActor { receiver_type, .. }) => {
-                                    let receiver_type = match receiver_type {
-                                        // TODO: This isn't totally correct as a direct access actor may call a non-direct access method
-                                        // but we don't use this anywhere at the moment
-                                        ReceiverType::DirectAccess => ReceiverType::DirectAccess,
-                                        ReceiverType::OnHeapObject => ReceiverType::OnHeapObject,
-                                        m @ ReceiverType::OnStoredObject(..) => m.clone(),
-                                    };
-                                    return Ok(receiver_type);
-                                }
-                                Actor::BlueprintHook(actor) => match actor.hook {
-                                    BlueprintHook::OnMove | BlueprintHook::OnDrop => {
-                                        return Ok(ReceiverType::OnHeapObject)
-                                    }
-                                    BlueprintHook::OnVirtualize => {
-                                        panic!("Function Actor should never be able to call a borrowed object method unless it's a direct access method.")
-                                    }
-                                    BlueprintHook::OnPersist => panic!("Unused"),
-                                },
-                                Actor::Function(..) => {
-                                    // This is currently a hack required since kernel modules call methods
-                                    // on objects without creating their own callframe/actor
-                                    // Otherwise, Function Actor should never be able to call a borrowed object method unless it's a direct access method.
-                                    return Ok(ReceiverType::OnHeapObject);
-                                }
-                                Actor::Root => {
-                                    panic!("Root should never be able to call a method")
-                                }
-                            }
-                        }
-                    }
+            if let Some(global_address) = node_visibility.as_transient_ref(*receiver) {
+                if let Some(global_address) = global_address {
+                    ReceiverType::OnStoredObject(global_address)
+                } else {
+                    ReceiverType::OnHeapOrUnknownGlobalAddress
                 }
-
-                Err(RuntimeError::SystemError(
+            } else {
+                return Err(RuntimeError::SystemError(
                     SystemError::NodeNotVisibleForMethodCall,
-                ))
-            };
-
-            get_receiver_type(node_visibility)?
+                ));
+            }
         };
 
         // Key Value Stores do not have methods so we remove that possibility here
