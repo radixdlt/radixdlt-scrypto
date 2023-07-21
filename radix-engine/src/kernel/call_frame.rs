@@ -65,14 +65,21 @@ pub enum StableReferenceType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TransientReference {
     ref_count: usize,
-    global_address: Option<GlobalAddress>,
+    root_node_type: RootNodeType,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum RootNodeType {
+    Heap,
+    Global(GlobalAddress),
+    DirectlyAccessed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Visibility {
     StableReference(StableReferenceType),
     FrameOwned,
-    Borrowed(Option<GlobalAddress>),
+    Borrowed(RootNodeType),
 }
 
 impl Visibility {
@@ -119,19 +126,25 @@ impl NodeVisibility {
         return None;
     }
 
-    pub fn as_transient_ref(&self, node_id: NodeId) -> Option<Option<GlobalAddress>> {
+    pub fn root_node_type(&self, node_id: NodeId) -> Option<RootNodeType> {
         let mut found_direct_access = false;
         for v in &self.0 {
             match v {
-                Visibility::StableReference(StableReferenceType::Global) => return Some(Some(GlobalAddress::new_or_panic(node_id.0))),
-                Visibility::StableReference(StableReferenceType::DirectAccess) => found_direct_access = true,
-                Visibility::Borrowed(global_address) => return Some(global_address.clone()),
-                Visibility::FrameOwned => return Some(None),
+                Visibility::StableReference(StableReferenceType::Global) => {
+                    return Some(RootNodeType::Global(GlobalAddress::new_or_panic(node_id.0)));
+                }
+                Visibility::StableReference(StableReferenceType::DirectAccess) => {
+                    found_direct_access = true
+                }
+                Visibility::Borrowed(root_node_type) => return Some(root_node_type.clone()),
+                Visibility::FrameOwned => {
+                    return Some(RootNodeType::Heap);
+                }
             }
         }
 
         if found_direct_access {
-            return Some(None);
+            return Some(RootNodeType::DirectlyAccessed);
         }
 
         return None;
@@ -144,6 +157,7 @@ pub struct CallFrame<C, L> {
     /// The frame id
     depth: usize,
 
+    /// Call frame system layer data
     call_frame_data: C,
 
     /// Owned nodes which by definition must live on heap
@@ -354,19 +368,21 @@ impl<C, L: Clone> CallFrame<C, L> {
                 panic!("Actor reference only supported for downstream calls.");
             }
 
-            if let Some(global_address) = from.get_node_visibility(&node_id).as_transient_ref(node_id) {
+            if let Some(root_node_type) = from.get_node_visibility(&node_id).root_node_type(node_id)
+            {
                 to.transient_references
                     .entry(node_id.clone())
                     .or_insert(TransientReference {
                         ref_count: 0usize,
-                        global_address,
+                        root_node_type,
                     })
-                    .ref_count.add_assign(1);
+                    .ref_count
+                    .add_assign(1);
 
-                if let Some(global_address) = global_address {
-                    to.stable_references.insert(global_address.into_node_id(), StableReferenceType::Global);
+                if let RootNodeType::Global(global_address) = root_node_type {
+                    to.stable_references
+                        .insert(global_address.into_node_id(), StableReferenceType::Global);
                 }
-
             } else {
                 return Err(PassMessageError::ActorRefNotFound(node_id));
             }
@@ -422,12 +438,12 @@ impl<C, L: Clone> CallFrame<C, L> {
         data: L,
     ) -> Result<(LockHandle, usize, StoreAccessInfo), OpenSubstateError> {
         let node_visibility = self.get_node_visibility(node_id);
-        let global_address = if let Some(global_address) = node_visibility
-            .as_transient_ref(node_id.clone()) {
-            global_address
-        } else {
-            return Err(OpenSubstateError::NodeNotVisible(node_id.clone()));
-        };
+        let root_node_type =
+            if let Some(root_node_type) = node_visibility.root_node_type(node_id.clone()) {
+                root_node_type
+            } else {
+                return Err(OpenSubstateError::NodeNotVisible(node_id.clone()));
+            };
 
         // Lock and read the substate
         let mut store_handle = None;
@@ -488,18 +504,20 @@ impl<C, L: Clone> CallFrame<C, L> {
                 .entry(reference.clone())
                 .or_insert(TransientReference {
                     ref_count: 0usize,
-                    global_address,
+                    root_node_type,
                 })
-                .ref_count.add_assign(1);
+                .ref_count
+                .add_assign(1);
         }
         for own in &owned_nodes {
             self.transient_references
                 .entry(own.clone())
                 .or_insert(TransientReference {
                     ref_count: 0usize,
-                    global_address,
+                    root_node_type,
                 })
-                .ref_count.add_assign(1);
+                .ref_count
+                .add_assign(1);
         }
 
         // Issue lock handle
@@ -1196,7 +1214,7 @@ impl<C, L: Clone> CallFrame<C, L> {
 
         // Borrowed from substate loading
         if let Some(transient_ref) = self.transient_references.get(node_id) {
-            visibilities.insert(Visibility::Borrowed(transient_ref.global_address));
+            visibilities.insert(Visibility::Borrowed(transient_ref.root_node_type));
         }
 
         NodeVisibility(visibilities)

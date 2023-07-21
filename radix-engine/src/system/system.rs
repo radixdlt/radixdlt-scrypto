@@ -9,7 +9,7 @@ use crate::errors::{
 };
 use crate::errors::{EventError, SystemUpstreamError};
 use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
-use crate::kernel::call_frame::NodeVisibility;
+use crate::kernel::call_frame::{NodeVisibility, RootNodeType};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
@@ -2246,8 +2246,8 @@ where
         let actor = self.current_actor();
         if let Some(node_id) = actor.node_id() {
             let visibility = self.kernel_get_node_visibility(&node_id);
-            if let Some(address) = visibility.as_transient_ref(node_id).unwrap() {
-                return Ok(address)
+            if let RootNodeType::Global(address) = visibility.root_node_type(node_id).unwrap() {
+                return Ok(address);
             }
         }
 

@@ -1,10 +1,11 @@
+use crate::kernel::call_frame::RootNodeType;
+use crate::kernel::kernel_api::KernelApi;
+use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
-use crate::kernel::kernel_api::KernelApi;
-use crate::system::system_callback::SystemConfig;
-use crate::system::system_callback_api::SystemCallbackObject;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstanceContext {
@@ -76,11 +77,7 @@ impl Actor {
             global_refs.push(blueprint_id.package_address.into());
         }
 
-        if let Actor::Method(MethodActor {
-            object_info,
-            ..
-        }) = self
-        {
+        if let Actor::Method(MethodActor { object_info, .. }) = self {
             if let OuterObjectInfo::Some { outer_object } =
                 object_info.blueprint_info.outer_obj_info
             {
@@ -217,10 +214,7 @@ impl Actor {
 
     pub fn is_direct_access(&self) -> bool {
         match self {
-            Actor::Method(MethodActor {
-                direct_access,
-                ..
-            }) => *direct_access,
+            Actor::Method(MethodActor { direct_access, .. }) => *direct_access,
             _ => false,
         }
     }
@@ -251,12 +245,18 @@ impl Actor {
         }
     }
 
-    pub fn get_global_call_frame_proofs<V: SystemCallbackObject, Y: KernelApi<SystemConfig<V>>>(&self, api: &mut Y) -> BTreeSet<NonFungibleGlobalId> {
+    pub fn get_global_call_frame_proofs<V: SystemCallbackObject, Y: KernelApi<SystemConfig<V>>>(
+        &self,
+        api: &mut Y,
+    ) -> BTreeSet<NonFungibleGlobalId> {
         let global_caller: Option<GlobalCaller> = match self {
             Actor::Method(actor) => {
                 let node_visibility = api.kernel_get_node_visibility(&actor.node_id);
-                node_visibility.as_transient_ref(actor.node_id).unwrap().map(|e| e.into())
-            },
+                match node_visibility.root_node_type(actor.node_id).unwrap() {
+                    RootNodeType::Heap | RootNodeType::DirectlyAccessed => None,
+                    RootNodeType::Global(address) => Some(address.into()),
+                }
+            }
             Actor::Function(FunctionActor { blueprint_id, .. }) => {
                 Some(blueprint_id.clone().into())
             }

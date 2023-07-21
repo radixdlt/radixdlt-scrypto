@@ -182,6 +182,7 @@ pub struct Kernel<
     S: SubstateStore,
 {
     /// Stack
+    /// TODO: Generify Actor
     current_frame: CallFrame<Actor, M::LockData>,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
