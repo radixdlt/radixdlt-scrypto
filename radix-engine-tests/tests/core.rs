@@ -13,7 +13,7 @@ fn test_process_and_transaction() {
 
     let manifest1 = ManifestBuilder::new()
         .lock_fee_from_faucet()
-        .call_function(package_address, "CoreTest", "query", manifest_args![])
+        .call_function(package_address, "RuntimeTest", "query", manifest_args![])
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
@@ -171,4 +171,21 @@ fn cant_store_role_assignment() {
         "store_role_assignment",
         "Persistence prohibited",
     )
+}
+
+#[test]
+fn test_globalize_with_deep_own() {
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
+
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .call_function(
+            package_address,
+            "RecursiveTest",
+            "create_own_at_depth",
+            manifest_args![10000u32],
+        )
+        .build();
+    test_runner.execute_manifest(manifest, vec![]);
 }
