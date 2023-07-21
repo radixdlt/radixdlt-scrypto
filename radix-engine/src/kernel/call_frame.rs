@@ -66,7 +66,6 @@ pub enum StableReferenceType {
 pub enum Visibility {
     StableReference(StableReferenceType),
     FrameOwned,
-    Actor,
     Borrowed,
 }
 
@@ -1178,7 +1177,7 @@ impl<L: Clone> CallFrame<L> {
         // Actor
         if let Some(actor_node_id) = self.actor.node_id() {
             if actor_node_id == *node_id {
-                visibilities.insert(Visibility::Actor);
+                visibilities.insert(Visibility::Borrowed);
             }
         }
 

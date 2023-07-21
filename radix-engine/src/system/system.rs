@@ -1456,7 +1456,7 @@ where
                         // If borrowed or actor then we just use the current actor's global address
                         // e.g. if the parent to the node is frame owned then the current actor's global
                         // address would be None
-                        Visibility::Borrowed | Visibility::Actor => {
+                        Visibility::Borrowed => {
                             match self.api.kernel_get_system_state().current_actor {
                                 Actor::Method(MethodActor { receiver_type, .. }) => {
                                     let receiver_type = match receiver_type {
