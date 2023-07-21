@@ -67,6 +67,7 @@ pub enum Visibility {
     StableReference(StableReferenceType),
     FrameOwned,
     Borrowed,
+    Actor,
 }
 
 impl Visibility {
@@ -277,7 +278,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn new_child_from_parent(
         parent: &mut CallFrame<L>,
         actor: Actor,
-        message: Message,
+        mut message: Message,
     ) -> Result<Self, CreateFrameError> {
         let mut frame = Self {
             depth: parent.depth + 1,
@@ -289,6 +290,11 @@ impl<L: Clone> CallFrame<L> {
             locks: index_map_new(),
         };
 
+        // Add actor global references
+        for reference in frame.actor.global_references() {
+            message.add_copy_reference(reference.into());
+        }
+
         // Copy references and move nodes
         Self::pass_message(parent, &mut frame, message)
             .map_err(CreateFrameError::PassMessageError)?;
@@ -298,39 +304,6 @@ impl<L: Clone> CallFrame<L> {
             if frame.owned_root_nodes.contains_key(&node_id) {
                 return Err(CreateFrameError::ActorBeingMoved(node_id));
             }
-        }
-
-        // Additional global references
-        let mut additional_global_refs = Vec::new();
-
-        if let Some(blueprint_id) = frame.actor.blueprint_id() {
-            additional_global_refs.push(blueprint_id.package_address.into());
-        }
-
-        match &frame.actor {
-            Actor::Root => {}
-            Actor::Method(MethodActor {
-                receiver_type,
-                object_info,
-                ..
-            }) => {
-                if let ReceiverType::OnStoredObject(global_address) = receiver_type {
-                    additional_global_refs.push(global_address.clone());
-                }
-                if let OuterObjectInfo::Some { outer_object } =
-                    object_info.blueprint_info.outer_obj_info
-                {
-                    additional_global_refs.push(outer_object.clone());
-                }
-            }
-            Actor::Function(FunctionActor { blueprint_id, .. })
-            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
-                additional_global_refs.push(blueprint_id.package_address.clone().into());
-            }
-        }
-
-        for reference in additional_global_refs {
-            frame.add_global_reference(reference);
         }
 
         Ok(frame)
@@ -1177,12 +1150,11 @@ impl<L: Clone> CallFrame<L> {
         // Actor
         if let Some(actor_node_id) = self.actor.node_id() {
             if actor_node_id == *node_id {
-                visibilities.insert(Visibility::Borrowed);
+                visibilities.insert(Visibility::Actor);
             }
         }
 
         // Borrowed from substate loading
-        // TODO: we may want to further split it based on the borrow origin (actor & frame owned nodes)
         if self.transient_references.contains_key(node_id) {
             visibilities.insert(Visibility::Borrowed);
         }

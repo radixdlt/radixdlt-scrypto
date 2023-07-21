@@ -73,6 +73,29 @@ pub enum Actor {
 }
 
 impl Actor {
+    pub fn global_references(&self) -> Vec<GlobalAddress> {
+        let mut global_refs = Vec::new();
+
+        if let Some(blueprint_id) = self.blueprint_id() {
+            global_refs.push(blueprint_id.package_address.into());
+        }
+
+        if let Actor::Method(MethodActor {
+            receiver_type, object_info, ..
+                     }) = self {
+            if let ReceiverType::OnStoredObject(global_address) = receiver_type {
+                global_refs.push(global_address.clone());
+            }
+            if let OuterObjectInfo::Some { outer_object } =
+                object_info.blueprint_info.outer_obj_info
+            {
+                global_refs.push(outer_object.clone());
+            }
+        }
+
+        global_refs
+    }
+
     pub fn instance_context(&self) -> Option<InstanceContext> {
         let method_actor = match self {
             Actor::Method(method_actor) => method_actor,
