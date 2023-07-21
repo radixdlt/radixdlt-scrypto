@@ -190,6 +190,7 @@ pub enum PersistNodeError {
     NotAllowed(NodeId, String),
     ContainsNonGlobalRef(NodeId),
     NodeBorrowed(NodeId, usize),
+    NodeIsTooDeep(NodeId),
 }
 
 /// Represents an error when taking a node from current frame.
@@ -530,7 +531,7 @@ impl<L: Clone> CallFrame<L> {
 
                     // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
-                        Self::move_node_to_store(heap, store, callback, filter, own)
+                        Self::move_node_to_store(heap, store, callback, filter, own, 0)
                             .map_err(CloseSubstateError::PersistNodeError)?;
                     }
                 }
@@ -713,7 +714,7 @@ impl<L: Clone> CallFrame<L> {
                     self.take_node_internal(own)
                         .map_err(CreateNodeError::TakeNodeError)?;
                     if push_to_store {
-                        Self::move_node_to_store(heap, store, callback, filter, own)
+                        Self::move_node_to_store(heap, store, callback, filter, own, 0)
                             .map_err(CreateNodeError::PersistNodeError)?;
                     }
                 }
@@ -851,7 +852,7 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, callback, filter, own)
+                    Self::move_node_to_store(heap, store, callback, filter, own, 0)
                         .map_err(MoveModuleError::PersistNodeError)?;
                 }
 
@@ -1102,11 +1103,16 @@ impl<L: Clone> CallFrame<L> {
         callback: &mut M,
         filter: &F,
         node_id: &NodeId,
+        depth: usize,
     ) -> Result<(), PersistNodeError>
     where
         M: KernelCallbackObject,
         F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
     {
+        if depth > MAX_RECURSIVE_MOVE_DEPTH {
+            return Err(PersistNodeError::NodeIsTooDeep(node_id.clone()));
+        }
+
         filter(heap, store, callback, node_id)
             .map_err(|e| PersistNodeError::NotAllowed(node_id.clone(), e))?;
 
@@ -1128,7 +1134,7 @@ impl<L: Clone> CallFrame<L> {
                 }
 
                 for node_id in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, callback, filter, node_id)?;
+                    Self::move_node_to_store(heap, store, callback, filter, node_id, depth + 1)?;
                 }
             }
         }
