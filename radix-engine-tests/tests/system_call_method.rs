@@ -1,5 +1,5 @@
 use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::kernel::call_frame::CreateFrameError;
+use radix_engine::kernel::call_frame::{CreateFrameError, PassMessageError};
 use radix_engine::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use radix_engine::system::system_callback::SystemLockData;
 use radix_engine::types::*;
@@ -63,7 +63,11 @@ fn call_method_with_owned_actor_should_fail() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::CallFrameError(CallFrameError::CreateFrameError(CreateFrameError::ActorBeingMoved(..))))
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::CreateFrameError(CreateFrameError::PassMessageError(
+                    PassMessageError::ActorRefNotFound(..)
+                ))
+            ))
         )
     });
 }

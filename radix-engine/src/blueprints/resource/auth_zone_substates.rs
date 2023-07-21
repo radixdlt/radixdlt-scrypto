@@ -26,9 +26,7 @@ impl Clone for AuthZone {
             virtual_resources: self.virtual_resources.clone(),
             virtual_non_fungibles: self.virtual_non_fungibles.clone(),
             virtual_local_call_frame_proofs: self.virtual_local_call_frame_proofs.clone(),
-            virtual_global_call_frame_proofs: self
-                .virtual_global_call_frame_proofs
-                .clone(),
+            virtual_global_call_frame_proofs: self.virtual_global_call_frame_proofs.clone(),
             is_barrier: self.is_barrier,
             parent: self.parent.clone(),
         }

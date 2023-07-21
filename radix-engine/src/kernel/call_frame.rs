@@ -1,4 +1,3 @@
-use crate::kernel::actor::ReceiverType;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
     AcquireLockError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess,
@@ -13,7 +12,7 @@ use radix_engine_interface::blueprints::resource::{
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
-use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
+use super::actor::Actor;
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
 
@@ -24,6 +23,7 @@ use super::kernel_api::LockInfo;
 pub struct Message {
     pub copy_references: Vec<NodeId>,
     pub move_nodes: Vec<NodeId>,
+    pub actor_reference: Option<NodeId>,
 }
 
 impl Message {
@@ -31,6 +31,7 @@ impl Message {
         Self {
             copy_references: value.references().clone(),
             move_nodes: value.owned_nodes().clone(),
+            actor_reference: None,
         }
     }
 
@@ -67,7 +68,6 @@ pub enum Visibility {
     StableReference(StableReferenceType),
     FrameOwned,
     Borrowed,
-    Actor,
 }
 
 impl Visibility {
@@ -129,10 +129,12 @@ pub struct CallFrame<L> {
     owned_root_nodes: IndexMap<NodeId, usize>,
 
     /// References to non-GLOBAL nodes, obtained from substate loading, ref counted.
+    /// These references may NOT be passed between call frames as arguments
     transient_references: NonIterMap<NodeId, usize>,
 
     /// Stable references points to nodes in track, which can't moved/deleted.
     /// Current two types: `GLOBAL` (root, stored) and `DirectAccess`.
+    /// These references MAY be passed between call frames
     stable_references: NonIterMap<NodeId, StableReferenceType>,
 
     next_lock_handle: LockHandle,
@@ -142,7 +144,6 @@ pub struct CallFrame<L> {
 /// Represents an error when creating a new frame.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateFrameError {
-    ActorBeingMoved(NodeId),
     PassMessageError(PassMessageError),
 }
 
@@ -151,6 +152,7 @@ pub enum CreateFrameError {
 pub enum PassMessageError {
     TakeNodeError(TakeNodeError),
     StableRefNotFound(NodeId),
+    ActorRefNotFound(NodeId),
 }
 
 /// Represents an error when attempting to lock a substate.
@@ -278,7 +280,7 @@ impl<L: Clone> CallFrame<L> {
     pub fn new_child_from_parent(
         parent: &mut CallFrame<L>,
         actor: Actor,
-        mut message: Message,
+        message: Message,
     ) -> Result<Self, CreateFrameError> {
         let mut frame = Self {
             depth: parent.depth + 1,
@@ -290,21 +292,9 @@ impl<L: Clone> CallFrame<L> {
             locks: index_map_new(),
         };
 
-        // Add actor global references
-        for reference in frame.actor.global_references() {
-            message.add_copy_reference(reference.into());
-        }
-
         // Copy references and move nodes
         Self::pass_message(parent, &mut frame, message)
             .map_err(CreateFrameError::PassMessageError)?;
-
-        // Make sure actor isn't part of the owned nodes
-        if let Some(node_id) = frame.actor.node_id() {
-            if frame.owned_root_nodes.contains_key(&node_id) {
-                return Err(CreateFrameError::ActorBeingMoved(node_id));
-            }
-        }
 
         Ok(frame)
     }
@@ -333,6 +323,21 @@ impl<L: Clone> CallFrame<L> {
                 to.stable_references.insert(node_id, t);
             } else {
                 return Err(PassMessageError::StableRefNotFound(node_id));
+            }
+        }
+
+        // TODO: Move this logic into system layer
+        if let Some(node_id) = message.actor_reference {
+            if from.depth >= to.depth {
+                panic!("Actor reference only supported for downstream calls.");
+            }
+            if from.get_node_visibility(&node_id).is_visible() {
+                to.transient_references
+                    .entry(node_id.clone())
+                    .or_default()
+                    .add_assign(1);
+            } else {
+                return Err(PassMessageError::ActorRefNotFound(node_id));
             }
         }
 
@@ -1145,13 +1150,6 @@ impl<L: Clone> CallFrame<L> {
         // Frame owned nodes
         if self.owned_root_nodes.contains_key(node_id) {
             visibilities.insert(Visibility::FrameOwned);
-        }
-
-        // Actor
-        if let Some(actor_node_id) = self.actor.node_id() {
-            if actor_node_id == *node_id {
-                visibilities.insert(Visibility::Actor);
-            }
         }
 
         // Borrowed from substate loading

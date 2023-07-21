@@ -81,8 +81,11 @@ impl Actor {
         }
 
         if let Actor::Method(MethodActor {
-            receiver_type, object_info, ..
-                     }) = self {
+            receiver_type,
+            object_info,
+            ..
+        }) = self
+        {
             if let ReceiverType::OnStoredObject(global_address) = receiver_type {
                 global_refs.push(global_address.clone());
             }

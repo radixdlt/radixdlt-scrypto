@@ -210,10 +210,24 @@ where
         invocation: Box<KernelInvocation>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         // Before push call frame
-        let mut message = Message::from_indexed_scrypto_value(&invocation.args);
         let actor = invocation.actor;
         let args = &invocation.args;
-        M::before_push_frame(&actor, &mut message, &args, self)?;
+        let message = {
+            let mut message = Message::from_indexed_scrypto_value(&args);
+            M::before_push_frame(&actor, &mut message, &args, self)?;
+
+            // Add actor global references
+            for reference in actor.global_references() {
+                message.add_copy_reference(reference.into());
+            }
+
+            // Add actor reference
+            if let Some(node_id) = actor.node_id() {
+                message.actor_reference = Some(node_id);
+            }
+
+            message
+        };
 
         // Push call frame
         {
