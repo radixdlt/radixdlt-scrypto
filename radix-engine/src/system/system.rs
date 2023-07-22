@@ -8,7 +8,7 @@ use crate::errors::{
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
+use crate::kernel::actor::{Actor, CallerAuthZone, FunctionActor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, RootNodeType};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
@@ -1437,14 +1437,14 @@ where
             ));
         }
 
-        let (global_caller_auth_zone, local_caller_auth_zone, self_auth_zone) = {
+        let (caller_auth_zone, self_auth_zone) = {
 
             let (global_caller_auth_zone, self_auth_zone_parent) = if object_info.global {
                 let global_caller_auth_zone = self.current_actor().self_auth_zone();
                 (global_caller_auth_zone, None)
             } else {
                 let global_caller_auth_zone = match self.current_actor() {
-                    Actor::Method(method_actor) => method_actor.global_caller_auth_zone,
+                    Actor::Method(method_actor) => method_actor.caller_auth_zone.global,
                     Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
                     _ => None,
                 };
@@ -1452,7 +1452,10 @@ where
                 (global_caller_auth_zone, parent)
             };
 
-            let local_caller_auth_zone = self.current_actor().self_auth_zone();
+            let caller_auth_zone = CallerAuthZone {
+                global: global_caller_auth_zone,
+                local: self.current_actor().self_auth_zone(),
+            };
 
             let blueprint_id = match module_id {
                 ObjectModuleId::Main => object_info.blueprint_info.blueprint_id.clone(),
@@ -1512,7 +1515,7 @@ where
                 ),
             )?;
 
-            (global_caller_auth_zone, local_caller_auth_zone, auth_zone_node_id)
+            (caller_auth_zone, auth_zone_node_id)
         };
 
         let invocation = KernelInvocation {
@@ -1522,8 +1525,7 @@ where
                 module_id,
                 ident: method_name.to_string(),
 
-                global_caller_auth_zone,
-                local_caller_auth_zone,
+                caller_auth_zone,
                 self_auth_zone,
 
                 object_info,
@@ -2073,15 +2075,22 @@ where
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let global_caller_auth_zone =
-            match self.current_actor() {
-                Actor::Method(method_actor) => method_actor.global_caller_auth_zone,
-                Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
-                _ => None,
-            };
 
+        let caller_auth_zone = {
+            let global =
+                match self.current_actor() {
+                    Actor::Method(method_actor) => method_actor.caller_auth_zone.global,
+                    Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
+                    _ => None,
+                };
+            let local = self.current_actor().self_auth_zone();
+            CallerAuthZone {
+                global,
+                local,
+            }
+        };
 
-        let auth_zone_node_id = {
+        let self_auth_zone = {
             let local_call_frame_proofs = btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
                 package_address
             ));
@@ -2141,15 +2150,14 @@ where
             auth_zone_node_id
         };
 
-        let local_caller_auth_zone = self.current_actor().self_auth_zone();
+
 
         let invocation = KernelInvocation {
             call_frame_data: Actor::Function(FunctionActor {
                 blueprint_id: BlueprintId::new(&package_address, blueprint_name),
                 ident: function_name.to_string(),
-                self_auth_zone: auth_zone_node_id,
-                global_caller_auth_zone,
-                local_caller_auth_zone,
+                self_auth_zone,
+                caller_auth_zone,
             }),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
@@ -2160,7 +2168,7 @@ where
             .kernel_invoke(Box::new(invocation))
             .map(|v| v.into())?;
 
-        self.api.kernel_drop_node(&auth_zone_node_id)?;
+        self.api.kernel_drop_node(&self_auth_zone)?;
 
         Ok(rtn)
     }

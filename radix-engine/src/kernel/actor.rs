@@ -14,14 +14,20 @@ pub struct InstanceContext {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct CallerAuthZone {
+    pub global: Option<NodeId>,
+    pub local: Option<NodeId>,
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
     pub direct_access: bool,
     pub node_id: NodeId,
     pub module_id: ObjectModuleId,
     pub ident: String,
 
-    pub global_caller_auth_zone: Option<NodeId>,
-    pub local_caller_auth_zone: Option<NodeId>,
+    pub caller_auth_zone: CallerAuthZone,
     pub self_auth_zone: NodeId,
 
     // Cached info
@@ -49,8 +55,7 @@ pub struct FunctionActor {
     pub blueprint_id: BlueprintId,
     pub ident: String,
 
-    pub global_caller_auth_zone: Option<NodeId>,
-    pub local_caller_auth_zone: Option<NodeId>,
+    pub caller_auth_zone: CallerAuthZone,
     pub self_auth_zone: NodeId,
 }
 
@@ -101,7 +106,10 @@ impl CallFrameReferences for Actor {
     fn transient_references(&self) -> Vec<NodeId> {
         let mut references = vec![];
         references.extend(self.self_auth_zone());
-        references.extend(self.global_caller_authzone());
+        if let Some(caller_auth_zone) = self.caller_authzone() {
+            references.extend(caller_auth_zone.local.clone());
+            references.extend(caller_auth_zone.global.clone());
+        }
 
         if !self.is_direct_access() {
             references.extend(self.node_id());
@@ -149,11 +157,11 @@ impl Actor {
         }
     }
 
-    pub fn global_caller_authzone(&self) -> Option<NodeId> {
+    pub fn caller_authzone(&self) -> Option<CallerAuthZone> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,
-            Actor::Method(method_actor) => method_actor.global_caller_auth_zone,
-            Actor::Function(function_actor) => function_actor.global_caller_auth_zone,
+            Actor::Method(method_actor) => Some(method_actor.caller_auth_zone.clone()),
+            Actor::Function(function_actor) => Some(function_actor.caller_auth_zone.clone()),
         }
     }
 
