@@ -20,6 +20,9 @@ pub struct MethodActor {
     pub module_id: ObjectModuleId,
     pub ident: String,
 
+    pub global_caller_auth_zone: Option<NodeId>,
+    pub self_auth_zone: NodeId,
+
     // Cached info
     pub object_info: ObjectInfo,
 }
@@ -44,6 +47,9 @@ impl MethodActor {
 pub struct FunctionActor {
     pub blueprint_id: BlueprintId,
     pub ident: String,
+
+    pub global_caller_auth_zone: Option<NodeId>,
+    pub self_auth_zone: NodeId,
 }
 
 impl FunctionActor {
@@ -71,6 +77,7 @@ pub enum Actor {
 }
 
 impl CallFrameReferences for Actor {
+
     fn global_references(&self) -> Vec<GlobalAddress> {
         let mut global_refs = Vec::new();
 
@@ -90,11 +97,15 @@ impl CallFrameReferences for Actor {
     }
 
     fn transient_references(&self) -> Vec<NodeId> {
-        if self.is_direct_access() {
-            vec![]
-        } else {
-            self.node_id().into_iter().collect()
+        let mut references = vec![];
+        references.extend(self.self_auth_zone());
+        references.extend(self.global_caller_authzone());
+
+        if !self.is_direct_access() {
+            references.extend(self.node_id());
         }
+
+        references
     }
 
     fn direct_access_references(&self) -> Vec<NodeId> {
@@ -114,6 +125,7 @@ impl CallFrameReferences for Actor {
             Actor::Function(FunctionActor {
                 blueprint_id,
                 ident,
+                ..
             }) => {
                 blueprint_id.package_address.as_ref().len()
                     + blueprint_id.blueprint_name.len()
@@ -127,6 +139,22 @@ impl CallFrameReferences for Actor {
 }
 
 impl Actor {
+    pub fn self_auth_zone(&self) -> Option<NodeId> {
+        match self {
+            Actor::Root | Actor::BlueprintHook(..) => None,
+            Actor::Method(method_actor) => Some(method_actor.self_auth_zone),
+            Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
+        }
+    }
+
+    pub fn global_caller_authzone(&self) -> Option<NodeId> {
+        match self {
+            Actor::Root | Actor::BlueprintHook(..) => None,
+            Actor::Method(method_actor) => method_actor.global_caller_auth_zone,
+            Actor::Function(function_actor) => function_actor.global_caller_auth_zone,
+        }
+    }
+
     pub fn instance_context(&self) -> Option<InstanceContext> {
         let method_actor = match self {
             Actor::Method(method_actor) => method_actor,
@@ -287,28 +315,5 @@ impl Actor {
         } else {
             btreeset!()
         }
-    }
-
-    pub fn method(
-        direct_access: bool,
-        node_id: NodeId,
-        module_id: ObjectModuleId,
-        ident: String,
-        object_info: ObjectInfo,
-    ) -> Self {
-        Self::Method(MethodActor {
-            direct_access,
-            node_id,
-            module_id,
-            ident,
-            object_info,
-        })
-    }
-
-    pub fn function(blueprint_id: BlueprintId, ident: String) -> Self {
-        Self::Function(FunctionActor {
-            blueprint_id,
-            ident,
-        })
     }
 }

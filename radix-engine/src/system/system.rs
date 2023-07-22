@@ -39,6 +39,7 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::blueprints::resource::AuthZone;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SubstateMutability {
@@ -1435,22 +1436,110 @@ where
             ));
         }
 
+        let global_caller_auth_zone = if object_info.global {
+            self.current_actor().self_auth_zone()
+        } else {
+            match self.current_actor() {
+                Actor::Method(method_actor) => method_actor.global_caller_auth_zone,
+                Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
+                _ => None,
+            }
+        };
+
+
+        let auth_zone_node_id = {
+            // Add Global Object and Package Actor Auth
+            /*
+            let local_call_frame_proofs = callee.get_local_call_frame_proofs();
+            let global_call_frame_proofs = callee.get_global_call_frame_proofs(api);
+             */
+
+            // TODO: Remove special casing use of transaction processor and just have virtual resources
+            // stored in root call frame
+            /*
+            let is_transaction_processor_blueprint = callee.is_transaction_processor_blueprint();
+            let is_at_root = api.kernel_get_current_depth() == 0;
+            let (virtual_resources, virtual_non_fungibles) =
+                if is_transaction_processor_blueprint && is_at_root {
+                    let auth_module = &api.kernel_get_system().modules.auth;
+                    (
+                        auth_module.params.virtual_resources.clone(),
+                        auth_module.params.initial_proofs.clone(),
+                    )
+                } else {
+                    (BTreeSet::new(), BTreeSet::new())
+                };
+             */
+
+            let parent = self.current_actor().self_auth_zone().map(|x| Reference(x));
+            let auth_zone = AuthZone::new(
+                vec![],
+                BTreeSet::new(),
+                BTreeSet::new(),
+                BTreeSet::new(),
+                BTreeSet::new(),
+                true,
+                parent,
+            );
+
+            // Create node
+            let auth_zone_node_id =
+                self.api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+
+            self.api.kernel_create_node(
+                auth_zone_node_id,
+                btreemap!(
+                    MAIN_BASE_PARTITION => btreemap!(
+                        AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
+                    ),
+                    TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                        global: false,
+
+                        module_versions: btreemap!(
+                            ObjectModuleId::Main => BlueprintVersion::default(),
+                        ),
+                        blueprint_info: BlueprintInfo {
+                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                            outer_obj_info: OuterObjectInfo::default(),
+                            features: btreeset!(),
+                            instance_schema: None,
+                        }
+                    }))
+                ),
+            )?;
+
+            auth_zone_node_id
+        };
+
+
+
+
+
+
         let invocation = KernelInvocation {
-            call_frame_data: Actor::method(
+            call_frame_data: Actor::Method(MethodActor {
                 direct_access,
-                receiver.clone(),
+                node_id: receiver.clone(),
                 module_id,
-                method_name.to_string(),
+                ident: method_name.to_string(),
+
+                global_caller_auth_zone,
+                self_auth_zone: auth_zone_node_id,
+
                 object_info,
-            ),
+            }),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
         };
 
-        self.api
+        let rtn = self.api
             .kernel_invoke(Box::new(invocation))
-            .map(|v| v.into())
+            .map(|v| v.into())?;
+
+        self.api.kernel_drop_node(&auth_zone_node_id)?;
+
+        Ok(rtn)
     }
 
     // Costing through kernel
@@ -1984,19 +2073,97 @@ where
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
+        let global_caller_auth_zone =
+            match self.current_actor() {
+                Actor::Method(method_actor) => method_actor.global_caller_auth_zone,
+                Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
+                _ => None,
+            };
+
+
+        let auth_zone_node_id = {
+            // Add Global Object and Package Actor Auth
+            /*
+            let local_call_frame_proofs = callee.get_local_call_frame_proofs();
+            let global_call_frame_proofs = callee.get_global_call_frame_proofs(api);
+             */
+
+            // TODO: Remove special casing use of transaction processor and just have virtual resources
+            // stored in root call frame
+            /*
+            let is_transaction_processor_blueprint = callee.is_transaction_processor_blueprint();
+            let is_at_root = api.kernel_get_current_depth() == 0;
+            let (virtual_resources, virtual_non_fungibles) =
+                if is_transaction_processor_blueprint && is_at_root {
+                    let auth_module = &api.kernel_get_system().modules.auth;
+                    (
+                        auth_module.params.virtual_resources.clone(),
+                        auth_module.params.initial_proofs.clone(),
+                    )
+                } else {
+                    (BTreeSet::new(), BTreeSet::new())
+                };
+             */
+
+            let parent = self.current_actor().self_auth_zone().map(|x| Reference(x));
+            let auth_zone = AuthZone::new(
+                vec![],
+                BTreeSet::new(),
+                BTreeSet::new(),
+                BTreeSet::new(),
+                BTreeSet::new(),
+                true,
+                parent,
+            );
+
+            // Create node
+            let auth_zone_node_id =
+                self.api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+
+            self.api.kernel_create_node(
+                auth_zone_node_id,
+                btreemap!(
+                    MAIN_BASE_PARTITION => btreemap!(
+                        AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
+                    ),
+                    TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                        global: false,
+
+                        module_versions: btreemap!(
+                            ObjectModuleId::Main => BlueprintVersion::default(),
+                        ),
+                        blueprint_info: BlueprintInfo {
+                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                            outer_obj_info: OuterObjectInfo::default(),
+                            features: btreeset!(),
+                            instance_schema: None,
+                        }
+                    }))
+                ),
+            )?;
+
+            auth_zone_node_id
+        };
+
         let invocation = KernelInvocation {
-            call_frame_data: Actor::function(
-                BlueprintId::new(&package_address, blueprint_name),
-                function_name.to_string(),
-            ),
+            call_frame_data: Actor::Function(FunctionActor {
+                blueprint_id: BlueprintId::new(&package_address, blueprint_name),
+                ident: function_name.to_string(),
+                self_auth_zone: auth_zone_node_id,
+                global_caller_auth_zone,
+            }),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
             })?,
         };
 
-        self.api
+        let rtn = self.api
             .kernel_invoke(Box::new(invocation))
-            .map(|v| v.into())
+            .map(|v| v.into())?;
+
+        self.api.kernel_drop_node(&auth_zone_node_id)?;
+
+        Ok(rtn)
     }
 }
 

@@ -485,6 +485,7 @@ impl ExecutionTraceModule {
             Actor::Function(FunctionActor {
                 blueprint_id,
                 ident,
+                ..
             }) => TraceOrigin::ScryptoFunction(ApplicationFnIdentifier {
                 blueprint_id: blueprint_id.clone(),
                 ident: ident.clone(),

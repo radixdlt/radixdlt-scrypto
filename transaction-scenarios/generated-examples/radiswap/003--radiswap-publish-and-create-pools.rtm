@@ -19,7 +19,7 @@ PUBLISH_PACKAGE_ADVANCED
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ntkean2wr5ut4uakv85rvamw58thkc93njxwa0j8hyq62u77tgmg94:#1#")
+                        NonFungibleGlobalId("resource_sim1ngy7fpes0unfnkmna9m4tqm3gljwxwu3h5zgazz76cyvj24aehxz9s:#1#")
                     )
                 )
             )
@@ -691,14 +691,14 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ntkean2wr5ut4uakv85rvamw58thkc93njxwa0j8hyq62u77tgmg94:#1#")
+                        NonFungibleGlobalId("resource_sim1ngy7fpes0unfnkmna9m4tqm3gljwxwu3h5zgazz76cyvj24aehxz9s:#1#")
                     )
                 )
             )
         )
     )
     Address("resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3")
-    Address("resource_sim1th47ntgk0vvcujeeucmtzhmnch00ems7su7akeszjutt582tqw8cnx")
+    Address("resource_sim1thqcm3ngv5ja49x5h3wpycdt3wcwvxe5rz00894gjmeyxrsjl3yvcm")
 ;
 CALL_FUNCTION
     NamedAddress("radiswap_package")
@@ -709,14 +709,14 @@ CALL_FUNCTION
             Enum<0u8>(
                 Enum<0u8>(
                     Enum<0u8>(
-                        NonFungibleGlobalId("resource_sim1ntkean2wr5ut4uakv85rvamw58thkc93njxwa0j8hyq62u77tgmg94:#1#")
+                        NonFungibleGlobalId("resource_sim1ngy7fpes0unfnkmna9m4tqm3gljwxwu3h5zgazz76cyvj24aehxz9s:#1#")
                     )
                 )
             )
         )
     )
-    Address("resource_sim1thvtyk4j7ry44p2fq5ucjwfay2n7d9gcl2huyv0hwpj0ffjehs3tcd")
-    Address("resource_sim1themku2nqm2ktjmz529wr786ckk8cyn9cljhfe8c4c8zqslrkp5dcl")
+    Address("resource_sim1t4lgnf470xhm4kpwxf5whxeqserk6tdfxdupyctd42hs3gafkt4pc9")
+    Address("resource_sim1t5wadz0akck57qx5auucndypxzup9x6z486qzlw7gfglf5455l37xn")
 ;
 CALL_METHOD
     Address("account_sim129uea6ms5wjstpze559am5ddw293cr2nxeqrha4ae4536dlw5x8whd")

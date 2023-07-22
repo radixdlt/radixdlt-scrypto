@@ -108,6 +108,7 @@ impl AuthModule {
                 Actor::Function(FunctionActor {
                     blueprint_id,
                     ident,
+                    ..
                 }) => {
                     let resolved_permission =
                         PackageAuthNativeBlueprint::resolve_function_permission(
