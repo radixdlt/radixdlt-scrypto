@@ -32,6 +32,7 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, Condition, InstanceSchema, KeyValueStoreSchema,
 };
@@ -1470,23 +1471,6 @@ where
                 .map(|c| NonFungibleGlobalId::global_caller_badge(c))
                 .collect();
 
-            // TODO: Remove special casing use of transaction processor and just have virtual resources
-            // stored in root call frame
-            /*
-            let is_transaction_processor_blueprint = callee.is_transaction_processor_blueprint();
-            let is_at_root = api.kernel_get_current_depth() == 0;
-            let (virtual_resources, virtual_non_fungibles) =
-                if is_transaction_processor_blueprint && is_at_root {
-                    let auth_module = &api.kernel_get_system().modules.auth;
-                    (
-                        auth_module.params.virtual_resources.clone(),
-                        auth_module.params.initial_proofs.clone(),
-                    )
-                } else {
-                    (BTreeSet::new(), BTreeSet::new())
-                };
-             */
-
             let parent = self.current_actor().self_auth_zone().map(|x| Reference(x));
             let auth_zone = AuthZone::new(
                 vec![],
@@ -2098,20 +2082,18 @@ where
 
 
         let auth_zone_node_id = {
-            // Add Global Object and Package Actor Auth
-            /*
-            let local_call_frame_proofs = callee.get_local_call_frame_proofs();
-            let global_call_frame_proofs = callee.get_global_call_frame_proofs(api);
-             */
+            let local_call_frame_proofs = btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
+                package_address
+            ));
 
             // TODO: Remove special casing use of transaction processor and just have virtual resources
             // stored in root call frame
-            /*
-            let is_transaction_processor_blueprint = callee.is_transaction_processor_blueprint();
-            let is_at_root = api.kernel_get_current_depth() == 0;
+            let is_transaction_processor_blueprint = package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE)
+                && blueprint_name.eq(TRANSACTION_PROCESSOR_BLUEPRINT);
+            let is_at_root = self.kernel_get_current_depth() == 0;
             let (virtual_resources, virtual_non_fungibles) =
                 if is_transaction_processor_blueprint && is_at_root {
-                    let auth_module = &api.kernel_get_system().modules.auth;
+                    let auth_module = &self.kernel_get_system().modules.auth;
                     (
                         auth_module.params.virtual_resources.clone(),
                         auth_module.params.initial_proofs.clone(),
@@ -2119,14 +2101,13 @@ where
                 } else {
                     (BTreeSet::new(), BTreeSet::new())
                 };
-             */
 
             let parent = self.current_actor().self_auth_zone().map(|x| Reference(x));
             let auth_zone = AuthZone::new(
                 vec![],
-                BTreeSet::new(),
-                BTreeSet::new(),
-                BTreeSet::new(),
+                virtual_resources,
+                virtual_non_fungibles,
+                local_call_frame_proofs,
                 BTreeSet::new(),
                 true,
                 parent,
