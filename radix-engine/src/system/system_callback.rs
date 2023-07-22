@@ -232,7 +232,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_create_node(api, node_id, total_substate_size, store_access)
     }
 
-    fn before_invoke<Y>(invocation: &KernelInvocation<Actor>, api: &mut Y) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(
+        invocation: &KernelInvocation<Actor>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {

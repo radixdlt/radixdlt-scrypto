@@ -1,12 +1,12 @@
 use crate::kernel::call_frame::RootNodeType;
 use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
-use crate::kernel::kernel_callback_api::CallFrameReferences;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstanceContext {
@@ -90,7 +90,19 @@ impl CallFrameReferences for Actor {
     }
 
     fn transient_references(&self) -> Vec<NodeId> {
-        self.node_id().into_iter().collect()
+        if self.is_direct_access() {
+            vec![]
+        } else {
+            self.node_id().into_iter().collect()
+        }
+    }
+
+    fn direct_access_references(&self) -> Vec<NodeId> {
+        if self.is_direct_access() {
+            self.node_id().into_iter().collect()
+        } else {
+            vec![]
+        }
     }
 
     fn len(&self) -> usize {
@@ -100,9 +112,9 @@ impl CallFrameReferences for Actor {
                 node_id.as_ref().len() + ident.len()
             }
             Actor::Function(FunctionActor {
-                                blueprint_id,
-                                ident,
-                            }) => {
+                blueprint_id,
+                ident,
+            }) => {
                 blueprint_id.package_address.as_ref().len()
                     + blueprint_id.blueprint_name.len()
                     + ident.len()
@@ -150,7 +162,6 @@ impl Actor {
             Actor::BlueprintHook(..) | Actor::Root | Actor::Function(..) => None,
         }
     }
-
 
     pub fn is_auth_zone(&self) -> bool {
         match self {

@@ -22,7 +22,8 @@ use super::kernel_api::LockInfo;
 pub struct Message {
     pub copy_references: Vec<NodeId>,
     pub move_nodes: Vec<NodeId>,
-    pub transient_references: Vec<NodeId>,
+    pub copy_transient_references: Vec<NodeId>,
+    pub copy_direct_references: Vec<NodeId>,
 }
 
 impl Message {
@@ -30,7 +31,8 @@ impl Message {
         Self {
             copy_references: value.references().clone(),
             move_nodes: value.owned_nodes().clone(),
-            transient_references: vec![],
+            copy_transient_references: vec![],
+            copy_direct_references: vec![],
         }
     }
 
@@ -151,7 +153,6 @@ impl NodeVisibility {
     }
 }
 
-
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects and references by this function.
 pub struct CallFrame<C, L> {
@@ -190,6 +191,7 @@ pub enum PassMessageError {
     TakeNodeError(TakeNodeError),
     StableRefNotFound(NodeId),
     TransientRefNotFound(NodeId),
+    DirectRefNotFound(NodeId),
 }
 
 /// Represents an error when attempting to lock a substate.
@@ -364,7 +366,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         // TODO: Move this logic into system layer
-        for node_id in message.transient_references {
+        for node_id in message.copy_transient_references {
             if from.depth >= to.depth {
                 panic!("Transient references only supported for downstream calls.");
             }
@@ -386,6 +388,15 @@ impl<C, L: Clone> CallFrame<C, L> {
                 }
             } else {
                 return Err(PassMessageError::TransientRefNotFound(node_id));
+            }
+        }
+
+        for node_id in message.copy_direct_references {
+            if from.get_node_visibility(&node_id).can_be_invoked(true) {
+                to.stable_references
+                    .insert(node_id, StableReferenceType::DirectAccess);
+            } else {
+                return Err(PassMessageError::DirectRefNotFound(node_id));
             }
         }
 

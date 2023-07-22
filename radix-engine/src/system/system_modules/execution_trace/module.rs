@@ -312,7 +312,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
             .system
             .modules
             .execution_trace
-            .handle_after_create_node(system_state.current_call_frame, current_depth, resource_summary);
+            .handle_after_create_node(
+                system_state.current_call_frame,
+                current_depth,
+                resource_summary,
+            );
         Ok(())
     }
 
@@ -355,7 +359,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
             .system
             .modules
             .execution_trace
-            .handle_before_push_frame(system_state.current_call_frame, callee, resource_summary, args);
+            .handle_before_push_frame(
+                system_state.current_call_frame,
+                callee,
+                resource_summary,
+                args,
+            );
         Ok(())
     }
 

@@ -7,10 +7,9 @@ use radix_engine_interface::api::field_api::LockFlags;
 
 use super::call_frame::Message;
 
-
 pub trait CallFrameReferences {
     fn global_references(&self) -> Vec<GlobalAddress>;
-
+    fn direct_access_references(&self) -> Vec<NodeId>;
     fn transient_references(&self) -> Vec<NodeId>;
 
     fn len(&self) -> usize;
@@ -130,7 +129,10 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn before_invoke<Y>(invocation: &KernelInvocation<Self::CallFrameData>, api: &mut Y) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(
+        invocation: &KernelInvocation<Self::CallFrameData>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -155,7 +157,10 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Self::CallFrameData) -> Result<(), RuntimeError>
+    fn after_pop_frame<Y>(
+        api: &mut Y,
+        dropped_actor: &Self::CallFrameData,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 

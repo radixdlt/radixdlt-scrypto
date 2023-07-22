@@ -1171,7 +1171,10 @@ where
     }
 
     pub fn current_actor(&mut self) -> Actor {
-        self.api.kernel_get_system_state().current_call_frame.clone()
+        self.api
+            .kernel_get_system_state()
+            .current_call_frame
+            .clone()
     }
 
     pub fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
@@ -1424,13 +1427,6 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let node_visibility = self.api.kernel_get_node_visibility(receiver);
-        if !node_visibility.can_be_invoked(direct_access) {
-            return Err(RuntimeError::SystemError(
-                SystemError::NodeNotVisibleForMethodCall,
-            ));
-        }
-
         // Key Value Stores do not have methods so we remove that possibility here
         let object_info = self.get_object_info(&receiver)?;
         if !object_info.module_versions.contains_key(&module_id) {

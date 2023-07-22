@@ -746,13 +746,12 @@ where
             let mut message = Message::from_indexed_scrypto_value(&args);
             M::before_push_frame(&callee, &mut message, &args, self)?;
 
-            // Add callee global references
+            // Add callee references
             for reference in callee.global_references() {
                 message.add_copy_reference(reference.into());
             }
-
-            // Add callee transient references
-            message.transient_references = callee.transient_references();
+            message.copy_transient_references = callee.transient_references();
+            message.copy_direct_references = callee.direct_access_references();
 
             message
         };

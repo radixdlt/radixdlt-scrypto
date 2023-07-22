@@ -204,6 +204,9 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
 }
 
 pub trait KernelApi<M: KernelCallbackObject>:
-    KernelNodeApi + KernelSubstateApi<M::LockData> + KernelInvokeApi<M::CallFrameData> + KernelInternalApi<M>
+    KernelNodeApi
+    + KernelSubstateApi<M::LockData>
+    + KernelInvokeApi<M::CallFrameData>
+    + KernelInternalApi<M>
 {
 }
