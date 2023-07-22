@@ -1437,18 +1437,19 @@ where
             ));
         }
 
-        let global_caller_auth_zone = if object_info.global {
-            self.current_actor().self_auth_zone()
-        } else {
-            match self.current_actor() {
-                Actor::Method(method_actor) => method_actor.global_caller_auth_zone,
-                Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
-                _ => None,
-            }
-        };
+        let (global_caller_auth_zone, self_auth_zone) = {
+            let (global_caller_auth_zone, self_auth_zone_parent) = if object_info.global {
+                (self.current_actor().self_auth_zone(), None)
+            } else {
+                let global_caller_auth_zone = match self.current_actor() {
+                    Actor::Method(method_actor) => method_actor.global_caller_auth_zone,
+                    Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
+                    _ => None,
+                };
+                let parent = self.current_actor().self_auth_zone().map(|x| Reference(x));
+                (global_caller_auth_zone, parent)
+            };
 
-
-        let auth_zone_node_id = {
             let blueprint_id = match module_id {
                 ObjectModuleId::Main => object_info.blueprint_info.blueprint_id.clone(),
                 _ => module_id.static_blueprint().unwrap()
@@ -1471,7 +1472,6 @@ where
                 .map(|c| NonFungibleGlobalId::global_caller_badge(c))
                 .collect();
 
-            let parent = self.current_actor().self_auth_zone().map(|x| Reference(x));
             let auth_zone = AuthZone::new(
                 vec![],
                 BTreeSet::new(),
@@ -1479,7 +1479,7 @@ where
                 local_call_frame_proofs,
                 global_call_frame_proofs,
                 true,
-                parent,
+                self_auth_zone_parent,
             );
 
             // Create node
@@ -1508,13 +1508,8 @@ where
                 ),
             )?;
 
-            auth_zone_node_id
+            (global_caller_auth_zone, auth_zone_node_id)
         };
-
-
-
-
-
 
         let invocation = KernelInvocation {
             call_frame_data: Actor::Method(MethodActor {
@@ -1524,7 +1519,7 @@ where
                 ident: method_name.to_string(),
 
                 global_caller_auth_zone,
-                self_auth_zone: auth_zone_node_id,
+                self_auth_zone,
 
                 object_info,
             }),
@@ -1537,7 +1532,7 @@ where
             .kernel_invoke(Box::new(invocation))
             .map(|v| v.into())?;
 
-        self.api.kernel_drop_node(&auth_zone_node_id)?;
+        self.api.kernel_drop_node(&self_auth_zone)?;
 
         Ok(rtn)
     }
@@ -2102,7 +2097,6 @@ where
                     (BTreeSet::new(), BTreeSet::new())
                 };
 
-            let parent = self.current_actor().self_auth_zone().map(|x| Reference(x));
             let auth_zone = AuthZone::new(
                 vec![],
                 virtual_resources,
@@ -2110,7 +2104,7 @@ where
                 local_call_frame_proofs,
                 BTreeSet::new(),
                 true,
-                parent,
+                None,
             );
 
             // Create node
