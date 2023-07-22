@@ -22,7 +22,7 @@ use super::kernel_api::LockInfo;
 pub struct Message {
     pub copy_references: Vec<NodeId>,
     pub move_nodes: Vec<NodeId>,
-    pub actor_reference: Option<NodeId>,
+    pub transient_references: Vec<NodeId>,
 }
 
 impl Message {
@@ -30,7 +30,7 @@ impl Message {
         Self {
             copy_references: value.references().clone(),
             move_nodes: value.owned_nodes().clone(),
-            actor_reference: None,
+            transient_references: vec![],
         }
     }
 
@@ -188,7 +188,7 @@ pub enum CreateFrameError {
 pub enum PassMessageError {
     TakeNodeError(TakeNodeError),
     StableRefNotFound(NodeId),
-    ActorRefNotFound(NodeId),
+    TransientRefNotFound(NodeId),
 }
 
 /// Represents an error when attempting to lock a substate.
@@ -363,9 +363,9 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         // TODO: Move this logic into system layer
-        if let Some(node_id) = message.actor_reference {
+        for node_id in message.transient_references {
             if from.depth >= to.depth {
-                panic!("Actor reference only supported for downstream calls.");
+                panic!("Transient references only supported for downstream calls.");
             }
 
             if let Some(root_node_type) = from.get_node_visibility(&node_id).root_node_type(node_id)
@@ -384,7 +384,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                         .insert(global_address.into_node_id(), StableReferenceType::Global);
                 }
             } else {
-                return Err(PassMessageError::ActorRefNotFound(node_id));
+                return Err(PassMessageError::TransientRefNotFound(node_id));
             }
         }
 

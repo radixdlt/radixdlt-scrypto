@@ -222,10 +222,8 @@ where
                 message.add_copy_reference(reference.into());
             }
 
-            // Add actor reference
-            if let Some(node_id) = actor.node_id() {
-                message.actor_reference = Some(node_id);
-            }
+            // Add actor transient references
+            message.transient_references = actor.transient_references();
 
             message
         };

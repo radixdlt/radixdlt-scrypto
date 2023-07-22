@@ -65,7 +65,7 @@ fn call_method_with_owned_actor_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
                 CallFrameError::CreateFrameError(CreateFrameError::PassMessageError(
-                    PassMessageError::ActorRefNotFound(..)
+                    PassMessageError::TransientRefNotFound(..)
                 ))
             ))
         )

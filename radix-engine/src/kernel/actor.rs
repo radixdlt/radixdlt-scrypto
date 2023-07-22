@@ -88,6 +88,10 @@ impl Actor {
         global_refs
     }
 
+    pub fn transient_references(&self) -> Vec<NodeId> {
+        self.node_id().into_iter().collect()
+    }
+
     pub fn instance_context(&self) -> Option<InstanceContext> {
         let method_actor = match self {
             Actor::Method(method_actor) => method_actor,
