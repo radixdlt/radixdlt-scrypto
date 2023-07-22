@@ -164,7 +164,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation,
+        invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         // Skip invocation costing for transaction processor
         if api.kernel_get_current_depth() > 0 {
@@ -172,7 +172,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 .modules
                 .costing
                 .apply_execution_cost(CostingEntry::BeforeInvoke {
-                    actor: &invocation.actor,
+                    actor: &invocation.call_frame_data,
                     input_size: invocation.len(),
                 })?;
         }

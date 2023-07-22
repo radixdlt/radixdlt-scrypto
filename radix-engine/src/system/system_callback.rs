@@ -89,6 +89,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
+    type CallFrameData = Actor;
     type LockData = SystemLockData;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -231,7 +232,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_create_node(api, node_id, total_substate_size, store_access)
     }
 
-    fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(invocation: &KernelInvocation<Actor>, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -594,7 +595,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 system.allocate_virtual_global_address(blueprint_id.clone(), address)?;
 
             api.kernel_invoke(Box::new(KernelInvocation {
-                actor: Actor::BlueprintHook(BlueprintHookActor {
+                call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
                     blueprint_id: blueprint_id.clone(),
                     hook: BlueprintHook::OnVirtualize,
                     receiver: None,
@@ -633,7 +634,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?;
                 if definition.hook_exports.contains_key(&BlueprintHook::OnDrop) {
                     api.kernel_invoke(Box::new(KernelInvocation {
-                        actor: Actor::BlueprintHook(BlueprintHookActor {
+                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
                             blueprint_id: node_object_info.blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnDrop,
                             receiver: Some(node_id.clone()),

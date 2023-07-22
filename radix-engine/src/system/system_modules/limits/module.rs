@@ -5,6 +5,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{NodeSubstates, StoreAccess, StoreAccessInfo};
 use crate::types::*;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
+use crate::kernel::actor::Actor;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {
@@ -82,7 +83,7 @@ impl LimitsModule {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation,
+        invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         // Check depth
         let current_depth = api.kernel_get_current_depth();

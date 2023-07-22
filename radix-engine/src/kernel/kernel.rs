@@ -11,7 +11,7 @@ use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::kernel_callback_api::{CallFrameReferences, KernelCallbackObject};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -182,12 +182,11 @@ pub struct Kernel<
     S: SubstateStore,
 {
     /// Stack
-    /// TODO: Generify Actor
-    current_frame: CallFrame<Actor, M::LockData>,
+    current_frame: CallFrame<M::CallFrameData, M::LockData>,
     // This stack could potentially be removed and just use the native stack
     // but keeping this call_frames stack may potentially prove useful if implementing
     // execution pause and/or for better debuggability
-    prev_frame_stack: Vec<CallFrame<Actor, M::LockData>>,
+    prev_frame_stack: Vec<CallFrame<M::CallFrameData, M::LockData>>,
 
     /// Heap
     heap: Heap,
@@ -197,106 +196,8 @@ pub struct Kernel<
     /// ID allocator
     id_allocator: &'g mut IdAllocator,
 
-    /// Upstream system layer
+    /// Upper system layer
     callback: &'g mut M,
-}
-
-impl<'g, M, S> Kernel<'g, M, S>
-where
-    M: KernelCallbackObject,
-    S: SubstateStore,
-{
-    fn invoke(
-        &mut self,
-        invocation: Box<KernelInvocation>,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
-        // Before push call frame
-        let actor = invocation.actor;
-        let args = &invocation.args;
-        let message = {
-            let mut message = Message::from_indexed_scrypto_value(&args);
-            M::before_push_frame(&actor, &mut message, &args, self)?;
-
-            // Add actor global references
-            for reference in actor.global_references() {
-                message.add_copy_reference(reference.into());
-            }
-
-            // Add actor transient references
-            message.transient_references = actor.transient_references();
-
-            message
-        };
-
-        // Push call frame
-        {
-            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, actor, message)
-                .map_err(CallFrameError::CreateFrameError)
-                .map_err(KernelError::CallFrameError)?;
-            let parent = mem::replace(&mut self.current_frame, frame);
-            self.prev_frame_stack.push(parent);
-        }
-
-        // Execute
-        let (output, message) = {
-            // Handle execution start
-            M::on_execution_start(self)?;
-
-            // Auto drop locks
-            self.current_frame
-                .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::CloseSubstateError)
-                .map_err(KernelError::CallFrameError)?;
-
-            // Run
-            let output = M::invoke_upstream(args, self)?;
-            let mut message = Message::from_indexed_scrypto_value(&output);
-
-            // Auto-drop locks again in case module forgot to drop
-            self.current_frame
-                .drop_all_locks(&mut self.heap, self.store)
-                .map_err(CallFrameError::CloseSubstateError)
-                .map_err(KernelError::CallFrameError)?;
-
-            // Handle execution finish
-            M::on_execution_finish(&mut message, self)?;
-
-            (output, message)
-        };
-
-        // Move
-        {
-            let parent = self.prev_frame_stack.last_mut().unwrap();
-
-            // Move resource
-            CallFrame::pass_message(&mut self.current_frame, parent, message)
-                .map_err(CallFrameError::PassMessageError)
-                .map_err(KernelError::CallFrameError)?;
-
-            // Auto-drop
-            let owned_nodes = self.current_frame.owned_nodes();
-            M::auto_drop(owned_nodes, self)?;
-
-            // Now, check if any own has been left!
-            let owned_nodes = self.current_frame.owned_nodes();
-            if !owned_nodes.is_empty() {
-                return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
-                    owned_nodes,
-                )));
-            }
-        }
-
-        // Pop call frame
-        {
-            let parent = self.prev_frame_stack.pop().unwrap();
-
-            let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
-
-            M::after_pop_frame(self, dropped_frame.data())?;
-        }
-
-        Ok(output)
-    }
 }
 
 impl<'g, M, S> KernelNodeApi for Kernel<'g, M, S>
@@ -413,8 +314,8 @@ where
         };
         SystemState {
             system: &mut self.callback,
-            current_actor: self.current_frame.data(),
-            caller_actor,
+            current_call_frame: self.current_frame.data(),
+            caller_call_frame: caller_actor,
         }
     }
 
@@ -826,7 +727,7 @@ where
     }
 }
 
-impl<'g, M, S> KernelInvokeApi for Kernel<'g, M, S>
+impl<'g, M, S> KernelInvokeApi<M::CallFrameData> for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
     S: SubstateStore,
@@ -834,15 +735,98 @@ where
     #[trace_resources]
     fn kernel_invoke(
         &mut self,
-        invocation: Box<KernelInvocation>,
+        invocation: Box<KernelInvocation<M::CallFrameData>>,
     ) -> Result<IndexedScryptoValue, RuntimeError> {
         M::before_invoke(invocation.as_ref(), self)?;
 
-        let rtn = self.invoke(invocation)?;
+        // Before push call frame
+        let callee = invocation.call_frame_data;
+        let args = &invocation.args;
+        let message = {
+            let mut message = Message::from_indexed_scrypto_value(&args);
+            M::before_push_frame(&callee, &mut message, &args, self)?;
 
-        M::after_invoke(rtn.len(), self)?;
+            // Add callee global references
+            for reference in callee.global_references() {
+                message.add_copy_reference(reference.into());
+            }
 
-        Ok(rtn)
+            // Add callee transient references
+            message.transient_references = callee.transient_references();
+
+            message
+        };
+
+        // Push call frame
+        {
+            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, callee, message)
+                .map_err(CallFrameError::CreateFrameError)
+                .map_err(KernelError::CallFrameError)?;
+            let parent = mem::replace(&mut self.current_frame, frame);
+            self.prev_frame_stack.push(parent);
+        }
+
+        // Execute
+        let (output, message) = {
+            // Handle execution start
+            M::on_execution_start(self)?;
+
+            // Auto drop locks
+            self.current_frame
+                .drop_all_locks(&mut self.heap, self.store)
+                .map_err(CallFrameError::CloseSubstateError)
+                .map_err(KernelError::CallFrameError)?;
+
+            // Run
+            let output = M::invoke_upstream(args, self)?;
+            let mut message = Message::from_indexed_scrypto_value(&output);
+
+            // Auto-drop locks again in case module forgot to drop
+            self.current_frame
+                .drop_all_locks(&mut self.heap, self.store)
+                .map_err(CallFrameError::CloseSubstateError)
+                .map_err(KernelError::CallFrameError)?;
+
+            // Handle execution finish
+            M::on_execution_finish(&mut message, self)?;
+
+            (output, message)
+        };
+
+        // Move
+        {
+            let parent = self.prev_frame_stack.last_mut().unwrap();
+
+            // Move resource
+            CallFrame::pass_message(&mut self.current_frame, parent, message)
+                .map_err(CallFrameError::PassMessageError)
+                .map_err(KernelError::CallFrameError)?;
+
+            // Auto-drop
+            let owned_nodes = self.current_frame.owned_nodes();
+            M::auto_drop(owned_nodes, self)?;
+
+            // Now, check if any own has been left!
+            let owned_nodes = self.current_frame.owned_nodes();
+            if !owned_nodes.is_empty() {
+                return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
+                    owned_nodes,
+                )));
+            }
+        }
+
+        // Pop call frame
+        {
+            let parent = self.prev_frame_stack.pop().unwrap();
+
+            let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
+
+            M::after_pop_frame(self, dropped_frame.data())?;
+        }
+
+        M::after_invoke(output.len(), self)?;
+
+        Ok(output)
     }
 }
 

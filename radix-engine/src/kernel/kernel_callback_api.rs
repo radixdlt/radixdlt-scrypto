@@ -5,11 +5,20 @@ use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
-use super::actor::Actor;
 use super::call_frame::Message;
+
+
+pub trait CallFrameReferences {
+    fn global_references(&self) -> Vec<GlobalAddress>;
+
+    fn transient_references(&self) -> Vec<NodeId>;
+
+    fn len(&self) -> usize;
+}
 
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
+    type CallFrameData: CallFrameReferences;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -121,7 +130,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(invocation: &KernelInvocation<Self::CallFrameData>, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -130,7 +139,7 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn before_push_frame<Y>(
-        callee: &Actor,
+        callee: &Self::CallFrameData,
         update: &mut Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
@@ -146,7 +155,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
+    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Self::CallFrameData) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 

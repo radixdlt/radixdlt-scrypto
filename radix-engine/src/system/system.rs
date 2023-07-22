@@ -1171,7 +1171,7 @@ where
     }
 
     pub fn current_actor(&mut self) -> Actor {
-        self.api.kernel_get_system_state().current_actor.clone()
+        self.api.kernel_get_system_state().current_call_frame.clone()
     }
 
     pub fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
@@ -1440,7 +1440,7 @@ where
         }
 
         let invocation = KernelInvocation {
-            actor: Actor::method(
+            call_frame_data: Actor::method(
                 direct_access,
                 receiver.clone(),
                 module_id,
@@ -1989,7 +1989,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = KernelInvocation {
-            actor: Actor::function(
+            call_frame_data: Actor::function(
                 BlueprintId::new(&package_address, blueprint_name),
                 function_name.to_string(),
             ),
@@ -2244,10 +2244,12 @@ where
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
         let actor = self.current_actor();
-        if let Some(node_id) = actor.node_id() {
-            let visibility = self.kernel_get_node_visibility(&node_id);
-            if let RootNodeType::Global(address) = visibility.root_node_type(node_id).unwrap() {
-                return Ok(address);
+        if !actor.is_direct_access() {
+            if let Some(node_id) = actor.node_id() {
+                let visibility = self.kernel_get_node_visibility(&node_id);
+                if let RootNodeType::Global(address) = visibility.root_node_type(node_id).unwrap() {
+                    return Ok(address);
+                }
             }
         }
 

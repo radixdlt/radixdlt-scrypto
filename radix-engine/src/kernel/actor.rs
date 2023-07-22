@@ -6,6 +6,7 @@ use crate::types::*;
 use radix_engine_interface::blueprints::resource::AUTH_ZONE_BLUEPRINT;
 use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::{api::ObjectModuleId, blueprints::resource::GlobalCaller};
+use crate::kernel::kernel_callback_api::CallFrameReferences;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstanceContext {
@@ -69,8 +70,8 @@ pub enum Actor {
     BlueprintHook(BlueprintHookActor),
 }
 
-impl Actor {
-    pub fn global_references(&self) -> Vec<GlobalAddress> {
+impl CallFrameReferences for Actor {
+    fn global_references(&self) -> Vec<GlobalAddress> {
         let mut global_refs = Vec::new();
 
         if let Some(blueprint_id) = self.blueprint_id() {
@@ -88,10 +89,32 @@ impl Actor {
         global_refs
     }
 
-    pub fn transient_references(&self) -> Vec<NodeId> {
+    fn transient_references(&self) -> Vec<NodeId> {
         self.node_id().into_iter().collect()
     }
 
+    fn len(&self) -> usize {
+        match self {
+            Actor::Root => 1,
+            Actor::Method(MethodActor { ident, node_id, .. }) => {
+                node_id.as_ref().len() + ident.len()
+            }
+            Actor::Function(FunctionActor {
+                                blueprint_id,
+                                ident,
+                            }) => {
+                blueprint_id.package_address.as_ref().len()
+                    + blueprint_id.blueprint_name.len()
+                    + ident.len()
+            }
+            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                blueprint_id.package_address.as_ref().len() + blueprint_id.blueprint_name.len() + 1
+            }
+        }
+    }
+}
+
+impl Actor {
     pub fn instance_context(&self) -> Option<InstanceContext> {
         let method_actor = match self {
             Actor::Method(method_actor) => method_actor,
@@ -128,25 +151,6 @@ impl Actor {
         }
     }
 
-    pub fn len(&self) -> usize {
-        match self {
-            Actor::Root => 1,
-            Actor::Method(MethodActor { ident, node_id, .. }) => {
-                node_id.as_ref().len() + ident.len()
-            }
-            Actor::Function(FunctionActor {
-                blueprint_id,
-                ident,
-            }) => {
-                blueprint_id.package_address.as_ref().len()
-                    + blueprint_id.blueprint_name.len()
-                    + ident.len()
-            }
-            Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
-                blueprint_id.package_address.as_ref().len() + blueprint_id.blueprint_name.len() + 1
-            }
-        }
-    }
 
     pub fn is_auth_zone(&self) -> bool {
         match self {
