@@ -1448,11 +1448,27 @@ where
 
 
         let auth_zone_node_id = {
-            // Add Global Object and Package Actor Auth
-            /*
-            let local_call_frame_proofs = callee.get_local_call_frame_proofs();
-            let global_call_frame_proofs = callee.get_global_call_frame_proofs(api);
-             */
+            let blueprint_id = match module_id {
+                ObjectModuleId::Main => object_info.blueprint_info.blueprint_id.clone(),
+                _ => module_id.static_blueprint().unwrap()
+            };
+
+            let local_call_frame_proofs = btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
+                blueprint_id.package_address
+            ));
+
+            let global_caller: Option<GlobalCaller> = {
+                let node_visibility = self.kernel_get_node_visibility(&receiver);
+                match node_visibility.root_node_type(receiver.clone()).unwrap() {
+                    RootNodeType::Heap | RootNodeType::DirectlyAccessed => None,
+                    RootNodeType::Global(address) => Some(address.into()),
+                }
+            };
+
+            let global_call_frame_proofs = global_caller
+                .into_iter()
+                .map(|c| NonFungibleGlobalId::global_caller_badge(c))
+                .collect();
 
             // TODO: Remove special casing use of transaction processor and just have virtual resources
             // stored in root call frame
@@ -1476,8 +1492,8 @@ where
                 vec![],
                 BTreeSet::new(),
                 BTreeSet::new(),
-                BTreeSet::new(),
-                BTreeSet::new(),
+                local_call_frame_proofs,
+                global_call_frame_proofs,
                 true,
                 parent,
             );
