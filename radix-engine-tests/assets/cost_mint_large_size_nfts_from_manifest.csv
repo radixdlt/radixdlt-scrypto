@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,  10.7991022305,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.99711641,      9.2%
-+ Tipping Cost (XRD)                                                       ,   0.0498558205,      0.5%
+Total Cost (XRD)                                                           ,  10.7991071865,    100.0%
++ Execution Cost (XRD)                                                     ,     0.99712113,      9.2%
++ Tipping Cost (XRD)                                                       ,   0.0498560565,      0.5%
 + State Expansion Cost (XRD)                                               ,        9.75213,     90.3%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       99711641,    100.0%
+Total Cost Units Consumed                                                  ,       99712113,    100.0%
 AfterInvoke                                                                ,            494,      0.0%
 AllocateNodeId                                                             ,          17000,      0.0%
 BeforeInvoke                                                               ,        1956800,      2.0%
@@ -13,8 +13,8 @@ Commit::GlobalGenericComponent                                             ,    
 Commit::GlobalNonFungibleResourceManager                                   ,       23843413,     23.9%
 Commit::InternalFungibleVault                                              ,         100010,      0.1%
 Commit::InternalNonFungibleVault                                           ,       22200046,     22.3%
-CreateNode                                                                 ,        1983960,      2.0%
-DropNode                                                                   ,          33138,      0.0%
+CreateNode                                                                 ,        1984196,      2.0%
+DropNode                                                                   ,          33374,      0.0%
 EmitEvent                                                                  ,           9668,      0.0%
 LockFee                                                                    ,            500,      0.0%
 MoveModules                                                                ,           2500,      0.0%

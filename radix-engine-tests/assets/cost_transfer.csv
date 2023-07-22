@@ -1,17 +1,17 @@
-Total Cost (XRD)                                                           ,   0.0562105995,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.05344819,     95.1%
-+ Tipping Cost (XRD)                                                       ,   0.0026724095,      4.8%
+Total Cost (XRD)                                                           ,   0.0562137075,    100.0%
++ Execution Cost (XRD)                                                     ,     0.05345115,     95.1%
++ Tipping Cost (XRD)                                                       ,   0.0026725575,      4.8%
 + State Expansion Cost (XRD)                                               ,        0.00009,      0.2%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        5344819,    100.0%
+Total Cost Units Consumed                                                  ,        5345115,    100.0%
 AfterInvoke                                                                ,            300,      0.0%
 AllocateNodeId                                                             ,          12000,      0.2%
 BeforeInvoke                                                               ,           6462,      0.1%
 CloseSubstate                                                              ,         109500,      2.0%
 Commit::GlobalAccount                                                      ,         100002,      1.9%
 Commit::InternalFungibleVault                                              ,         200020,      3.7%
-CreateNode                                                                 ,          23486,      0.4%
-DropNode                                                                   ,          23346,      0.4%
+CreateNode                                                                 ,          23634,      0.4%
+DropNode                                                                   ,          23494,      0.4%
 EmitEvent                                                                  ,           1940,      0.0%
 LockFee                                                                    ,            500,      0.0%
 OpenSubstate::GlobalAccount                                                ,         895504,     16.8%

@@ -21,6 +21,7 @@ pub struct MethodActor {
     pub ident: String,
 
     pub global_caller_auth_zone: Option<NodeId>,
+    pub local_caller_auth_zone: Option<NodeId>,
     pub self_auth_zone: NodeId,
 
     // Cached info
@@ -49,6 +50,7 @@ pub struct FunctionActor {
     pub ident: String,
 
     pub global_caller_auth_zone: Option<NodeId>,
+    pub local_caller_auth_zone: Option<NodeId>,
     pub self_auth_zone: NodeId,
 }
 

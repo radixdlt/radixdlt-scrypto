@@ -1437,9 +1437,11 @@ where
             ));
         }
 
-        let (global_caller_auth_zone, self_auth_zone) = {
+        let (global_caller_auth_zone, local_caller_auth_zone, self_auth_zone) = {
+
             let (global_caller_auth_zone, self_auth_zone_parent) = if object_info.global {
-                (self.current_actor().self_auth_zone(), None)
+                let global_caller_auth_zone = self.current_actor().self_auth_zone();
+                (global_caller_auth_zone, None)
             } else {
                 let global_caller_auth_zone = match self.current_actor() {
                     Actor::Method(method_actor) => method_actor.global_caller_auth_zone,
@@ -1449,6 +1451,8 @@ where
                 let parent = self.current_actor().self_auth_zone().map(|x| Reference(x));
                 (global_caller_auth_zone, parent)
             };
+
+            let local_caller_auth_zone = self.current_actor().self_auth_zone();
 
             let blueprint_id = match module_id {
                 ObjectModuleId::Main => object_info.blueprint_info.blueprint_id.clone(),
@@ -1508,7 +1512,7 @@ where
                 ),
             )?;
 
-            (global_caller_auth_zone, auth_zone_node_id)
+            (global_caller_auth_zone, local_caller_auth_zone, auth_zone_node_id)
         };
 
         let invocation = KernelInvocation {
@@ -1519,6 +1523,7 @@ where
                 ident: method_name.to_string(),
 
                 global_caller_auth_zone,
+                local_caller_auth_zone,
                 self_auth_zone,
 
                 object_info,
@@ -2136,12 +2141,15 @@ where
             auth_zone_node_id
         };
 
+        let local_caller_auth_zone = self.current_actor().self_auth_zone();
+
         let invocation = KernelInvocation {
             call_frame_data: Actor::Function(FunctionActor {
                 blueprint_id: BlueprintId::new(&package_address, blueprint_name),
                 ident: function_name.to_string(),
                 self_auth_zone: auth_zone_node_id,
                 global_caller_auth_zone,
+                local_caller_auth_zone,
             }),
             args: IndexedScryptoValue::from_vec(args).map_err(|e| {
                 RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
