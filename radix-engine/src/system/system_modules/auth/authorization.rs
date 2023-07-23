@@ -77,16 +77,18 @@ impl Authorization {
             }
         }
 
+        /*
         let (
-            mut is_first_barrier,
+            //mut is_first_barrier,
             mut waiting_for_barrier,
             mut remaining_barrier_crossings_allowed,
             mut skip,
         ) = match acting_location {
-            ActingLocation::AtBarrier => (true, 0, 0, 0),
-            ActingLocation::AtLocalBarrier => (false, 1, 1, 0),
-            ActingLocation::InCallFrame => (false, 1, 1, 1),
+            ActingLocation::AtBarrier => (0, 0, 0),
+            ActingLocation::AtLocalBarrier => (1, 1, 0),
+            ActingLocation::InCallFrame => (1, 1, 1),
         };
+         */
 
         let mut current_auth_zone_id = caller_auth_zone.global_auth_zone;
         let mut handles = Vec::new();
@@ -105,9 +107,9 @@ impl Authorization {
             let auth_zone = auth_zone.value.0.clone();
             handles.push(handle);
 
-            if skip > 0 {
+            /*if skip > 0 {
                 skip -= 1;
-            } else {
+            } else*/ {
                 let mut virtual_non_fungible_global_ids = BTreeSet::new();
                 let virtual_resources = auth_zone.virtual_resources();
 
@@ -123,20 +125,22 @@ impl Authorization {
             }
 
             // Progress
-            is_first_barrier = false;
+            //is_first_barrier = false;
+            /*
             if auth_zone.is_barrier {
                 if remaining_barrier_crossings_allowed == 0 {
                     break;
                 }
                 remaining_barrier_crossings_allowed -= 1;
 
-                if waiting_for_barrier > 0 {
-                    waiting_for_barrier -= 1;
-                    if waiting_for_barrier == 0u32 {
-                        is_first_barrier = true;
-                    }
+            if waiting_for_barrier > 0 {
+                waiting_for_barrier -= 1;
+                if waiting_for_barrier == 0u32 {
+                    is_first_barrier = true;
+                }
                 }
             }
+                 */
 
             if let Some(id) = auth_zone.parent {
                 current_auth_zone_id = id.into();
