@@ -1441,29 +1441,37 @@ where
 
             let caller_auth_zone = match self.current_actor() {
                 Actor::Root | Actor::BlueprintHook(..) => None,
-                Actor::Method(method_actor) => {
+                Actor::Method(current_method_actor) => {
                     let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: if object_info.global || direct_access {
-                            method_actor.self_auth_zone
+                            current_method_actor.self_auth_zone
                         } else {
-                            method_actor.caller_auth_zone.clone().unwrap().global_auth_zone
+                            current_method_actor.caller_auth_zone.clone().unwrap().global_auth_zone
                         },
-                        global: if object_info.global || direct_access {
+                        global: {
                             // TODO: Check actor object module id?
-                            let node_visibility = self.kernel_get_node_visibility(&method_actor.node_id);
-                            let global_caller: Option<GlobalCaller> = match node_visibility.root_node_type(method_actor.node_id).unwrap() {
-                                RootNodeType::Heap | RootNodeType::DirectlyAccessed => None,
-                                RootNodeType::Global(address) => Some(address.into()),
+                            let node_visibility = self.kernel_get_node_visibility(&current_method_actor.node_id);
+                            let global_caller: Option<GlobalCaller> = match node_visibility.root_node_type(current_method_actor.node_id).unwrap() {
+                                RootNodeType::Global(address) => {
+                                    if object_info.global {
+                                        Some(address.into())
+                                    } else {
+                                        // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
+                                        current_method_actor.caller_auth_zone.clone().unwrap().global.clone()
+                                    }
+                                },
+                                RootNodeType::Heap => {
+                                    // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
+                                    current_method_actor.caller_auth_zone.clone().unwrap().global.clone()
+                                }
+                                RootNodeType::DirectlyAccessed => None,
                             };
                             global_caller
-                        } else {
-                            // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                            method_actor.caller_auth_zone.clone().unwrap().global.clone()
                         },
-                        local_package_address: method_actor.get_blueprint_id().package_address,
+                        local_package_address: current_method_actor.get_blueprint_id().package_address,
                     };
                     Some(caller_auth_zone)
-                },
+                }
                 Actor::Function(function_actor) => {
                     let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: function_actor.self_auth_zone,
