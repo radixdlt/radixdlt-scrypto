@@ -51,7 +51,7 @@ impl Authorization {
     fn global_auth_zone_matches<Y, V, P>(
         api: &mut SystemService<Y, V>,
         auth_zone_id: NodeId,
-        check: P,
+        check: &P,
     ) -> Result<bool, RuntimeError> where
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
@@ -134,10 +134,14 @@ impl Authorization {
                     return Ok(true);
                 }
 
-                if Self::global_auth_zone_matches(api, auth_zone_id.clone(), check)? {
+                if Self::global_auth_zone_matches(api, auth_zone_id.clone(), &check)? {
                     return Ok(true);
                 }
             }
+        }
+
+        if Self::global_auth_zone_matches(api, auth_info.self_auth_zone, &check)? {
+            return Ok(true);
         }
 
         Ok(false)
