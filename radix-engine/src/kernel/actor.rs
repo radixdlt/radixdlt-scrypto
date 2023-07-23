@@ -153,6 +153,14 @@ impl CallFrameReferences for Actor {
 }
 
 impl Actor {
+    pub fn auth_info(&self) -> Option<AuthInfo> {
+        match self {
+            Actor::Root | Actor::BlueprintHook(..) => None,
+            Actor::Method(method_actor) => Some(method_actor.auth_info.clone()),
+            Actor::Function(function_actor) => Some(function_actor.auth_info.clone()),
+        }
+    }
+
     pub fn self_auth_zone(&self) -> Option<NodeId> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,

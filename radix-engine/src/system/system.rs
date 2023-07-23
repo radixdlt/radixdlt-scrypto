@@ -2691,11 +2691,11 @@ where
         */
 
 
-        if let Some(caller_auth_zone) = self.current_actor().caller_authzone() {
+        if let Some(auth_info) = self.current_actor().auth_info() {
             // Authorize
             let auth_result = Authorization::check_authorization_against_access_rule(
                 ActingLocation::InCallFrame,
-                &caller_auth_zone,
+                &auth_info,
                 &rule,
                 self,
             )?;
