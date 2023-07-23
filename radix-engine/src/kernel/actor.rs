@@ -16,7 +16,7 @@ pub struct InstanceContext {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CallerAuthZone {
     pub global_auth_zone: NodeId,
-    pub global_caller: Option<GlobalCaller>,
+    pub global: Option<GlobalCaller>,
     pub local_package_address: PackageAddress,
 }
 
@@ -289,30 +289,5 @@ impl Actor {
 
     pub fn package_address(&self) -> Option<PackageAddress> {
         self.blueprint_id().map(|id| id.package_address)
-    }
-
-    pub fn get_global_call_frame_proofs<V: SystemCallbackObject, Y: KernelApi<SystemConfig<V>>>(
-        &self,
-        api: &mut Y,
-    ) -> BTreeSet<NonFungibleGlobalId> {
-        let global_caller: Option<GlobalCaller> = match self {
-            Actor::Method(actor) => {
-                let node_visibility = api.kernel_get_node_visibility(&actor.node_id);
-                match node_visibility.root_node_type(actor.node_id).unwrap() {
-                    RootNodeType::Heap | RootNodeType::DirectlyAccessed => None,
-                    RootNodeType::Global(address) => Some(address.into()),
-                }
-            }
-            Actor::Function(FunctionActor { blueprint_id, .. }) => {
-                Some(blueprint_id.clone().into())
-            }
-            _ => None,
-        };
-
-        if let Some(global_caller) = global_caller {
-            btreeset!(NonFungibleGlobalId::global_caller_badge(global_caller))
-        } else {
-            btreeset!()
-        }
     }
 }

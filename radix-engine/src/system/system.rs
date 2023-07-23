@@ -1442,20 +1442,24 @@ where
             let caller_auth_zone = match self.current_actor() {
                 Actor::Root | Actor::BlueprintHook(..) => None,
                 Actor::Method(method_actor) => {
-                    // TODO: Check actor object module id?
-                    let node_visibility = self.kernel_get_node_visibility(&method_actor.node_id);
-                    let global_caller: Option<GlobalCaller> = match node_visibility.root_node_type(method_actor.node_id).unwrap() {
-                        RootNodeType::Heap | RootNodeType::DirectlyAccessed => None,
-                        RootNodeType::Global(address) => Some(address.into()),
-                    };
-
                     let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: if object_info.global || direct_access {
                             method_actor.self_auth_zone
                         } else {
                             method_actor.caller_auth_zone.clone().unwrap().global_auth_zone
                         },
-                        global_caller,
+                        global: if object_info.global || direct_access {
+                            // TODO: Check actor object module id?
+                            let node_visibility = self.kernel_get_node_visibility(&method_actor.node_id);
+                            let global_caller: Option<GlobalCaller> = match node_visibility.root_node_type(method_actor.node_id).unwrap() {
+                                RootNodeType::Heap | RootNodeType::DirectlyAccessed => None,
+                                RootNodeType::Global(address) => Some(address.into()),
+                            };
+                            global_caller
+                        } else {
+                            // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
+                            method_actor.caller_auth_zone.clone().unwrap().global.clone()
+                        },
                         local_package_address: method_actor.get_blueprint_id().package_address,
                     };
                     Some(caller_auth_zone)
@@ -1463,7 +1467,7 @@ where
                 Actor::Function(function_actor) => {
                     let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: function_actor.self_auth_zone,
-                        global_caller: Some(GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone())),
+                        global: Some(GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone())),
                         local_package_address: function_actor.blueprint_id.package_address,
                     };
                     Some(caller_auth_zone)
@@ -1476,24 +1480,10 @@ where
                 self.current_actor().self_auth_zone().map(|x| Reference(x))
             };
 
-            let global_caller: Option<GlobalCaller> = {
-                let node_visibility = self.kernel_get_node_visibility(&receiver);
-                match node_visibility.root_node_type(receiver.clone()).unwrap() {
-                    RootNodeType::Heap | RootNodeType::DirectlyAccessed => None,
-                    RootNodeType::Global(address) => Some(address.into()),
-                }
-            };
-
-            let global_call_frame_proofs = global_caller
-                .into_iter()
-                .map(|c| NonFungibleGlobalId::global_caller_badge(c))
-                .collect();
-
             let auth_zone = AuthZone::new(
                 vec![],
                 BTreeSet::new(),
                 BTreeSet::new(),
-                global_call_frame_proofs,
                 true,
                 self_auth_zone_parent,
             );
@@ -2096,7 +2086,7 @@ where
 
                     let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: method_actor.self_auth_zone,
-                        global_caller,
+                        global: global_caller,
                         local_package_address: method_actor.get_blueprint_id().package_address,
                     };
                     Some(caller_auth_zone)
@@ -2104,7 +2094,7 @@ where
                 Actor::Function(function_actor) => {
                     Some(CallerAuthZone {
                         global_auth_zone: function_actor.self_auth_zone,
-                        global_caller: Some(function_actor.blueprint_id.clone().into()),
+                        global: Some(function_actor.blueprint_id.clone().into()),
                         local_package_address: function_actor.blueprint_id.package_address,
                     })
                 },
@@ -2133,7 +2123,6 @@ where
                 vec![],
                 virtual_resources,
                 virtual_non_fungibles,
-                BTreeSet::new(),
                 true,
                 None,
             );
@@ -2606,7 +2595,7 @@ where
 
         let caller_auth_zone = CallerAuthZone {
             global_auth_zone: auth_zone_id,
-            global_caller: self.current_actor().caller_authzone().unwrap().global_caller.clone(),
+            global: self.current_actor().caller_authzone().unwrap().global.clone(),
             local_package_address: self.current_actor().caller_authzone().unwrap().local_package_address,
         };
 

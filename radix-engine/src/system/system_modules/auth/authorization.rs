@@ -69,10 +69,10 @@ impl Authorization {
             }
         }
 
-        if let Some(global_caller) = &caller_auth_zone.global_caller {
+        if let Some(global_caller) = &caller_auth_zone.global {
             let non_fungible_global_id = NonFungibleGlobalId::global_caller_badge(global_caller.clone());
-            let local_call_frame_proofs = btreeset!(&non_fungible_global_id);
-            if check(&[], &btreeset!(), local_call_frame_proofs, api)? {
+            let global_call_frame_proofs = btreeset!(&non_fungible_global_id);
+            if check(&[], &btreeset!(), global_call_frame_proofs, api)? {
                 return Ok(true);
             }
         }
@@ -111,9 +111,6 @@ impl Authorization {
                 let mut virtual_non_fungible_global_ids = BTreeSet::new();
                 let virtual_resources = auth_zone.virtual_resources();
 
-                if is_first_barrier {
-                    virtual_non_fungible_global_ids.extend(auth_zone.virtual_global_call_frame_proofs());
-                }
                 virtual_non_fungible_global_ids.extend(auth_zone.virtual_non_fungibles());
 
                 let proofs = auth_zone.proofs();

@@ -96,7 +96,7 @@ impl AuthModule {
 
             let caller_auth_zone = CallerAuthZone {
                 global_auth_zone,
-                global_caller: caller_auth_zone.global_caller.clone(),
+                global: caller_auth_zone.global.clone(),
                 local_package_address: caller_auth_zone.local_package_address,
             };
 
@@ -308,9 +308,6 @@ impl AuthModule {
         callee: &Actor,
         message: &mut Message,
     ) -> Result<(), RuntimeError> {
-        // Add Global Object and Package Actor Auth
-        let global_call_frame_proofs = callee.get_global_call_frame_proofs(api);
-
         // Prepare a new auth zone
         let is_barrier = callee.is_barrier();
         // TODO: Remove special casing use of transaction processor and just have virtual resources
@@ -338,7 +335,6 @@ impl AuthModule {
             vec![],
             virtual_resources,
             virtual_non_fungibles,
-            global_call_frame_proofs,
             is_barrier,
             parent,
         );
