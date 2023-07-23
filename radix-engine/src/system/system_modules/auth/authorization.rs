@@ -51,7 +51,6 @@ impl Authorization {
     fn auth_zone_stack_matches<P, Y, V>(
         acting_location: ActingLocation,
         caller_auth_zone: CallerAuthZone,
-        //auth_zone_id: NodeId,
         api: &mut SystemService<Y, V>,
         check: P,
     ) -> Result<bool, RuntimeError>
@@ -82,7 +81,6 @@ impl Authorization {
         };
 
         let mut current_auth_zone_id = caller_auth_zone.global_auth_zone;
-        let mut rev_index = 0;
         let mut handles = Vec::new();
         let mut pass = false;
         loop {
@@ -108,9 +106,6 @@ impl Authorization {
                 if is_first_barrier {
                     virtual_non_fungible_global_ids.extend(auth_zone.virtual_global_call_frame_proofs());
                 }
-                if rev_index == 0 {
-                    virtual_non_fungible_global_ids.extend(auth_zone.virtual_local_call_frame_proofs());
-                }
                 virtual_non_fungible_global_ids.extend(auth_zone.virtual_non_fungibles());
 
                 let proofs = auth_zone.proofs();
@@ -120,7 +115,6 @@ impl Authorization {
                     pass = true;
                     break;
                 }
-                rev_index += 1;
             }
 
             // Progress

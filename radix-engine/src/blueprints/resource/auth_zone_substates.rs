@@ -9,9 +9,6 @@ pub struct AuthZone {
     pub virtual_resources: BTreeSet<ResourceAddress>,
     pub virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
 
-    /// Virtual proofs which are only valid for the current local call frame
-    pub virtual_local_call_frame_proofs: BTreeSet<NonFungibleGlobalId>,
-
     /// Virtual proofs which are valid for the current global call frame
     pub virtual_global_call_frame_proofs: BTreeSet<NonFungibleGlobalId>,
 
@@ -25,7 +22,6 @@ impl Clone for AuthZone {
             proofs: self.proofs.iter().map(|p| Proof(p.0)).collect(),
             virtual_resources: self.virtual_resources.clone(),
             virtual_non_fungibles: self.virtual_non_fungibles.clone(),
-            virtual_local_call_frame_proofs: self.virtual_local_call_frame_proofs.clone(),
             virtual_global_call_frame_proofs: self.virtual_global_call_frame_proofs.clone(),
             is_barrier: self.is_barrier,
             parent: self.parent.clone(),
@@ -38,7 +34,6 @@ impl AuthZone {
         proofs: Vec<Proof>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
-        local_call_frame_proofs: BTreeSet<NonFungibleGlobalId>,
         global_call_frame_proofs: BTreeSet<NonFungibleGlobalId>,
         is_barrier: bool,
         parent: Option<Reference>,
@@ -47,7 +42,6 @@ impl AuthZone {
             proofs,
             virtual_resources,
             virtual_non_fungibles,
-            virtual_local_call_frame_proofs: local_call_frame_proofs,
             virtual_global_call_frame_proofs: global_call_frame_proofs,
             is_barrier,
             parent,
@@ -64,10 +58,6 @@ impl AuthZone {
 
     pub fn virtual_non_fungibles(&self) -> &BTreeSet<NonFungibleGlobalId> {
         &self.virtual_non_fungibles
-    }
-
-    pub fn virtual_local_call_frame_proofs(&self) -> &BTreeSet<NonFungibleGlobalId> {
-        &self.virtual_local_call_frame_proofs
     }
 
     pub fn virtual_global_call_frame_proofs(&self) -> &BTreeSet<NonFungibleGlobalId> {
@@ -91,10 +81,6 @@ impl AuthZone {
             x != &SECP256K1_SIGNATURE_VIRTUAL_BADGE && x != &ED25519_SIGNATURE_VIRTUAL_BADGE
         });
         self.virtual_non_fungibles.retain(|x| {
-            x.resource_address() != SECP256K1_SIGNATURE_VIRTUAL_BADGE
-                && x.resource_address() != ED25519_SIGNATURE_VIRTUAL_BADGE
-        });
-        self.virtual_local_call_frame_proofs.retain(|x| {
             x.resource_address() != SECP256K1_SIGNATURE_VIRTUAL_BADGE
                 && x.resource_address() != ED25519_SIGNATURE_VIRTUAL_BADGE
         });

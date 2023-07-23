@@ -290,17 +290,6 @@ impl Actor {
         self.blueprint_id().map(|id| id.package_address)
     }
 
-    /// Proofs which exist only on the local call frame
-    pub fn get_local_call_frame_proofs(&self) -> BTreeSet<NonFungibleGlobalId> {
-        if let Some(blueprint_id) = self.blueprint_id() {
-            btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
-                blueprint_id.package_address
-            ))
-        } else {
-            btreeset!()
-        }
-    }
-
     pub fn get_global_call_frame_proofs<V: SystemCallbackObject, Y: KernelApi<SystemConfig<V>>>(
         &self,
         api: &mut Y,

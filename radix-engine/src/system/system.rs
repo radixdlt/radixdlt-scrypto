@@ -1463,15 +1463,6 @@ where
                 self.current_actor().self_auth_zone().map(|x| Reference(x))
             };
 
-            let blueprint_id = match module_id {
-                ObjectModuleId::Main => object_info.blueprint_info.blueprint_id.clone(),
-                _ => module_id.static_blueprint().unwrap()
-            };
-
-            let local_call_frame_proofs = btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
-                blueprint_id.package_address
-            ));
-
             let global_caller: Option<GlobalCaller> = {
                 let node_visibility = self.kernel_get_node_visibility(&receiver);
                 match node_visibility.root_node_type(receiver.clone()).unwrap() {
@@ -1489,7 +1480,6 @@ where
                 vec![],
                 BTreeSet::new(),
                 BTreeSet::new(),
-                local_call_frame_proofs,
                 global_call_frame_proofs,
                 true,
                 self_auth_zone_parent,
@@ -2101,10 +2091,6 @@ where
         };
 
         let self_auth_zone = {
-            let local_call_frame_proofs = btreeset!(NonFungibleGlobalId::package_of_direct_caller_badge(
-                package_address
-            ));
-
             // TODO: Remove special casing use of transaction processor and just have virtual resources
             // stored in root call frame
             let is_transaction_processor_blueprint = package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE)
@@ -2125,7 +2111,6 @@ where
                 vec![],
                 virtual_resources,
                 virtual_non_fungibles,
-                local_call_frame_proofs,
                 BTreeSet::new(),
                 true,
                 None,
