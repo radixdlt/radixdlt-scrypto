@@ -2,7 +2,7 @@ use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
+use crate::kernel::actor::{Actor, CallerAuthZone, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::system::module::SystemModule;
@@ -88,8 +88,16 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
+        //if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
+        if let Some(caller_auth_zone) = callee.caller_authzone() {
+            let global_auth_zone = api.kernel_get_system().modules.auth.last_auth_zone().unwrap();
+
             let mut system = SystemService::new(api);
+
+            let caller_auth_zone = CallerAuthZone {
+                global_auth_zone,
+                local_package_address: caller_auth_zone.local_package_address,
+            };
 
             // Step 1: Resolve method to permission
             // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
@@ -125,7 +133,7 @@ impl AuthModule {
 
             // Step 2: Check permission
             Self::check_permission(
-                &auth_zone_id,
+                caller_auth_zone,
                 acting_location,
                 permission,
                 callee.fn_identifier(),
@@ -139,7 +147,7 @@ impl AuthModule {
     }
 
     fn check_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_zone_id: &NodeId,
+        caller_auth_zone: CallerAuthZone,
         acting_location: ActingLocation,
         resolved_permission: ResolvedPermission,
         fn_identifier: Option<FnIdentifier>,
@@ -150,7 +158,7 @@ impl AuthModule {
             ResolvedPermission::AccessRule(rule) => {
                 let result = Authorization::check_authorization_against_access_rule(
                     acting_location,
-                    auth_zone_id.clone(),
+                    caller_auth_zone,
                     &rule,
                     api,
                 )?;
@@ -176,7 +184,7 @@ impl AuthModule {
             } => {
                 let result = Authorization::check_authorization_against_role_list(
                     acting_location,
-                    *auth_zone_id,
+                    caller_auth_zone,
                     &role_assignment_of,
                     module_id,
                     &role_list,

@@ -2597,10 +2597,15 @@ where
         // Fetch the tip auth zone
         let auth_zone_id = self.get_auth_zone()?;
 
+        let caller_auth_zone = CallerAuthZone {
+            global_auth_zone: auth_zone_id,
+            local_package_address: self.current_actor().caller_authzone().unwrap().local_package_address,
+        };
+
         // Authorize
         let auth_result = Authorization::check_authorization_against_access_rule(
             ActingLocation::InCallFrame,
-            auth_zone_id,
+            caller_auth_zone,
             &rule,
             self,
         )?;

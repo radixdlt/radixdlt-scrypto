@@ -13,7 +13,7 @@ pub struct InstanceContext {
     pub outer_object: GlobalAddress,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CallerAuthZone {
     pub global_auth_zone: NodeId,
     pub local_package_address: PackageAddress,
