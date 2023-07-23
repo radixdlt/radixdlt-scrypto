@@ -47,11 +47,7 @@ pub struct Unauthorized {
 #[derive(Debug, Clone)]
 pub struct AuthModule {
     pub params: AuthZoneParams,
-    /// Stack of auth zones
-    /// Invariants:
-    /// - An auth zone is created for every non-root frame.
-    /// - Auth zones are created by the caller frame and moved to the callee
-    pub auth_zone_stack: Vec<NodeId>,
+    //pub auth_zone_stack: Vec<NodeId>,
 }
 
 pub enum AuthorizationCheckResult {
@@ -75,9 +71,11 @@ pub enum ResolvedPermission {
 }
 
 impl AuthModule {
+    /*
     pub fn last_auth_zone(&self) -> Option<NodeId> {
         self.auth_zone_stack.last().cloned()
     }
+     */
 
     fn check_authorization<V, Y>(
         callee: &Actor,
@@ -90,15 +88,17 @@ impl AuthModule {
     {
         //if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
         if let Some(caller_auth_zone) = callee.caller_authzone() {
-            let global_auth_zone = api.kernel_get_system().modules.auth.last_auth_zone().unwrap();
+            //let global_auth_zone = api.kernel_get_system().modules.auth.last_auth_zone().unwrap();
 
             let mut system = SystemService::new(api);
 
+            /*
             let caller_auth_zone = CallerAuthZone {
                 global_auth_zone,
                 global: caller_auth_zone.global.clone(),
                 local_package_address: caller_auth_zone.local_package_address,
             };
+             */
 
             // Step 1: Resolve method to permission
             // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
@@ -298,6 +298,7 @@ impl AuthModule {
         }
     }
 
+    /*
     /// Create a new auth zone and move it to next frame.
     ///
     /// Must be done before a new frame is created, as
@@ -377,6 +378,7 @@ impl AuthModule {
 
         Ok(())
     }
+     */
 }
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
@@ -387,7 +389,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         AuthModule::check_authorization(callee, args, api)
-            .and_then(|_| AuthModule::create_auth_zone(api, callee, message))
+            //.and_then(|_| AuthModule::create_auth_zone(api, callee, message))
     }
 
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
@@ -395,7 +397,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
         _dropped_actor: &Actor,
     ) -> Result<(), RuntimeError> {
         // update internal state
-        api.kernel_get_system().modules.auth.auth_zone_stack.pop();
+        //api.kernel_get_system().modules.auth.auth_zone_stack.pop();
         Ok(())
     }
 }

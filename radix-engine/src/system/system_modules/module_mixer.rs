@@ -149,7 +149,7 @@ impl SystemModuleMixer {
             node_move: NodeMoveModule {},
             auth: AuthModule {
                 params: auth_zone_params.clone(),
-                auth_zone_stack: Vec::new(),
+                //auth_zone_stack: Vec::new(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
                 max_number_of_substates_in_track: execution_config.max_number_of_substates_in_track,
@@ -531,6 +531,7 @@ impl SystemModuleMixer {
         }
     }
 
+    /*
     pub fn auth_zone_id(&mut self) -> Option<NodeId> {
         if self.enabled_modules.contains(EnabledModules::AUTH) {
             self.auth.last_auth_zone()
@@ -538,6 +539,7 @@ impl SystemModuleMixer {
             None
         }
     }
+     */
 
     pub fn fee_reserve(&mut self) -> Option<&SystemLoanFeeReserve> {
         if self.enabled_modules.contains(EnabledModules::COSTING) {

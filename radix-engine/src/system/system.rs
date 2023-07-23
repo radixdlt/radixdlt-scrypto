@@ -1538,7 +1538,35 @@ where
             .kernel_invoke(Box::new(invocation))
             .map(|v| v.into())?;
 
-        self.api.kernel_drop_node(&self_auth_zone)?;
+        {
+            // Detach proofs from the auth zone
+            let handle = self.kernel_open_substate(
+                &self_auth_zone,
+                MAIN_BASE_PARTITION,
+                &AuthZoneField::AuthZone.into(),
+                LockFlags::MUTABLE,
+                SystemLockData::Default,
+            )?;
+            let mut substate: FieldSubstate<AuthZone> =
+                self.kernel_read_substate(handle)?.as_typed().unwrap();
+            let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
+            self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
+            self.kernel_close_substate(handle)?;
+
+            // Drop all proofs (previously) owned by the auth zone
+            for proof in proofs {
+                let object_info = self.get_object_info(proof.0.as_node_id())?;
+                self.call_function(
+                    RESOURCE_PACKAGE,
+                    &object_info.blueprint_info.blueprint_id.blueprint_name,
+                    PROOF_DROP_IDENT,
+                    scrypto_encode(&ProofDropInput { proof }).unwrap(),
+                )?;
+            }
+
+            // Drop the auth zone
+            self.kernel_drop_node(&self_auth_zone)?;
+        }
 
         Ok(rtn)
     }
@@ -2172,7 +2200,35 @@ where
             .kernel_invoke(Box::new(invocation))
             .map(|v| v.into())?;
 
-        self.api.kernel_drop_node(&self_auth_zone)?;
+        {
+            // Detach proofs from the auth zone
+            let handle = self.kernel_open_substate(
+                &self_auth_zone,
+                MAIN_BASE_PARTITION,
+                &AuthZoneField::AuthZone.into(),
+                LockFlags::MUTABLE,
+                SystemLockData::Default,
+            )?;
+            let mut substate: FieldSubstate<AuthZone> =
+                self.kernel_read_substate(handle)?.as_typed().unwrap();
+            let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
+            self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
+            self.kernel_close_substate(handle)?;
+
+            // Drop all proofs (previously) owned by the auth zone
+            for proof in proofs {
+                let object_info = self.get_object_info(proof.0.as_node_id())?;
+                self.call_function(
+                    RESOURCE_PACKAGE,
+                    &object_info.blueprint_info.blueprint_id.blueprint_name,
+                    PROOF_DROP_IDENT,
+                    scrypto_encode(&ProofDropInput { proof }).unwrap(),
+                )?;
+            }
+
+            // Drop the auth zone
+            self.kernel_drop_node(&self_auth_zone)?;
+        }
 
         Ok(rtn)
     }
@@ -2571,12 +2627,14 @@ where
 {
     #[trace_resources]
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
+        /*
         self.api
             .kernel_get_system()
             .modules
             .apply_execution_cost(CostingEntry::QueryAuthZone)?;
+         */
 
-        if let Some(auth_zone_id) = self.api.kernel_get_system().modules.auth_zone_id() {
+        if let Some(auth_zone_id) = self.current_actor().self_auth_zone() {
             Ok(auth_zone_id.into())
         } else {
             Err(RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))
@@ -2591,26 +2649,35 @@ where
             .apply_execution_cost(CostingEntry::AssertAccessRule)?;
 
         // Fetch the tip auth zone
-        let auth_zone_id = self.get_auth_zone()?;
+        //let auth_zone_id = self.get_auth_zone()?;
 
-        let caller_auth_zone = CallerAuthZone {
+
+        /*CallerAuthZone {
             global_auth_zone: auth_zone_id,
             global: self.current_actor().caller_authzone().unwrap().global.clone(),
             local_package_address: self.current_actor().caller_authzone().unwrap().local_package_address,
         };
+        */
 
-        // Authorize
-        let auth_result = Authorization::check_authorization_against_access_rule(
-            ActingLocation::InCallFrame,
-            &caller_auth_zone,
-            &rule,
-            self,
-        )?;
-        match auth_result {
-            AuthorizationCheckResult::Authorized => Ok(()),
-            AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(
+
+        if let Some(caller_auth_zone) = self.current_actor().caller_authzone() {
+            // Authorize
+            let auth_result = Authorization::check_authorization_against_access_rule(
+                ActingLocation::InCallFrame,
+                &caller_auth_zone,
+                &rule,
+                self,
+            )?;
+            match auth_result {
+                AuthorizationCheckResult::Authorized => Ok(()),
+                AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(
+                    SystemError::AssertAccessRuleFailed,
+                )),
+            }
+        } else {
+            return Err(RuntimeError::SystemError(
                 SystemError::AssertAccessRuleFailed,
-            )),
+            ));
         }
     }
 }

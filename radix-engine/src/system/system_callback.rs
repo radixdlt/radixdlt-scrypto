@@ -517,7 +517,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         // Note that we destroy frame's auth zone at the very end of the `auto_drop` process
         // to make sure the auth zone stack is in good state for the proof dropping above.
         //
-        if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
+        /*if let Some(auth_zone_id) = api.kernel_get_system().modules.auth_zone_id() {
             // Detach proofs from the auth zone
             let handle = api.kernel_open_substate(
                 &auth_zone_id,
@@ -547,6 +547,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             // Drop the auth zone
             api.kernel_drop_node(&auth_zone_id)?;
         }
+         */
 
         Ok(())
     }
