@@ -15,11 +15,15 @@ pub struct InstanceContext {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CallerAuthZone {
-    //pub global_auth_zone: NodeId,
     pub global_auth_zone: Option<(GlobalCaller, NodeId)>,
     pub local_package_address: PackageAddress,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+pub struct AuthInfo {
+    pub caller_auth_zone: Option<CallerAuthZone>,
+    pub self_auth_zone: NodeId,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct MethodActor {
@@ -28,8 +32,7 @@ pub struct MethodActor {
     pub module_id: ObjectModuleId,
     pub ident: String,
 
-    pub caller_auth_zone: Option<CallerAuthZone>,
-    pub self_auth_zone: NodeId,
+    pub auth_info: AuthInfo,
 
     // Cached info
     pub object_info: ObjectInfo,
@@ -56,8 +59,7 @@ pub struct FunctionActor {
     pub blueprint_id: BlueprintId,
     pub ident: String,
 
-    pub caller_auth_zone: Option<CallerAuthZone>,
-    pub self_auth_zone: NodeId,
+    pub auth_info: AuthInfo,
 }
 
 impl FunctionActor {
@@ -154,16 +156,16 @@ impl Actor {
     pub fn self_auth_zone(&self) -> Option<NodeId> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,
-            Actor::Method(method_actor) => Some(method_actor.self_auth_zone),
-            Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
+            Actor::Method(method_actor) => Some(method_actor.auth_info.self_auth_zone),
+            Actor::Function(function_actor) => Some(function_actor.auth_info.self_auth_zone),
         }
     }
 
     pub fn caller_authzone(&self) -> Option<CallerAuthZone> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,
-            Actor::Method(method_actor) => method_actor.caller_auth_zone.clone(),
-            Actor::Function(function_actor) => function_actor.caller_auth_zone.clone(),
+            Actor::Method(method_actor) => method_actor.auth_info.caller_auth_zone.clone(),
+            Actor::Function(function_actor) => function_actor.auth_info.caller_auth_zone.clone(),
         }
     }
 
