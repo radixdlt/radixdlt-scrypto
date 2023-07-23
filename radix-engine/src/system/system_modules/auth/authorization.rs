@@ -48,6 +48,63 @@ impl Authorization {
         }
     }
 
+    fn global_auth_zone_matches<Y, V, P>(
+        api: &mut SystemService<Y, V>,
+        auth_zone_id: NodeId,
+        check: P,
+    ) -> Result<bool, RuntimeError> where
+        Y: KernelApi<SystemConfig<V>>,
+        V: SystemCallbackObject,
+        P: Fn(&[Proof], &BTreeSet<ResourceAddress>, BTreeSet<&NonFungibleGlobalId>, &mut SystemService<Y, V>) -> Result<bool, RuntimeError>,
+    {
+        let mut pass = false;
+        let mut current_auth_zone_id = auth_zone_id;
+        let mut handles = Vec::new();
+        loop {
+            // Load auth zone
+            let handle = api.kernel_open_substate(
+                &current_auth_zone_id,
+                MAIN_BASE_PARTITION,
+                &AuthZoneField::AuthZone.into(),
+                LockFlags::read_only(),
+                SystemLockData::default(),
+            )?;
+            let auth_zone: FieldSubstate<AuthZone> =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
+            let auth_zone = auth_zone.value.0.clone();
+            handles.push(handle);
+
+            /*if skip > 0 {
+                skip -= 1;
+            } else*/ {
+                let mut virtual_non_fungible_global_ids = BTreeSet::new();
+                let virtual_resources = auth_zone.virtual_resources();
+
+                virtual_non_fungible_global_ids.extend(auth_zone.virtual_non_fungibles());
+
+                let proofs = auth_zone.proofs();
+
+                // Check
+                if check(proofs, virtual_resources, virtual_non_fungible_global_ids, api)? {
+                    pass = true;
+                    break;
+                }
+            }
+
+            if let Some(id) = auth_zone.parent {
+                current_auth_zone_id = id.into();
+            } else {
+                break;
+            }
+        }
+
+        for handle in handles {
+            api.kernel_close_substate(handle)?;
+        }
+
+        Ok(pass)
+    }
+
     fn auth_zone_stack_matches<P, Y, V>(
         acting_location: ActingLocation,
         caller_auth_zone: &CallerAuthZone,
@@ -69,8 +126,6 @@ impl Authorization {
             }
         }
 
-        let mut pass = false;
-
         if let Some((global_caller, auth_zone_id)) = &caller_auth_zone.global_auth_zone {
             let non_fungible_global_id = NonFungibleGlobalId::global_caller_badge(global_caller.clone());
             let global_call_frame_proofs = btreeset!(&non_fungible_global_id);
@@ -78,52 +133,12 @@ impl Authorization {
                 return Ok(true);
             }
 
-            let mut current_auth_zone_id = auth_zone_id.clone();
-            let mut handles = Vec::new();
-            loop {
-                // Load auth zone
-                let handle = api.kernel_open_substate(
-                    &current_auth_zone_id,
-                    MAIN_BASE_PARTITION,
-                    &AuthZoneField::AuthZone.into(),
-                    LockFlags::read_only(),
-                    SystemLockData::default(),
-                )?;
-                let auth_zone: FieldSubstate<AuthZone> =
-                    api.kernel_read_substate(handle)?.as_typed().unwrap();
-                let auth_zone = auth_zone.value.0.clone();
-                handles.push(handle);
-
-                /*if skip > 0 {
-                    skip -= 1;
-                } else*/ {
-                    let mut virtual_non_fungible_global_ids = BTreeSet::new();
-                    let virtual_resources = auth_zone.virtual_resources();
-
-                    virtual_non_fungible_global_ids.extend(auth_zone.virtual_non_fungibles());
-
-                    let proofs = auth_zone.proofs();
-
-                    // Check
-                    if check(proofs, virtual_resources, virtual_non_fungible_global_ids, api)? {
-                        pass = true;
-                        break;
-                    }
-                }
-
-                if let Some(id) = auth_zone.parent {
-                    current_auth_zone_id = id.into();
-                } else {
-                    break;
-                }
-            }
-
-            for handle in handles {
-                api.kernel_close_substate(handle)?;
+            if Self::global_auth_zone_matches(api, auth_zone_id.clone(), check)? {
+                return Ok(true);
             }
         }
 
-        Ok(pass)
+        Ok(false)
     }
 
     fn auth_zone_stack_has_amount<
