@@ -1455,7 +1455,7 @@ where
                             let node_visibility = self.kernel_get_node_visibility(&current_method_actor.node_id);
                             let global_auth_zone = match node_visibility.root_node_type(current_method_actor.node_id).unwrap() {
                                 RootNodeType::Global(address) => {
-                                    if object_info.global {
+                                    if object_info.global || direct_access {
                                         Some((address.into(), current_method_actor.self_auth_zone))
                                     } else {
                                         // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
@@ -1476,7 +1476,14 @@ where
                 }
                 Actor::Function(function_actor) => {
                     let caller_auth_zone = CallerAuthZone {
-                        global_auth_zone: Some((GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone()), function_actor.self_auth_zone)),
+                        global_auth_zone: {
+                            if object_info.global || direct_access {
+                                Some((GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone()), function_actor.self_auth_zone))
+                            } else {
+                                // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
+                                function_actor.caller_auth_zone.clone().and_then(|a| a.global_auth_zone)
+                            }
+                        },
                         local_package_address: function_actor.blueprint_id.package_address,
                     };
                     Some(caller_auth_zone)
@@ -2132,7 +2139,7 @@ where
                             RootNodeType::Heap => {
                                 // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
                                 current_method_actor.caller_auth_zone.clone().and_then(|a| a.global_auth_zone)
-                            }
+                            },
                             RootNodeType::DirectlyAccessed => None,
                         };
                         global_auth_zone
