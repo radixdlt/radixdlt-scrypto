@@ -58,6 +58,18 @@ impl Authorization {
         V: SystemCallbackObject,
         P: Fn(&[Proof], &BTreeSet<ResourceAddress>, BTreeSet<&NonFungibleGlobalId>, &mut SystemService<Y, V>) -> Result<bool, RuntimeError>,
     {
+        /*
+        if let Some(blueprint_id) = api.current_actor().blueprint_id() {
+            let non_fungible_global_id = NonFungibleGlobalId::package_of_direct_caller_badge(
+                blueprint_id.package_address
+            );
+            let local_call_frame_proofs = btreeset!(&non_fungible_global_id);
+            if check(&[], &btreeset!(), local_call_frame_proofs, api)? {
+                return Ok(true);
+            }
+        }
+         */
+
         let (
             mut is_first_barrier,
             mut waiting_for_barrier,

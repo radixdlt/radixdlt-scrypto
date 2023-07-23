@@ -15,8 +15,8 @@ pub struct InstanceContext {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CallerAuthZone {
-    pub global: Option<NodeId>,
-    pub local: Option<NodeId>,
+    pub global_auth_zone: NodeId,
+    pub local_package_address: PackageAddress,
 }
 
 
@@ -27,7 +27,7 @@ pub struct MethodActor {
     pub module_id: ObjectModuleId,
     pub ident: String,
 
-    pub caller_auth_zone: CallerAuthZone,
+    pub caller_auth_zone: Option<CallerAuthZone>,
     pub self_auth_zone: NodeId,
 
     // Cached info
@@ -55,7 +55,7 @@ pub struct FunctionActor {
     pub blueprint_id: BlueprintId,
     pub ident: String,
 
-    pub caller_auth_zone: CallerAuthZone,
+    pub caller_auth_zone: Option<CallerAuthZone>,
     pub self_auth_zone: NodeId,
 }
 
@@ -107,8 +107,7 @@ impl CallFrameReferences for Actor {
         let mut references = vec![];
         references.extend(self.self_auth_zone());
         if let Some(caller_auth_zone) = self.caller_authzone() {
-            references.extend(caller_auth_zone.local.clone());
-            references.extend(caller_auth_zone.global.clone());
+            references.push(caller_auth_zone.global_auth_zone.clone());
         }
 
         if !self.is_direct_access() {
@@ -160,8 +159,8 @@ impl Actor {
     pub fn caller_authzone(&self) -> Option<CallerAuthZone> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,
-            Actor::Method(method_actor) => Some(method_actor.caller_auth_zone.clone()),
-            Actor::Function(function_actor) => Some(function_actor.caller_auth_zone.clone()),
+            Actor::Method(method_actor) => method_actor.caller_auth_zone.clone(),
+            Actor::Function(function_actor) => function_actor.caller_auth_zone.clone(),
         }
     }
 

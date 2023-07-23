@@ -1439,22 +1439,28 @@ where
 
         let (caller_auth_zone, self_auth_zone) = {
 
-            let (global_caller_auth_zone, self_auth_zone_parent) = if object_info.global {
-                let global_caller_auth_zone = self.current_actor().self_auth_zone();
-                (global_caller_auth_zone, None)
-            } else {
-                let global_caller_auth_zone = match self.current_actor() {
-                    Actor::Method(method_actor) => method_actor.caller_auth_zone.global,
-                    Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
-                    _ => None,
-                };
-                let parent = self.current_actor().self_auth_zone().map(|x| Reference(x));
-                (global_caller_auth_zone, parent)
+            let caller_auth_zone = match self.current_actor() {
+                Actor::Root | Actor::BlueprintHook(..) => None,
+                Actor::Method(method_actor) => {
+                    Some(CallerAuthZone {
+                        global_auth_zone: if object_info.global || direct_access {
+                            method_actor.self_auth_zone
+                        } else {
+                            method_actor.caller_auth_zone.clone().unwrap().global_auth_zone
+                        },
+                        local_package_address: method_actor.get_blueprint_id().package_address,
+                    })
+                },
+                Actor::Function(function_actor) => Some(CallerAuthZone {
+                    global_auth_zone: function_actor.self_auth_zone,
+                    local_package_address: function_actor.blueprint_id.package_address,
+                }),
             };
 
-            let caller_auth_zone = CallerAuthZone {
-                global: global_caller_auth_zone,
-                local: self.current_actor().self_auth_zone(),
+            let self_auth_zone_parent = if object_info.global {
+                None
+            } else {
+                self.current_actor().self_auth_zone().map(|x| Reference(x))
             };
 
             let blueprint_id = match module_id {
@@ -2077,16 +2083,20 @@ where
     ) -> Result<Vec<u8>, RuntimeError> {
 
         let caller_auth_zone = {
-            let global =
-                match self.current_actor() {
-                    Actor::Method(method_actor) => method_actor.caller_auth_zone.global,
-                    Actor::Function(function_actor) => Some(function_actor.self_auth_zone),
-                    _ => None,
-                };
-            let local = self.current_actor().self_auth_zone();
-            CallerAuthZone {
-                global,
-                local,
+            match self.current_actor() {
+                Actor::Method(method_actor) => {
+                    Some(CallerAuthZone {
+                        global_auth_zone: method_actor.self_auth_zone,
+                        local_package_address: method_actor.get_blueprint_id().package_address,
+                    })
+                },
+                Actor::Function(function_actor) => {
+                    Some(CallerAuthZone {
+                        global_auth_zone: function_actor.self_auth_zone,
+                        local_package_address: function_actor.blueprint_id.package_address,
+                    })
+                },
+                _ => None,
             }
         };
 
@@ -2149,8 +2159,6 @@ where
 
             auth_zone_node_id
         };
-
-
 
         let invocation = KernelInvocation {
             call_frame_data: Actor::Function(FunctionActor {
