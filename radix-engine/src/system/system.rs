@@ -1442,19 +1442,32 @@ where
             let caller_auth_zone = match self.current_actor() {
                 Actor::Root | Actor::BlueprintHook(..) => None,
                 Actor::Method(method_actor) => {
-                    Some(CallerAuthZone {
+                    // TODO: Check actor object module id?
+                    let node_visibility = self.kernel_get_node_visibility(&method_actor.node_id);
+                    let global_caller: Option<GlobalCaller> = match node_visibility.root_node_type(method_actor.node_id).unwrap() {
+                        RootNodeType::Heap | RootNodeType::DirectlyAccessed => None,
+                        RootNodeType::Global(address) => Some(address.into()),
+                    };
+
+                    let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: if object_info.global || direct_access {
                             method_actor.self_auth_zone
                         } else {
                             method_actor.caller_auth_zone.clone().unwrap().global_auth_zone
                         },
+                        global_caller,
                         local_package_address: method_actor.get_blueprint_id().package_address,
-                    })
+                    };
+                    Some(caller_auth_zone)
                 },
-                Actor::Function(function_actor) => Some(CallerAuthZone {
-                    global_auth_zone: function_actor.self_auth_zone,
-                    local_package_address: function_actor.blueprint_id.package_address,
-                }),
+                Actor::Function(function_actor) => {
+                    let caller_auth_zone = CallerAuthZone {
+                        global_auth_zone: function_actor.self_auth_zone,
+                        global_caller: Some(GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone())),
+                        local_package_address: function_actor.blueprint_id.package_address,
+                    };
+                    Some(caller_auth_zone)
+                },
             };
 
             let self_auth_zone_parent = if object_info.global {
@@ -2075,14 +2088,23 @@ where
         let caller_auth_zone = {
             match self.current_actor() {
                 Actor::Method(method_actor) => {
-                    Some(CallerAuthZone {
+                    let node_visibility = self.kernel_get_node_visibility(&method_actor.node_id);
+                    let global_caller: Option<GlobalCaller> = match node_visibility.root_node_type(method_actor.node_id).unwrap() {
+                        RootNodeType::Heap | RootNodeType::DirectlyAccessed => None,
+                        RootNodeType::Global(address) => Some(address.into()),
+                    };
+
+                    let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: method_actor.self_auth_zone,
+                        global_caller,
                         local_package_address: method_actor.get_blueprint_id().package_address,
-                    })
+                    };
+                    Some(caller_auth_zone)
                 },
                 Actor::Function(function_actor) => {
                     Some(CallerAuthZone {
                         global_auth_zone: function_actor.self_auth_zone,
+                        global_caller: Some(function_actor.blueprint_id.clone().into()),
                         local_package_address: function_actor.blueprint_id.package_address,
                     })
                 },
@@ -2584,13 +2606,14 @@ where
 
         let caller_auth_zone = CallerAuthZone {
             global_auth_zone: auth_zone_id,
+            global_caller: self.current_actor().caller_authzone().unwrap().global_caller.clone(),
             local_package_address: self.current_actor().caller_authzone().unwrap().local_package_address,
         };
 
         // Authorize
         let auth_result = Authorization::check_authorization_against_access_rule(
             ActingLocation::InCallFrame,
-            caller_auth_zone,
+            &caller_auth_zone,
             &rule,
             self,
         )?;

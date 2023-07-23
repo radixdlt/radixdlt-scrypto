@@ -50,7 +50,7 @@ impl Authorization {
 
     fn auth_zone_stack_matches<P, Y, V>(
         acting_location: ActingLocation,
-        caller_auth_zone: CallerAuthZone,
+        caller_auth_zone: &CallerAuthZone,
         api: &mut SystemService<Y, V>,
         check: P,
     ) -> Result<bool, RuntimeError>
@@ -63,6 +63,14 @@ impl Authorization {
             let non_fungible_global_id = NonFungibleGlobalId::package_of_direct_caller_badge(
                 caller_auth_zone.local_package_address
             );
+            let local_call_frame_proofs = btreeset!(&non_fungible_global_id);
+            if check(&[], &btreeset!(), local_call_frame_proofs, api)? {
+                return Ok(true);
+            }
+        }
+
+        if let Some(global_caller) = &caller_auth_zone.global_caller {
+            let non_fungible_global_id = NonFungibleGlobalId::global_caller_badge(global_caller.clone());
             let local_call_frame_proofs = btreeset!(&non_fungible_global_id);
             if check(&[], &btreeset!(), local_call_frame_proofs, api)? {
                 return Ok(true);
@@ -151,7 +159,7 @@ impl Authorization {
         Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
     >(
         acting_location: ActingLocation,
-        caller_auth_zone: CallerAuthZone,
+        caller_auth_zone: &CallerAuthZone,
         resource: &ResourceAddress,
         amount: Decimal,
         api: &mut SystemService<Y, V>,
@@ -177,7 +185,7 @@ impl Authorization {
 
     fn auth_zone_stack_matches_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         acting_location: ActingLocation,
-        caller_auth_zone: CallerAuthZone,
+        caller_auth_zone: &CallerAuthZone,
         resource_rule: &ResourceOrNonFungible,
         api: &mut SystemService<Y, V>,
     ) -> Result<bool, RuntimeError> {
@@ -209,7 +217,7 @@ impl Authorization {
 
     pub fn verify_proof_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         acting_location: ActingLocation,
-        caller_auth_zone: CallerAuthZone,
+        caller_auth_zone: &CallerAuthZone,
         proof_rule: &ProofRule,
         api: &mut SystemService<Y, V>,
     ) -> Result<bool, RuntimeError> {
@@ -285,7 +293,7 @@ impl Authorization {
 
     pub fn verify_auth_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         acting_location: ActingLocation,
-        caller_auth_zone: CallerAuthZone,
+        caller_auth_zone: &CallerAuthZone,
         auth_rule: &AccessRuleNode,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -321,7 +329,7 @@ impl Authorization {
 
     pub fn check_authorization_against_role_key_internal<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         acting_location: ActingLocation,
-        caller_auth_zone: CallerAuthZone,
+        caller_auth_zone: &CallerAuthZone,
         role_assignment_of: &NodeId,
         key: &ModuleRoleKey,
         api: &mut SystemService<Y, V>,
@@ -382,7 +390,7 @@ impl Authorization {
         Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
     >(
         acting_location: ActingLocation,
-        caller_auth_zone: CallerAuthZone,
+        caller_auth_zone: &CallerAuthZone,
         rule: &AccessRule,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -405,7 +413,7 @@ impl Authorization {
 
     pub fn check_authorization_against_access_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         acting_location: ActingLocation,
-        caller_auth_zone: CallerAuthZone,
+        caller_auth_zone: &CallerAuthZone,
         rule: &AccessRule,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -419,7 +427,7 @@ impl Authorization {
 
     pub fn check_authorization_against_role_list<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         acting_location: ActingLocation,
-        caller_auth_zone: CallerAuthZone,
+        caller_auth_zone: &CallerAuthZone,
         role_assignment_of: &NodeId,
         module: ObjectModuleId,
         role_list: &RoleList,
@@ -431,7 +439,7 @@ impl Authorization {
             let module_role_key = ModuleRoleKey::new(module, key.key.as_str());
             let result = Self::check_authorization_against_role_key_internal(
                 acting_location,
-                caller_auth_zone,
+                &caller_auth_zone,
                 role_assignment_of,
                 &module_role_key,
                 api,

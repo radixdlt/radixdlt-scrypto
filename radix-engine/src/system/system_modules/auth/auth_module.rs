@@ -96,6 +96,7 @@ impl AuthModule {
 
             let caller_auth_zone = CallerAuthZone {
                 global_auth_zone,
+                global_caller: caller_auth_zone.global_caller.clone(),
                 local_package_address: caller_auth_zone.local_package_address,
             };
 
@@ -158,7 +159,7 @@ impl AuthModule {
             ResolvedPermission::AccessRule(rule) => {
                 let result = Authorization::check_authorization_against_access_rule(
                     acting_location,
-                    caller_auth_zone,
+                    &caller_auth_zone,
                     &rule,
                     api,
                 )?;
@@ -184,7 +185,7 @@ impl AuthModule {
             } => {
                 let result = Authorization::check_authorization_against_role_list(
                     acting_location,
-                    caller_auth_zone,
+                    &caller_auth_zone,
                     &role_assignment_of,
                     module_id,
                     &role_list,
