@@ -15,8 +15,8 @@ pub struct InstanceContext {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct CallerAuthZone {
-    pub global_auth_zone: NodeId,
-    pub global: Option<GlobalCaller>,
+    //pub global_auth_zone: NodeId,
+    pub global_auth_zone: Option<(GlobalCaller, NodeId)>,
     pub local_package_address: PackageAddress,
 }
 
@@ -108,7 +108,9 @@ impl CallFrameReferences for Actor {
         let mut references = vec![];
         references.extend(self.self_auth_zone());
         if let Some(caller_auth_zone) = self.caller_authzone() {
-            references.push(caller_auth_zone.global_auth_zone.clone());
+            if let Some((_caller, auth_zone)) = &caller_auth_zone.global_auth_zone {
+                references.push(auth_zone.clone());
+            }
         }
 
         if !self.is_direct_access() {

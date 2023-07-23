@@ -69,88 +69,58 @@ impl Authorization {
             }
         }
 
-        if let Some(global_caller) = &caller_auth_zone.global {
+        let mut pass = false;
+
+        if let Some((global_caller, auth_zone_id)) = &caller_auth_zone.global_auth_zone {
             let non_fungible_global_id = NonFungibleGlobalId::global_caller_badge(global_caller.clone());
             let global_call_frame_proofs = btreeset!(&non_fungible_global_id);
             if check(&[], &btreeset!(), global_call_frame_proofs, api)? {
                 return Ok(true);
             }
-        }
 
-        /*
-        let (
-            //mut is_first_barrier,
-            mut waiting_for_barrier,
-            mut remaining_barrier_crossings_allowed,
-            mut skip,
-        ) = match acting_location {
-            ActingLocation::AtBarrier => (0, 0, 0),
-            ActingLocation::AtLocalBarrier => (1, 1, 0),
-            ActingLocation::InCallFrame => (1, 1, 1),
-        };
-         */
+            let mut current_auth_zone_id = auth_zone_id.clone();
+            let mut handles = Vec::new();
+            loop {
+                // Load auth zone
+                let handle = api.kernel_open_substate(
+                    &current_auth_zone_id,
+                    MAIN_BASE_PARTITION,
+                    &AuthZoneField::AuthZone.into(),
+                    LockFlags::read_only(),
+                    SystemLockData::default(),
+                )?;
+                let auth_zone: FieldSubstate<AuthZone> =
+                    api.kernel_read_substate(handle)?.as_typed().unwrap();
+                let auth_zone = auth_zone.value.0.clone();
+                handles.push(handle);
 
-        let mut current_auth_zone_id = caller_auth_zone.global_auth_zone;
-        let mut handles = Vec::new();
-        let mut pass = false;
-        loop {
-            // Load auth zone
-            let handle = api.kernel_open_substate(
-                &current_auth_zone_id,
-                MAIN_BASE_PARTITION,
-                &AuthZoneField::AuthZone.into(),
-                LockFlags::read_only(),
-                SystemLockData::default(),
-            )?;
-            let auth_zone: FieldSubstate<AuthZone> =
-                api.kernel_read_substate(handle)?.as_typed().unwrap();
-            let auth_zone = auth_zone.value.0.clone();
-            handles.push(handle);
+                /*if skip > 0 {
+                    skip -= 1;
+                } else*/ {
+                    let mut virtual_non_fungible_global_ids = BTreeSet::new();
+                    let virtual_resources = auth_zone.virtual_resources();
 
-            /*if skip > 0 {
-                skip -= 1;
-            } else*/ {
-                let mut virtual_non_fungible_global_ids = BTreeSet::new();
-                let virtual_resources = auth_zone.virtual_resources();
+                    virtual_non_fungible_global_ids.extend(auth_zone.virtual_non_fungibles());
 
-                virtual_non_fungible_global_ids.extend(auth_zone.virtual_non_fungibles());
+                    let proofs = auth_zone.proofs();
 
-                let proofs = auth_zone.proofs();
+                    // Check
+                    if check(proofs, virtual_resources, virtual_non_fungible_global_ids, api)? {
+                        pass = true;
+                        break;
+                    }
+                }
 
-                // Check
-                if check(proofs, virtual_resources, virtual_non_fungible_global_ids, api)? {
-                    pass = true;
+                if let Some(id) = auth_zone.parent {
+                    current_auth_zone_id = id.into();
+                } else {
                     break;
                 }
             }
 
-            // Progress
-            //is_first_barrier = false;
-            /*
-            if auth_zone.is_barrier {
-                if remaining_barrier_crossings_allowed == 0 {
-                    break;
-                }
-                remaining_barrier_crossings_allowed -= 1;
-
-            if waiting_for_barrier > 0 {
-                waiting_for_barrier -= 1;
-                if waiting_for_barrier == 0u32 {
-                    is_first_barrier = true;
-                }
-                }
+            for handle in handles {
+                api.kernel_close_substate(handle)?;
             }
-                 */
-
-            if let Some(id) = auth_zone.parent {
-                current_auth_zone_id = id.into();
-            } else {
-                break;
-            }
-        }
-
-        for handle in handles {
-            api.kernel_close_substate(handle)?;
         }
 
         Ok(pass)
