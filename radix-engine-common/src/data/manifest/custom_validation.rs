@@ -227,11 +227,11 @@ impl<'a> ValidatableCustomExtension<()> for ManifestCustomExtension {
 mod tests {
     use super::*;
 
+    use crate::constants::*;
     use crate::data::scrypto::model::NonFungibleLocalId;
     use crate::data::scrypto::{well_known_scrypto_custom_types, ScryptoValue};
     use crate::data::scrypto::{ScryptoCustomSchema, ScryptoDescribe};
     use crate::math::{Decimal, PreciseDecimal};
-    use crate::native_addresses::*;
     use crate::types::{PackageAddress, ResourceAddress};
 
     pub struct Bucket;
