@@ -15,7 +15,7 @@ use crate::track::interface::SubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
-use radix_engine_constants::*;
+use radix_engine_common::constants::*;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
@@ -33,10 +33,10 @@ pub struct FeeReserveConfig {
 impl Default for FeeReserveConfig {
     fn default() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
-            usd_price: DEFAULT_USD_PRICE_IN_XRD.try_into().unwrap(),
-            state_expansion_price: DEFAULT_STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
-            system_loan: DEFAULT_SYSTEM_LOAN,
+            cost_unit_price: COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
+            state_expansion_price: STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
+            system_loan: SYSTEM_LOAN_AMOUNT,
         }
     }
 }
@@ -67,24 +67,22 @@ impl ExecutionConfig {
     fn default() -> Self {
         Self {
             enabled_modules: EnabledModules::for_notarized_transaction(),
-            max_execution_trace_depth: DEFAULT_MAX_EXECUTION_TRACE_DEPTH,
-            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+            max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
+            max_call_depth: MAX_CALL_DEPTH,
+            cost_unit_limit: COST_UNIT_LIMIT,
             abort_when_loan_repaid: false,
-            max_number_of_substates_in_track: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
-            max_number_of_substates_in_heap: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
-            max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
-            max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
+            max_number_of_substates_in_track: MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
+            max_number_of_substates_in_heap: MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
+            max_substate_size: MAX_SUBSTATE_SIZE,
+            max_invoke_input_size: MAX_INVOKE_PAYLOAD_SIZE,
             enable_cost_breakdown: false,
-            max_event_size: DEFAULT_MAX_EVENT_SIZE,
-            max_log_size: DEFAULT_MAX_LOG_SIZE,
-            max_panic_message_size: DEFAULT_MAX_PANIC_MESSAGE_SIZE,
-            max_number_of_logs: DEFAULT_MAX_NUMBER_OF_LOGS,
-            max_number_of_events: DEFAULT_MAX_NUMBER_OF_EVENTS,
-            max_per_function_royalty_in_xrd: Decimal::try_from(
-                DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD,
-            )
-            .unwrap(),
+            max_event_size: MAX_EVENT_SIZE,
+            max_log_size: MAX_LOG_SIZE,
+            max_panic_message_size: MAX_PANIC_MESSAGE_SIZE,
+            max_number_of_logs: MAX_NUMBER_OF_LOGS,
+            max_number_of_events: MAX_NUMBER_OF_EVENTS,
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                .unwrap(),
         }
     }
 
@@ -123,6 +121,7 @@ impl ExecutionConfig {
     pub fn for_preview() -> Self {
         Self {
             enabled_modules: EnabledModules::for_preview(),
+            enable_cost_breakdown: true,
             ..Self::default()
         }
     }
@@ -133,6 +132,11 @@ impl ExecutionConfig {
         } else {
             self.enabled_modules.remove(EnabledModules::KERNEL_TRACE);
         }
+        self
+    }
+
+    pub fn with_cost_breakdown(mut self, enabled: bool) -> Self {
+        self.enable_cost_breakdown = enabled;
         self
     }
 
@@ -169,31 +173,24 @@ where
 
     pub fn execute(
         &mut self,
-        transaction: &Executable,
+        executable: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
+        let free_credit = executable.fee_payment().free_credit_in_xrd;
+        let tip_percentage = executable.fee_payment().tip_percentage;
         let fee_reserve = SystemLoanFeeReserve::new(
             fee_reserve_config.cost_unit_price,
             fee_reserve_config.usd_price,
             fee_reserve_config.state_expansion_price,
-            transaction.fee_payment().tip_percentage,
+            tip_percentage,
             execution_config.cost_unit_limit,
             fee_reserve_config.system_loan,
             execution_config.abort_when_loan_repaid,
         )
-        .with_free_credit(transaction.fee_payment().free_credit_in_xrd);
+        .with_free_credit(free_credit);
+        let fee_table = FeeTable::new();
 
-        self.execute_with_fee_reserve(transaction, execution_config, fee_reserve, FeeTable::new())
-    }
-
-    fn execute_with_fee_reserve(
-        &mut self,
-        executable: &Executable,
-        execution_config: &ExecutionConfig,
-        fee_reserve: SystemLoanFeeReserve,
-        fee_table: FeeTable,
-    ) -> TransactionReceipt {
         // Dump executable
         #[cfg(not(feature = "alloc"))]
         if execution_config
@@ -274,8 +271,12 @@ where
                         }
 
                         // Distribute fees
-                        let (mut fee_summary, fee_payments) =
-                            Self::finalize_fees(&mut track, costing_module.fee_reserve, is_success);
+                        let (mut fee_summary, fee_payments) = Self::finalize_fees(
+                            &mut track,
+                            costing_module.fee_reserve,
+                            is_success,
+                            free_credit,
+                        );
                         fee_summary.execution_cost_breakdown = costing_module
                             .costing_traces
                             .into_iter()
@@ -597,6 +598,7 @@ where
         track: &mut Track<S, SpreadPrefixKeyMapper>,
         fee_reserve: SystemLoanFeeReserve,
         is_success: bool,
+        free_credit: Decimal,
     ) -> (FeeSummary, IndexMap<NodeId, Decimal>) {
         // Distribute royalty
         for (_, (recipient_vault_id, amount)) in fee_reserve.royalty_cost() {
@@ -660,16 +662,34 @@ where
             // Record final payments
             *fee_payments.entry(vault_id).or_default() += amount;
         }
+        // Free credit is locked first and thus used last
+        if free_credit.is_positive() {
+            let amount = Decimal::min(free_credit, required);
+            collected_fees.put(LiquidFungibleResource::new(amount));
+            required -= amount;
+        }
 
         let tips_to_distribute = fee_summary.tips_to_distribute();
         let fees_to_distribute = fee_summary.fees_to_distribute();
 
-        // Sanity check
-        assert_eq!(required, Decimal::ZERO);
-        assert_eq!(fee_summary.total_bad_debt_xrd, Decimal::ZERO);
-        assert_eq!(
-            tips_to_distribute + fees_to_distribute,
-            collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */
+        // Sanity checks
+        assert!(
+            fee_summary.total_bad_debt_xrd == Decimal::ZERO,
+            "Bad debt is non-zero: {}",
+            fee_summary.total_bad_debt_xrd
+        );
+        assert!(
+            required == Decimal::ZERO,
+            "Locked fee does not cover transaction cost: {} required",
+            required
+        );
+        let remaining_collected_fees = collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */;
+        let to_distribute = tips_to_distribute + fees_to_distribute;
+        assert!(
+            to_distribute == remaining_collected_fees,
+            "Remaining collected fee isn't equal to amount to distribute: {} != {}",
+            remaining_collected_fees,
+            to_distribute,
         );
 
         if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {

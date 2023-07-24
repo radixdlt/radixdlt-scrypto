@@ -1,33 +1,33 @@
 use crate::types::*;
 use radix_engine_interface::math::Decimal;
 
-#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
+#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct RegisterValidatorEvent;
 
-#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
+#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct UnregisterValidatorEvent;
 
-#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
+#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct StakeEvent {
     pub xrd_staked: Decimal,
 }
 
-#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
+#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct UnstakeEvent {
     pub stake_units: Decimal,
 }
 
-#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
+#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct ClaimXrdEvent {
     pub claimed_xrd: Decimal,
 }
 
-#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
+#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct UpdateAcceptingStakeDelegationStateEvent {
     pub accepts_delegation: bool,
 }
 
-#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq)]
+#[derive(ScryptoSbor, ScryptoEvent, PartialEq, Eq, Debug)]
 pub struct ProtocolUpdateReadinessSignalEvent {
     pub protocol_version_name: String,
 }
