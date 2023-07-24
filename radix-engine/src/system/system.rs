@@ -1444,13 +1444,6 @@ where
                 Actor::Root | Actor::BlueprintHook(..) => None,
                 Actor::Method(current_method_actor) => {
                     let caller_auth_zone = CallerAuthZone {
-                        /*
-                        global_auth_zone: if object_info.global || direct_access {
-                            current_method_actor.self_auth_zone
-                        } else {
-                            current_method_actor.caller_auth_zone.clone().unwrap().global_auth_zone
-                        },
-                         */
                         global_auth_zone: {
                             // TODO: Check actor object module id?
                             let node_visibility =

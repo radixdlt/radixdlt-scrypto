@@ -142,7 +142,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_push_frame<Y>(
         callee: &Self::CallFrameData,
-        message: &mut Message,
+        message: &Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

@@ -855,7 +855,7 @@ where
         let args = &invocation.args;
         let message = {
             let mut message = Message::from_indexed_scrypto_value(&args);
-            M::before_push_frame(&callee, &mut message, &args, self)?;
+            M::before_push_frame(&callee, &message, &args, self)?;
 
             // Add callee references
             for reference in callee.global_references() {
