@@ -2858,13 +2858,13 @@ fn test_tips_and_fee_distribution_two_validators() {
     assert_close_to!(
         events[0].amount,
         result1.fee_summary.to_proposer_amount()
-            + result1.fee_summary.to_validator_set_amount() * dec!("0.25") * initial_stake_amount1
+            + result1.fee_summary.to_validator_set_amount() * initial_stake_amount1
                 / (initial_stake_amount1 + initial_stake_amount2)
     );
     assert_eq!(events[1].epoch, initial_epoch);
     assert_close_to!(
         events[1].amount,
-        result1.fee_summary.to_validator_set_amount() * dec!("0.25") * initial_stake_amount2
+        result1.fee_summary.to_validator_set_amount() * initial_stake_amount2
             / (initial_stake_amount1 + initial_stake_amount2)
     );
 }
