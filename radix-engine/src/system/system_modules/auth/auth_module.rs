@@ -3,7 +3,7 @@ use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, AuthInfo, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::system::SystemService;
@@ -257,12 +257,7 @@ impl AuthModule {
 }
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        callee: &Actor,
-        _message: &Message,
-        args: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
-        AuthModule::check_authorization(callee, args, api)
+    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(api: &mut Y, invocation: &KernelInvocation<Actor>) -> Result<(), RuntimeError> {
+        AuthModule::check_authorization(&invocation.call_frame_data, &invocation.args, api)
     }
 }
