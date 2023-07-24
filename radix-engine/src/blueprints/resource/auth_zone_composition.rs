@@ -68,13 +68,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
     match resource_type {
         ResourceType::Fungible { .. } => {
             compose_fungible_proof(proofs, resource_address, amount, api).map(|(proof, handles)| {
-                ComposedProof::Fungible(
-                    ProofMoveableSubstate {
-                        restricted: false, // FIXME: follow existing impl, but need to revisit this
-                    },
-                    proof,
-                    handles,
-                )
+                ComposedProof::Fungible(ProofMoveableSubstate { restricted: false }, proof, handles)
             })
         }
         ResourceType::NonFungible { .. } => compose_non_fungible_proof(
@@ -93,13 +87,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
             api,
         )
         .map(|(proof, handles)| {
-            ComposedProof::NonFungible(
-                ProofMoveableSubstate {
-                    restricted: false, //  FIXME: verify this is sound
-                },
-                proof,
-                handles,
-            )
+            ComposedProof::NonFungible(ProofMoveableSubstate { restricted: false }, proof, handles)
         }),
     }
 }
@@ -131,13 +119,7 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + ClientApi<Run
             api,
         )
         .map(|(proof, handles)| {
-            ComposedProof::NonFungible(
-                ProofMoveableSubstate {
-                    restricted: false, // FIXME: verify this is sound
-                },
-                proof,
-                handles,
-            )
+            ComposedProof::NonFungible(ProofMoveableSubstate { restricted: false }, proof, handles)
         }),
     }
 }

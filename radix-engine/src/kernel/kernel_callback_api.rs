@@ -131,7 +131,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn before_push_frame<Y>(
         callee: &Actor,
-        update: &mut Message,
+        message: &mut Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -142,11 +142,15 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_execution_finish<Y>(update: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
+    fn after_pop_frame<Y>(
+        dropped_actor: &Actor,
+        message: &Message,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -175,6 +179,17 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    // This is technically not a kernel event, but system event, per current implementation.
+    fn on_move_node<Y>(
+        node_id: &NodeId,
+        is_moving_down: bool,
+        is_to_barrier: bool,
+        destination_blueprint_id: Option<BlueprintId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 }
