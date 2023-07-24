@@ -556,7 +556,7 @@ fn run_mint_nfts_from_manifest(mode: Mode, nft_data: TestNonFungibleData) {
             manifest.clone(),
         );
         let raw_transaction = transaction.to_raw().unwrap();
-        if raw_transaction.0.len() > DEFAULT_MAX_TRANSACTION_SIZE {
+        if raw_transaction.0.len() > MAX_TRANSACTION_SIZE {
             high = mid - 1;
         } else {
             let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -696,6 +696,7 @@ impl NonFungibleData for TestNonFungibleData {
     const MUTABLE_FIELDS: &'static [&'static str] = &["metadata"];
 }
 
+// FIXME: Need to update large_package.wasm as it is is no longer the correct size
 #[test]
 /// The large_package blueprint combines toogether two other packages just to provide meaningful content for
 /// a large package of size as close as possible to current limit: 1,048,576 bytes minus the size of

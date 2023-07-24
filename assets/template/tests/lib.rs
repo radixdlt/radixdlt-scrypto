@@ -32,7 +32,11 @@ fn test_hello() {
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new()
         .call_method(component, "free_token", manifest_args!())
-        .deposit_batch(account)
+        .call_method(
+            account,
+            "deposit_batch",
+            manifest_args!(ManifestExpression::EntireWorktop),
+        )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(
         manifest,

@@ -1,3 +1,4 @@
+use radix_engine::system::system_modules::costing::FeeTable;
 use radix_engine::transaction::ExecutionConfig;
 use radix_engine::transaction::FeeReserveConfig;
 use radix_engine::types::*;
@@ -27,23 +28,60 @@ fn test_transaction_preview_cost_estimate() {
         manifest,
         &preview_flags,
     );
+    let size_diff = manifest_encode(&notarized_transaction).unwrap().len()
+        - manifest_encode(&preview_intent.intent).unwrap().len();
 
     // Act & Assert: Execute the preview, followed by a normal execution.
     // Ensure that both succeed and that the preview result provides an accurate cost estimate
-    let preview_result = test_runner.preview(preview_intent, &network);
-    let preview_receipt = preview_result.unwrap();
-    preview_receipt.expect_commit_success();
-
-    let receipt = test_runner.execute_transaction(
+    let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
+    let preview_result = preview_receipt.expect_commit_success();
+    let actual_receipt = test_runner.execute_transaction(
         validate(&network, &notarized_transaction).get_executable(),
         FeeReserveConfig::default(),
-        ExecutionConfig::for_preview(),
+        ExecutionConfig::for_notarized_transaction()
+            .with_kernel_trace(true)
+            .with_cost_breakdown(true),
     );
-    let commit_result = receipt.expect_commit(true);
+    let actual_result = actual_receipt.expect_commit_success();
     assert_eq!(
-        commit_result.fee_summary.execution_cost_sum,
-        commit_result.fee_summary.execution_cost_sum
+        // TODO: better preview payload size estimate?
+        preview_result.fee_summary.total_cost()
+            + FeeReserveConfig::default().cost_unit_price
+                * FeeTable::new().tx_payload_cost(size_diff),
+        actual_result.fee_summary.total_cost(),
     );
+}
+
+#[test]
+fn test_transaction_preview_without_locking_fee() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let network = NetworkDefinition::simulator();
+    let manifest = ManifestBuilder::new()
+        // Explicitly don't lock fee from faucet
+        .clear_auth_zone()
+        .build();
+    let preview_flags = PreviewFlags {
+        use_free_credit: true,
+        assume_all_signature_proofs: false,
+        skip_epoch_check: false,
+    };
+    let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(
+        &mut test_runner,
+        &network,
+        manifest,
+        &preview_flags,
+    );
+
+    // Act
+    let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
+    let fee_summary = &preview_receipt.expect_commit_success().fee_summary;
+    println!("{:?}", preview_receipt);
+    assert_eq!(fee_summary.total_execution_cost_xrd, dec!("0.01844552"));
+    assert_eq!(fee_summary.total_tipping_cost_xrd, dec!("0"));
+    assert_eq!(fee_summary.total_state_expansion_cost_xrd, dec!("0.00009"));
+    assert_eq!(fee_summary.total_royalty_cost_xrd, dec!("0"));
+    assert_eq!(fee_summary.total_payments(), dec!("0")); // no one is paying the fees; wallets should fill the gap.
 }
 
 #[test]

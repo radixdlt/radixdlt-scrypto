@@ -37,7 +37,7 @@ impl ValidatedPreviewIntent {
         let fee_payment = FeePayment {
             tip_percentage: header.tip_percentage,
             free_credit_in_xrd: if self.flags.use_free_credit {
-                Decimal::try_from(DEFAULT_FREE_CREDIT_IN_XRD).unwrap()
+                Decimal::try_from(FREE_CREDIT_IN_XRD).unwrap()
             } else {
                 Decimal::ZERO
             },
@@ -69,13 +69,7 @@ impl ValidatedPreviewIntent {
                         end_epoch_exclusive: intent.header.inner.end_epoch_exclusive,
                     })
                 },
-                payload_size: self.encoded_instructions.len()
-                    + intent
-                        .blobs
-                        .blobs_by_hash
-                        .values()
-                        .map(|x| x.len())
-                        .sum::<usize>(),
+                payload_size: self.intent.summary.effective_length,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtual_resources,

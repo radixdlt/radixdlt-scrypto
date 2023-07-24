@@ -251,7 +251,7 @@ mod tests {
             * 5 // Targeted epoch duration: 5 mins
             / 60
             / 24;
-        assert!(covered_epochs >= DEFAULT_MAX_EPOCH_RANGE);
+        assert!(covered_epochs >= MAX_EPOCH_RANGE);
         assert_eq!(covered_days, 65);
     }
 

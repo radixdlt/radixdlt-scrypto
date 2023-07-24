@@ -1,7 +1,7 @@
 use radix_engine::{
     errors::{RuntimeError, VmError},
     types::*,
-    vm::wasm::{WasmRuntimeError, DEFAULT_MAX_MEMORY_SIZE_IN_PAGES},
+    vm::wasm::WasmRuntimeError,
 };
 use scrypto_unit::*;
 use transaction::prelude::*;
@@ -127,9 +127,9 @@ fn test_grow_memory_within_limit() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
 
-    // Grow memory size by `DEFAULT_MAX_MEMORY_SIZE_IN_PAGES - 1`.
+    // Grow memory size by `MAX_MEMORY_SIZE_IN_PAGES - 1`.
     // Note that initial memory size is 1 page.
-    let grow_value = DEFAULT_MAX_MEMORY_SIZE_IN_PAGES - 1;
+    let grow_value = MAX_MEMORY_SIZE_IN_PAGES - 1;
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));
@@ -154,9 +154,9 @@ fn test_grow_memory_beyond_limit() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
 
-    // Grow memory size by `DEFAULT_MAX_MEMORY_SIZE_IN_PAGES`.
+    // Grow memory size by `MAX_MEMORY_SIZE_IN_PAGES`.
     // Note that initial memory size is 1 page.
-    let grow_value = DEFAULT_MAX_MEMORY_SIZE_IN_PAGES;
+    let grow_value = MAX_MEMORY_SIZE_IN_PAGES;
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", &grow_value.to_string()));

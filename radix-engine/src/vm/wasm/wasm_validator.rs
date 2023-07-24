@@ -14,11 +14,11 @@ pub struct WasmValidator {
 impl Default for WasmValidator {
     fn default() -> Self {
         Self {
-            max_memory_size_in_pages: DEFAULT_MAX_MEMORY_SIZE_IN_PAGES,
-            max_initial_table_size: DEFAULT_MAX_INITIAL_TABLE_SIZE,
-            max_number_of_br_table_targets: DEFAULT_MAX_NUMBER_OF_BR_TABLE_TARGETS,
-            max_number_of_functions: DEFAULT_MAX_NUMBER_OF_FUNCTIONS,
-            max_number_of_globals: DEFAULT_MAX_NUMBER_OF_GLOBALS,
+            max_memory_size_in_pages: MAX_MEMORY_SIZE_IN_PAGES,
+            max_initial_table_size: MAX_INITIAL_TABLE_SIZE,
+            max_number_of_br_table_targets: MAX_NUMBER_OF_BR_TABLE_TARGETS,
+            max_number_of_functions: MAX_NUMBER_OF_FUNCTIONS,
+            max_number_of_globals: MAX_NUMBER_OF_GLOBALS,
             instrumenter_config: WasmValidatorConfigV1::new(),
         }
     }
