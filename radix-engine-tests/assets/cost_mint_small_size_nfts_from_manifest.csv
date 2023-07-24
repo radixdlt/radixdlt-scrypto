@@ -1,18 +1,18 @@
-Total Cost (XRD)                                                           ,    0.585879747,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.51515214,     87.9%
-+ Tipping Cost (XRD)                                                       ,    0.025757607,      4.4%
+Total Cost (XRD)                                                           ,    0.585981387,    100.0%
++ Execution Cost (XRD)                                                     ,     0.51524894,     87.9%
++ Tipping Cost (XRD)                                                       ,    0.025762447,      4.4%
 + State Expansion Cost (XRD)                                               ,        0.04497,      7.7%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       51515214,    100.0%
+Total Cost Units Consumed                                                  ,       51524894,    100.0%
 AfterInvoke                                                                ,            494,      0.0%
 AllocateNodeId                                                             ,          10500,      0.0%
 BeforeInvoke                                                               ,          15408,      0.0%
-CloseSubstate                                                              ,         220500,      0.4%
+CloseSubstate                                                              ,         223000,      0.4%
 Commit::GlobalAccount                                                      ,         200012,      0.4%
 Commit::GlobalGenericComponent                                             ,         100018,      0.2%
 Commit::GlobalNonFungibleResourceManager                                   ,       22600749,     43.9%
 Commit::InternalFungibleVault                                              ,         100010,      0.2%
-Commit::InternalNonFungibleVault                                           ,       21200046,     41.2%
+Commit::InternalNonFungibleVault                                           ,       21200046,     41.1%
 CreateNode                                                                 ,          30592,      0.1%
 DropNode                                                                   ,          21142,      0.0%
 EmitEvent                                                                  ,           9308,      0.0%
@@ -23,12 +23,12 @@ OpenSubstate::GlobalGenericComponent                                       ,    
 OpenSubstate::GlobalNonFungibleResourceManager                             ,          13950,      0.0%
 OpenSubstate::GlobalPackage                                                ,         857054,      1.7%
 OpenSubstate::InternalFungibleVault                                        ,           7242,      0.0%
-OpenSubstate::InternalGenericComponent                                     ,          70648,      0.1%
+OpenSubstate::InternalGenericComponent                                     ,          73492,      0.1%
 OpenSubstate::InternalKeyValueStore                                        ,            706,      0.0%
-OpenSubstate::InternalNonFungibleVault                                     ,         162252,      0.3%
+OpenSubstate::InternalNonFungibleVault                                     ,         162998,      0.3%
 PrepareWasmCode                                                            ,         698756,      1.4%
 QueryActor                                                                 ,           2000,      0.0%
-ReadSubstate                                                               ,        1128206,      2.2%
+ReadSubstate                                                               ,        1131796,      2.2%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.0%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.0%
 RunNativeCode::Worktop_put                                                 ,          24411,      0.0%

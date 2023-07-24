@@ -273,7 +273,7 @@ where
 
             // Run
             let output = M::invoke_upstream(args, self)?;
-            let mut message = Message::from_indexed_scrypto_value(&output);
+            let message = Message::from_indexed_scrypto_value(&output);
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -291,7 +291,7 @@ where
                 })?;
 
             // Handle execution finish
-            M::on_execution_finish(&mut message, self)?;
+            M::on_execution_finish(&message, self)?;
 
             (output, message)
         };
@@ -301,7 +301,7 @@ where
             let parent = self.prev_frame_stack.last_mut().unwrap();
 
             // Move resource
-            CallFrame::pass_message(&mut self.current_frame, parent, message)
+            CallFrame::pass_message(&mut self.current_frame, parent, message.clone())
                 .map_err(CallFrameError::PassMessageError)
                 .map_err(KernelError::CallFrameError)?;
 
@@ -324,7 +324,7 @@ where
 
             let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
 
-            M::after_pop_frame(self, dropped_frame.actor())?;
+            M::after_pop_frame(dropped_frame.actor(), &message, self)?;
         }
 
         Ok(output)

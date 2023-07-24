@@ -260,6 +260,7 @@ pub enum CallFrameDrainSubstatesError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CallFrameScanSortedSubstatesError {
     NodeNotVisible(NodeId),
+    OwnedNodeNotSupported(NodeId),
 }
 
 impl<L: Clone> CallFrame<L> {
@@ -1084,7 +1085,9 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    // FIXME: check if non-global reference is needed
+                    return Err(CallbackError::Error(CallFrameScanSortedSubstatesError::OwnedNodeNotSupported(
+                        reference.clone(),
+                    )));
                 }
             }
         }

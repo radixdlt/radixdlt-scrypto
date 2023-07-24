@@ -82,6 +82,14 @@ mod vault_proof {
             LocalAuthZone::push(proof); // should fail here
         }
 
+        pub fn receive_proof_and_pass_to_scrypto_function(proof: Proof) {
+            Blueprint::<VaultProof>::receive_proof(proof);
+        }
+
+        pub fn receive_proof_and_drop(proof: Proof) {
+            proof.drop();
+        }
+
         pub fn compose_vault_and_bucket_proof(&mut self, bucket: Bucket) {
             self.vault.as_fungible().authorize_with_amount(dec!(1), || {
                 bucket.as_fungible().authorize_with_amount(dec!(1), || {
