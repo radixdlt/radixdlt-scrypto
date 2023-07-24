@@ -238,30 +238,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_invoke(api, invocation)
-    }
+        let is_to_barrier = invocation.call_frame_data.is_barrier();
+        let destination_blueprint_id = invocation.call_frame_data.blueprint_id();
 
-    fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_invoke(api, output_size)
-    }
-
-    fn before_push_frame<Y>(
-        callee: &Actor,
-        message: &Message,
-        args: &IndexedScryptoValue,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::before_push_frame(api, callee, message, args)?;
-
-        let is_to_barrier = callee.is_barrier();
-        let destination_blueprint_id = callee.blueprint_id();
-        for node_id in &message.move_nodes {
+        for node_id in invocation.args.owned_nodes() {
             Self::on_move_node(
                 node_id,
                 true,
@@ -271,7 +251,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             )?;
         }
 
-        Ok(())
+        SystemModuleMixer::before_invoke(api, invocation)
+    }
+
+    fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_invoke(api, output_size)
     }
 
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>

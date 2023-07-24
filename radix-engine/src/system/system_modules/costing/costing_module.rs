@@ -182,12 +182,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         let (optional_blueprint_id, ident, maybe_object_royalties) = {
             let (maybe_component, ident) = match &invocation.call_frame_data {
                 Actor::Method(MethodActor {
-                                  node_id,
-                                  module_id,
-                                  ident,
-                                  object_info,
-                                  ..
-                              }) => {
+                    node_id,
+                    module_id,
+                    ident,
+                    object_info,
+                    ..
+                }) => {
                     // Only do royalty costing for Main
                     if module_id.ne(&ObjectModuleId::Main) {
                         return Ok(());
@@ -208,7 +208,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 }
             };
 
-            (invocation.call_frame_data.blueprint_id(), ident, maybe_component)
+            (
+                invocation.call_frame_data.blueprint_id(),
+                ident,
+                maybe_component,
+            )
         };
 
         //===========================

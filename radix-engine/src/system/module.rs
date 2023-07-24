@@ -26,10 +26,8 @@ pub trait SystemModule<M: KernelCallbackObject> {
     // Invocation events
     //
     // -> BeforeInvoke
-    // -> BeforePushFrame
     //        -> ExecutionStart
     //        -> ExecutionFinish
-    // -> AfterPopFrame
     // -> AfterInvoke
     //======================
 
@@ -37,16 +35,6 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
         _invocation: &KernelInvocation<Actor>,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn before_push_frame<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _callee: &Actor,
-        _message: &Message,
-        _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

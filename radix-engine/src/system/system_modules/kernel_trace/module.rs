@@ -37,17 +37,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         .green();
 
         log!(api, "{}", message);
-        Ok(())
-    }
-
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        callee: &Actor,
-        message: &Message,
-        _args: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
-        log!(api, "Sending nodes: {:?}", message.move_nodes);
-        log!(api, "Sending refs: {:?}", message.copy_references);
+        log!(api, "Sending nodes: {:?}", invocation.args.owned_nodes());
+        log!(api, "Sending refs: {:?}", invocation.args.references());
         Ok(())
     }
 

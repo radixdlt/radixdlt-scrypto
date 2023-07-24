@@ -347,7 +347,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(api: &mut Y, invocation: &KernelInvocation<Actor>) -> Result<(), RuntimeError> {
+    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        invocation: &KernelInvocation<Actor>,
+    ) -> Result<(), RuntimeError> {
         let message = Message::from_indexed_scrypto_value(&invocation.args);
         let resource_summary = ResourceSummary::from_message(api, &message);
         let callee = &invocation.call_frame_data;
@@ -357,7 +360,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
             .system
             .modules
             .execution_trace
-            .handle_before_push_frame(
+            .handle_before_invoke(
                 system_state.current_call_frame,
                 callee,
                 resource_summary,
@@ -460,7 +463,7 @@ impl ExecutionTraceModule {
         self.finalize_kernel_call_trace(traced_output, current_actor, current_depth)
     }
 
-    fn handle_before_push_frame(
+    fn handle_before_invoke(
         &mut self,
         current_actor: &Actor,
         callee: &Actor,
