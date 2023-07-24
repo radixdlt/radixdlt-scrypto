@@ -1,4 +1,5 @@
 use crate::blueprints::consensus_manager::{ConsensusManagerSubstate, ValidatorRewardsSubstate};
+use crate::blueprints::resource::BurnFungibleResourceEvent;
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::blueprints::transaction_tracker::{TransactionStatus, TransactionTrackerSubstate};
 use crate::errors::*;
@@ -16,7 +17,8 @@ use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
-use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::api::{LockFlags, ObjectModuleId};
+use radix_engine_interface::blueprints::package::TypePointer;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -503,18 +505,32 @@ where
                 executable.blobs(),
             )
             .and_then(|x| {
+                // Costing and limits for XRD "burn" event
+                let mock_event = scrypto_encode(&BurnFungibleResourceEvent {
+                    amount: Decimal::ZERO,
+                })
+                .unwrap();
+                system
+                    .modules
+                    .apply_execution_cost(CostingEntry::EmitEvent {
+                        size: mock_event.len(),
+                    })?;
+                system.modules.add_event(
+                    EventTypeIdentifier(
+                        Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                        TypePointer::Package(Hash([0u8; 32]), LocalTypeIndex::SchemaLocalIndex(0)), // FIXME
+                    ),
+                    mock_event,
+                )?;
+
                 let info = track.get_commit_info();
                 for commit in &info {
-                    if let Err(e) = system.modules.apply_execution_cost(CostingEntry::Commit {
+                    system.modules.apply_execution_cost(CostingEntry::Commit {
                         store_commit: commit,
-                    }) {
-                        return Err(e);
-                    }
+                    })?;
                 }
                 for commit in &info {
-                    if let Err(e) = system.modules.apply_state_expansion_cost(commit) {
-                        return Err(e);
-                    }
+                    system.modules.apply_state_expansion_cost(commit)?;
                 }
 
                 Ok(x)
@@ -669,8 +685,9 @@ where
             required -= amount;
         }
 
-        let tips_to_distribute = fee_summary.tips_to_distribute();
-        let fees_to_distribute = fee_summary.fees_to_distribute();
+        let to_proposer = fee_summary.to_proposer_amount();
+        let to_validator_set = fee_summary.to_validator_set_amount();
+        let to_burn = fee_summary.to_burn_amount();
 
         // Sanity checks
         assert!(
@@ -684,15 +701,14 @@ where
             required
         );
         let remaining_collected_fees = collected_fees.amount() - fee_summary.total_royalty_cost_xrd /* royalty already distributed */;
-        let to_distribute = tips_to_distribute + fees_to_distribute;
         assert!(
-            to_distribute == remaining_collected_fees,
-            "Remaining collected fee isn't equal to amount to distribute: {} != {}",
+            remaining_collected_fees  == to_proposer + to_validator_set + to_burn,
+            "Remaining collected fee isn't equal to amount to distribute (proposer/validator set/burn): {} != {}",
             remaining_collected_fees,
-            to_distribute,
+            to_proposer + to_validator_set + to_burn,
         );
 
-        if !tips_to_distribute.is_zero() || !fees_to_distribute.is_zero() {
+        if !to_proposer.is_zero() || !to_validator_set.is_zero() {
             // Fetch current leader
             // TODO: maybe we should move current leader into validator rewards?
             let handle = track
@@ -721,23 +737,17 @@ where
                 .0;
             let mut substate: FieldSubstate<ValidatorRewardsSubstate> =
                 track.read_substate(handle).0.as_typed().unwrap();
-            let proposer_rewards = if let Some(current_leader) = current_leader {
-                let rewards = tips_to_distribute * TIPS_PROPOSER_SHARE_PERCENTAGE / dec!(100)
-                    + fees_to_distribute * FEES_PROPOSER_SHARE_PERCENTAGE / dec!(100);
+            let unclaimed_to_proposer = if let Some(current_leader) = current_leader {
                 substate
                     .value
                     .0
                     .proposer_rewards
                     .entry(current_leader)
                     .or_default()
-                    .add_assign(rewards);
-                rewards
-            } else {
+                    .add_assign(to_proposer);
                 Decimal::ZERO
-            };
-            let validator_set_rewards = {
-                tips_to_distribute * TIPS_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
-                    + fees_to_distribute * FEES_VALIDATOR_SET_SHARE_PERCENTAGE / dec!(100)
+            } else {
+                to_proposer
             };
             let vault_node_id = substate.value.0.rewards_vault.0 .0;
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
@@ -757,7 +767,7 @@ where
                 track.read_substate(handle).0.as_typed().unwrap();
             substate.value.0.put(
                 collected_fees
-                    .take_by_amount(proposer_rewards + validator_set_rewards)
+                    .take_by_amount(unclaimed_to_proposer + to_validator_set)
                     .unwrap(),
             );
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
