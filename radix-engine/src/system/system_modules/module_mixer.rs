@@ -149,7 +149,6 @@ impl SystemModuleMixer {
             node_move: NodeMoveModule {},
             auth: AuthModule {
                 params: auth_zone_params.clone(),
-                //auth_zone_stack: Vec::new(),
             },
             limits: LimitsModule::new(TransactionLimitsConfig {
                 max_number_of_substates_in_track: execution_config.max_number_of_substates_in_track,
@@ -249,7 +248,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        update: &mut Message,
+        update: &Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, before_push_frame(api, callee, update, args))

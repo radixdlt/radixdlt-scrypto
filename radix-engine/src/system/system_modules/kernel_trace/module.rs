@@ -43,7 +43,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         log!(api, "Sending nodes: {:?}", message.move_nodes);

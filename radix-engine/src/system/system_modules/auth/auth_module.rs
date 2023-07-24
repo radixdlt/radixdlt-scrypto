@@ -1,22 +1,19 @@
 use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
-use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, AuthInfo, CallerAuthZone, FunctionActor, MethodActor};
+use crate::kernel::actor::{Actor, AuthInfo, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::system::module::SystemModule;
-use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
-use crate::system::system::{FieldSubstate, SystemService};
+use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
-    BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
+    BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -47,7 +44,6 @@ pub struct Unauthorized {
 #[derive(Debug, Clone)]
 pub struct AuthModule {
     pub params: AuthZoneParams,
-    //pub auth_zone_stack: Vec<NodeId>,
 }
 
 pub enum AuthorizationCheckResult {
@@ -71,12 +67,6 @@ pub enum ResolvedPermission {
 }
 
 impl AuthModule {
-    /*
-    pub fn last_auth_zone(&self) -> Option<NodeId> {
-        self.auth_zone_stack.last().cloned()
-    }
-     */
-
     fn check_authorization<V, Y>(
         callee: &Actor,
         args: &IndexedScryptoValue,
@@ -93,17 +83,7 @@ impl AuthModule {
                 return Ok(());
             }
 
-            //let global_auth_zone = api.kernel_get_system().modules.auth.last_auth_zone().unwrap();
-
             let mut system = SystemService::new(api);
-
-            /*
-            let caller_auth_zone = CallerAuthZone {
-                global_auth_zone,
-                global: caller_auth_zone.global.clone(),
-                local_package_address: caller_auth_zone.local_package_address,
-            };
-             */
 
             // Step 1: Resolve method to permission
             // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
@@ -302,107 +282,15 @@ impl AuthModule {
             )),
         }
     }
-
-    /*
-    /// Create a new auth zone and move it to next frame.
-    ///
-    /// Must be done before a new frame is created, as
-    /// borrowed references must be wrapped and passed.
-    ///
-    fn create_auth_zone<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        api: &mut Y,
-        callee: &Actor,
-        message: &mut Message,
-    ) -> Result<(), RuntimeError> {
-        // Prepare a new auth zone
-        let is_barrier = callee.is_barrier();
-        // TODO: Remove special casing use of transaction processor and just have virtual resources
-        // stored in root call frame
-        let is_transaction_processor_blueprint = callee.is_transaction_processor_blueprint();
-        let is_at_root = api.kernel_get_current_depth() == 0;
-        let (virtual_resources, virtual_non_fungibles) =
-            if is_transaction_processor_blueprint && is_at_root {
-                let auth_module = &api.kernel_get_system().modules.auth;
-                (
-                    auth_module.params.virtual_resources.clone(),
-                    auth_module.params.initial_proofs.clone(),
-                )
-            } else {
-                (BTreeSet::new(), BTreeSet::new())
-            };
-        let parent = api
-            .kernel_get_system()
-            .modules
-            .auth
-            .auth_zone_stack
-            .last()
-            .map(|x| Reference(x.clone().into()));
-        let auth_zone = AuthZone::new(
-            vec![],
-            virtual_resources,
-            virtual_non_fungibles,
-            is_barrier,
-            parent,
-        );
-
-        // Create node
-        let auth_zone_node_id =
-            api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
-
-        api.kernel_create_node(
-            auth_zone_node_id,
-            btreemap!(
-                MAIN_BASE_PARTITION => btreemap!(
-                    AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
-                ),
-                TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                    global: false,
-
-                    module_versions: btreemap!(
-                        ObjectModuleId::Main => BlueprintVersion::default(),
-                    ),
-                    blueprint_info: BlueprintInfo {
-                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
-                        outer_obj_info: OuterObjectInfo::default(),
-                        features: btreeset!(),
-                        instance_schema: None,
-                    }
-                }))
-            ),
-        )?;
-
-        // Move auth zone (containing borrowed reference)!
-        message.add_move_node(auth_zone_node_id);
-
-        // Update auth zone stack
-        api.kernel_get_system()
-            .modules
-            .auth
-            .auth_zone_stack
-            .push(auth_zone_node_id);
-
-        Ok(())
-    }
-     */
 }
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        _message: &Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         AuthModule::check_authorization(callee, args, api)
-            //.and_then(|_| AuthModule::create_auth_zone(api, callee, message))
-    }
-
-    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _dropped_actor: &Actor,
-    ) -> Result<(), RuntimeError> {
-        // update internal state
-        //api.kernel_get_system().modules.auth.auth_zone_stack.pop();
-        Ok(())
     }
 }

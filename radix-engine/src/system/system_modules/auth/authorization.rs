@@ -12,7 +12,7 @@ use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
 use radix_engine_interface::api::{LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
-use crate::kernel::actor::{AuthInfo, CallerAuthZone};
+use crate::kernel::actor::AuthInfo;
 use crate::system::system_callback_api::SystemCallbackObject;
 
 // FIXME: Refactor structure to be able to remove this
@@ -74,9 +74,7 @@ impl Authorization {
             let auth_zone = auth_zone.value.0.clone();
             handles.push(handle);
 
-            /*if skip > 0 {
-                skip -= 1;
-            } else*/ {
+            {
                 let mut virtual_non_fungible_global_ids = BTreeSet::new();
                 let virtual_resources = auth_zone.virtual_resources();
 

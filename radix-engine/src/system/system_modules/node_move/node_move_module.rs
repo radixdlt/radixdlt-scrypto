@@ -184,7 +184,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for NodeMoveModule {
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &Message,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         for node_id in &message.move_nodes {
