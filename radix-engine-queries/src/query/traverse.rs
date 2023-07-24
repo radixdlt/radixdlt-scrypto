@@ -10,7 +10,7 @@ use radix_engine_interface::constants::{ACCOUNT_PACKAGE, RESOURCE_PACKAGE};
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
 use radix_engine_interface::prelude::{scrypto_decode, CONSENSUS_MANAGER_PACKAGE};
 use radix_engine_interface::types::{
-    AccountPartitionOffset, ConsensusManagerField, EnumCount, FungibleVaultField,
+    AccountPartitionOffset, ConsensusManagerPartitionOffset, FungibleVaultField,
     IndexedScryptoValue, NonFungibleVaultField, PartitionNumber, PartitionOffset, ResourceAddress,
     TypeInfoField, MAIN_BASE_PARTITION, METADATA_KV_STORE_PARTITION,
     ROLE_ASSIGNMENT_BASE_PARTITION, ROYALTY_BASE_PARTITION, TYPE_INFO_FIELD_PARTITION,
@@ -242,15 +242,22 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                             .blueprint_name
                             .eq(CONSENSUS_MANAGER_BLUEPRINT)
                     {
-                        for i in 0..ConsensusManagerField::COUNT {
-                            self.traverse_substates::<FieldKey>(
-                                node_id,
-                                MAIN_BASE_PARTITION
-                                    .at_offset(PartitionOffset(i as u8))
-                                    .unwrap(),
-                                depth,
-                            );
-                        }
+                        self.traverse_substates::<FieldKey>(
+                            node_id,
+                            MAIN_BASE_PARTITION
+                                .at_offset(ConsensusManagerPartitionOffset::ConsensusManager.into())
+                                .unwrap(),
+                            depth,
+                        );
+                        self.traverse_substates::<MapKey>(
+                            node_id,
+                            MAIN_BASE_PARTITION
+                                .at_offset(
+                                    ConsensusManagerPartitionOffset::RegisteredValidatorsByStakeIndex.into(),
+                                )
+                                .unwrap(),
+                            depth,
+                        )
                     } else {
                         self.traverse_substates::<FieldKey>(node_id, MAIN_BASE_PARTITION, depth)
                     }
