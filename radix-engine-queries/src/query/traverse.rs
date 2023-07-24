@@ -2,17 +2,18 @@ use radix_engine::system::node_modules::type_info::TypeInfoSubstate;
 use radix_engine::system::system::FieldSubstate;
 use radix_engine::types::{FieldKey, MapKey, ScryptoValue, SubstateKey};
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
+use radix_engine_interface::blueprints::consensus_manager::CONSENSUS_MANAGER_BLUEPRINT;
 use radix_engine_interface::blueprints::resource::{
     LiquidNonFungibleVault, FUNGIBLE_VAULT_BLUEPRINT, NON_FUNGIBLE_VAULT_BLUEPRINT,
 };
 use radix_engine_interface::constants::{ACCOUNT_PACKAGE, RESOURCE_PACKAGE};
 use radix_engine_interface::data::scrypto::model::NonFungibleLocalId;
-use radix_engine_interface::prelude::scrypto_decode;
+use radix_engine_interface::prelude::{scrypto_decode, CONSENSUS_MANAGER_PACKAGE};
 use radix_engine_interface::types::{
-    AccountPartitionOffset, FungibleVaultField, IndexedScryptoValue, NonFungibleVaultField,
-    PartitionNumber, PartitionOffset, ResourceAddress, TypeInfoField, MAIN_BASE_PARTITION,
-    METADATA_KV_STORE_PARTITION, ROLE_ASSIGNMENT_BASE_PARTITION, ROYALTY_BASE_PARTITION,
-    TYPE_INFO_FIELD_PARTITION,
+    AccountPartitionOffset, ConsensusManagerField, EnumCount, FungibleVaultField,
+    IndexedScryptoValue, NonFungibleVaultField, PartitionNumber, PartitionOffset, ResourceAddress,
+    TypeInfoField, MAIN_BASE_PARTITION, METADATA_KV_STORE_PARTITION,
+    ROLE_ASSIGNMENT_BASE_PARTITION, ROYALTY_BASE_PARTITION, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_interface::{blueprints::resource::LiquidFungibleResource, types::NodeId};
 use radix_engine_store_interface::{
@@ -230,6 +231,26 @@ impl<'s, 'v, S: SubstateDatabase, V: StateTreeVisitor> StateTreeTraverser<'s, 'v
                                 .unwrap(),
                             depth,
                         )
+                    } else if info
+                        .blueprint_info
+                        .blueprint_id
+                        .package_address
+                        .eq(&CONSENSUS_MANAGER_PACKAGE)
+                        && info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .eq(CONSENSUS_MANAGER_BLUEPRINT)
+                    {
+                        for i in 0..ConsensusManagerField::COUNT {
+                            self.traverse_substates::<FieldKey>(
+                                node_id,
+                                MAIN_BASE_PARTITION
+                                    .at_offset(PartitionOffset(i as u8))
+                                    .unwrap(),
+                                depth,
+                            );
+                        }
                     } else {
                         self.traverse_substates::<FieldKey>(node_id, MAIN_BASE_PARTITION, depth)
                     }

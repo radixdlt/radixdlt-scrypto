@@ -163,7 +163,7 @@ impl TryFrom<u8> for ConsensusManagerPartitionOffset {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Clone, Sbor, PartialEq, Eq, Hash, PartialOrd, Ord, FromRepr, EnumCount)]
 pub enum ConsensusManagerField {
     Config,
     ConsensusManager,

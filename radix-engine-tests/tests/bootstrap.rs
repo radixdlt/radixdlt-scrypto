@@ -12,6 +12,9 @@ use radix_engine::types::*;
 use radix_engine::vm::wasm::DefaultWasmEngine;
 use radix_engine::vm::*;
 use radix_engine_interface::api::node_modules::metadata::{MetadataValue, Url};
+use radix_engine_queries::typed_substate_layout::{
+    BurnFungibleResourceEvent, MintFungibleResourceEvent,
+};
 use radix_engine_store_interface::db_key_mapper::{MappedSubstateDatabase, SpreadPrefixKeyMapper};
 use radix_engine_stores::memory_db::InMemorySubstateDatabase;
 use scrypto_unit::{CustomGenesis, TestRunnerBuilder};
@@ -457,12 +460,12 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
         },
         GenesisStakeAllocation {
             account_index: 1,
-            xrd_amount: dec!("50000"),
+            xrd_amount: dec!("100"),
         },
     ];
     let validator_1_allocations = vec![GenesisStakeAllocation {
         account_index: 1,
-        xrd_amount: dec!(1),
+        xrd_amount: dec!(2),
     }];
     let genesis_data_chunks = vec![
         GenesisDataChunk::Validators(vec![
@@ -500,9 +503,40 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
+    println!("Staker 0: {:?}", staker_0);
+    println!("Staker 1: {:?}", staker_1);
     let components = test_runner.find_all_components();
+    let mut total_xrd_supply = Decimal::ZERO;
     for component in components {
         let xrd_balance = test_runner.get_component_balance(component, XRD);
+        total_xrd_supply += xrd_balance;
         println!("{:?}, {}", component, xrd_balance);
     }
+
+    let mut total_mint_amount = Decimal::ZERO;
+    let mut total_burn_amount = Decimal::ZERO;
+    for tx_events in test_runner.collected_events() {
+        for event in tx_events {
+            let actual_type_name = test_runner.event_name(&event.0);
+            match actual_type_name.as_str() {
+                "MintFungibleResourceEvent" => {
+                    total_mint_amount += scrypto_decode::<MintFungibleResourceEvent>(&event.1)
+                        .unwrap()
+                        .amount;
+                }
+                "BurnFungibleResourceEvent" => {
+                    total_burn_amount += scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
+                        .unwrap()
+                        .amount;
+                }
+                _ => {}
+            }
+        }
+    }
+    println!("Total XRD supply: {}", total_xrd_supply);
+    println!("Total mint amount: {}", total_mint_amount);
+    println!("Total burn amount: {}", total_burn_amount);
+    let delta = total_mint_amount - total_burn_amount - total_xrd_supply;
+    println!("Delta: {}", delta);
+    assert_eq!(delta, dec!(0));
 }
