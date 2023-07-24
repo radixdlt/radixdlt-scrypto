@@ -184,10 +184,10 @@ impl ScryptoUncheckedProof for Proof {
 
     fn drop(self) {
         let mut env = ScryptoEnv;
-        let info = env.get_object_info(self.0.as_node_id()).unwrap();
+        let blueprint_id = env.get_blueprint_id(self.0.as_node_id()).unwrap();
         env.call_function(
             RESOURCE_PACKAGE,
-            info.main_blueprint_id.blueprint_name.as_str(),
+            blueprint_id.blueprint_name.as_str(),
             PROOF_DROP_IDENT,
             scrypto_encode(&ProofDropInput {
                 proof: Proof(self.0),

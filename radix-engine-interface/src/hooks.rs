@@ -1,3 +1,4 @@
+use crate::types::BlueprintId;
 use crate::ScryptoSbor;
 use radix_engine_common::types::GlobalAddressReservation;
 use radix_engine_common::types::NodeId;
@@ -16,8 +17,18 @@ pub struct OnDropInput {}
 
 pub type OnDropOutput = ();
 
+// TODO: expose generic information, but fully-detailed actor? and then remove `is_to_barrier`.
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct OnMoveInput {}
+pub struct OnMoveInput {
+    /// True if the node moves from caller to callee, otherwise false.
+    pub is_moving_down: bool,
+
+    /// True if the destination actor is a barrier, otherwise false.
+    pub is_to_barrier: bool,
+
+    /// The destination blueprint id.
+    pub destination_blueprint_id: Option<BlueprintId>,
+}
 
 pub type OnMoveOutput = ();
 

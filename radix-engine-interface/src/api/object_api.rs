@@ -125,13 +125,14 @@ pub trait ClientObjectApi<E> {
         kv_entries: BTreeMap<u8, BTreeMap<Vec<u8>, KVEntry>>,
     ) -> Result<NodeId, E>;
 
-    /// Drops an object, returns the fields of the object
+    /// Drops an owned object, returns the fields of the object
     fn drop_object(&mut self, node_id: &NodeId) -> Result<Vec<Vec<u8>>, E>;
 
-    /// Get info regarding a visible object
-    fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, E>;
+    /// Get the blueprint id of a visible object
+    fn get_blueprint_id(&mut self, node_id: &NodeId) -> Result<BlueprintId, E>;
 
-    fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
+    /// Get the outer object of a visible object
+    fn get_outer_object(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
     /// Pre-allocates a global address, for a future globalization.
     fn allocate_global_address(
@@ -144,6 +145,8 @@ pub trait ClientObjectApi<E> {
         blueprint_id: BlueprintId,
         global_address: GlobalAddress,
     ) -> Result<GlobalAddressReservation, E>;
+
+    fn get_reservation_address(&mut self, node_id: &NodeId) -> Result<GlobalAddress, E>;
 
     /// Moves an object currently in the heap into the global space making
     /// it accessible to all with the provided global address.

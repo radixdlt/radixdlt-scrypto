@@ -696,6 +696,7 @@ impl NonFungibleData for TestNonFungibleData {
     const MUTABLE_FIELDS: &'static [&'static str] = &["metadata"];
 }
 
+// FIXME: Need to update large_package.wasm as it is is no longer the correct size
 #[test]
 /// The large_package blueprint combines toogether two other packages just to provide meaningful content for
 /// a large package of size as close as possible to current limit: 1,048,576 bytes minus the size of

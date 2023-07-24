@@ -25,12 +25,12 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::api::ClientObjectApi;
-use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::account::ACCOUNT_BLUEPRINT;
 use radix_engine_interface::blueprints::identity::IDENTITY_BLUEPRINT;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::hooks::OnDropOutput;
+use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::hooks::OnMoveOutput;
 use radix_engine_interface::hooks::OnPersistOutput;
 use radix_engine_interface::hooks::OnVirtualizeInput;
@@ -248,14 +248,28 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_push_frame<Y>(
         callee: &Actor,
-        update: &mut Message,
+        message: &mut Message,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::before_push_frame(api, callee, update, args)
+        SystemModuleMixer::before_push_frame(api, callee, message, args)?;
+
+        let is_to_barrier = callee.is_barrier();
+        let destination_blueprint_id = callee.blueprint_id();
+        for node_id in &message.move_nodes {
+            Self::on_move_node(
+                node_id,
+                true,
+                is_to_barrier,
+                destination_blueprint_id.clone(),
+                api,
+            )?;
+        }
+
+        Ok(())
     }
 
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -265,18 +279,39 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_execution_start(api)
     }
 
-    fn on_execution_finish<Y>(update: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_execution_finish(api, update)
+        SystemModuleMixer::on_execution_finish(api, message)?;
+
+        Ok(())
     }
 
-    fn after_pop_frame<Y>(api: &mut Y, dropped_actor: &Actor) -> Result<(), RuntimeError>
+    fn after_pop_frame<Y>(
+        dropped_actor: &Actor,
+        message: &Message,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_pop_frame(api, dropped_actor)
+        SystemModuleMixer::after_pop_frame(api, dropped_actor, message)?;
+
+        let current_actor = api.kernel_get_system_state().current_actor;
+        let is_to_barrier = current_actor.is_barrier();
+        let destination_blueprint_id = current_actor.blueprint_id();
+        for node_id in &message.move_nodes {
+            Self::on_move_node(
+                node_id,
+                false,
+                is_to_barrier,
+                destination_blueprint_id.clone(),
+                api,
+            )?;
+        }
+
+        Ok(())
     }
 
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
@@ -338,22 +373,12 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             system.kernel_close_substate(handle)?;
         }
 
-        match actor {
+        match &actor {
             Actor::Root => panic!("Root is invoked"),
-            Actor::Method(MethodActor {
-                object_info:
-                    ObjectInfo {
-                        main_blueprint_id: blueprint_id,
-                        ..
-                    },
-                ident,
-                ..
-            })
-            | Actor::Function(FunctionActor {
-                blueprint_id,
-                ident,
-                ..
-            }) => {
+            actor @ Actor::Method(MethodActor { ident, .. })
+            | actor @ Actor::Function(FunctionActor { ident, .. }) => {
+                let blueprint_id = actor.blueprint_id().unwrap();
+
                 //  Validate input
                 let definition = system.load_blueprint_definition(
                     blueprint_id.package_address,
@@ -377,7 +402,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 let function_schema = definition
                     .interface
                     .functions
-                    .get(&ident)
+                    .get(ident)
                     .expect("Should exist due to schema check");
                 match (&function_schema.receiver, node_id) {
                     (Some(receiver_info), Some(_)) => {
@@ -400,7 +425,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 // Execute
                 let export = definition
                     .function_exports
-                    .get(&ident)
+                    .get(ident)
                     .expect("Schema should have validated this exists")
                     .clone();
                 let output =
@@ -419,11 +444,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 Ok(output)
             }
             Actor::BlueprintHook(BlueprintHookActor {
-                blueprint_id,
-                hook,
-                export,
-                ..
+                blueprint_id, hook, ..
             }) => {
+                // Find the export
+                let definition = system.load_blueprint_definition(
+                    blueprint_id.package_address,
+                    &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                )?;
+                let export =
+                    definition
+                        .hook_exports
+                        .get(&hook)
+                        .ok_or(RuntimeError::SystemUpstreamError(
+                            SystemUpstreamError::HookNotFound(hook.clone()),
+                        ))?;
+
                 // Input is not validated as they're created by system.
 
                 // Invoke the export
@@ -469,7 +504,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    main_blueprint_id: blueprint_id,
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
                     ..
                 }) => {
                     match (
@@ -535,7 +570,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 let object_info = system.get_object_info(proof.0.as_node_id())?;
                 system.call_function(
                     RESOURCE_PACKAGE,
-                    &object_info.main_blueprint_id.blueprint_name,
+                    &object_info.blueprint_info.blueprint_id.blueprint_name,
                     PROOF_DROP_IDENT,
                     scrypto_encode(&ProofDropInput { proof }).unwrap(),
                 )?;
@@ -585,10 +620,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 version: BlueprintVersion::default(),
             },
         )?;
-        if let Some(export) = definition
+        if definition
             .hook_exports
-            .get(&BlueprintHook::OnVirtualize)
-            .cloned()
+            .contains_key(&BlueprintHook::OnVirtualize)
         {
             let mut system = SystemService::new(api);
             let address = GlobalAddress::new_or_panic(node_id.into());
@@ -599,10 +633,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 actor: Actor::BlueprintHook(BlueprintHookActor {
                     blueprint_id: blueprint_id.clone(),
                     hook: BlueprintHook::OnVirtualize,
-                    export,
-                    node_id: None,
-                    module_id: None,
-                    object_info: None,
+                    receiver: None,
                 }),
                 args: IndexedScryptoValue::from_typed(&OnVirtualizeInput {
                     variant_id,
@@ -623,25 +654,25 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
 
         match type_info {
-            TypeInfoSubstate::Object(object_info) => {
+            TypeInfoSubstate::Object(node_object_info) => {
                 let mut service = SystemService::new(api);
                 let definition = service.load_blueprint_definition(
-                    object_info.main_blueprint_id.package_address,
+                    node_object_info.blueprint_info.blueprint_id.package_address,
                     &BlueprintVersionKey {
-                        blueprint: object_info.main_blueprint_id.blueprint_name.clone(),
+                        blueprint: node_object_info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .clone(),
                         version: BlueprintVersion::default(),
                     },
                 )?;
-                if let Some(export) = definition.hook_exports.get(&BlueprintHook::OnDrop).cloned() {
-                    let object_info = service.get_object_info(node_id)?;
+                if definition.hook_exports.contains_key(&BlueprintHook::OnDrop) {
                     api.kernel_invoke(Box::new(KernelInvocation {
                         actor: Actor::BlueprintHook(BlueprintHookActor {
-                            blueprint_id: object_info.main_blueprint_id.clone(),
+                            blueprint_id: node_object_info.blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnDrop,
-                            export,
-                            node_id: Some(node_id.clone()),
-                            module_id: Some(ObjectModuleId::Main),
-                            object_info: Some(object_info),
+                            receiver: Some(node_id.clone()),
                         }),
                         args: IndexedScryptoValue::from_typed(&OnDropInput {}),
                     }))
@@ -656,6 +687,56 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 // There is no way to drop a non-object through system API, triggering `NotAnObject` error.
                 Ok(())
             }
+        }
+    }
+
+    fn on_move_node<Y>(
+        node_id: &NodeId,
+        is_moving_down: bool,
+        is_to_barrier: bool,
+        destination_blueprint_id: Option<BlueprintId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        let type_info = TypeInfoBlueprint::get_type(&node_id, api)?;
+
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => {
+                let mut service = SystemService::new(api);
+                let definition = service.load_blueprint_definition(
+                    object_info.blueprint_info.blueprint_id.package_address,
+                    &BlueprintVersionKey {
+                        blueprint: object_info
+                            .blueprint_info
+                            .blueprint_id
+                            .blueprint_name
+                            .clone(),
+                        version: BlueprintVersion::default(),
+                    },
+                )?;
+                if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
+                    api.kernel_invoke(Box::new(KernelInvocation {
+                        actor: Actor::BlueprintHook(BlueprintHookActor {
+                            receiver: Some(node_id.clone()),
+                            blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
+                            hook: BlueprintHook::OnMove,
+                        }),
+                        args: IndexedScryptoValue::from_typed(&OnMoveInput {
+                            is_moving_down,
+                            is_to_barrier,
+                            destination_blueprint_id,
+                        }),
+                    }))
+                    .map(|_| ())
+                } else {
+                    Ok(())
+                }
+            }
+            TypeInfoSubstate::KeyValueStore(_)
+            | TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
 }
