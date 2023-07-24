@@ -517,6 +517,12 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     let mut total_burn_amount = Decimal::ZERO;
     for tx_events in test_runner.collected_events() {
         for event in tx_events {
+            match &event.0 .0 {
+                Emitter::Method(x, _) if x.eq(XRD.as_node_id()) => {}
+                _ => {
+                    continue;
+                }
+            }
             let actual_type_name = test_runner.event_name(&event.0);
             match actual_type_name.as_str() {
                 "MintFungibleResourceEvent" => {
@@ -536,7 +542,5 @@ fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx()
     println!("Total XRD supply: {}", total_xrd_supply);
     println!("Total mint amount: {}", total_mint_amount);
     println!("Total burn amount: {}", total_burn_amount);
-    let delta = total_mint_amount - total_burn_amount - total_xrd_supply;
-    println!("Delta: {}", delta);
-    assert_eq!(delta, dec!(0));
+    assert_eq!(total_xrd_supply, total_mint_amount - total_burn_amount);
 }

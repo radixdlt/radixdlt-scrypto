@@ -765,7 +765,7 @@ where
                 .0;
             let mut substate: FieldSubstate<ValidatorRewardsSubstate> =
                 track.read_substate(handle).0.as_typed().unwrap();
-            let unclaimed_to_proposer = if let Some(current_leader) = current_leader {
+            if let Some(current_leader) = current_leader {
                 substate
                     .value
                     .0
@@ -773,9 +773,8 @@ where
                     .entry(current_leader)
                     .or_default()
                     .add_assign(to_proposer);
-                Decimal::ZERO
             } else {
-                to_proposer
+                // If there is no current leader, the rewards go to the pool
             };
             let vault_node_id = substate.value.0.rewards_vault.0 .0;
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));
@@ -795,7 +794,7 @@ where
                 track.read_substate(handle).0.as_typed().unwrap();
             substate.value.0.put(
                 collected_fees
-                    .take_by_amount(unclaimed_to_proposer + to_validator_set)
+                    .take_by_amount(to_proposer + to_validator_set)
                     .unwrap(),
             );
             track.update_substate(handle, IndexedScryptoValue::from_typed(&substate));

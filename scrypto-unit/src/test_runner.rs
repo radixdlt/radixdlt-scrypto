@@ -577,24 +577,33 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
     }
 
     pub fn find_all_components(&self) -> Vec<ComponentAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<ComponentAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| ComponentAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn find_all_packages(&self) -> Vec<PackageAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<PackageAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| PackageAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn find_all_resources(&self) -> Vec<ResourceAddress> {
-        self.find_all_nodes()
+        let mut addresses: Vec<ResourceAddress> = self
+            .find_all_nodes()
             .iter()
             .filter_map(|node_id| ResourceAddress::try_from(node_id.as_bytes()).ok())
-            .collect()
+            .collect();
+        addresses.sort();
+        addresses
     }
 
     pub fn get_package_scrypto_schemas(
