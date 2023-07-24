@@ -87,31 +87,22 @@ impl AuthModule {
             // Step 1: Resolve method to permission
             // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
             let permission = match &callee {
-                Actor::Method(actor) => {
-                        Self::resolve_method_permission(actor, args, &mut system)?
-                }
+                Actor::Method(actor) => Self::resolve_method_permission(actor, args, &mut system)?,
                 Actor::Function(FunctionActor {
                     blueprint_id,
                     ident,
                     ..
-                }) => {
-                    PackageAuthNativeBlueprint::resolve_function_permission(
-                        blueprint_id.package_address.as_node_id(),
-                        &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-                        ident.as_str(),
-                        system.api,
-                    )?
-                }
+                }) => PackageAuthNativeBlueprint::resolve_function_permission(
+                    blueprint_id.package_address.as_node_id(),
+                    &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                    ident.as_str(),
+                    system.api,
+                )?,
                 Actor::BlueprintHook(..) | Actor::Root => return Ok(()),
             };
 
             // Step 2: Check permission
-            Self::check_permission(
-                auth_info,
-                permission,
-                callee.fn_identifier(),
-                &mut system,
-            )?;
+            Self::check_permission(auth_info, permission, callee.fn_identifier(), &mut system)?;
         } else {
             // Bypass auth check for ROOT frame
         }
@@ -128,11 +119,8 @@ impl AuthModule {
         match resolved_permission {
             ResolvedPermission::AllowAll => return Ok(()),
             ResolvedPermission::AccessRule(rule) => {
-                let result = Authorization::check_authorization_against_access_rule(
-                    &auth_info,
-                    &rule,
-                    api,
-                )?;
+                let result =
+                    Authorization::check_authorization_against_access_rule(&auth_info, &rule, api)?;
 
                 match result {
                     AuthorizationCheckResult::Authorized => Ok(()),

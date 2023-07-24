@@ -83,7 +83,6 @@ pub enum Actor {
 }
 
 impl CallFrameReferences for Actor {
-
     fn global_references(&self) -> Vec<GlobalAddress> {
         let mut global_refs = Vec::new();
 

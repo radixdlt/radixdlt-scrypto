@@ -2,13 +2,16 @@ use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
 use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingEntry;
+use crate::blueprints::resource::AuthZone;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
     InvalidGlobalizeAccess, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, AuthInfo, CallerAuthZone, FunctionActor, InstanceContext, MethodActor};
+use crate::kernel::actor::{
+    Actor, AuthInfo, CallerAuthZone, FunctionActor, InstanceContext, MethodActor,
+};
 use crate::kernel::call_frame::{NodeVisibility, RootNodeType};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
@@ -40,7 +43,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::blueprints::resource::AuthZone;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SubstateMutability {
@@ -1438,7 +1440,6 @@ where
         }
 
         let (caller_auth_zone, self_auth_zone) = {
-
             let caller_auth_zone = match self.current_actor() {
                 Actor::Root | Actor::BlueprintHook(..) => None,
                 Actor::Method(current_method_actor) => {
@@ -1452,25 +1453,42 @@ where
                          */
                         global_auth_zone: {
                             // TODO: Check actor object module id?
-                            let node_visibility = self.kernel_get_node_visibility(&current_method_actor.node_id);
-                            let global_auth_zone = match node_visibility.root_node_type(current_method_actor.node_id).unwrap() {
+                            let node_visibility =
+                                self.kernel_get_node_visibility(&current_method_actor.node_id);
+                            let global_auth_zone = match node_visibility
+                                .root_node_type(current_method_actor.node_id)
+                                .unwrap()
+                            {
                                 RootNodeType::Global(address) => {
                                     if object_info.global || direct_access {
-                                        Some((address.into(), current_method_actor.auth_info.self_auth_zone))
+                                        Some((
+                                            address.into(),
+                                            current_method_actor.auth_info.self_auth_zone,
+                                        ))
                                     } else {
                                         // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                                        current_method_actor.auth_info.caller_auth_zone.clone().and_then(|a| a.global_auth_zone)
+                                        current_method_actor
+                                            .auth_info
+                                            .caller_auth_zone
+                                            .clone()
+                                            .and_then(|a| a.global_auth_zone)
                                     }
-                                },
+                                }
                                 RootNodeType::Heap => {
                                     // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                                    current_method_actor.auth_info.caller_auth_zone.clone().and_then(|a| a.global_auth_zone)
+                                    current_method_actor
+                                        .auth_info
+                                        .caller_auth_zone
+                                        .clone()
+                                        .and_then(|a| a.global_auth_zone)
                                 }
                                 RootNodeType::DirectlyAccessed => None,
                             };
                             global_auth_zone
                         },
-                        local_package_address: current_method_actor.get_blueprint_id().package_address,
+                        local_package_address: current_method_actor
+                            .get_blueprint_id()
+                            .package_address,
                     };
                     Some(caller_auth_zone)
                 }
@@ -1478,16 +1496,25 @@ where
                     let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: {
                             if object_info.global || direct_access {
-                                Some((GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone()), function_actor.auth_info.self_auth_zone))
+                                Some((
+                                    GlobalCaller::PackageBlueprint(
+                                        function_actor.blueprint_id.clone(),
+                                    ),
+                                    function_actor.auth_info.self_auth_zone,
+                                ))
                             } else {
                                 // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                                function_actor.auth_info.caller_auth_zone.clone().and_then(|a| a.global_auth_zone)
+                                function_actor
+                                    .auth_info
+                                    .caller_auth_zone
+                                    .clone()
+                                    .and_then(|a| a.global_auth_zone)
                             }
                         },
                         local_package_address: function_actor.blueprint_id.package_address,
                     };
                     Some(caller_auth_zone)
-                },
+                }
             };
 
             let self_auth_zone_parent = if object_info.global {
@@ -1505,8 +1532,9 @@ where
             );
 
             // Create node
-            let auth_zone_node_id =
-                self.api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+            let auth_zone_node_id = self
+                .api
+                .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
 
             self.api.kernel_create_node(
                 auth_zone_node_id,
@@ -1552,7 +1580,8 @@ where
             })?,
         };
 
-        let rtn = self.api
+        let rtn = self
+            .api
             .kernel_invoke(Box::new(invocation))
             .map(|v| v.into())?;
 
@@ -2133,15 +2162,24 @@ where
                      */
                     global_auth_zone: {
                         // TODO: Check actor object module id?
-                        let node_visibility = self.kernel_get_node_visibility(&current_method_actor.node_id);
-                        let global_auth_zone = match node_visibility.root_node_type(current_method_actor.node_id).unwrap() {
-                            RootNodeType::Global(address) => {
-                                Some((address.into(), current_method_actor.auth_info.self_auth_zone))
-                            },
+                        let node_visibility =
+                            self.kernel_get_node_visibility(&current_method_actor.node_id);
+                        let global_auth_zone = match node_visibility
+                            .root_node_type(current_method_actor.node_id)
+                            .unwrap()
+                        {
+                            RootNodeType::Global(address) => Some((
+                                address.into(),
+                                current_method_actor.auth_info.self_auth_zone,
+                            )),
                             RootNodeType::Heap => {
                                 // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                                current_method_actor.auth_info.caller_auth_zone.clone().and_then(|a| a.global_auth_zone)
-                            },
+                                current_method_actor
+                                    .auth_info
+                                    .caller_auth_zone
+                                    .clone()
+                                    .and_then(|a| a.global_auth_zone)
+                            }
                             RootNodeType::DirectlyAccessed => None,
                         };
                         global_auth_zone
@@ -2152,17 +2190,21 @@ where
             }
             Actor::Function(function_actor) => {
                 let caller_auth_zone = CallerAuthZone {
-                    global_auth_zone: Some((GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone()), function_actor.auth_info.self_auth_zone)),
+                    global_auth_zone: Some((
+                        GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone()),
+                        function_actor.auth_info.self_auth_zone,
+                    )),
                     local_package_address: function_actor.blueprint_id.package_address,
                 };
                 Some(caller_auth_zone)
-            },
+            }
         };
 
         let self_auth_zone = {
             // TODO: Remove special casing use of transaction processor and just have virtual resources
             // stored in root call frame
-            let is_transaction_processor_blueprint = package_address.eq(&TRANSACTION_PROCESSOR_PACKAGE)
+            let is_transaction_processor_blueprint = package_address
+                .eq(&TRANSACTION_PROCESSOR_PACKAGE)
                 && blueprint_name.eq(TRANSACTION_PROCESSOR_BLUEPRINT);
             let is_at_root = self.kernel_get_current_depth() == 0;
             let (virtual_resources, virtual_non_fungibles) =
@@ -2176,17 +2218,13 @@ where
                     (BTreeSet::new(), BTreeSet::new())
                 };
 
-            let auth_zone = AuthZone::new(
-                vec![],
-                virtual_resources,
-                virtual_non_fungibles,
-                true,
-                None,
-            );
+            let auth_zone =
+                AuthZone::new(vec![], virtual_resources, virtual_non_fungibles, true, None);
 
             // Create node
-            let auth_zone_node_id =
-                self.api.kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+            let auth_zone_node_id = self
+                .api
+                .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
 
             self.api.kernel_create_node(
                 auth_zone_node_id,
@@ -2227,7 +2265,8 @@ where
             })?,
         };
 
-        let rtn = self.api
+        let rtn = self
+            .api
             .kernel_invoke(Box::new(invocation))
             .map(|v| v.into())?;
 
@@ -2681,11 +2720,8 @@ where
 
         if let Some(auth_info) = self.current_actor().auth_info() {
             // Authorize
-            let auth_result = Authorization::check_authorization_against_access_rule(
-                &auth_info,
-                &rule,
-                self,
-            )?;
+            let auth_result =
+                Authorization::check_authorization_against_access_rule(&auth_info, &rule, self)?;
             match auth_result {
                 AuthorizationCheckResult::Authorized => Ok(()),
                 AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(
