@@ -704,9 +704,9 @@ where
     ) -> Result<M::LockData, RuntimeError> {
         self.current_frame
             .get_handle_info(lock_handle)
-            .ok_or(RuntimeError::KernelError(KernelError::LockDoesNotExist(
-                lock_handle,
-            )))
+            .ok_or(RuntimeError::KernelError(
+                KernelError::SubstateHandleDoesNotExist(lock_handle),
+            ))
     }
 
     #[trace_resources]

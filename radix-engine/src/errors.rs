@@ -144,7 +144,7 @@ pub enum KernelError {
     InvalidReference(NodeId),
 
     // Substate lock/read/write/unlock
-    LockDoesNotExist(OpenSubstateHandle),
+    SubstateHandleDoesNotExist(OpenSubstateHandle),
 
     // Invoke
     InvalidInvokeAccess,

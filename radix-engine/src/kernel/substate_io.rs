@@ -22,6 +22,7 @@ use radix_engine_interface::types::{
     IndexedScryptoValue, TypeInfoField, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use sbor::prelude::Vec;
 use utils::prelude::index_set_new;
 use utils::rust::prelude::IndexSet;
 
