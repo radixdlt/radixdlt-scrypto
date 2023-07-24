@@ -2,7 +2,6 @@ use super::*;
 use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
-use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
 use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
@@ -167,50 +166,28 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         // Skip invocation costing for transaction processor
-        if api.kernel_get_current_depth() > 0 {
-            api.kernel_get_system()
-                .modules
-                .costing
-                .apply_execution_cost(CostingEntry::BeforeInvoke {
-                    actor: &invocation.call_frame_data,
-                    input_size: invocation.len(),
-                })?;
+        if api.kernel_get_current_depth() == 0 {
+            return Ok(());
         }
 
-        Ok(())
-    }
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(CostingEntry::BeforeInvoke {
+                actor: &invocation.call_frame_data,
+                input_size: invocation.len(),
+            })?;
 
-    fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        output_size: usize,
-    ) -> Result<(), RuntimeError> {
-        // Skip invocation costing for transaction processor
-        if api.kernel_get_current_depth() > 0 {
-            api.kernel_get_system()
-                .modules
-                .costing
-                .apply_execution_cost(CostingEntry::AfterInvoke { output_size })?;
-        }
-
-        Ok(())
-    }
-
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        callee: &Actor,
-        _message: &Message,
-        _args: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address
         let (optional_blueprint_id, ident, maybe_object_royalties) = {
-            let (maybe_component, ident) = match &callee {
+            let (maybe_component, ident) = match &invocation.call_frame_data {
                 Actor::Method(MethodActor {
-                    node_id,
-                    module_id,
-                    ident,
-                    object_info,
-                    ..
-                }) => {
+                                  node_id,
+                                  module_id,
+                                  ident,
+                                  object_info,
+                                  ..
+                              }) => {
                     // Only do royalty costing for Main
                     if module_id.ne(&ObjectModuleId::Main) {
                         return Ok(());
@@ -231,7 +208,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
                 }
             };
 
-            (callee.blueprint_id(), ident, maybe_component)
+            (invocation.call_frame_data.blueprint_id(), ident, maybe_component)
         };
 
         //===========================
@@ -253,6 +230,21 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         //===========================
         if let Some(node_id) = maybe_object_royalties {
             ComponentRoyaltyBlueprint::charge_component_royalty(&node_id, ident, api)?;
+        }
+
+        Ok(())
+    }
+
+    fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        output_size: usize,
+    ) -> Result<(), RuntimeError> {
+        // Skip invocation costing for transaction processor
+        if api.kernel_get_current_depth() > 0 {
+            api.kernel_get_system()
+                .modules
+                .costing
+                .apply_execution_cost(CostingEntry::AfterInvoke { output_size })?;
         }
 
         Ok(())
