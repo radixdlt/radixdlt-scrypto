@@ -4,10 +4,10 @@ use crate::rust::vec::Vec;
 pub fn copy_u8_array<const N: usize>(slice: &[u8]) -> [u8; N] {
     if slice.len() == N {
         let mut bytes = [0u8; N];
-        bytes.copy_from_slice(&slice[0..N]);
+        bytes.copy_from_slice(slice);
         bytes
     } else {
-        panic!("Invalid length");
+        panic!("Invalid length: expected {}, actual {}", N, slice.len());
     }
 }
 

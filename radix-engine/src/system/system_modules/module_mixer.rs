@@ -15,7 +15,6 @@ use crate::system::system_modules::costing::SystemLoanFeeReserve;
 use crate::system::system_modules::execution_trace::ExecutionTraceModule;
 use crate::system::system_modules::kernel_trace::KernelTraceModule;
 use crate::system::system_modules::limits::{LimitsModule, TransactionLimitsConfig};
-use crate::system::system_modules::node_move::NodeMoveModule;
 use crate::system::system_modules::transaction_runtime::TransactionRuntimeModule;
 use crate::track::interface::NodeSubstates;
 use crate::track::interface::{StoreAccess, StoreCommit};
@@ -38,7 +37,6 @@ bitflags! {
         const LIMITS = 0x01 << 1;
         const COSTING = 0x01 << 2;
         const AUTH = 0x01 << 3;
-        const NODE_MOVE = 0x01 << 4;
 
         // Transaction runtime data
         const TRANSACTION_RUNTIME = 0x01 << 5;
@@ -52,15 +50,15 @@ impl EnabledModules {
     /// The difference between genesis transaction and system transaction is "no auth".
     /// TODO: double check if this is the right assumption.
     pub fn for_genesis_transaction() -> Self {
-        Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
+        Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_system_transaction() -> Self {
-        Self::AUTH | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
+        Self::AUTH | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_notarized_transaction() -> Self {
-        Self::LIMITS | Self::COSTING | Self::AUTH | Self::NODE_MOVE | Self::TRANSACTION_RUNTIME
+        Self::LIMITS | Self::COSTING | Self::AUTH | Self::TRANSACTION_RUNTIME
     }
 
     pub fn for_test_transaction() -> Self {
@@ -85,7 +83,6 @@ pub struct SystemModuleMixer {
     pub(super) limits: LimitsModule,
     pub(super) costing: CostingModule,
     pub(super) auth: AuthModule,
-    pub(super) node_move: NodeMoveModule,
     pub(super) transaction_runtime: TransactionRuntimeModule,
     pub(super) execution_trace: ExecutionTraceModule,
 }
@@ -107,9 +104,6 @@ macro_rules! internal_call_dispatch {
             }
             if modules.contains(EnabledModules::AUTH) {
                 AuthModule::[< $fn >]($($param, )*)?;
-            }
-            if modules.contains(EnabledModules::NODE_MOVE) {
-                NodeMoveModule::[< $fn >]($($param, )*)?;
             }
             if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
                 TransactionRuntimeModule::[< $fn >]($($param, )*)?;
@@ -146,7 +140,6 @@ impl SystemModuleMixer {
                 enable_cost_breakdown: execution_config.enable_cost_breakdown,
                 costing_traces: index_map_new(),
             },
-            node_move: NodeMoveModule {},
             auth: AuthModule {
                 params: auth_zone_params.clone(),
                 auth_zone_stack: Vec::new(),
@@ -204,11 +197,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
             TransactionRuntimeModule::on_init(api)?;
         }
 
-        // Enable node move
-        if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_init(api)?;
-        }
-
         // Enable auth
         if modules.contains(EnabledModules::AUTH) {
             AuthModule::on_init(api)?;
@@ -249,10 +237,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        update: &mut Message,
+        message: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, before_push_frame(api, callee, update, args))
+        internal_call_dispatch!(api, before_push_frame(api, callee, message, args))
     }
 
     #[trace_resources]
@@ -263,17 +251,18 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        update: &Message,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_execution_finish(api, update))
+        internal_call_dispatch!(api, on_execution_finish(api, message))
     }
 
     #[trace_resources]
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         dropped_actor: &Actor,
+        message: &Message,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_pop_frame(api, dropped_actor))
+        internal_call_dispatch!(api, after_pop_frame(api, dropped_actor, message))
     }
 
     #[trace_resources(log=output_size)]
@@ -422,9 +411,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         }
         if modules.contains(EnabledModules::AUTH) {
             AuthModule::on_store_access(store_access, system)?;
-        }
-        if modules.contains(EnabledModules::NODE_MOVE) {
-            NodeMoveModule::on_store_access(store_access, system)?;
         }
         if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
             TransactionRuntimeModule::on_store_access(store_access, system)?;

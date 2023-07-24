@@ -1,7 +1,7 @@
 use radix_engine::blueprints::resource::FungibleResourceManagerError;
+use radix_engine::errors::ApplicationError;
 use radix_engine::errors::RuntimeError;
 use radix_engine::errors::SystemModuleError;
-use radix_engine::errors::{ApplicationError, PayloadValidationAgainstSchemaError, SystemError};
 use radix_engine::system::system_modules::costing::CostingError;
 use radix_engine::system::system_modules::costing::FeeReserveError;
 use radix_engine::types::*;
@@ -44,7 +44,7 @@ fn test_many_current_auth_zone_call() {
 
     // Act
     let mut expressions = Vec::<ManifestExpression>::new();
-    for _ in 0..5000 {
+    for _ in 0..10000 {
         expressions.push(ManifestExpression::EntireAuthZone);
     }
     let manifest = ManifestBuilder::new()
@@ -60,8 +60,8 @@ fn test_many_current_auth_zone_call() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                PayloadValidationAgainstSchemaError::PayloadValidationError(..)
+            RuntimeError::SystemModuleError(SystemModuleError::CostingError(
+                CostingError::FeeReserveError(FeeReserveError::LimitExceeded { .. })
             ))
         )
     });

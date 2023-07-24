@@ -37,7 +37,7 @@ impl ValidatedPreviewIntent {
         let fee_payment = FeePayment {
             tip_percentage: header.tip_percentage,
             free_credit_in_xrd: if self.flags.use_free_credit {
-                Decimal::try_from(DEFAULT_FREE_CREDIT_IN_XRD).unwrap()
+                Decimal::try_from(FREE_CREDIT_IN_XRD).unwrap()
             } else {
                 Decimal::ZERO
             },

@@ -15,7 +15,7 @@ use crate::track::interface::SubstateStore;
 use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
-use radix_engine_constants::*;
+use radix_engine_common::constants::*;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -32,10 +32,10 @@ pub struct FeeReserveConfig {
 impl Default for FeeReserveConfig {
     fn default() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
-            usd_price: DEFAULT_USD_PRICE_IN_XRD.try_into().unwrap(),
-            state_expansion_price: DEFAULT_STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
-            system_loan: DEFAULT_SYSTEM_LOAN,
+            cost_unit_price: COST_UNIT_PRICE_IN_XRD.try_into().unwrap(),
+            usd_price: USD_PRICE_IN_XRD.try_into().unwrap(),
+            state_expansion_price: STATE_EXPANSION_PRICE_IN_XRD.try_into().unwrap(),
+            system_loan: SYSTEM_LOAN_AMOUNT,
         }
     }
 }
@@ -66,24 +66,22 @@ impl ExecutionConfig {
     fn default() -> Self {
         Self {
             enabled_modules: EnabledModules::for_notarized_transaction(),
-            max_execution_trace_depth: DEFAULT_MAX_EXECUTION_TRACE_DEPTH,
-            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-            cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+            max_execution_trace_depth: MAX_EXECUTION_TRACE_DEPTH,
+            max_call_depth: MAX_CALL_DEPTH,
+            cost_unit_limit: COST_UNIT_LIMIT,
             abort_when_loan_repaid: false,
-            max_number_of_substates_in_track: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
-            max_number_of_substates_in_heap: DEFAULT_MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
-            max_substate_size: DEFAULT_MAX_SUBSTATE_SIZE,
-            max_invoke_input_size: DEFAULT_MAX_INVOKE_INPUT_SIZE,
+            max_number_of_substates_in_track: MAX_NUMBER_OF_SUBSTATES_IN_TRACK,
+            max_number_of_substates_in_heap: MAX_NUMBER_OF_SUBSTATES_IN_HEAP,
+            max_substate_size: MAX_SUBSTATE_SIZE,
+            max_invoke_input_size: MAX_INVOKE_PAYLOAD_SIZE,
             enable_cost_breakdown: false,
-            max_event_size: DEFAULT_MAX_EVENT_SIZE,
-            max_log_size: DEFAULT_MAX_LOG_SIZE,
-            max_panic_message_size: DEFAULT_MAX_PANIC_MESSAGE_SIZE,
-            max_number_of_logs: DEFAULT_MAX_NUMBER_OF_LOGS,
-            max_number_of_events: DEFAULT_MAX_NUMBER_OF_EVENTS,
-            max_per_function_royalty_in_xrd: Decimal::try_from(
-                DEFAULT_MAX_PER_FUNCTION_ROYALTY_IN_XRD,
-            )
-            .unwrap(),
+            max_event_size: MAX_EVENT_SIZE,
+            max_log_size: MAX_LOG_SIZE,
+            max_panic_message_size: MAX_PANIC_MESSAGE_SIZE,
+            max_number_of_logs: MAX_NUMBER_OF_LOGS,
+            max_number_of_events: MAX_NUMBER_OF_EVENTS,
+            max_per_function_royalty_in_xrd: Decimal::try_from(MAX_PER_FUNCTION_ROYALTY_IN_XRD)
+                .unwrap(),
         }
     }
 

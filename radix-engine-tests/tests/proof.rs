@@ -1,6 +1,5 @@
 use radix_engine::errors::{ApplicationError, RuntimeError, SystemModuleError};
 use radix_engine::system::system_modules::auth::AuthError;
-use radix_engine::system::system_modules::node_move::NodeMoveError;
 use radix_engine::types::*;
 use radix_engine_interface::blueprints::resource::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
@@ -253,7 +252,7 @@ fn can_create_proof_from_account_and_pass_on() {
 }
 
 #[test]
-fn cant_move_restricted_proof() {
+fn cant_move_restricted_proof_to_auth_zone() {
     // Arrange
     let mut test_runner = TestRunnerBuilder::new().build();
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -281,14 +280,85 @@ fn cant_move_restricted_proof() {
     );
 
     // Assert
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::SystemModuleError(SystemModuleError::NodeMoveError(
-                NodeMoveError::CantMoveDownstream(..)
-            ))
-        )
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ApplicationError(ApplicationError::Panic(e))
+            if e.eq("Moving restricted proof downstream") =>
+        {
+            true
+        }
+        _ => false,
     });
+}
+
+#[test]
+fn cant_move_restricted_proof_to_scrypto_function_aka_barrier() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource_address =
+        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, resource_address, 1)
+        .pop_from_auth_zone("proof")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "VaultProof",
+                "receive_proof_and_pass_to_scrypto_function",
+                manifest_args!(lookup.proof("proof")),
+            )
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| match e {
+        RuntimeError::ApplicationError(ApplicationError::Panic(e))
+            if e.eq("Moving restricted proof downstream") =>
+        {
+            true
+        }
+        _ => false,
+    });
+}
+
+#[test]
+fn can_move_restricted_proof_to_proof_function_aka_non_barrier() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let resource_address =
+        test_runner.create_fungible_resource(100u32.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, resource_address, 1)
+        .pop_from_auth_zone("proof")
+        .with_name_lookup(|builder, lookup| {
+            builder.call_function(
+                package_address,
+                "VaultProof",
+                "receive_proof_and_drop",
+                manifest_args!(lookup.proof("proof")),
+            )
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleGlobalId::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
 }
 
 #[test]
@@ -307,7 +377,7 @@ fn can_move_restricted_proofs_internally() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(1))
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .create_proof_from_auth_zone_of_all(XRD, "proof")
         .with_name_lookup(|builder, lookup| {
             builder.call_method(
