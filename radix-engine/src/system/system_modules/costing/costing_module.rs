@@ -241,14 +241,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        output_size: usize,
+        output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Skip invocation costing for transaction processor
         if api.kernel_get_current_depth() > 0 {
             api.kernel_get_system()
                 .modules
                 .costing
-                .apply_execution_cost(CostingEntry::AfterInvoke { output_size })?;
+                .apply_execution_cost(CostingEntry::AfterInvoke { output_size: output.len() })?;
         }
 
         Ok(())

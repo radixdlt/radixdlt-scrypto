@@ -136,25 +136,19 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
+    // TODO: Remove
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
+    // TODO: Remove
     fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn after_pop_frame<Y>(
-        dropped_actor: &Self::CallFrameData,
-        message: &Message,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
+    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: KernelApi<Self>;
 
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
     where

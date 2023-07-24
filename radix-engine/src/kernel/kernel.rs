@@ -816,13 +816,10 @@ where
         // Pop call frame
         {
             let parent = self.prev_frame_stack.pop().unwrap();
-
-            let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
-
-            M::after_pop_frame(dropped_frame.data(), &message, self)?;
+            let _ = core::mem::replace(&mut self.current_frame, parent);
         }
 
-        M::after_invoke(output.len(), self)?;
+        M::after_invoke(&output, self)?;
 
         Ok(output)
     }

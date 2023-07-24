@@ -254,13 +254,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::before_invoke(api, invocation)
     }
 
-    fn after_invoke<Y>(output_size: usize, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_invoke(api, output_size)
-    }
-
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
@@ -277,20 +270,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         Ok(())
     }
 
-    fn after_pop_frame<Y>(
-        dropped_actor: &Actor,
-        message: &Message,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_pop_frame(api, dropped_actor, message)?;
-
         let current_actor = api.kernel_get_system_state().current_call_frame;
         let is_to_barrier = current_actor.is_barrier();
         let destination_blueprint_id = current_actor.blueprint_id();
-        for node_id in &message.move_nodes {
+        for node_id in output.owned_nodes() {
             Self::on_move_node(
                 node_id,
                 false,
@@ -300,7 +287,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             )?;
         }
 
-        Ok(())
+        SystemModuleMixer::after_invoke(api, output)
     }
 
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>

@@ -53,9 +53,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        output_size: usize,
+        output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Exiting: output size = {}", output_size);
+        log!(api, "Exiting: output size = {}", output.len());
         Ok(())
     }
 

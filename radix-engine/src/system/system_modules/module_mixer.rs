@@ -245,21 +245,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         internal_call_dispatch!(api, on_execution_finish(api, message))
     }
 
-    #[trace_resources]
-    fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        dropped_actor: &Actor,
-        message: &Message,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_pop_frame(api, dropped_actor, message))
-    }
-
     #[trace_resources(log=output_size)]
     fn after_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        output_size: usize,
+        output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_invoke(api, output_size))
+        internal_call_dispatch!(api, after_invoke(api, output))
     }
 
     #[trace_resources(log=entity_type)]

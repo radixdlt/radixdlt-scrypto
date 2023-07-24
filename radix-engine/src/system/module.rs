@@ -53,18 +53,9 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn after_pop_frame<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _dropped_actor: &Actor,
-        _message: &Message,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
     fn after_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
-        _output_size: usize,
+        _output: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
