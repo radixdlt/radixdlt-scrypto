@@ -28,7 +28,7 @@ paste = { version = "1.0.13" }
 wasmparser = { version = "0.107.0", default-features = false }
 
 # WASM instrumentation
-wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "refactor/drop_parity-wasm_dependency" }
+wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "refactor/drop_parity-wasm_dependency", default-features = false,  features = ["ignore_custom_section"]}
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
@@ -48,7 +48,7 @@ wabt = { version = "0.10.0" }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std", "moka"]
-std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "serde_json?/std" ]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "radix-engine-store-interface/std", "utils/std", "serde_json?/std", "wasm-instrument/std" ]
 alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "radix-engine-store-interface/alloc", "utils/alloc", "lru?/hashbrown", "serde_json?/alloc"]
 
 # Enables heap memory and CPU cycles resource tracing - available only for Linux OS on x86 arch.
