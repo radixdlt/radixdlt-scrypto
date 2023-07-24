@@ -2595,7 +2595,7 @@ where
         self.api
             .kernel_get_system()
             .modules
-            .add_event(event_type_identifier, event_data)?;
+            .add_event(event_type_identifier, event_data, true)?;
 
         Ok(())
     }

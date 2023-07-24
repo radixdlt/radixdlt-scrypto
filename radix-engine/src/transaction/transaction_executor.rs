@@ -17,8 +17,7 @@ use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
-use radix_engine_interface::api::{LockFlags, ObjectModuleId};
-use radix_engine_interface::blueprints::package::TypePointer;
+use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -297,7 +296,7 @@ where
                         }
 
                         // Finalize everything
-                        let (application_events, application_logs) =
+                        let (mut application_events, application_logs) =
                             runtime_module.finalize(is_success);
                         let execution_trace =
                             execution_trace_module.finalize(&fee_payments, is_success);
@@ -308,6 +307,15 @@ where
                             tracked_nodes,
                             deleted_partitions,
                         );
+
+                        // Overwrite XRD burn event
+                        application_events
+                            .last_mut()
+                            .expect("XRD burn event not found")
+                            .1 = scrypto_encode(&BurnFungibleResourceEvent {
+                            amount: fee_summary.to_burn_amount(),
+                        })
+                        .unwrap();
 
                         TransactionResult::Commit(CommitResult {
                             state_updates,
@@ -498,31 +506,13 @@ where
         };
 
         let interpretation_result = kernel_boot
-            .call_transaction_processor(
+            .call_transaction_processor_and_emit_xrd_burn_event(
                 executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),
                 executable.references(),
                 executable.blobs(),
             )
             .and_then(|x| {
-                // Costing and limits for XRD "burn" event
-                let mock_event = scrypto_encode(&BurnFungibleResourceEvent {
-                    amount: Decimal::ZERO,
-                })
-                .unwrap();
-                system
-                    .modules
-                    .apply_execution_cost(CostingEntry::EmitEvent {
-                        size: mock_event.len(),
-                    })?;
-                system.modules.add_event(
-                    EventTypeIdentifier(
-                        Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
-                        TypePointer::Package(Hash([0u8; 32]), LocalTypeIndex::SchemaLocalIndex(0)), // FIXME
-                    ),
-                    mock_event,
-                )?;
-
                 let info = track.get_commit_info();
                 for commit in &info {
                     system.modules.apply_execution_cost(CostingEntry::Commit {

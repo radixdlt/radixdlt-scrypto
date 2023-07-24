@@ -482,8 +482,9 @@ impl SystemModuleMixer {
 
     pub fn add_event(
         &mut self,
-        identifier: EventTypeIdentifier,
-        data: Vec<u8>,
+        type_identifier: EventTypeIdentifier,
+        payload: Vec<u8>,
+        revert_on_failure: bool,
     ) -> Result<(), RuntimeError> {
         if self.enabled_modules.contains(EnabledModules::LIMITS) {
             if self.transaction_runtime.events.len() >= self.limits.config().max_number_of_events {
@@ -493,11 +494,11 @@ impl SystemModuleMixer {
                     ),
                 ));
             }
-            if data.len() > self.limits.config().max_event_size {
+            if payload.len() > self.limits.config().max_event_size {
                 return Err(RuntimeError::SystemModuleError(
                     SystemModuleError::TransactionLimitsError(
                         TransactionLimitsError::EventSizeTooLarge {
-                            actual: data.len(),
+                            actual: payload.len(),
                             max: self.limits.config().max_event_size,
                         },
                     ),
@@ -509,7 +510,8 @@ impl SystemModuleMixer {
             .enabled_modules
             .contains(EnabledModules::TRANSACTION_RUNTIME)
         {
-            self.transaction_runtime.add_event(identifier, data)
+            self.transaction_runtime
+                .add_event(type_identifier, payload, revert_on_failure)
         }
 
         Ok(())
