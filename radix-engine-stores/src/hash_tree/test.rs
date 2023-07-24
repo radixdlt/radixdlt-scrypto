@@ -8,14 +8,16 @@ use crate::hash_tree::{put_at_next_version, SubstateHashChange};
 use itertools::Itertools;
 use radix_engine_common::crypto::{hash, Hash};
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
-use radix_engine_store_interface::interface::{DbPartitionKey, DbSortKey};
+use radix_engine_store_interface::interface::{
+    DbNodeKey, DbPartitionKey, DbPartitionNum, DbSortKey,
+};
 use utils::rust::collections::{hashmap, hashset, HashMap, HashSet};
 
 #[test]
 fn hash_of_next_version_differs_when_value_changed() {
     let mut store = TypedInMemoryTreeStore::new();
-    let hash_v1 = put_at_next_version(&mut store, None, vec![change(1, 2, Some(30))]);
-    let hash_v2 = put_at_next_version(&mut store, Some(1), vec![change(1, 2, Some(70))]);
+    let hash_v1 = put_at_next_version(&mut store, None, vec![change(1, 6, 2, Some(30))]);
+    let hash_v2 = put_at_next_version(&mut store, Some(1), vec![change(1, 6, 2, Some(70))]);
     assert_ne!(hash_v1, hash_v2);
 }
 
@@ -25,9 +27,9 @@ fn hash_of_next_version_same_when_write_repeated() {
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
-        vec![change(4, 6, Some(30)), change(3, 9, Some(40))],
+        vec![change(4, 1, 6, Some(30)), change(3, 2, 9, Some(40))],
     );
-    let hash_v2 = put_at_next_version(&mut store, Some(1), vec![change(4, 6, Some(30))]);
+    let hash_v2 = put_at_next_version(&mut store, Some(1), vec![change(4, 1, 6, Some(30))]);
     assert_eq!(hash_v1, hash_v2);
 }
 
@@ -37,7 +39,7 @@ fn hash_of_next_version_same_when_write_empty() {
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
-        vec![change(1, 2, Some(30)), change(3, 1, Some(40))],
+        vec![change(1, 6, 2, Some(30)), change(3, 7, 1, Some(40))],
     );
     let hash_v2 = put_at_next_version(&mut store, Some(1), vec![]);
     assert_eq!(hash_v1, hash_v2);
@@ -46,8 +48,8 @@ fn hash_of_next_version_same_when_write_empty() {
 #[test]
 fn hash_of_next_version_differs_when_entry_added() {
     let mut store = TypedInMemoryTreeStore::new();
-    let hash_v1 = put_at_next_version(&mut store, None, vec![change(1, 2, Some(30))]);
-    let hash_v2 = put_at_next_version(&mut store, Some(1), vec![change(1, 8, Some(30))]);
+    let hash_v1 = put_at_next_version(&mut store, None, vec![change(1, 6, 2, Some(30))]);
+    let hash_v2 = put_at_next_version(&mut store, Some(1), vec![change(1, 6, 8, Some(30))]);
     assert_ne!(hash_v1, hash_v2);
 }
 
@@ -57,9 +59,9 @@ fn hash_of_next_version_differs_when_entry_removed() {
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
-        vec![change(1, 2, Some(30)), change(4, 3, Some(20))],
+        vec![change(1, 6, 2, Some(30)), change(4, 7, 3, Some(20))],
     );
-    let hash_v2 = put_at_next_version(&mut store, Some(1), vec![change(1, 2, None)]);
+    let hash_v2 = put_at_next_version(&mut store, Some(1), vec![change(1, 6, 2, None)]);
     assert_ne!(hash_v1, hash_v2);
 }
 
@@ -69,75 +71,79 @@ fn hash_returns_to_same_when_previous_state_restored() {
     let hash_v1 = put_at_next_version(
         &mut store,
         None,
-        vec![change(1, 2, Some(30)), change(3, 1, Some(40))],
+        vec![change(1, 6, 2, Some(30)), change(3, 7, 1, Some(40))],
     );
     put_at_next_version(
         &mut store,
         Some(1),
         vec![
-            change(1, 2, Some(90)),
-            change(3, 1, None),
-            change(1, 5, Some(10)),
+            change(1, 6, 2, Some(90)),
+            change(3, 7, 1, None),
+            change(1, 6, 5, Some(10)),
         ],
     );
     let hash_v3 = put_at_next_version(
         &mut store,
         Some(1),
         vec![
-            change(1, 2, Some(30)),
-            change(3, 1, Some(40)),
-            change(1, 5, None),
+            change(1, 6, 2, Some(30)),
+            change(3, 7, 1, Some(40)),
+            change(1, 6, 5, None),
         ],
     );
     assert_eq!(hash_v1, hash_v3);
 }
 
 #[test]
-fn hash_differs_when_states_only_differ_by_partition_key() {
+fn hash_differs_when_states_only_differ_by_node_key() {
     let mut store_1 = TypedInMemoryTreeStore::new();
-    let hash_1 = put_at_next_version(&mut store_1, None, vec![change(1, 3, Some(30))]);
+    let hash_1 = put_at_next_version(&mut store_1, None, vec![change(1, 6, 3, Some(30))]);
     let mut store_2 = TypedInMemoryTreeStore::new();
-    let hash_2 = put_at_next_version(&mut store_2, None, vec![change(2, 3, Some(30))]);
+    let hash_2 = put_at_next_version(&mut store_2, None, vec![change(2, 6, 3, Some(30))]);
+    assert_ne!(hash_1, hash_2);
+}
+
+#[test]
+fn hash_differs_when_states_only_differ_by_partition_num() {
+    let mut store_1 = TypedInMemoryTreeStore::new();
+    let hash_1 = put_at_next_version(&mut store_1, None, vec![change(1, 6, 3, Some(30))]);
+    let mut store_2 = TypedInMemoryTreeStore::new();
+    let hash_2 = put_at_next_version(&mut store_2, None, vec![change(1, 7, 3, Some(30))]);
     assert_ne!(hash_1, hash_2);
 }
 
 #[test]
 fn hash_differs_when_states_only_differ_by_sort_key() {
     let mut store_1 = TypedInMemoryTreeStore::new();
-    let hash_1 = put_at_next_version(&mut store_1, None, vec![change(1, 2, Some(30))]);
+    let hash_1 = put_at_next_version(&mut store_1, None, vec![change(1, 6, 2, Some(30))]);
     let mut store_2 = TypedInMemoryTreeStore::new();
-    let hash_2 = put_at_next_version(&mut store_2, None, vec![change(1, 3, Some(30))]);
+    let hash_2 = put_at_next_version(&mut store_2, None, vec![change(1, 6, 3, Some(30))]);
     assert_ne!(hash_1, hash_2);
 }
 
 #[test]
-fn hash_of_different_partition_nested_trees_is_same_when_contained_entries_are_same() {
+fn hash_of_different_re_nodes_is_same_when_contained_entries_are_same() {
     let mut store = TypedInMemoryTreeStore::new();
     put_at_next_version(
         &mut store,
         None,
         vec![
-            change(1, 2, Some(30)),
-            change(1, 9, Some(40)),
-            change(7, 2, Some(30)),
-            change(7, 9, Some(40)),
+            change(1, 6, 2, Some(30)),
+            change(1, 7, 9, Some(40)),
+            change(7, 6, 2, Some(30)),
+            change(7, 7, 9, Some(40)),
         ],
     );
 
-    let nested_tree_hashes = store
-        .root_tree_nodes
-        .values()
-        .filter_map(|node| match node {
-            TreeNode::Leaf(TreeLeafNode { value_hash, .. }) => Some(value_hash.clone()),
-            _ => None,
-        })
-        .collect::<Vec<Hash>>();
-    assert_eq!(nested_tree_hashes.len(), 2);
-    assert_eq!(nested_tree_hashes[0], nested_tree_hashes[1])
+    let re_node_leaf_hashes = get_leafs_of_tier(&store, Tier::ReNode)
+        .into_values()
+        .collect::<Vec<_>>();
+    assert_eq!(re_node_leaf_hashes.len(), 2);
+    assert_eq!(re_node_leaf_hashes[0], re_node_leaf_hashes[1])
 }
 
 #[test]
-fn partition_key_and_sort_key_are_used_directly_for_node_nibble_path() {
+fn physical_nodes_of_tiered_jmt_have_expected_keys_and_contents() {
     let mut store = TypedInMemoryTreeStore::new();
 
     put_at_next_version(
@@ -145,41 +151,43 @@ fn partition_key_and_sort_key_are_used_directly_for_node_nibble_path() {
         None,
         vec![
             SubstateHashChange::new(
-                (DbPartitionKey(vec![1, 3, 3, 7]), DbSortKey(vec![253])),
+                (db_partition_key(vec![1, 3, 3, 7], 99), DbSortKey(vec![253])),
                 Some(Hash([1; Hash::LENGTH])),
             ),
             SubstateHashChange::new(
-                (DbPartitionKey(vec![1, 3, 3, 7]), DbSortKey(vec![66])),
+                (db_partition_key(vec![1, 3, 3, 7], 99), DbSortKey(vec![66])),
                 Some(Hash([2; Hash::LENGTH])),
             ),
             SubstateHashChange::new(
                 (
-                    DbPartitionKey(vec![123, 12, 1, 0]),
+                    db_partition_key(vec![123, 12, 1, 0], 88),
                     DbSortKey(vec![6, 6, 6]),
                 ),
                 Some(Hash([3; Hash::LENGTH])),
             ),
             SubstateHashChange::new(
                 (
-                    DbPartitionKey(vec![123, 12, 1, 0]),
+                    db_partition_key(vec![123, 12, 1, 0], 88),
                     DbSortKey(vec![6, 6, 7]),
                 ),
                 Some(Hash([4; Hash::LENGTH])),
             ),
+            SubstateHashChange::new(
+                (
+                    db_partition_key(vec![123, 12, 1, 0], 66),
+                    DbSortKey(vec![1, 2, 3, 4]),
+                ),
+                Some(Hash([5; Hash::LENGTH])),
+            ),
         ],
     );
 
-    let upper_leaf_keys = store
-        .root_tree_nodes
-        .iter()
-        .filter_map(|(node_key, node)| match node {
-            TreeNode::Leaf(TreeLeafNode { key_suffix, .. }) => Some(leaf_key(node_key, key_suffix)),
-            _ => None,
-        })
+    // Assert on the keys of Node-tier leafs:
+    let node_tier_leaf_keys = get_leafs_of_tier(&store, Tier::ReNode)
+        .into_keys()
         .collect::<HashSet<_>>();
-    // we cannot assert on the upper hashes, since they are effectively internal merkle hashes
     assert_eq!(
-        upper_leaf_keys,
+        node_tier_leaf_keys,
         hashset!(
             LeafKey {
                 bytes: vec![1, 3, 3, 7]
@@ -190,59 +198,60 @@ fn partition_key_and_sort_key_are_used_directly_for_node_nibble_path() {
         )
     );
 
-    let lower_leaves = store
-        .sub_tree_nodes
-        .iter()
-        .filter_map(|(node_key, node)| match node {
-            TreeNode::Leaf(TreeLeafNode {
-                key_suffix,
-                value_hash,
-                ..
-            }) => Some((leaf_key(node_key, key_suffix), value_hash.clone())),
-            _ => None,
-        })
-        .collect::<HashMap<_, _>>();
+    // Assert on the keys of Partition-tier leafs:
+    let partition_tier_leaf_keys = get_leafs_of_tier(&store, Tier::Partition)
+        .into_keys()
+        .collect::<HashSet<_>>();
     assert_eq!(
-        lower_leaves,
+        partition_tier_leaf_keys,
+        hashset!(
+            LeafKey {
+                bytes: vec![1, 3, 3, 7, TIER_SEPARATOR, 99]
+            },
+            LeafKey {
+                bytes: vec![123, 12, 1, 0, TIER_SEPARATOR, 66]
+            },
+            LeafKey {
+                bytes: vec![123, 12, 1, 0, TIER_SEPARATOR, 88]
+            },
+        )
+    );
+
+    // Assert on the keys and hashes of the Substate-tier leaves:
+    let substate_tier_leaves = get_leafs_of_tier(&store, Tier::Substate);
+    assert_eq!(
+        substate_tier_leaves,
         hashmap!(
-            LeafKey { bytes: vec![1, 3, 3, 7, 253] } => Hash([1; Hash::LENGTH]),
-            LeafKey { bytes: vec![1, 3, 3, 7, 66] } => Hash([2; Hash::LENGTH]),
-            LeafKey { bytes: vec![123, 12, 1, 0, 6, 6, 6] } => Hash([3; Hash::LENGTH]),
-            LeafKey { bytes: vec![123, 12, 1, 0, 6, 6, 7] } => Hash([4; Hash::LENGTH]),
+            LeafKey { bytes: vec![1, 3, 3, 7, TIER_SEPARATOR, 99, TIER_SEPARATOR, 253] } => Hash([1; Hash::LENGTH]),
+            LeafKey { bytes: vec![1, 3, 3, 7, TIER_SEPARATOR, 99, TIER_SEPARATOR, 66] } => Hash([2; Hash::LENGTH]),
+            LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEPARATOR, 88, TIER_SEPARATOR, 6, 6, 6] } => Hash([3; Hash::LENGTH]),
+            LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEPARATOR, 88, TIER_SEPARATOR, 6, 6, 7] } => Hash([4; Hash::LENGTH]),
+            LeafKey { bytes: vec![123, 12, 1, 0, TIER_SEPARATOR, 66, TIER_SEPARATOR, 1, 2, 3, 4] } => Hash([5; Hash::LENGTH]),
         )
     );
 }
 
 #[test]
-fn deletes_partition_layer_leaf_when_all_its_entries_deleted() {
-    fn count_current_re_node_leafs(store: &TypedInMemoryTreeStore) -> usize {
-        store
-            .root_tree_nodes
-            .iter()
-            .filter(|(key, _)| !store.stale_key_buffer.contains(key))
-            .filter(|(_, node)| matches!(node, TreeNode::Leaf(TreeLeafNode { .. })))
-            .count()
-    }
-
+fn deletes_node_tier_leaf_when_all_its_entries_deleted() {
     let mut store = TypedInMemoryTreeStore::new();
     put_at_next_version(
         &mut store,
         None,
         vec![
-            change(1, 2, Some(30)),
-            change(1, 9, Some(40)),
-            change(2, 3, Some(30)),
+            change(1, 6, 2, Some(30)),
+            change(1, 6, 9, Some(40)),
+            change(2, 7, 3, Some(30)),
         ],
     );
-    assert_eq!(count_current_re_node_leafs(&store), 2);
+    assert_eq!(get_leafs_of_tier(&store, Tier::ReNode).len(), 2);
     put_at_next_version(
         &mut store,
         Some(1),
-        vec![change(1, 2, None), change(1, 9, None)],
+        vec![change(1, 6, 2, None), change(1, 6, 9, None)],
     );
-    assert_eq!(count_current_re_node_leafs(&store), 1);
-    put_at_next_version(&mut store, Some(2), vec![change(2, 3, None)]);
-    assert_eq!(count_current_re_node_leafs(&store), 0);
+    assert_eq!(get_leafs_of_tier(&store, Tier::ReNode).len(), 1);
+    put_at_next_version(&mut store, Some(2), vec![change(2, 7, 3, None)]);
+    assert_eq!(get_leafs_of_tier(&store, Tier::ReNode).len(), 0);
 }
 
 #[test]
@@ -250,18 +259,18 @@ fn supports_empty_state() {
     let mut store = TypedInMemoryTreeStore::new();
     let hash_v1 = put_at_next_version(&mut store, None, vec![]);
     assert_eq!(hash_v1, SPARSE_MERKLE_PLACEHOLDER_HASH);
-    let hash_v2 = put_at_next_version(&mut store, Some(1), vec![change(1, 2, Some(30))]);
+    let hash_v2 = put_at_next_version(&mut store, Some(1), vec![change(1, 6, 2, Some(30))]);
     assert_ne!(hash_v2, SPARSE_MERKLE_PLACEHOLDER_HASH);
-    let hash_v3 = put_at_next_version(&mut store, Some(2), vec![change(1, 2, None)]);
+    let hash_v3 = put_at_next_version(&mut store, Some(2), vec![change(1, 6, 2, None)]);
     assert_eq!(hash_v3, SPARSE_MERKLE_PLACEHOLDER_HASH);
 }
 
 #[test]
 fn records_stale_tree_node_keys() {
     let mut store = TypedInMemoryTreeStore::new();
-    put_at_next_version(&mut store, None, vec![change(4, 6, Some(30))]);
-    put_at_next_version(&mut store, Some(1), vec![change(3, 9, Some(70))]);
-    put_at_next_version(&mut store, Some(2), vec![change(3, 9, Some(80))]);
+    put_at_next_version(&mut store, None, vec![change(4, 1, 6, Some(30))]);
+    put_at_next_version(&mut store, Some(1), vec![change(3, 2, 9, Some(70))]);
+    put_at_next_version(&mut store, Some(2), vec![change(3, 2, 9, Some(80))]);
     let stale_versions = store
         .stale_key_buffer
         .iter()
@@ -278,7 +287,6 @@ fn sbor_uses_custom_direct_codecs_for_nibbles() {
     let direct_bytes = nibbles.bytes().to_vec();
     let node = TreeNode::Leaf(TreeLeafNode {
         key_suffix: nibbles,
-        payload: (),
         value_hash: Hash([7; 32]),
     });
     let encoded = scrypto_encode(&node).unwrap();
@@ -309,39 +317,40 @@ fn sbor_decodes_what_was_encoded() {
         }),
         TreeNode::Leaf(TreeLeafNode {
             key_suffix: nibbles("abc"),
-            payload: (),
             value_hash: Hash([7; 32]),
         }),
         TreeNode::Null,
     ];
     let encoded = scrypto_encode(&nodes).unwrap();
-    let decoded = scrypto_decode::<Vec<TreeNode<()>>>(&encoded).unwrap();
+    let decoded = scrypto_decode::<Vec<TreeNode>>(&encoded).unwrap();
     assert_eq!(nodes, decoded);
 }
 
 #[test]
 fn serialized_keys_are_strictly_increasing() {
     let mut store = SerializedInMemoryTreeStore::new();
-    put_at_next_version(&mut store, None, vec![change(3, 4, Some(90))]);
-    let previous_key = store.memory.keys().collect_vec()[0].clone();
-    put_at_next_version(&mut store, Some(1), vec![change(1, 2, Some(80))]);
-    let next_key = store
+    put_at_next_version(&mut store, None, vec![change(3, 6, 4, Some(90))]);
+    let previous_keys = store.memory.keys().cloned().collect::<HashSet<_>>();
+    put_at_next_version(&mut store, Some(1), vec![change(1, 7, 2, Some(80))]);
+    let min_next_key = store
         .memory
         .keys()
-        .filter(|key| **key != previous_key)
-        .collect_vec()[0]
-        .clone();
-    assert!(next_key > previous_key);
+        .filter(|key| !previous_keys.contains(*key))
+        .max()
+        .unwrap();
+    let max_previous_key = previous_keys.iter().max().unwrap();
+    assert!(min_next_key > max_previous_key);
 }
 
 fn change(
-    partition_key_seed: u8,
+    node_key_seed: u8,
+    partition_num: u8,
     sort_key_seed: u8,
     value_hash_seed: Option<u8>,
 ) -> SubstateHashChange {
     SubstateHashChange::new(
         (
-            DbPartitionKey(vec![partition_key_seed; Hash::LENGTH]),
+            db_partition_key(vec![node_key_seed; Hash::LENGTH], partition_num),
             DbSortKey(vec![sort_key_seed; sort_key_seed as usize]),
         ),
         value_hash_seed.map(|value_seed| value_hash(value_seed)),
@@ -371,4 +380,42 @@ fn leaf_key(node_key: &NodeKey, suffix_from_leaf: &NibblePath) -> LeafKey {
         )
         .bytes(),
     )
+}
+
+fn db_partition_key(node_key: DbNodeKey, partition_num: DbPartitionNum) -> DbPartitionKey {
+    DbPartitionKey {
+        node_key,
+        partition_num,
+    }
+}
+
+enum Tier {
+    ReNode,
+    Partition,
+    Substate,
+}
+
+const TIER_SEPARATOR: u8 = b'_';
+
+fn get_leafs_of_tier(store: &TypedInMemoryTreeStore, tier: Tier) -> HashMap<LeafKey, Hash> {
+    let separator_count = tier as usize;
+    store
+        .tree_nodes
+        .iter()
+        .filter(|(key, _)| {
+            key.nibble_path()
+                .bytes()
+                .iter()
+                .filter(|byte| **byte == TIER_SEPARATOR)
+                .count()
+                == separator_count
+        })
+        .filter(|(key, _)| !store.stale_key_buffer.contains(key))
+        .filter_map(|(key, node)| match node {
+            TreeNode::Leaf(leaf) => {
+                Some((leaf_key(key, &leaf.key_suffix), leaf.value_hash.clone()))
+            }
+            _ => None,
+        })
+        .collect()
 }
