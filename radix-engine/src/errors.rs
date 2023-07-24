@@ -23,7 +23,6 @@ use crate::system::node_modules::royalty::ComponentRoyaltyError;
 use crate::system::system_modules::auth::AuthError;
 use crate::system::system_modules::costing::CostingError;
 use crate::system::system_modules::limits::TransactionLimitsError;
-use crate::system::system_modules::node_move::NodeMoveError;
 use crate::transaction::AbortReason;
 use crate::types::*;
 use crate::vm::wasm::WasmRuntimeError;
@@ -215,6 +214,8 @@ pub enum SystemError {
     NoParent,
     NotAnAddressReservation,
     NotAnObject,
+    NodeNotVisibleForMethodCall,
+    ModulesDontHaveOuterObjects,
     ActorNodeIdDoesNotExist,
     ActorModuleIdIdDoesNotExist,
     ActorObjectInfoDoesNotExist,
@@ -306,7 +307,6 @@ pub enum CreateObjectError {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SystemModuleError {
-    NodeMoveError(NodeMoveError),
     AuthError(AuthError),
     CostingError(CostingError),
     TransactionLimitsError(TransactionLimitsError),
@@ -345,12 +345,6 @@ impl CanBeAbortion for SystemModuleError {
             Self::CostingError(err) => err.abortion(),
             _ => None,
         }
-    }
-}
-
-impl From<NodeMoveError> for SystemModuleError {
-    fn from(error: NodeMoveError) -> Self {
-        Self::NodeMoveError(error)
     }
 }
 

@@ -14,7 +14,7 @@ use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
-use radix_engine_interface::api::{ClientObjectApi, ObjectModuleId};
+use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
     BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
 };
@@ -213,15 +213,13 @@ impl AuthModule {
             );
         }
 
+        let blueprint_id = api
+            .get_blueprint_info(&callee.node_id, callee.module_id)?
+            .blueprint_id;
+
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
-            callee
-                .object_info
-                .main_blueprint_id
-                .package_address
-                .as_node_id(),
-            &BlueprintVersionKey::new_default(
-                callee.object_info.main_blueprint_id.blueprint_name.as_str(),
-            ),
+            blueprint_id.package_address.as_node_id(),
+            &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
             api.api,
         )?
         .method_auth;
@@ -254,16 +252,26 @@ impl AuthModule {
         match method_permissions.get(&method_key) {
             Some(MethodAccessibility::Public) => Ok(ResolvedPermission::AllowAll),
             Some(MethodAccessibility::OwnPackageOnly) => {
-                let package = callee.object_info.main_blueprint_id.package_address;
+                let package = blueprint_id.package_address;
                 Ok(ResolvedPermission::AccessRule(rule!(require(
                     package_of_direct_caller(package)
                 ))))
             }
-            Some(MethodAccessibility::OuterObjectOnly) => match callee.object_info.outer_object {
-                OuterObjectInfo::Some { outer_object } => Ok(ResolvedPermission::AccessRule(
-                    rule!(require(global_caller(outer_object))),
-                )),
-                OuterObjectInfo::None { .. } => Err(RuntimeError::SystemModuleError(
+            Some(MethodAccessibility::OuterObjectOnly) => match callee.module_id {
+                ObjectModuleId::Main => {
+                    let outer_object_info = &callee.object_info.blueprint_info.outer_obj_info;
+                    match outer_object_info {
+                        OuterObjectInfo::Some { outer_object } => {
+                            Ok(ResolvedPermission::AccessRule(rule!(require(
+                                global_caller(*outer_object)
+                            ))))
+                        }
+                        OuterObjectInfo::None { .. } => Err(RuntimeError::SystemModuleError(
+                            SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
+                        )),
+                    }
+                }
+                _ => Err(RuntimeError::SystemModuleError(
                     SystemModuleError::AuthError(AuthError::InvalidOuterObjectMapping),
                 )),
             },
@@ -341,14 +349,15 @@ impl AuthModule {
                 TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
                     global: false,
 
-                    main_blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
                     module_versions: btreemap!(
                         ObjectModuleId::Main => BlueprintVersion::default(),
                     ),
-
-                    outer_object: OuterObjectInfo::default(),
-                    features: btreeset!(),
-                    instance_schema: None,
+                    blueprint_info: BlueprintInfo {
+                        blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                        outer_obj_info: OuterObjectInfo::default(),
+                        features: btreeset!(),
+                        instance_schema: None,
+                    }
                 }))
             ),
         )?;
@@ -381,6 +390,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _dropped_actor: &Actor,
+        _message: &Message,
     ) -> Result<(), RuntimeError> {
         // update internal state
         api.kernel_get_system().modules.auth.auth_zone_stack.pop();

@@ -68,13 +68,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
     match resource_type {
         ResourceType::Fungible { .. } => {
             compose_fungible_proof(proofs, resource_address, amount, api).map(|(proof, handles)| {
-                ComposedProof::Fungible(
-                    ProofMoveableSubstate {
-                        restricted: false, // FIXME: follow existing impl, but need to revisit this
-                    },
-                    proof,
-                    handles,
-                )
+                ComposedProof::Fungible(ProofMoveableSubstate { restricted: false }, proof, handles)
             })
         }
         ResourceType::NonFungible { .. } => compose_non_fungible_proof(
@@ -93,13 +87,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
             api,
         )
         .map(|(proof, handles)| {
-            ComposedProof::NonFungible(
-                ProofMoveableSubstate {
-                    restricted: false, //  FIXME: verify this is sound
-                },
-                proof,
-                handles,
-            )
+            ComposedProof::NonFungible(ProofMoveableSubstate { restricted: false }, proof, handles)
         }),
     }
 }
@@ -131,13 +119,7 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + ClientApi<Run
             api,
         )
         .map(|(proof, handles)| {
-            ComposedProof::NonFungible(
-                ProofMoveableSubstate {
-                    restricted: false, // FIXME: verify this is sound
-                },
-                proof,
-                handles,
-            )
+            ComposedProof::NonFungible(ProofMoveableSubstate { restricted: false }, proof, handles)
         }),
     }
 }
@@ -154,14 +136,11 @@ fn max_amount_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeErr
     // calculate the max locked amount of each container
     let mut max = BTreeMap::<LocalRef, Decimal>::new();
     for proof in proofs {
-        let info = api.get_object_info(proof.0.as_node_id())?;
+        let blueprint_id = api.get_blueprint_id(proof.0.as_node_id())?;
 
-        if info
-            .main_blueprint_id
-            .blueprint_name
-            .eq(FUNGIBLE_PROOF_BLUEPRINT)
-        {
-            let proof_resource = ResourceAddress::new_or_panic(info.get_outer_object().into());
+        if blueprint_id.blueprint_name.eq(FUNGIBLE_PROOF_BLUEPRINT) {
+            let outer_object = api.get_outer_object(proof.0.as_node_id())?;
+            let proof_resource = ResourceAddress::new_or_panic(outer_object.into());
             if proof_resource == resource_address {
                 let handle = api.kernel_open_substate(
                     proof.0.as_node_id(),
@@ -207,13 +186,10 @@ fn max_ids_locked<Y: KernelSubstateApi<SystemLockData> + ClientApi<RuntimeError>
     // calculate the max locked non-fungibles of each container
     let mut per_container = NonIterMap::<LocalRef, BTreeSet<NonFungibleLocalId>>::new();
     for proof in proofs {
-        let info = api.get_object_info(proof.0.as_node_id())?;
-        if info
-            .main_blueprint_id
-            .blueprint_name
-            .eq(NON_FUNGIBLE_PROOF_BLUEPRINT)
-        {
-            let proof_resource = ResourceAddress::new_or_panic(info.get_outer_object().into());
+        let blueprint_id = api.get_blueprint_id(proof.0.as_node_id())?;
+        if blueprint_id.blueprint_name.eq(NON_FUNGIBLE_PROOF_BLUEPRINT) {
+            let outer_object = api.get_outer_object(proof.0.as_node_id())?;
+            let proof_resource = ResourceAddress::new_or_panic(outer_object.into());
             if proof_resource == resource_address {
                 let handle = api.kernel_open_substate(
                     proof.0.as_node_id(),
@@ -256,7 +232,6 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
         ));
     }
 
-    // FIXME: make sure costing has taken this loop into account.
     let mut evidence = BTreeMap::new();
     let mut remaining = amount.clone();
     let mut lock_handles = Vec::new();
@@ -346,7 +321,6 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
         ));
     }
 
-    // FIXME: make sure costing has taken this loop into account.
     let mut evidence = BTreeMap::new();
     let mut remaining = ids.clone();
     let mut lock_handles = Vec::new();

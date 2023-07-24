@@ -77,7 +77,7 @@ fn test_transaction_preview_without_locking_fee() {
     let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
     let fee_summary = &preview_receipt.expect_commit_success().fee_summary;
     println!("{:?}", preview_receipt);
-    assert_eq!(fee_summary.total_execution_cost_xrd, dec!("0.01840696"));
+    assert_eq!(fee_summary.total_execution_cost_xrd, dec!("0.01844552"));
     assert_eq!(fee_summary.total_tipping_cost_xrd, dec!("0"));
     assert_eq!(fee_summary.total_state_expansion_cost_xrd, dec!("0.00009"));
     assert_eq!(fee_summary.total_royalty_cost_xrd, dec!("0"));

@@ -9,6 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
+use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -109,7 +110,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
             kernel.store.close_substate(handle);
             match type_substate {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    main_blueprint_id: blueprint_id,
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
                     global,
                     ..
                 }) => {
@@ -213,12 +214,12 @@ where
         let can_be_invoked = match &invocation.actor {
             Actor::Method(MethodActor {
                 node_id,
-                is_direct_access,
+                receiver_type,
                 ..
             }) => self
                 .current_frame
                 .get_node_visibility(&node_id)
-                .can_be_invoked(*is_direct_access),
+                .can_be_invoked(receiver_type.eq(&ReceiverType::DirectAccess)),
             Actor::Function(FunctionActor { blueprint_id, .. })
             | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
                 // FIXME: combine this with reference check of invocation
@@ -260,7 +261,7 @@ where
 
             // Run
             let output = M::invoke_upstream(args, self)?;
-            let mut message = Message::from_indexed_scrypto_value(&output);
+            let message = Message::from_indexed_scrypto_value(&output);
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
@@ -269,7 +270,7 @@ where
                 .map_err(KernelError::CallFrameError)?;
 
             // Handle execution finish
-            M::on_execution_finish(&mut message, self)?;
+            M::on_execution_finish(&message, self)?;
 
             (output, message)
         };
@@ -279,7 +280,7 @@ where
             let parent = self.prev_frame_stack.last_mut().unwrap();
 
             // Move resource
-            CallFrame::pass_message(&mut self.current_frame, parent, message)
+            CallFrame::pass_message(&mut self.current_frame, parent, message.clone())
                 .map_err(CallFrameError::PassMessageError)
                 .map_err(KernelError::CallFrameError)?;
 
@@ -302,7 +303,7 @@ where
 
             let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
 
-            M::after_pop_frame(self, dropped_frame.actor())?;
+            M::after_pop_frame(dropped_frame.actor(), &message, self)?;
         }
 
         Ok(output)
@@ -437,13 +438,15 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(info)
-                    if info.main_blueprint_id.package_address == RESOURCE_PACKAGE
-                        && (info.main_blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || info.main_blueprint_id.blueprint_name
+                    if info.blueprint_info.blueprint_id.package_address == RESOURCE_PACKAGE
+                        && (info.blueprint_info.blueprint_id.blueprint_name
+                            == FUNGIBLE_BUCKET_BLUEPRINT
+                            || info.blueprint_info.blueprint_id.blueprint_name
                                 == NON_FUNGIBLE_BUCKET_BLUEPRINT) =>
                 {
                     let is_fungible = info
-                        .main_blueprint_id
+                        .blueprint_info
+                        .blueprint_id
                         .blueprint_name
                         .eq(FUNGIBLE_BUCKET_BLUEPRINT);
                     let parent = info.get_outer_object();
@@ -501,7 +504,7 @@ where
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             match type_info {
                 TypeInfoSubstate::Object(ObjectInfo {
-                    main_blueprint_id: blueprint_id,
+                    blueprint_info: BlueprintInfo { blueprint_id, .. },
                     ..
                 }) if blueprint_id.package_address == RESOURCE_PACKAGE
                     && (blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT
