@@ -17,13 +17,13 @@ use radix_engine_interface::blueprints::resource::{
     FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT,
     NON_FUNGIBLE_PROOF_BLUEPRINT,
 };
-use radix_engine_interface::prelude::indexmap::IndexSet;
 use radix_engine_interface::prelude::{BlueprintInfo, ObjectInfo};
 use radix_engine_interface::types::{
     IndexedScryptoValue, TypeInfoField, TYPE_INFO_FIELD_PARTITION,
 };
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use utils::prelude::index_set_new;
+use utils::rust::prelude::IndexSet;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubstateDevice {
@@ -236,11 +236,11 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             default,
         )?;
 
-        let mut owned_nodes: IndexSet<NodeId> = index_set_new();
+        let mut owned_nodes = index_set_new();
         for node_id in substate_value.owned_nodes() {
             owned_nodes.insert(*node_id);
         }
-        let mut non_global_references: IndexSet<NodeId> = index_set_new(); // du-duplicated
+        let mut non_global_references = index_set_new(); // du-duplicated
         for node_id in substate_value.references() {
             if !node_id.is_global() {
                 non_global_references.insert(*node_id);
@@ -298,7 +298,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
-        let mut new_owned_nodes: IndexSet<NodeId> = index_set_new();
+        let mut new_owned_nodes = index_set_new();
         for own in substate.owned_nodes() {
             if !new_owned_nodes.insert(own.clone()) {
                 return Err(CallbackError::Error(
@@ -306,8 +306,8 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 ));
             }
         }
-        let mut new_non_global_references: IndexSet<NodeId> = index_set_new();
-        let mut new_references: IndexSet<NodeId> = index_set_new();
+        let mut new_non_global_references = index_set_new();
+        let mut new_references = index_set_new();
         for own in substate.references() {
             // Deduplicate
             new_references.insert(own.clone());

@@ -58,7 +58,7 @@ pub struct SubstateLocks<D> {
 impl<D> SubstateLocks<D> {
     pub fn new() -> Self {
         Self {
-            locks: IndexMap::new(),
+            locks: index_map_new(),
             substate_lock_states: NonIterMap::new(),
             next_lock_id: 0u32,
         }
