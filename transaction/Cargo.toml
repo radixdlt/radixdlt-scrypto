@@ -7,7 +7,6 @@ edition = "2021"
 sbor = { path = "../sbor", default-features = false }
 utils = { path = "../utils", default-features = false }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
-radix-engine-constants = { path = "../radix-engine-constants", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
 
 hex = { version = "0.4.3", default-features = false }

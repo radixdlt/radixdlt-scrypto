@@ -7,7 +7,6 @@ edition = "2021"
 sbor = { path = "../sbor", default-features = false }
 utils = { path = "../utils", default-features = false }
 radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
-radix-engine-constants = { path = "../radix-engine-constants" }
 
 serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
 hex = { version = "0.4.3", default-features = false }
@@ -16,7 +15,7 @@ num-integer = { version = "0.1.45", default-features = false }
 num-bigint = { version = "0.4.3", default-features = false }
 bnum = { version = "0.7.0", default-features = false, features = ["numtraits"] }
 bech32 = { version = "0.9.0", default-features = false }
-paste = { version = "1.0.7"}
+paste = { version = "1.0.13" }
 blake2 = { version = "0.10.6", default-features = false }
 lazy_static = "1.4.0"
 strum = { version = "0.24", default-features = false, features = ["derive"] }

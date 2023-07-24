@@ -6,4 +6,5 @@ compile_error!("Either feature `std` or `alloc` must be enabled for this crate."
 compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 pub mod query;
+pub mod typed_native_events;
 pub mod typed_substate_layout;

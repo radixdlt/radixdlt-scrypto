@@ -102,8 +102,7 @@ impl FungibleVaultBlueprint {
         Self::assert_not_frozen(VaultFreezeFlags::WITHDRAW, api)?;
 
         // Check resource address and amount
-        let resource_address =
-            ResourceAddress::new_or_panic(api.actor_get_object_info()?.get_outer_object().into());
+        let resource_address = ResourceAddress::new_or_panic(api.actor_get_outer_object()?.into());
         if resource_address != XRD {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::VaultError(VaultError::LockFeeNotRadixToken),

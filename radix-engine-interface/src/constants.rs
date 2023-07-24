@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use radix_engine_common::types::*;
 use sbor::rust::prelude::*;
 
-pub use radix_engine_common::native_addresses::*;
+pub use radix_engine_common::constants::*;
 
 // Currently, functions and methods can reference these well-known nodes without declaring
 // the dependency in the package info.

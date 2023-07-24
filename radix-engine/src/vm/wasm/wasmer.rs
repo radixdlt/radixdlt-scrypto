@@ -178,7 +178,6 @@ impl WasmerModule {
 
         pub fn actor_call_module_method(
             env: &WasmerInstanceEnv,
-            object_handle: u32,
             module_id: u32,
             ident_ptr: u32,
             ident_len: u32,
@@ -191,7 +190,7 @@ impl WasmerModule {
             let args = read_memory(&instance, args_ptr, args_len)?;
 
             let buffer = runtime
-                .actor_call_module_method(object_handle, module_id, ident, args)
+                .actor_call_module_method(module_id, ident, args)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -338,7 +337,7 @@ impl WasmerModule {
             Ok(buffer.0)
         }
 
-        pub fn get_type_info(
+        pub fn get_blueprint_id(
             env: &WasmerInstanceEnv,
             component_id_ptr: u32,
             component_id_len: u32,
@@ -346,7 +345,21 @@ impl WasmerModule {
             let (instance, runtime) = grab_runtime!(env);
 
             let buffer = runtime
-                .get_object_info(read_memory(&instance, component_id_ptr, component_id_len)?)
+                .get_blueprint_id(read_memory(&instance, component_id_ptr, component_id_len)?)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer.0)
+        }
+
+        pub fn get_outer_object(
+            env: &WasmerInstanceEnv,
+            component_id_ptr: u32,
+            component_id_len: u32,
+        ) -> Result<u64, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .get_outer_object(read_memory(&instance, component_id_ptr, component_id_len)?)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
             Ok(buffer.0)
@@ -667,7 +680,8 @@ impl WasmerModule {
                 TIP_PERCENTAGE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), tip_percentage),
                 FEE_BALANCE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), fee_balance),
                 GLOBALIZE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), globalize_object),
-                GET_OBJECT_INFO_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_type_info),
+                GET_BLUEPRINT_ID_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_blueprint_id),
+                GET_OUTER_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_outer_object),
                 DROP_OBJECT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_object),
                 ACTOR_OPEN_FIELD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_open_field),
                 ACTOR_CALL_MODULE_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), actor_call_module_method),
@@ -771,7 +785,7 @@ pub struct WasmerEngineOptions {
 impl Default for WasmerEngine {
     fn default() -> Self {
         Self::new(WasmerEngineOptions {
-            max_cache_size: DEFAULT_WASM_ENGINE_CACHE_SIZE,
+            max_cache_size: WASM_ENGINE_CACHE_SIZE,
         })
     }
 }

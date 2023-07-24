@@ -1,5 +1,5 @@
 //use super::compute_state_tree_update;
-use crate::hash_tree::tree_store::{encode_key, NodeKey, Payload, ReadableTreeStore, TreeNode};
+use crate::hash_tree::tree_store::{encode_key, NodeKey, ReadableTreeStore, TreeNode};
 use itertools::Itertools;
 use radix_engine_common::data::scrypto::{scrypto_decode, scrypto_encode};
 use radix_engine_derive::ScryptoSbor;
@@ -133,14 +133,7 @@ impl CommittableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
         // derive and put new JMT nodes (also record keys of stale nodes, for later amortized background GC [not implemented here!])
         let state_hash_tree_update =
             compute_state_tree_update(self, parent_state_version, database_updates);
-        for (key, node) in state_hash_tree_update.new_re_node_layer_nodes {
-            batch.put_cf(
-                self.cf(MERKLE_NODES_CF),
-                encode_key(&key),
-                scrypto_encode(&node).unwrap(),
-            );
-        }
-        for (key, node) in state_hash_tree_update.new_substate_layer_nodes {
+        for (key, node) in state_hash_tree_update.new_nodes {
             batch.put_cf(
                 self.cf(MERKLE_NODES_CF),
                 encode_key(&key),
@@ -190,8 +183,8 @@ impl ListableSubstateDatabase for RocksDBWithMerkleTreeSubstateStore {
     }
 }
 
-impl<P: Payload> ReadableTreeStore<P> for RocksDBWithMerkleTreeSubstateStore {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode<P>> {
+impl ReadableTreeStore for RocksDBWithMerkleTreeSubstateStore {
+    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
         self.db
             .get_cf(self.cf(MERKLE_NODES_CF), &encode_key(key))
             .unwrap()

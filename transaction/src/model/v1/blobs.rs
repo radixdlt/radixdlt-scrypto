@@ -1,4 +1,4 @@
-use radix_engine_constants::MAX_NUMBER_OF_BLOBS;
+use radix_engine_common::constants::MAX_NUMBER_OF_BLOBS;
 
 use super::*;
 use crate::internal_prelude::*;

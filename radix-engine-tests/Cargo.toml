@@ -7,7 +7,6 @@ edition = "2021"
 native-sdk = { path = "../native-sdk", default-features = false }
 sbor = { path = "../sbor", default-features = false }
 radix-engine = { path = "../radix-engine", default-features = false, features = ["radix_engine_tests"] }
-radix-engine-constants = { path = "../radix-engine-constants" }
 radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
 radix-engine-common = { path = "../radix-engine-common", default-features = false }
 radix-engine-store-interface = { path = "../radix-engine-store-interface", default-features = false }
@@ -33,7 +32,7 @@ serde = { version = "1.0.144", default-features = false }
 serde_json = { version = "1.0.81", default-features = false }
 crossbeam = { version = "0.8.2" }
 walkdir = { version = "2.3.3" }
-paste = { version = "1.0.12" }
+paste = { version = "1.0.13" }
 
 
 [[bench]]
