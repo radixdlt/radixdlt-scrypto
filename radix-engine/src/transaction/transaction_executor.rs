@@ -17,7 +17,10 @@ use crate::track::{to_state_updates, Track};
 use crate::transaction::*;
 use crate::types::*;
 use radix_engine_common::constants::*;
-use radix_engine_interface::api::LockFlags;
+use radix_engine_interface::api::{LockFlags, ObjectModuleId};
+use radix_engine_interface::blueprints::package::{
+    BlueprintDefinition, BlueprintVersionKey, PACKAGE_BLUEPRINTS_PARTITION_OFFSET,
+};
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::blueprints::transaction_processor::InstructionOutput;
 use radix_engine_store_interface::{db_key_mapper::SpreadPrefixKeyMapper, interface::*};
@@ -295,11 +298,55 @@ where
                             );
                         }
 
-                        // Finalize everything
+                        // Finalize events and logs
                         let (mut application_events, application_logs) =
                             runtime_module.finalize(is_success);
+                        /*
+                            Emit XRD burn event, ignoring costing and limits.
+                            Otherwise, we won't be able to commit failed transactions.
+                            May also cache the information for better performance.
+                        */
+                        let handle = track
+                            .acquire_lock(
+                                RESOURCE_PACKAGE.as_node_id(),
+                                MAIN_BASE_PARTITION
+                                    .at_offset(PACKAGE_BLUEPRINTS_PARTITION_OFFSET)
+                                    .unwrap(),
+                                &SubstateKey::Map(
+                                    scrypto_encode(&BlueprintVersionKey::new_default(
+                                        FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
+                                    ))
+                                    .unwrap(),
+                                ),
+                                LockFlags::read_only(),
+                            )
+                            .unwrap()
+                            .0;
+                        let substate: KeyValueEntrySubstate<BlueprintDefinition> =
+                            track.read_substate(handle).0.as_typed().unwrap();
+                        track.close_substate(handle);
+                        let type_pointer = substate
+                            .value
+                            .unwrap()
+                            .interface
+                            .get_event_type_pointer("BurnFungibleResourceEvent")
+                            .unwrap();
+                        application_events.push((
+                            EventTypeIdentifier(
+                                Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
+                                type_pointer,
+                            ),
+                            scrypto_encode(&BurnFungibleResourceEvent {
+                                amount: fee_summary.to_burn_amount(),
+                            })
+                            .unwrap(),
+                        ));
+
+                        // Finalize execution trace
                         let execution_trace =
                             execution_trace_module.finalize(&fee_payments, is_success);
+
+                        // Finalize track
                         let (tracked_nodes, deleted_partitions) = track.finalize();
                         let state_update_summary =
                             StateUpdateSummary::new(self.substate_db, &tracked_nodes);
@@ -307,15 +354,6 @@ where
                             tracked_nodes,
                             deleted_partitions,
                         );
-
-                        // Overwrite XRD burn event
-                        application_events
-                            .last_mut()
-                            .expect("XRD burn event not found")
-                            .1 = scrypto_encode(&BurnFungibleResourceEvent {
-                            amount: fee_summary.to_burn_amount(),
-                        })
-                        .unwrap();
 
                         TransactionResult::Commit(CommitResult {
                             state_updates,
@@ -506,7 +544,7 @@ where
         };
 
         let interpretation_result = kernel_boot
-            .call_transaction_processor_and_emit_xrd_burn_event(
+            .call_transaction_processor(
                 executable.encoded_instructions(),
                 executable.pre_allocated_addresses(),
                 executable.references(),

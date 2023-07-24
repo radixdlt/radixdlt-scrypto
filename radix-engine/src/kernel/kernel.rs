@@ -21,7 +21,7 @@ use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapsh
 use crate::track::interface::{AcquireLockError, NodeSubstates, StoreAccessInfo, SubstateStore};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::api::{ClientBlueprintApi, ObjectModuleId};
+use radix_engine_interface::api::ClientBlueprintApi;
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::blueprints::transaction_processor::{
     TRANSACTION_PROCESSOR_BLUEPRINT, TRANSACTION_PROCESSOR_RUN_IDENT,
@@ -51,7 +51,7 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
     }
 
     /// Executes a transaction
-    pub fn call_transaction_processor_and_emit_xrd_burn_event<'a>(
+    pub fn call_transaction_processor<'a>(
         self,
         manifest_encoded_instructions: &'a [u8],
         pre_allocated_addresses: &'a Vec<PreAllocatedAddress>,
@@ -163,33 +163,6 @@ impl<'g, 'h, V: SystemCallbackObject, S: SubstateStore> KernelBoot<'g, V, S> {
                 blobs,
             })
             .unwrap(),
-        )?;
-
-        // Emit XRD burn event
-        let blueprint_interface = system.get_blueprint_default_interface(BlueprintId::new(
-            &RESOURCE_PACKAGE,
-            FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT,
-        ))?;
-        let type_pointer = blueprint_interface
-            .get_event_type_pointer("BurnFungibleResourceEvent")
-            .ok_or_else(|| {
-                RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                    PayloadValidationAgainstSchemaError::EventDoesNotExist(
-                        "BurnFungibleResourceEvent".to_owned(),
-                    ),
-                ))
-            })?;
-        let mock_event = scrypto_encode(&BurnFungibleResourceEvent {
-            amount: Decimal::ZERO,
-        })
-        .unwrap();
-        system.kernel_get_system().modules.add_event(
-            EventTypeIdentifier(
-                Emitter::Method(XRD.into_node_id(), ObjectModuleId::Main),
-                type_pointer,
-            ),
-            mock_event,
-            false,
         )?;
 
         // Sanity check call frame
