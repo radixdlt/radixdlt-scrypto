@@ -37,14 +37,18 @@ pub enum PrepareError {
     /// The wasm module does not have the `scrypto_free` export.
     NoScryptoFreeExport,
     /// Failed to inject instruction metering
-    RejectedByInstructionMetering,
+    RejectedByInstructionMetering { reason: String },
     /// Failed to inject stack metering
-    RejectedByStackMetering,
+    RejectedByStackMetering { reason: String },
     /// Not instantiatable
     NotInstantiatable { reason: String },
     /// Not compilable
     NotCompilable,
-    /// WasmParser
+    /// Wrap errors returned by WasmInstrument::ModuleInfoError
+    /// It is wrapped to String, because it's members cannot derive: Sbor, Eq and PartialEq
+    ModuleInfoError(String),
+    /// Wrap errors returned by wasmparser
+    /// It is wrapped to String, because wasmparser error (BinaryReaderError) members cannot derive: Sbor, Eq and PartialEq
     WasmParserError(String),
 }
 

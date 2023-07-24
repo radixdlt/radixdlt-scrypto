@@ -62,7 +62,7 @@ impl WasmModule {
         for entry in self
             .module
             .import_section()
-            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?
             .unwrap_or(vec![])
         {
             if entry.module == MODULE_ENV_NAME {
@@ -640,7 +640,7 @@ impl WasmModule {
                             }
                             return Err(PrepareError::InvalidImport(
                                 InvalidImport::InvalidFunctionType(
-                                 EMIT_EVENT_FUNCTION_NAME.to_string(),
+                                    EMIT_EVENT_FUNCTION_NAME.to_string(),
                                 ),
                             ));
                         }
@@ -673,9 +673,7 @@ impl WasmModule {
                                 continue;
                             }
                             return Err(PrepareError::InvalidImport(
-                                InvalidImport::InvalidFunctionType(
-                                    PANIC_FUNCTION_NAME.to_string(),
-                                ),
+                                InvalidImport::InvalidFunctionType(PANIC_FUNCTION_NAME.to_string()),
                             ));
                         }
                     }
@@ -731,7 +729,7 @@ impl WasmModule {
         let memory_section = self
             .module
             .memory_section()
-            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?
             .ok_or(PrepareError::InvalidMemory(
                 InvalidMemory::MissingMemorySection,
             ))?;
@@ -763,14 +761,14 @@ impl WasmModule {
             memory.maximum = Some(max_memory_size_in_pages.into());
             self.module
                 .modify_memory_type(0, memory)
-                .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+                .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?;
         }
 
         // Check if the memory is exported
         if !self
             .module
             .export_section()
-            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?
             .unwrap_or(vec![])
             .iter()
             .any(|e| e.kind == ExternalKind::Memory && e.name == EXPORT_MEMORY)
@@ -787,7 +785,7 @@ impl WasmModule {
         let section = self
             .module
             .table_section()
-            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+            .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?;
 
         if let Some(section) = section {
             if section.len() > 1 {
@@ -814,7 +812,7 @@ impl WasmModule {
         for fb in self
             .module
             .code_section()
-            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?
             .unwrap_or(vec![])
         {
             let reader = fb
@@ -865,7 +863,7 @@ impl WasmModule {
         let exports = self
             .module
             .export_section()
-            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?;
+            .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?;
 
         if let Some(exports) = exports {
             for blueprint_def_init in blueprints {
@@ -905,15 +903,21 @@ impl WasmModule {
             MODULE_ENV_NAME,
             CONSUME_WASM_EXECUTION_UNITS_FUNCTION_NAME,
         );
-        gas_metering::inject(&mut self.module, backend, rules)
-            .map_err(|_| PrepareError::RejectedByInstructionMetering)?;
+        gas_metering::inject(&mut self.module, backend, rules).map_err(|err| {
+            PrepareError::RejectedByInstructionMetering {
+                reason: err.to_string(),
+            }
+        })?;
 
         Ok(self)
     }
 
     pub fn inject_stack_metering(mut self, wasm_max_stack_size: u32) -> Result<Self, PrepareError> {
-        inject_stack_limiter(&mut self.module, wasm_max_stack_size)
-            .map_err(|_| PrepareError::RejectedByStackMetering)?;
+        inject_stack_limiter(&mut self.module, wasm_max_stack_size).map_err(|err| {
+            PrepareError::RejectedByStackMetering {
+                reason: err.to_string(),
+            }
+        })?;
         Ok(self)
     }
 
@@ -960,7 +964,7 @@ impl WasmModule {
         for export in self
             .module
             .export_section()
-            .map_err(|err| PrepareError::WasmParserError(err.to_string()))?
+            .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))?
             .unwrap_or(vec![])
         {
             if let wasmparser::ExternalKind::Func = export.kind {
@@ -1005,7 +1009,7 @@ impl WasmModule {
         for func_body in self
             .module
             .code_section()
-            .map_err(|err| PrepareError::WasmParserError(err.to_string()))
+            .map_err(|err| PrepareError::ModuleInfoError(err.to_string()))
             .unwrap()
             .expect("no code section")
         {
@@ -1069,7 +1073,7 @@ mod tests {
             )
             "#,
             PrepareError::ValidationError(
-                "floating-point support is disabled (at offset 0xb)".to_string()
+                "WasmParserError(BinaryReaderError { floating-point support is disabled (at offset 0xb) })".to_string()
             )
         );
         // input
@@ -1081,7 +1085,7 @@ mod tests {
             )
             "#,
             PrepareError::ValidationError(
-                "floating-point support is disabled (at offset 0xb)".to_string()
+                "WasmParserError(BinaryReaderError { floating-point support is disabled (at offset 0xb) })".to_string()
             )
         );
         // instruction
@@ -1097,7 +1101,7 @@ mod tests {
             )
             "#,
             PrepareError::ValidationError(
-                "floating-point instruction disallowed (at offset 0x17)".to_string()
+                "WasmParserError(BinaryReaderError { floating-point instruction disallowed (at offset 0x17) })".to_string()
             )
         );
         // global
@@ -1108,7 +1112,7 @@ mod tests {
             )
             "#,
             PrepareError::ValidationError(
-                "floating-point support is disabled (at offset 0xb)".to_string()
+                "WasmParserError(BinaryReaderError { floating-point support is disabled (at offset 0xb) })".to_string()
             )
         );
     }
