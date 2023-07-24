@@ -567,23 +567,6 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .map(|r| r.value.0.amount())
     }
 
-    pub fn account_balance(
-        &mut self,
-        account_address: ComponentAddress,
-        resource_address: ResourceAddress,
-    ) -> Option<Decimal> {
-        let vaults = self.get_component_vaults(account_address, resource_address);
-        let index = if resource_address.eq(&XRD) {
-            // To account for royalty vault
-            1usize
-        } else {
-            0usize
-        };
-        vaults
-            .get(index)
-            .map_or(None, |vault_id| self.inspect_vault_balance(*vault_id))
-    }
-
     pub fn find_all_nodes(&self) -> IndexSet<NodeId> {
         let mut node_ids = index_set_new();
         for pk in self.database.list_partition_keys() {
@@ -681,6 +664,28 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let mut traverser = StateTreeTraverser::new(&self.database, &mut vault_finder, 100);
         traverser.traverse_all_descendents(None, *node_id);
         vault_finder.to_vaults()
+    }
+
+    pub fn get_component_balance(
+        &mut self,
+        account_address: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> Decimal {
+        let vaults = self.get_component_vaults(account_address, resource_address);
+        let mut sum = Decimal::ZERO;
+        for vault in vaults {
+            sum += self.inspect_vault_balance(vault).unwrap();
+        }
+        sum
+    }
+
+    /// Alias to `get_component_balance`
+    pub fn account_balance(
+        &mut self,
+        account_address: ComponentAddress,
+        resource_address: ResourceAddress,
+    ) -> Decimal {
+        self.get_component_balance(account_address, resource_address)
     }
 
     pub fn inspect_vault_balance(&mut self, vault_id: NodeId) -> Option<Decimal> {

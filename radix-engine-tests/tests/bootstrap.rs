@@ -3,7 +3,7 @@ use radix_engine::blueprints::resource::FungibleResourceManagerTotalSupplySubsta
 use radix_engine::errors::{RuntimeError, SystemModuleError};
 use radix_engine::system::bootstrap::{
     Bootstrapper, GenesisDataChunk, GenesisReceipts, GenesisResource, GenesisResourceAllocation,
-    GenesisStakeAllocation,
+    GenesisStakeAllocation, DEFAULT_TESTING_FAUCET_SUPPLY,
 };
 use radix_engine::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use radix_engine::system::system_modules::auth::AuthError;
@@ -437,4 +437,72 @@ fn should_not_be_able_to_call_genesis_helper() {
             )))
         )
     });
+}
+
+#[test]
+fn mint_burn_events_should_match_resource_supply_post_genesis_and_notarized_tx() {
+    // Data migrated from Olympia
+    let validator_0_key = Secp256k1PrivateKey::from_u64(10).unwrap().public_key();
+    let validator_1_key = Secp256k1PrivateKey::from_u64(11).unwrap().public_key();
+    let staker_0 = ComponentAddress::virtual_account_from_public_key(
+        &Secp256k1PrivateKey::from_u64(4).unwrap().public_key(),
+    );
+    let staker_1 = ComponentAddress::virtual_account_from_public_key(
+        &Secp256k1PrivateKey::from_u64(5).unwrap().public_key(),
+    );
+    let validator_0_allocations = vec![
+        GenesisStakeAllocation {
+            account_index: 0,
+            xrd_amount: dec!("10"),
+        },
+        GenesisStakeAllocation {
+            account_index: 1,
+            xrd_amount: dec!("50000"),
+        },
+    ];
+    let validator_1_allocations = vec![GenesisStakeAllocation {
+        account_index: 1,
+        xrd_amount: dec!(1),
+    }];
+    let genesis_data_chunks = vec![
+        GenesisDataChunk::Validators(vec![
+            validator_0_key.clone().into(),
+            validator_1_key.clone().into(),
+        ]),
+        GenesisDataChunk::Stakes {
+            accounts: vec![staker_0, staker_1],
+            allocations: vec![
+                (validator_0_key, validator_0_allocations),
+                (validator_1_key, validator_1_allocations),
+            ],
+        },
+        GenesisDataChunk::XrdBalances(vec![(staker_0, dec!(200)), (staker_1, dec!(300))]),
+    ];
+
+    // Bootstrap
+    let mut test_runner = TestRunnerBuilder::new()
+        .collect_events()
+        .with_custom_genesis(CustomGenesis {
+            genesis_data_chunks: genesis_data_chunks,
+            genesis_epoch: Epoch::of(1),
+            initial_config: CustomGenesis::default_consensus_manager_config(),
+            initial_time_ms: 0,
+            initial_current_leader: Some(0),
+            faucet_supply: *DEFAULT_TESTING_FAUCET_SUPPLY,
+        })
+        .build();
+
+    // Run transaction
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .drop_auth_zone_proofs()
+        .build();
+    test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    let components = test_runner.find_all_components();
+    for component in components {
+        let xrd_balance = test_runner.get_component_balance(component, XRD);
+        println!("{:?}, {}", component, xrd_balance);
+    }
 }

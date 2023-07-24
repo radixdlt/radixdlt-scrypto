@@ -2038,7 +2038,7 @@ fn owner_can_lock_stake_units() {
     );
     assert_eq!(
         test_runner.account_balance(validator_account, validator_substate.stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount)
+        total_stake_amount - stake_units_to_lock_amount
     )
 }
 
@@ -2134,7 +2134,7 @@ fn owner_can_start_unlocking_stake_units() {
     );
     assert_eq!(
         test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount) // NOT in the external vault yet
+        total_stake_amount - stake_units_to_lock_amount // NOT in the external vault yet
     )
 }
 
@@ -2234,7 +2234,7 @@ fn multiple_pending_owner_stake_unit_withdrawals_stack_up() {
     );
     assert_eq!(
         test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount) // NOT in the external vault yet
+        total_stake_amount - stake_units_to_lock_amount // NOT in the external vault yet
     )
 }
 
@@ -2473,7 +2473,7 @@ fn owner_can_finish_unlocking_stake_units_after_delay() {
     );
     assert_eq!(
         test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount + stake_units_to_unlock_amount)
+        total_stake_amount - stake_units_to_lock_amount + stake_units_to_unlock_amount
     )
 }
 
@@ -2587,7 +2587,7 @@ fn owner_can_not_finish_unlocking_stake_units_before_delay() {
     );
     assert_eq!(
         test_runner.account_balance(validator_account, stake_unit_resource),
-        Some(total_stake_amount - stake_units_to_lock_amount) // still NOT in the external vault
+        total_stake_amount - stake_units_to_lock_amount // still NOT in the external vault
     )
 }
 

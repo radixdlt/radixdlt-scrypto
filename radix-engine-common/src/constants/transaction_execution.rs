@@ -40,7 +40,7 @@ pub const FEES_PROPOSER_SHARE_PERCENTAGE: u8 = 25;
 pub const FEES_VALIDATOR_SET_SHARE_PERCENTAGE: u8 = 25;
 
 /// The fees to burn
-pub const FEES_TO_BURN_PERCENTAGE: u8 = 25;
+pub const FEES_TO_BURN_PERCENTAGE: u8 = 50;
 
 /// The max event size
 pub const MAX_EVENT_SIZE: usize = 64 * 1024;
