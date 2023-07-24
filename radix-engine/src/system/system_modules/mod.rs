@@ -3,7 +3,6 @@ pub mod costing;
 pub mod execution_trace;
 pub mod kernel_trace;
 pub mod limits;
-pub mod node_move;
 pub mod transaction_runtime;
 
 mod module_mixer;

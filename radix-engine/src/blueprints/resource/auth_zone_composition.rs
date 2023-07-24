@@ -68,13 +68,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
     match resource_type {
         ResourceType::Fungible { .. } => {
             compose_fungible_proof(proofs, resource_address, amount, api).map(|(proof, handles)| {
-                ComposedProof::Fungible(
-                    ProofMoveableSubstate {
-                        restricted: false, // FIXME: follow existing impl, but need to revisit this
-                    },
-                    proof,
-                    handles,
-                )
+                ComposedProof::Fungible(ProofMoveableSubstate { restricted: false }, proof, handles)
             })
         }
         ResourceType::NonFungible { .. } => compose_non_fungible_proof(
@@ -93,13 +87,7 @@ pub fn compose_proof_by_amount<Y: KernelSubstateApi<SystemLockData> + ClientApi<
             api,
         )
         .map(|(proof, handles)| {
-            ComposedProof::NonFungible(
-                ProofMoveableSubstate {
-                    restricted: false, //  FIXME: verify this is sound
-                },
-                proof,
-                handles,
-            )
+            ComposedProof::NonFungible(ProofMoveableSubstate { restricted: false }, proof, handles)
         }),
     }
 }
@@ -131,13 +119,7 @@ pub fn compose_proof_by_ids<Y: KernelSubstateApi<SystemLockData> + ClientApi<Run
             api,
         )
         .map(|(proof, handles)| {
-            ComposedProof::NonFungible(
-                ProofMoveableSubstate {
-                    restricted: false, // FIXME: verify this is sound
-                },
-                proof,
-                handles,
-            )
+            ComposedProof::NonFungible(ProofMoveableSubstate { restricted: false }, proof, handles)
         }),
     }
 }
@@ -250,7 +232,6 @@ fn compose_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<Runti
         ));
     }
 
-    // FIXME: make sure costing has taken this loop into account.
     let mut evidence = BTreeMap::new();
     let mut remaining = amount.clone();
     let mut lock_handles = Vec::new();
@@ -340,7 +321,6 @@ fn compose_non_fungible_proof<Y: KernelSubstateApi<SystemLockData> + ClientApi<R
         ));
     }
 
-    // FIXME: make sure costing has taken this loop into account.
     let mut evidence = BTreeMap::new();
     let mut remaining = ids.clone();
     let mut lock_handles = Vec::new();
