@@ -2,7 +2,7 @@ use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
@@ -347,13 +347,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        callee: &Actor,
-        message: &Message,
-        args: &IndexedScryptoValue,
-    ) -> Result<(), RuntimeError> {
-        let resource_summary = ResourceSummary::from_message(api, message);
+    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(api: &mut Y, invocation: &KernelInvocation<Actor>) -> Result<(), RuntimeError> {
+        let message = Message::from_indexed_scrypto_value(&invocation.args);
+        let resource_summary = ResourceSummary::from_message(api, &message);
+        let callee = &invocation.call_frame_data;
+        let args = &invocation.args;
         let system_state = api.kernel_get_system_state();
         system_state
             .system
