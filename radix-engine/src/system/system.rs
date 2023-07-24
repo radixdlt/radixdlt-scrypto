@@ -17,7 +17,7 @@ use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::{ActingLocation, AuthorizationCheckResult};
+use crate::system::system_modules::auth::AuthorizationCheckResult;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -2679,22 +2679,9 @@ where
             .modules
             .apply_execution_cost(CostingEntry::AssertAccessRule)?;
 
-        // Fetch the tip auth zone
-        //let auth_zone_id = self.get_auth_zone()?;
-
-
-        /*CallerAuthZone {
-            global_auth_zone: auth_zone_id,
-            global: self.current_actor().caller_authzone().unwrap().global.clone(),
-            local_package_address: self.current_actor().caller_authzone().unwrap().local_package_address,
-        };
-        */
-
-
         if let Some(auth_info) = self.current_actor().auth_info() {
             // Authorize
             let auth_result = Authorization::check_authorization_against_access_rule(
-                ActingLocation::InCallFrame,
                 &auth_info,
                 &rule,
                 self,

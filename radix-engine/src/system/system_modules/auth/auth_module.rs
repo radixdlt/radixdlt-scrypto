@@ -9,7 +9,6 @@ use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::ActingLocation;
 use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::{
@@ -87,32 +86,21 @@ impl AuthModule {
 
             // Step 1: Resolve method to permission
             // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-            let (permission, acting_location) = match &callee {
+            let permission = match &callee {
                 Actor::Method(actor) => {
-                    let resolved_permission =
-                        Self::resolve_method_permission(actor, args, &mut system)?;
-                    let acting_location = if actor.object_info.global {
-                        ActingLocation::AtBarrier
-                    } else {
-                        ActingLocation::AtLocalBarrier
-                    };
-
-                    (resolved_permission, acting_location)
+                        Self::resolve_method_permission(actor, args, &mut system)?
                 }
                 Actor::Function(FunctionActor {
                     blueprint_id,
                     ident,
                     ..
                 }) => {
-                    let resolved_permission =
-                        PackageAuthNativeBlueprint::resolve_function_permission(
-                            blueprint_id.package_address.as_node_id(),
-                            &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-                            ident.as_str(),
-                            system.api,
-                        )?;
-
-                    (resolved_permission, ActingLocation::AtBarrier)
+                    PackageAuthNativeBlueprint::resolve_function_permission(
+                        blueprint_id.package_address.as_node_id(),
+                        &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                        ident.as_str(),
+                        system.api,
+                    )?
                 }
                 Actor::BlueprintHook(..) | Actor::Root => return Ok(()),
             };
@@ -120,7 +108,6 @@ impl AuthModule {
             // Step 2: Check permission
             Self::check_permission(
                 auth_info,
-                acting_location,
                 permission,
                 callee.fn_identifier(),
                 &mut system,
@@ -134,7 +121,6 @@ impl AuthModule {
 
     fn check_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         auth_info: AuthInfo,
-        acting_location: ActingLocation,
         resolved_permission: ResolvedPermission,
         fn_identifier: Option<FnIdentifier>,
         api: &mut SystemService<Y, V>,
@@ -143,7 +129,6 @@ impl AuthModule {
             ResolvedPermission::AllowAll => return Ok(()),
             ResolvedPermission::AccessRule(rule) => {
                 let result = Authorization::check_authorization_against_access_rule(
-                    acting_location,
                     &auth_info,
                     &rule,
                     api,
@@ -169,7 +154,6 @@ impl AuthModule {
                 module_id,
             } => {
                 let result = Authorization::check_authorization_against_role_list(
-                    acting_location,
                     &auth_info,
                     &role_assignment_of,
                     module_id,
