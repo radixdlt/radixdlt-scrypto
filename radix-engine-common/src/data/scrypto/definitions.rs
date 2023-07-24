@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 
-pub use radix_engine_constants::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
-pub const SCRYPTO_SBOR_V1_MAX_DEPTH: usize = 64;
+pub use crate::constants::SCRYPTO_SBOR_V1_MAX_DEPTH;
+pub use crate::constants::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX;
 
 pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind>;
 pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind>;

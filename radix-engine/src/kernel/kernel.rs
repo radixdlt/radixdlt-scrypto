@@ -200,6 +200,117 @@ pub struct Kernel<
     callback: &'g mut M,
 }
 
+/*
+impl<'g, M, S> Kernel<'g, M, S>
+where
+    M: KernelCallbackObject,
+    S: SubstateStore,
+{
+    fn invoke(
+        &mut self,
+        invocation: Box<KernelInvocation>,
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
+        // Check actor visibility
+        let can_be_invoked = match &invocation.actor {
+            Actor::Method(MethodActor {
+                node_id,
+                receiver_type,
+                ..
+            }) => self
+                .current_frame
+                .get_node_visibility(&node_id)
+                .can_be_invoked(receiver_type.eq(&ReceiverType::DirectAccess)),
+            Actor::Function(FunctionActor { blueprint_id, .. })
+            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
+                // FIXME: combine this with reference check of invocation
+                self.current_frame
+                    .get_node_visibility(blueprint_id.package_address.as_node_id())
+                    .can_be_invoked(false)
+            }
+            Actor::Root => true,
+        };
+        if !can_be_invoked {
+            return Err(RuntimeError::KernelError(KernelError::InvalidInvokeAccess));
+        }
+
+        // Before push call frame
+        let mut message = Message::from_indexed_scrypto_value(&invocation.args);
+        let actor = invocation.actor;
+        let args = &invocation.args;
+        M::before_push_frame(&actor, &mut message, &args, self)?;
+
+        // Push call frame
+        {
+            let frame = CallFrame::new_child_from_parent(&mut self.current_frame, actor, message)
+                .map_err(CallFrameError::CreateFrameError)
+                .map_err(KernelError::CallFrameError)?;
+            let parent = mem::replace(&mut self.current_frame, frame);
+            self.prev_frame_stack.push(parent);
+        }
+
+        // Execute
+        let (output, message) = {
+            // Handle execution start
+            M::on_execution_start(self)?;
+
+            // Auto drop locks
+            self.current_frame
+                .drop_all_locks(&mut self.heap, self.store)
+                .map_err(CallFrameError::CloseSubstateError)
+                .map_err(KernelError::CallFrameError)?;
+
+            // Run
+            let output = M::invoke_upstream(args, self)?;
+            let message = Message::from_indexed_scrypto_value(&output);
+
+            // Auto-drop locks again in case module forgot to drop
+            self.current_frame
+                .drop_all_locks(&mut self.heap, self.store)
+                .map_err(CallFrameError::CloseSubstateError)
+                .map_err(KernelError::CallFrameError)?;
+
+            // Handle execution finish
+            M::on_execution_finish(&message, self)?;
+
+            (output, message)
+        };
+
+        // Move
+        {
+            let parent = self.prev_frame_stack.last_mut().unwrap();
+
+            // Move resource
+            CallFrame::pass_message(&mut self.current_frame, parent, message.clone())
+                .map_err(CallFrameError::PassMessageError)
+                .map_err(KernelError::CallFrameError)?;
+
+            // Auto-drop
+            let owned_nodes = self.current_frame.owned_nodes();
+            M::auto_drop(owned_nodes, self)?;
+
+            // Now, check if any own has been left!
+            let owned_nodes = self.current_frame.owned_nodes();
+            if !owned_nodes.is_empty() {
+                return Err(RuntimeError::KernelError(KernelError::OrphanedNodes(
+                    owned_nodes,
+                )));
+            }
+        }
+
+        // Pop call frame
+        {
+            let parent = self.prev_frame_stack.pop().unwrap();
+
+            let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
+
+            M::after_pop_frame(dropped_frame.actor(), &message, self)?;
+        }
+
+        Ok(output)
+    }
+}
+ */
+
 impl<'g, M, S> KernelNodeApi for Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
@@ -797,7 +908,7 @@ where
             let parent = self.prev_frame_stack.last_mut().unwrap();
 
             // Move resource
-            CallFrame::pass_message(&mut self.current_frame, parent, message)
+            CallFrame::pass_message(&mut self.current_frame, parent, message.clone())
                 .map_err(CallFrameError::PassMessageError)
                 .map_err(KernelError::CallFrameError)?;
 
@@ -820,7 +931,7 @@ where
 
             let dropped_frame = core::mem::replace(&mut self.current_frame, parent);
 
-            M::after_pop_frame(self, dropped_frame.data())?;
+            M::after_pop_frame(dropped_frame.data(), &message, self)?;
         }
 
         M::after_invoke(output.len(), self)?;
