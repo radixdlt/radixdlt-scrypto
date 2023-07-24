@@ -78,7 +78,7 @@ fn bench_spin_loop(c: &mut Criterion) {
     c.bench_function("costing::spin_loop", |b| {
         b.iter(|| {
             let fee_reserve = SystemLoanFeeReserve::default()
-                .with_free_credit(Decimal::try_from(DEFAULT_FREE_CREDIT_IN_XRD).unwrap());
+                .with_free_credit(Decimal::try_from(FREE_CREDIT_IN_XRD).unwrap());
             wasm_execution_units_consumed = 0;
             let mut runtime: Box<dyn WasmRuntime> = Box::new(NoOpWasmRuntime::new(
                 fee_reserve,

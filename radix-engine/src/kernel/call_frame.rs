@@ -1085,9 +1085,9 @@ impl<L: Clone> CallFrame<L> {
                     self.stable_references
                         .insert(reference.clone(), StableReferenceType::Global);
                 } else {
-                    return Err(CallbackError::Error(CallFrameScanSortedSubstatesError::OwnedNodeNotSupported(
-                        reference.clone(),
-                    )));
+                    return Err(CallbackError::Error(
+                        CallFrameScanSortedSubstatesError::OwnedNodeNotSupported(reference.clone()),
+                    ));
                 }
             }
         }

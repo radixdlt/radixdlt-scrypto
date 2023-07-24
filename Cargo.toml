@@ -32,7 +32,6 @@ members = [
     "radix-engine-store-interface",
     "radix-engine-stores",
     "radix-engine-tests",
-    "radix-engine-constants",
     "radix-engine-queries",
     "utils",
     "radix-engine-profiling",

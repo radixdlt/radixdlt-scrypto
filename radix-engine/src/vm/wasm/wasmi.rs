@@ -1230,7 +1230,7 @@ pub struct WasmiEngine {
 impl Default for WasmiEngine {
     fn default() -> Self {
         Self::new(WasmiEngineOptions {
-            max_cache_size: DEFAULT_WASM_ENGINE_CACHE_SIZE,
+            max_cache_size: WASM_ENGINE_CACHE_SIZE,
         })
     }
 }
