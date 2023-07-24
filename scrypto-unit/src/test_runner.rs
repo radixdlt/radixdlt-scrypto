@@ -309,6 +309,15 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
     }
 
     pub fn build_and_get_epoch(self) -> (TestRunner<E, D>, ActiveValidatorSet) {
+        //---------- Override configs for resource tracker ---------------
+        let bootstrap_trace = false;
+
+        #[cfg(not(feature = "resource_tracker"))]
+        let trace = self.trace;
+        #[cfg(feature = "resource_tracker")]
+        let trace = false;
+        //----------------------------------------------------------------
+
         let scrypto_vm = ScryptoVm {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_validator_config: WasmValidatorConfigV1::new(),
@@ -316,7 +325,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
         let native_vm = NativeVm::new_with_extension(self.custom_extension);
         let vm = Vm::new(&scrypto_vm, native_vm.clone());
         let mut substate_db = self.custom_database;
-        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, false);
+        let mut bootstrapper = Bootstrapper::new(&mut substate_db, vm, bootstrap_trace);
         let GenesisReceipts {
             wrap_up_receipt, ..
         } = match self.custom_genesis {
@@ -348,7 +357,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunnerBuilder<E, D> {
                 .map(|_| StateHashSupport::new()),
             next_private_key,
             next_transaction_nonce,
-            trace: self.trace,
+            trace,
         };
 
         let next_epoch = wrap_up_receipt
