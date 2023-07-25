@@ -66,8 +66,6 @@ impl FeeTable {
     }
 
     fn data_processing_cost(size: usize) -> u32 {
-        // FIXME: add payload against schema validation costs
-
         // Based on benchmark `bench_decode_sbor`
         // Time for processing a byte: 10.244 µs / 1068 = 0.00959176029
 
