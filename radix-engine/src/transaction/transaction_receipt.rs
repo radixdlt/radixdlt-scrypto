@@ -245,7 +245,7 @@ impl TransactionReceipt {
         matches!(self.transaction_result, TransactionResult::Reject(_))
     }
 
-    pub fn expect_commit(&self) -> &CommitResult {
+    pub fn expect_commit_ignore_result(&self) -> &CommitResult {
         match &self.transaction_result {
             TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
@@ -253,8 +253,8 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn expect_commit_with_success(&self, success: bool) -> &CommitResult {
-        let c = self.expect_commit();
+    pub fn expect_commit(&self, success: bool) -> &CommitResult {
+        let c = self.expect_commit_ignore_result();
         if c.outcome.is_success() != success {
             panic!(
                 "Expected {} but was {}: {:?}",
@@ -271,11 +271,11 @@ impl TransactionReceipt {
     }
 
     pub fn expect_commit_success(&self) -> &CommitResult {
-        self.expect_commit_with_success(true)
+        self.expect_commit(true)
     }
 
     pub fn expect_commit_failure(&self) -> &CommitResult {
-        self.expect_commit_with_success(false)
+        self.expect_commit(false)
     }
 
     pub fn expect_rejection(&self) -> &RejectionError {

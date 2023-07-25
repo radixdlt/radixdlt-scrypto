@@ -56,7 +56,7 @@ fn setting_struct_with_deep_recursive_data_panics_inside_component() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     // Act 1 - Small Depth - Succeeds

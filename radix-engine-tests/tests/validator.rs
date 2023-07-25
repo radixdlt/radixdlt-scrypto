@@ -120,7 +120,7 @@ fn check_if_validator_accepts_delegated_stake() {
 
     // Assert
     let ret = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .outcome
         .expect_success();
     assert_eq!(

@@ -203,7 +203,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         receipt.expect_commit_success();
 
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_component_addresses()[0]
     };
 
@@ -246,7 +246,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
         receipt.expect_commit_success();
 
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_component_addresses()[0]
     };
 
@@ -281,7 +281,7 @@ fn update_rule() {
 
     let receipt = test_runner.get_role(RoleKey::new("borrow_funds_auth"));
     let ret = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .outcome
         .expect_success();
     assert_eq!(
@@ -304,7 +304,7 @@ fn update_rule() {
 
     // Assert
     let ret = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .outcome
         .expect_success();
     assert_eq!(
@@ -322,7 +322,7 @@ fn change_lock_owner_role_rules() {
     // Act: verify if lock owner role is possible
     let receipt = test_runner.lock_owner_role();
     receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .outcome
         .expect_success();
     let receipt = test_runner.lock_owner_role();
@@ -386,7 +386,7 @@ impl MutableRolesTestRunner {
             &mut test_runner,
         );
         let component_address = receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_component_addresses()[0];
 
         Self {
@@ -400,7 +400,7 @@ impl MutableRolesTestRunner {
         let mut test_runner = TestRunnerBuilder::new().build();
         let receipt = Self::create_component_with_owner(owner_role, &mut test_runner);
         let component_address = receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_component_addresses()[0];
 
         Self {
@@ -414,7 +414,7 @@ impl MutableRolesTestRunner {
         let mut test_runner = TestRunnerBuilder::new().build();
         let receipt = Self::create_component(roles, &mut test_runner);
         let component_address = receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_component_addresses()[0];
 
         Self {

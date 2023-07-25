@@ -25,7 +25,7 @@ fn test_component() {
 
     // Find the component address from receipt
     let component = receipt1
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     // Call functions & methods

@@ -32,7 +32,7 @@ fn cannot_call_package_protected_function_without_package_token() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     // Act

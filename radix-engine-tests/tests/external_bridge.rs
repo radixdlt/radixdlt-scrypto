@@ -37,7 +37,7 @@ fn test_external_bridges() {
     receipt1.expect_commit_success();
 
     let target_component_address = receipt1
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     // Part 3 - Get the caller component address
@@ -54,7 +54,7 @@ fn test_external_bridges() {
     receipt2.expect_commit_success();
 
     let caller_component_address = receipt2
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     // ACT

@@ -46,7 +46,7 @@ fn setup_test_runner() -> (DefaultTestRunner, ComponentAddress) {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let commit_result = receipt1.expect_commit_with_success(true);
+    let commit_result = receipt1.expect_commit(true);
     let component_address = commit_result.new_component_addresses()[0];
 
     (test_runner, component_address)
@@ -246,7 +246,7 @@ fn test_fee_accounting_success() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit_with_success(true);
+    let commit_result = receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -307,7 +307,7 @@ fn test_fee_accounting_failure() {
             ))
         )
     });
-    let commit_result = receipt.expect_commit_with_success(false);
+    let commit_result = receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -389,7 +389,7 @@ fn test_contingent_fee_accounting_success() {
     );
 
     // Assert
-    let commit_result = receipt.expect_commit_with_success(true);
+    let commit_result = receipt.expect_commit(true);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)
@@ -454,7 +454,7 @@ fn test_contingent_fee_accounting_failure() {
             ))
         )
     });
-    let commit_result = receipt.expect_commit_with_success(false);
+    let commit_result = receipt.expect_commit(false);
     let account1_new_balance = test_runner
         .get_component_resources(account1)
         .get(&XRD)

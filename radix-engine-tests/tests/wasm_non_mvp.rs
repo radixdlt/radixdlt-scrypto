@@ -45,7 +45,7 @@ macro_rules! assert_sign_extensions {
                 let receipt = test_runner.execute_manifest(manifest, vec![]);
 
                 // Assert
-                let outcome: $type = receipt.expect_commit_with_success(true).output(1);
+                let outcome: $type = receipt.expect_commit(true).output(1);
                 assert_eq!(outcome, $output as $type);
             }
         }

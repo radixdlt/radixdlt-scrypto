@@ -20,7 +20,7 @@ fn create_secured_component(
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let secured_component = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
     secured_component
 }
@@ -53,7 +53,7 @@ fn create_component(
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let my_component = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
     my_component
 }

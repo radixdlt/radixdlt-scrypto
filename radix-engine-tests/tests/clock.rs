@@ -39,7 +39,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
 
     // Assert
     let current_unix_time_rounded_to_minutes: i64 =
-        receipt.expect_commit_with_success(true).output(2);
+        receipt.expect_commit(true).output(2);
     assert_eq!(
         current_unix_time_rounded_to_minutes,
         expected_unix_time_rounded_to_minutes
@@ -65,7 +65,7 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let current_time_rounded_to_minutes: i64 = receipt.expect_commit_with_success(true).output(1);
+    let current_time_rounded_to_minutes: i64 = receipt.expect_commit(true).output(1);
     assert_eq!(current_time_rounded_to_minutes, 0);
 }
 

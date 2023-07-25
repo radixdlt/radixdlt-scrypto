@@ -42,7 +42,7 @@ fn test_transaction_preview_cost_estimate() {
             .with_kernel_trace(true)
             .with_cost_breakdown(true),
     );
-    let actual_result = actual_receipt.expect_commit_with_success(true);
+    let actual_result = actual_receipt.expect_commit(true);
     assert_eq!(
         // TODO: better preview payload size estimate?
         preview_result.fee_summary.total_cost()

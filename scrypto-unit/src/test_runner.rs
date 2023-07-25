@@ -711,7 +711,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         receipt.expect_commit_success();
 
         let account = receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_component_addresses()[0];
 
         let manifest = ManifestBuilder::new()
@@ -804,7 +804,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             let receipt = self.execute_manifest(manifest, vec![]);
             receipt.expect_commit_success();
             let component_address = receipt
-                .expect_commit_with_success(true)
+                .expect_commit(true)
                 .new_component_addresses()[0];
 
             component_address
@@ -820,7 +820,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
         let component_address = receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_component_addresses()[0];
 
         component_address
@@ -840,7 +840,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let address = receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_component_addresses()[0];
         address
     }
@@ -864,7 +864,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             }],
             btreeset!(AuthAddresses::system_role()),
         );
-        let package_address: PackageAddress = receipt.expect_commit_with_success(true).output(0);
+        let package_address: PackageAddress = receipt.expect_commit(true).output(0);
         package_address
     }
 
@@ -924,7 +924,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_package_addresses()[0]
     }
 
@@ -941,7 +941,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_package_addresses()[0]
     }
 
@@ -1243,7 +1243,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_resource_addresses()[0]
     }
 
@@ -1358,7 +1358,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             vec![],
         );
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_resource_addresses()[0]
     }
 
@@ -1489,7 +1489,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_resource_addresses()[0]
     }
 
@@ -1513,7 +1513,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_resource_addresses()[0]
     }
 
@@ -1547,7 +1547,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         let resource_address = receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_resource_addresses()[0];
         (admin_auth, resource_address)
     }
@@ -1579,7 +1579,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_resource_addresses()[0]
     }
 
@@ -1614,7 +1614,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_resource_addresses()[0]
     }
 
@@ -1633,7 +1633,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
 
         let receipt = self.execute_manifest(manifest, initial_proofs);
         receipt
-            .expect_commit_with_success(true)
+            .expect_commit(true)
             .new_component_addresses()[0]
     }
 
@@ -1664,7 +1664,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             }],
             btreeset![AuthAddresses::validator_role()],
         );
-        receipt.expect_commit_with_success(true).output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn get_state_hash(&self) -> Hash {
@@ -1822,7 +1822,7 @@ impl<E: NativeVmExtension, D: TestDatabase> TestRunner<E, D> {
             }],
             btreeset![AuthAddresses::validator_role()],
         );
-        receipt.expect_commit_with_success(true).output(0)
+        receipt.expect_commit(true).output(0)
     }
 
     pub fn event_schema(

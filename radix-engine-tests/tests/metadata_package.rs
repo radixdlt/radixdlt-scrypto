@@ -22,7 +22,7 @@ fn cannot_set_package_metadata_with_no_owner() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let package_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_package_addresses()[0];
 
     // Act
@@ -62,7 +62,7 @@ fn can_set_package_metadata_with_owner() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let package_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_package_addresses()[0];
 
     // Act

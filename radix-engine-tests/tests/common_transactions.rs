@@ -318,7 +318,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
     };
     let result = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
     let mintable_non_fungible_resource_address = result
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_resource_addresses()[0]
         .clone();
 

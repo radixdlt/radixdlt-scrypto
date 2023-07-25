@@ -105,12 +105,12 @@ impl NonFungibleVaultBlueprint {
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut ids = Self::liquid_non_fungible_local_ids(count, api)?;
+        let mut ids = Self::locked_non_fungible_local_ids(count, api)?;
         let id_len: u32 = ids.len().try_into().unwrap();
 
         if id_len < count {
             let locked_count = count - id_len;
-            ids.extend(Self::locked_non_fungible_local_ids(locked_count, api)?);
+            ids.extend(Self::liquid_non_fungible_local_ids(locked_count, api)?);
         }
 
         Ok(ids)

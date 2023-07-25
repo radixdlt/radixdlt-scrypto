@@ -193,7 +193,7 @@ fn set_up_package_and_component() -> (
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let package_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_package_addresses()[0];
 
     // Instantiate component
@@ -216,7 +216,7 @@ fn set_up_package_and_component() -> (
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
     let component_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     (

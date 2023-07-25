@@ -18,7 +18,7 @@ fn can_get_from_scrypto() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
@@ -52,7 +52,7 @@ fn can_set_from_scrypto() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     // Act
@@ -111,7 +111,7 @@ fn cannot_set_metadata_if_key_too_long() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     // Act
@@ -177,7 +177,7 @@ fn cannot_set_metadata_if_value_too_long() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     // Act
@@ -213,7 +213,7 @@ fn cannot_set_metadata_if_initialized_empty_locked() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     // Act

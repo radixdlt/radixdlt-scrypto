@@ -13,7 +13,7 @@ fn stored_resource_is_invokeable() {
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component = receipt
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()[0];
 
     // Act

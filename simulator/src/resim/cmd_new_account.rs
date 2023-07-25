@@ -55,7 +55,7 @@ impl NewAccount {
         let address_bech32_encoder = AddressBech32Encoder::new(&NetworkDefinition::simulator());
 
         if let Some(ref receipt) = receipt {
-            let commit_result = receipt.expect_commit_with_success(true);
+            let commit_result = receipt.expect_commit(true);
             commit_result
                 .outcome
                 .success_or_else(|err| TransactionFailed(err.clone()))?;
@@ -91,7 +91,7 @@ impl NewAccount {
             )?
             .unwrap();
             let resource_address = receipt
-                .expect_commit_with_success(true)
+                .expect_commit(true)
                 .new_resource_addresses()[0];
             let owner_badge =
                 NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::integer(1));
