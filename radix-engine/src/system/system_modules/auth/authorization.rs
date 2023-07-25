@@ -1,6 +1,6 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
-use crate::kernel::actor::AuthInfo;
+use crate::kernel::actor::AuthActorInfo;
 use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
 use crate::system::node_modules::role_assignment::OwnerRoleSubstate;
 use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SystemService};
@@ -107,7 +107,7 @@ impl Authorization {
     }
 
     fn auth_zone_stack_matches<P, Y, V>(
-        auth_info: &AuthInfo,
+        auth_info: &AuthActorInfo,
         api: &mut SystemService<Y, V>,
         check: P,
     ) -> Result<bool, RuntimeError>
@@ -154,7 +154,7 @@ impl Authorization {
     }
 
     fn auth_zone_stack_has_amount<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_info: &AuthInfo,
+        auth_info: &AuthActorInfo,
         resource: &ResourceAddress,
         amount: Decimal,
         api: &mut SystemService<Y, V>,
@@ -174,7 +174,7 @@ impl Authorization {
     }
 
     fn auth_zone_stack_matches_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_info: &AuthInfo,
+        auth_info: &AuthActorInfo,
         resource_rule: &ResourceOrNonFungible,
         api: &mut SystemService<Y, V>,
     ) -> Result<bool, RuntimeError> {
@@ -204,7 +204,7 @@ impl Authorization {
     }
 
     pub fn verify_proof_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_info: &AuthInfo,
+        auth_info: &AuthActorInfo,
         proof_rule: &ProofRule,
         api: &mut SystemService<Y, V>,
     ) -> Result<bool, RuntimeError> {
@@ -257,7 +257,7 @@ impl Authorization {
     }
 
     pub fn verify_auth_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_info: &AuthInfo,
+        auth_info: &AuthActorInfo,
         auth_rule: &AccessRuleNode,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -295,7 +295,7 @@ impl Authorization {
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        auth_info: &AuthInfo,
+        auth_info: &AuthActorInfo,
         role_assignment_of: &NodeId,
         key: &ModuleRoleKey,
         api: &mut SystemService<Y, V>,
@@ -351,7 +351,7 @@ impl Authorization {
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        auth_info: &AuthInfo,
+        auth_info: &AuthActorInfo,
         rule: &AccessRule,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -375,7 +375,7 @@ impl Authorization {
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        auth_info: &AuthInfo,
+        auth_info: &AuthActorInfo,
         rule: &AccessRule,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -386,7 +386,7 @@ impl Authorization {
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        auth_info: &AuthInfo,
+        auth_info: &AuthActorInfo,
         role_assignment_of: &NodeId,
         module: ObjectModuleId,
         role_list: &RoleList,

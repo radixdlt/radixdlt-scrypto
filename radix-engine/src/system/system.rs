@@ -10,7 +10,7 @@ use crate::errors::{
 };
 use crate::errors::{EventError, SystemUpstreamError};
 use crate::kernel::actor::{
-    Actor, AuthInfo, CallerAuthZone, FunctionActor, InstanceContext, MethodActor,
+    Actor, AuthActorInfo, CallerAuthZone, FunctionActor, InstanceContext, MethodActor,
 };
 use crate::kernel::call_frame::{NodeVisibility, RootNodeType};
 use crate::kernel::kernel_api::*;
@@ -1444,11 +1444,7 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_info = AuthModule::create_auth_info(self.api, receiver, direct_access)?;
-
-        if self.kernel_get_system_state().system.modules.enabled_modules.contains(EnabledModules::AUTH) {
-            AuthModule::check_method_authorization(self.api, receiver, module_id, method_name, &args, auth_info.clone())?;
-        }
+        let auth_actor_info = AuthModule::on_call_method(self, receiver, module_id, direct_access, method_name, &args)?;
 
         let invocation = KernelInvocation {
             call_frame_data: Actor::Method(MethodActor {
@@ -1457,7 +1453,7 @@ where
                 module_id,
                 ident: method_name.to_string(),
 
-                auth_info: auth_info.clone(),
+                auth_actor_info: auth_actor_info.clone(),
                 object_info,
             }),
             args,
@@ -1468,36 +1464,7 @@ where
             .kernel_invoke(Box::new(invocation))
             .map(|v| v.into())?;
 
-        {
-            let self_auth_zone = auth_info.self_auth_zone;
-            // Detach proofs from the auth zone
-            let handle = self.kernel_open_substate(
-                &self_auth_zone,
-                MAIN_BASE_PARTITION,
-                &AuthZoneField::AuthZone.into(),
-                LockFlags::MUTABLE,
-                SystemLockData::Default,
-            )?;
-            let mut substate: FieldSubstate<AuthZone> =
-                self.kernel_read_substate(handle)?.as_typed().unwrap();
-            let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
-            self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
-            self.kernel_close_substate(handle)?;
-
-            // Drop all proofs (previously) owned by the auth zone
-            for proof in proofs {
-                let object_info = self.get_object_info(proof.0.as_node_id())?;
-                self.call_function(
-                    RESOURCE_PACKAGE,
-                    &object_info.blueprint_info.blueprint_id.blueprint_name,
-                    PROOF_DROP_IDENT,
-                    scrypto_encode(&ProofDropInput { proof }).unwrap(),
-                )?;
-            }
-
-            // Drop the auth zone
-            self.kernel_drop_node(&self_auth_zone)?;
-        }
+        AuthModule::on_call_method_finish(self, auth_actor_info)?;
 
         Ok(rtn)
     }
@@ -2047,12 +2014,12 @@ where
                         {
                             RootNodeType::Global(address) => Some((
                                 address.into(),
-                                current_method_actor.auth_info.self_auth_zone,
+                                current_method_actor.auth_actor_info.self_auth_zone,
                             )),
                             RootNodeType::Heap => {
                                 // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
                                 current_method_actor
-                                    .auth_info
+                                    .auth_actor_info
                                     .caller_auth_zone
                                     .clone()
                                     .and_then(|a| a.global_auth_zone)
@@ -2136,7 +2103,7 @@ where
             auth_zone_node_id
         };
 
-        let auth_info = AuthInfo {
+        let auth_info = AuthActorInfo {
             caller_auth_zone,
             self_auth_zone,
         };

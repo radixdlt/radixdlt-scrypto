@@ -1,15 +1,15 @@
 use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, AuthInfo, CallerAuthZone, FunctionActor, MethodActor};
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
+use crate::kernel::actor::{Actor, AuthActorInfo, CallerAuthZone, FunctionActor, MethodActor};
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::module::KernelModule;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::system::{FieldSubstate, SystemService};
-use crate::system::system_callback::SystemConfig;
+use crate::system::system_callback::{SystemConfig, SystemLockData};
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
-use radix_engine_interface::api::ObjectModuleId;
+use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
@@ -18,6 +18,7 @@ use crate::blueprints::resource::AuthZone;
 use crate::kernel::call_frame::RootNodeType;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
+use crate::system::system_modules::EnabledModules;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -69,7 +70,7 @@ pub enum ResolvedPermission {
 impl AuthModule {
     pub fn check_function_authorization<V, Y>(
         api: &mut Y,
-        auth_info: AuthInfo,
+        auth_info: AuthActorInfo,
         blueprint_id: &BlueprintId,
         ident: &str,
     ) -> Result<(), RuntimeError>
@@ -97,27 +98,104 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn check_method_authorization<V, Y>(
-        api: &mut Y,
+    /*
+    pub fn on_call_function<V, Y>(
+        api: &mut SystemService<Y, V>,
+        blueprint_id: &BlueprintId,
+        ident: &str,
+    ) -> Result<AuthActorInfo, RuntimeError>
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
+    {
+        let auth_info = Self::create_auth_info(api, receiver, direct_access)?;
+        if api.kernel_get_system_state().system.modules.enabled_modules.contains(EnabledModules::AUTH) {
+            Self::check_method_authorization(api, receiver, module_id, ident, args, auth_info.clone())?;
+        }
+
+        Ok(auth_info)
+    }
+     */
+
+    pub fn on_call_method<V, Y>(
+        api: &mut SystemService<Y, V>,
         receiver: &NodeId,
         module_id: ObjectModuleId,
+        direct_access: bool,
         ident: &str,
         args: &IndexedScryptoValue,
-        auth_info: AuthInfo,
+    ) -> Result<AuthActorInfo, RuntimeError>
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
+    {
+        let auth_info = Self::create_auth_info(api, Some((receiver, direct_access)))?;
+        if api.kernel_get_system_state().system.modules.enabled_modules.contains(EnabledModules::AUTH) {
+            Self::check_method_authorization(api, receiver, module_id, ident, args, auth_info.clone())?;
+        }
+
+        Ok(auth_info)
+    }
+
+    pub fn on_call_method_finish<V, Y>(
+        api: &mut SystemService<Y, V>,
+        auth_actor_info: AuthActorInfo,
     ) -> Result<(), RuntimeError>
         where
             V: SystemCallbackObject,
             Y: KernelApi<SystemConfig<V>>,
     {
-        let mut system = SystemService::new(api);
+        let self_auth_zone = auth_actor_info.self_auth_zone;
+        // Detach proofs from the auth zone
+        let handle = api.kernel_open_substate(
+            &self_auth_zone,
+            MAIN_BASE_PARTITION,
+            &AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+            SystemLockData::Default,
+        )?;
+        let mut substate: FieldSubstate<AuthZone> =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
+        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
+        api.kernel_close_substate(handle)?;
 
+        // Drop all proofs (previously) owned by the auth zone
+        for proof in proofs {
+            let object_info = api.get_object_info(proof.0.as_node_id())?;
+            api.call_function(
+                RESOURCE_PACKAGE,
+                &object_info.blueprint_info.blueprint_id.blueprint_name,
+                PROOF_DROP_IDENT,
+                scrypto_encode(&ProofDropInput { proof }).unwrap(),
+            )?;
+        }
+
+        // Drop the auth zone
+        api.kernel_drop_node(&self_auth_zone)?;
+
+        Ok(())
+    }
+
+    fn check_method_authorization<V, Y>(
+        system: &mut SystemService<Y, V>,
+        receiver: &NodeId,
+        module_id: ObjectModuleId,
+        ident: &str,
+        args: &IndexedScryptoValue,
+        auth_info: AuthActorInfo,
+    ) -> Result<(), RuntimeError>
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
+    {
         // Step 1: Resolve method to permission
         let blueprint_id = system
             .get_blueprint_info(receiver, module_id)?
             .blueprint_id;
 
         let permission = Self::resolve_method_permission(
-            &mut system,
+            system,
             &blueprint_id,
             receiver,
             &module_id,
@@ -130,23 +208,25 @@ impl AuthModule {
             blueprint_id: blueprint_id.clone(),
             ident: ident.to_string(),
         };
-        Self::check_permission(auth_info, permission, fn_identifier, &mut system)?;
+        Self::check_permission(auth_info, permission, fn_identifier, system)?;
 
         Ok(())
     }
 
-    pub fn create_auth_info<V, Y>(
-        api: &mut Y,
-        receiver: &NodeId,
-        direct_access: bool,
-    ) -> Result<AuthInfo, RuntimeError>
+    fn create_auth_info<V, Y>(
+        system: &mut SystemService<Y, V>,
+        receiver: Option<(&NodeId, bool)>,
+    ) -> Result<AuthActorInfo, RuntimeError>
         where
             V: SystemCallbackObject,
             Y: KernelApi<SystemConfig<V>>,
     {
-        let mut system = SystemService::new(api);
-
-        let object_info = system.get_object_info(receiver)?;
+        let is_barrier = if let Some((receiver, direct_access)) = receiver {
+            let object_info = system.get_object_info(receiver)?;
+            object_info.global || direct_access
+        } else {
+            true
+        };
 
         let (caller_auth_zone, self_auth_zone) = {
             let caller_auth_zone = match system.current_actor() {
@@ -162,15 +242,15 @@ impl AuthModule {
                                 .unwrap()
                             {
                                 RootNodeType::Global(address) => {
-                                    if object_info.global || direct_access {
+                                    if is_barrier {
                                         Some((
                                             address.into(),
-                                            current_method_actor.auth_info.self_auth_zone,
+                                            current_method_actor.auth_actor_info.self_auth_zone,
                                         ))
                                     } else {
                                         // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
                                         current_method_actor
-                                            .auth_info
+                                            .auth_actor_info
                                             .caller_auth_zone
                                             .clone()
                                             .and_then(|a| a.global_auth_zone)
@@ -179,7 +259,7 @@ impl AuthModule {
                                 RootNodeType::Heap => {
                                     // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
                                     current_method_actor
-                                        .auth_info
+                                        .auth_actor_info
                                         .caller_auth_zone
                                         .clone()
                                         .and_then(|a| a.global_auth_zone)
@@ -204,7 +284,7 @@ impl AuthModule {
                 Actor::Function(function_actor) => {
                     let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: {
-                            if object_info.global || direct_access {
+                            if is_barrier {
                                 Some((
                                     GlobalCaller::PackageBlueprint(
                                         function_actor.blueprint_id.clone(),
@@ -226,7 +306,7 @@ impl AuthModule {
                 }
             };
 
-            let self_auth_zone_parent = if object_info.global {
+            let self_auth_zone_parent = if is_barrier {
                 None
             } else {
                 system.current_actor().self_auth_zone().map(|x| Reference(x))
@@ -270,14 +350,14 @@ impl AuthModule {
             (caller_auth_zone, auth_zone_node_id)
         };
 
-        Ok(AuthInfo {
+        Ok(AuthActorInfo {
             caller_auth_zone,
             self_auth_zone,
         })
     }
 
     fn check_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_info: AuthInfo,
+        auth_info: AuthActorInfo,
         resolved_permission: ResolvedPermission,
         fn_identifier: FnIdentifier,
         api: &mut SystemService<Y, V>,

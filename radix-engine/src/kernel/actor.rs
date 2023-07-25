@@ -16,7 +16,7 @@ pub struct CallerAuthZone {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
-pub struct AuthInfo {
+pub struct AuthActorInfo {
     pub caller_auth_zone: Option<CallerAuthZone>,
     pub self_auth_zone: NodeId,
 }
@@ -28,7 +28,7 @@ pub struct MethodActor {
     pub module_id: ObjectModuleId,
     pub ident: String,
 
-    pub auth_info: AuthInfo,
+    pub auth_actor_info: AuthActorInfo,
 
     // Cached info
     pub object_info: ObjectInfo,
@@ -55,7 +55,7 @@ pub struct FunctionActor {
     pub blueprint_id: BlueprintId,
     pub ident: String,
 
-    pub auth_info: AuthInfo,
+    pub auth_info: AuthActorInfo,
 }
 
 impl FunctionActor {
@@ -148,10 +148,10 @@ impl CallFrameReferences for Actor {
 }
 
 impl Actor {
-    pub fn auth_info(&self) -> Option<AuthInfo> {
+    pub fn auth_info(&self) -> Option<AuthActorInfo> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,
-            Actor::Method(method_actor) => Some(method_actor.auth_info.clone()),
+            Actor::Method(method_actor) => Some(method_actor.auth_actor_info.clone()),
             Actor::Function(function_actor) => Some(function_actor.auth_info.clone()),
         }
     }
@@ -159,7 +159,7 @@ impl Actor {
     pub fn self_auth_zone(&self) -> Option<NodeId> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,
-            Actor::Method(method_actor) => Some(method_actor.auth_info.self_auth_zone),
+            Actor::Method(method_actor) => Some(method_actor.auth_actor_info.self_auth_zone),
             Actor::Function(function_actor) => Some(function_actor.auth_info.self_auth_zone),
         }
     }
@@ -167,7 +167,7 @@ impl Actor {
     pub fn caller_authzone(&self) -> Option<CallerAuthZone> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,
-            Actor::Method(method_actor) => method_actor.auth_info.caller_auth_zone.clone(),
+            Actor::Method(method_actor) => method_actor.auth_actor_info.caller_auth_zone.clone(),
             Actor::Function(function_actor) => function_actor.auth_info.caller_auth_zone.clone(),
         }
     }
