@@ -1,13 +1,13 @@
-Total Cost (XRD)                                                           ,     0.12657088,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.12424088,     98.2%
+Total Cost (XRD)                                                           ,      0.1270666,    100.0%
++ Execution Cost (XRD)                                                     ,      0.1247366,     98.2%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00233,      1.8%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       12424088,    100.0%
+Total Cost Units Consumed                                                  ,       12473660,    100.0%
 AfterInvoke                                                                ,           1368,      0.0%
 AllocateNodeId                                                             ,          15500,      0.1%
 BeforeInvoke                                                               ,          16440,      0.1%
-CloseSubstate                                                              ,         223500,      1.8%
+CloseSubstate                                                              ,         236000,      1.9%
 Commit::GlobalAccount                                                      ,         300014,      2.4%
 Commit::GlobalGenericComponent                                             ,         100010,      0.8%
 Commit::InternalFungibleVault                                              ,         700083,      5.6%
@@ -15,16 +15,16 @@ CreateNode                                                                 ,    
 DropNode                                                                   ,          22548,      0.2%
 EmitEvent                                                                  ,           5416,      0.0%
 LockFee                                                                    ,            500,      0.0%
-OpenSubstate::GlobalAccount                                                ,        1379048,     11.1%
-OpenSubstate::GlobalFungibleResourceManager                                ,         828440,      6.7%
-OpenSubstate::GlobalGenericComponent                                       ,          83550,      0.7%
-OpenSubstate::GlobalPackage                                                ,        4864808,     39.2%
-OpenSubstate::GlobalTwoResourcePool                                        ,         337582,      2.7%
-OpenSubstate::InternalFungibleVault                                        ,         839302,      6.8%
-OpenSubstate::InternalGenericComponent                                     ,         107572,      0.9%
+OpenSubstate::GlobalAccount                                                ,        1381370,     11.1%
+OpenSubstate::GlobalFungibleResourceManager                                ,         829248,      6.6%
+OpenSubstate::GlobalGenericComponent                                       ,          84290,      0.7%
+OpenSubstate::GlobalPackage                                                ,        4864808,     39.0%
+OpenSubstate::GlobalTwoResourcePool                                        ,         339952,      2.7%
+OpenSubstate::InternalFungibleVault                                        ,         844482,      6.8%
+OpenSubstate::InternalGenericComponent                                     ,         114688,      0.9%
 PrepareWasmCode                                                            ,         639308,      5.1%
 QueryActor                                                                 ,           4000,      0.0%
-ReadSubstate                                                               ,        1014842,      8.2%
+ReadSubstate                                                               ,        1033378,      8.3%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.2%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.1%
 RunNativeCode::Worktop_put                                                 ,          48822,      0.4%

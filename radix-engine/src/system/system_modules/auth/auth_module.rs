@@ -1,21 +1,23 @@
 use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, AuthInfo, FunctionActor, MethodActor};
-use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::actor::{Actor, AuthInfo, CallerAuthZone, FunctionActor, MethodActor};
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::system::module::KernelModule;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
-use crate::system::system::SystemService;
+use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use radix_engine_interface::api::ObjectModuleId;
-use radix_engine_interface::blueprints::package::{
-    BlueprintVersionKey, MethodAuthTemplate, RoleSpecification,
-};
+use radix_engine_interface::blueprints::package::{BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
+use crate::blueprints::resource::AuthZone;
+use crate::kernel::call_frame::RootNodeType;
+use crate::system::node_init::type_info_partition;
+use crate::system::node_modules::type_info::TypeInfoSubstate;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum AuthError {
@@ -131,6 +133,147 @@ impl AuthModule {
         Self::check_permission(auth_info, permission, fn_identifier, &mut system)?;
 
         Ok(())
+    }
+
+    pub fn create_auth_info<V, Y>(
+        api: &mut Y,
+        receiver: &NodeId,
+        direct_access: bool,
+    ) -> Result<AuthInfo, RuntimeError>
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
+    {
+        let mut system = SystemService::new(api);
+
+        let object_info = system.get_object_info(receiver)?;
+
+        let (caller_auth_zone, self_auth_zone) = {
+            let caller_auth_zone = match system.current_actor() {
+                Actor::Root => None,
+                Actor::Method(current_method_actor) => {
+                    let caller_auth_zone = CallerAuthZone {
+                        global_auth_zone: {
+                            // TODO: Check actor object module id?
+                            let node_visibility =
+                                system.kernel_get_node_visibility(&current_method_actor.node_id);
+                            let global_auth_zone = match node_visibility
+                                .root_node_type(current_method_actor.node_id)
+                                .unwrap()
+                            {
+                                RootNodeType::Global(address) => {
+                                    if object_info.global || direct_access {
+                                        Some((
+                                            address.into(),
+                                            current_method_actor.auth_info.self_auth_zone,
+                                        ))
+                                    } else {
+                                        // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
+                                        current_method_actor
+                                            .auth_info
+                                            .caller_auth_zone
+                                            .clone()
+                                            .and_then(|a| a.global_auth_zone)
+                                    }
+                                }
+                                RootNodeType::Heap => {
+                                    // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
+                                    current_method_actor
+                                        .auth_info
+                                        .caller_auth_zone
+                                        .clone()
+                                        .and_then(|a| a.global_auth_zone)
+                                }
+                                RootNodeType::DirectlyAccessed => None,
+                            };
+                            global_auth_zone
+                        },
+                        local_package_address: current_method_actor
+                            .get_blueprint_id()
+                            .package_address,
+                    };
+                    Some(caller_auth_zone)
+                }
+                Actor::BlueprintHook(blueprint_hook_actor) => {
+                    let caller_auth_zone = CallerAuthZone {
+                        global_auth_zone: None,
+                        local_package_address: blueprint_hook_actor.blueprint_id.package_address,
+                    };
+                    Some(caller_auth_zone)
+                }
+                Actor::Function(function_actor) => {
+                    let caller_auth_zone = CallerAuthZone {
+                        global_auth_zone: {
+                            if object_info.global || direct_access {
+                                Some((
+                                    GlobalCaller::PackageBlueprint(
+                                        function_actor.blueprint_id.clone(),
+                                    ),
+                                    function_actor.auth_info.self_auth_zone,
+                                ))
+                            } else {
+                                // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
+                                function_actor
+                                    .auth_info
+                                    .caller_auth_zone
+                                    .clone()
+                                    .and_then(|a| a.global_auth_zone)
+                            }
+                        },
+                        local_package_address: function_actor.blueprint_id.package_address,
+                    };
+                    Some(caller_auth_zone)
+                }
+            };
+
+            let self_auth_zone_parent = if object_info.global {
+                None
+            } else {
+                system.current_actor().self_auth_zone().map(|x| Reference(x))
+            };
+
+            let auth_zone = AuthZone::new(
+                vec![],
+                BTreeSet::new(),
+                BTreeSet::new(),
+                true,
+                self_auth_zone_parent,
+            );
+
+            // Create node
+            let auth_zone_node_id = system
+                .api
+                .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
+
+            system.api.kernel_create_node(
+                auth_zone_node_id,
+                btreemap!(
+                    MAIN_BASE_PARTITION => btreemap!(
+                        AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
+                    ),
+                    TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
+                        global: false,
+
+                        module_versions: btreemap!(
+                            ObjectModuleId::Main => BlueprintVersion::default(),
+                        ),
+                        blueprint_info: BlueprintInfo {
+                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
+                            outer_obj_info: OuterObjectInfo::default(),
+                            features: btreeset!(),
+                            instance_schema: None,
+                        }
+                    }))
+                ),
+            )?;
+
+            (caller_auth_zone, auth_zone_node_id)
+        };
+
+        Ok(AuthInfo {
+            caller_auth_zone,
+            self_auth_zone,
+        })
     }
 
     fn check_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
