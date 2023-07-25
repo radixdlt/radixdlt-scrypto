@@ -16,6 +16,11 @@ pub enum CreateNodeEvent<'a> {
 }
 
 #[derive(Debug)]
+pub enum MoveModuleEvent<'a> {
+    StoreAccess(&'a StoreAccess),
+}
+
+#[derive(Debug)]
 pub enum SetSubstateEvent<'a> {
     Start(&'a IndexedScryptoValue),
     StoreAccess(&'a StoreAccess),
@@ -70,6 +75,13 @@ pub trait KernelCallbackObject: Sized {
     fn after_drop_node<Y>(api: &mut Y, total_substate_size: usize) -> Result<(), RuntimeError>
         where
             Y: KernelApi<Self>;
+
+    fn on_move_module<Y>(
+        api: &mut Y,
+        event: MoveModuleEvent,
+    ) -> Result<(), RuntimeError>
+        where
+            Y: KernelInternalApi<Self>;
 
     fn before_open_substate<Y>(
         node_id: &NodeId,

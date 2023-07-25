@@ -836,7 +836,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(node_substates)
     }
 
-    pub fn move_module<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn move_module<'f, S: SubstateStore, E, F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
@@ -876,8 +876,8 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, own, &mut |_, store_access| {
-                        on_store_access(store_access)
+                    Self::move_node_to_store(heap, store, own, &mut |heap, store_access| {
+                        on_store_access(self, heap, store_access)
                     })
                         .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
@@ -896,7 +896,9 @@ impl<L: Clone> CallFrame<L> {
                         dest_partition_number,
                         substate_key,
                         substate_value,
-                        on_store_access,
+                        &mut |store_access| {
+                            on_store_access(self, heap, store_access)
+                        },
                     )
                     .map_err(|e| e.map(MoveModuleError::TrackSetSubstateError))?
             }

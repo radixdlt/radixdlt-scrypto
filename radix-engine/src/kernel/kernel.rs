@@ -12,7 +12,7 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -429,7 +429,15 @@ where
                 src_partition_number,
                 dest_node_id,
                 dest_partition_number,
-                &mut |store_access| self.callback.on_store_access(&store_access),
+                &mut |current_frame, heap, store_access| {
+                    let mut read_only = KernelReadOnly {
+                        current_frame,
+                        prev_frame: self.prev_frame_stack.last(),
+                        heap,
+                        callback: self.callback
+                    };
+                    M::on_move_module(&mut read_only, MoveModuleEvent::StoreAccess(&store_access))
+                },
                 &mut self.heap,
                 self.store,
             )

@@ -3,7 +3,7 @@ use crate::kernel::actor::Actor;
 use crate::track::interface::{StoreAccess, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 
 #[derive(Debug, IntoStaticStr)]
 pub enum CostingEntry<'a> {
@@ -48,7 +48,9 @@ pub enum CostingEntry<'a> {
     DropNode {
         total_substate_size: usize,
     },
-    MoveModules,
+    MoveModule {
+        event: &'a MoveModuleEvent<'a>,
+    },
     OpenSubstate {
         node_id: &'a NodeId,
         value_size: usize,
@@ -143,7 +145,7 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::DropNode {
                 total_substate_size,
             } => ft.drop_node_cost(*total_substate_size),
-            CostingEntry::MoveModules => ft.move_modules_cost(),
+            CostingEntry::MoveModule { event } => ft.move_module_cost(event),
             CostingEntry::OpenSubstate {
                 node_id: _,
                 value_size,
