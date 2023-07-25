@@ -4,7 +4,7 @@ CALL_METHOD
     Decimal("5000")
 ;
 MINT_NON_FUNGIBLE
-    Address("resource_sim1nfxa03qkvrs3798j38c2dwc89jyntte7452fwyqqm34fslhazr5ugq")
+    Address("resource_sim1nftpvfauql53qkzxjzxtw9e28lxymhvfq8sg673dz9p562ldk60rg2")
     Map<NonFungibleLocalId, Tuple>(
         NonFungibleLocalId("#100#") => Tuple(
             Tuple(

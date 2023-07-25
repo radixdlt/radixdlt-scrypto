@@ -211,6 +211,14 @@ pub struct NonFungibleResourceManagerUpdateDataInput {
     pub data: ScryptoValue,
 }
 
+#[cfg_attr(feature = "radix_engine_fuzzing", derive(Arbitrary))]
+#[derive(Debug, Clone, Eq, PartialEq, ManifestSbor)]
+pub struct NonFungibleResourceManagerUpdateDataManifestInput {
+    pub id: NonFungibleLocalId,
+    pub field_name: String,
+    pub data: ManifestValue,
+}
+
 pub type NonFungibleResourceManagerUpdateDataOutput = ();
 
 pub const NON_FUNGIBLE_RESOURCE_MANAGER_EXISTS_IDENT: &str = "non_fungible_exists";
