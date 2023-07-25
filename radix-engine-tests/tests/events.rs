@@ -34,7 +34,7 @@ fn create_proof_emits_correct_events() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
+        .lock_fee(FAUCET, dec!(500))
         .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .build();
     let receipt =
