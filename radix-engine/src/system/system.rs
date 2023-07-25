@@ -1446,22 +1446,20 @@ where
 
         let auth_actor_info = AuthModule::on_call_method(self, receiver, module_id, direct_access, method_name, &args)?;
 
-        let invocation = KernelInvocation {
-            call_frame_data: Actor::Method(MethodActor {
-                direct_access,
-                node_id: receiver.clone(),
-                module_id,
-                ident: method_name.to_string(),
-
-                auth_actor_info: auth_actor_info.clone(),
-                object_info,
-            }),
-            args,
-        };
-
         let rtn = self
             .api
-            .kernel_invoke(Box::new(invocation))
+            .kernel_invoke(Box::new(KernelInvocation {
+                call_frame_data: Actor::Method(MethodActor {
+                    direct_access,
+                    node_id: receiver.clone(),
+                    module_id,
+                    ident: method_name.to_string(),
+
+                    auth_actor_info: auth_actor_info.clone(),
+                    object_info,
+                }),
+                args,
+            }))
             .map(|v| v.into())?;
 
         AuthModule::on_call_method_finish(self, auth_actor_info)?;
@@ -2006,57 +2004,19 @@ where
         let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
         let auth_info = AuthModule::on_call_function(self, &blueprint_id, function_name)?;
 
-        /*
-        if self.kernel_get_system_state().system.modules.enabled_modules.contains(EnabledModules::AUTH) {
-            AuthModule::check_function_authorization(self.api, auth_info.clone(), &blueprint_id, function_name)?;
-        }
-         */
-
-        let invocation = KernelInvocation {
-            call_frame_data: Actor::Function(FunctionActor {
-                blueprint_id,
-                ident: function_name.to_string(),
-                auth_info: auth_info.clone(),
-            }),
-            args,
-        };
-
         let rtn = self
             .api
-            .kernel_invoke(Box::new(invocation))
+            .kernel_invoke(Box::new(KernelInvocation {
+                call_frame_data: Actor::Function(FunctionActor {
+                    blueprint_id,
+                    ident: function_name.to_string(),
+                    auth_info: auth_info.clone(),
+                }),
+                args,
+            }))
             .map(|v| v.into())?;
 
-        {
-            let self_auth_zone = auth_info.self_auth_zone;
-
-            // Detach proofs from the auth zone
-            let handle = self.kernel_open_substate(
-                &self_auth_zone,
-                MAIN_BASE_PARTITION,
-                &AuthZoneField::AuthZone.into(),
-                LockFlags::MUTABLE,
-                SystemLockData::Default,
-            )?;
-            let mut substate: FieldSubstate<AuthZone> =
-                self.kernel_read_substate(handle)?.as_typed().unwrap();
-            let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
-            self.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
-            self.kernel_close_substate(handle)?;
-
-            // Drop all proofs (previously) owned by the auth zone
-            for proof in proofs {
-                let object_info = self.get_object_info(proof.0.as_node_id())?;
-                self.call_function(
-                    RESOURCE_PACKAGE,
-                    &object_info.blueprint_info.blueprint_id.blueprint_name,
-                    PROOF_DROP_IDENT,
-                    scrypto_encode(&ProofDropInput { proof }).unwrap(),
-                )?;
-            }
-
-            // Drop the auth zone
-            self.kernel_drop_node(&self_auth_zone)?;
-        }
+        AuthModule::on_call_function_finish(self, auth_info)?;
 
         Ok(rtn)
     }

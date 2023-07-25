@@ -121,6 +121,17 @@ impl AuthModule {
         Ok(auth_info)
     }
 
+    pub fn on_call_function_finish<V, Y>(
+        api: &mut SystemService<Y, V>,
+        auth_actor_info: AuthActorInfo,
+    ) -> Result<(), RuntimeError>
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
+    {
+        Self::on_execution_finish(api, auth_actor_info)
+    }
+
     pub fn on_call_method<V, Y>(
         api: &mut SystemService<Y, V>,
         receiver: &NodeId,
@@ -148,6 +159,17 @@ impl AuthModule {
     }
 
     pub fn on_call_method_finish<V, Y>(
+        api: &mut SystemService<Y, V>,
+        auth_actor_info: AuthActorInfo,
+    ) -> Result<(), RuntimeError>
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
+    {
+        Self::on_execution_finish(api, auth_actor_info)
+    }
+
+    fn on_execution_finish<V, Y>(
         api: &mut SystemService<Y, V>,
         auth_actor_info: AuthActorInfo,
     ) -> Result<(), RuntimeError>

@@ -1,26 +1,26 @@
-Total Cost (XRD)                                                           ,     0.05283769,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.05274769,     99.8%
+Total Cost (XRD)                                                           ,     0.05283533,    100.0%
++ Execution Cost (XRD)                                                     ,     0.05274533,     99.8%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00009,      0.2%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        5274769,    100.0%
+Total Cost Units Consumed                                                  ,        5274533,    100.0%
 AfterInvoke                                                                ,            300,      0.0%
 AllocateNodeId                                                             ,           6500,      0.1%
 BeforeInvoke                                                               ,           6462,      0.1%
 CloseSubstate                                                              ,         101500,      1.9%
 Commit::GlobalAccount                                                      ,         100002,      1.9%
 Commit::InternalFungibleVault                                              ,         200020,      3.8%
-CreateNode                                                                 ,           9922,      0.2%
-DropNode                                                                   ,           9782,      0.2%
+CreateNode                                                                 ,           9878,      0.2%
+DropNode                                                                   ,           9738,      0.2%
 EmitEvent                                                                  ,           1940,      0.0%
 LockFee                                                                    ,            500,      0.0%
 OpenSubstate::GlobalAccount                                                ,         900148,     17.1%
 OpenSubstate::GlobalFungibleResourceManager                                ,         332126,      6.3%
 OpenSubstate::GlobalPackage                                                ,        2568612,     48.7%
 OpenSubstate::InternalFungibleVault                                        ,         339570,      6.4%
-OpenSubstate::InternalGenericComponent                                     ,          45174,      0.9%
+OpenSubstate::InternalGenericComponent                                     ,          45122,      0.9%
 QueryActor                                                                 ,           2500,      0.0%
-ReadSubstate                                                               ,         183526,      3.5%
+ReadSubstate                                                               ,         183474,      3.5%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.4%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.3%
 RunNativeCode::Worktop_put                                                 ,          24411,      0.5%
@@ -33,4 +33,4 @@ RunNativeCode::withdraw                                                    ,    
 TxBaseCost                                                                 ,          50000,      0.9%
 TxPayloadCost                                                              ,          10760,      0.2%
 TxSignatureVerification                                                    ,           7000,      0.1%
-WriteSubstate                                                              ,           9838,      0.2%
+WriteSubstate                                                              ,           9794,      0.2%
