@@ -8,6 +8,12 @@ use radix_engine_interface::api::field_api::LockFlags;
 use super::actor::Actor;
 use super::call_frame::Message;
 
+#[derive(Debug)]
+pub enum RemoveSubstateEvent {
+    Start,
+    StoreAccess(StoreAccess),
+}
+
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
 
@@ -84,9 +90,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_remove_substate<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
+    fn on_remove_substate(&mut self, event: RemoveSubstateEvent) -> Result<(), RuntimeError>;
 
     fn on_scan_keys<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where

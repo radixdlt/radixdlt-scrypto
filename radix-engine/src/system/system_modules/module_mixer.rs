@@ -27,6 +27,7 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
+use crate::kernel::kernel_callback_api::RemoveSubstateEvent;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -373,8 +374,31 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_remove_substate(api))
+    fn on_remove_substate(
+        system: &mut SystemConfig<V>,
+        event: &RemoveSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        let modules: EnabledModules = system.modules.enabled_modules;
+        if modules.contains(EnabledModules::KERNEL_TRACE) {
+            KernelTraceModule::on_remove_substate(system, event)?;
+        }
+        if modules.contains(EnabledModules::LIMITS) {
+            LimitsModule::on_remove_substate(system, event)?;
+        }
+        if modules.contains(EnabledModules::COSTING) {
+            CostingModule::on_remove_substate(system, event)?;
+        }
+        if modules.contains(EnabledModules::AUTH) {
+            AuthModule::on_remove_substate(system, event)?;
+        }
+        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
+            TransactionRuntimeModule::on_remove_substate(system, event)?;
+        }
+        if modules.contains(EnabledModules::EXECUTION_TRACE) {
+            ExecutionTraceModule::on_remove_substate(system, event)?;
+        }
+
+        Ok(())
     }
 
     #[trace_resources]

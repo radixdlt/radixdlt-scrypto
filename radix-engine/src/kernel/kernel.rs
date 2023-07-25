@@ -12,7 +12,7 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::KernelCallbackObject;
+use crate::kernel::kernel_callback_api::{KernelCallbackObject, RemoveSubstateEvent};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -800,7 +800,7 @@ where
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        M::on_remove_substate(self)?;
+        self.callback.on_remove_substate(RemoveSubstateEvent::Start)?;
 
         let substate = self
             .current_frame
@@ -808,7 +808,7 @@ where
                 node_id,
                 partition_num,
                 &substate_key,
-                &mut |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_remove_substate(RemoveSubstateEvent::StoreAccess(store_access)),
                 &mut self.heap,
                 self.store,
             )
