@@ -2071,7 +2071,7 @@ where
                 };
 
             let auth_zone =
-                AuthZone::new(vec![], virtual_resources, virtual_non_fungibles, true, None);
+                AuthZone::new(vec![], virtual_resources, virtual_non_fungibles, None);
 
             // Create node
             let auth_zone_node_id = self

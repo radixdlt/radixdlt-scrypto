@@ -316,7 +316,6 @@ impl AuthModule {
                 vec![],
                 BTreeSet::new(),
                 BTreeSet::new(),
-                true,
                 self_auth_zone_parent,
             );
 
