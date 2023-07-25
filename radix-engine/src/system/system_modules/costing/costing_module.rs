@@ -18,7 +18,7 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
-use crate::kernel::kernel_callback_api::{RemoveSubstateEvent, ScanKeysEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -385,22 +385,23 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .costing
-            .apply_execution_cost(CostingEntry::ScanSortedSubstatesBase)?;
-
-        Ok(())
-    }
-
     fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(CostingEntry::DrainSubstatesBase)?;
+
+        Ok(())
+    }
+
+    fn on_scan_sorted_substates(
+        system: &mut SystemConfig<V>,
+        event: &ScanSortedSubstatesEvent,
+    ) -> Result<(), RuntimeError> {
+        system
+            .modules
+            .costing
+            .apply_execution_cost(CostingEntry::ScanSortedSubstatesBase { event })?;
 
         Ok(())
     }

@@ -13,7 +13,7 @@ use crate::kernel::actor::MethodActor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::system::module::SystemModule;
 use crate::system::system::FieldSubstate;
 use crate::system::system::KeyValueEntrySubstate;
@@ -201,11 +201,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_scan_keys(self, &event)
     }
 
-    fn on_scan_sorted_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
+    fn on_scan_sorted_substates(&mut self, event: ScanSortedSubstatesEvent) -> Result<(), RuntimeError>
     {
-        SystemModuleMixer::on_scan_sorted_substates(api)
+        SystemModuleMixer::on_scan_sorted_substates(self, &event)
     }
 
     fn on_drain_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>

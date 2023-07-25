@@ -12,7 +12,7 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -887,7 +887,7 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        M::on_scan_sorted_substates(self)?;
+        self.callback.on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
 
         let substates = self
             .current_frame
@@ -895,7 +895,7 @@ where
                 node_id,
                 partition_num,
                 count,
-                &mut |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_scan_sorted_substates(ScanSortedSubstatesEvent::StoreAccess(&store_access)),
                 &mut self.heap,
                 self.store,
             )
