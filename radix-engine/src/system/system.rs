@@ -20,7 +20,7 @@ use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::AuthorizationCheckResult;
+use crate::system::system_modules::auth::{AuthModule, AuthorizationCheckResult};
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -43,6 +43,7 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use crate::system::system_modules::EnabledModules;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SubstateMutability {
@@ -1561,6 +1562,19 @@ where
             (caller_auth_zone, auth_zone_node_id)
         };
 
+        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        let auth_info = AuthInfo {
+            caller_auth_zone,
+            self_auth_zone,
+        };
+
+        if self.kernel_get_system_state().system.modules.enabled_modules.contains(EnabledModules::AUTH) {
+            AuthModule::check_method_authorization(self.api, receiver, module_id, method_name, &args, auth_info.clone())?;
+        }
+
         let invocation = KernelInvocation {
             call_frame_data: Actor::Method(MethodActor {
                 direct_access,
@@ -1568,16 +1582,10 @@ where
                 module_id,
                 ident: method_name.to_string(),
 
-                auth_info: AuthInfo {
-                    caller_auth_zone,
-                    self_auth_zone,
-                },
-
+                auth_info,
                 object_info,
             }),
-            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?,
+            args,
         };
 
         let rtn = self
@@ -2200,6 +2208,7 @@ where
             }
         };
 
+
         let self_auth_zone = {
             // TODO: Remove special casing use of transaction processor and just have virtual resources
             // stored in root call frame
@@ -2251,18 +2260,28 @@ where
             auth_zone_node_id
         };
 
+        let auth_info = AuthInfo {
+            caller_auth_zone,
+            self_auth_zone,
+        };
+
+        let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
+            RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
+        })?;
+
+        let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
+
+        if self.kernel_get_system_state().system.modules.enabled_modules.contains(EnabledModules::AUTH) {
+            AuthModule::check_function_authorization(self.api, auth_info.clone(), &blueprint_id, function_name)?;
+        }
+
         let invocation = KernelInvocation {
             call_frame_data: Actor::Function(FunctionActor {
-                blueprint_id: BlueprintId::new(&package_address, blueprint_name),
+                blueprint_id,
                 ident: function_name.to_string(),
-                auth_info: AuthInfo {
-                    caller_auth_zone,
-                    self_auth_zone,
-                },
+                auth_info,
             }),
-            args: IndexedScryptoValue::from_vec(args).map_err(|e| {
-                RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
-            })?,
+            args,
         };
 
         let rtn = self

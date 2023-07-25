@@ -5,7 +5,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::system::module::SystemModule;
+use crate::system::module::KernelModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::auth::AuthModule;
@@ -76,7 +76,7 @@ pub struct SystemModuleMixer {
     // The original reason for performance, but we should double check.
 
     /* flags */
-    enabled_modules: EnabledModules,
+    pub enabled_modules: EnabledModules,
 
     /* states */
     pub(super) kernel_trace: KernelTraceModule,
@@ -181,7 +181,7 @@ impl SystemModuleMixer {
 // This has an impact if there is module dependency.
 //====================================================================
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixer {
+impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixer {
     #[trace_resources]
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let modules: EnabledModules = api.kernel_get_system().modules.enabled_modules;

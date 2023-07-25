@@ -3,7 +3,7 @@ use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::system::module::SystemModule;
+use crate::system::module::KernelModule;
 use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -146,7 +146,7 @@ pub fn apply_royalty_cost<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject
         })
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
+impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
     fn on_init<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
         let costing = &mut api.kernel_get_system().modules.costing;
 

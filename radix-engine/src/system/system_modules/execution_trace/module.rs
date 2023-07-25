@@ -4,7 +4,7 @@ use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
-use crate::system::module::SystemModule;
+use crate::system::module::KernelModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
@@ -285,7 +285,7 @@ impl ResourceSummary {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceModule {
+impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for ExecutionTraceModule {
     fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _node_id: &NodeId,

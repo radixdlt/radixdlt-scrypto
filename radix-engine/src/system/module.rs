@@ -8,7 +8,7 @@ use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
-pub trait SystemModule<M: KernelCallbackObject> {
+pub trait KernelModule<M: KernelCallbackObject> {
     //======================
     // System module setup
     //======================
@@ -30,6 +30,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     //        -> ExecutionFinish
     // -> AfterInvoke
     //======================
+
 
     #[inline(always)]
     fn before_invoke<Y: KernelApi<M>>(

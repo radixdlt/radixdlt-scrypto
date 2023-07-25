@@ -1,7 +1,7 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::system::module::SystemModule;
+use crate::system::module::KernelModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::StoreAccessInfo;
@@ -24,7 +24,7 @@ macro_rules! log {
 }
 
 #[allow(unused_variables)] // for no_std
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
+impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         invocation: &KernelInvocation<Actor>,

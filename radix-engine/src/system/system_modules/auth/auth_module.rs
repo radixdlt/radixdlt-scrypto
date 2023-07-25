@@ -2,8 +2,8 @@ use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, AuthInfo, FunctionActor, MethodActor};
-use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::system::module::SystemModule;
+use crate::kernel::kernel_api::KernelApi;
+use crate::system::module::KernelModule;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
 use crate::system::system::SystemService;
 use crate::system::system_callback::SystemConfig;
@@ -36,7 +36,7 @@ pub enum FailedAccessRules {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub struct Unauthorized {
     pub failed_access_rules: FailedAccessRules,
-    pub fn_identifier: Option<FnIdentifier>,
+    pub fn_identifier: FnIdentifier,
 }
 
 #[derive(Debug, Clone)]
@@ -65,46 +65,70 @@ pub enum ResolvedPermission {
 }
 
 impl AuthModule {
-    fn check_authorization<V, Y>(
-        callee: &Actor,
-        args: &IndexedScryptoValue,
+    pub fn check_function_authorization<V, Y>(
         api: &mut Y,
+        auth_info: AuthInfo,
+        blueprint_id: &BlueprintId,
+        ident: &str,
     ) -> Result<(), RuntimeError>
-    where
-        V: SystemCallbackObject,
-        Y: KernelApi<SystemConfig<V>>,
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
     {
-        if let Some(auth_info) = callee.auth_info() {
-            let mut system = SystemService::new(api);
+        let mut system = SystemService::new(api);
 
-            // Step 1: Resolve method to permission
-            // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
-            let permission = match &callee {
-                Actor::Method(MethodActor {
-                    node_id,
-                    module_id,
-                    ident,
-                    ..
-                }) => Self::resolve_method_permission(&mut system, node_id, module_id, ident, args)?,
-                Actor::Function(FunctionActor {
-                    blueprint_id,
-                    ident,
-                    ..
-                }) => PackageAuthNativeBlueprint::resolve_function_permission(
-                    blueprint_id.package_address.as_node_id(),
-                    &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-                    ident.as_str(),
-                    system.api,
-                )?,
-                // TODO: Remove (aka move check_authorization into system)
-                Actor::BlueprintHook(..) | Actor::Root => return Ok(()),
-            };
+        // Step 1: Resolve method to permission
+        let permission = PackageAuthNativeBlueprint::resolve_function_permission(
+            blueprint_id.package_address.as_node_id(),
+            &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+            ident,
+            system.api,
+        )?;
 
-            // Step 2: Check permission
-            Self::check_permission(auth_info, permission, callee.fn_identifier(), &mut system)?;
-        } else {
-            // Bypass auth check for ROOT frame
-        }
+        // Step 2: Check permission
+        let fn_identifier = FnIdentifier {
+            blueprint_id: blueprint_id.clone(),
+            ident: ident.to_string(),
+        };
+        Self::check_permission(auth_info, permission, fn_identifier, &mut system)?;
+
+        Ok(())
+    }
+
+    pub fn check_method_authorization<V, Y>(
+        api: &mut Y,
+        receiver: &NodeId,
+        module_id: ObjectModuleId,
+        ident: &str,
+        args: &IndexedScryptoValue,
+        auth_info: AuthInfo,
+    ) -> Result<(), RuntimeError>
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
+    {
+        let mut system = SystemService::new(api);
+
+        // Step 1: Resolve method to permission
+        let blueprint_id = system
+            .get_blueprint_info(receiver, module_id)?
+            .blueprint_id;
+
+        let permission = Self::resolve_method_permission(
+            &mut system,
+            &blueprint_id,
+            receiver,
+            &module_id,
+            ident,
+            args,
+        )?;
+
+        // Step 2: Check permission
+        let fn_identifier = FnIdentifier {
+            blueprint_id: blueprint_id.clone(),
+            ident: ident.to_string(),
+        };
+        Self::check_permission(auth_info, permission, fn_identifier, &mut system)?;
 
         Ok(())
     }
@@ -112,7 +136,7 @@ impl AuthModule {
     fn check_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         auth_info: AuthInfo,
         resolved_permission: ResolvedPermission,
-        fn_identifier: Option<FnIdentifier>,
+        fn_identifier: FnIdentifier,
         api: &mut SystemService<Y, V>,
     ) -> Result<(), RuntimeError> {
         match resolved_permission {
@@ -165,6 +189,7 @@ impl AuthModule {
 
     fn resolve_method_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         api: &mut SystemService<Y, V>,
+        blueprint_id: &BlueprintId,
         receiver: &NodeId,
         module_id: &ObjectModuleId,
         ident: &str,
@@ -180,10 +205,6 @@ impl AuthModule {
                 api,
             );
         }
-
-        let blueprint_id = api
-            .get_blueprint_info(receiver, *module_id)?
-            .blueprint_id;
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
             blueprint_id.package_address.as_node_id(),
@@ -251,7 +272,7 @@ impl AuthModule {
             }
             None => {
                 let fn_identifier = FnIdentifier {
-                    blueprint_id,
+                    blueprint_id: blueprint_id.clone(),
                     ident: ident.to_string(),
                 };
                 Err(RuntimeError::SystemModuleError(
@@ -262,11 +283,5 @@ impl AuthModule {
     }
 }
 
-impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
-    fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        invocation: &KernelInvocation<Actor>,
-    ) -> Result<(), RuntimeError> {
-        AuthModule::check_authorization(&invocation.call_frame_data, &invocation.args, api)
-    }
+impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for AuthModule {
 }
