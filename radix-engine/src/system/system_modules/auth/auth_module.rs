@@ -12,6 +12,7 @@ use crate::types::*;
 use radix_engine_interface::api::{ClientBlueprintApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::package::{BlueprintVersion, BlueprintVersionKey, MethodAuthTemplate, RoleSpecification};
 use radix_engine_interface::blueprints::resource::*;
+use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 use crate::blueprints::resource::AuthZone;
@@ -68,37 +69,6 @@ pub enum ResolvedPermission {
 }
 
 impl AuthModule {
-    pub fn check_function_authorization<V, Y>(
-        api: &mut Y,
-        auth_info: AuthActorInfo,
-        blueprint_id: &BlueprintId,
-        ident: &str,
-    ) -> Result<(), RuntimeError>
-        where
-            V: SystemCallbackObject,
-            Y: KernelApi<SystemConfig<V>>,
-    {
-        let mut system = SystemService::new(api);
-
-        // Step 1: Resolve method to permission
-        let permission = PackageAuthNativeBlueprint::resolve_function_permission(
-            blueprint_id.package_address.as_node_id(),
-            &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
-            ident,
-            system.api,
-        )?;
-
-        // Step 2: Check permission
-        let fn_identifier = FnIdentifier {
-            blueprint_id: blueprint_id.clone(),
-            ident: ident.to_string(),
-        };
-        Self::check_permission(auth_info, permission, fn_identifier, &mut system)?;
-
-        Ok(())
-    }
-
-    /*
     pub fn on_call_function<V, Y>(
         api: &mut SystemService<Y, V>,
         blueprint_id: &BlueprintId,
@@ -108,14 +78,48 @@ impl AuthModule {
             V: SystemCallbackObject,
             Y: KernelApi<SystemConfig<V>>,
     {
-        let auth_info = Self::create_auth_info(api, receiver, direct_access)?;
+        // Create AuthActorInfo
+        let auth_info = {
+            // TODO: Remove special casing use of transaction processor and just have virtual resources
+            // stored in root call frame
+            let is_transaction_processor_blueprint = blueprint_id.package_address
+                .eq(&TRANSACTION_PROCESSOR_PACKAGE)
+                && blueprint_id.blueprint_name.eq(TRANSACTION_PROCESSOR_BLUEPRINT);
+            let is_at_root = api.kernel_get_current_depth() == 0;
+            let (virtual_resources, virtual_non_fungibles) =
+                if is_transaction_processor_blueprint && is_at_root {
+                    let auth_module = &api.kernel_get_system().modules.auth;
+                    (
+                        auth_module.params.virtual_resources.clone(),
+                        auth_module.params.initial_proofs.clone(),
+                    )
+                } else {
+                    (BTreeSet::new(), BTreeSet::new())
+                };
+
+            Self::create_auth_info(api, None, virtual_resources, virtual_non_fungibles)?
+        };
+
+        // Check authorization
         if api.kernel_get_system_state().system.modules.enabled_modules.contains(EnabledModules::AUTH) {
-            Self::check_method_authorization(api, receiver, module_id, ident, args, auth_info.clone())?;
+            // Step 1: Resolve method to permission
+            let permission = PackageAuthNativeBlueprint::resolve_function_permission(
+                blueprint_id.package_address.as_node_id(),
+                &BlueprintVersionKey::new_default(blueprint_id.blueprint_name.as_str()),
+                ident,
+                api.api,
+            )?;
+
+            // Step 2: Check permission
+            let fn_identifier = FnIdentifier {
+                blueprint_id: blueprint_id.clone(),
+                ident: ident.to_string(),
+            };
+            Self::check_permission(auth_info.clone(), permission, fn_identifier, api)?;
         }
 
         Ok(auth_info)
     }
-     */
 
     pub fn on_call_method<V, Y>(
         api: &mut SystemService<Y, V>,
@@ -129,7 +133,13 @@ impl AuthModule {
             V: SystemCallbackObject,
             Y: KernelApi<SystemConfig<V>>,
     {
-        let auth_info = Self::create_auth_info(api, Some((receiver, direct_access)))?;
+        let auth_info = Self::create_auth_info(
+            api,
+            Some((receiver, direct_access)),
+            btreeset!(),
+            btreeset!(),
+        )?;
+
         if api.kernel_get_system_state().system.modules.enabled_modules.contains(EnabledModules::AUTH) {
             Self::check_method_authorization(api, receiver, module_id, ident, args, auth_info.clone())?;
         }
@@ -216,6 +226,8 @@ impl AuthModule {
     fn create_auth_info<V, Y>(
         system: &mut SystemService<Y, V>,
         receiver: Option<(&NodeId, bool)>,
+        virtual_resources: BTreeSet<ResourceAddress>,
+        virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
     ) -> Result<AuthActorInfo, RuntimeError>
         where
             V: SystemCallbackObject,
@@ -314,8 +326,8 @@ impl AuthModule {
 
             let auth_zone = AuthZone::new(
                 vec![],
-                BTreeSet::new(),
-                BTreeSet::new(),
+                virtual_resources,
+                virtual_non_fungibles,
                 self_auth_zone_parent,
             );
 

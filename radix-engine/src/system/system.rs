@@ -2000,129 +2000,23 @@ where
         function_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let caller_auth_zone = match self.current_actor() {
-            Actor::Root => None,
-            Actor::Method(current_method_actor) => {
-                let caller_auth_zone = CallerAuthZone {
-                    global_auth_zone: {
-                        // TODO: Check actor object module id?
-                        let node_visibility =
-                            self.kernel_get_node_visibility(&current_method_actor.node_id);
-                        let global_auth_zone = match node_visibility
-                            .root_node_type(current_method_actor.node_id)
-                            .unwrap()
-                        {
-                            RootNodeType::Global(address) => Some((
-                                address.into(),
-                                current_method_actor.auth_actor_info.self_auth_zone,
-                            )),
-                            RootNodeType::Heap => {
-                                // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                                current_method_actor
-                                    .auth_actor_info
-                                    .caller_auth_zone
-                                    .clone()
-                                    .and_then(|a| a.global_auth_zone)
-                            }
-                            RootNodeType::DirectlyAccessed => None,
-                        };
-                        global_auth_zone
-                    },
-                    local_package_address: current_method_actor.get_blueprint_id().package_address,
-                };
-                Some(caller_auth_zone)
-            }
-            Actor::BlueprintHook(blueprint_hook_actor) => {
-                let caller_auth_zone = CallerAuthZone {
-                    global_auth_zone: None,
-                    local_package_address: blueprint_hook_actor.blueprint_id.package_address,
-                };
-                Some(caller_auth_zone)
-            }
-            Actor::Function(function_actor) => {
-                let caller_auth_zone = CallerAuthZone {
-                    global_auth_zone: Some((
-                        GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone()),
-                        function_actor.auth_info.self_auth_zone,
-                    )),
-                    local_package_address: function_actor.blueprint_id.package_address,
-                };
-                Some(caller_auth_zone)
-            }
-        };
-
-
-        let self_auth_zone = {
-            // TODO: Remove special casing use of transaction processor and just have virtual resources
-            // stored in root call frame
-            let is_transaction_processor_blueprint = package_address
-                .eq(&TRANSACTION_PROCESSOR_PACKAGE)
-                && blueprint_name.eq(TRANSACTION_PROCESSOR_BLUEPRINT);
-            let is_at_root = self.kernel_get_current_depth() == 0;
-            let (virtual_resources, virtual_non_fungibles) =
-                if is_transaction_processor_blueprint && is_at_root {
-                    let auth_module = &self.kernel_get_system().modules.auth;
-                    (
-                        auth_module.params.virtual_resources.clone(),
-                        auth_module.params.initial_proofs.clone(),
-                    )
-                } else {
-                    (BTreeSet::new(), BTreeSet::new())
-                };
-
-            let auth_zone =
-                AuthZone::new(vec![], virtual_resources, virtual_non_fungibles, None);
-
-            // Create node
-            let auth_zone_node_id = self
-                .api
-                .kernel_allocate_node_id(EntityType::InternalGenericComponent)?;
-
-            self.api.kernel_create_node(
-                auth_zone_node_id,
-                btreemap!(
-                    MAIN_BASE_PARTITION => btreemap!(
-                        AuthZoneField::AuthZone.into() => IndexedScryptoValue::from_typed(&FieldSubstate::new_field(auth_zone))
-                    ),
-                    TYPE_INFO_FIELD_PARTITION => type_info_partition(TypeInfoSubstate::Object(ObjectInfo {
-                        global: false,
-
-                        module_versions: btreemap!(
-                            ObjectModuleId::Main => BlueprintVersion::default(),
-                        ),
-                        blueprint_info: BlueprintInfo {
-                            blueprint_id: BlueprintId::new(&RESOURCE_PACKAGE, AUTH_ZONE_BLUEPRINT),
-                            outer_obj_info: OuterObjectInfo::default(),
-                            features: btreeset!(),
-                            instance_schema: None,
-                        }
-                    }))
-                ),
-            )?;
-
-            auth_zone_node_id
-        };
-
-        let auth_info = AuthActorInfo {
-            caller_auth_zone,
-            self_auth_zone,
-        };
-
         let args = IndexedScryptoValue::from_vec(args).map_err(|e| {
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
-
         let blueprint_id = BlueprintId::new(&package_address, blueprint_name);
+        let auth_info = AuthModule::on_call_function(self, &blueprint_id, function_name)?;
 
+        /*
         if self.kernel_get_system_state().system.modules.enabled_modules.contains(EnabledModules::AUTH) {
             AuthModule::check_function_authorization(self.api, auth_info.clone(), &blueprint_id, function_name)?;
         }
+         */
 
         let invocation = KernelInvocation {
             call_frame_data: Actor::Function(FunctionActor {
                 blueprint_id,
                 ident: function_name.to_string(),
-                auth_info,
+                auth_info: auth_info.clone(),
             }),
             args,
         };
@@ -2133,6 +2027,8 @@ where
             .map(|v| v.into())?;
 
         {
+            let self_auth_zone = auth_info.self_auth_zone;
+
             // Detach proofs from the auth zone
             let handle = self.kernel_open_substate(
                 &self_auth_zone,
