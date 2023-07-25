@@ -26,9 +26,50 @@ use transaction::model::InstructionV1;
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
-// FIXME: Creation of proofs triggers withdraw and deposit events when the amount is still liquid.
-// This is not the intended behavior. Should figure out a solution to that so that it doesn't emit
-// that and clean up this test to have one event.
+#[test]
+fn create_proof_emits_correct_events() {
+    // Arrange
+    let mut test_runner = TestRunnerBuilder::new().build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
+        .build();
+    let receipt =
+        test_runner.execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)]);
+
+    // Assert
+    let events = &receipt.expect_commit_success().application_events;
+    for event in events {
+        let name = test_runner.event_name(&event.0);
+        println!("{:?} - {}", event.0, name);
+    }
+    assert!(match events.get(0) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<LockFeeEvent>(event_identifier)
+            && is_decoded_equal(&LockFeeEvent { amount: 500.into() }, event_data) =>
+            true,
+        _ => false,
+    });
+    assert!(match events.get(1) {
+        Some((
+            event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
+            ref event_data,
+        )) if test_runner.is_event_name_equal::<BurnFungibleResourceEvent>(event_identifier)
+            && is_decoded_equal(
+                &BurnFungibleResourceEvent {
+                    amount: receipt.expect_commit_success().fee_summary.to_burn_amount()
+                },
+                event_data
+            ) =>
+            true,
+        _ => false,
+    });
+}
 
 //=========
 // Scrypto
@@ -82,7 +123,11 @@ fn scrypto_can_emit_registered_events() {
 
     // Assert
     let events = receipt.expect_commit(true).application_events.clone();
-    assert_eq!(events.len(), 3); // Two events: lock fee and registered event
+    for event in &events {
+        let name = test_runner.event_name(&event.0);
+        println!("{:?} - {}", event.0, name);
+    }
+    assert_eq!(events.len(), 3);
     assert!(match events.get(0) {
         Some((
             event_identifier @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -187,7 +232,11 @@ fn locking_fee_against_a_vault_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 2); // One event: lock fee
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 2);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -221,7 +270,11 @@ fn vault_fungible_recall_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 5); // Four events: vault lock fee, vault fungible withdraw, vault fungible recall, vault fungible deposit
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 4);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -232,19 +285,7 @@ fn vault_fungible_recall_emits_correct_events() {
                 true,
             _ => false,
         });
-        // FIXME: Currently recall first emits a withdraw event and then a recall event. Should the
-        // redundant withdraw event go away or does it make sense from a user perspective?
         assert!(match events.get(1) {
-            Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ref event_data,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier)
-                && is_decoded_equal(&WithdrawResourceEvent::Amount(1.into()), event_data) =>
-                true,
-            _ => false,
-        });
-        assert!(match events.get(2) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -254,7 +295,7 @@ fn vault_fungible_recall_emits_correct_events() {
                 true,
             _ => false,
         });
-        assert!(match events.get(3) {
+        assert!(match events.get(2) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -310,7 +351,11 @@ fn vault_non_fungible_recall_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 5); // Four events: vault lock fee, vault non-fungible withdraw, vault non-fungible recall, vault non-fungible deposit
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 4);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -321,28 +366,20 @@ fn vault_non_fungible_recall_emits_correct_events() {
                 true,
             _ => false,
         });
-        // FIXME: Currently recall first emits a withdraw event and then a recall event. Should the
-        // redundant withdraw event go away or does it make sense from a user perspective?
         assert!(match events.get(1) {
-            Some((
-                event_identifier
-                @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
-                ..,
-            )) if test_runner.is_event_name_equal::<WithdrawResourceEvent>(event_identifier) =>
-                true,
-            _ => false,
-        });
-        assert!(match events.get(2) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
                 ref event_data,
             )) if test_runner.is_event_name_equal::<RecallResourceEvent>(event_identifier)
-                && is_decoded_equal(&RecallResourceEvent::Amount(1.into()), event_data) =>
+                && is_decoded_equal(
+                    &RecallResourceEvent::Ids(btreeset!(NonFungibleLocalId::integer(1))),
+                    event_data
+                ) =>
                 true,
             _ => false,
         });
-        assert!(match events.get(3) {
+        assert!(match events.get(2) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -387,7 +424,11 @@ fn resource_manager_new_vault_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 4); // Four events: vault lock fee, vault fungible deposit
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 4);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -465,7 +506,11 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 4); // Three events: vault lock fee, resource manager mint fungible, resource manager burn fungible
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 4);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -552,7 +597,11 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 4); // Three events: vault lock fee, resource manager mint non-fungible, resource manager burn non-fungible
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 4);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -652,12 +701,10 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        /*
-        6 Events:
-        - Vault lock fee event
-        - Resource manager mint non-fungible event
-        -
-         */
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert_eq!(events.len(), 7);
         assert!(match events.get(0) {
             Some((
@@ -769,7 +816,11 @@ fn consensus_manager_round_update_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 2); // One event: round change event
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 2);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -920,7 +971,11 @@ fn validator_registration_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 5); // Two events: vault lock fee and register validator
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 3);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -931,7 +986,7 @@ fn validator_registration_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(2) {
+        assert!(match events.get(1) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -991,7 +1046,11 @@ fn validator_unregistration_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 5); // Two events: vault lock fee and register validator
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 3);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1002,7 +1061,7 @@ fn validator_unregistration_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(2) {
+        assert!(match events.get(1) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1065,7 +1124,11 @@ fn validator_staking_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        assert_eq!(events.len(), 10); // Seven events: vault lock fee, vault withdraw fungible, resource manager mint (lp tokens), vault deposit event, validator stake event, resource manager vault create (for the LP tokens), vault deposit
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 8);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1076,7 +1139,7 @@ fn validator_staking_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(2) {
+        assert!(match events.get(1) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1086,7 +1149,7 @@ fn validator_staking_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(3) {
+        assert!(match events.get(2) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1096,7 +1159,7 @@ fn validator_staking_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(4) {
+        assert!(match events.get(3) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1106,7 +1169,7 @@ fn validator_staking_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(5) {
+        assert!(match events.get(4) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1121,7 +1184,7 @@ fn validator_staking_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(6) {
+        assert!(match events.get(5) {
             Some((
                 event_identifier @ EventTypeIdentifier(
                     Emitter::Method(_node_id, ObjectModuleId::Main),
@@ -1131,7 +1194,7 @@ fn validator_staking_emits_correct_event() {
             )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
             _ => false,
         });
-        assert!(match events.get(7) {
+        assert!(match events.get(6) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1182,18 +1245,10 @@ fn validator_unstake_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        /*
-        Nine Events:
-        1. Lock Fee event
-        2. Vault withdraw event (LP Tokens)
-        3. Resource Manager burn event (LP Tokens)
-        4. Vault withdraw event (withdraw from stake vault)
-        5. Vault deposit event (deposit into stake vault)
-        6. Resource Manager Mint (minting unstake redeem tokens)
-        7. Validator Unstake event
-        8. Resource Manager Vault creation event (unstake redeem tokens)
-        9. Vault Deposit Event (unstake redeem tokens)
-         */
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert_eq!(events.len(), 10);
         assert!(match events.get(0) {
             Some((
@@ -1339,16 +1394,10 @@ fn validator_claim_xrd_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        /*
-        Seven Events:
-        1. Vault lock fee event
-        2. Vault withdraw event (unstake nft)
-        3. Resource Manager burn event (unstake nft)
-        4. Vault withdraw event (unstaked xrd)
-        5. Claim XRD
-        5. Resource Manager vault creation event (XRD)
-        6. Vault deposit event (XRD)
-         */
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert_eq!(events.len(), 8);
         assert!(match events.get(0) {
             Some((
@@ -1470,14 +1519,11 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        /*
-        5 Events:
-        1. Vault lock fee event
-        2. Withdraw event
-        3. Validator update delegation state
-        4. Deposit event
-         */
-        assert_eq!(events.len(), 5);
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
+        assert_eq!(events.len(), 3);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -1488,7 +1534,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
                 true,
             _ => false,
         });
-        assert!(match events.get(2) {
+        assert!(match events.get(1) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1528,11 +1574,10 @@ fn setting_metadata_emits_correct_events() {
     // Assert
     {
         let events = receipt.expect_commit(true).clone().application_events;
-        /*
-        Two events:
-        1. Vault lock fee
-        2. Metadata set entry
-         */
+        for event in &events {
+            let name = test_runner.event_name(&event.0);
+            println!("{:?} - {}", event.0, name);
+        }
         assert_eq!(events.len(), 3);
         assert!(match events.get(0) {
             Some((
