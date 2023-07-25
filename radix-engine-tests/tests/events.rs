@@ -26,9 +26,6 @@ use transaction::model::InstructionV1;
 use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
-// TODO: In the future, the ClientAPI should only be able to add events to the event store. It
-// should not be able to have full control over it.
-
 // FIXME: Creation of proofs triggers withdraw and deposit events when the amount is still liquid.
 // This is not the intended behavior. Should figure out a solution to that so that it doesn't emit
 // that and clean up this test to have one event.
