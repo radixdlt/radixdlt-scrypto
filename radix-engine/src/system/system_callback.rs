@@ -13,7 +13,7 @@ use crate::kernel::actor::MethodActor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{DrainSubstatesEvent, KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::system::module::SystemModule;
 use crate::system::system::FieldSubstate;
 use crate::system::system::KeyValueEntrySubstate;
@@ -120,15 +120,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_drop_node(api, total_substate_size)
     }
 
-    fn before_create_node<Y>(
-        node_id: &NodeId,
-        node_module_init: &BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+    fn on_create_node<Y>(
         api: &mut Y,
+        event: CreateNodeEvent,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>,
     {
-        SystemModuleMixer::before_create_node(api, node_id, node_module_init)
+        SystemModuleMixer::on_create_node(api, &event)
     }
 
     fn before_open_substate<Y>(
@@ -209,13 +208,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError>
     {
         SystemModuleMixer::on_drain_substates(self, &event)
-    }
-
-    fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_create_node(api, node_id)
     }
 
     fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>

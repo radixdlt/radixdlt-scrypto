@@ -27,7 +27,7 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
-use crate::kernel::kernel_callback_api::{DrainSubstatesEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -283,20 +283,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn before_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
-        node_substates: &NodeSubstates,
+        event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), before_create_node(api, node_id, node_substates))
-    }
-
-    #[trace_resources]
-    fn after_create_node<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        node_id: &NodeId,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), after_create_node(api, node_id))
+        internal_call_dispatch!(api.kernel_get_system(), on_create_node(api, event))
     }
 
     #[trace_resources]

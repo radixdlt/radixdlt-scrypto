@@ -12,7 +12,7 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{DrainSubstatesEvent, KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -348,6 +348,52 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
+    #[trace_resources(log=entity_type)]
+    fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
+        M::on_allocate_node_id(entity_type, self)?;
+
+        self.id_allocator.allocate_node_id(entity_type)
+    }
+
+    #[trace_resources(log=node_id.entity_type())]
+    fn kernel_create_node(
+        &mut self,
+        node_id: NodeId,
+        node_substates: NodeSubstates,
+    ) -> Result<(), RuntimeError> {
+        let mut read_only = as_read_only!(self);
+        M::on_create_node(&mut read_only, CreateNodeEvent::Start(&node_id, &node_substates))?;
+
+        self.current_frame
+            .create_node(
+                node_id,
+                node_substates,
+                &mut |current_frame, heap, store_access| {
+                    let mut read_only = KernelReadOnly {
+                        current_frame,
+                        prev_frame: self.prev_frame_stack.last(),
+                        heap,
+                        callback: self.callback
+                    };
+                    M::on_create_node(&mut read_only, CreateNodeEvent::StoreAccess(&store_access))
+                },
+                &mut self.heap,
+                self.store,
+                node_id.is_global(),
+            )
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::CreateNodeError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
+            })?;
+
+        let mut read_only = as_read_only!(self);
+        M::on_create_node(&mut read_only, CreateNodeEvent::End(&node_id))?;
+
+        Ok(())
+    }
+
     #[trace_resources(log=node_id.entity_type())]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         M::before_drop_node(node_id, self)?;
@@ -367,43 +413,6 @@ where
         M::after_drop_node(self, total_substate_size)?;
 
         Ok(node)
-    }
-
-    #[trace_resources(log=entity_type)]
-    fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
-        M::on_allocate_node_id(entity_type, self)?;
-
-        self.id_allocator.allocate_node_id(entity_type)
-    }
-
-    #[trace_resources(log=node_id.entity_type())]
-    fn kernel_create_node(
-        &mut self,
-        node_id: NodeId,
-        node_substates: NodeSubstates,
-    ) -> Result<(), RuntimeError> {
-        let mut read_only = as_read_only!(self);
-        M::before_create_node(&node_id, &node_substates, &mut read_only)?;
-
-        self.current_frame
-            .create_node(
-                node_id,
-                node_substates,
-                &mut |store_access| self.callback.on_store_access(&store_access),
-                &mut self.heap,
-                self.store,
-                node_id.is_global(),
-            )
-            .map_err(|e| match e {
-                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::CreateNodeError(e),
-                )),
-                CallbackError::CallbackError(e) => e,
-            })?;
-
-        M::after_create_node(&node_id, self)?;
-
-        Ok(())
     }
 
     #[trace_resources]

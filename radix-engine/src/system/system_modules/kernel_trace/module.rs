@@ -10,6 +10,7 @@ use colored::Colorize;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use sbor::rust::collections::BTreeMap;
+use crate::kernel::kernel_callback_api::CreateNodeEvent;
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}
@@ -75,29 +76,34 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn before_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
-        node_module_init: &BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        event: &CreateNodeEvent
     ) -> Result<(), RuntimeError> {
-        let mut module_substate_keys = BTreeMap::<&PartitionNumber, Vec<&SubstateKey>>::new();
-        for (module_id, m) in node_module_init {
-            for (substate_key, _) in m {
-                module_substate_keys
-                    .entry(module_id)
-                    .or_default()
-                    .push(substate_key);
+        match event {
+            CreateNodeEvent::Start(node_id, node_module_init) => {
+                let mut module_substate_keys = BTreeMap::<&PartitionNumber, Vec<&SubstateKey>>::new();
+                for (module_id, m) in *node_module_init {
+                    for (substate_key, _) in m {
+                        module_substate_keys
+                            .entry(module_id)
+                            .or_default()
+                            .push(substate_key);
+                    }
+                }
+                let message = format!(
+                    "Creating node: id = {:?}, type = {:?}, substates = {:?}, module 0 = {:?}",
+                    node_id,
+                    node_id.entity_type(),
+                    module_substate_keys,
+                    node_module_init.get(&PartitionNumber(0))
+                )
+                    .red();
+                log!(api, "{}", message);
             }
+            _ => {}
         }
-        let message = format!(
-            "Creating node: id = {:?}, type = {:?}, substates = {:?}, module 0 = {:?}",
-            node_id,
-            node_id.entity_type(),
-            module_substate_keys,
-            node_module_init.get(&PartitionNumber(0))
-        )
-        .red();
-        log!(api, "{}", message);
+
         Ok(())
     }
 

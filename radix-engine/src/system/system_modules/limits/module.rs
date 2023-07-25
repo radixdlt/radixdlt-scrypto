@@ -5,6 +5,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
+use crate::kernel::kernel_callback_api::CreateNodeEvent;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {
@@ -103,23 +104,27 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        _node_id: &NodeId,
-        node_substates: &NodeSubstates,
+        event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
         let limits = &mut api.kernel_get_system().modules.limits.config;
 
-        for partitions in node_substates.values() {
-            for (_, value) in partitions {
-                if value.len() > limits.max_substate_size {
-                    return Err(RuntimeError::SystemModuleError(
-                        SystemModuleError::TransactionLimitsError(
-                            TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
-                        ),
-                    ));
+        match event {
+            CreateNodeEvent::Start(_node_id, node_substates) => {
+                for partitions in node_substates.values() {
+                    for (_, value) in partitions {
+                        if value.len() > limits.max_substate_size {
+                            return Err(RuntimeError::SystemModuleError(
+                                SystemModuleError::TransactionLimitsError(
+                                    TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
+                                ),
+                            ));
+                        }
+                    }
                 }
             }
+            _ => {}
         }
 
         Ok(())

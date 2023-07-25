@@ -18,7 +18,7 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
-use crate::kernel::kernel_callback_api::{DrainSubstatesEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -259,22 +259,15 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
-        node_substates: &NodeSubstates,
+        event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
-        let total_substate_size = node_substates
-            .values()
-            .map(|x| x.values().map(|x| x.len()).sum::<usize>())
-            .sum::<usize>();
-
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(CostingEntry::CreateNode {
-                node_id,
-                total_substate_size,
+                event
             })?;
 
         Ok(())

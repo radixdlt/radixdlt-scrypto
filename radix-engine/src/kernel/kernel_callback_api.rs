@@ -9,6 +9,13 @@ use super::actor::Actor;
 use super::call_frame::Message;
 
 #[derive(Debug)]
+pub enum CreateNodeEvent<'a> {
+    Start(&'a NodeId, &'a NodeSubstates),
+    StoreAccess(&'a StoreAccess),
+    End(&'a NodeId),
+}
+
+#[derive(Debug)]
 pub enum SetSubstateEvent<'a> {
     Start(&'a IndexedScryptoValue),
     StoreAccess(&'a StoreAccess),
@@ -49,25 +56,20 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn before_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn after_drop_node<Y>(api: &mut Y, total_substate_size: usize) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn before_create_node<Y>(
-        node_id: &NodeId,
-        node_substates: &NodeSubstates,
+    fn on_create_node<Y>(
         api: &mut Y,
+        event: CreateNodeEvent,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
-    fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
+    fn before_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+        where
+            Y: KernelApi<Self>;
+
+    fn after_drop_node<Y>(api: &mut Y, total_substate_size: usize) -> Result<(), RuntimeError>
+        where
+            Y: KernelApi<Self>;
 
     fn before_open_substate<Y>(
         node_id: &NodeId,

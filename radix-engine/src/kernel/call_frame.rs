@@ -549,7 +549,9 @@ impl<L: Clone> CallFrame<L> {
 
                     // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
-                        Self::move_node_to_store(heap, store, own, on_store_access)
+                        Self::move_node_to_store(heap, store, own, &mut |_, store_access| {
+                            on_store_access(store_access)
+                        })
                             .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
                     }
                 }
@@ -715,7 +717,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn create_node<'f, S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn create_node<'f, S: SubstateStore, E, F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
@@ -733,7 +735,9 @@ impl<L: Clone> CallFrame<L> {
                     self.take_node_internal(own)
                         .map_err(|e| CallbackError::Error(CreateNodeError::TakeNodeError(e)))?;
                     if push_to_store {
-                        Self::move_node_to_store(heap, store, own, on_store_access)
+                        Self::move_node_to_store(heap, store, own, &mut |heap, store_access| {
+                            on_store_access(self, heap, store_access)
+                        })
                             .map_err(|e| e.map(CreateNodeError::PersistNodeError))?;
                     }
                 }
@@ -770,7 +774,9 @@ impl<L: Clone> CallFrame<L> {
             self.stable_references
                 .insert(node_id, StableReferenceType::Global);
             store
-                .create_node(node_id, node_substates, on_store_access)
+                .create_node(node_id, node_substates, &mut |store_access| {
+                    on_store_access(self, heap, store_access)
+                })
                 .map_err(CallbackError::CallbackError)?;
         } else {
             heap.create_node(node_id, node_substates);
@@ -870,7 +876,9 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, own, on_store_access)
+                    Self::move_node_to_store(heap, store, own, &mut |_, store_access| {
+                        on_store_access(store_access)
+                    })
                         .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
 
@@ -1129,7 +1137,7 @@ impl<L: Clone> CallFrame<L> {
         self.owned_root_nodes.keys().cloned().collect()
     }
 
-    pub fn move_node_to_store<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn move_node_to_store<S: SubstateStore, E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         heap: &mut Heap,
         store: &mut S,
         node_id: &NodeId,
@@ -1194,7 +1202,9 @@ impl<L: Clone> CallFrame<L> {
         }
 
         store
-            .create_node(node_id.clone(), node_substates, on_store_access)
+            .create_node(node_id.clone(), node_substates, &mut |store_access| {
+                on_store_access(heap, store_access)
+            })
             .map_err(CallbackError::CallbackError)?;
 
         Ok(())
