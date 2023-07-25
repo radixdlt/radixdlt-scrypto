@@ -20,6 +20,12 @@ pub enum RemoveSubstateEvent<'a> {
     StoreAccess(&'a StoreAccess),
 }
 
+#[derive(Debug)]
+pub enum ScanKeysEvent<'a> {
+    Start,
+    StoreAccess(&'a StoreAccess),
+}
+
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
 
@@ -96,9 +102,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_remove_substate(&mut self, event: RemoveSubstateEvent) -> Result<(), RuntimeError>;
 
-    fn on_scan_keys<Y>(api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
+    fn on_scan_keys(&mut self, event: ScanKeysEvent) -> Result<(), RuntimeError>;
 
     fn on_scan_sorted_substates<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where

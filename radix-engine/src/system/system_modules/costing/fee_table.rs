@@ -5,7 +5,7 @@ use crate::{
     types::*,
 };
 use lazy_static::lazy_static;
-use crate::kernel::kernel_callback_api::{RemoveSubstateEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{RemoveSubstateEvent, ScanKeysEvent, SetSubstateEvent};
 
 lazy_static! {
     pub static ref NATIVE_FUNCTION_BASE_COSTS: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = {
@@ -252,8 +252,13 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn scan_substates_base_cost(&self) -> u32 {
-        500
+    pub fn scan_substates_cost(&self, event: &ScanKeysEvent) -> u32 {
+        match event {
+            ScanKeysEvent::Start => 500,
+            ScanKeysEvent::StoreAccess(store_access) => {
+                self.store_access_cost(store_access)
+            }
+        }
     }
 
     #[inline]

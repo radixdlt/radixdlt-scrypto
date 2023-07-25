@@ -12,7 +12,7 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{KernelCallbackObject, RemoveSubstateEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, SetSubstateEvent};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -823,42 +823,13 @@ where
     }
 
     #[trace_resources]
-    fn kernel_scan_sorted_substates(
-        &mut self,
-        node_id: &NodeId,
-        partition_num: PartitionNumber,
-        count: u32,
-    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        M::on_scan_sorted_substates(self)?;
-
-        let substates = self
-            .current_frame
-            .scan_sorted(
-                node_id,
-                partition_num,
-                count,
-                &mut |store_access| self.callback.on_store_access(&store_access),
-                &mut self.heap,
-                self.store,
-            )
-            .map_err(|e| match e {
-                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::ScanSortedSubstatesError(e),
-                )),
-                CallbackError::CallbackError(e) => e,
-            })?;
-
-        Ok(substates)
-    }
-
-    #[trace_resources]
     fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
-        M::on_scan_keys(self)?;
+        self.callback.on_scan_keys(ScanKeysEvent::Start)?;
 
         let keys = self
             .current_frame
@@ -866,7 +837,7 @@ where
                 node_id,
                 partition_num,
                 count,
-                &mut |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_scan_keys(ScanKeysEvent::StoreAccess(&store_access)),
                 &mut self.heap,
                 self.store,
             )
@@ -904,6 +875,35 @@ where
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
                     CallFrameError::DrainSubstatesError(e),
                 )),
+            })?;
+
+        Ok(substates)
+    }
+
+    #[trace_resources]
+    fn kernel_scan_sorted_substates(
+        &mut self,
+        node_id: &NodeId,
+        partition_num: PartitionNumber,
+        count: u32,
+    ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
+        M::on_scan_sorted_substates(self)?;
+
+        let substates = self
+            .current_frame
+            .scan_sorted(
+                node_id,
+                partition_num,
+                count,
+                &mut |store_access| self.callback.on_store_access(&store_access),
+                &mut self.heap,
+                self.store,
+            )
+            .map_err(|e| match e {
+                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
+                    CallFrameError::ScanSortedSubstatesError(e),
+                )),
+                CallbackError::CallbackError(e) => e,
             })?;
 
         Ok(substates)

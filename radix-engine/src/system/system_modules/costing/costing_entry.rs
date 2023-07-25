@@ -3,7 +3,7 @@ use crate::kernel::actor::Actor;
 use crate::track::interface::{StoreAccess, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
-use crate::kernel::kernel_callback_api::{RemoveSubstateEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{RemoveSubstateEvent, ScanKeysEvent, SetSubstateEvent};
 
 #[derive(Debug, IntoStaticStr)]
 pub enum CostingEntry<'a> {
@@ -69,9 +69,11 @@ pub enum CostingEntry<'a> {
     RemoveSubstate {
         event: &'a RemoveSubstateEvent<'a>,
     },
-    ScanSortedSubstatesBase,
-    ScanSubstatesBase,
+    ScanSubstates {
+        event: &'a ScanKeysEvent<'a>,
+    },
     DrainSubstatesBase,
+    ScanSortedSubstatesBase,
     StoreAccess {
         store_access: &'a StoreAccess,
     },
@@ -149,7 +151,7 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::CloseSubstate => ft.close_substate_cost(),
             CostingEntry::SetSubstate { event } => ft.set_substate_cost(event),
             CostingEntry::RemoveSubstate { event } => ft.remove_substate_cost(event),
-            CostingEntry::ScanSubstatesBase => ft.scan_substates_base_cost(),
+            CostingEntry::ScanSubstates { event } => ft.scan_substates_cost(event),
             CostingEntry::ScanSortedSubstatesBase => ft.scan_sorted_substates_base_cost(),
             CostingEntry::DrainSubstatesBase => ft.drain_substates_base_cost(),
             CostingEntry::StoreAccess { store_access } => ft.store_access_cost(store_access),
