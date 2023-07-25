@@ -606,7 +606,8 @@ pub struct ComplexNonFungibleData {
     pub fixed_number: u64,
     pub fixed_non_fungible_global_id: NonFungibleGlobalId,
     #[mutable]
-    pub mutable_long_name_for_data_to_try_and_stretch_the_bounds_of_what_is_possible_in_user_interfaces: String,
+    pub mutable_long_name_for_data_to_try_and_stretch_the_bounds_of_what_is_possible_in_user_interfaces:
+        String,
     pub inner_struct: InnerStruct,
     #[mutable]
     pub mutable_inner_enum: InnerEnum,
