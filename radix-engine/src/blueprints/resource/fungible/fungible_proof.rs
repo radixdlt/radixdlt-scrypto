@@ -1,5 +1,5 @@
 use crate::blueprints::resource::{LocalRef, ProofError, ProofMoveableSubstate};
-use crate::errors::RuntimeError;
+use crate::errors::{ApplicationError, RuntimeError};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::{ClientApi, FieldValue, OBJECT_HANDLE_SELF};
@@ -151,5 +151,56 @@ impl FungibleProofBlueprint {
         api.field_close(handle)?;
 
         Ok(())
+    }
+
+    pub(crate) fn on_move<Y>(
+        is_moving_down: bool,
+        is_to_barrier: bool,
+        destination_blueprint_id: Option<BlueprintId>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: ClientApi<RuntimeError>,
+    {
+        if is_moving_down {
+            let is_to_self = destination_blueprint_id.eq(&Some(BlueprintId::new(
+                &RESOURCE_PACKAGE,
+                FUNGIBLE_PROOF_BLUEPRINT,
+            )));
+            let is_to_auth_zone = destination_blueprint_id.eq(&Some(BlueprintId::new(
+                &RESOURCE_PACKAGE,
+                AUTH_ZONE_BLUEPRINT,
+            )));
+            if !is_to_self && (is_to_barrier || is_to_auth_zone) {
+                let handle = api.actor_open_field(
+                    OBJECT_HANDLE_SELF,
+                    FungibleProofField::Moveable.into(),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut proof: ProofMoveableSubstate = api.field_read_typed(handle)?;
+
+                // Check if the proof is restricted
+                if proof.restricted {
+                    return Err(RuntimeError::ApplicationError(ApplicationError::Panic(
+                        "Moving restricted proof downstream".to_owned(),
+                    )));
+                }
+
+                // Update restricted flag
+                if is_to_barrier {
+                    proof.change_to_restricted();
+                }
+
+                api.field_write_typed(handle, proof)?;
+                api.field_close(handle)?;
+                Ok(())
+            } else {
+                // Proofs can move freely as long as it's not to a barrier or auth zone.
+                Ok(())
+            }
+        } else {
+            // No restriction for moving up
+            Ok(())
+        }
     }
 }

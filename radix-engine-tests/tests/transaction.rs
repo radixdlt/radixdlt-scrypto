@@ -50,7 +50,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     // Act
     let manifest = ManifestBuilder::new()
         .lock_standard_test_fee(account)
-        .create_proof_from_account_of_amount(account, RADIX_TOKEN, dec!(1))
+        .create_proof_from_account_of_amount(account, XRD, dec!(1))
         .create_proof_from_auth_zone_of_all(XRD, "proof1")
         .push_to_auth_zone("proof1")
         .try_deposit_batch_or_abort(account)

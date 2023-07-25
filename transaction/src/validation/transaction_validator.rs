@@ -61,12 +61,12 @@ impl ValidationConfig {
     pub fn default(network_id: u8) -> Self {
         Self {
             network_id,
-            max_notarized_payload_size: DEFAULT_MAX_TRANSACTION_SIZE,
-            min_cost_unit_limit: DEFAULT_MIN_COST_UNIT_LIMIT,
-            max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
-            min_tip_percentage: DEFAULT_MIN_TIP_PERCENTAGE,
-            max_tip_percentage: DEFAULT_MAX_TIP_PERCENTAGE,
-            max_epoch_range: DEFAULT_MAX_EPOCH_RANGE,
+            max_notarized_payload_size: MAX_TRANSACTION_SIZE,
+            min_cost_unit_limit: MIN_COST_UNIT_LIMIT,
+            max_cost_unit_limit: MAX_COST_UNIT_LIMIT,
+            min_tip_percentage: MIN_TIP_PERCENTAGE,
+            max_tip_percentage: MAX_TIP_PERCENTAGE,
+            max_epoch_range: MAX_EPOCH_RANGE,
             message_validation: MessageValidationConfig::default(),
         }
     }
@@ -462,13 +462,7 @@ mod tests {
             TransactionValidationError::HeaderValidationError(
                 HeaderValidationError::EpochRangeTooLarge
             ),
-            (
-                Epoch::zero(),
-                Epoch::of(DEFAULT_MAX_EPOCH_RANGE + 1),
-                5,
-                vec![1],
-                2
-            )
+            (Epoch::zero(), Epoch::of(MAX_EPOCH_RANGE + 1), 5, vec![1], 2)
         );
     }
 
