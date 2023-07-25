@@ -1,13 +1,13 @@
-Total Cost (XRD)                                                           ,     0.10076006,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.09205006,     91.4%
+Total Cost (XRD)                                                           ,     0.10089974,    100.0%
++ Execution Cost (XRD)                                                     ,     0.09218974,     91.4%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00871,      8.6%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,        9205006,    100.0%
+Total Cost Units Consumed                                                  ,        9218974,    100.0%
 AfterInvoke                                                                ,            626,      0.0%
 AllocateNodeId                                                             ,          12500,      0.1%
 BeforeInvoke                                                               ,          10802,      0.1%
-CloseSubstate                                                              ,         134000,      1.5%
+CloseSubstate                                                              ,         137500,      1.5%
 Commit::GlobalAccount                                                      ,         100002,      1.1%
 Commit::GlobalVirtualSecp256k1Account                                      ,         900125,      9.8%
 Commit::InternalFungibleVault                                              ,         700096,      7.6%
@@ -16,16 +16,16 @@ DropNode                                                                   ,    
 EmitEvent                                                                  ,           3228,      0.0%
 LockFee                                                                    ,            500,      0.0%
 MoveModules                                                                ,           4000,      0.0%
-OpenSubstate::GlobalAccount                                                ,         569406,      6.2%
-OpenSubstate::GlobalFungibleResourceManager                                ,         339236,      3.7%
+OpenSubstate::GlobalAccount                                                ,         570954,      6.2%
+OpenSubstate::GlobalFungibleResourceManager                                ,         340816,      3.7%
 OpenSubstate::GlobalNonFungibleResourceManager                             ,          83294,      0.9%
-OpenSubstate::GlobalPackage                                                ,        4543162,     49.4%
-OpenSubstate::GlobalVirtualSecp256k1Account                                ,         647906,      7.0%
+OpenSubstate::GlobalPackage                                                ,        4543162,     49.3%
+OpenSubstate::GlobalVirtualSecp256k1Account                                ,         648680,      7.0%
 OpenSubstate::InternalAccount                                              ,           1332,      0.0%
 OpenSubstate::InternalFungibleVault                                        ,         181018,      2.0%
-OpenSubstate::InternalGenericComponent                                     ,          55654,      0.6%
+OpenSubstate::InternalGenericComponent                                     ,          56986,      0.6%
 QueryActor                                                                 ,           2500,      0.0%
-ReadSubstate                                                               ,         256200,      2.8%
+ReadSubstate                                                               ,         261434,      2.8%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.2%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.2%
 RunNativeCode::Worktop_put                                                 ,          24411,      0.3%

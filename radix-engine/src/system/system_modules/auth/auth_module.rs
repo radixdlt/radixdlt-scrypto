@@ -80,7 +80,12 @@ impl AuthModule {
             // Step 1: Resolve method to permission
             // Decide `authorization`, `barrier_crossing_allowed`, and `tip_auth_zone_id`
             let permission = match &callee {
-                Actor::Method(actor) => Self::resolve_method_permission(actor, args, &mut system)?,
+                Actor::Method(MethodActor {
+                    node_id,
+                    module_id,
+                    ident,
+                    ..
+                }) => Self::resolve_method_permission(&mut system, node_id, module_id, ident, args)?,
                 Actor::Function(FunctionActor {
                     blueprint_id,
                     ident,
@@ -159,23 +164,25 @@ impl AuthModule {
     }
 
     fn resolve_method_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        callee: &MethodActor,
-        args: &IndexedScryptoValue,
         api: &mut SystemService<Y, V>,
+        receiver: &NodeId,
+        module_id: &ObjectModuleId,
+        ident: &str,
+        args: &IndexedScryptoValue,
     ) -> Result<ResolvedPermission, RuntimeError> {
-        let method_key = MethodKey::new(callee.ident.as_str());
+        let method_key = MethodKey::new(ident);
 
-        if let ObjectModuleId::RoleAssignment = callee.module_id {
+        if let ObjectModuleId::RoleAssignment = module_id {
             return RoleAssignmentNativePackage::authorization(
-                &callee.node_id,
-                method_key.ident.as_str(),
+                receiver,
+                ident,
                 args,
                 api,
             );
         }
 
         let blueprint_id = api
-            .get_blueprint_info(&callee.node_id, callee.module_id)?
+            .get_blueprint_info(receiver, *module_id)?
             .blueprint_id;
 
         let auth_template = PackageAuthNativeBlueprint::get_bp_auth_template(
@@ -185,22 +192,21 @@ impl AuthModule {
         )?
         .method_auth;
 
+        let receiver_object_info = api.get_object_info(&receiver)?;
+
         let (role_assignment_of, method_permissions) = match auth_template {
             MethodAuthTemplate::StaticRoles(static_roles) => {
                 let role_assignment_of = match static_roles.roles {
                     RoleSpecification::Normal(..) => {
                         // Non-globalized objects do not have access rules module
-                        if !callee.object_info.global {
+                        if !receiver_object_info.global {
                             return Ok(ResolvedPermission::AllowAll);
                         }
 
-                        callee.node_id
+                        receiver.clone()
                     }
                     RoleSpecification::UseOuter => {
-                        let node_id = callee.node_id;
-                        let info = api.get_object_info(&node_id)?;
-
-                        let role_assignment_of = info.get_outer_object();
+                        let role_assignment_of = receiver_object_info.get_outer_object();
                         role_assignment_of.into_node_id()
                     }
                 };
@@ -218,9 +224,9 @@ impl AuthModule {
                     package_of_direct_caller(package)
                 ))))
             }
-            Some(MethodAccessibility::OuterObjectOnly) => match callee.module_id {
+            Some(MethodAccessibility::OuterObjectOnly) => match module_id {
                 ObjectModuleId::Main => {
-                    let outer_object_info = &callee.object_info.blueprint_info.outer_obj_info;
+                    let outer_object_info = &receiver_object_info.blueprint_info.outer_obj_info;
                     match outer_object_info {
                         OuterObjectInfo::Some { outer_object } => {
                             Ok(ResolvedPermission::AccessRule(rule!(require(
@@ -240,12 +246,18 @@ impl AuthModule {
                 Ok(ResolvedPermission::RoleList {
                     role_assignment_of,
                     role_list: role_list.clone(),
-                    module_id: callee.module_id,
+                    module_id: module_id.clone(),
                 })
             }
-            None => Err(RuntimeError::SystemModuleError(
-                SystemModuleError::AuthError(AuthError::NoMethodMapping(callee.fn_identifier())),
-            )),
+            None => {
+                let fn_identifier = FnIdentifier {
+                    blueprint_id,
+                    ident: ident.to_string(),
+                };
+                Err(RuntimeError::SystemModuleError(
+                    SystemModuleError::AuthError(AuthError::NoMethodMapping(fn_identifier)),
+                ))
+            },
         }
     }
 }
