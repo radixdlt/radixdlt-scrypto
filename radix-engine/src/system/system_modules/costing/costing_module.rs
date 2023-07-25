@@ -18,7 +18,7 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::blueprints::package::BlueprintVersionKey;
 use radix_engine_interface::blueprints::resource::LiquidFungibleResource;
 use radix_engine_interface::{types::NodeId, *};
-use crate::kernel::kernel_callback_api::RemoveSubstateEvent;
+use crate::kernel::kernel_callback_api::{RemoveSubstateEvent, SetSubstateEvent};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CostingError {
@@ -349,14 +349,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        value_size: usize,
+    fn on_set_substate(
+        system: &mut SystemConfig<V>,
+        event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
+        system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::SetSubstate { value_size })?;
+            .apply_execution_cost(CostingEntry::SetSubstate { event })?;
 
         Ok(())
     }

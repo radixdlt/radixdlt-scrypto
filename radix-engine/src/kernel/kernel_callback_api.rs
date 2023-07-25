@@ -9,9 +9,15 @@ use super::actor::Actor;
 use super::call_frame::Message;
 
 #[derive(Debug)]
-pub enum RemoveSubstateEvent {
+pub enum SetSubstateEvent<'a> {
+    Start(&'a IndexedScryptoValue),
+    StoreAccess(&'a StoreAccess),
+}
+
+#[derive(Debug)]
+pub enum RemoveSubstateEvent<'a> {
     Start,
-    StoreAccess(StoreAccess),
+    StoreAccess(&'a StoreAccess),
 }
 
 pub trait KernelCallbackObject: Sized {
@@ -86,9 +92,7 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError>;
 
-    fn on_set_substate<Y>(value_size: usize, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
+    fn on_set_substate(&mut self, event: SetSubstateEvent) -> Result<(), RuntimeError>;
 
     fn on_remove_substate(&mut self, event: RemoveSubstateEvent) -> Result<(), RuntimeError>;
 

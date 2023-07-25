@@ -3,7 +3,7 @@ use crate::kernel::actor::Actor;
 use crate::track::interface::{StoreAccess, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
-use crate::kernel::kernel_callback_api::RemoveSubstateEvent;
+use crate::kernel::kernel_callback_api::{RemoveSubstateEvent, SetSubstateEvent};
 
 #[derive(Debug, IntoStaticStr)]
 pub enum CostingEntry<'a> {
@@ -64,10 +64,10 @@ pub enum CostingEntry<'a> {
 
     /* unstable node apis */
     SetSubstate {
-        value_size: usize,
+        event: &'a SetSubstateEvent<'a>,
     },
     RemoveSubstate {
-        event: &'a RemoveSubstateEvent,
+        event: &'a RemoveSubstateEvent<'a>,
     },
     ScanSortedSubstatesBase,
     ScanSubstatesBase,
@@ -147,7 +147,7 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::ReadSubstate { value_size } => ft.read_substate_cost(*value_size),
             CostingEntry::WriteSubstate { value_size } => ft.write_substate_cost(*value_size),
             CostingEntry::CloseSubstate => ft.close_substate_cost(),
-            CostingEntry::SetSubstate { value_size } => ft.set_substate_cost(*value_size),
+            CostingEntry::SetSubstate { event } => ft.set_substate_cost(event),
             CostingEntry::RemoveSubstate { event } => ft.remove_substate_cost(event),
             CostingEntry::ScanSubstatesBase => ft.scan_substates_base_cost(),
             CostingEntry::ScanSortedSubstatesBase => ft.scan_sorted_substates_base_cost(),

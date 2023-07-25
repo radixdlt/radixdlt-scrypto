@@ -27,7 +27,7 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
-use crate::kernel::kernel_callback_api::RemoveSubstateEvent;
+use crate::kernel::kernel_callback_api::{RemoveSubstateEvent, SetSubstateEvent};
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -90,10 +90,10 @@ pub struct SystemModuleMixer {
 
 // Macro generates default modules dispatches call based on passed function name and arguments.
 macro_rules! internal_call_dispatch {
-    ($api:ident, $fn:ident ( $($param:ident),*) ) => {
+    ($system:expr, $fn:ident ( $($param:ident),*) ) => {
         paste! {
         {
-            let modules: EnabledModules = $api.kernel_get_system().modules.enabled_modules;
+            let modules: EnabledModules = $system.modules.enabled_modules;
             if modules.contains(EnabledModules::KERNEL_TRACE) {
                 KernelTraceModule::[< $fn >]($($param, )*)?;
             }
@@ -223,7 +223,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
 
     #[trace_resources]
     fn on_teardown<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_teardown(api))
+        internal_call_dispatch!(api.kernel_get_system(), on_teardown(api))
     }
 
     #[trace_resources(log=invocation.len())]
@@ -231,7 +231,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         invocation: &KernelInvocation,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, before_invoke(api, invocation))
+        internal_call_dispatch!(api.kernel_get_system(), before_invoke(api, invocation))
     }
 
     #[trace_resources]
@@ -241,12 +241,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         message: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, before_push_frame(api, callee, message, args))
+        internal_call_dispatch!(api.kernel_get_system(), before_push_frame(api, callee, message, args))
     }
 
     #[trace_resources]
     fn on_execution_start<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_execution_start(api))
+        internal_call_dispatch!(api.kernel_get_system(), on_execution_start(api))
     }
 
     #[trace_resources]
@@ -254,7 +254,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         message: &Message,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_execution_finish(api, message))
+        internal_call_dispatch!(api.kernel_get_system(), on_execution_finish(api, message))
     }
 
     #[trace_resources]
@@ -263,7 +263,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         dropped_actor: &Actor,
         message: &Message,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_pop_frame(api, dropped_actor, message))
+        internal_call_dispatch!(api.kernel_get_system(), after_pop_frame(api, dropped_actor, message))
     }
 
     #[trace_resources(log=output_size)]
@@ -271,7 +271,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         output_size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_invoke(api, output_size))
+        internal_call_dispatch!(api.kernel_get_system(), after_invoke(api, output_size))
     }
 
     #[trace_resources(log=entity_type)]
@@ -279,7 +279,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_allocate_node_id(api, entity_type))
+        internal_call_dispatch!(api.kernel_get_system(), on_allocate_node_id(api, entity_type))
     }
 
     #[trace_resources]
@@ -288,7 +288,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         node_id: &NodeId,
         node_substates: &NodeSubstates,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, before_create_node(api, node_id, node_substates))
+        internal_call_dispatch!(api.kernel_get_system(), before_create_node(api, node_id, node_substates))
     }
 
     #[trace_resources]
@@ -296,7 +296,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_create_node(api, node_id))
+        internal_call_dispatch!(api.kernel_get_system(), after_create_node(api, node_id))
     }
 
     #[trace_resources]
@@ -304,7 +304,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         node_id: &NodeId,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, before_drop_node(api, node_id))
+        internal_call_dispatch!(api.kernel_get_system(), before_drop_node(api, node_id))
     }
 
     #[trace_resources]
@@ -312,7 +312,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         total_substate_size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_drop_node(api, total_substate_size))
+        internal_call_dispatch!(api.kernel_get_system(), after_drop_node(api, total_substate_size))
     }
 
     #[trace_resources]
@@ -324,7 +324,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         flags: &LockFlags,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
-            api,
+            api.kernel_get_system(),
             before_open_substate(api, node_id, partition_number, substate_key, flags)
         )
     }
@@ -336,7 +336,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         node_id: &NodeId,
         size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, after_open_substate(api, handle, node_id, size))
+        internal_call_dispatch!(api.kernel_get_system(), after_open_substate(api, handle, node_id, size))
     }
 
     #[trace_resources(log=value_size)]
@@ -345,7 +345,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         lock_handle: LockHandle,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_read_substate(api, lock_handle, value_size))
+        internal_call_dispatch!(api.kernel_get_system(), on_read_substate(api, lock_handle, value_size))
     }
 
     #[trace_resources(log=value_size)]
@@ -354,7 +354,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         lock_handle: LockHandle,
         value_size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_write_substate(api, lock_handle, value_size))
+        internal_call_dispatch!(api.kernel_get_system(), on_write_substate(api, lock_handle, value_size))
     }
 
     #[trace_resources]
@@ -362,15 +362,15 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         lock_handle: LockHandle,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_close_substate(api, lock_handle))
+        internal_call_dispatch!(api.kernel_get_system(), on_close_substate(api, lock_handle))
     }
 
     #[trace_resources]
-    fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        value_size: usize,
+    fn on_set_substate(
+        system: &mut SystemConfig<V>,
+        event: &SetSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_set_substate(api, value_size))
+        internal_call_dispatch!(system, on_set_substate(system, event))
     }
 
     #[trace_resources]
@@ -378,44 +378,24 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         system: &mut SystemConfig<V>,
         event: &RemoveSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = system.modules.enabled_modules;
-        if modules.contains(EnabledModules::KERNEL_TRACE) {
-            KernelTraceModule::on_remove_substate(system, event)?;
-        }
-        if modules.contains(EnabledModules::LIMITS) {
-            LimitsModule::on_remove_substate(system, event)?;
-        }
-        if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_remove_substate(system, event)?;
-        }
-        if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_remove_substate(system, event)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_remove_substate(system, event)?;
-        }
-        if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_remove_substate(system, event)?;
-        }
-
-        Ok(())
+        internal_call_dispatch!(system, on_remove_substate(system, event))
     }
 
     #[trace_resources]
     fn on_scan_keys<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_scan_keys(api))
+        internal_call_dispatch!(api.kernel_get_system(), on_scan_keys(api))
     }
 
     #[trace_resources]
     fn on_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_scan_sorted_substates(api))
+        internal_call_dispatch!(api.kernel_get_system(), on_scan_sorted_substates(api))
     }
 
     #[trace_resources]
     fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_drain_substates(api))
+        internal_call_dispatch!(api.kernel_get_system(), on_drain_substates(api))
     }
 
     #[trace_resources]

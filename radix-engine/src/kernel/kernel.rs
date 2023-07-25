@@ -12,7 +12,7 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{KernelCallbackObject, RemoveSubstateEvent};
+use crate::kernel::kernel_callback_api::{KernelCallbackObject, RemoveSubstateEvent, SetSubstateEvent};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -771,7 +771,7 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        M::on_set_substate(value.len(), self)?;
+        self.callback.on_set_substate(SetSubstateEvent::Start(&value))?;
 
         self.current_frame
             .set_substate(
@@ -779,7 +779,7 @@ where
                 partition_num,
                 substate_key,
                 value,
-                &mut |store_access| self.callback.on_store_access(&store_access),
+                &mut |store_access| self.callback.on_set_substate(SetSubstateEvent::StoreAccess(&store_access)),
                 &mut self.heap,
                 self.store,
             )
@@ -808,7 +808,7 @@ where
                 node_id,
                 partition_num,
                 &substate_key,
-                &mut |store_access| self.callback.on_remove_substate(RemoveSubstateEvent::StoreAccess(store_access)),
+                &mut |store_access| self.callback.on_remove_substate(RemoveSubstateEvent::StoreAccess(&store_access)),
                 &mut self.heap,
                 self.store,
             )
