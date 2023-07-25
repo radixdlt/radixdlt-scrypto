@@ -74,13 +74,7 @@ impl AuthModule {
         V: SystemCallbackObject,
         Y: KernelApi<SystemConfig<V>>,
     {
-        //if let Some(auth_zone_id) = api.kernel_get_system().modules.auth.last_auth_zone() {
         if let Some(auth_info) = callee.auth_info() {
-            // TODO: Remove
-            if auth_info.caller_auth_zone.is_none() {
-                return Ok(());
-            }
-
             let mut system = SystemService::new(api);
 
             // Step 1: Resolve method to permission
@@ -97,6 +91,7 @@ impl AuthModule {
                     ident.as_str(),
                     system.api,
                 )?,
+                // TODO: Remove (aka move check_authorization into system)
                 Actor::BlueprintHook(..) | Actor::Root => return Ok(()),
             };
 

@@ -1441,7 +1441,7 @@ where
 
         let (caller_auth_zone, self_auth_zone) = {
             let caller_auth_zone = match self.current_actor() {
-                Actor::Root | Actor::BlueprintHook(..) => None,
+                Actor::Root => None,
                 Actor::Method(current_method_actor) => {
                     let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: {
@@ -1482,6 +1482,13 @@ where
                         local_package_address: current_method_actor
                             .get_blueprint_id()
                             .package_address,
+                    };
+                    Some(caller_auth_zone)
+                }
+                Actor::BlueprintHook(blueprint_hook_actor) => {
+                    let caller_auth_zone = CallerAuthZone {
+                        global_auth_zone: None,
+                        local_package_address: blueprint_hook_actor.blueprint_id.package_address,
                     };
                     Some(caller_auth_zone)
                 }
@@ -2143,16 +2150,9 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let caller_auth_zone = match self.current_actor() {
-            Actor::Root | Actor::BlueprintHook(..) => None,
+            Actor::Root => None,
             Actor::Method(current_method_actor) => {
                 let caller_auth_zone = CallerAuthZone {
-                    /*
-                    global_auth_zone: if object_info.global || direct_access {
-                        current_method_actor.self_auth_zone
-                    } else {
-                        current_method_actor.caller_auth_zone.clone().unwrap().global_auth_zone
-                    },
-                     */
                     global_auth_zone: {
                         // TODO: Check actor object module id?
                         let node_visibility =
@@ -2178,6 +2178,13 @@ where
                         global_auth_zone
                     },
                     local_package_address: current_method_actor.get_blueprint_id().package_address,
+                };
+                Some(caller_auth_zone)
+            }
+            Actor::BlueprintHook(blueprint_hook_actor) => {
+                let caller_auth_zone = CallerAuthZone {
+                    global_auth_zone: None,
+                    local_package_address: blueprint_hook_actor.blueprint_id.package_address,
                 };
                 Some(caller_auth_zone)
             }
