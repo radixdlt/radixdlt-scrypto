@@ -1,4 +1,4 @@
-use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -103,7 +103,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
+    fn before_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         _node_id: &NodeId,
         node_substates: &NodeSubstates,

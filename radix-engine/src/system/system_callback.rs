@@ -11,7 +11,7 @@ use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelSubstateApi;
+use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{DrainSubstatesEvent, KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::system::module::SystemModule;
@@ -126,7 +126,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>,
+        Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::before_create_node(api, node_id, node_module_init)
     }

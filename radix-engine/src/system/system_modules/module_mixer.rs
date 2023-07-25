@@ -3,7 +3,7 @@ use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
@@ -283,7 +283,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
+    fn before_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         node_substates: &NodeSubstates,

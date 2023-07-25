@@ -1,5 +1,5 @@
 use crate::errors::*;
-use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
@@ -63,7 +63,7 @@ pub trait KernelCallbackObject: Sized {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>;
+        Y: KernelInternalApi<Self>;
 
     fn after_create_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where

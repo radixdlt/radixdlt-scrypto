@@ -204,6 +204,18 @@ pub struct Kernel<
     callback: &'g mut M,
 }
 
+macro_rules! as_read_only {
+    ($kernel:expr) => {{
+        KernelReadOnly {
+            current_frame: &$kernel.current_frame,
+            prev_frame: $kernel.prev_frame_stack.last(),
+            heap: &$kernel.heap,
+            callback: $kernel.callback,
+        }
+    }}
+}
+
+
 impl<'g, M, S> Kernel<'g, M, S>
 where
     M: KernelCallbackObject,
@@ -370,7 +382,8 @@ where
         node_id: NodeId,
         node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError> {
-        M::before_create_node(&node_id, &node_substates, self)?;
+        let mut read_only = as_read_only!(self);
+        M::before_create_node(&node_id, &node_substates, &mut read_only)?;
 
         self.current_frame
             .create_node(
@@ -422,21 +435,70 @@ where
     }
 }
 
+// TODO: Remove
 impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>
-where
-    M: KernelCallbackObject,
-    S: SubstateStore,
+    where
+        M: KernelCallbackObject,
+        S: SubstateStore,
 {
-    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
-        self.current_frame.get_node_visibility(node_id)
+
+    fn kernel_get_node_visibility(&mut self, node_id: &NodeId) -> NodeVisibility {
+        let mut read_only = as_read_only!(self);
+        read_only.kernel_get_node_visibility(node_id)
     }
 
-    fn kernel_get_current_depth(&self) -> usize {
-        self.current_frame.depth()
+    fn kernel_get_current_depth(&mut self) -> usize {
+        let mut read_only = as_read_only!(self);
+        read_only.kernel_get_current_depth()
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
         let caller_actor = match self.prev_frame_stack.last() {
+            Some(call_frame) => call_frame.actor(),
+            None => {
+                // This will only occur on initialization
+                self.current_frame.actor()
+            }
+        };
+        SystemState {
+            system: &mut self.callback,
+            current_actor: self.current_frame.actor(),
+            caller_actor,
+        }
+    }
+
+    fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot> {
+        let mut read_only = as_read_only!(self);
+        read_only.kernel_read_bucket(bucket_id)
+    }
+
+    fn kernel_read_proof(&mut self, proof_id: &NodeId) -> Option<ProofSnapshot> {
+        let mut read_only = as_read_only!(self);
+        read_only.kernel_read_proof(proof_id)
+    }
+}
+
+struct KernelReadOnly<'g, M> where M: KernelCallbackObject {
+    current_frame: &'g CallFrame<M::LockData>,
+    prev_frame: Option<&'g CallFrame<M::LockData>>,
+    heap: &'g Heap,
+    callback: &'g mut M,
+}
+
+impl<'g, M> KernelInternalApi<M> for KernelReadOnly<'g, M>
+where
+    M: KernelCallbackObject,
+{
+    fn kernel_get_node_visibility(&mut self, node_id: &NodeId) -> NodeVisibility {
+        self.current_frame.get_node_visibility(node_id)
+    }
+
+    fn kernel_get_current_depth(&mut self) -> usize {
+        self.current_frame.depth()
+    }
+
+    fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
+        let caller_actor = match self.prev_frame {
             Some(call_frame) => call_frame.actor(),
             None => {
                 // This will only occur on initialization

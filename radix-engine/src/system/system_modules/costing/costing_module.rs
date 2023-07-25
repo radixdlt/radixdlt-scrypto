@@ -3,7 +3,7 @@ use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
 use crate::system::module::SystemModule;
 use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::system_callback::SystemConfig;
@@ -259,7 +259,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
+    fn before_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
         node_substates: &NodeSubstates,

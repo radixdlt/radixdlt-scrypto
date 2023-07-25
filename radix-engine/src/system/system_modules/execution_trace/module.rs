@@ -2,7 +2,7 @@ use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
@@ -286,7 +286,7 @@ impl ResourceSummary {
 }
 
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceModule {
-    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
+    fn before_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
         _node_id: &NodeId,
         _node_substates: &NodeSubstates,

@@ -1,7 +1,7 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelApi;
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::{DrainSubstatesEvent, KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::track::interface::{NodeSubstates, StoreAccess};
@@ -94,7 +94,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn before_create_node<Y: KernelApi<M>>(
+    fn before_create_node<Y: KernelInternalApi<M>>(
         _api: &mut Y,
         _node_id: &NodeId,
         _node_substates: &NodeSubstates,
