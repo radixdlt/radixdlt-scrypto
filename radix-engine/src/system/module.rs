@@ -3,7 +3,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::kernel::kernel_callback_api::{KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{DrainSubstatesEvent, KernelCallbackObject, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -199,7 +199,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_drain_substates<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_drain_substates(_system: &mut M, _event: &DrainSubstatesEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
 

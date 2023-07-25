@@ -27,7 +27,7 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
-use crate::kernel::kernel_callback_api::{RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{DrainSubstatesEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -387,8 +387,8 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(api: &mut Y) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_drain_substates(api))
+    fn on_drain_substates(system: &mut SystemConfig<V>, event: &DrainSubstatesEvent) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(system, on_drain_substates(system, event))
     }
 
     #[trace_resources]
