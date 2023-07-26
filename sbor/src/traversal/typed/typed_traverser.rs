@@ -178,15 +178,15 @@ impl<'de, 's, E: CustomExtension> TypedTraverser<'de, 's, E> {
         let LocatedTraversalEvent { location, event } = inner_traverser.next_event();
         let typed_event = match event {
             TraversalEvent::ContainerStart(header) => {
-                let type_index = state.get_type_index(&location);
+                let type_index = state.get_type_index_of_last_visited_child(&location);
                 state.map_container_start_event(type_index, header)
             }
             TraversalEvent::TerminalValue(value) => {
-                let type_index = state.get_type_index(&location);
+                let type_index = state.get_type_index_of_last_visited_child(&location);
                 state.map_terminal_value_event(type_index, value)
             }
             TraversalEvent::TerminalValueBatch(value_batch) => {
-                let type_index = state.get_type_index(&location);
+                let type_index = state.get_type_index_of_last_visited_child(&location);
                 state.map_terminal_value_batch_event(type_index, value_batch)
             }
             TraversalEvent::ContainerEnd(header) => state.map_container_end_event(header),
@@ -491,18 +491,21 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
         TypedTraversalEvent::ContainerEnd(container.self_type(), header)
     }
 
-    fn get_type_index(&self, location: &Location<E::CustomTraversal>) -> LocalTypeIndex {
+    fn get_type_index_of_last_visited_child(
+        &self,
+        location: &Location<E::CustomTraversal>,
+    ) -> LocalTypeIndex {
         match location.ancestor_path.last() {
-            Some(container_child) => {
-                let current_child_index = container_child.next_child_index - 1;
-                match container_child.container_header {
+            Some(container_state) => {
+                let child_index = container_state.last_child_index.expect("Caller should ensure the child has been visited before calling this function");
+                match container_state.container_header {
                     ContainerHeader::Tuple(_)
                     | ContainerHeader::EnumVariant(_)
                     | ContainerHeader::Array(_) =>  {
-                        self.container_stack.last().unwrap().get_child_type_for_element(current_child_index)
+                        self.container_stack.last().unwrap().get_child_type_for_element(child_index)
                     }
                     ContainerHeader::Map(_) =>  {
-                        if current_child_index % 2 == 0 {
+                        if child_index % 2 == 0 {
                             self.container_stack.last().unwrap().get_child_type_for_map_key()
                         } else {
                             self.container_stack.last().unwrap().get_child_type_for_map_value()
