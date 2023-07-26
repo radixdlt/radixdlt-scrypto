@@ -4,11 +4,7 @@ use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent,
-    ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
-    SetSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use crate::system::module::SystemModule;
 use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
 use crate::system::system_callback::SystemConfig;
@@ -275,15 +271,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        total_substate_size: usize,
-    ) -> Result<(), RuntimeError> {
+    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(api: &mut Y, event: &DropNodeEvent) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(CostingEntry::DropNode {
-                total_substate_size,
+                event,
             })?;
 
         Ok(())

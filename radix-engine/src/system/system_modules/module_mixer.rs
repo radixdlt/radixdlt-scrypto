@@ -5,11 +5,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent,
-    ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
-    SetSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -304,22 +300,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn before_drop_node<Y: KernelApi<SystemConfig<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
+        event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), before_drop_node(api, node_id))
-    }
-
-    #[trace_resources]
-    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        total_substate_size: usize,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api.kernel_get_system(),
-            after_drop_node(api, total_substate_size)
-        )
+        internal_call_dispatch!(api.kernel_get_system(), on_drop_node(api, event))
     }
 
     #[trace_resources]

@@ -16,6 +16,12 @@ pub enum CreateNodeEvent<'a> {
 }
 
 #[derive(Debug)]
+pub enum DropNodeEvent<'a> {
+    Start(&'a NodeId),
+    End(&'a NodeId, &'a NodeSubstates),
+}
+
+#[derive(Debug)]
 pub enum MoveModuleEvent<'a> {
     StoreAccess(&'a StoreAccess),
 }
@@ -103,13 +109,9 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelInternalApi<Self>;
 
-    fn before_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>;
-
-    fn after_drop_node<Y>(api: &mut Y, total_substate_size: usize) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
+        Y: KernelInternalApi<Self>;
 
     fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
     where
@@ -201,7 +203,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drop_node_mut<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 

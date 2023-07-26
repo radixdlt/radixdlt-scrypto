@@ -3,11 +3,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject,
-    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
-    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -114,17 +110,9 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn before_drop_node<Y: KernelApi<M>>(
+    fn on_drop_node<Y: KernelInternalApi<M>>(
         _api: &mut Y,
-        _node_id: &NodeId,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn after_drop_node<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _total_substate_size: usize,
+        _event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

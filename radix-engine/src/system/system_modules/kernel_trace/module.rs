@@ -1,9 +1,7 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, OpenSubstateEvent, ReadSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DropNodeEvent, OpenSubstateEvent, ReadSubstateEvent, WriteSubstateEvent};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -110,11 +108,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelApi<SystemConfig<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
+        event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Dropping node: id = {:?}", node_id);
+        match event {
+            DropNodeEvent::Start(node_id) => {
+                log!(api, "Dropping node: id = {:?}", node_id);
+            }
+            _ => {}
+        }
         Ok(())
     }
 

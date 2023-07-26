@@ -12,11 +12,7 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject,
-    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
-    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -424,23 +420,21 @@ where
 
     #[trace_resources(log=node_id.entity_type())]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
-        M::before_drop_node(node_id, self)?;
+        let mut read_only = as_read_only!(self);
+        M::on_drop_node(&mut read_only, DropNodeEvent::Start(node_id))?;
 
-        M::on_drop_node(node_id, self)?;
-        let node = self
+        M::on_drop_node_mut(node_id, self)?;
+        let node_substates = self
             .current_frame
             .drop_node(&mut self.heap, node_id)
             .map_err(CallFrameError::DropNodeError)
             .map_err(KernelError::CallFrameError)?;
 
-        let total_substate_size = node
-            .values()
-            .map(|x| x.values().map(|x| x.len()).sum::<usize>())
-            .sum::<usize>();
 
-        M::after_drop_node(self, total_substate_size)?;
+        let mut read_only = as_read_only!(self);
+        M::on_drop_node(&mut read_only, DropNodeEvent::End(node_id, &node_substates))?;
 
-        Ok(node)
+        Ok(node_substates)
     }
 
     #[trace_resources]

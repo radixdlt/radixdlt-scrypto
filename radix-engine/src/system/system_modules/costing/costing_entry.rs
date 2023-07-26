@@ -1,10 +1,6 @@
 use super::FeeTable;
 use crate::kernel::actor::Actor;
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent,
-    ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
-    SetSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use crate::track::interface::{StoreAccess, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
@@ -50,7 +46,7 @@ pub enum CostingEntry<'a> {
         event: &'a CreateNodeEvent<'a>,
     },
     DropNode {
-        total_substate_size: usize,
+        event: &'a DropNodeEvent<'a>,
     },
     MoveModule {
         event: &'a MoveModuleEvent<'a>,
@@ -143,8 +139,8 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::AllocateNodeId => ft.allocate_node_id_cost(),
             CostingEntry::CreateNode { event } => ft.create_node_cost(event),
             CostingEntry::DropNode {
-                total_substate_size,
-            } => ft.drop_node_cost(*total_substate_size),
+                event,
+            } => ft.drop_node_cost(event),
             CostingEntry::MoveModule { event } => ft.move_module_cost(event),
             CostingEntry::OpenSubstate { event } => ft.open_substate_cost(event),
             CostingEntry::ReadSubstate { event } => ft.read_substate_cost(event),

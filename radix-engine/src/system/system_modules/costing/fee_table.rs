@@ -1,8 +1,4 @@
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent,
-    ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
-    SetSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use crate::{
     blueprints::package::*,
     kernel::actor::Actor,
@@ -215,8 +211,19 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn drop_node_cost(&self, size: usize) -> u32 {
-        add(500, Self::data_processing_cost(size))
+    pub fn drop_node_cost(&self, event: &DropNodeEvent) -> u32 {
+        match event {
+            DropNodeEvent::Start(..) => {
+                0
+            }
+            DropNodeEvent::End(_node_id, node_substates) => {
+                let total_substate_size = node_substates
+                    .values()
+                    .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+                    .sum::<usize>();
+                add(500, Self::data_processing_cost(total_substate_size))
+            }
+        }
     }
 
     #[inline]

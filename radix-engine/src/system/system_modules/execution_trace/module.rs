@@ -3,7 +3,7 @@ use crate::errors::*;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, KernelCallbackObject};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -318,30 +318,30 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelApi<SystemConfig<V>>>(
+    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
+        event: &DropNodeEvent,
     ) -> Result<(), RuntimeError> {
-        let resource_summary = ResourceSummary::from_node_id(api, node_id);
-        api.kernel_get_system_state()
-            .system
-            .modules
-            .execution_trace
-            .handle_before_drop_node(resource_summary);
-        Ok(())
-    }
+        match event {
+            DropNodeEvent::Start(node_id) => {
+                let resource_summary = ResourceSummary::from_node_id(api, node_id);
+                api.kernel_get_system_state()
+                    .system
+                    .modules
+                    .execution_trace
+                    .handle_before_drop_node(resource_summary);
+            }
+            DropNodeEvent::End(..) => {
+                let current_depth = api.kernel_get_current_depth();
+                let system_state = api.kernel_get_system_state();
+                system_state
+                    .system
+                    .modules
+                    .execution_trace
+                    .handle_after_drop_node(system_state.current_actor, current_depth);
+            }
+        }
 
-    fn after_drop_node<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _total_substate_size: usize,
-    ) -> Result<(), RuntimeError> {
-        let current_depth = api.kernel_get_current_depth();
-        let system_state = api.kernel_get_system_state();
-        system_state
-            .system
-            .modules
-            .execution_trace
-            .handle_after_drop_node(system_state.current_actor, current_depth);
         Ok(())
     }
 

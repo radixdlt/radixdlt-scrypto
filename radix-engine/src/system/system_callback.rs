@@ -13,11 +13,7 @@ use crate::kernel::actor::MethodActor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
-use crate::kernel::kernel_callback_api::{
-    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject,
-    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
-    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
-};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use crate::system::module::SystemModule;
 use crate::system::system::FieldSubstate;
 use crate::system::system::KeyValueEntrySubstate;
@@ -110,18 +106,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_teardown(api)
     }
 
-    fn before_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drop_node<Y>(api: &mut Y, event: DropNodeEvent) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>,
+        Y: KernelInternalApi<Self>,
     {
-        SystemModuleMixer::before_drop_node(api, node_id)
-    }
-
-    fn after_drop_node<Y>(api: &mut Y, total_substate_size: usize) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::after_drop_node(api, total_substate_size)
+        SystemModuleMixer::on_drop_node(api, &event)
     }
 
     fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
@@ -592,7 +581,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
     }
 
-    fn on_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_drop_node_mut<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
