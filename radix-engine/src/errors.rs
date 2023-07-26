@@ -12,10 +12,10 @@ use crate::blueprints::resource::{
 };
 use crate::blueprints::transaction_processor::TransactionProcessorError;
 use crate::kernel::call_frame::{
-    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanSortedSubstatesError,
-    CallFrameScanSubstatesError, CallFrameSetSubstateError, CloseSubstateError, CreateFrameError,
-    CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError, OpenSubstateError,
-    PassMessageError, ReadSubstateError, WriteSubstateError,
+    CallFrameDrainSubstatesError, CallFrameRemoveSubstateError, CallFrameScanKeysError,
+    CallFrameScanSortedSubstatesError, CallFrameSetSubstateError, CloseSubstateError,
+    CreateFrameError, CreateNodeError, DropNodeError, ListNodeModuleError, MoveModuleError,
+    OpenSubstateError, PassMessageError, ReadSubstateError, WriteSubstateError,
 };
 use crate::system::node_modules::metadata::MetadataPanicError;
 use crate::system::node_modules::role_assignment::RoleAssignmentError;
@@ -198,7 +198,7 @@ pub enum CallFrameError {
     ReadSubstateError(ReadSubstateError),
     WriteSubstateError(WriteSubstateError),
 
-    ScanSubstatesError(CallFrameScanSubstatesError),
+    ScanSubstatesError(CallFrameScanKeysError),
     DrainSubstatesError(CallFrameDrainSubstatesError),
     ScanSortedSubstatesError(CallFrameScanSortedSubstatesError),
     SetSubstatesError(CallFrameSetSubstateError),
@@ -553,5 +553,80 @@ impl From<CloseSubstateError> for CallFrameError {
 impl From<PassMessageError> for CallFrameError {
     fn from(value: PassMessageError) -> Self {
         Self::PassMessageError(value)
+    }
+}
+
+impl From<MoveModuleError> for CallFrameError {
+    fn from(value: MoveModuleError) -> Self {
+        Self::MoveModuleError(value)
+    }
+}
+
+impl From<ReadSubstateError> for CallFrameError {
+    fn from(value: ReadSubstateError) -> Self {
+        Self::ReadSubstateError(value)
+    }
+}
+
+impl From<WriteSubstateError> for CallFrameError {
+    fn from(value: WriteSubstateError) -> Self {
+        Self::WriteSubstateError(value)
+    }
+}
+
+impl From<CreateNodeError> for CallFrameError {
+    fn from(value: CreateNodeError) -> Self {
+        Self::CreateNodeError(value)
+    }
+}
+
+impl From<DropNodeError> for CallFrameError {
+    fn from(value: DropNodeError) -> Self {
+        Self::DropNodeError(value)
+    }
+}
+
+impl From<CreateFrameError> for CallFrameError {
+    fn from(value: CreateFrameError) -> Self {
+        Self::CreateFrameError(value)
+    }
+}
+
+impl From<CallFrameScanKeysError> for CallFrameError {
+    fn from(value: CallFrameScanKeysError) -> Self {
+        Self::ScanSubstatesError(value)
+    }
+}
+
+impl From<CallFrameScanSortedSubstatesError> for CallFrameError {
+    fn from(value: CallFrameScanSortedSubstatesError) -> Self {
+        Self::ScanSortedSubstatesError(value)
+    }
+}
+
+impl From<CallFrameDrainSubstatesError> for CallFrameError {
+    fn from(value: CallFrameDrainSubstatesError) -> Self {
+        Self::DrainSubstatesError(value)
+    }
+}
+
+impl From<CallFrameSetSubstateError> for CallFrameError {
+    fn from(value: CallFrameSetSubstateError) -> Self {
+        Self::SetSubstatesError(value)
+    }
+}
+
+impl From<CallFrameRemoveSubstateError> for CallFrameError {
+    fn from(value: CallFrameRemoveSubstateError) -> Self {
+        Self::RemoveSubstatesError(value)
+    }
+}
+
+impl<T> From<T> for RuntimeError
+where
+    T: Into<CallFrameError>,
+{
+    fn from(value: T) -> Self {
+        Self::KernelError(KernelError::CallFrameError(value.into()))
     }
 }

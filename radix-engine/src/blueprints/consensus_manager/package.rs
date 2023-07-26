@@ -163,6 +163,7 @@ impl ConsensusManagerNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 feature_set: btreeset!(),
                 dependencies: btreeset!(
                     XRD.into(),
@@ -445,6 +446,7 @@ impl ConsensusManagerNativePackage {
                 blueprint_type: BlueprintType::Inner {
                     outer_blueprint: CONSENSUS_MANAGER_BLUEPRINT.to_string(),
                 },
+                is_transient: false,
                 feature_set: btreeset!(),
                 dependencies: btreeset!(),
                 schema: BlueprintSchemaInit {

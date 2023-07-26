@@ -81,6 +81,7 @@ impl TransactionTrackerNativePackage {
         let blueprints = btreemap!(
             TRANSACTION_TRACKER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 dependencies: btreeset!(
                 ),
                 feature_set: btreeset!(),

@@ -1,9 +1,9 @@
-Total Cost (XRD)                                                           ,     0.12781588,    100.0%
-+ Execution Cost (XRD)                                                     ,     0.12548588,     98.2%
+Total Cost (XRD)                                                           ,       0.127832,    100.0%
++ Execution Cost (XRD)                                                     ,       0.125502,     98.2%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00233,      1.8%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
-Total Cost Units Consumed                                                  ,       12548588,    100.0%
+Total Cost Units Consumed                                                  ,       12550200,    100.0%
 AfterInvoke                                                                ,           1368,      0.0%
 AllocateNodeId                                                             ,          15500,      0.1%
 BeforeInvoke                                                               ,          16440,      0.1%
@@ -18,13 +18,13 @@ LockFee                                                                    ,    
 OpenSubstate::GlobalAccount                                                ,        1376726,     11.0%
 OpenSubstate::GlobalFungibleResourceManager                                ,         827632,      6.6%
 OpenSubstate::GlobalGenericComponent                                       ,          82810,      0.7%
-OpenSubstate::GlobalPackage                                                ,        4870184,     38.8%
+OpenSubstate::GlobalPackage                                                ,        4870768,     38.8%
 OpenSubstate::GlobalTwoResourcePool                                        ,         335212,      2.7%
 OpenSubstate::InternalFungibleVault                                        ,         839302,      6.7%
 OpenSubstate::InternalGenericComponent                                     ,         149964,      1.2%
-PrepareWasmCode                                                            ,         639308,      5.1%
+PrepareWasmCode                                                            ,         639804,      5.1%
 QueryActor                                                                 ,           4000,      0.0%
-ReadSubstate                                                               ,        1055882,      8.4%
+ReadSubstate                                                               ,        1056414,      8.4%
 RunNativeCode::Worktop_drain                                               ,          22525,      0.2%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.1%
 RunNativeCode::Worktop_put                                                 ,          48822,      0.4%
