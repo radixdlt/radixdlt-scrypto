@@ -99,6 +99,10 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
     }
 
     pub fn drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, DropNodeError> {
+        // TODO: Add opened substate checks, though this is not required since
+        // the system layer currently maintains the invariant that a call frame cannot
+        // open a substate of an owned node
+
         let node_substates = match self.heap.remove_node(node_id) {
             Ok(substates) => substates,
             Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
@@ -130,8 +134,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), CallbackError<MoveModuleError, E>> {
-        // Move
         // TODO: Add lock checks
+
+        // Move
         let module = self
             .heap
             .remove_module(src_node_id, src_partition_number)
@@ -548,6 +553,10 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         handler
             .on_persist_node(heap, node_id)
             .map_err(CallbackError::CallbackError)?;
+
+        // TODO: Add locked substate checks, though this is not required since
+        // the system layer currently maintains the invariant that a call frame cannot
+        // open a substate of an owned node
 
         let node_substates = match heap.remove_node(node_id) {
             Ok(substates) => substates,

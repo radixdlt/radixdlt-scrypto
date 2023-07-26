@@ -942,7 +942,6 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Borrowed from substate loading
-        // TODO: we may want to further split it based on the borrow origin (actor & frame owned nodes)
         if self.transient_references.contains_key(node_id) {
             visibilities.insert(Visibility::Borrowed);
         }
