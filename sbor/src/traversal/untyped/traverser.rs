@@ -78,10 +78,10 @@ impl<C: CustomTraversal> ContainerState<C> {
     }
 
     pub fn advance_child_index(&mut self) {
-        self.advance_child_index_advanced(1)
+        self.advance_child_index_by(1)
     }
 
-    pub fn advance_child_index_advanced(&mut self, n: usize) {
+    pub fn advance_child_index_by(&mut self, n: usize) {
         if n == 0 {
             return;
         }
@@ -461,7 +461,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         self.container_stack
             .last_mut()
             .unwrap()
-            .advance_child_index_advanced(size);
+            .advance_child_index_by(size);
         self.next_event_override = NextEventOverride::None;
         LocatedTraversalEvent {
             event: TraversalEvent::TerminalValueBatch(TerminalValueBatchRef::U8(bytes)),
