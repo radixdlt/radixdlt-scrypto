@@ -1,6 +1,7 @@
 use crate::rust::prelude::*;
 use crate::traversal::*;
 use crate::*;
+use sbor::rust::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PayloadValidationError<E: CustomExtension> {
@@ -77,7 +78,7 @@ impl<'s, E: CustomExtension> LocatedValidationError<'s, E> {
             self.location.start_offset,
             self.location.end_offset,
             self.location.path_to_string(schema),
-            self.location.cause_to_string()
+            self.error
         )
     }
 }
@@ -292,6 +293,16 @@ pub fn validate_terminal_value_batch<'de, E: CustomExtension>(
         _ => return Err(PayloadValidationError::SchemaInconsistency),
     }
     Ok(())
+}
+
+impl<E: CustomExtension> fmt::Display for PayloadValidationError<E> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PayloadValidationError::TraversalError(e) => write!(f, "{}", e),
+            PayloadValidationError::ValidationError(e) => write!(f, "{:?}", e),
+            PayloadValidationError::SchemaInconsistency => write!(f, "SchemaInconsistency"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -558,10 +569,9 @@ mod tests {
             panic!("Validation did not error with too short a payload");
         };
         let path_message = error.location.path_to_string(&schema);
-
         assert_eq!(
             path_message,
-            "MyStruct.[0|hello]->MyEnum::{1|Option2}.[0|inner]->MyEnum::{0|Option1}.[0]->Map[0].Value->Array[0]->Tuple.[0]->Enum::{6}.[0]->Tuple.[1]->Map[0].Key->[ERROR] DecodeError(BufferUnderflow { required: 1, remaining: 0 })"
+            "MyStruct.[0|hello]->MyEnum::{1|Option2}.[0|inner]->MyEnum::{0|Option1}.[0]->Map.[0].Value->Array.[0]->Tuple.[0]->Enum::{6}.[0]->Tuple.[1]->Map.[0].Key"
         );
     }
 
@@ -594,11 +604,7 @@ mod tests {
             panic!("Validation did not error with too short a payload");
         };
         let path_message = error.location.path_to_string(&schema);
-
-        assert_eq!(
-            path_message,
-            "MyStruct2.[0|field1]->[ERROR] { expected_type: U8, found: U16 }"
-        );
+        assert_eq!(path_message, "MyStruct2.[0|field1]");
     }
 
     #[test]
@@ -626,10 +632,6 @@ mod tests {
             panic!("Validation did not error with too short a payload");
         };
         let path_message = error.location.path_to_string(&schema);
-
-        assert_eq!(
-            path_message,
-            "Tuple.[0]->MyEnum::{2}[ERROR] { unknown_variant_id: 2 }"
-        );
+        assert_eq!(path_message, "Tuple.[0]->MyEnum::{2}");
     }
 }

@@ -11,7 +11,6 @@ pub struct FullLocation<'s, E: CustomExtension> {
     pub end_offset: usize,
     pub ancestor_path: Vec<(ContainerState<E::CustomTraversal>, ContainerType<'s>)>,
     pub current_value_info: Option<CurrentValueInfo<E>>,
-    pub error: Option<TypedTraversalError<E>>,
 }
 
 impl<'s, E: CustomExtension> FullLocation<'s, E> {
@@ -125,103 +124,6 @@ impl<'s, E: CustomExtension> FullLocation<'s, E> {
                 write!(buf, "{}{}", type_name, variant_part).unwrap();
             } else {
                 write!(buf, "{}", type_name).unwrap();
-            }
-        }
-        buf
-    }
-
-    pub fn cause_to_string(&self) -> String {
-        let mut buf = String::new();
-        if let Some(error) = &self.error {
-            match error {
-                TypedTraversalError::ValueMismatchWithType(
-                    TypeMismatchError::MismatchingType {
-                        expected_type_kind,
-                        actual_value_kind,
-                        ..
-                    },
-                ) => {
-                    write!(
-                        buf,
-                        "{{ expected_type: {:?}, found: {:?} }}",
-                        expected_type_kind, actual_value_kind
-                    )
-                    .unwrap();
-                }
-                TypedTraversalError::ValueMismatchWithType(
-                    TypeMismatchError::MismatchingChildElementType {
-                        expected_type_kind,
-                        actual_value_kind,
-                        ..
-                    },
-                ) => {
-                    write!(
-                        buf,
-                        "{{ expected_child_type: {:?}, found: {:?} }}",
-                        expected_type_kind, actual_value_kind
-                    )
-                    .unwrap();
-                }
-                TypedTraversalError::ValueMismatchWithType(
-                    TypeMismatchError::MismatchingChildKeyType {
-                        expected_type_kind,
-                        actual_value_kind,
-                        ..
-                    },
-                ) => {
-                    write!(
-                        buf,
-                        "{{ expected_key_type: {:?}, found: {:?} }}",
-                        expected_type_kind, actual_value_kind
-                    )
-                    .unwrap();
-                }
-                TypedTraversalError::ValueMismatchWithType(
-                    TypeMismatchError::MismatchingChildValueType {
-                        expected_type_kind,
-                        actual_value_kind,
-                        ..
-                    },
-                ) => {
-                    write!(
-                        buf,
-                        "{{ expected_value_type: {:?}, found: {:?} }}",
-                        expected_type_kind, actual_value_kind
-                    )
-                    .unwrap();
-                }
-                TypedTraversalError::ValueMismatchWithType(
-                    TypeMismatchError::MismatchingTupleLength {
-                        expected, actual, ..
-                    },
-                ) => {
-                    write!(
-                        buf,
-                        "{{ expected_field_count: {:?}, found: {:?} }}",
-                        expected, actual
-                    )
-                    .unwrap();
-                }
-                TypedTraversalError::ValueMismatchWithType(
-                    TypeMismatchError::MismatchingEnumVariantLength {
-                        expected, actual, ..
-                    },
-                ) => {
-                    write!(
-                        buf,
-                        "{{ expected_field_count: {:?}, found: {:?} }}",
-                        expected, actual
-                    )
-                    .unwrap();
-                }
-                TypedTraversalError::ValueMismatchWithType(
-                    TypeMismatchError::UnknownEnumVariant { variant, .. },
-                ) => {
-                    write!(buf, "{{ unknown_variant_id: {:?} }}", variant).unwrap();
-                }
-                TypedTraversalError::TypeIndexNotFound(_) | TypedTraversalError::DecodeError(_) => {
-                    write!(buf, "{:?}", error).unwrap();
-                }
             }
         }
         buf
