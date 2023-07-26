@@ -19,11 +19,11 @@ pub struct CallFrameMessage {
     /// Nodes to be moved from src to dest
     pub move_nodes: Vec<NodeId>,
 
-    /// Copy of any stable ref (Global or DirectAccess) from src to dest
-    pub copy_stable_references: Vec<NodeId>,
+    /// Copy of a global ref from src to dest
+    pub copy_global_references: Vec<NodeId>,
 
-    /// Copy of a direct access ref specficially from src to dest
-    pub copy_only_direct_access_references: Vec<NodeId>,
+    /// Copy of a direct access ref from src to dest
+    pub copy_direct_access_references: Vec<NodeId>,
 
     /// Create a "stable" transient in dest from src. The src node may
     /// have global or borrowed visibility
@@ -33,28 +33,39 @@ pub struct CallFrameMessage {
 
 impl CallFrameMessage {
     pub fn from_input<C: CallFrameReferences>(value: &IndexedScryptoValue, references: &C) -> Self {
+        let mut copy_global_references = Vec::new();
+        let mut copy_direct_access_references = Vec::new();
+
+        for arg_ref in value.references().clone() {
+            if arg_ref.is_global() {
+                copy_global_references.push(arg_ref);
+            } else {
+                copy_direct_access_references.push(arg_ref);
+            }
+        }
+
+        copy_global_references.extend(references.global_references());
+        copy_direct_access_references.extend(references.direct_access_references());
+
         Self {
             move_nodes: value.owned_nodes().clone(),
-            copy_stable_references: value
-                .references()
-                .clone()
-                .extend(references.copy_stable_references()),
-            copy_only_direct_access_references: references.direct_access_references(),
-            copy_to_stable_transient_references: references.copy_only_transient_references(),
+            copy_global_references,
+            copy_direct_access_references,
+            copy_to_stable_transient_references: references.stable_transient_references(),
         }
     }
 
     pub fn from_output(value: &IndexedScryptoValue) -> Self {
         Self {
-            copy_stable_references: value.references().clone(),
+            copy_global_references: value.references().clone(),
             move_nodes: value.owned_nodes().clone(),
             copy_to_stable_transient_references: vec![],
-            copy_only_direct_access_references: vec![],
+            copy_direct_access_references: vec![],
         }
     }
 
     pub fn add_copy_reference(&mut self, node_id: NodeId) {
-        self.copy_stable_references.push(node_id)
+        self.copy_global_references.push(node_id)
     }
 
     pub fn add_move_node(&mut self, node_id: NodeId) {
@@ -136,13 +147,13 @@ impl NodeVisibility {
         self.0.iter().any(|x| x.is_normal())
     }
 
-    pub fn can_be_reference_copied_to_frame(&self) -> Option<StableReferenceType> {
+    pub fn is_global(&self) -> bool {
         for v in &self.0 {
-            if let Visibility::StableReference(t) = v {
-                return Some(t.clone());
+            if let Visibility::StableReference(StableReferenceType::Global) = v {
+                return true;
             }
         }
-        return None;
+        return false;
     }
 
     pub fn reference_origin(&self, node_id: NodeId) -> Option<ReferenceOrigin> {
@@ -217,9 +228,9 @@ pub enum CreateFrameError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PassMessageError {
     TakeNodeError(TakeNodeError),
-    StableRefNotFound(NodeId),
-    TransientRefNotFound(NodeId),
+    GlobalRefNotFound(NodeId),
     DirectRefNotFound(NodeId),
+    TransientRefNotFound(NodeId),
 }
 
 /// Represents an error when attempting to lock a substate.
@@ -381,20 +392,26 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         // Only allow move of `Global` and `DirectAccess` references
-        for node_id in message.copy_stable_references {
-            if let Some(t) = from
-                .get_node_visibility(&node_id)
-                .can_be_reference_copied_to_frame()
-            {
+        for node_id in message.copy_global_references {
+            if from.get_node_visibility(&node_id).is_global() {
                 // Note that GLOBAL and DirectAccess references are mutually exclusive,
                 // so okay to overwrite
-                to.stable_references.insert(node_id, t);
+                to.stable_references
+                    .insert(node_id, StableReferenceType::Global);
             } else {
-                return Err(PassMessageError::StableRefNotFound(node_id));
+                return Err(PassMessageError::GlobalRefNotFound(node_id));
             }
         }
 
-        // TODO: Move this logic into system layer
+        for node_id in message.copy_direct_access_references {
+            if from.get_node_visibility(&node_id).can_be_invoked(true) {
+                to.stable_references
+                    .insert(node_id, StableReferenceType::DirectAccess);
+            } else {
+                return Err(PassMessageError::DirectRefNotFound(node_id));
+            }
+        }
+
         for node_id in message.copy_to_stable_transient_references {
             if from.depth >= to.depth {
                 panic!("Transient references only supported for downstream calls.");
@@ -418,15 +435,6 @@ impl<C, L: Clone> CallFrame<C, L> {
                 }
             } else {
                 return Err(PassMessageError::TransientRefNotFound(node_id));
-            }
-        }
-
-        for node_id in message.copy_only_direct_access_references {
-            if from.get_node_visibility(&node_id).can_be_invoked(true) {
-                to.stable_references
-                    .insert(node_id, StableReferenceType::DirectAccess);
-            } else {
-                return Err(PassMessageError::DirectRefNotFound(node_id));
             }
         }
 

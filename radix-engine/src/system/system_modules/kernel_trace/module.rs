@@ -47,7 +47,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         log!(api, "Sending nodes: {:?}", message.move_nodes);
-        log!(api, "Sending refs: {:?}", message.copy_stable_references);
+        log!(api, "Sending refs: {:?}", message.copy_global_references);
         Ok(())
     }
 
@@ -56,7 +56,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         log!(api, "Returning nodes: {:?}", message.move_nodes);
-        log!(api, "Returning refs: {:?}", message.copy_stable_references);
+        log!(api, "Returning refs: {:?}", message.copy_global_references);
         Ok(())
     }
 

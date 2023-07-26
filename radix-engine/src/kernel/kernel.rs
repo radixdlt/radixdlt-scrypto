@@ -11,7 +11,7 @@ use crate::errors::RuntimeError;
 use crate::errors::*;
 use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{CallFrameReferences, KernelCallbackObject};
+use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -814,7 +814,7 @@ where
         let callee = invocation.call_frame_data;
         let args = &invocation.args;
         let message = {
-            let message = CallFrameMessage::from_input(&args, &callee);
+            let mut message = CallFrameMessage::from_input(&args, &callee);
             M::before_push_frame(&callee, &mut message, &args, self)?;
 
             message

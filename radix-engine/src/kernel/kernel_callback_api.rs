@@ -8,9 +8,9 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
 pub trait CallFrameReferences {
-    fn copy_stable_references(&self) -> Vec<NodeId>;
+    fn global_references(&self) -> Vec<NodeId>;
     fn direct_access_references(&self) -> Vec<NodeId>;
-    fn copy_only_transient_references(&self) -> Vec<NodeId>;
+    fn stable_transient_references(&self) -> Vec<NodeId>;
 
     fn len(&self) -> usize;
 }

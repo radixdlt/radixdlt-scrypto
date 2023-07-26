@@ -290,7 +290,7 @@ fn pass_own_as_reference_trigger_move_error_rather_than_payload_validation_error
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::PassMessageError(PassMessageError::StableRefNotFound(_))
+                CallFrameError::PassMessageError(PassMessageError::GlobalRefNotFound(_))
             ))
         )
     });
