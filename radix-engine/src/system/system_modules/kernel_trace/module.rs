@@ -1,15 +1,17 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DropNodeEvent, OpenSubstateEvent, ReadSubstateEvent, WriteSubstateEvent};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DropNodeEvent, OpenSubstateEvent, ReadSubstateEvent,
+    WriteSubstateEvent,
+};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
+use radix_engine_interface::types::SubstateKey;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]

@@ -1005,7 +1005,7 @@ impl<L: Clone> CallFrame<L> {
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
         on_store_access: &mut F,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -1018,10 +1018,10 @@ impl<L: Clone> CallFrame<L> {
         }
 
         let keys = if heap.contains_node(node_id) {
-            heap.scan_keys(node_id, partition_num, count)
+            heap.scan_keys(node_id, partition_num, limit)
         } else {
             store
-                .scan_keys::<K, E, F>(node_id, partition_num, count, on_store_access)
+                .scan_keys::<K, E, F>(node_id, partition_num, limit, on_store_access)
                 .map_err(|e| CallbackError::CallbackError(e))?
         };
 
@@ -1038,7 +1038,7 @@ impl<L: Clone> CallFrame<L> {
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
         on_store_access: &mut F,
         heap: &'f mut Heap,
         store: &'f mut S,
@@ -1054,10 +1054,10 @@ impl<L: Clone> CallFrame<L> {
         }
 
         let substates = if heap.contains_node(node_id) {
-            heap.drain_substates(node_id, partition_num, count)
+            heap.drain_substates(node_id, partition_num, limit)
         } else {
             store
-                .drain_substates::<K, E, F>(node_id, partition_num, count, on_store_access)
+                .drain_substates::<K, E, F>(node_id, partition_num, limit, on_store_access)
                 .map_err(|e| CallbackError::CallbackError(e))?
         };
 

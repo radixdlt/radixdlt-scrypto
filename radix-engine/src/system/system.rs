@@ -1917,7 +1917,7 @@ where
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
@@ -1925,7 +1925,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_keys::<MapKey>(&node_id, partition_num, count)?
+            .kernel_scan_keys::<MapKey>(&node_id, partition_num, limit)?
             .into_iter()
             .map(|key| key.into_map())
             .collect();
@@ -1938,7 +1938,7 @@ where
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
@@ -1946,7 +1946,7 @@ where
 
         let substates = self
             .api
-            .kernel_drain_substates::<MapKey>(&node_id, partition_num, count)?
+            .kernel_drain_substates::<MapKey>(&node_id, partition_num, limit)?
             .into_iter()
             .map(|(key, value)| (key.into_map(), value.into()))
             .collect();
@@ -2022,7 +2022,7 @@ where
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
@@ -2031,7 +2031,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(&node_id, partition_num, count)?
+            .kernel_scan_sorted_substates(&node_id, partition_num, limit)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -2790,30 +2790,30 @@ where
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api
-            .kernel_scan_sorted_substates(node_id, partition_num, count)
+            .kernel_scan_sorted_substates(node_id, partition_num, limit)
     }
 
     fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
         self.api
-            .kernel_scan_keys::<K>(node_id, partition_num, count)
+            .kernel_scan_keys::<K>(node_id, partition_num, limit)
     }
 
     fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api
-            .kernel_drain_substates::<K>(node_id, partition_num, count)
+            .kernel_drain_substates::<K>(node_id, partition_num, limit)
     }
 }
 

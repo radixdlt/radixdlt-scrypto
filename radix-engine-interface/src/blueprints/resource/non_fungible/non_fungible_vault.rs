@@ -20,7 +20,7 @@ pub const NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT: &str = "get_non_f
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NonFungibleVaultGetNonFungibleLocalIdsInput {
-    pub count: u32,
+    pub limit: u32,
 }
 
 pub type NonFungibleVaultGetNonFungibleLocalIdsOutput = BTreeSet<NonFungibleLocalId>;

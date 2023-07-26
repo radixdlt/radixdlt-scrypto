@@ -2640,7 +2640,7 @@ impl ResourceNativePackage {
                     input.as_typed().map_err(|e| {
                         RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
                     })?;
-                let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(input.count, api)?;
+                let rtn = NonFungibleVaultBlueprint::get_non_fungible_local_ids(input.limit, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
             NON_FUNGIBLE_VAULT_CREATE_PROOF_OF_NON_FUNGIBLES_IDENT => {

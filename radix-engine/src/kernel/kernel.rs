@@ -12,7 +12,11 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, KernelCallbackObject,
+    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -429,7 +433,6 @@ where
             .drop_node(&mut self.heap, node_id)
             .map_err(CallFrameError::DropNodeError)
             .map_err(KernelError::CallFrameError)?;
-
 
         let mut read_only = as_read_only!(self);
         M::on_drop_node(&mut read_only, DropNodeEvent::End(node_id, &node_substates))?;
@@ -1002,7 +1005,7 @@ where
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
         self.callback.on_scan_keys(ScanKeysEvent::Start)?;
 
@@ -1011,7 +1014,7 @@ where
             .scan_keys::<K, _, _, _>(
                 node_id,
                 partition_num,
-                count,
+                limit,
                 &mut |store_access| {
                     self.callback
                         .on_scan_keys(ScanKeysEvent::StoreAccess(&store_access))
@@ -1034,7 +1037,7 @@ where
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.callback
             .on_drain_substates(DrainSubstatesEvent::Start)?;
@@ -1044,7 +1047,7 @@ where
             .drain_substates::<K, _, _, _>(
                 node_id,
                 partition_num,
-                count,
+                limit,
                 &mut |store_access| {
                     self.callback
                         .on_drain_substates(DrainSubstatesEvent::StoreAccess(&store_access))
@@ -1067,7 +1070,7 @@ where
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.callback
             .on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
@@ -1077,7 +1080,7 @@ where
                 .scan_sorted(
                     node_id,
                     partition_num,
-                    count,
+                    limit,
                     &mut |store_access| {
                         self.callback.on_scan_sorted_substates(
                             ScanSortedSubstatesEvent::StoreAccess(&store_access),
