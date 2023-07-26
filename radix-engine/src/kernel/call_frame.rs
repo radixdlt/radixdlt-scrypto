@@ -500,20 +500,12 @@ impl<L: Clone> CallFrame<L> {
         Ok((lock_handle, substate_value.len()))
     }
 
-    pub fn close_substate<
-        S: SubstateStore,
-        E,
-        //F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>,
-        //C: FnMut(&Heap, &S, &NodeId) -> Result<(), E>,
-    >(
+    pub fn close_substate<S: SubstateStore, E>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
         handler: &mut impl CallFrameEventHandler<L, E>,
-
         lock_handle: LockHandle,
-        //handler: &mut C,
-        //on_store_access: &mut F,
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
         let substate_lock = self
             .locks
@@ -718,13 +710,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn create_node<
-        'f,
-        S: SubstateStore,
-        E,
-        //F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>,
-        //C: FnMut(&Heap, &S, &NodeId) -> Result<(), E>,
-    >(
+    pub fn create_node<'f, S: SubstateStore, E>(
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
@@ -841,13 +827,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(node_substates)
     }
 
-    pub fn move_module<
-        'f,
-        S: SubstateStore,
-        E,
-        //F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>,
-        //C: FnMut(&Heap, &S, &NodeId) -> Result<(), E>,
-    >(
+    pub fn move_module<'f, S: SubstateStore, E>(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
@@ -1112,14 +1092,8 @@ impl<L: Clone> CallFrame<L> {
         Ok(substates)
     }
 
-    pub fn close_all_substates<
-        S: SubstateStore,
-        E,
-        //F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>,
-        //C: FnMut(&Heap, &S, &NodeId) -> Result<(), E>,
-    >(
+    pub fn close_all_substates<S: SubstateStore, E>(
         &mut self,
-        //on_store_access: &mut F,
         heap: &mut Heap,
         store: &mut S,
         handler: &mut impl CallFrameEventHandler<L, E>,
@@ -1152,14 +1126,7 @@ impl<L: Clone> CallFrame<L> {
         self.owned_root_nodes.keys().cloned().collect()
     }
 
-    pub fn move_node_to_store<
-        S: SubstateStore,
-        E,
-        /*
-        F: FnMut(&Heap, StoreAccess) -> Result<(), E>,
-        C: FnMut(&Heap, &S, &NodeId) -> Result<(), E>,
-         */
-    >(
+    pub fn move_node_to_store<S: SubstateStore, E>(
         &self,
         heap: &mut Heap,
         store: &mut S,

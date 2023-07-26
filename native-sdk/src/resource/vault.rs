@@ -87,7 +87,7 @@ pub trait NativeFungibleVault {
 pub trait NativeNonFungibleVault {
     fn non_fungible_local_ids<Y, E: Debug + ScryptoDecode>(
         &self,
-        count: u32,
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where

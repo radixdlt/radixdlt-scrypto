@@ -63,9 +63,9 @@ pub trait ScryptoFungibleVault {
 }
 
 pub trait ScryptoNonFungibleVault {
-    fn non_fungible_local_ids(&self, count: u32) -> BTreeSet<NonFungibleLocalId>;
+    fn non_fungible_local_ids(&self, limit: u32) -> BTreeSet<NonFungibleLocalId>;
 
-    fn non_fungibles<T: NonFungibleData>(&self, count: u32) -> Vec<NonFungible<T>>;
+    fn non_fungibles<T: NonFungibleData>(&self, limit: u32) -> Vec<NonFungible<T>>;
 
     fn non_fungible_local_id(&self) -> NonFungibleLocalId;
 
