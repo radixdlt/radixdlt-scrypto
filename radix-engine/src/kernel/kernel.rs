@@ -12,7 +12,7 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -899,7 +899,11 @@ where
         lock_handle: LockHandle,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        M::on_write_substate(lock_handle, value.len(), self)?;
+        let mut read_only = as_read_only!(self);
+        M::on_write_substate(&mut read_only, WriteSubstateEvent::Start {
+            handle: lock_handle,
+            value: &value,
+        })?;
 
         self.current_frame
             .write_substate(&mut self.heap, self.store, lock_handle, value)

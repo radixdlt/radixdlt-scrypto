@@ -5,7 +5,7 @@ use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, WriteSubstateEvent};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {
@@ -160,19 +160,22 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn on_write_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        _lock_handle: LockHandle,
-        value_size: usize,
+        event: &WriteSubstateEvent
     ) -> Result<(), RuntimeError> {
         let limits = &mut api.kernel_get_system().modules.limits.config;
 
-        if value_size > limits.max_substate_size {
-            return Err(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxSubstateSizeExceeded(value_size),
-                ),
-            ));
+        match event {
+            WriteSubstateEvent::Start { value, .. } => {
+                if value.len() > limits.max_substate_size {
+                    return Err(RuntimeError::SystemModuleError(
+                        SystemModuleError::TransactionLimitsError(
+                            TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
+                        ),
+                    ));
+                }
+            }
         }
 
         Ok(())
