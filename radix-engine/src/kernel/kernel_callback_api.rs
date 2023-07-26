@@ -37,6 +37,15 @@ pub enum OpenSubstateEvent<'a> {
 }
 
 #[derive(Debug)]
+pub enum ReadSubstateEvent<'a> {
+    End {
+        handle: LockHandle,
+        value: &'a IndexedScryptoValue,
+    },
+}
+
+
+#[derive(Debug)]
 pub enum CloseSubstateEvent<'a> {
     StoreAccess(&'a StoreAccess),
     End(LockHandle),
@@ -117,12 +126,11 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelInternalApi<Self>;
 
     fn on_read_substate<Y>(
-        lock_handle: LockHandle,
-        value_size: usize,
         api: &mut Y,
+        event: ReadSubstateEvent,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>;
+        Y: KernelInternalApi<Self>;
 
     fn on_write_substate<Y>(
         lock_handle: LockHandle,

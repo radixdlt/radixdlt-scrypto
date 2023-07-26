@@ -10,7 +10,7 @@ use colored::Colorize;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use sbor::rust::collections::BTreeMap;
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, OpenSubstateEvent};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, OpenSubstateEvent, ReadSubstateEvent};
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}
@@ -148,17 +148,24 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        lock_handle: LockHandle,
-        value_size: usize,
+        event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Reading substate: handle = {}, size = {}",
-            lock_handle,
-            value_size
-        );
+        match event {
+            ReadSubstateEvent::End {
+                handle,
+                value
+            } => {
+                log!(
+                    api,
+                    "Reading substate: handle = {}, size = {}",
+                    handle,
+                    value.len()
+                );
+            }
+        }
+
         Ok(())
     }
 

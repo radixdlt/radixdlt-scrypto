@@ -662,7 +662,7 @@ impl<L: Clone> CallFrame<L> {
 
     pub fn read_substate<'f, S: SubstateStore>(
         &mut self,
-        heap: &'f mut Heap,
+        heap: &'f Heap,
         store: &'f mut S,
         lock_handle: LockHandle,
     ) -> Result<&'f IndexedScryptoValue, ReadSubstateError> {
