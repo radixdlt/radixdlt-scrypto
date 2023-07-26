@@ -356,6 +356,15 @@ impl TransactionReceipt {
         })
     }
 
+    pub fn expect_auth_assertion_failure(&self) {
+        self.expect_specific_failure(|e| {
+            matches!(
+                e,
+                RuntimeError::SystemError(SystemError::AssertAccessRuleFailed)
+            )
+        })
+    }
+
     pub fn expect_auth_mutability_failure(&self) {
         self.expect_specific_failure(|e| {
             matches!(

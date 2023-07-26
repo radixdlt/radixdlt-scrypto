@@ -8,6 +8,7 @@ use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
+// TODO: Replace Events with separate callback functions
 #[derive(Debug)]
 pub enum CreateNodeEvent<'a> {
     Start(&'a NodeId, &'a NodeSubstates),
