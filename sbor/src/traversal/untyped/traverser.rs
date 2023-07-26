@@ -69,14 +69,6 @@ impl<C: CustomTraversal> ContainerState<C> {
         return false;
     }
 
-    pub fn next_child_index(&self) -> usize {
-        if let Some(index) = self.current_child_index {
-            index + 1
-        } else {
-            0
-        }
-    }
-
     pub fn advance_current_child_index(&mut self) {
         self.advance_current_child_index_by(1)
     }
@@ -279,14 +271,14 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
     fn read_child_value<'t>(&'t mut self) -> LocatedTraversalEvent<'t, 'de, T> {
         let start_offset = self.decoder.get_offset();
         let parent = self.container_stack.last_mut().unwrap();
+        parent.advance_current_child_index();
         let value_kind = parent
             .container_header
-            .get_implicit_child_value_kind(parent.next_child_index());
+            .get_implicit_child_value_kind(parent.current_child_index.unwrap());
         let value_kind = match value_kind {
             Some(value_kind) => value_kind,
             None => return_if_error!(self, self.decoder.read_value_kind()),
         };
-        parent.advance_current_child_index();
         self.next_value(start_offset, value_kind)
     }
 

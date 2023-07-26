@@ -680,9 +680,7 @@ mod tests {
         payload[index] = 0xff; // replace U16 value kind with something invalid
         check_location_path::<MyStruct2>(
             payload,
-            // TODO: this should be [1|inner2].
-            // A proper fix require tracking states: `BEFORE_READ_VALUE_KIND`, `BEFORE_READ_VALUE` and `AFTER_READ_VALUE`.
-            "MyStruct2.[1|field2]->MyStruct2Inner.[0|inner1]",
+            "MyStruct2.[1|field2]->MyStruct2Inner.[1|inner2]",
             "DecodeError(UnknownValueKind(255))",
         );
 
