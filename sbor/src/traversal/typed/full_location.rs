@@ -33,7 +33,7 @@ impl<'s, E: CustomExtension> FullLocation<'s, E> {
             let type_name = metadata
                 .and_then(|m| m.get_name())
                 .unwrap_or_else(|| container_state.container_header.value_kind_name());
-            let last_visited_child_index = container_state.last_visited_child_index;
+            let current_child_index = container_state.current_child_index;
             let header = container_state.container_header;
             match header {
                 ContainerHeader::EnumVariant(variant_header) => {
@@ -49,7 +49,7 @@ impl<'s, E: CustomExtension> FullLocation<'s, E> {
                             format!("::{{{}|{}}}", variant_header.variant, variant_name,)
                         })
                         .unwrap_or_else(|| format!("::{{{}}}", variant_header.variant));
-                    let field_part = if let Some(child_index) = last_visited_child_index {
+                    let field_part = if let Some(child_index) = current_child_index {
                         variant_data
                             .and_then(|d| match &d.child_names {
                                 Some(ChildNames::NamedFields(fields)) => fields.get(child_index),
@@ -63,7 +63,7 @@ impl<'s, E: CustomExtension> FullLocation<'s, E> {
                     write!(buf, "{}{}{}", type_name, variant_part, field_part).unwrap();
                 }
                 ContainerHeader::Tuple(_) => {
-                    let field_part = if let Some(child_index) = last_visited_child_index {
+                    let field_part = if let Some(child_index) = current_child_index {
                         metadata
                             .and_then(|d| match &d.child_names {
                                 Some(ChildNames::NamedFields(fields)) => fields.get(child_index),
@@ -77,7 +77,7 @@ impl<'s, E: CustomExtension> FullLocation<'s, E> {
                     write!(buf, "{}{}", type_name, field_part).unwrap();
                 }
                 ContainerHeader::Array(_) => {
-                    let field_part = if let Some(child_index) = last_visited_child_index {
+                    let field_part = if let Some(child_index) = current_child_index {
                         format!(".[{}]", child_index)
                     } else {
                         format!("")
@@ -85,7 +85,7 @@ impl<'s, E: CustomExtension> FullLocation<'s, E> {
                     write!(buf, "{}{}", type_name, field_part).unwrap();
                 }
                 ContainerHeader::Map(_) => {
-                    let field_part = if let Some(child_index) = last_visited_child_index {
+                    let field_part = if let Some(child_index) = current_child_index {
                         let entry_index = child_index / 2;
                         let key_or_value = if child_index % 2 == 0 { "Key" } else { "Value" };
                         format!(".[{}].{}", entry_index, key_or_value)

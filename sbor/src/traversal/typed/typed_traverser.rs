@@ -497,7 +497,7 @@ impl<'s, E: CustomExtension> TypedTraverserState<'s, E> {
     ) -> LocalTypeIndex {
         match location.ancestor_path.last() {
             Some(container_state) => {
-                let child_index = container_state.last_visited_child_index.expect("Caller should ensure the child has been visited before calling this function");
+                let child_index = container_state.current_child_index.expect("Caller should ensure the child has been visited before calling this function");
                 match container_state.container_header {
                     ContainerHeader::Tuple(_)
                     | ContainerHeader::EnumVariant(_)

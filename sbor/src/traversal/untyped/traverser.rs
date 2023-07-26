@@ -51,7 +51,7 @@ pub struct ContainerState<C: CustomTraversal> {
     pub container_header: ContainerHeader<C>,
     pub container_start_offset: usize,
     pub container_child_count: usize,
-    pub last_visited_child_index: Option<usize>,
+    pub current_child_index: Option<usize>,
 }
 
 impl<C: CustomTraversal> ContainerState<C> {
@@ -60,7 +60,7 @@ impl<C: CustomTraversal> ContainerState<C> {
             return true;
         }
 
-        if let Some(index) = self.last_visited_child_index {
+        if let Some(index) = self.current_child_index {
             if index >= self.container_child_count - 1 {
                 return true;
             }
@@ -70,26 +70,26 @@ impl<C: CustomTraversal> ContainerState<C> {
     }
 
     pub fn next_child_index(&self) -> usize {
-        if let Some(index) = self.last_visited_child_index {
+        if let Some(index) = self.current_child_index {
             index + 1
         } else {
             0
         }
     }
 
-    pub fn advance_child_index(&mut self) {
-        self.advance_child_index_by(1)
+    pub fn advance_current_child_index(&mut self) {
+        self.advance_current_child_index_by(1)
     }
 
-    pub fn advance_child_index_by(&mut self, n: usize) {
+    pub fn advance_current_child_index_by(&mut self, n: usize) {
         if n == 0 {
             return;
         }
 
-        if let Some(index) = self.last_visited_child_index {
-            self.last_visited_child_index = Some(index + n)
+        if let Some(index) = self.current_child_index {
+            self.current_child_index = Some(index + n)
         } else {
-            self.last_visited_child_index = Some(n - 1)
+            self.current_child_index = Some(n - 1)
         }
     }
 }
@@ -232,7 +232,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             container_header,
             container_start_offset: start_offset,
             container_child_count: child_count,
-            last_visited_child_index: None,
+            current_child_index: None,
         });
 
         // Check depth: either container stack overflows or children of this container will overflow.
@@ -286,7 +286,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             Some(value_kind) => value_kind,
             None => return_if_error!(self, self.decoder.read_value_kind()),
         };
-        parent.advance_child_index();
+        parent.advance_current_child_index();
         self.next_value(start_offset, value_kind)
     }
 
@@ -461,7 +461,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
         self.container_stack
             .last_mut()
             .unwrap()
-            .advance_child_index_by(size);
+            .advance_current_child_index_by(size);
         self.next_event_override = NextEventOverride::None;
         LocatedTraversalEvent {
             event: TraversalEvent::TerminalValueBatch(TerminalValueBatchRef::U8(bytes)),
