@@ -1,27 +1,27 @@
-/// The default system loan amount, used by transaction executor.
+/// The system loan amount, used by transaction executor.
 pub const SYSTEM_LOAN_AMOUNT: u32 = 10_000_000;
 
-/// The default cost unit limit.
+/// The cost unit limit.
 pub const COST_UNIT_LIMIT: u32 = 100_000_000;
 
-/// The default free credit, for preview only.
+/// The free credit, for preview only.
 pub const FREE_CREDIT_IN_XRD: &str = "100";
 
 pub const MAX_EXECUTION_TRACE_DEPTH: usize = 16;
 
-/// The default max call depth, used by transaction executor.
+/// The max call depth, used by transaction executor.
 pub const MAX_CALL_DEPTH: usize = 8;
 
-/// The default max number of substates in track.
+/// The max number of substates in track.
 pub const MAX_NUMBER_OF_SUBSTATES_IN_TRACK: usize = 512;
 
-/// The default max number of substates in heap.
+/// The max number of substates in heap.
 pub const MAX_NUMBER_OF_SUBSTATES_IN_HEAP: usize = 512;
 
-/// The default maximum substate read and write size.
+/// The maximum substate read and write size.
 pub const MAX_SUBSTATE_SIZE: usize = 2 * 1024 * 1024;
 
-/// The default maximum invoke payload size.
+/// The maximum invoke payload size.
 pub const MAX_INVOKE_PAYLOAD_SIZE: usize = 1 * 1024 * 1024;
 
 /// The proposer's share of tips
@@ -64,14 +64,14 @@ pub const MAX_RECURSIVE_PERSIST_DEPTH: usize = 16;
 // TO BE DEFINED
 //==========================
 
-/// The default cost unit price, in XRD.
+/// The cost unit price, in XRD.
 pub const COST_UNIT_PRICE_IN_XRD: &str = "0.00000001";
 
-/// The default price for adding a single byte to the substate store, in XRD.
+/// The price for adding a single byte to the substate store, in XRD.
 pub const STATE_EXPANSION_PRICE_IN_XRD: &str = "0.00001";
 
-/// The default USD price, in XRD
+/// The USD price, in XRD
 pub const USD_PRICE_IN_XRD: &str = "10";
 
-/// The default maximum that a package or component owner is allowed to set their method royalty to
+/// The maximum that a package or component owner is allowed to set their method royalty to
 pub const MAX_PER_FUNCTION_ROYALTY_IN_XRD: &str = "150.0";
