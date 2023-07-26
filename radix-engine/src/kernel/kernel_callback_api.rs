@@ -1,11 +1,11 @@
+use super::call_frame::CallFrameEventHandler;
+use super::call_frame::Message;
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-
-use super::call_frame::Message;
 
 pub trait CallFrameReferences {
     fn global_references(&self) -> Vec<GlobalAddress>;
@@ -15,7 +15,7 @@ pub trait CallFrameReferences {
     fn len(&self) -> usize;
 }
 
-pub trait KernelCallbackObject: Sized {
+pub trait KernelCallbackObject: Sized + CallFrameEventHandler {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
 
@@ -54,7 +54,9 @@ pub trait KernelCallbackObject: Sized {
 
     fn after_move_modules<Y>(
         src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -81,15 +83,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_close_substate<Y>(
-        lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_read_substate<Y>(
+    fn after_read_substate<Y>(
         lock_handle: LockHandle,
         value_size: usize,
         store_access: &StoreAccessInfo,
@@ -98,7 +92,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_write_substate<Y>(
+    fn after_write_substate<Y>(
         lock_handle: LockHandle,
         value_size: usize,
         store_access: &StoreAccessInfo,
@@ -107,14 +101,15 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_scan_substates<Y>(
+    fn after_close_substate<Y>(
+        lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn on_set_substate<Y>(
+    fn after_set_substate<Y>(
         value_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -122,7 +117,25 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_drain_substates<Y>(
+    fn after_remove_substate<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn after_scan_sorted_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn after_scan_keys<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn after_drain_substates<Y>(
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

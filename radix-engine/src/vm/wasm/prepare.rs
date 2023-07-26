@@ -1284,6 +1284,7 @@ mod tests {
             "Test".to_string(),
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 feature_set: btreeset!(),
                 dependencies: btreeset!(),
 

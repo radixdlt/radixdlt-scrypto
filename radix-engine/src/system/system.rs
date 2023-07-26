@@ -2243,7 +2243,9 @@ where
         if !actor.is_direct_access() {
             if let Some(node_id) = actor.node_id() {
                 let visibility = self.kernel_get_node_visibility(&node_id);
-                if let ReferenceOrigin::Global(address) = visibility.reference_origin(node_id).unwrap() {
+                if let ReferenceOrigin::Global(address) =
+                    visibility.reference_origin(node_id).unwrap()
+                {
                     return Ok(address);
                 }
             }
@@ -2687,7 +2689,7 @@ where
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<&IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         self.api.kernel_read_substate(lock_handle)
     }
 
