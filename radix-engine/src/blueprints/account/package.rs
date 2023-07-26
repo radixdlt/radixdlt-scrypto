@@ -52,6 +52,15 @@ impl AccountNativePackage {
                 can_own: false,
             },
         ));
+        collections.push(BlueprintCollectionSchema::KeyValueStore(
+            BlueprintKeyValueStoreSchema {
+                key: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<ResourceOrNonFungible>(),
+                ),
+                value: TypeRef::Static(aggregator.add_child_type_and_descendents::<()>()),
+                can_own: false,
+            },
+        ));
 
         let mut functions = BTreeMap::new();
 
@@ -355,6 +364,102 @@ impl AccountNativePackage {
             },
         );
 
+        functions.insert(
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountTryAuthorizedDepositOrRefundInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator.add_child_type_and_descendents::<AccountTryAuthorizedDepositOrRefundOutput>(),
+                ),
+                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrRefundInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrRefundOutput>(),
+                ),
+                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositOrAbortInput>(
+                        ),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositOrAbortOutput>(
+                        ),
+                ),
+                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrAbortInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountTryAuthorizedDepositBatchOrAbortOutput>(),
+                ),
+                export: ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountAddAuthorizedDepositorInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountAddAuthorizedDepositorOutput>(),
+                ),
+                export: ACCOUNT_ADD_AUTHORIZED_DEPOSITOR.to_string(),
+            },
+        );
+
+        functions.insert(
+            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR.to_string(),
+            FunctionSchemaInit {
+                receiver: Some(ReceiverInfo::normal_ref_mut()),
+                input: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveAuthorizedDepositorInput>(),
+                ),
+                output: TypeRef::Static(
+                    aggregator
+                        .add_child_type_and_descendents::<AccountRemoveAuthorizedDepositorOutput>(),
+                ),
+                export: ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR.to_string(),
+            },
+        );
+
         let schema = generate_full_schema(aggregator);
         let blueprints = btreemap!(
             ACCOUNT_BLUEPRINT.to_string() => BlueprintDefinitionInit {
@@ -406,11 +511,17 @@ impl AccountNativePackage {
                             ACCOUNT_DEPOSIT_BATCH_IDENT => [OWNER_ROLE];
                             ACCOUNT_BURN_IDENT => [OWNER_ROLE];
                             ACCOUNT_BURN_NON_FUNGIBLES_IDENT => [OWNER_ROLE];
+                            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR => [OWNER_ROLE];
+                            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR => [OWNER_ROLE];
 
                             ACCOUNT_TRY_DEPOSIT_OR_REFUND_IDENT => MethodAccessibility::Public;
                             ACCOUNT_TRY_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;
                             ACCOUNT_TRY_DEPOSIT_OR_ABORT_IDENT => MethodAccessibility::Public;
                             ACCOUNT_TRY_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT => MethodAccessibility::Public;
+                            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT => MethodAccessibility::Public;
                         }
                     )),
                 },
@@ -528,6 +639,58 @@ impl AccountNativePackage {
                 let rtn = AccountBlueprint::try_deposit_batch_or_abort(input.buckets, api)?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_REFUND_IDENT => {
+                let input: AccountTryAuthorizedDepositOrRefundInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+
+                let rtn = AccountBlueprint::try_authorized_deposit_or_refund(
+                    input.bucket,
+                    input.badge,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_REFUND_IDENT => {
+                let input: AccountTryAuthorizedDepositBatchOrRefundInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+
+                let rtn = AccountBlueprint::try_authorized_deposit_batch_or_refund(
+                    input.buckets,
+                    input.badge,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_OR_ABORT_IDENT => {
+                let input: AccountTryAuthorizedDepositOrAbortInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+
+                let rtn = AccountBlueprint::try_authorized_deposit_or_abort(
+                    input.bucket,
+                    input.badge,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_TRY_AUTHORIZED_DEPOSIT_BATCH_OR_ABORT_IDENT => {
+                let input: AccountTryAuthorizedDepositBatchOrAbortInput =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+
+                let rtn = AccountBlueprint::try_authorized_deposit_batch_or_abort(
+                    input.buckets,
+                    input.badge,
+                    api,
+                )?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
             ACCOUNT_WITHDRAW_IDENT => {
                 let input: AccountWithdrawInput = input.as_typed().map_err(|e| {
                     RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
@@ -637,6 +800,23 @@ impl AccountNativePackage {
                 )?;
                 Ok(IndexedScryptoValue::from_typed(&rtn))
             }
+            ACCOUNT_ADD_AUTHORIZED_DEPOSITOR => {
+                let AccountAddAuthorizedDepositorInput { badge } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = AccountBlueprint::add_authorized_depositor(badge, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+            ACCOUNT_REMOVE_AUTHORIZED_DEPOSITOR => {
+                let AccountRemoveAuthorizedDepositorInput { badge } =
+                    input.as_typed().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::InputDecodeError(e))
+                    })?;
+                let rtn = AccountBlueprint::remove_authorized_depositor(badge, api)?;
+                Ok(IndexedScryptoValue::from_typed(&rtn))
+            }
+
             _ => Err(RuntimeError::ApplicationError(
                 ApplicationError::ExportDoesNotExist(export_name.to_string()),
             )),
