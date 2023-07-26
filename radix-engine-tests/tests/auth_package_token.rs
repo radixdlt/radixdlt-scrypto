@@ -31,9 +31,7 @@ fn cannot_call_package_protected_function_without_package_token() {
         .call_function(package_address, "Factory", "create_raw", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()

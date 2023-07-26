@@ -38,8 +38,7 @@ fn sdk_clock_reads_timestamp_set_by_validator_next_round() {
     let receipt = test_runner.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
 
     // Assert
-    let current_unix_time_rounded_to_minutes: i64 =
-        receipt.expect_commit(true).output(2);
+    let current_unix_time_rounded_to_minutes: i64 = receipt.expect_commit(true).output(2);
     assert_eq!(
         current_unix_time_rounded_to_minutes,
         expected_unix_time_rounded_to_minutes

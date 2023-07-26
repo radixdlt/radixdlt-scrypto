@@ -1687,9 +1687,7 @@ impl AccessControllerTestRunner {
         );
         receipt.expect_commit_success();
 
-        let access_controller_address = receipt
-            .expect_commit(true)
-            .new_component_addresses()[0];
+        let access_controller_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,

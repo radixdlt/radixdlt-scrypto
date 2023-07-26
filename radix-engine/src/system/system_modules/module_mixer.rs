@@ -3,8 +3,13 @@ use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent,
+    ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
+    SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -27,7 +32,6 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -241,7 +245,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         message: &mut Message,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), before_push_frame(api, callee, message, args))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            before_push_frame(api, callee, message, args)
+        )
     }
 
     #[trace_resources]
@@ -263,7 +270,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         dropped_actor: &Actor,
         message: &Message,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), after_pop_frame(api, dropped_actor, message))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            after_pop_frame(api, dropped_actor, message)
+        )
     }
 
     #[trace_resources(log=output_size)]
@@ -279,7 +289,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         entity_type: EntityType,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), on_allocate_node_id(api, entity_type))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            on_allocate_node_id(api, entity_type)
+        )
     }
 
     #[trace_resources]
@@ -303,9 +316,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         api: &mut Y,
         total_substate_size: usize,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), after_drop_node(api, total_substate_size))
+        internal_call_dispatch!(
+            api.kernel_get_system(),
+            after_drop_node(api, total_substate_size)
+        )
     }
-
 
     #[trace_resources]
     fn on_move_module<Y: KernelInternalApi<SystemConfig<V>>>(
@@ -364,12 +379,18 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn on_scan_keys(system: &mut SystemConfig<V>, event: &ScanKeysEvent) -> Result<(), RuntimeError> {
+    fn on_scan_keys(
+        system: &mut SystemConfig<V>,
+        event: &ScanKeysEvent,
+    ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(system, on_scan_keys(system, event))
     }
 
     #[trace_resources]
-    fn on_drain_substates(system: &mut SystemConfig<V>, event: &DrainSubstatesEvent) -> Result<(), RuntimeError> {
+    fn on_drain_substates(
+        system: &mut SystemConfig<V>,
+        event: &DrainSubstatesEvent,
+    ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(system, on_drain_substates(system, event))
     }
 

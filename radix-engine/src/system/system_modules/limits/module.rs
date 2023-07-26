@@ -1,11 +1,14 @@
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent,
+    ScanKeysEvent, ScanSortedSubstatesEvent, WriteSubstateEvent,
+};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, WriteSubstateEvent};
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum TransactionLimitsError {
@@ -125,7 +128,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
                 }
             }
             CreateNodeEvent::StoreAccess(store_access) => {
-                api.kernel_get_system().modules.limits.process_store_access(store_access)?;
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_store_access(store_access)?;
             }
             _ => {}
         }
@@ -139,7 +145,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     ) -> Result<(), RuntimeError> {
         match event {
             MoveModuleEvent::StoreAccess(store_access) => {
-                api.kernel_get_system().modules.limits.process_store_access(store_access)?;
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_store_access(store_access)?;
             }
         }
 
@@ -152,7 +161,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     ) -> Result<(), RuntimeError> {
         match event {
             OpenSubstateEvent::StoreAccess(store_access) => {
-                api.kernel_get_system().modules.limits.process_store_access(store_access)?;
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_store_access(store_access)?;
             }
             _ => {}
         }
@@ -162,7 +174,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
 
     fn on_write_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        event: &WriteSubstateEvent
+        event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
         let limits = &mut api.kernel_get_system().modules.limits.config;
 
@@ -187,14 +199,16 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     ) -> Result<(), RuntimeError> {
         match event {
             CloseSubstateEvent::StoreAccess(store_access) => {
-                api.kernel_get_system().modules.limits.process_store_access(store_access)?;
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_store_access(store_access)?;
             }
             _ => {}
         }
 
         Ok(())
     }
-
 
     fn on_scan_keys(
         system: &mut SystemConfig<V>,

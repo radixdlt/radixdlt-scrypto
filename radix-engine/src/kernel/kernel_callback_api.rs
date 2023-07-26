@@ -1,6 +1,6 @@
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -33,7 +33,7 @@ pub enum OpenSubstateEvent<'a> {
         handle: LockHandle,
         node_id: &'a NodeId,
         size: usize,
-    }
+    },
 }
 
 #[derive(Debug)]
@@ -99,32 +99,23 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_create_node<Y>(
-        api: &mut Y,
-        event: CreateNodeEvent,
-    ) -> Result<(), RuntimeError>
+    fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
     fn before_drop_node<Y>(node_id: &NodeId, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>;
+    where
+        Y: KernelApi<Self>;
 
     fn after_drop_node<Y>(api: &mut Y, total_substate_size: usize) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>;
+    where
+        Y: KernelApi<Self>;
 
-    fn on_move_module<Y>(
-        api: &mut Y,
-        event: MoveModuleEvent,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self>;
+    fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
+    where
+        Y: KernelInternalApi<Self>;
 
-    fn on_open_substate<Y>(
-        api: &mut Y,
-        event: OpenSubstateEvent,
-    ) -> Result<(), RuntimeError>
+    fn on_open_substate<Y>(api: &mut Y, event: OpenSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
@@ -132,17 +123,11 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelInternalApi<Self>;
 
-    fn on_read_substate<Y>(
-        api: &mut Y,
-        event: ReadSubstateEvent,
-    ) -> Result<(), RuntimeError>
+    fn on_read_substate<Y>(api: &mut Y, event: ReadSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
-    fn on_write_substate<Y>(
-        api: &mut Y,
-        event: WriteSubstateEvent,
-    ) -> Result<(), RuntimeError>
+    fn on_write_substate<Y>(api: &mut Y, event: WriteSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
@@ -154,7 +139,10 @@ pub trait KernelCallbackObject: Sized {
 
     fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError>;
 
-    fn on_scan_sorted_substates(&mut self, event: ScanSortedSubstatesEvent) -> Result<(), RuntimeError>;
+    fn on_scan_sorted_substates(
+        &mut self,
+        event: ScanSortedSubstatesEvent,
+    ) -> Result<(), RuntimeError>;
 
     fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
     where

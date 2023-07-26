@@ -390,7 +390,11 @@ impl<L: Clone> CallFrame<L> {
         }
     }
 
-    pub fn open_substate<S: SubstateStore, E, F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>>(
+    pub fn open_substate<
+        S: SubstateStore,
+        E,
+        F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
@@ -439,9 +443,7 @@ impl<L: Clone> CallFrame<L> {
                     partition_num,
                     substate_key,
                     flags,
-                    &mut |store_access| {
-                        on_store_access(self, heap, store_access)
-                    },
+                    &mut |store_access| on_store_access(self, heap, store_access),
                     || default.map(|f| f()),
                 )
                 .map_err(|x| x.map(|e| OpenSubstateError::TrackError(Box::new(e))))?;
@@ -507,7 +509,11 @@ impl<L: Clone> CallFrame<L> {
         Ok((lock_handle, substate_value.len()))
     }
 
-    pub fn close_substate<S: SubstateStore, E, F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>>(
+    pub fn close_substate<
+        S: SubstateStore,
+        E,
+        F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
@@ -554,7 +560,7 @@ impl<L: Clone> CallFrame<L> {
                         Self::move_node_to_store(heap, store, own, &mut |heap, store_access| {
                             on_store_access(self, heap, store_access)
                         })
-                            .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
+                        .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
                     }
                 }
             }
@@ -719,7 +725,12 @@ impl<L: Clone> CallFrame<L> {
         Ok(())
     }
 
-    pub fn create_node<'f, S: SubstateStore, E, F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>>(
+    pub fn create_node<
+        'f,
+        S: SubstateStore,
+        E,
+        F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
@@ -740,7 +751,7 @@ impl<L: Clone> CallFrame<L> {
                         Self::move_node_to_store(heap, store, own, &mut |heap, store_access| {
                             on_store_access(self, heap, store_access)
                         })
-                            .map_err(|e| e.map(CreateNodeError::PersistNodeError))?;
+                        .map_err(|e| e.map(CreateNodeError::PersistNodeError))?;
                     }
                 }
 
@@ -838,7 +849,12 @@ impl<L: Clone> CallFrame<L> {
         Ok(node_substates)
     }
 
-    pub fn move_module<'f, S: SubstateStore, E, F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>>(
+    pub fn move_module<
+        'f,
+        S: SubstateStore,
+        E,
+        F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
@@ -881,7 +897,7 @@ impl<L: Clone> CallFrame<L> {
                     Self::move_node_to_store(heap, store, own, &mut |heap, store_access| {
                         on_store_access(self, heap, store_access)
                     })
-                        .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
+                    .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
 
                 for reference in substate_value.references() {
@@ -898,9 +914,7 @@ impl<L: Clone> CallFrame<L> {
                         dest_partition_number,
                         substate_key,
                         substate_value,
-                        &mut |store_access| {
-                            on_store_access(self, heap, store_access)
-                        },
+                        &mut |store_access| on_store_access(self, heap, store_access),
                     )
                     .map_err(|e| e.map(MoveModuleError::TrackSetSubstateError))?
             }
@@ -1107,7 +1121,11 @@ impl<L: Clone> CallFrame<L> {
         Ok(substates)
     }
 
-    pub fn close_all_substates<S: SubstateStore, E, F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>>(
+    pub fn close_all_substates<
+        S: SubstateStore,
+        E,
+        F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>,
+    >(
         &mut self,
         on_store_access: &mut F,
         heap: &mut Heap,
@@ -1141,7 +1159,11 @@ impl<L: Clone> CallFrame<L> {
         self.owned_root_nodes.keys().cloned().collect()
     }
 
-    pub fn move_node_to_store<S: SubstateStore, E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
+    pub fn move_node_to_store<
+        S: SubstateStore,
+        E,
+        F: FnMut(&Heap, StoreAccess) -> Result<(), E>,
+    >(
         heap: &mut Heap,
         store: &mut S,
         node_id: &NodeId,

@@ -84,10 +84,7 @@ fn scrypto_can_emit_registered_events() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let events = receipt
-        .expect_commit(true)
-        .application_events
-        .clone();
+    let events = receipt.expect_commit(true).application_events.clone();
     assert_eq!(events.len(), 2); // Two events: lock fee and registered event
     assert!(match events.get(0) {
         Some((
@@ -192,10 +189,7 @@ fn locking_fee_against_a_vault_emits_correct_events() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 1); // One event: lock fee
         assert!(match events.get(0) {
             Some((
@@ -229,10 +223,7 @@ fn vault_fungible_recall_emits_correct_events() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 4); // Four events: vault lock fee, vault fungible withdraw, vault fungible recall, vault fungible deposit
         assert!(match events.get(0) {
             Some((
@@ -306,12 +297,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
             .try_deposit_batch_or_abort(account)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        (
-            receipt
-                .expect_commit(true)
-                .new_resource_addresses()[0],
-            id,
-        )
+        (receipt.expect_commit(true).new_resource_addresses()[0], id)
     };
     let vault_id = test_runner.get_component_vaults(account, recallable_resource_address)[0];
 
@@ -326,10 +312,7 @@ fn vault_non_fungible_recall_emits_correct_events() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 4); // Four events: vault lock fee, vault non-fungible withdraw, vault non-fungible recall, vault non-fungible deposit
         assert!(match events.get(0) {
             Some((
@@ -406,10 +389,7 @@ fn resource_manager_new_vault_emits_correct_events() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 3); // Four events: vault lock fee, vault fungible deposit
         assert!(match events.get(0) {
             Some((
@@ -473,9 +453,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
             .try_deposit_batch_or_abort(account)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        receipt
-            .expect_commit(true)
-            .new_resource_addresses()[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
     let manifest = ManifestBuilder::new()
@@ -489,10 +467,7 @@ fn resource_manager_mint_and_burn_fungible_resource_emits_correct_events() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager mint fungible, resource manager burn fungible
         assert!(match events.get(0) {
             Some((
@@ -564,9 +539,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
             .try_deposit_batch_or_abort(account)
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        receipt
-            .expect_commit(true)
-            .new_resource_addresses()[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
     let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
@@ -581,10 +554,7 @@ fn resource_manager_mint_and_burn_non_fungible_resource_emits_correct_events() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 3); // Three events: vault lock fee, resource manager mint non-fungible, resource manager burn non-fungible
         assert!(match events.get(0) {
             Some((
@@ -660,9 +630,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
             )
             .build();
         let receipt = test_runner.execute_manifest(manifest, vec![]);
-        receipt
-            .expect_commit(true)
-            .new_resource_addresses()[0]
+        receipt.expect_commit(true).new_resource_addresses()[0]
     };
 
     let id = NonFungibleLocalId::Integer(IntegerNonFungibleLocalId::new(1));
@@ -686,10 +654,7 @@ fn vault_take_non_fungibles_by_amount_emits_correct_event() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         /*
         6 Events:
         - Vault lock fee event
@@ -806,10 +771,7 @@ fn consensus_manager_round_update_emits_correct_event() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 1); // One event: round change event
         assert!(match events.get(0) {
             Some((
@@ -864,10 +826,7 @@ fn consensus_manager_epoch_update_emits_epoch_change_event() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         let epoch_change_events = events
             .into_iter()
             .filter(|(id, _data)| test_runner.is_event_name_equal::<EpochChangeEvent>(id))
@@ -963,10 +922,7 @@ fn validator_registration_emits_correct_event() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 4); // Two events: vault lock fee and register validator
         assert!(match events.get(0) {
             Some((
@@ -1037,10 +993,7 @@ fn validator_unregistration_emits_correct_event() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 4); // Two events: vault lock fee and register validator
         assert!(match events.get(0) {
             Some((
@@ -1114,10 +1067,7 @@ fn validator_staking_emits_correct_event() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         assert_eq!(events.len(), 9); // Seven events: vault lock fee, vault withdraw fungible, resource manager mint (lp tokens), vault deposit event, validator stake event, resource manager vault create (for the LP tokens), vault deposit
         assert!(match events.get(0) {
             Some((
@@ -1234,10 +1184,7 @@ fn validator_unstake_emits_correct_events() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         /*
         Nine Events:
         1. Lock Fee event
@@ -1394,10 +1341,7 @@ fn validator_claim_xrd_emits_correct_events() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         /*
         Seven Events:
         1. Vault lock fee event
@@ -1528,10 +1472,7 @@ fn validator_update_stake_delegation_status_emits_correct_event() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         /*
         5 Events:
         1. Vault lock fee event
@@ -1589,10 +1530,7 @@ fn setting_metadata_emits_correct_events() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         /*
         Two events:
         1. Vault lock fee
@@ -1639,10 +1577,7 @@ fn create_account_events_can_be_looked_up() {
 
     // Assert
     {
-        let events = receipt
-            .expect_commit(true)
-            .clone()
-            .application_events;
+        let events = receipt.expect_commit(true).clone().application_events;
         for (event_id, _) in events {
             let _name = test_runner.event_name(&event_id);
         }

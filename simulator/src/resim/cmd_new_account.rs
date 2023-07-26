@@ -90,9 +90,7 @@ impl NewAccount {
                 out,
             )?
             .unwrap();
-            let resource_address = receipt
-                .expect_commit(true)
-                .new_resource_addresses()[0];
+            let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
             let owner_badge =
                 NonFungibleGlobalId::new(resource_address, NonFungibleLocalId::integer(1));
 

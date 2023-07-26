@@ -1,6 +1,9 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, OpenSubstateEvent, ReadSubstateEvent, WriteSubstateEvent,
+};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
@@ -10,7 +13,6 @@ use colored::Colorize;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use sbor::rust::collections::BTreeMap;
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, OpenSubstateEvent, ReadSubstateEvent, WriteSubstateEvent};
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}
@@ -78,11 +80,12 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        event: &CreateNodeEvent
+        event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
         match event {
             CreateNodeEvent::Start(node_id, node_module_init) => {
-                let mut module_substate_keys = BTreeMap::<&PartitionNumber, Vec<&SubstateKey>>::new();
+                let mut module_substate_keys =
+                    BTreeMap::<&PartitionNumber, Vec<&SubstateKey>>::new();
                 for (module_id, m) in *node_module_init {
                     for (substate_key, _) in m {
                         module_substate_keys
@@ -98,7 +101,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
                     module_substate_keys,
                     node_module_init.get(&PartitionNumber(0))
                 )
-                    .red();
+                .red();
                 log!(api, "{}", message);
             }
             _ => {}
@@ -117,11 +120,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        event: &OpenSubstateEvent
+        event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
             OpenSubstateEvent::Start {
-                node_id, partition_num, substate_key, flags
+                node_id,
+                partition_num,
+                substate_key,
+                flags,
             } => {
                 log!(
                     api,
@@ -134,7 +140,9 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
             }
             OpenSubstateEvent::StoreAccess(..) => {}
             OpenSubstateEvent::End {
-                handle, node_id, size
+                handle,
+                node_id,
+                size,
             } => {
                 log!(
                     api,
@@ -153,10 +161,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
         match event {
-            ReadSubstateEvent::End {
-                handle,
-                value
-            } => {
+            ReadSubstateEvent::End { handle, value } => {
                 log!(
                     api,
                     "Reading substate: handle = {}, size = {}",
@@ -195,8 +200,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
             CloseSubstateEvent::End(lock_handle) => {
                 log!(api, "Dropping lock: handle = {} ", lock_handle);
             }
-            CloseSubstateEvent::StoreAccess(..) => {
-            }
+            CloseSubstateEvent::StoreAccess(..) => {}
         }
         Ok(())
     }

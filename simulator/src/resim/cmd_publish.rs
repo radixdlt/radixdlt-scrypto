@@ -268,9 +268,7 @@ impl Publish {
                 writeln!(
                     out,
                     "Success! New Package: {}",
-                    receipt
-                        .expect_commit(true)
-                        .new_package_addresses()[0]
+                    receipt.expect_commit(true).new_package_addresses()[0]
                         .display(&AddressBech32Encoder::for_simulator())
                         .to_string()
                         .green()

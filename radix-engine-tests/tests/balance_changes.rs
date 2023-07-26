@@ -35,9 +35,7 @@ fn test_balance_changes_when_success() {
             owner_badge_addr.clone(),
         ],
     );
-    let component_address = receipt
-        .expect_commit(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Call the put method
     let receipt = test_runner.execute_manifest(
@@ -113,9 +111,7 @@ fn test_balance_changes_when_failure() {
             owner_badge_addr.clone(),
         ],
     );
-    let component_address = receipt
-        .expect_commit(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Call the put method
     let receipt = test_runner.execute_manifest(

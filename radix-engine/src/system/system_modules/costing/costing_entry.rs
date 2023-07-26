@@ -1,9 +1,13 @@
 use super::FeeTable;
 use crate::kernel::actor::Actor;
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent,
+    ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
+    SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::track::interface::{StoreAccess, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 
 #[derive(Debug, IntoStaticStr)]
 pub enum CostingEntry<'a> {
@@ -137,9 +141,7 @@ impl<'a> CostingEntry<'a> {
             }
             CostingEntry::AfterInvoke { output_size } => ft.after_invoke_cost(*output_size),
             CostingEntry::AllocateNodeId => ft.allocate_node_id_cost(),
-            CostingEntry::CreateNode {
-                event
-            } => ft.create_node_cost(event),
+            CostingEntry::CreateNode { event } => ft.create_node_cost(event),
             CostingEntry::DropNode {
                 total_substate_size,
             } => ft.drop_node_cost(*total_substate_size),
@@ -179,7 +181,10 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::RunWasmCode { export_name, .. } => {
                 format!("RunWasmCode::{}", export_name)
             }
-            CostingEntry::OpenSubstate { event: OpenSubstateEvent::Start { node_id, .. } , .. } => {
+            CostingEntry::OpenSubstate {
+                event: OpenSubstateEvent::Start { node_id, .. },
+                ..
+            } => {
                 format!(
                     "OpenSubstate::{}",
                     node_id.entity_type().map(|x| x.into()).unwrap_or("?")

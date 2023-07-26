@@ -19,9 +19,7 @@ fn mut_reentrancy_should_not_be_possible() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -60,9 +58,7 @@ fn read_reentrancy_should_be_possible() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -94,9 +90,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()

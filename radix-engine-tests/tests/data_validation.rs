@@ -14,9 +14,7 @@ fn setup_component(test_runner: &mut DefaultTestRunner) -> ComponentAddress {
         .call_function(package_address, "DataValidation", "new", manifest_args!())
         .build();
     let setup_receipt = test_runner.execute_manifest(setup_manifest, vec![]);
-    setup_receipt
-        .expect_commit(true)
-        .new_component_addresses()[0]
+    setup_receipt.expect_commit(true).new_component_addresses()[0]
 }
 
 fn sink_account() -> ComponentAddress {

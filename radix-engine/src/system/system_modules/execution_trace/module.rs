@@ -307,7 +307,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
                     .system
                     .modules
                     .execution_trace
-                    .handle_after_create_node(system_state.current_actor, current_depth, resource_summary);
+                    .handle_after_create_node(
+                        system_state.current_actor,
+                        current_depth,
+                        resource_summary,
+                    );
             }
         }
 

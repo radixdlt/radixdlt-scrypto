@@ -12,7 +12,11 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject,
+    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -212,9 +216,8 @@ macro_rules! as_read_only {
             heap: &$kernel.heap,
             callback: $kernel.callback,
         }
-    }}
+    }};
 }
-
 
 impl<'g, M, S> Kernel<'g, M, S>
 where
@@ -276,9 +279,12 @@ where
                             current_frame,
                             prev_frame: self.prev_frame_stack.last(),
                             heap,
-                            callback: self.callback
+                            callback: self.callback,
                         };
-                        M::on_close_substate(&mut read_only, CloseSubstateEvent::StoreAccess(&store_access))
+                        M::on_close_substate(
+                            &mut read_only,
+                            CloseSubstateEvent::StoreAccess(&store_access),
+                        )
                     },
                     &mut self.heap,
                     self.store,
@@ -303,9 +309,12 @@ where
                             current_frame,
                             prev_frame: self.prev_frame_stack.last(),
                             heap,
-                            callback: self.callback
+                            callback: self.callback,
                         };
-                        M::on_close_substate(&mut read_only, CloseSubstateEvent::StoreAccess(&store_access))
+                        M::on_close_substate(
+                            &mut read_only,
+                            CloseSubstateEvent::StoreAccess(&store_access),
+                        )
                     },
                     &mut self.heap,
                     self.store,
@@ -378,7 +387,10 @@ where
         node_substates: NodeSubstates,
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
-        M::on_create_node(&mut read_only, CreateNodeEvent::Start(&node_id, &node_substates))?;
+        M::on_create_node(
+            &mut read_only,
+            CreateNodeEvent::Start(&node_id, &node_substates),
+        )?;
 
         self.current_frame
             .create_node(
@@ -389,7 +401,7 @@ where
                         current_frame,
                         prev_frame: self.prev_frame_stack.last(),
                         heap,
-                        callback: self.callback
+                        callback: self.callback,
                     };
                     M::on_create_node(&mut read_only, CreateNodeEvent::StoreAccess(&store_access))
                 },
@@ -450,7 +462,7 @@ where
                         current_frame,
                         prev_frame: self.prev_frame_stack.last(),
                         heap,
-                        callback: self.callback
+                        callback: self.callback,
                     };
                     M::on_move_module(&mut read_only, MoveModuleEvent::StoreAccess(&store_access))
                 },
@@ -470,11 +482,10 @@ where
 
 // TODO: Remove
 impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>
-    where
-        M: KernelCallbackObject,
-        S: SubstateStore,
+where
+    M: KernelCallbackObject,
+    S: SubstateStore,
 {
-
     fn kernel_get_node_visibility(&mut self, node_id: &NodeId) -> NodeVisibility {
         let mut read_only = as_read_only!(self);
         read_only.kernel_get_node_visibility(node_id)
@@ -511,7 +522,10 @@ impl<'g, M, S> KernelInternalApi<M> for Kernel<'g, M, S>
     }
 }
 
-struct KernelReadOnly<'g, M> where M: KernelCallbackObject {
+struct KernelReadOnly<'g, M>
+where
+    M: KernelCallbackObject,
+{
     current_frame: &'g CallFrame<M::LockData>,
     prev_frame: Option<&'g CallFrame<M::LockData>>,
     heap: &'g Heap,
@@ -716,8 +730,8 @@ where
                 node_id: &node_id,
                 partition_num: &partition_num,
                 substate_key,
-                flags: &flags
-            }
+                flags: &flags,
+            },
         )?;
 
         let maybe_lock_handle = self.current_frame.open_substate(
@@ -732,12 +746,12 @@ where
                     current_frame,
                     prev_frame: self.prev_frame_stack.last(),
                     heap,
-                    callback: self.callback
+                    callback: self.callback,
                 };
 
                 M::on_open_substate(
                     &mut read_only,
-                    OpenSubstateEvent::StoreAccess(&store_access)
+                    OpenSubstateEvent::StoreAccess(&store_access),
                 )
             },
             default,
@@ -766,12 +780,12 @@ where
                                         current_frame,
                                         prev_frame: self.prev_frame_stack.last(),
                                         heap,
-                                        callback: self.callback
+                                        callback: self.callback,
                                     };
 
                                     M::on_open_substate(
                                         &mut read_only,
-                                        OpenSubstateEvent::StoreAccess(&store_access)
+                                        OpenSubstateEvent::StoreAccess(&store_access),
                                     )
                                 },
                                 None,
@@ -816,7 +830,6 @@ where
             }
         };
 
-
         let mut read_only = as_read_only!(self);
         M::on_open_substate(
             &mut read_only,
@@ -824,7 +837,7 @@ where
                 handle: lock_handle,
                 node_id: &node_id,
                 size: value_size,
-            }
+            },
         )?;
 
         Ok(lock_handle)
@@ -854,10 +867,13 @@ where
                         current_frame,
                         prev_frame: self.prev_frame_stack.last(),
                         heap,
-                        callback: self.callback
+                        callback: self.callback,
                     };
 
-                    M::on_close_substate(&mut read_only, CloseSubstateEvent::StoreAccess(&store_access))
+                    M::on_close_substate(
+                        &mut read_only,
+                        CloseSubstateEvent::StoreAccess(&store_access),
+                    )
                 },
             )
             .map_err(|e| match e {
@@ -885,10 +901,13 @@ where
             .map_err(KernelError::CallFrameError)?;
 
         let mut read_only = as_read_only!(self);
-        M::on_read_substate(&mut read_only, ReadSubstateEvent::End {
-            handle: lock_handle,
-            value,
-        })?;
+        M::on_read_substate(
+            &mut read_only,
+            ReadSubstateEvent::End {
+                handle: lock_handle,
+                value,
+            },
+        )?;
 
         Ok(value)
     }
@@ -900,10 +919,13 @@ where
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let mut read_only = as_read_only!(self);
-        M::on_write_substate(&mut read_only, WriteSubstateEvent::Start {
-            handle: lock_handle,
-            value: &value,
-        })?;
+        M::on_write_substate(
+            &mut read_only,
+            WriteSubstateEvent::Start {
+                handle: lock_handle,
+                value: &value,
+            },
+        )?;
 
         self.current_frame
             .write_substate(&mut self.heap, self.store, lock_handle, value)
@@ -922,7 +944,8 @@ where
         substate_key: SubstateKey,
         value: IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
-        self.callback.on_set_substate(SetSubstateEvent::Start(&value))?;
+        self.callback
+            .on_set_substate(SetSubstateEvent::Start(&value))?;
 
         self.current_frame
             .set_substate(
@@ -930,7 +953,10 @@ where
                 partition_num,
                 substate_key,
                 value,
-                &mut |store_access| self.callback.on_set_substate(SetSubstateEvent::StoreAccess(&store_access)),
+                &mut |store_access| {
+                    self.callback
+                        .on_set_substate(SetSubstateEvent::StoreAccess(&store_access))
+                },
                 &mut self.heap,
                 self.store,
             )
@@ -951,7 +977,8 @@ where
         partition_num: PartitionNumber,
         substate_key: &SubstateKey,
     ) -> Result<Option<IndexedScryptoValue>, RuntimeError> {
-        self.callback.on_remove_substate(RemoveSubstateEvent::Start)?;
+        self.callback
+            .on_remove_substate(RemoveSubstateEvent::Start)?;
 
         let substate = self
             .current_frame
@@ -959,7 +986,10 @@ where
                 node_id,
                 partition_num,
                 &substate_key,
-                &mut |store_access| self.callback.on_remove_substate(RemoveSubstateEvent::StoreAccess(&store_access)),
+                &mut |store_access| {
+                    self.callback
+                        .on_remove_substate(RemoveSubstateEvent::StoreAccess(&store_access))
+                },
                 &mut self.heap,
                 self.store,
             )
@@ -988,7 +1018,10 @@ where
                 node_id,
                 partition_num,
                 count,
-                &mut |store_access| self.callback.on_scan_keys(ScanKeysEvent::StoreAccess(&store_access)),
+                &mut |store_access| {
+                    self.callback
+                        .on_scan_keys(ScanKeysEvent::StoreAccess(&store_access))
+                },
                 &mut self.heap,
                 self.store,
             )
@@ -1009,7 +1042,8 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
-        self.callback.on_drain_substates(DrainSubstatesEvent::Start)?;
+        self.callback
+            .on_drain_substates(DrainSubstatesEvent::Start)?;
 
         let substates = self
             .current_frame
@@ -1017,7 +1051,10 @@ where
                 node_id,
                 partition_num,
                 count,
-                &mut |store_access| self.callback.on_drain_substates(DrainSubstatesEvent::StoreAccess(&store_access)),
+                &mut |store_access| {
+                    self.callback
+                        .on_drain_substates(DrainSubstatesEvent::StoreAccess(&store_access))
+                },
                 &mut self.heap,
                 self.store,
             )
@@ -1038,24 +1075,29 @@ where
         partition_num: PartitionNumber,
         count: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-        self.callback.on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
+        self.callback
+            .on_scan_sorted_substates(ScanSortedSubstatesEvent::Start)?;
 
-        let substates = self
-            .current_frame
-            .scan_sorted(
-                node_id,
-                partition_num,
-                count,
-                &mut |store_access| self.callback.on_scan_sorted_substates(ScanSortedSubstatesEvent::StoreAccess(&store_access)),
-                &mut self.heap,
-                self.store,
-            )
-            .map_err(|e| match e {
-                CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
-                    CallFrameError::ScanSortedSubstatesError(e),
-                )),
-                CallbackError::CallbackError(e) => e,
-            })?;
+        let substates =
+            self.current_frame
+                .scan_sorted(
+                    node_id,
+                    partition_num,
+                    count,
+                    &mut |store_access| {
+                        self.callback.on_scan_sorted_substates(
+                            ScanSortedSubstatesEvent::StoreAccess(&store_access),
+                        )
+                    },
+                    &mut self.heap,
+                    self.store,
+                )
+                .map_err(|e| match e {
+                    CallbackError::Error(e) => RuntimeError::KernelError(
+                        KernelError::CallFrameError(CallFrameError::ScanSortedSubstatesError(e)),
+                    ),
+                    CallbackError::CallbackError(e) => e,
+                })?;
 
         Ok(substates)
     }

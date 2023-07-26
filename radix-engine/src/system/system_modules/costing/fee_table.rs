@@ -1,3 +1,8 @@
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent,
+    ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent,
+    SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::{
     blueprints::package::*,
     kernel::actor::Actor,
@@ -5,7 +10,6 @@ use crate::{
     types::*,
 };
 use lazy_static::lazy_static;
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
 
 lazy_static! {
     pub static ref NATIVE_FUNCTION_BASE_COSTS: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = {
@@ -205,12 +209,8 @@ impl FeeTable {
 
                 add(500, Self::data_processing_cost(total_substate_size))
             }
-            CreateNodeEvent::StoreAccess(store_access) => {
-                self.store_access_cost(store_access)
-            }
-            CreateNodeEvent::End(..) => {
-                0
-            }
+            CreateNodeEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+            CreateNodeEvent::End(..) => 0,
         }
     }
 
@@ -222,9 +222,7 @@ impl FeeTable {
     #[inline]
     pub fn move_module_cost(&self, event: &MoveModuleEvent) -> u32 {
         match event {
-            MoveModuleEvent::StoreAccess(store_access) => {
-                self.store_access_cost(store_access)
-            }
+            MoveModuleEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }
 
@@ -232,12 +230,8 @@ impl FeeTable {
     pub fn open_substate_cost(&self, event: &OpenSubstateEvent) -> u32 {
         match event {
             OpenSubstateEvent::Start { .. } => 0,
-            OpenSubstateEvent::StoreAccess(store_access) => {
-                self.store_access_cost(store_access)
-            }
-            OpenSubstateEvent::End { size, .. } => {
-                add(500, Self::data_processing_cost(*size))
-            }
+            OpenSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+            OpenSubstateEvent::End { size, .. } => add(500, Self::data_processing_cost(*size)),
         }
     }
 
@@ -262,24 +256,16 @@ impl FeeTable {
     #[inline]
     pub fn close_substate_cost(&self, event: &CloseSubstateEvent) -> u32 {
         match event {
-            CloseSubstateEvent::StoreAccess(store_access) => {
-                self.store_access_cost(store_access)
-            }
-            CloseSubstateEvent::End(..) => {
-                500
-            }
+            CloseSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+            CloseSubstateEvent::End(..) => 500,
         }
     }
 
     #[inline]
     pub fn set_substate_cost(&self, event: &SetSubstateEvent) -> u32 {
         match event {
-            SetSubstateEvent::Start(value) => {
-                add(500, Self::data_processing_cost(value.len()))
-            }
-            SetSubstateEvent::StoreAccess(store_access) => {
-                self.store_access_cost(store_access)
-            }
+            SetSubstateEvent::Start(value) => add(500, Self::data_processing_cost(value.len())),
+            SetSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }
 
@@ -287,9 +273,7 @@ impl FeeTable {
     pub fn remove_substate_cost(&self, event: &RemoveSubstateEvent) -> u32 {
         match event {
             RemoveSubstateEvent::Start => 500,
-            RemoveSubstateEvent::StoreAccess(store_access) => {
-                self.store_access_cost(store_access)
-            }
+            RemoveSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }
 
@@ -297,9 +281,7 @@ impl FeeTable {
     pub fn scan_substates_cost(&self, event: &ScanKeysEvent) -> u32 {
         match event {
             ScanKeysEvent::Start => 500,
-            ScanKeysEvent::StoreAccess(store_access) => {
-                self.store_access_cost(store_access)
-            }
+            ScanKeysEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }
 
@@ -307,9 +289,7 @@ impl FeeTable {
     pub fn drain_substates_cost(&self, event: &DrainSubstatesEvent) -> u32 {
         match event {
             DrainSubstatesEvent::Start => 500,
-            DrainSubstatesEvent::StoreAccess(store_access) => {
-                self.store_access_cost(store_access)
-            }
+            DrainSubstatesEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
         }
     }
 

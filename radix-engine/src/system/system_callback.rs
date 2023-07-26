@@ -11,9 +11,13 @@ use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent};
+use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject,
+    MoveModuleEvent, OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::system::module::SystemModule;
 use crate::system::system::FieldSubstate;
 use crate::system::system::KeyValueEntrySubstate;
@@ -120,29 +124,21 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_drop_node(api, total_substate_size)
     }
 
-    fn on_create_node<Y>(
-        api: &mut Y,
-        event: CreateNodeEvent,
-    ) -> Result<(), RuntimeError>
+    fn on_create_node<Y>(api: &mut Y, event: CreateNodeEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_create_node(api, &event)
     }
 
-    fn on_move_module<Y>(
-        api: &mut Y,
-        event: MoveModuleEvent,
-    ) -> Result<(), RuntimeError>
-        where
-            Y: KernelInternalApi<Self> {
+    fn on_move_module<Y>(api: &mut Y, event: MoveModuleEvent) -> Result<(), RuntimeError>
+    where
+        Y: KernelInternalApi<Self>,
+    {
         SystemModuleMixer::on_move_module(api, &event)
     }
 
-    fn on_open_substate<Y>(
-        api: &mut Y,
-        event: OpenSubstateEvent,
-    ) -> Result<(), RuntimeError>
+    fn on_open_substate<Y>(api: &mut Y, event: OpenSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>,
     {
@@ -156,20 +152,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_close_substate(api, &event)
     }
 
-    fn on_read_substate<Y>(
-        api: &mut Y,
-        event: ReadSubstateEvent,
-    ) -> Result<(), RuntimeError>
+    fn on_read_substate<Y>(api: &mut Y, event: ReadSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>,
     {
         SystemModuleMixer::on_read_substate(api, &event)
     }
 
-    fn on_write_substate<Y>(
-        api: &mut Y,
-        event: WriteSubstateEvent,
-    ) -> Result<(), RuntimeError>
+    fn on_write_substate<Y>(api: &mut Y, event: WriteSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>,
     {
@@ -188,13 +178,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_scan_keys(self, &event)
     }
 
-    fn on_scan_sorted_substates(&mut self, event: ScanSortedSubstatesEvent) -> Result<(), RuntimeError>
-    {
+    fn on_scan_sorted_substates(
+        &mut self,
+        event: ScanSortedSubstatesEvent,
+    ) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_scan_sorted_substates(self, &event)
     }
 
-    fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError>
-    {
+    fn on_drain_substates(&mut self, event: DrainSubstatesEvent) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_drain_substates(self, &event)
     }
 
