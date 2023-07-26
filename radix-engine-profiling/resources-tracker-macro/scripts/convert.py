@@ -115,6 +115,12 @@ for path in file_list:
             node_id = param[0].attrib["arg0"]
             key += "::" + module_id + "::" + node_id
 
+        # handle kernel_allocate_node_id - not using this rule
+        # param = child.xpath("./self::kernel_allocate_node_id/@entity_type")
+        # if param:
+        #     key += "::" + param[0]
+
+
         # correcting parenthesis
         c1 = key.count('(')
         c2 = key.count(')')

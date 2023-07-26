@@ -6,6 +6,12 @@ use crate::{
 };
 use lazy_static::lazy_static;
 
+// Reference EC2 instance c5.4xlarge has CPU clock 3.4 GHz which means in 1 µs it executes 3400 instructions
+// (1 core, single-threaded operation, skipping CPU cache influence).
+// Basing on above assumptions converting CPU instructions count to cost units requires divistion CPU instructions
+// by 3400 and multiplication by 100 (1 µs = 100 cost units), so it is enough to divide by 34.
+const CPU_INSTRUCTIONS_TO_COST_UNIT: u32 = 34;
+
 lazy_static! {
     pub static ref NATIVE_FUNCTION_BASE_COSTS: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = {
         let mut costs: IndexMap<PackageAddress, IndexMap<&'static str, u32>> = index_map_new();
@@ -171,10 +177,7 @@ impl FeeTable {
                     ))
             });
 
-        // Reference EC2 instance c5.4xlarge has CPU clock 3.4 GHz which means in 1 µs it executes 3400 instructions
-        // (1 core, single-threaded operation, skipping CPU cache influence).
-        // Basing on above assumptions return native function execution time in µs: native_execution_units / 3400
-        native_execution_units / 34
+        native_execution_units / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
     #[inline]
@@ -216,7 +219,7 @@ impl FeeTable {
 
     #[inline]
     pub fn allocate_node_id_cost(&self) -> u32 {
-        500
+        3278u32 / CPU_INSTRUCTIONS_TO_COST_UNIT
     }
 
     #[inline]
