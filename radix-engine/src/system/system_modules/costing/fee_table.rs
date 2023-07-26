@@ -225,12 +225,40 @@ impl FeeTable {
     #[inline]
     pub fn create_node_cost(
         &self,
-        _node_id: &NodeId,
+        node_id: &NodeId,
         total_substate_size: usize,
         store_access: &StoreAccessInfo,
     ) -> u32 {
+        let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
+            match entity_type {
+                EntityType::GlobalAccessController => 10757,
+                EntityType::GlobalAccount => 36506,
+                EntityType::GlobalConsensusManager => 8523,
+                EntityType::GlobalFungibleResourceManager => 8989,
+                EntityType::GlobalGenericComponent => 8659,
+                EntityType::GlobalIdentity => 50353,
+                EntityType::GlobalMultiResourcePool => 9454,
+                EntityType::GlobalNonFungibleResourceManager => 8656,
+                EntityType::GlobalOneResourcePool => 9007,
+                EntityType::GlobalPackage => 8435,
+                EntityType::GlobalTransactionTracker => 8672,
+                EntityType::GlobalTwoResourcePool => 9400,
+                EntityType::GlobalValidator => 10563,
+                EntityType::GlobalVirtualEd25519Account => 50887,
+                EntityType::GlobalVirtualEd25519Identity => 0, // TODO: cover that in tests
+                EntityType::GlobalVirtualSecp256k1Account => 8608,
+                EntityType::GlobalVirtualSecp256k1Identity => 50780,
+                EntityType::InternalAccount => 4688,
+                EntityType::InternalFungibleVault => 5049,
+                EntityType::InternalGenericComponent => 7336,
+                EntityType::InternalKeyValueStore => 1466,
+                EntityType::InternalNonFungibleVault => 4986
+            }
+        } else {
+            0
+        };
         add3(
-            500,
+            base_cost,
             Self::data_processing_cost(total_substate_size),
             Self::store_access_cost(store_access),
         )
