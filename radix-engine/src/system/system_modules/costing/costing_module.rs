@@ -270,7 +270,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .apply_execution_cost(CostingEntry::CreateNode {
                 node_id,
                 total_substate_size,
-                store_access: store_access,
+                store_access,
             })?;
 
         Ok(())
@@ -335,7 +335,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .costing
             .apply_execution_cost(CostingEntry::ReadSubstate {
                 value_size,
-                store_access: store_access,
+                store_access,
             })?;
 
         Ok(())
@@ -366,9 +366,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::CloseSubstate {
-                store_access: store_access,
-            })?;
+            .apply_execution_cost(CostingEntry::CloseSubstate { store_access })?;
 
         Ok(())
     }
@@ -380,9 +378,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::ScanSubstates {
-                store_access: store_access,
-            })?;
+            .apply_execution_cost(CostingEntry::ScanSubstates { store_access })?;
 
         Ok(())
     }
@@ -397,7 +393,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
             .costing
             .apply_execution_cost(CostingEntry::SetSubstate {
                 value_size,
-                store_access: store_access,
+                store_access,
             })?;
 
         Ok(())
@@ -405,13 +401,15 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
 
     fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
+        count: u32,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
             .modules
             .costing
             .apply_execution_cost(CostingEntry::DrainSubstates {
-                store_access: store_access,
+                count,
+                store_access,
             })?;
 
         Ok(())
@@ -424,9 +422,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::RemoveSubstate {
-                store_access: store_access,
-            })?;
+            .apply_execution_cost(CostingEntry::RemoveSubstate { store_access })?;
 
         Ok(())
     }

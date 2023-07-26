@@ -213,6 +213,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_drain_substates<Y: KernelApi<M>>(
         _api: &mut Y,
+        _count: u32,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())

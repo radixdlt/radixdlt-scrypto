@@ -115,6 +115,7 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn on_drain_substates<Y>(
+        count: u32,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>

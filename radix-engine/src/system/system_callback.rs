@@ -211,13 +211,14 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     }
 
     fn on_drain_substates<Y>(
+        count: u32,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_drain_substates(api, store_access)
+        SystemModuleMixer::on_drain_substates(api, count, store_access)
     }
 
     fn on_remove_substate<Y>(

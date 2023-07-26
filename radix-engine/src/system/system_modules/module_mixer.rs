@@ -415,9 +415,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
+        count: u32,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_drain_substates(api, store_access))
+        internal_call_dispatch!(api, on_drain_substates(api, count, store_access))
     }
 
     #[trace_resources]

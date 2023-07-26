@@ -252,7 +252,7 @@ impl FeeTable {
                 EntityType::InternalFungibleVault => 5049,
                 EntityType::InternalGenericComponent => 7336,
                 EntityType::InternalKeyValueStore => 1466,
-                EntityType::InternalNonFungibleVault => 4986
+                EntityType::InternalNonFungibleVault => 4986,
             }
         } else {
             0
@@ -303,7 +303,10 @@ impl FeeTable {
 
     #[inline]
     pub fn close_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(4087u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::store_access_cost(store_access))
+        add(
+            4087u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::store_access_cost(store_access),
+        )
     }
 
     #[inline]
@@ -317,7 +320,10 @@ impl FeeTable {
 
     #[inline]
     pub fn remove_substate_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(16523u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::store_access_cost(store_access))
+        add(
+            16523u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::store_access_cost(store_access),
+        )
     }
 
     #[inline]
@@ -331,8 +337,12 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn drain_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
+    pub fn drain_substates_cost(&self, count: u32, store_access: &StoreAccessInfo) -> u32 {
+        let cpu_instructions = add(3692u32, mul(13222u32, count));
+        add(
+            cpu_instructions / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::store_access_cost(store_access),
+        )
     }
 
     //======================

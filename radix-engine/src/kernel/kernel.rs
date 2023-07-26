@@ -817,7 +817,7 @@ where
         Ok(substates)
     }
 
-    #[trace_resources]
+    #[trace_resources(log=count)]
     fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
@@ -831,7 +831,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_drain_substates(&store_access, self)?;
+        M::on_drain_substates(count, &store_access, self)?;
 
         Ok(substates)
     }

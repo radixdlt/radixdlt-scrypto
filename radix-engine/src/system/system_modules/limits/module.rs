@@ -236,6 +236,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
 
     fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
+        _count: u32,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()

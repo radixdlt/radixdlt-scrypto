@@ -120,6 +120,10 @@ for path in file_list:
         # if param:
         #     key += "::" + param[0]
 
+        # handle kernel_drain_substates
+        param = child.xpath("./self::kernel_drain_substates/@count")
+        if param:
+            key += "::" + param[0]
 
         # correcting parenthesis
         c1 = key.count('(')
