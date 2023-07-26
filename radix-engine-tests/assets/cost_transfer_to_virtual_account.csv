@@ -1,9 +1,18 @@
+<<<<<<< HEAD
 Total Cost (XRD)                                                           ,      0.1011153,    100.0%
 + Execution Cost (XRD)                                                     ,      0.0924053,     91.4%
 + Tipping Cost (XRD)                                                       ,              0,      0.0%
 + State Expansion Cost (XRD)                                               ,        0.00871,      8.6%
 + Royalty Cost (XRD)                                                       ,              0,      0.0%
 Total Cost Units Consumed                                                  ,        9240530,    100.0%
+=======
+Total Cost (XRD)                                                           ,     0.10179836,    100.0%
++ Execution Cost (XRD)                                                     ,     0.09308836,     91.4%
++ Tipping Cost (XRD)                                                       ,              0,      0.0%
++ State Expansion Cost (XRD)                                               ,        0.00871,      8.6%
++ Royalty Cost (XRD)                                                       ,              0,      0.0%
+Total Cost Units Consumed                                                  ,        9308836,    100.0%
+>>>>>>> cleanup-actor-2
 AfterInvoke                                                                ,            626,      0.0%
 AllocateNodeId                                                             ,          12500,      0.1%
 BeforeInvoke                                                               ,          10802,      0.1%
@@ -15,17 +24,30 @@ CreateNode                                                                 ,    
 DropNode                                                                   ,          16496,      0.2%
 EmitEvent                                                                  ,           3228,      0.0%
 LockFee                                                                    ,            500,      0.0%
+<<<<<<< HEAD
 MoveModules                                                                ,           4000,      0.0%
 OpenSubstate::GlobalAccount                                                ,         572502,      6.2%
 OpenSubstate::GlobalFungibleResourceManager                                ,         342396,      3.7%
 OpenSubstate::GlobalNonFungibleResourceManager                             ,          83294,      0.9%
 OpenSubstate::GlobalPackage                                                ,        4543162,     49.2%
 OpenSubstate::GlobalVirtualSecp256k1Account                                ,         649454,      7.0%
+=======
+MoveModules                                                                ,           4500,      0.0%
+OpenSubstate::GlobalAccount                                                ,         569406,      6.1%
+OpenSubstate::GlobalFungibleResourceManager                                ,         339236,      3.6%
+OpenSubstate::GlobalNonFungibleResourceManager                             ,          83294,      0.9%
+OpenSubstate::GlobalPackage                                                ,        4548586,     48.9%
+OpenSubstate::GlobalVirtualSecp256k1Account                                ,         647906,      7.0%
+>>>>>>> cleanup-actor-2
 OpenSubstate::InternalAccount                                              ,           1332,      0.0%
 OpenSubstate::InternalFungibleVault                                        ,         183238,      2.0%
 OpenSubstate::InternalGenericComponent                                     ,          58988,      0.6%
 QueryActor                                                                 ,           2500,      0.0%
+<<<<<<< HEAD
 ReadSubstate                                                               ,         269558,      2.9%
+=======
+ReadSubstate                                                               ,         290326,      3.1%
+>>>>>>> cleanup-actor-2
 RunNativeCode::Worktop_drain                                               ,          22525,      0.2%
 RunNativeCode::Worktop_drop                                                ,          16371,      0.2%
 RunNativeCode::Worktop_put                                                 ,          24411,      0.3%

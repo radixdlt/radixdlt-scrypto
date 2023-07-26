@@ -147,7 +147,9 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for LimitsModule {
     fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _src_node_id: &NodeId,
+        _src_partition_number: PartitionNumber,
         _dest_node_id: &NodeId,
+        _dest_partition_number: PartitionNumber,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         api.kernel_get_system()
@@ -169,7 +171,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for LimitsModule {
             .process_store_access(store_access)
     }
 
-    fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         _value_size: usize,
@@ -181,7 +183,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for LimitsModule {
             .process_store_access(store_access)
     }
 
-    fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         value_size: usize,
@@ -203,7 +205,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for LimitsModule {
             .process_store_access(store_access)
     }
 
-    fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
@@ -214,17 +216,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for LimitsModule {
             .process_store_access(store_access)
     }
 
-    fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        api.kernel_get_system()
-            .modules
-            .limits
-            .process_store_access(store_access)
-    }
-
-    fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_set_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _value_size: usize,
         store_access: &StoreAccessInfo,
@@ -235,7 +227,37 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for LimitsModule {
             .process_store_access(store_access)
     }
 
-    fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(
+    fn after_remove_substate<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .limits
+            .process_store_access(store_access)
+    }
+
+    fn after_scan_keys<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .limits
+            .process_store_access(store_access)
+    }
+
+    fn after_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .limits
+            .process_store_access(store_access)
+    }
+
+    fn after_drain_substates<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {

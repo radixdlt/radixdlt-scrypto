@@ -1,5 +1,5 @@
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::KernelModule;
 use crate::system::system_callback::SystemConfig;
@@ -44,10 +44,10 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModul
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         log!(api, "Returning nodes: {:?}", message.move_nodes);
-        log!(api, "Returning refs: {:?}", message.copy_references);
+        log!(api, "Returning refs: {:?}", message.copy_global_references);
         Ok(())
     }
 
@@ -101,6 +101,25 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
+    fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
+        dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        log!(
+            api,
+            "Moved module node: from = {:?}:{:?}, to = {:?}:{:?}",
+            src_node_id,
+            src_partition_number,
+            dest_node_id,
+            dest_partition_number
+        );
+        Ok(())
+    }
+
     fn before_open_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         node_id: &NodeId,
@@ -110,7 +129,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModul
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Locking substate: node id = {:?}, module_id = {:?}, substate_key = {:?}, flags = {:?}",
+            "Opening substate: node id = {:?}, module_id = {:?}, substate_key = {:?}, flags = {:?}",
             node_id,
             module_id,
             offset,
@@ -128,14 +147,14 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModul
     ) -> Result<(), RuntimeError> {
         log!(
             api,
-            "Substate locked: node id = {:?}, handle = {:?}",
+            "Substate opened: node id = {:?}, handle = {:?}",
             node_id,
             handle
         );
         Ok(())
     }
 
-    fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         value_size: usize,
@@ -150,7 +169,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         value_size: usize,
@@ -165,12 +184,12 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Dropping lock: handle = {} ", lock_handle);
+        log!(api, "Substate closed: handle = {} ", lock_handle);
         Ok(())
     }
 }

@@ -9,7 +9,9 @@ use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameEventHandler;
+use crate::kernel::call_frame::CallFrameMessage;
+use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -19,6 +21,7 @@ use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
 use crate::track::interface::StoreAccessInfo;
+use crate::track::interface::SubstateStore;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -30,7 +33,6 @@ use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::hooks::OnDropOutput;
 use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::hooks::OnMoveOutput;
-use radix_engine_interface::hooks::OnPersistOutput;
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::schema::{InstanceSchema, RefTypes};
@@ -156,7 +158,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::after_open_substate(api, handle, node_id, store_access, size)
     }
 
-    fn on_close_substate<Y>(
+    fn after_close_substate<Y>(
         lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -164,22 +166,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_close_substate(api, lock_handle, store_access)
+        SystemModuleMixer::after_close_substate(api, lock_handle, store_access)
     }
 
-    fn on_read_substate<Y>(
-        lock_handle: LockHandle,
-        value_size: usize,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_read_substate(api, lock_handle, value_size, store_access)
-    }
-
-    fn on_write_substate<Y>(
+    fn after_read_substate<Y>(
         lock_handle: LockHandle,
         value_size: usize,
         store_access: &StoreAccessInfo,
@@ -188,17 +178,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_write_substate(api, lock_handle, value_size, store_access)
+        SystemModuleMixer::after_read_substate(api, lock_handle, value_size, store_access)
     }
 
-    fn on_scan_substates<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>,
-    {
-        SystemModuleMixer::on_scan_substate(api, store_access)
-    }
-
-    fn on_set_substate<Y>(
+    fn after_write_substate<Y>(
+        lock_handle: LockHandle,
         value_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -206,17 +190,55 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_set_substate(api, value_size, store_access)
+        SystemModuleMixer::after_write_substate(api, lock_handle, value_size, store_access)
     }
 
-    fn on_drain_substates<Y>(
+    fn after_set_substate<Y>(
+        value_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::on_drain_substates(api, store_access)
+        SystemModuleMixer::after_set_substate(api, value_size, store_access)
+    }
+
+    fn after_remove_substate<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_remove_substate(api, store_access)
+    }
+
+    fn after_scan_keys<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_scan_keys(api, store_access)
+    }
+
+    fn after_scan_sorted_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_scan_sorted_substates(api, store_access)
+    }
+
+    fn after_drain_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::after_drain_substates(api, store_access)
     }
 
     fn after_create_node<Y>(
@@ -261,7 +283,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_execution_start(api)
     }
 
-    fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -299,14 +321,23 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn after_move_modules<Y>(
         src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
-        SystemModuleMixer::after_move_modules(api, src_node_id, dest_node_id, store_access)
+        SystemModuleMixer::after_move_modules(
+            api,
+            src_node_id,
+            src_partition_number,
+            dest_node_id,
+            dest_partition_number,
+            store_access,
+        )
     }
 
     //--------------------------------------------------------------------------
@@ -455,9 +486,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     }
                     BlueprintHook::OnMove => {
                         scrypto_decode::<OnMoveOutput>(output.as_slice()).map(|_| ())
-                    }
-                    BlueprintHook::OnPersist => {
-                        scrypto_decode::<OnPersistOutput>(output.as_slice()).map(|_| ())
                     }
                 }
                 .map_err(|e| {
@@ -677,6 +705,65 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             TypeInfoSubstate::KeyValueStore(_)
             | TypeInfoSubstate::GlobalAddressReservation(_)
             | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
+        }
+    }
+}
+
+impl<C: SystemCallbackObject> CallFrameEventHandler for SystemConfig<C> {
+    fn on_persist_node<S: SubstateStore>(
+        &mut self,
+        heap: &mut Heap,
+        store: &mut S,
+        node_id: &NodeId,
+    ) -> Result<(), String> {
+        // Read type info
+        let maybe_type_info = if let Some(substate) = heap.get_substate(
+            node_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+        ) {
+            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
+            Some(type_info)
+        } else if let Ok((handle, _)) = store.acquire_lock(
+            node_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+            LockFlags::read_only(),
+        ) {
+            let type_info: TypeInfoSubstate = store.read_substate(handle).0.as_typed().unwrap();
+            store.close_substate(handle);
+            Some(type_info)
+        } else {
+            None
+        };
+
+        let is_persist_allowed = if let Some(type_info) = maybe_type_info {
+            match type_info {
+                TypeInfoSubstate::Object(ObjectInfo { blueprint_info, .. }) => {
+                    let canonical_id = CanonicalBlueprintId {
+                        address: blueprint_info.blueprint_id.package_address,
+                        blueprint: blueprint_info.blueprint_id.blueprint_name.clone(),
+                        version: BlueprintVersion::default(),
+                    };
+                    let maybe_definition = self.blueprint_cache.get(&canonical_id);
+                    if let Some(definition) = maybe_definition {
+                        !definition.is_transient
+                    } else {
+                        panic!("Blueprint definition not available for heap node");
+                    }
+                }
+                TypeInfoSubstate::KeyValueStore(_) => true,
+                TypeInfoSubstate::GlobalAddressReservation(_) => false,
+                TypeInfoSubstate::GlobalAddressPhantom(_) => true,
+            }
+        } else {
+            false
+        };
+
+        if is_persist_allowed {
+            Ok(())
+        } else {
+            Err("Persistence prohibited".to_owned())
         }
     }
 }

@@ -7,10 +7,9 @@ edition = "2021"
 sbor = { path = "../../../../sbor" }
 scrypto = { path = "../../../../scrypto" }
 
-package1 = { package = "non_fungible", path = "../non_fungible" }
-
-# If needed change package and path parameters
-package2 = { package = "publish_package", path = "../publish_package" }
+non_fungible = { path = "../non_fungible" }
+fee_reserve_states = { path = "../fee_reserve_states" }
+fake_bucket = { path = "../fake_bucket" }
 
 [dev-dependencies]
 radix-engine = { path = "../../../../radix-engine" }

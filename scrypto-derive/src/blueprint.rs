@@ -607,6 +607,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                     blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+                    is_transient: false,
                     feature_set: BTreeSet::default(),
                     dependencies,
                     schema,
@@ -1495,6 +1496,7 @@ mod tests {
 
                         let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
                             blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+                            is_transient: false,
                             feature_set: BTreeSet::default(),
                             dependencies,
                             schema,

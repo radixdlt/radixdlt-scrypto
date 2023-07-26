@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
@@ -48,7 +48,7 @@ pub trait KernelModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_execution_finish<Y: KernelApi<M>>(
         _api: &mut Y,
-        _message: &Message,
+        _message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -96,7 +96,9 @@ pub trait KernelModule<M: KernelCallbackObject> {
     fn after_move_modules<Y: KernelApi<M>>(
         _api: &mut Y,
         _src_node_id: &NodeId,
+        _src_partition_number: PartitionNumber,
         _dest_node_id: &NodeId,
+        _dest_partition_number: PartitionNumber,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -145,7 +147,7 @@ pub trait KernelModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_read_substate<Y: KernelApi<M>>(
+    fn after_read_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
         _value_size: usize,
@@ -155,7 +157,7 @@ pub trait KernelModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_write_substate<Y: KernelApi<M>>(
+    fn after_write_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
         _value_size: usize,
@@ -165,7 +167,7 @@ pub trait KernelModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_close_substate<Y: KernelApi<M>>(
+    fn after_close_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
         _store_access: &StoreAccessInfo,
@@ -174,15 +176,7 @@ pub trait KernelModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_scan_substate<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn on_set_substate<Y: KernelApi<M>>(
+    fn after_set_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _value_size: usize,
         _store_access: &StoreAccessInfo,
@@ -191,7 +185,31 @@ pub trait KernelModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_drain_substates<Y: KernelApi<M>>(
+    fn after_remove_substate<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn after_scan_keys<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn after_scan_sorted_substates<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn after_drain_substates<Y: KernelApi<M>>(
         _api: &mut Y,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {

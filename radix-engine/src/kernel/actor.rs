@@ -83,25 +83,42 @@ pub enum Actor {
 }
 
 impl CallFrameReferences for Actor {
-    fn global_references(&self) -> Vec<GlobalAddress> {
+    fn global_references(&self) -> Vec<NodeId> {
         let mut global_refs = Vec::new();
 
         if let Some(blueprint_id) = self.blueprint_id() {
-            global_refs.push(blueprint_id.package_address.into());
+            global_refs.push(blueprint_id.package_address.into_node_id());
         }
 
-        if let Actor::Method(MethodActor { object_info, .. }) = self {
+        if let Actor::Method(MethodActor {
+            node_id,
+            object_info,
+            ..
+        }) = self
+        {
             if let OuterObjectInfo::Some { outer_object } =
                 object_info.blueprint_info.outer_obj_info
             {
-                global_refs.push(outer_object.clone());
+                global_refs.push(outer_object.clone().into_node_id());
+            }
+
+            if node_id.is_global() {
+                global_refs.push(node_id.clone());
             }
         }
 
         global_refs
     }
 
-    fn transient_references(&self) -> Vec<NodeId> {
+    fn direct_access_references(&self) -> Vec<NodeId> {
+        if self.is_direct_access() {
+            self.node_id().into_iter().collect()
+        } else {
+            vec![]
+        }
+    }
+
+    fn stable_transient_references(&self) -> Vec<NodeId> {
         let mut references = vec![];
         references.extend(self.self_auth_zone());
         if let Some(caller_auth_zone) = self.caller_authzone() {
@@ -111,18 +128,10 @@ impl CallFrameReferences for Actor {
         }
 
         if !self.is_direct_access() {
-            references.extend(self.node_id());
+            references.extend(self.node_id().filter(|n| !n.is_global()));
         }
 
         references
-    }
-
-    fn direct_access_references(&self) -> Vec<NodeId> {
-        if self.is_direct_access() {
-            self.node_id().into_iter().collect()
-        } else {
-            vec![]
-        }
     }
 
     fn len(&self) -> usize {

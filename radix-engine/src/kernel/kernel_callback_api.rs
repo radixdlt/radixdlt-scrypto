@@ -1,3 +1,5 @@
+use super::call_frame::CallFrameEventHandler;
+use super::call_frame::CallFrameMessage;
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -5,17 +7,15 @@ use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
-use super::call_frame::Message;
-
 pub trait CallFrameReferences {
-    fn global_references(&self) -> Vec<GlobalAddress>;
+    fn global_references(&self) -> Vec<NodeId>;
     fn direct_access_references(&self) -> Vec<NodeId>;
-    fn transient_references(&self) -> Vec<NodeId>;
+    fn stable_transient_references(&self) -> Vec<NodeId>;
 
     fn len(&self) -> usize;
 }
 
-pub trait KernelCallbackObject: Sized {
+pub trait KernelCallbackObject: Sized + CallFrameEventHandler {
     type LockData: Default + Clone;
     type CallFrameData: CallFrameReferences;
 
@@ -54,7 +54,9 @@ pub trait KernelCallbackObject: Sized {
 
     fn after_move_modules<Y>(
         src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -81,15 +83,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_close_substate<Y>(
-        lock_handle: LockHandle,
-        store_access: &StoreAccessInfo,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_read_substate<Y>(
+    fn after_read_substate<Y>(
         lock_handle: LockHandle,
         value_size: usize,
         store_access: &StoreAccessInfo,
@@ -98,7 +92,7 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_write_substate<Y>(
+    fn after_write_substate<Y>(
         lock_handle: LockHandle,
         value_size: usize,
         store_access: &StoreAccessInfo,
@@ -107,14 +101,15 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_scan_substates<Y>(
+    fn after_close_substate<Y>(
+        lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    fn on_set_substate<Y>(
+    fn after_set_substate<Y>(
         value_size: usize,
         store_access: &StoreAccessInfo,
         api: &mut Y,
@@ -122,7 +117,25 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_drain_substates<Y>(
+    fn after_remove_substate<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn after_scan_sorted_substates<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn after_scan_keys<Y>(store_access: &StoreAccessInfo, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
+    fn after_drain_substates<Y>(
         store_access: &StoreAccessInfo,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -136,19 +149,17 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    // TODO: Remove
+    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>;
+
     fn on_execution_start<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
-    // TODO: Remove
-    fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
-
-    fn after_invoke<Y>(output: &IndexedScryptoValue, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: KernelApi<Self>;
 
     fn on_allocate_node_id<Y>(entity_type: EntityType, api: &mut Y) -> Result<(), RuntimeError>
     where

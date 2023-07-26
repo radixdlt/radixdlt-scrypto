@@ -2,7 +2,7 @@ use super::costing::CostingEntry;
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::KernelModule;
@@ -240,7 +240,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, on_execution_finish(api, message))
     }
@@ -287,12 +287,21 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixe
     fn after_move_modules<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         src_node_id: &NodeId,
+        src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
+        dest_partition_number: PartitionNumber,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api,
-            after_move_modules(api, src_node_id, dest_node_id, store_access)
+            after_move_modules(
+                api,
+                src_node_id,
+                src_partition_number,
+                dest_node_id,
+                dest_partition_number,
+                store_access
+            )
         )
     }
 
@@ -341,7 +350,7 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources(log=value_size)]
-    fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         value_size: usize,
@@ -349,12 +358,12 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixe
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api,
-            on_read_substate(api, lock_handle, value_size, store_access)
+            after_read_substate(api, lock_handle, value_size, store_access)
         )
     }
 
     #[trace_resources(log=value_size)]
-    fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_write_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         value_size: usize,
@@ -362,42 +371,58 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for SystemModuleMixe
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api,
-            on_write_substate(api, lock_handle, value_size, store_access)
+            after_write_substate(api, lock_handle, value_size, store_access)
         )
     }
 
     #[trace_resources]
-    fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_close_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_close_substate(api, lock_handle, store_access))
+        internal_call_dispatch!(api, after_close_substate(api, lock_handle, store_access))
     }
 
     #[trace_resources]
-    fn on_scan_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_scan_substate(api, store_access))
-    }
-
-    #[trace_resources]
-    fn on_set_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn after_set_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         value_size: usize,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_set_substate(api, value_size, store_access))
+        internal_call_dispatch!(api, after_set_substate(api, value_size, store_access))
     }
 
     #[trace_resources]
-    fn on_drain_substates<Y: KernelApi<SystemConfig<V>>>(
+    fn after_remove_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api, on_drain_substates(api, store_access))
+        internal_call_dispatch!(api, after_remove_substate(api, store_access))
+    }
+
+    #[trace_resources]
+    fn after_scan_keys<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, after_scan_keys(api, store_access))
+    }
+
+    #[trace_resources]
+    fn after_scan_sorted_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, after_scan_sorted_substates(api, store_access))
+    }
+
+    #[trace_resources]
+    fn after_drain_substates<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, after_drain_substates(api, store_access))
     }
 }
 

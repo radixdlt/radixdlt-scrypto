@@ -16,7 +16,7 @@ use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCE
 use radix_engine_interface::types::*;
 use transaction::model::AuthZoneParams;
 use crate::blueprints::resource::AuthZone;
-use crate::kernel::call_frame::RootNodeType;
+use crate::kernel::call_frame::ReferenceOrigin;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_modules::EnabledModules;
@@ -272,10 +272,10 @@ impl AuthModule {
                             let node_visibility =
                                 system.kernel_get_node_visibility(&current_method_actor.node_id);
                             let global_auth_zone = match node_visibility
-                                .root_node_type(current_method_actor.node_id)
+                                .reference_origin(current_method_actor.node_id)
                                 .unwrap()
                             {
-                                RootNodeType::Global(address) => {
+                                ReferenceOrigin::Global(address) => {
                                     if is_barrier {
                                         Some((
                                             address.into(),
@@ -290,7 +290,7 @@ impl AuthModule {
                                             .and_then(|a| a.global_auth_zone)
                                     }
                                 }
-                                RootNodeType::Heap => {
+                                ReferenceOrigin::Heap => {
                                     // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
                                     current_method_actor
                                         .auth_actor_info
@@ -298,7 +298,7 @@ impl AuthModule {
                                         .clone()
                                         .and_then(|a| a.global_auth_zone)
                                 }
-                                RootNodeType::DirectlyAccessed => None,
+                                ReferenceOrigin::DirectlyAccessed => None,
                             };
                             global_auth_zone
                         },
