@@ -55,6 +55,7 @@ pub extern "C" fn LargeReturnSize_schema() -> Slice {
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+        is_transient: false,
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema,
@@ -104,6 +105,7 @@ pub extern "C" fn MaxReturnSize_schema() -> Slice {
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+        is_transient: false,
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema,
@@ -153,6 +155,7 @@ pub extern "C" fn ZeroReturnSize_schema() -> Slice {
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+        is_transient: false,
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema,
@@ -195,6 +198,7 @@ pub extern "C" fn BadFunctionSchema_schema() -> Slice {
 
     let return_data = scrypto::blueprints::package::BlueprintDefinitionInit {
         blueprint_type: scrypto::blueprints::package::BlueprintType::default(),
+        is_transient: false,
         dependencies: btreeset!(),
         feature_set: btreeset!(),
         schema: BlueprintSchemaInit {

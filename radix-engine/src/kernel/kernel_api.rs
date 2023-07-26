@@ -98,7 +98,7 @@ pub trait KernelSubstateApi<L> {
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<&IndexedScryptoValue, RuntimeError>;
+    ) -> Result<IndexedScryptoValue, RuntimeError>;
 
     /// Writes a value to the substate locked by the given lock handle
     fn kernel_write_substate(
