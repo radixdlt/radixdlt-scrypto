@@ -718,7 +718,6 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
         handler: &mut impl CallFrameEventHandler<L, E>,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
-
         // TODO: We need to protect transient blueprints from being globalized directly
         // into store. This isn't a problem for now since only native objects are allowed
         // to be transient.
