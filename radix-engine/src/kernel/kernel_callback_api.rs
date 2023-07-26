@@ -1,15 +1,14 @@
 use super::actor::Actor;
+use super::call_frame::CallFrameEventHandler;
 use super::call_frame::Message;
-use super::heap::Heap;
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::track::interface::SubstateStore;
 use crate::track::interface::{NodeSubstates, StoreAccessInfo};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 
-pub trait KernelCallbackObject: Sized {
+pub trait KernelCallbackObject: Sized + CallFrameEventHandler {
     type LockData: Default + Clone;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -206,11 +205,4 @@ pub trait KernelCallbackObject: Sized {
     ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
-
-    fn on_persist_node<S: SubstateStore>(
-        heap: &mut Heap,
-        store: &mut S,
-        callback: &mut Self,
-        node_id: &NodeId,
-    ) -> Result<(), String>;
 }

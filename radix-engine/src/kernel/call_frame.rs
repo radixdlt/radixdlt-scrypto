@@ -11,7 +11,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
-use super::kernel_callback_api::KernelCallbackObject;
 
 /// A message used for communication between call frames.
 ///
@@ -109,6 +108,15 @@ impl NodeVisibility {
         }
         return None;
     }
+}
+
+pub trait CallFrameEventHandler {
+    fn on_persist_node<S: SubstateStore>(
+        &mut self,
+        heap: &mut Heap,
+        store: &mut S,
+        node_id: &NodeId,
+    ) -> Result<(), String>;
 }
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
@@ -480,18 +488,13 @@ impl<L: Clone> CallFrame<L> {
         Ok((lock_handle, substate_value.len(), store_access))
     }
 
-    pub fn close_substate<S: SubstateStore, F, M>(
+    pub fn close_substate<S: SubstateStore>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
-        callback: &mut M,
-        filter: &F,
+        handler: &mut impl CallFrameEventHandler,
         lock_handle: LockHandle,
-    ) -> Result<StoreAccessInfo, CloseSubstateError>
-    where
-        M: KernelCallbackObject,
-        F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
-    {
+    ) -> Result<StoreAccessInfo, CloseSubstateError> {
         let substate_lock = self
             .locks
             .remove(&lock_handle)
@@ -530,7 +533,7 @@ impl<L: Clone> CallFrame<L> {
 
                     // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
-                        Self::move_node_to_store(heap, store, callback, filter, own)
+                        Self::move_node_to_store(heap, store, handler, own)
                             .map_err(CloseSubstateError::PersistNodeError)?;
                     }
                 }
@@ -690,19 +693,14 @@ impl<L: Clone> CallFrame<L> {
         }
     }
 
-    pub fn create_node<'f, S: SubstateStore, F, M>(
+    pub fn create_node<'f, S: SubstateStore>(
         &mut self,
         node_id: NodeId,
         node_substates: NodeSubstates,
         heap: &mut Heap,
         store: &'f mut S,
-        callback: &mut M,
-        filter: &F,
-    ) -> Result<StoreAccessInfo, CreateNodeError>
-    where
-        M: KernelCallbackObject,
-        F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
-    {
+        handler: &mut impl CallFrameEventHandler,
+    ) -> Result<StoreAccessInfo, CreateNodeError> {
         let push_to_store = node_id.is_global();
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
@@ -713,7 +711,7 @@ impl<L: Clone> CallFrame<L> {
                     self.take_node_internal(own)
                         .map_err(CreateNodeError::TakeNodeError)?;
                     if push_to_store {
-                        Self::move_node_to_store(heap, store, callback, filter, own)
+                        Self::move_node_to_store(heap, store, handler, own)
                             .map_err(CreateNodeError::PersistNodeError)?;
                     }
                 }
@@ -805,7 +803,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(node_substates)
     }
 
-    pub fn move_module<'f, S: SubstateStore, F, M>(
+    pub fn move_module<'f, S: SubstateStore>(
         &mut self,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
@@ -813,13 +811,8 @@ impl<L: Clone> CallFrame<L> {
         dest_partition_number: PartitionNumber,
         heap: &'f mut Heap,
         store: &'f mut S,
-        callback: &mut M,
-        filter: &F,
-    ) -> Result<StoreAccessInfo, MoveModuleError>
-    where
-        M: KernelCallbackObject,
-        F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
-    {
+        handler: &mut impl CallFrameEventHandler,
+    ) -> Result<StoreAccessInfo, MoveModuleError> {
         // Check ownership (and visibility)
         if self.owned_root_nodes.get(src_node_id) != Some(&0) {
             return Err(MoveModuleError::NodeNotAvailable(src_node_id.clone()));
@@ -848,7 +841,7 @@ impl<L: Clone> CallFrame<L> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, callback, filter, own)
+                    Self::move_node_to_store(heap, store, handler, own)
                         .map_err(MoveModuleError::PersistNodeError)?;
                 }
 
@@ -1056,21 +1049,16 @@ impl<L: Clone> CallFrame<L> {
         Ok((substates, store_access))
     }
 
-    pub fn drop_all_locks<S: SubstateStore, F, M>(
+    pub fn drop_all_locks<S: SubstateStore>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
-        callback: &mut M,
-        filter: &F,
-    ) -> Result<(), CloseSubstateError>
-    where
-        M: KernelCallbackObject,
-        F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
-    {
+        handler: &mut impl CallFrameEventHandler,
+    ) -> Result<(), CloseSubstateError> {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
         for lock_handle in lock_handles {
-            self.close_substate(heap, store, callback, filter, lock_handle)?;
+            self.close_substate(heap, store, handler, lock_handle)?;
         }
 
         Ok(())
@@ -1095,18 +1083,14 @@ impl<L: Clone> CallFrame<L> {
         self.owned_root_nodes.keys().cloned().collect()
     }
 
-    pub fn move_node_to_store<S: SubstateStore, F, M>(
+    pub fn move_node_to_store<S: SubstateStore>(
         heap: &mut Heap,
         store: &mut S,
-        callback: &mut M,
-        filter: &F,
+        handler: &mut impl CallFrameEventHandler,
         node_id: &NodeId,
-    ) -> Result<(), PersistNodeError>
-    where
-        M: KernelCallbackObject,
-        F: Fn(&mut Heap, &mut S, &mut M, &NodeId) -> Result<(), String>,
-    {
-        filter(heap, store, callback, node_id)
+    ) -> Result<(), PersistNodeError> {
+        handler
+            .on_persist_node(heap, store, node_id)
             .map_err(|e| PersistNodeError::NotAllowed(node_id.clone(), e))?;
 
         let node_substates = match heap.remove_node(node_id) {
@@ -1127,7 +1111,7 @@ impl<L: Clone> CallFrame<L> {
                 }
 
                 for node_id in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, callback, filter, node_id)?;
+                    Self::move_node_to_store(heap, store, handler, node_id)?;
                 }
             }
         }

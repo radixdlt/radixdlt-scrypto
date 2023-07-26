@@ -10,6 +10,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
+use crate::kernel::call_frame::CallFrameEventHandler;
 use crate::kernel::call_frame::Message;
 use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::KernelSubstateApi;
@@ -766,11 +767,13 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
         }
     }
+}
 
+impl<C: SystemCallbackObject> CallFrameEventHandler for SystemConfig<C> {
     fn on_persist_node<S: SubstateStore>(
+        &mut self,
         heap: &mut Heap,
         store: &mut S,
-        callback: &mut Self,
         node_id: &NodeId,
     ) -> Result<(), String> {
         // Read type info
@@ -802,7 +805,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                         blueprint: blueprint_info.blueprint_id.blueprint_name.clone(),
                         version: BlueprintVersion::default(),
                     };
-                    let maybe_definition = callback.blueprint_cache.get(&canonical_id);
+                    let maybe_definition = self.blueprint_cache.get(&canonical_id);
                     if let Some(definition) = maybe_definition {
                         !definition.is_transient
                     } else {
