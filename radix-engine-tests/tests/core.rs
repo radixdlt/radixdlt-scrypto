@@ -1,6 +1,5 @@
 use radix_engine::{
-    errors::{CallFrameError, KernelError, RuntimeError, SystemError},
-    kernel::call_frame::{MoveModuleError, PersistNodeError},
+    errors::{RuntimeError, SystemError},
     types::*,
 };
 use radix_engine_interface::blueprints::resource::FromPublicKey;
@@ -175,7 +174,7 @@ fn cant_store_role_assignment() {
 }
 
 #[test]
-fn test_globalize_with_deep_own() {
+fn test_globalize_with_very_deep_own() {
     let mut test_runner = TestRunnerBuilder::new().without_trace().build();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
 
@@ -190,43 +189,4 @@ fn test_globalize_with_deep_own() {
         .build();
     let result = test_runner.execute_manifest(manifest, vec![]);
     result.expect_commit_failure();
-}
-
-#[test]
-fn test_globalize_with_deep_own_around_limit() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
-    let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
-
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_function(
-            package_address,
-            "RecursiveTest",
-            "create_own_at_depth",
-            manifest_args![MAX_RECURSIVE_PERSIST_DEPTH as u32],
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_commit_success();
-
-    let manifest = ManifestBuilder::new()
-        .lock_fee_from_faucet()
-        .call_function(
-            package_address,
-            "RecursiveTest",
-            "create_own_at_depth",
-            manifest_args![MAX_RECURSIVE_PERSIST_DEPTH as u32 + 1],
-        )
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::MoveModuleError(MoveModuleError::PersistNodeError(
-                    PersistNodeError::NodeIsTooDeep(_)
-                ))
-            ))
-        )
-    });
 }

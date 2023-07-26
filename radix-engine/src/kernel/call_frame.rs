@@ -199,7 +199,6 @@ pub enum PersistNodeError {
     NotAllowed(NodeId, String),
     ContainsNonGlobalRef(NodeId),
     NodeBorrowed(NodeId, usize),
-    NodeIsTooDeep(NodeId),
 }
 
 /// Represents an error when taking a node from current frame.
@@ -1090,34 +1089,39 @@ impl<L: Clone> CallFrame<L> {
         handler: &mut impl CallFrameEventHandler,
         node_id: &NodeId,
     ) -> Result<(), PersistNodeError> {
-        handler
-            .on_persist_node(heap, store, node_id)
-            .map_err(|e| PersistNodeError::NotAllowed(node_id.clone(), e))?;
+        let mut queue = LinkedList::new();
+        queue.push_back(node_id.clone());
 
-        let node_substates = match heap.remove_node(node_id) {
-            Ok(substates) => substates,
-            Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
-                panic!("Frame owned node {:?} not found in heap", node_id)
-            }
-            Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
-                return Err(PersistNodeError::NodeBorrowed(node_id, count));
-            }
-        };
-        for (_partition_number, module_substates) in &node_substates {
-            for (_substate_key, substate_value) in module_substates {
-                for reference in substate_value.references() {
-                    if !reference.is_global() {
-                        return Err(PersistNodeError::ContainsNonGlobalRef(*reference));
+        while let Some(node_id) = queue.pop_front() {
+            handler
+                .on_persist_node(heap, store, &node_id)
+                .map_err(|e| PersistNodeError::NotAllowed(node_id.clone(), e))?;
+
+            let node_substates = match heap.remove_node(&node_id) {
+                Ok(substates) => substates,
+                Err(HeapRemoveNodeError::NodeNotFound(node_id)) => {
+                    panic!("Frame owned node {:?} not found in heap", node_id)
+                }
+                Err(HeapRemoveNodeError::NodeBorrowed(node_id, count)) => {
+                    return Err(PersistNodeError::NodeBorrowed(node_id, count));
+                }
+            };
+            for (_partition_number, module_substates) in &node_substates {
+                for (_substate_key, substate_value) in module_substates {
+                    for reference in substate_value.references() {
+                        if !reference.is_global() {
+                            return Err(PersistNodeError::ContainsNonGlobalRef(*reference));
+                        }
+                    }
+
+                    for node_id in substate_value.owned_nodes() {
+                        queue.push_back(*node_id);
                     }
                 }
-
-                for node_id in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, handler, node_id)?;
-                }
             }
-        }
 
-        store.create_node(node_id.clone(), node_substates);
+            store.create_node(node_id.clone(), node_substates);
+        }
 
         Ok(())
     }
