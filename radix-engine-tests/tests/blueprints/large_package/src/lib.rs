@@ -2,3 +2,4 @@
 
 use fake_bucket;
 use non_fungible;
+use fee;

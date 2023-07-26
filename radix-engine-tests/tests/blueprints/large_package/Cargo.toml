@@ -9,6 +9,7 @@ scrypto = { path = "../../../../scrypto" }
 
 non_fungible = { path = "../non_fungible" }
 fake_bucket = { path = "../fake_bucket" }
+fee = { path = "../fee" }
 
 [dev-dependencies]
 radix-engine = { path = "../../../../radix-engine" }
