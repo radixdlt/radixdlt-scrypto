@@ -27,7 +27,7 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -316,27 +316,11 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     }
 
     #[trace_resources]
-    fn before_open_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
-        partition_number: &PartitionNumber,
-        substate_key: &SubstateKey,
-        flags: &LockFlags,
+        event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(
-            api.kernel_get_system(),
-            before_open_substate(api, node_id, partition_number, substate_key, flags)
-        )
-    }
-
-    #[trace_resources(log=size)]
-    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        handle: LockHandle,
-        node_id: &NodeId,
-        size: usize,
-    ) -> Result<(), RuntimeError> {
-        internal_call_dispatch!(api.kernel_get_system(), after_open_substate(api, handle, node_id, size))
+        internal_call_dispatch!(api.kernel_get_system(), on_open_substate(api, event))
     }
 
     #[trace_resources(log=value_size)]

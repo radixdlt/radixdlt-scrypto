@@ -390,7 +390,7 @@ impl<L: Clone> CallFrame<L> {
         }
     }
 
-    pub fn open_substate<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn open_substate<S: SubstateStore, E, F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
@@ -439,7 +439,9 @@ impl<L: Clone> CallFrame<L> {
                     partition_num,
                     substate_key,
                     flags,
-                    on_store_access,
+                    &mut |store_access| {
+                        on_store_access(self, heap, store_access)
+                    },
                     || default.map(|f| f()),
                 )
                 .map_err(|x| x.map(|e| OpenSubstateError::TrackError(Box::new(e))))?;

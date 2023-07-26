@@ -3,7 +3,7 @@ use crate::kernel::actor::Actor;
 use crate::track::interface::{StoreAccess, StoreCommit};
 use crate::types::*;
 use radix_engine_interface::*;
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 
 #[derive(Debug, IntoStaticStr)]
 pub enum CostingEntry<'a> {
@@ -52,8 +52,7 @@ pub enum CostingEntry<'a> {
         event: &'a MoveModuleEvent<'a>,
     },
     OpenSubstate {
-        node_id: &'a NodeId,
-        value_size: usize,
+        event: &'a OpenSubstateEvent<'a>,
     },
     ReadSubstate {
         value_size: usize,
@@ -146,10 +145,7 @@ impl<'a> CostingEntry<'a> {
                 total_substate_size,
             } => ft.drop_node_cost(*total_substate_size),
             CostingEntry::MoveModule { event } => ft.move_module_cost(event),
-            CostingEntry::OpenSubstate {
-                node_id: _,
-                value_size,
-            } => ft.open_substate_cost(*value_size),
+            CostingEntry::OpenSubstate { event } => ft.open_substate_cost(event),
             CostingEntry::ReadSubstate { value_size } => ft.read_substate_cost(*value_size),
             CostingEntry::WriteSubstate { value_size } => ft.write_substate_cost(*value_size),
             CostingEntry::CloseSubstate => ft.close_substate_cost(),
@@ -185,7 +181,7 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::RunWasmCode { export_name, .. } => {
                 format!("RunWasmCode::{}", export_name)
             }
-            CostingEntry::OpenSubstate { node_id, .. } => {
+            CostingEntry::OpenSubstate { event: OpenSubstateEvent::Start { node_id, .. } , .. } => {
                 format!(
                     "OpenSubstate::{}",
                     node_id.entity_type().map(|x| x.into()).unwrap_or("?")

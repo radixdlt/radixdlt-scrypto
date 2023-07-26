@@ -12,7 +12,7 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -693,7 +693,16 @@ where
         default: Option<fn() -> IndexedScryptoValue>,
         data: M::LockData,
     ) -> Result<LockHandle, RuntimeError> {
-        M::before_open_substate(&node_id, &partition_num, substate_key, &flags, self)?;
+        let mut read_only = as_read_only!(self);
+        M::on_open_substate(
+            &mut read_only,
+            OpenSubstateEvent::Start {
+                node_id: &node_id,
+                partition_num: &partition_num,
+                substate_key,
+                flags: &flags
+            }
+        )?;
 
         let maybe_lock_handle = self.current_frame.open_substate(
             &mut self.heap,
@@ -702,7 +711,19 @@ where
             partition_num,
             substate_key,
             flags,
-            &mut |store_access| self.callback.on_store_access(&store_access),
+            &mut |current_frame, heap, store_access| {
+                let mut read_only = KernelReadOnly {
+                    current_frame,
+                    prev_frame: self.prev_frame_stack.last(),
+                    heap,
+                    callback: self.callback
+                };
+
+                M::on_open_substate(
+                    &mut read_only,
+                    OpenSubstateEvent::StoreAccess(&store_access)
+                )
+            },
             default,
             data,
         );
@@ -724,7 +745,19 @@ where
                                 partition_num,
                                 &substate_key,
                                 flags,
-                                &mut |store_access| self.callback.on_store_access(&store_access),
+                                &mut |current_frame, heap, store_access| {
+                                    let mut read_only = KernelReadOnly {
+                                        current_frame,
+                                        prev_frame: self.prev_frame_stack.last(),
+                                        heap,
+                                        callback: self.callback
+                                    };
+
+                                    M::on_open_substate(
+                                        &mut read_only,
+                                        OpenSubstateEvent::StoreAccess(&store_access)
+                                    )
+                                },
                                 None,
                                 M::LockData::default(),
                             )
@@ -767,7 +800,16 @@ where
             }
         };
 
-        M::after_open_substate(lock_handle, node_id, value_size, self)?;
+
+        let mut read_only = as_read_only!(self);
+        M::on_open_substate(
+            &mut read_only,
+            OpenSubstateEvent::End {
+                handle: lock_handle,
+                node_id: &node_id,
+                size: value_size,
+            }
+        )?;
 
         Ok(lock_handle)
     }

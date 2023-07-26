@@ -10,7 +10,7 @@ use colored::Colorize;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use sbor::rust::collections::BTreeMap;
-use crate::kernel::kernel_callback_api::CreateNodeEvent;
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, OpenSubstateEvent};
 
 #[derive(Debug, Clone)]
 pub struct KernelTraceModule {}
@@ -115,36 +115,36 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn before_open_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
-        module_id: &PartitionNumber,
-        offset: &SubstateKey,
-        flags: &LockFlags,
+        event: &OpenSubstateEvent
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Locking substate: node id = {:?}, module_id = {:?}, substate_key = {:?}, flags = {:?}",
-            node_id,
-            module_id,
-            offset,
-            flags
-        );
-        Ok(())
-    }
+        match event {
+            OpenSubstateEvent::Start {
+                node_id, partition_num, substate_key, flags
+            } => {
+                log!(
+                    api,
+                    "Locking substate: node id = {:?}, partition_num = {:?}, substate_key = {:?}, flags = {:?}",
+                    node_id,
+                    partition_num,
+                    substate_key,
+                    flags
+                );
+            }
+            OpenSubstateEvent::StoreAccess(..) => {}
+            OpenSubstateEvent::End {
+                handle, node_id, size
+            } => {
+                log!(
+                    api,
+                    "Substate locked: node id = {:?}, handle = {:?}",
+                    node_id,
+                    handle
+                );
+            }
+        }
 
-    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        handle: LockHandle,
-        node_id: &NodeId,
-        size: usize,
-    ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Substate locked: node id = {:?}, handle = {:?}",
-            node_id,
-            handle
-        );
         Ok(())
     }
 

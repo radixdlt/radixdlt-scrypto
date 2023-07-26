@@ -21,6 +21,22 @@ pub enum MoveModuleEvent<'a> {
 }
 
 #[derive(Debug)]
+pub enum OpenSubstateEvent<'a> {
+    Start {
+        node_id: &'a NodeId,
+        partition_num: &'a PartitionNumber,
+        substate_key: &'a SubstateKey,
+        flags: &'a LockFlags,
+    },
+    StoreAccess(&'a StoreAccess),
+    End {
+        handle: LockHandle,
+        node_id: &'a NodeId,
+        size: usize,
+    }
+}
+
+#[derive(Debug)]
 pub enum SetSubstateEvent<'a> {
     Start(&'a IndexedScryptoValue),
     StoreAccess(&'a StoreAccess),
@@ -83,24 +99,12 @@ pub trait KernelCallbackObject: Sized {
         where
             Y: KernelInternalApi<Self>;
 
-    fn before_open_substate<Y>(
-        node_id: &NodeId,
-        partition_num: &PartitionNumber,
-        substate_key: &SubstateKey,
-        flags: &LockFlags,
+    fn on_open_substate<Y>(
         api: &mut Y,
+        event: OpenSubstateEvent,
     ) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>;
-
-    fn after_open_substate<Y>(
-        handle: LockHandle,
-        node_id: &NodeId,
-        size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
+        Y: KernelInternalApi<Self>;
 
     fn on_close_substate<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
     where

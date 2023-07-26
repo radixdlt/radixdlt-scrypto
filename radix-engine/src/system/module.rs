@@ -3,7 +3,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::kernel_api::KernelInvocation;
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
@@ -130,12 +130,9 @@ pub trait SystemModule<M: KernelCallbackObject> {
     //======================
 
     #[inline(always)]
-    fn before_open_substate<Y: KernelApi<M>>(
+    fn on_open_substate<Y: KernelInternalApi<M>>(
         _api: &mut Y,
-        _node_id: &NodeId,
-        _partition_num: &PartitionNumber,
-        _offset: &SubstateKey,
-        _flags: &LockFlags,
+        _event: &OpenSubstateEvent,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
