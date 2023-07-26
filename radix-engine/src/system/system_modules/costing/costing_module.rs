@@ -417,6 +417,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
+    fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .costing
+            .apply_execution_cost(CostingEntry::RemoveSubstate {
+                store_access: store_access,
+            })?;
+
+        Ok(())
+    }
+
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _entity_type: EntityType,

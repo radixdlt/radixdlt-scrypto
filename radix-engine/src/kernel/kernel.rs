@@ -774,7 +774,7 @@ where
             .map_err(KernelError::CallFrameError)
             .map_err(RuntimeError::KernelError)?;
 
-        M::on_drain_substates(&store_access, self)?;
+        M::on_remove_substate(&store_access, self)?;
 
         Ok(substate)
     }

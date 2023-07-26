@@ -419,6 +419,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api, on_drain_substates(api, store_access))
     }
+
+    #[trace_resources]
+    fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        internal_call_dispatch!(api, on_remove_substate(api, store_access))
+    }
 }
 
 impl SystemModuleMixer {

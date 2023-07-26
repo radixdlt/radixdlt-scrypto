@@ -243,4 +243,14 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
             .limits
             .process_store_access(store_access)
     }
+
+    fn on_remove_substate<Y: KernelApi<SystemConfig<V>>>(
+        api: &mut Y,
+        store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        api.kernel_get_system()
+            .modules
+            .limits
+            .process_store_access(store_access)
+    }
 }

@@ -217,4 +217,12 @@ pub trait SystemModule<M: KernelCallbackObject> {
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
+
+    #[inline(always)]
+    fn on_remove_substate<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 }

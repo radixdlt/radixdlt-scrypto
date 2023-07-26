@@ -220,6 +220,16 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_drain_substates(api, store_access)
     }
 
+    fn on_remove_substate<Y>(
+        store_access: &StoreAccessInfo,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelApi<Self>,
+    {
+        SystemModuleMixer::on_remove_substate(api, store_access)
+    }
+
     fn after_create_node<Y>(
         node_id: &NodeId,
         total_substate_size: usize,
