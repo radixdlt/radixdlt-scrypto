@@ -415,18 +415,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         Ok(())
     }
 
-    fn on_store_access(
-        store_access: &StoreAccess,
-        system: &mut SystemConfig<V>,
-    ) -> Result<(), RuntimeError> {
-        system
-            .modules
-            .costing
-            .apply_execution_cost(CostingEntry::StoreAccess { store_access })?;
-
-        Ok(())
-    }
-
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _entity_type: EntityType,

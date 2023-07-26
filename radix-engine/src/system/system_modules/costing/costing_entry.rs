@@ -80,9 +80,6 @@ pub enum CostingEntry<'a> {
     DrainSubstatesBase {
         event: &'a DrainSubstatesEvent<'a>,
     },
-    StoreAccess {
-        store_access: &'a StoreAccess,
-    },
 
     /* commit */
     Commit {
@@ -156,7 +153,6 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::ScanSubstates { event } => ft.scan_substates_cost(event),
             CostingEntry::DrainSubstatesBase { event } => ft.drain_substates_cost(event),
             CostingEntry::ScanSortedSubstatesBase { event } => ft.scan_sorted_substates_cost(event),
-            CostingEntry::StoreAccess { store_access } => ft.store_access_cost(store_access),
             CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),
             CostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),

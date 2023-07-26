@@ -178,10 +178,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_write_substate(api, lock_handle, value_size)
     }
 
-    fn on_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError> {
-        SystemModuleMixer::on_store_access(store_access, self)
-    }
-
     fn on_set_substate(&mut self, event: SetSubstateEvent) -> Result<(), RuntimeError> {
         SystemModuleMixer::on_set_substate(self, &event)
     }

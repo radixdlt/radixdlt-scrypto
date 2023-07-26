@@ -193,9 +193,4 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn on_scan_sorted_substates(_system: &mut M, _event: &ScanSortedSubstatesEvent) -> Result<(), RuntimeError> {
         Ok(())
     }
-
-    #[inline(always)]
-    fn on_store_access(_store_access: &StoreAccess, _system: &mut M) -> Result<(), RuntimeError> {
-        Ok(())
-    }
 }

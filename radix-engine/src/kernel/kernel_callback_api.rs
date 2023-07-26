@@ -132,9 +132,6 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    // TODO: Remove
-    fn on_store_access(&mut self, store_access: &StoreAccess) -> Result<(), RuntimeError>;
-
     fn on_set_substate(&mut self, event: SetSubstateEvent) -> Result<(), RuntimeError>;
 
     fn on_remove_substate(&mut self, event: RemoveSubstateEvent) -> Result<(), RuntimeError>;

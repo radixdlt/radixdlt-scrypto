@@ -382,34 +382,6 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(system, on_scan_sorted_substates(system, event))
     }
-
-    #[trace_resources]
-    fn on_store_access(
-        store_access: &StoreAccess,
-        system: &mut SystemConfig<V>,
-    ) -> Result<(), RuntimeError> {
-        let modules: EnabledModules = system.modules.enabled_modules;
-        if modules.contains(EnabledModules::KERNEL_TRACE) {
-            KernelTraceModule::on_store_access(store_access, system)?;
-        }
-        if modules.contains(EnabledModules::LIMITS) {
-            LimitsModule::on_store_access(store_access, system)?;
-        }
-        if modules.contains(EnabledModules::COSTING) {
-            CostingModule::on_store_access(store_access, system)?;
-        }
-        if modules.contains(EnabledModules::AUTH) {
-            AuthModule::on_store_access(store_access, system)?;
-        }
-        if modules.contains(EnabledModules::TRANSACTION_RUNTIME) {
-            TransactionRuntimeModule::on_store_access(store_access, system)?;
-        }
-        if modules.contains(EnabledModules::EXECUTION_TRACE) {
-            ExecutionTraceModule::on_store_access(store_access, system)?;
-        }
-
-        Ok(())
-    }
 }
 
 impl SystemModuleMixer {
