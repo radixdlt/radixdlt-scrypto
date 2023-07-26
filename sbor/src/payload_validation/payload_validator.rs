@@ -73,11 +73,11 @@ pub struct LocatedValidationError<'s, E: CustomExtension> {
 impl<'s, E: CustomExtension> LocatedValidationError<'s, E> {
     pub fn error_message(&self, schema: &Schema<E::CustomSchema>) -> String {
         format!(
-            "{:?} occurred at byte offset {}-{} and value path {}",
-            self.error,
+            "[ERROR] byte offset: {}-{}, value path: {}, cause: {}",
             self.location.start_offset,
             self.location.end_offset,
-            self.location.path_to_string(schema)
+            self.location.path_to_string(schema),
+            self.location.cause_to_string()
         )
     }
 }

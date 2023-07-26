@@ -362,7 +362,7 @@ fn vec_of_u8_underflow_should_not_cause_panic() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_specific_failure(|e| match e {
         RuntimeError::SystemError(SystemError::InvalidSubstateWrite(e))
-            if e.eq("TraversalError(DecodeError(BufferUnderflow { required: 99999993, remaining: 1048569 })) occurred at byte offset 7-7 and value path Array->[ERROR] DecodeError(BufferUnderflow { required: 99999993, remaining: 1048569 })") => true,
+            if e.eq("[ERROR] byte offset: 7-7, value path: Array, cause: DecodeError(BufferUnderflow { required: 99999993, remaining: 1048569 })") => true,
         _ => false,
     })
 }

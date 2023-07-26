@@ -127,11 +127,12 @@ impl<'s, E: CustomExtension> FullLocation<'s, E> {
                 write!(buf, "{}", type_name).unwrap();
             }
         }
+        buf
+    }
+
+    pub fn cause_to_string(&self) -> String {
+        let mut buf = String::new();
         if let Some(error) = &self.error {
-            if !is_first && !self.current_value_info.is_some() {
-                write!(buf, "->").unwrap();
-            }
-            write!(buf, "[ERROR] ").unwrap();
             match error {
                 TypedTraversalError::ValueMismatchWithType(
                     TypeMismatchError::MismatchingType {
