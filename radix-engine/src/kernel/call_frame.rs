@@ -7,7 +7,6 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use crate::errors::RuntimeError;
 
 use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
@@ -112,11 +111,7 @@ impl NodeVisibility {
 }
 
 pub trait CallFrameEventHandler<L, E> {
-    fn on_persist_node(
-        &mut self,
-        heap: &Heap,
-        node_id: &NodeId,
-    ) -> Result<(), E>;
+    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
 
     fn on_store_access(
         &mut self,
@@ -518,7 +513,6 @@ impl<L: Clone> CallFrame<L> {
         handler: &mut impl CallFrameEventHandler<L, E>,
 
         lock_handle: LockHandle,
-
         //handler: &mut C,
         //on_store_access: &mut F,
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
@@ -560,7 +554,7 @@ impl<L: Clone> CallFrame<L> {
                     // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
                         self.move_node_to_store(heap, store, handler, own)
-                        .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
+                            .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
                     }
                 }
             }
@@ -750,7 +744,7 @@ impl<L: Clone> CallFrame<L> {
                         .map_err(|e| CallbackError::Error(CreateNodeError::TakeNodeError(e)))?;
                     if push_to_store {
                         self.move_node_to_store(heap, store, handler, own)
-                        .map_err(|e| e.map(CreateNodeError::PersistNodeError))?;
+                            .map_err(|e| e.map(CreateNodeError::PersistNodeError))?;
                     }
                 }
 
@@ -895,7 +889,7 @@ impl<L: Clone> CallFrame<L> {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
                     self.move_node_to_store(heap, store, handler, own)
-                    .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
+                        .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
 
                 for reference in substate_value.references() {
@@ -1173,7 +1167,8 @@ impl<L: Clone> CallFrame<L> {
         handler: &mut impl CallFrameEventHandler<L, E>,
         node_id: &NodeId,
     ) -> Result<(), CallbackError<PersistNodeError, E>> {
-        handler.on_persist_node(heap, node_id)
+        handler
+            .on_persist_node(heap, node_id)
             .map_err(CallbackError::CallbackError)?;
 
         let node_substates = match heap.remove_node(node_id) {

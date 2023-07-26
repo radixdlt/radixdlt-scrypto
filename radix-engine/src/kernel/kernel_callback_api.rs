@@ -1,13 +1,12 @@
 use super::actor::Actor;
-use super::call_frame::CallFrameEventHandler;
 use super::call_frame::Message;
 use crate::errors::*;
+use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
-use crate::kernel::heap::Heap;
 
 #[derive(Debug)]
 pub enum CreateNodeEvent<'a> {
@@ -208,7 +207,6 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-
     // This is technically not a kernel event, but system event, per current implementation.
     fn on_move_node<Y>(
         node_id: &NodeId,
@@ -220,9 +218,5 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_persist_node(
-        &mut self,
-        heap: &Heap,
-        node_id: &NodeId,
-    ) -> Result<(), RuntimeError>;
+    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError>;
 }

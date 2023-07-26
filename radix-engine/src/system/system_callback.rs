@@ -4,13 +4,12 @@ use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::resource::AuthZone;
-use crate::errors::{RuntimeError, SystemError};
 use crate::errors::SystemUpstreamError;
+use crate::errors::{RuntimeError, SystemError};
 use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
-use crate::kernel::call_frame::CallFrameEventHandler;
 use crate::kernel::call_frame::Message;
 use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
@@ -26,7 +25,6 @@ use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
-use crate::track::interface::SubstateStore;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -676,11 +674,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         }
     }
 
-    fn on_persist_node(
-        &mut self,
-        heap: &Heap,
-        node_id: &NodeId,
-    ) -> Result<(), RuntimeError> {
+    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), RuntimeError> {
         // Read type info
         let maybe_type_info = if let Some(substate) = heap.get_substate(
             node_id,
@@ -689,7 +683,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         ) {
             let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
             Some(type_info)
-        }else {
+        } else {
             None
         };
 
@@ -719,7 +713,9 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         if is_persist_allowed {
             Ok(())
         } else {
-            Err(RuntimeError::SystemError(SystemError::PersistenceProhibited))
+            Err(RuntimeError::SystemError(
+                SystemError::PersistenceProhibited,
+            ))
         }
     }
 }
