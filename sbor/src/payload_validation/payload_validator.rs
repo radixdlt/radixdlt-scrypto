@@ -577,23 +577,22 @@ mod tests {
 
     #[derive(BasicSbor)]
     struct MyStruct2 {
-        field1: u8,
-        field2: u16,
+        field1: u16,
+        field2: MyStruct2Inner,
     }
 
-    #[test]
-    pub fn mismatched_type_full_location_path_is_readable() {
-        let value = BasicValue::Tuple {
-            fields: vec![
-                // EG got these around the wrong way
-                BasicValue::U16 { value: 2 },
-                BasicValue::U8 { value: 1 },
-            ],
-        };
-        let payload = basic_encode(&value).unwrap();
+    #[derive(BasicSbor)]
+    struct MyStruct2Inner {
+        inner1: u16,
+        inner2: u16,
+    }
 
-        let (type_index, schema) =
-            generate_full_schema_from_single_type::<MyStruct2, NoCustomSchema>();
+    fn check_location_path<T: BasicDescribe>(
+        payload: Vec<u8>,
+        expected_path: &str,
+        expected_cause: &str,
+    ) {
+        let (type_index, schema) = generate_full_schema_from_single_type::<T, NoCustomSchema>();
 
         let Err(error) = validate_payload_against_schema::<NoCustomExtension, _>(
             &payload,
@@ -603,8 +602,95 @@ mod tests {
         ) else {
             panic!("Validation did not error with too short a payload");
         };
-        let path_message = error.location.path_to_string(&schema);
-        assert_eq!(path_message, "MyStruct2.[0|field1]");
+        assert_eq!(error.location.path_to_string(&schema), expected_path);
+        assert_eq!(error.error.to_string(), expected_cause);
+    }
+
+    #[test]
+    pub fn mismatched_type_full_location_path_is_readable() {
+        // Valid payload, but does not match with schema
+        check_location_path::<MyStruct2>(
+            basic_encode(&BasicValue::Tuple {
+                fields: vec![
+                    BasicValue::U8 { value: 1 },
+                    BasicValue::Tuple {
+                        fields: vec![BasicValue::U16 { value: 2 }, BasicValue::U16 { value: 3 }],
+                    },
+                ],
+            })
+            .unwrap(),
+            "MyStruct2.[0|field1]",
+            "{ expected_type: U16, found: U8 }",
+        );
+        check_location_path::<MyStruct2>(
+            basic_encode(&BasicValue::Tuple {
+                fields: vec![
+                    BasicValue::U16 { value: 1 },
+                    BasicValue::Tuple {
+                        fields: vec![BasicValue::U8 { value: 2 }, BasicValue::U16 { value: 3 }],
+                    },
+                ],
+            })
+            .unwrap(),
+            "MyStruct2.[1|field2]->MyStruct2Inner.[0|inner1]",
+            "{ expected_type: U16, found: U8 }",
+        );
+        check_location_path::<MyStruct2>(
+            basic_encode(&BasicValue::Tuple {
+                fields: vec![
+                    BasicValue::U16 { value: 1 },
+                    BasicValue::Tuple {
+                        fields: vec![BasicValue::U16 { value: 2 }, BasicValue::U8 { value: 3 }],
+                    },
+                ],
+            })
+            .unwrap(),
+            "MyStruct2.[1|field2]->MyStruct2Inner.[1|inner2]",
+            "{ expected_type: U16, found: U8 }",
+        );
+    }
+
+    #[test]
+    pub fn invalid_payload_full_location_path_is_readable() {
+        // Invalid payload
+        let valid_bytes = basic_encode(&BasicValue::Tuple {
+            fields: vec![
+                BasicValue::U16 { value: 1 },
+                BasicValue::Tuple {
+                    fields: vec![BasicValue::U16 { value: 2 }, BasicValue::U16 { value: 3 }],
+                },
+            ],
+        })
+        .unwrap();
+        check_location_path::<MyStruct2>(
+            valid_bytes[0..valid_bytes.len() - 1].to_vec(),
+            "MyStruct2.[1|field2]->MyStruct2Inner.[1|inner2]",
+            "DecodeError(BufferUnderflow { required: 2, remaining: 1 })",
+        );
+
+        let valid_bytes = basic_encode(&vec![1u8, 2u8, 3u8]).unwrap();
+        check_location_path::<Vec<u8>>(
+            valid_bytes[0..valid_bytes.len() - 1].to_vec(),
+            "Array",
+            "DecodeError(BufferUnderflow { required: 3, remaining: 2 })",
+        );
+
+        let payload_with_invalid_array_size = vec![
+            BASIC_SBOR_V1_PAYLOAD_PREFIX,
+            VALUE_KIND_ARRAY,
+            VALUE_KIND_U8,
+            0xff, // invalid size
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+            0xff,
+        ];
+        check_location_path::<Vec<u8>>(
+            payload_with_invalid_array_size,
+            "", // container state not established due to failing to read size
+            "DecodeError(InvalidSize)",
+        );
     }
 
     #[test]
