@@ -429,42 +429,12 @@ where
             CreateNodeEvent::Start(&node_id, &node_substates),
         )?;
 
-        struct CreateNodeHandler<'a, M: KernelCallbackObject> {
-            callback: &'a mut M,
-            prev_frame: Option<&'a CallFrame<M::LockData>>,
-        }
-
-        impl<M: KernelCallbackObject> CallFrameEventHandler<M::LockData, RuntimeError>
-            for CreateNodeHandler<'_, M>
-        {
-            fn on_persist_node(
-                &mut self,
-                heap: &Heap,
-                node_id: &NodeId,
-            ) -> Result<(), RuntimeError> {
-                self.callback.on_persist_node(heap, node_id)
-            }
-
-            fn on_store_access(
-                &mut self,
-                current_frame: &CallFrame<M::LockData>,
-                heap: &Heap,
-                store_access: StoreAccess,
-            ) -> Result<(), RuntimeError> {
-                let mut read_only = KernelReadOnly {
-                    current_frame,
-                    prev_frame: self.prev_frame,
-                    heap,
-                    callback: self.callback,
-                };
-
-                M::on_create_node(&mut read_only, CreateNodeEvent::StoreAccess(&store_access))
-            }
-        }
-
-        let mut handler = CreateNodeHandler {
+        let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                M::on_create_node(api, CreateNodeEvent::StoreAccess(&store_access))
+            },
         };
 
         self.current_frame
@@ -481,15 +451,6 @@ where
                 )),
                 CallbackError::CallbackError(e) => e,
             })?;
-        /*
-        let store_access = self.current_frame.create_node(
-            node_id,
-            node_substates,
-            &mut self.heap,
-            self.store,
-            self.callback,
-        )?;
-         */
 
         let mut read_only = as_read_only!(self);
         M::on_create_node(&mut read_only, CreateNodeEvent::End(&node_id))?;
@@ -523,42 +484,12 @@ where
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), RuntimeError> {
-        struct MoveModuleHandler<'a, M: KernelCallbackObject> {
-            callback: &'a mut M,
-            prev_frame: Option<&'a CallFrame<M::LockData>>,
-        }
-
-        impl<M: KernelCallbackObject> CallFrameEventHandler<M::LockData, RuntimeError>
-            for MoveModuleHandler<'_, M>
-        {
-            fn on_persist_node(
-                &mut self,
-                heap: &Heap,
-                node_id: &NodeId,
-            ) -> Result<(), RuntimeError> {
-                self.callback.on_persist_node(heap, node_id)
-            }
-
-            fn on_store_access(
-                &mut self,
-                current_frame: &CallFrame<M::LockData>,
-                heap: &Heap,
-                store_access: StoreAccess,
-            ) -> Result<(), RuntimeError> {
-                let mut read_only = KernelReadOnly {
-                    current_frame,
-                    prev_frame: self.prev_frame,
-                    heap,
-                    callback: self.callback,
-                };
-
-                M::on_move_module(&mut read_only, MoveModuleEvent::StoreAccess(&store_access))
-            }
-        }
-
-        let mut handler = MoveModuleHandler {
+        let mut handler = KernelHandler {
             callback: self.callback,
             prev_frame: self.prev_frame_stack.last(),
+            on_store_access: |api, store_access| {
+                M::on_move_module(api, MoveModuleEvent::StoreAccess(&store_access))
+            },
         };
 
         self.current_frame
@@ -1013,16 +944,6 @@ where
 
         let mut read_only = as_read_only!(self);
         M::on_close_substate(&mut read_only, CloseSubstateEvent::End(lock_handle))?;
-        /*
-        let store_access = self.current_frame.close_substate(
-            &mut self.heap,
-            self.store,
-            self.callback,
-            lock_handle,
-        )?;
-
-        M::after_close_substate(lock_handle, &store_access, self)?;
-         */
 
         Ok(())
     }

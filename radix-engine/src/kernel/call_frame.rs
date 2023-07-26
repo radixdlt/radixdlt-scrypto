@@ -198,7 +198,6 @@ pub enum DropNodeError {
 /// Represents an error when persisting a node into store.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PersistNodeError {
-    NotAllowed(NodeId, String),
     ContainsNonGlobalRef(NodeId),
     NodeBorrowed(NodeId, usize),
 }
