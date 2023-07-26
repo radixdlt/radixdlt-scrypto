@@ -56,7 +56,7 @@ for path in file_list:
         continue
 
     # Look for all "kernel..." calls
-    root = tree.xpath(".//*[starts-with(local-name(), 'kernel')]")
+    root = tree.xpath(".//*[starts-with(local-name(), 'kernel') or starts-with(local-name(), 'before_invoke') or starts-with(local-name(), 'after_invoke')]")
     for child in root:
 
         key = child.tag
@@ -117,6 +117,16 @@ for path in file_list:
 
         # handle kernel_drain_substates
         param = child.xpath("./self::kernel_drain_substates/@count")
+        if param:
+            key += "::" + param[0]
+
+        # handle before_invoke
+        param = child.xpath("./self::before_invoke/@arg0")
+        if param:
+            key += "::" + param[0]
+
+        # handle after_invoke
+        param = child.xpath("./self::after_invoke/@arg0")
         if param:
             key += "::" + param[0]
 
