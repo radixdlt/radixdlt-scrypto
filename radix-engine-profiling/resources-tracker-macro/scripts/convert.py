@@ -130,6 +130,12 @@ for path in file_list:
         if param:
             key += "::" + param[0]
 
+        # handle kernel_open_substate_with_default
+        param = child.xpath("./self::kernel_open_substate_with_default/@arg0")
+        if param:
+            key += "::" + param[0]
+
+
         # correcting parenthesis
         c1 = key.count('(')
         c2 = key.count(')')

@@ -583,7 +583,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type(), log=partition_num, log={format!("{:?}", substate_key)})]
+    #[trace_resources(log=node_id.entity_type())]
     fn kernel_open_substate_with_default(
         &mut self,
         node_id: &NodeId,

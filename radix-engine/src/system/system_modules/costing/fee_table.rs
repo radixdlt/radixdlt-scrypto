@@ -275,9 +275,37 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn open_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
+    pub fn open_substate_cost(&self, node_id: &NodeId, size: usize, store_access: &StoreAccessInfo) -> u32 {
+        let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
+            match entity_type {
+                EntityType::GlobalAccessController => 9360,
+                EntityType::GlobalAccount => 37068,
+                EntityType::GlobalConsensusManager => 8171,
+                EntityType::GlobalFungibleResourceManager => 9105,
+                EntityType::GlobalGenericComponent => 37037,
+                EntityType::GlobalIdentity => 39406,
+                EntityType::GlobalMultiResourcePool => 9467,
+                EntityType::GlobalNonFungibleResourceManager => 7584,
+                EntityType::GlobalOneResourcePool => 9369,
+                EntityType::GlobalPackage => 20730,
+                EntityType::GlobalTransactionTracker => 7508,
+                EntityType::GlobalTwoResourcePool => 21242,
+                EntityType::GlobalValidator => 8344,
+                EntityType::GlobalVirtualEd25519Account => 36466,
+                EntityType::GlobalVirtualEd25519Identity => 0, // TODO: cover that in tests
+                EntityType::GlobalVirtualSecp256k1Account => 24346,
+                EntityType::GlobalVirtualSecp256k1Identity => 38876,
+                EntityType::InternalAccount => 34663,
+                EntityType::InternalFungibleVault => 9699,
+                EntityType::InternalGenericComponent => 6453,
+                EntityType::InternalKeyValueStore => 24412,
+                EntityType::InternalNonFungibleVault => 6916,
+            }
+        } else {
+            0
+        };
         add3(
-            500,
+            base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
             Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
@@ -333,7 +361,7 @@ impl FeeTable {
 
     #[inline]
     pub fn scan_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(500, Self::store_access_cost(store_access))
+        add(3443u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::store_access_cost(store_access))
     }
 
     #[inline]

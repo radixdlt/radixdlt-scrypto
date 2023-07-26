@@ -154,10 +154,10 @@ impl<'a> CostingEntry<'a> {
             } => ft.drop_node_cost(*total_substate_size),
             CostingEntry::MoveModules { store_access } => ft.move_modules_cost(store_access),
             CostingEntry::OpenSubstate {
-                node_id: _,
+                node_id,
                 value_size,
                 store_access,
-            } => ft.open_substate_cost(*value_size, store_access),
+            } => ft.open_substate_cost(&node_id, *value_size, store_access),
             CostingEntry::ReadSubstate {
                 value_size,
                 store_access,
