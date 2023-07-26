@@ -360,7 +360,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         )
     }
 
-    #[trace_resources(log=value_size)]
+    #[trace_resources(log=value_size, log=store_access.len())]
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
