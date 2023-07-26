@@ -14,25 +14,25 @@ use super::kernel_api::LockInfo;
 ///
 /// Note that it's just an intent, not checked/allowed by kernel yet.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct Message {
-    pub copy_references: Vec<NodeId>,
+pub struct CallFrameMessage {
     pub move_nodes: Vec<NodeId>,
+    pub copy_stable_references: Vec<NodeId>,
+    pub copy_only_direct_references: Vec<NodeId>,
     pub copy_transient_references: Vec<NodeId>,
-    pub copy_direct_references: Vec<NodeId>,
 }
 
-impl Message {
+impl CallFrameMessage {
     pub fn from_indexed_scrypto_value(value: &IndexedScryptoValue) -> Self {
         Self {
-            copy_references: value.references().clone(),
+            copy_stable_references: value.references().clone(),
             move_nodes: value.owned_nodes().clone(),
             copy_transient_references: vec![],
-            copy_direct_references: vec![],
+            copy_only_direct_references: vec![],
         }
     }
 
     pub fn add_copy_reference(&mut self, node_id: NodeId) {
-        self.copy_references.push(node_id)
+        self.copy_stable_references.push(node_id)
     }
 
     pub fn add_move_node(&mut self, node_id: NodeId) {
@@ -326,7 +326,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn new_child_from_parent(
         parent: &mut CallFrame<C, L>,
         call_frame_data: C,
-        message: Message,
+        message: CallFrameMessage,
     ) -> Result<Self, CreateFrameError> {
         let mut frame = Self {
             depth: parent.depth + 1,
@@ -348,7 +348,7 @@ impl<C, L: Clone> CallFrame<C, L> {
     pub fn pass_message(
         from: &mut CallFrame<C, L>,
         to: &mut CallFrame<C, L>,
-        message: Message,
+        message: CallFrameMessage,
     ) -> Result<(), PassMessageError> {
         for node_id in message.move_nodes {
             // Note that this has no impact on the `transient_references` because
@@ -359,7 +359,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         // Only allow move of `Global` and `DirectAccess` references
-        for node_id in message.copy_references {
+        for node_id in message.copy_stable_references {
             if let Some(t) = from
                 .get_node_visibility(&node_id)
                 .can_be_reference_copied_to_frame()
@@ -399,7 +399,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        for node_id in message.copy_direct_references {
+        for node_id in message.copy_only_direct_references {
             if from.get_node_visibility(&node_id).can_be_invoked(true) {
                 to.stable_references
                     .insert(node_id, StableReferenceType::DirectAccess);

@@ -9,7 +9,7 @@ use crate::blueprints::resource::*;
 use crate::blueprints::transaction_processor::TransactionProcessorRunInputEfficientEncodable;
 use crate::errors::RuntimeError;
 use crate::errors::*;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
 use crate::kernel::kernel_callback_api::{CallFrameReferences, KernelCallbackObject};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
@@ -814,7 +814,7 @@ where
         let callee = invocation.call_frame_data;
         let args = &invocation.args;
         let message = {
-            let mut message = Message::from_indexed_scrypto_value(&args);
+            let mut message = CallFrameMessage::from_indexed_scrypto_value(&args);
             M::before_push_frame(&callee, &mut message, &args, self)?;
 
             // Add callee references
@@ -822,7 +822,7 @@ where
                 message.add_copy_reference(reference.into());
             }
             message.copy_transient_references = callee.transient_references();
-            message.copy_direct_references = callee.direct_access_references();
+            message.copy_only_direct_references = callee.direct_access_references();
 
             message
         };
@@ -849,7 +849,7 @@ where
 
             // Run
             let output = M::invoke_upstream(args, self)?;
-            let mut message = Message::from_indexed_scrypto_value(&output);
+            let mut message = CallFrameMessage::from_indexed_scrypto_value(&output);
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame

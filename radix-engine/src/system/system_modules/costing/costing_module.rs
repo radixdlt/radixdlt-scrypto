@@ -2,7 +2,7 @@ use super::*;
 use super::{FeeReserveError, FeeTable, SystemLoanFeeReserve};
 use crate::blueprints::package::PackageRoyaltyNativeBlueprint;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::system::module::SystemModule;
 use crate::system::node_modules::royalty::ComponentRoyaltyBlueprint;
@@ -198,7 +198,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        _message: &mut Message,
+        _message: &mut CallFrameMessage,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         // Identify the function, and optional component address

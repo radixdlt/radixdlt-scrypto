@@ -3,7 +3,7 @@ use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::blueprints::resource::AuthZone;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelApi;
 use crate::system::module::SystemModule;
 use crate::system::node_init::type_info_partition;
@@ -296,7 +296,7 @@ impl AuthModule {
     fn create_auth_zone<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         // Add Global Object and Package Actor Auth
         let local_call_frame_proofs = callee.get_local_call_frame_proofs();
@@ -379,7 +379,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         AuthModule::check_authorization(callee, args, api)
@@ -389,7 +389,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for AuthModule {
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         _dropped_actor: &Actor,
-        _message: &Message,
+        _message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         // update internal state
         api.kernel_get_system().modules.auth.auth_zone_stack.pop();

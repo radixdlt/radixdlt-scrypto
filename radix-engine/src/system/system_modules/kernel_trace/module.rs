@@ -1,5 +1,5 @@
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
@@ -43,7 +43,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         log!(api, "Sending nodes: {:?}", message.move_nodes);
@@ -53,7 +53,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         log!(api, "Returning nodes: {:?}", message.move_nodes);
         log!(api, "Returning refs: {:?}", message.copy_references);

@@ -1,5 +1,5 @@
 use super::call_frame::CallFrameEventHandler;
-use super::call_frame::Message;
+use super::call_frame::CallFrameMessage;
 use crate::errors::*;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -155,7 +155,7 @@ pub trait KernelCallbackObject: Sized + CallFrameEventHandler {
 
     fn before_push_frame<Y>(
         callee: &Self::CallFrameData,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -166,13 +166,13 @@ pub trait KernelCallbackObject: Sized + CallFrameEventHandler {
     where
         Y: KernelApi<Self>;
 
-    fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
     fn after_pop_frame<Y>(
         dropped_actor: &Self::CallFrameData,
-        message: &Message,
+        message: &CallFrameMessage,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

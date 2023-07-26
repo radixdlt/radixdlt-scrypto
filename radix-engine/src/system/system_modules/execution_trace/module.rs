@@ -1,7 +1,7 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::SystemModule;
@@ -254,7 +254,7 @@ impl ResourceSummary {
 
     pub fn from_message<Y: KernelApi<M>, M: KernelCallbackObject>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
@@ -350,7 +350,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let resource_summary = ResourceSummary::from_message(api, message);
@@ -370,7 +370,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_message(api, message);

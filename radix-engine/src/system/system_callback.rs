@@ -11,7 +11,7 @@ use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
 use crate::kernel::call_frame::CallFrameEventHandler;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
@@ -274,7 +274,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_push_frame<Y>(
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -305,7 +305,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_execution_start(api)
     }
 
-    fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -316,7 +316,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn after_pop_frame<Y>(
         dropped_actor: &Actor,
-        message: &Message,
+        message: &CallFrameMessage,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
