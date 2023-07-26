@@ -27,8 +27,8 @@ if not os.path.exists(os.path.dirname(input_folder)):
 api_functions_ins = {}
 api_functions_info_data = {}
 
-# Define functions which should be used for linear regression based on size
-kernel_invoke_divide_by_size = [ "publish_native", "publish_wasm_advanced" ]
+# Define functions which should be used for linear regression based on defined parameter (size, count, etc.)
+kernel_invoke_divide_by_param = [ "publish_native", "publish_wasm_advanced", "kernel_drain_substates" ]
 
 use_max_instead_of_median = ["kernel_create_wasm_instance"] # due to use of caching
 
@@ -88,7 +88,7 @@ for path in file_list:
                 native = "native"
             pkg = resolve[0].attrib["arg1"].replace('"','')
             fcn_name = resolve[0].attrib["export_name"]
-            if fcn_name in kernel_invoke_divide_by_size:
+            if fcn_name in kernel_invoke_divide_by_param:
                 key += "::" + native + "::" + pkg + "::" + fcn_name + "::" + invoke_size
             else:
                 key += "::" + native + "::" + pkg + "::" + fcn_name
@@ -187,11 +187,11 @@ for idx, item in enumerate(output_tab):
 
 # calculate linear approximation coefficients for selected functions and write to file
 f = open("/tmp/_out_linear_regression_coeff.txt", "w")
-for s in kernel_invoke_divide_by_size:
+for s in kernel_invoke_divide_by_param:
     values_size = []
     values_instructions = []
     for row in output_tab:
-        if row[1].find("::" + s + "::") != -1:
+        if row[1].find("::" + s + "::") != -1 or row[1].find(s + "::") == 0:
             # extracting size from 2nd table column
             last_token_idx = row[1].rfind("::") + 2
             size = row[1][last_token_idx:]
@@ -204,10 +204,10 @@ for s in kernel_invoke_divide_by_size:
         r_sq = model.score(x, y)
         intercept = model.intercept_
         slope = model.coef_[0]
-        out_str = s + ": " + "instructions(size) = " + str(slope) + " * size + " + str(intercept) + "\n"
+        out_str = s + ": " + "instructions(param) = " + str(slope) + " * param + " + str(intercept) + "\n"
         f.write(out_str)
     else:
-        print("Linear regression size not found for '",s,"' function.")
+        print("Linear regression param not found for '",s,"' function.")
 f.close()
 
 
