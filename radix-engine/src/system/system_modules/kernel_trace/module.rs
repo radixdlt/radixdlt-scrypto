@@ -203,7 +203,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     ) -> Result<(), RuntimeError> {
         match event {
             CloseSubstateEvent::End(lock_handle) => {
-                log!(api, "Dropping lock: handle = {} ", lock_handle);
+                log!(api, "Substate closed: handle = {} ", lock_handle);
             }
             CloseSubstateEvent::StoreAccess(..) => {}
         }

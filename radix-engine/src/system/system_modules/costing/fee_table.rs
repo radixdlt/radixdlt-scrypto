@@ -287,7 +287,7 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn scan_substates_cost(&self, event: &ScanKeysEvent) -> u32 {
+    pub fn scan_keys_cost(&self, event: &ScanKeysEvent) -> u32 {
         match event {
             ScanKeysEvent::Start => 500,
             ScanKeysEvent::StoreAccess(store_access) => self.store_access_cost(store_access),

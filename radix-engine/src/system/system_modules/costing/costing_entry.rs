@@ -75,13 +75,13 @@ pub enum CostingEntry<'a> {
     RemoveSubstate {
         event: &'a RemoveSubstateEvent<'a>,
     },
-    ScanSubstates {
+    ScanKeys {
         event: &'a ScanKeysEvent<'a>,
     },
-    ScanSortedSubstatesBase {
+    ScanSortedSubstates {
         event: &'a ScanSortedSubstatesEvent<'a>,
     },
-    DrainSubstatesBase {
+    DrainSubstates {
         event: &'a DrainSubstatesEvent<'a>,
     },
 
@@ -150,9 +150,9 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::CloseSubstate { event } => ft.close_substate_cost(event),
             CostingEntry::SetSubstate { event } => ft.set_substate_cost(event),
             CostingEntry::RemoveSubstate { event } => ft.remove_substate_cost(event),
-            CostingEntry::ScanSubstates { event } => ft.scan_substates_cost(event),
-            CostingEntry::DrainSubstatesBase { event } => ft.drain_substates_cost(event),
-            CostingEntry::ScanSortedSubstatesBase { event } => ft.scan_sorted_substates_cost(event),
+            CostingEntry::ScanKeys { event } => ft.scan_keys_cost(event),
+            CostingEntry::DrainSubstates { event } => ft.drain_substates_cost(event),
+            CostingEntry::ScanSortedSubstates { event } => ft.scan_sorted_substates_cost(event),
             CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),
             CostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),

@@ -4,13 +4,15 @@ use crate::blueprints::account::ACCOUNT_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_ED25519_ID;
 use crate::blueprints::identity::IDENTITY_CREATE_VIRTUAL_SECP256K1_ID;
 use crate::blueprints::resource::AuthZone;
-use crate::errors::RuntimeError;
+use crate::errors::{RuntimeError, SystemError};
 use crate::errors::SystemUpstreamError;
 use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
+use crate::kernel::call_frame::CallFrameEventHandler;
 use crate::kernel::call_frame::Message;
+use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_callback_api::{
@@ -24,6 +26,7 @@ use crate::system::system::KeyValueEntrySubstate;
 use crate::system::system::SystemService;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::system::system_modules::SystemModuleMixer;
+use crate::track::interface::SubstateStore;
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::api::ClientBlueprintApi;
@@ -35,7 +38,6 @@ use radix_engine_interface::hooks::OnDropInput;
 use radix_engine_interface::hooks::OnDropOutput;
 use radix_engine_interface::hooks::OnMoveInput;
 use radix_engine_interface::hooks::OnMoveOutput;
-use radix_engine_interface::hooks::OnPersistOutput;
 use radix_engine_interface::hooks::OnVirtualizeInput;
 use radix_engine_interface::hooks::OnVirtualizeOutput;
 use radix_engine_interface::schema::{InstanceSchema, RefTypes};
@@ -417,9 +419,6 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                     BlueprintHook::OnMove => {
                         scrypto_decode::<OnMoveOutput>(output.as_slice()).map(|_| ())
                     }
-                    BlueprintHook::OnPersist => {
-                        scrypto_decode::<OnPersistOutput>(output.as_slice()).map(|_| ())
-                    }
                 }
                 .map_err(|e| {
                     RuntimeError::SystemUpstreamError(SystemUpstreamError::OutputDecodeError(e))
@@ -674,6 +673,53 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
             TypeInfoSubstate::KeyValueStore(_)
             | TypeInfoSubstate::GlobalAddressReservation(_)
             | TypeInfoSubstate::GlobalAddressPhantom(_) => Ok(()),
+        }
+    }
+
+    fn on_persist_node(
+        &mut self,
+        heap: &Heap,
+        node_id: &NodeId,
+    ) -> Result<(), RuntimeError> {
+        // Read type info
+        let maybe_type_info = if let Some(substate) = heap.get_substate(
+            node_id,
+            TYPE_INFO_FIELD_PARTITION,
+            &TypeInfoField::TypeInfo.into(),
+        ) {
+            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
+            Some(type_info)
+        }else {
+            None
+        };
+
+        let is_persist_allowed = if let Some(type_info) = maybe_type_info {
+            match type_info {
+                TypeInfoSubstate::Object(ObjectInfo { blueprint_info, .. }) => {
+                    let canonical_id = CanonicalBlueprintId {
+                        address: blueprint_info.blueprint_id.package_address,
+                        blueprint: blueprint_info.blueprint_id.blueprint_name.clone(),
+                        version: BlueprintVersion::default(),
+                    };
+                    let maybe_definition = self.blueprint_cache.get(&canonical_id);
+                    if let Some(definition) = maybe_definition {
+                        !definition.is_transient
+                    } else {
+                        panic!("Blueprint definition not available for heap node");
+                    }
+                }
+                TypeInfoSubstate::KeyValueStore(_) => true,
+                TypeInfoSubstate::GlobalAddressReservation(_) => false,
+                TypeInfoSubstate::GlobalAddressPhantom(_) => true,
+            }
+        } else {
+            false
+        };
+
+        if is_persist_allowed {
+            Ok(())
+        } else {
+            Err(RuntimeError::SystemError(SystemError::PersistenceProhibited))
         }
     }
 }

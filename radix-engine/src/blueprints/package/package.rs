@@ -931,6 +931,7 @@ impl PackageNativePackage {
         let blueprints = btreemap!(
             PACKAGE_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 feature_set: btreeset!(
                     PACKAGE_ROYALTY_FEATURE.to_string(),
                 ),
@@ -1148,6 +1149,7 @@ impl PackageNativePackage {
                             definition_init.schema.state,
                         ),
                     },
+                    is_transient: definition_init.is_transient,
                     function_exports,
                     hook_exports: {
                         definition_init

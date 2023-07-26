@@ -4,7 +4,6 @@ use native_sdk::resource::ResourceManager;
 use scrypto::api::node_modules::metadata::*;
 use scrypto::api::object_api::ObjectModuleId;
 use scrypto::api::ClientObjectApi;
-use scrypto::prelude::scrypto_env::ScryptoEnv;
 use scrypto::prelude::*;
 
 // Important: the types defined here must match those in bootstrap.rs

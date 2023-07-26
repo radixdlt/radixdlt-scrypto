@@ -1472,7 +1472,6 @@ where
                                     BlueprintHook::OnVirtualize => {
                                         panic!("Function Actor should never be able to call a borrowed object method unless it's a direct access method.")
                                     }
-                                    BlueprintHook::OnPersist => panic!("Unused"),
                                 },
                                 Actor::Function(..) => {
                                     // This is currently a hack required since kernel modules call methods

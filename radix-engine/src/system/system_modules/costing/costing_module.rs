@@ -378,7 +378,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::ScanSubstates { event })?;
+            .apply_execution_cost(CostingEntry::ScanKeys { event })?;
 
         Ok(())
     }
@@ -390,7 +390,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::DrainSubstatesBase { event })?;
+            .apply_execution_cost(CostingEntry::DrainSubstates { event })?;
 
         Ok(())
     }
@@ -402,7 +402,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         system
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::ScanSortedSubstatesBase { event })?;
+            .apply_execution_cost(CostingEntry::ScanSortedSubstates { event })?;
 
         Ok(())
     }
