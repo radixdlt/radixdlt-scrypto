@@ -391,25 +391,6 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    /*
-    #[trace_resources(log=node_id.entity_type())]
-    fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
-        M::before_drop_node(node_id, self)?;
-
-        M::on_drop_node(node_id, self)?;
-        let node = self.current_frame.drop_node(&mut self.heap, node_id)?;
-
-        let total_substate_size = node
-            .values()
-            .map(|x| x.values().map(|x| x.len()).sum::<usize>())
-            .sum::<usize>();
-
-        M::after_drop_node(self, total_substate_size)?;
-
-        Ok(node)
-    }
-     */
-
     #[trace_resources(log=entity_type)]
     fn kernel_allocate_node_id(&mut self, entity_type: EntityType) -> Result<NodeId, RuntimeError> {
         M::on_allocate_node_id(entity_type, self)?;
@@ -802,24 +783,6 @@ where
                     if retry {
                         self.current_frame
                             .open_substate(
-                                /*
-                                       let (lock_handle, value_size, store_access): (u32, usize, StoreAccessInfo) =
-                                           match &maybe_lock_handle {
-                                               Ok((lock_handle, value_size, store_access)) => {
-                                                   (*lock_handle, *value_size, store_access.clone())
-                                               }
-                                               Err(OpenSubstateError::TrackError(track_err)) => {
-                                                   if matches!(track_err.as_ref(), AcquireLockError::NotFound(..)) {
-                                                       let retry = M::on_substate_lock_fault(
-                                                           *node_id,
-                                                           partition_num,
-                                                           &substate_key,
-                                                           self,
-                                                       )?;
-
-                                                       if retry {
-                                                           self.current_frame.acquire_lock(
-                                */
                                 &mut self.heap,
                                 self.store,
                                 &node_id,
@@ -868,23 +831,6 @@ where
                             track_err.clone(),
                         )),
                     )));
-                    /*
-                                    None,
-                                    M::LockData::default(),
-                                )?
-                            } else {
-                                return maybe_lock_handle
-                                    .map(|(lock_handle, _, _)| lock_handle)
-                                    .map_err(Into::into);
-                            }
-                        } else {
-                            return Err(OpenSubstateError::TrackError(track_err.clone()).into());
-                        }
-                    }
-                    Err(err) => {
-                        return Err(err.clone().into());
-
-                         */
                 }
             }
             Err(err) => {
@@ -967,15 +913,6 @@ where
                 value,
             },
         )?;
-        /*
-        ) -> Result<IndexedScryptoValue, RuntimeError> {
-            let (value, store_access) =
-                self.current_frame
-                    .read_substate(&mut self.heap, self.store, lock_handle)?;
-            let value = value.clone();
-
-            M::after_read_substate(lock_handle, value.len(), &store_access, self)?;
-             */
 
         Ok(value)
     }
@@ -1002,13 +939,6 @@ where
             .map_err(RuntimeError::KernelError)?;
 
         Ok(())
-        /*
-        let store_access =
-            self.current_frame
-                .write_substate(&mut self.heap, self.store, lock_handle, value)?;
-
-        M::after_write_substate(lock_handle, value_size, &store_access, self)
-             */
     }
 
     #[trace_resources]
@@ -1041,19 +971,6 @@ where
                 )),
                 CallbackError::CallbackError(e) => e,
             })?;
-        /*
-        let value_size = value.len();
-        let store_access = self.current_frame.set_substate(
-            node_id,
-            partition_num,
-            substate_key,
-            value,
-            &mut self.heap,
-            self.store,
-        )?;
-
-        M::after_set_substate(value_size, &store_access, self)?;
-         */
 
         Ok(())
     }
@@ -1087,17 +1004,6 @@ where
                 )),
                 CallbackError::CallbackError(e) => e,
             })?;
-        /*
-        let (substate, store_access) = self.current_frame.remove_substate(
-            node_id,
-            partition_num,
-            &substate_key,
-            &mut self.heap,
-            self.store,
-        )?;
-
-        M::after_remove_substate(&store_access, self)?;
-         */
 
         Ok(substate)
     }
@@ -1110,19 +1016,6 @@ where
         limit: u32,
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
         self.callback.on_scan_keys(ScanKeysEvent::Start)?;
-        /*
-            count: u32,
-        ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
-            let (substates, store_access) = self.current_frame.scan_sorted(
-                node_id,
-                partition_num,
-                count,
-                &mut self.heap,
-                self.store,
-            )?;
-
-            M::after_scan_sorted_substates(&store_access, self)?;
-             */
 
         let keys = self
             .current_frame
@@ -1176,19 +1069,6 @@ where
                     CallFrameError::DrainSubstatesError(e),
                 )),
             })?;
-        /*
-            count: u32,
-        ) -> Result<Vec<SubstateKey>, RuntimeError> {
-            let (substates, store_access) = self.current_frame.scan_keys::<K, _>(
-                node_id,
-                partition_num,
-                count,
-                &mut self.heap,
-                self.store,
-            )?;
-
-            M::after_scan_keys(&store_access, self)?;
-             */
 
         Ok(substates)
     }
@@ -1223,19 +1103,6 @@ where
                     ),
                     CallbackError::CallbackError(e) => e,
                 })?;
-        /*
-            count: u32,
-        ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
-            let (substates, store_access) = self.current_frame.drain_substates::<K, _>(
-                node_id,
-                partition_num,
-                count,
-                &mut self.heap,
-                self.store,
-            )?;
-
-            M::after_drain_substates(&store_access, self)?;
-             */
 
         Ok(substates)
     }
