@@ -1,4 +1,4 @@
-use crate::kernel::call_frame::RootNodeType;
+use crate::kernel::call_frame::ReferenceOrigin;
 use crate::kernel::kernel_api::KernelApi;
 use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::system::system_callback::SystemConfig;
@@ -271,9 +271,9 @@ impl Actor {
         let global_caller: Option<GlobalCaller> = match self {
             Actor::Method(actor) => {
                 let node_visibility = api.kernel_get_node_visibility(&actor.node_id);
-                match node_visibility.root_node_type(actor.node_id).unwrap() {
-                    RootNodeType::Heap | RootNodeType::DirectlyAccessed => None,
-                    RootNodeType::Global(address) => Some(address.into()),
+                match node_visibility.reference_origin(actor.node_id).unwrap() {
+                    ReferenceOrigin::Heap | ReferenceOrigin::DirectlyAccessed => None,
+                    ReferenceOrigin::Global(address) => Some(address.into()),
                 }
             }
             Actor::Function(FunctionActor { blueprint_id, .. }) => {
