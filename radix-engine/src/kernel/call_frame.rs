@@ -718,6 +718,11 @@ impl<L: Clone> CallFrame<L> {
         store: &'f mut S,
         handler: &mut impl CallFrameEventHandler<L, E>,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
+
+        // TODO: We need to protect transient blueprints from being globalized directly
+        // into store. This isn't a problem for now since only native objects are allowed
+        // to be transient.
+
         let push_to_store = node_id.is_global();
         for (_partition_number, module) in &node_substates {
             for (_substate_key, substate_value) in module {
@@ -764,6 +769,7 @@ impl<L: Clone> CallFrame<L> {
         if push_to_store {
             self.stable_references
                 .insert(node_id, StableReferenceType::Global);
+
             store
                 .create_node(node_id, node_substates, &mut |store_access| {
                     handler.on_store_access(self, heap, store_access)
