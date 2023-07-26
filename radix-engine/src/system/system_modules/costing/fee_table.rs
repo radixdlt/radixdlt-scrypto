@@ -312,7 +312,7 @@ impl FeeTable {
     #[inline]
     pub fn set_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
         add3(
-            500,
+            4799u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
             Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )
