@@ -8,6 +8,7 @@ sbor = { path = "../../../../sbor" }
 scrypto = { path = "../../../../scrypto" }
 
 non_fungible = { path = "../non_fungible" }
+fee_reserve_states = { path = "../fee_reserve_states" }
 fake_bucket = { path = "../fake_bucket" }
 
 [dev-dependencies]
