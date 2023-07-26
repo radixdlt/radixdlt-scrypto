@@ -507,7 +507,7 @@ impl<L: Clone> CallFrame<L> {
         Ok((lock_handle, substate_value.len()))
     }
 
-    pub fn close_substate<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn close_substate<S: SubstateStore, E, F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         heap: &mut Heap,
         store: &mut S,
@@ -551,8 +551,8 @@ impl<L: Clone> CallFrame<L> {
 
                     // Move the node to store, if its owner is already in store
                     if !heap.contains_node(&node_id) {
-                        Self::move_node_to_store(heap, store, own, &mut |_, store_access| {
-                            on_store_access(store_access)
+                        Self::move_node_to_store(heap, store, own, &mut |heap, store_access| {
+                            on_store_access(self, heap, store_access)
                         })
                             .map_err(|e| e.map(CloseSubstateError::PersistNodeError))?;
                     }
@@ -1107,7 +1107,7 @@ impl<L: Clone> CallFrame<L> {
         Ok(substates)
     }
 
-    pub fn drop_all_locks<S: SubstateStore, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn close_all_substates<S: SubstateStore, E, F: FnMut(&Self, &Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         on_store_access: &mut F,
         heap: &mut Heap,

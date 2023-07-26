@@ -13,7 +13,7 @@ use crate::kernel::actor::MethodActor;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::system::module::SystemModule;
 use crate::system::system::FieldSubstate;
 use crate::system::system::KeyValueEntrySubstate;
@@ -149,11 +149,11 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_open_substate(api, &event)
     }
 
-    fn on_close_substate<Y>(lock_handle: LockHandle, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_close_substate<Y>(api: &mut Y, event: CloseSubstateEvent) -> Result<(), RuntimeError>
     where
-        Y: KernelApi<Self>,
+        Y: KernelInternalApi<Self>,
     {
-        SystemModuleMixer::on_close_substate(api, lock_handle)
+        SystemModuleMixer::on_close_substate(api, &event)
     }
 
     fn on_read_substate<Y>(

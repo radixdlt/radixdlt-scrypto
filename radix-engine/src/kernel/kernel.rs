@@ -12,7 +12,7 @@ use crate::errors::*;
 use crate::kernel::actor::ReceiverType;
 use crate::kernel::call_frame::Message;
 use crate::kernel::kernel_api::{KernelInvocation, SystemState};
-use crate::kernel::kernel_callback_api::{CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
+use crate::kernel::kernel_callback_api::{CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, KernelCallbackObject, MoveModuleEvent, OpenSubstateEvent, RemoveSubstateEvent, ScanKeysEvent, ScanSortedSubstatesEvent, SetSubstateEvent};
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system::{FieldSubstate, SystemService};
 use crate::system::system_callback::SystemConfig;
@@ -270,8 +270,16 @@ where
 
             // Auto drop locks
             self.current_frame
-                .drop_all_locks(
-                    &mut |store_access| self.callback.on_store_access(&store_access),
+                .close_all_substates(
+                    &mut |current_frame, heap, store_access| {
+                        let mut read_only = KernelReadOnly {
+                            current_frame,
+                            prev_frame: self.prev_frame_stack.last(),
+                            heap,
+                            callback: self.callback
+                        };
+                        M::on_close_substate(&mut read_only, CloseSubstateEvent::StoreAccess(&store_access))
+                    },
                     &mut self.heap,
                     self.store,
                 )
@@ -289,8 +297,16 @@ where
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
-                .drop_all_locks(
-                    &mut |store_access| self.callback.on_store_access(&store_access),
+                .close_all_substates(
+                    &mut |current_frame, heap, store_access| {
+                        let mut read_only = KernelReadOnly {
+                            current_frame,
+                            prev_frame: self.prev_frame_stack.last(),
+                            heap,
+                            callback: self.callback
+                        };
+                        M::on_close_substate(&mut read_only, CloseSubstateEvent::StoreAccess(&store_access))
+                    },
                     &mut self.heap,
                     self.store,
                 )
@@ -833,7 +849,16 @@ where
                 &mut self.heap,
                 self.store,
                 lock_handle,
-                &mut |store_access| self.callback.on_store_access(&store_access),
+                &mut |current_frame, heap, store_access| {
+                    let mut read_only = KernelReadOnly {
+                        current_frame,
+                        prev_frame: self.prev_frame_stack.last(),
+                        heap,
+                        callback: self.callback
+                    };
+
+                    M::on_close_substate(&mut read_only, CloseSubstateEvent::StoreAccess(&store_access))
+                },
             )
             .map_err(|e| match e {
                 CallbackError::Error(e) => RuntimeError::KernelError(KernelError::CallFrameError(
@@ -842,7 +867,8 @@ where
                 CallbackError::CallbackError(e) => e,
             })?;
 
-        M::on_close_substate(lock_handle, self)?;
+        let mut read_only = as_read_only!(self);
+        M::on_close_substate(&mut read_only, CloseSubstateEvent::End(lock_handle))?;
 
         Ok(())
     }
