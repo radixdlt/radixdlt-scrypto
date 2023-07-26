@@ -266,7 +266,7 @@ impl FeeTable {
 
     #[inline]
     pub fn drop_node_cost(&self, size: usize) -> u32 {
-        add(500, Self::data_processing_cost(size))
+        add(45537u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(size))
     }
 
     #[inline]

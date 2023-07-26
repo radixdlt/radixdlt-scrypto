@@ -315,7 +315,7 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    #[trace_resources(log=node_id.entity_type())]
+    #[trace_resources]
     fn kernel_drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, RuntimeError> {
         M::before_drop_node(node_id, self)?;
 

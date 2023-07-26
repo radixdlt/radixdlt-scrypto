@@ -98,11 +98,6 @@ for path in file_list:
         if param:
             key += "::" + param[0]
 
-        # handle kernel_drop_node
-        param = child.xpath("./self::kernel_drop_node/@arg0")
-        if param:
-            key += "::" + param[0]
-
         # handle kernel_get_node_info
         param = child.xpath("./self::kernel_get_node_info/@arg0")
         if param:
