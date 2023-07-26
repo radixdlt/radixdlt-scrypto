@@ -71,25 +71,25 @@ pub enum Actor {
 }
 
 impl CallFrameReferences for Actor {
-    fn global_references(&self) -> Vec<GlobalAddress> {
+    fn copy_stable_references(&self) -> Vec<NodeId> {
         let mut global_refs = Vec::new();
 
         if let Some(blueprint_id) = self.blueprint_id() {
-            global_refs.push(blueprint_id.package_address.into());
+            global_refs.push(blueprint_id.package_address.into_node_id());
         }
 
         if let Actor::Method(MethodActor { object_info, .. }) = self {
             if let OuterObjectInfo::Some { outer_object } =
                 object_info.blueprint_info.outer_obj_info
             {
-                global_refs.push(outer_object.clone());
+                global_refs.push(outer_object.clone().into_node_id());
             }
         }
 
         global_refs
     }
 
-    fn transient_references(&self) -> Vec<NodeId> {
+    fn copy_only_transient_references(&self) -> Vec<NodeId> {
         if self.is_direct_access() {
             vec![]
         } else {

@@ -1,3 +1,4 @@
+use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::track::interface::{
     AcquireLockError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess,
     StoreAccessInfo, SubstateStore,
@@ -6,7 +7,6 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
-use crate::kernel::kernel_callback_api::CallFrameReferences;
 
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
@@ -16,26 +16,31 @@ use super::kernel_api::LockInfo;
 /// Note that it's just an intent, not checked/allowed by kernel yet.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct CallFrameMessage {
+    /// Nodes to be moved from src to dest
     pub move_nodes: Vec<NodeId>,
+
+    /// Copy of any stable ref (Global or DirectAccess) from src to dest
     pub copy_stable_references: Vec<NodeId>,
-    pub copy_only_direct_references: Vec<NodeId>,
-    pub copy_transient_references: Vec<NodeId>,
+
+    /// Copy of a direct access ref specficially from src to dest
+    pub copy_only_direct_access_references: Vec<NodeId>,
+
+    /// Create a "stable" transient in dest from src. The src node may
+    /// have global or borrowed visibility
+    /// TODO: Cleanup abstraction (perhaps by adding another type of visibility)
+    pub copy_to_stable_transient_references: Vec<NodeId>,
 }
 
 impl CallFrameMessage {
     pub fn from_input<C: CallFrameReferences>(value: &IndexedScryptoValue, references: &C) -> Self {
-        let mut stable_references = value.references().clone();
-
-        // Add callee references
-        for reference in references.global_references() {
-            stable_references.push(reference.into());
-        }
-
         Self {
-            copy_stable_references: stable_references,
             move_nodes: value.owned_nodes().clone(),
-            copy_transient_references: references.transient_references(),
-            copy_only_direct_references: references.direct_access_references(),
+            copy_stable_references: value
+                .references()
+                .clone()
+                .extend(references.copy_stable_references()),
+            copy_only_direct_access_references: references.direct_access_references(),
+            copy_to_stable_transient_references: references.copy_only_transient_references(),
         }
     }
 
@@ -43,8 +48,8 @@ impl CallFrameMessage {
         Self {
             copy_stable_references: value.references().clone(),
             move_nodes: value.owned_nodes().clone(),
-            copy_transient_references: vec![],
-            copy_only_direct_references: vec![],
+            copy_to_stable_transient_references: vec![],
+            copy_only_direct_access_references: vec![],
         }
     }
 
@@ -390,7 +395,7 @@ impl<C, L: Clone> CallFrame<C, L> {
         }
 
         // TODO: Move this logic into system layer
-        for node_id in message.copy_transient_references {
+        for node_id in message.copy_to_stable_transient_references {
             if from.depth >= to.depth {
                 panic!("Transient references only supported for downstream calls.");
             }
@@ -416,7 +421,7 @@ impl<C, L: Clone> CallFrame<C, L> {
             }
         }
 
-        for node_id in message.copy_only_direct_references {
+        for node_id in message.copy_only_direct_access_references {
             if from.get_node_visibility(&node_id).can_be_invoked(true) {
                 to.stable_references
                     .insert(node_id, StableReferenceType::DirectAccess);
