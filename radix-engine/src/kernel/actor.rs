@@ -9,19 +9,19 @@ pub struct InstanceContext {
     pub outer_object: GlobalAddress,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallerAuthZone {
     pub global_auth_zone: Option<(GlobalCaller, NodeId)>,
     pub local_package_address: PackageAddress,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthActorInfo {
     pub caller_auth_zone: Option<CallerAuthZone>,
     pub self_auth_zone: NodeId,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MethodActor {
     pub direct_access: bool,
     pub node_id: NodeId,
@@ -50,7 +50,7 @@ impl MethodActor {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionActor {
     pub blueprint_id: BlueprintId,
     pub ident: String,
@@ -67,14 +67,14 @@ impl FunctionActor {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlueprintHookActor {
     pub receiver: Option<NodeId>,
     pub hook: BlueprintHook,
     pub blueprint_id: BlueprintId,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Actor {
     Root,
     Method(MethodActor),
