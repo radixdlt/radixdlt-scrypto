@@ -61,9 +61,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -73,7 +71,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let rtn: u32 = receipt.expect_commit_with_success(true).output(1);
+    let rtn: u32 = receipt.expect_commit(true).output(1);
     assert_eq!(rtn, 34567u32);
 }
 
@@ -92,9 +90,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -109,7 +105,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let rtn: u32 = receipt.expect_commit_with_success(true).output(2);
+    let rtn: u32 = receipt.expect_commit(true).output(2);
     assert_eq!(rtn, 8888u32);
 }
 
@@ -172,9 +168,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -184,7 +178,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let rtn: u32 = receipt.expect_commit_with_success(true).output(1);
+    let rtn: u32 = receipt.expect_commit(true).output(1);
     assert_eq!(rtn, 34567u32);
 }
 
@@ -203,9 +197,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -220,6 +212,6 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let rtn: u32 = receipt.expect_commit_with_success(true).output(2);
+    let rtn: u32 = receipt.expect_commit(true).output(2);
     assert_eq!(rtn, 8888u32);
 }

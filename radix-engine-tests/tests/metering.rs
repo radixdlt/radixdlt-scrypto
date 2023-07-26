@@ -250,7 +250,7 @@ fn run_basic_transfer(mode: Mode) {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
-    let commit_result = receipt.expect_commit_with_success(true);
+    let commit_result = receipt.expect_commit(true);
 
     mode.run(&commit_result.fee_summary);
 }
@@ -275,7 +275,7 @@ fn run_basic_transfer_to_virtual_account(mode: Mode) {
         manifest,
         vec![NonFungibleGlobalId::from_public_key(&public_key1)],
     );
-    let commit_result = receipt.expect_commit_with_success(true);
+    let commit_result = receipt.expect_commit(true);
 
     mode.run(&commit_result.fee_summary);
 }
@@ -315,7 +315,7 @@ fn run_radiswap(mode: Mode) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .output(1);
 
     // Contributing an initial amount to radiswap
@@ -340,7 +340,7 @@ fn run_radiswap(mode: Mode) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
-        .expect_commit_with_success(true);
+        .expect_commit(true);
 
     // Transfer `10,000 BTC` from `account2` to `account3`
     let btc_amount = Decimal::from(10_000);
@@ -375,7 +375,7 @@ fn run_radiswap(mode: Mode) {
     let eth_received = test_runner.account_balance(account3, eth).unwrap();
     assert_eq!(remaining_btc, btc_amount - btc_to_swap);
     assert_eq!(eth_received, dec!("1195.219123505976095617"));
-    let commit_result = receipt.expect_commit_with_success(true);
+    let commit_result = receipt.expect_commit(true);
 
     mode.run(&commit_result.fee_summary);
 }
@@ -418,7 +418,7 @@ fn run_flash_loan(mode: Mode) {
                 .build(),
             vec![NonFungibleGlobalId::from_public_key(&pk2)],
         )
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .output::<(ComponentAddress, ResourceAddress)>(3);
 
     // Take loan
@@ -443,7 +443,7 @@ fn run_flash_loan(mode: Mode) {
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&pk3)],
     );
-    let commit_result = receipt.expect_commit_with_success(true);
+    let commit_result = receipt.expect_commit(true);
     let new_balance = test_runner.account_balance(account3, XRD).unwrap();
     assert!(test_runner
         .account_balance(account3, promise_token_address)
@@ -610,7 +610,7 @@ fn can_run_large_manifest() {
     );
 
     // Assert
-    receipt.expect_commit_with_success(true);
+    receipt.expect_commit(true);
 }
 
 #[test]
@@ -634,7 +634,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     );
 
     // Assert
-    receipt.expect_commit_with_success(true);
+    receipt.expect_commit(true);
 }
 
 fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, ComponentAddress) {
@@ -660,7 +660,7 @@ fn setup_test_runner_with_fee_blueprint_component() -> (DefaultTestRunner, Compo
             .build(),
         vec![NonFungibleGlobalId::from_public_key(&public_key)],
     );
-    let commit_result = receipt1.expect_commit_with_success(true);
+    let commit_result = receipt1.expect_commit(true);
     let component_address = commit_result.new_component_addresses()[0];
 
     (test_runner, component_address)
@@ -696,26 +696,24 @@ impl NonFungibleData for TestNonFungibleData {
     const MUTABLE_FIELDS: &'static [&'static str] = &["metadata"];
 }
 
-// FIXME: Need to update large_package.wasm as it is is no longer the correct size
-#[test]
-/// The large_package blueprint combines toogether two other packages just to provide meaningful content for
-/// a large package of size as close as possible to current limit: 1,048,576 bytes minus the size of
-/// SCRYPTO_SBOR_V1_PAYLOAD_PREFIX and the actor size.
-/// If this test fails with an error TransactionLimitsError::MaxInvokePayloadSizeExceeded,
-/// go to `blueprints/large_package/Cargo.toml` file and change `package2` reference package name and path
-/// some other blueprint, but verify transaction payload size if it is close enough to the limit (it can be
-/// done by checking TxPayloadCost from cost breakdown table divided by payload byte cost, which can be taken
-/// from fee_table.rs tx_payload_cost() function). List of blueprints and its size can be displayed using command
+/// This test verified that we can publish a large package of size as close as possible to current
+/// limit: 1,048,576 bytes minus SBOR overhead.
+///
+/// If it fails, update `radix-engine-tests/blueprints/large_package/` by adding or removing blueprints
+/// to make sure the size is close to 1MB. This is often needed when the WASM interface or compiler
+/// changes.
+///
+/// List of blueprints and its size can be displayed using command
 /// `ls -lSk ./radix-engine-tests/tests/blueprints/target/wasm32-unknown-unknown/release/*.wasm`
+///
+#[test]
 fn publish_package_1mib() {
     let mut test_runner = TestRunnerBuilder::new().build();
+    let (code, definition) = Compile::compile("./tests/blueprints/large_package");
+    println!("Code size: {}", code.len());
+    assert!(code.len() <= 1000 * 1024);
+    assert!(code.len() >= 900 * 1024);
+
     // internally validates if publish succeeded
-    test_runner.publish_package(
-        include_bytes!("./assets/large_package.wasm").to_vec(),
-        PackageDefinition {
-            blueprints: btreemap!(),
-        },
-        btreemap!(),
-        OwnerRole::None,
-    );
+    test_runner.publish_package(code, definition, BTreeMap::new(), OwnerRole::None);
 }

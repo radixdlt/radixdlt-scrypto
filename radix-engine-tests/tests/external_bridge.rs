@@ -36,9 +36,7 @@ fn test_external_bridges() {
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.expect_commit_success();
 
-    let target_component_address = receipt1
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let target_component_address = receipt1.expect_commit(true).new_component_addresses()[0];
 
     // Part 3 - Get the caller component address
     let manifest2 = ManifestBuilder::new()
@@ -53,9 +51,7 @@ fn test_external_bridges() {
     let receipt2 = test_runner.execute_manifest(manifest2, vec![]);
     receipt2.expect_commit_success();
 
-    let caller_component_address = receipt2
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let caller_component_address = receipt2.expect_commit(true).new_component_addresses()[0];
 
     // ACT
     let manifest3 = ManifestBuilder::new()

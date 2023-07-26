@@ -202,9 +202,7 @@ fn assert_access_rule_through_component_when_not_fulfilled_fails() {
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, []);
         receipt.expect_commit_success();
 
-        receipt
-            .expect_commit_with_success(true)
-            .new_component_addresses()[0]
+        receipt.expect_commit(true).new_component_addresses()[0]
     };
 
     // Act
@@ -245,9 +243,7 @@ fn assert_access_rule_through_component_when_fulfilled_succeeds() {
         );
         receipt.expect_commit_success();
 
-        receipt
-            .expect_commit_with_success(true)
-            .new_component_addresses()[0]
+        receipt.expect_commit(true).new_component_addresses()[0]
     };
 
     let manifest = ManifestBuilder::new()
@@ -280,10 +276,7 @@ fn update_rule() {
     )));
 
     let receipt = test_runner.get_role(RoleKey::new("borrow_funds_auth"));
-    let ret = receipt
-        .expect_commit_with_success(true)
-        .outcome
-        .expect_success();
+    let ret = receipt.expect_commit(true).outcome.expect_success();
     assert_eq!(
         ret[1],
         InstructionOutput::CallReturn(
@@ -303,10 +296,7 @@ fn update_rule() {
     let receipt = test_runner.get_role(RoleKey::new("borrow_funds_auth"));
 
     // Assert
-    let ret = receipt
-        .expect_commit_with_success(true)
-        .outcome
-        .expect_success();
+    let ret = receipt.expect_commit(true).outcome.expect_success();
     assert_eq!(
         ret[1],
         InstructionOutput::CallReturn(scrypto_encode(&Some(AccessRule::AllowAll)).unwrap())
@@ -321,10 +311,7 @@ fn change_lock_owner_role_rules() {
 
     // Act: verify if lock owner role is possible
     let receipt = test_runner.lock_owner_role();
-    receipt
-        .expect_commit_with_success(true)
-        .outcome
-        .expect_success();
+    receipt.expect_commit(true).outcome.expect_success();
     let receipt = test_runner.lock_owner_role();
 
     // Assert
@@ -385,9 +372,7 @@ impl MutableRolesTestRunner {
             OwnerRole::Fixed(update_access_rule),
             &mut test_runner,
         );
-        let component_address = receipt
-            .expect_commit_with_success(true)
-            .new_component_addresses()[0];
+        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,
@@ -399,9 +384,7 @@ impl MutableRolesTestRunner {
     pub fn new_with_owner_role(owner_role: OwnerRole) -> Self {
         let mut test_runner = TestRunnerBuilder::new().build();
         let receipt = Self::create_component_with_owner(owner_role, &mut test_runner);
-        let component_address = receipt
-            .expect_commit_with_success(true)
-            .new_component_addresses()[0];
+        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,
@@ -413,9 +396,7 @@ impl MutableRolesTestRunner {
     pub fn new(roles: RolesInit) -> Self {
         let mut test_runner = TestRunnerBuilder::new().build();
         let receipt = Self::create_component(roles, &mut test_runner);
-        let component_address = receipt
-            .expect_commit_with_success(true)
-            .new_component_addresses()[0];
+        let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
         Self {
             test_runner,

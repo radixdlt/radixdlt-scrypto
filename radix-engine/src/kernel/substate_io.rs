@@ -6,21 +6,13 @@ use crate::kernel::call_frame::{
 };
 use crate::kernel::heap::{Heap, HeapRemoveNodeError};
 use crate::kernel::substate_locks::SubstateLocks;
-use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::track::interface::{
     CallbackError, NodeSubstates, StoreAccess, SubstateStore, TrackedSubstateInfo,
 };
-use radix_engine_common::prelude::{NodeId, PartitionNumber, RESOURCE_PACKAGE};
+use radix_engine_common::prelude::{NodeId, PartitionNumber};
 use radix_engine_common::types::SubstateKey;
 use radix_engine_interface::api::LockFlags;
-use radix_engine_interface::blueprints::resource::{
-    FUNGIBLE_BUCKET_BLUEPRINT, FUNGIBLE_PROOF_BLUEPRINT, NON_FUNGIBLE_BUCKET_BLUEPRINT,
-    NON_FUNGIBLE_PROOF_BLUEPRINT,
-};
-use radix_engine_interface::prelude::{BlueprintInfo, ObjectInfo};
-use radix_engine_interface::types::{
-    IndexedScryptoValue, TypeInfoField, TYPE_INFO_FIELD_PARTITION,
-};
+use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use sbor::prelude::Vec;
 use utils::prelude::index_set_new;
@@ -40,6 +32,12 @@ pub struct LockData {
     non_global_references: IndexSet<NodeId>,
 }
 
+pub trait SubstateIOHandler<E> {
+    fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
+
+    fn on_store_access(&mut self, heap: &Heap, store_access: StoreAccess) -> Result<(), E>;
+}
+
 pub struct SubstateIO<'g, S: SubstateStore> {
     pub heap: Heap,
     pub store: &'g mut S,
@@ -55,9 +53,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         }
     }
 
-    pub fn create_node<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn create_node<'f, E>(
         &mut self,
-        on_store_access: &mut F,
+        handler: &mut impl SubstateIOHandler<E>,
         node_id: NodeId,
         node_substates: NodeSubstates,
         substate_device: SubstateDevice,
@@ -66,7 +64,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             for (_substate_key, substate_value) in module {
                 for own in substate_value.owned_nodes() {
                     if substate_device.eq(&SubstateDevice::Store) {
-                        Self::move_node_to_store(&mut self.heap, self.store, own, on_store_access)
+                        Self::move_node_to_store(&mut self.heap, self.store, handler, own)
                             .map_err(|e| e.map(CreateNodeError::PersistNodeError))?
                     }
                 }
@@ -87,7 +85,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         match substate_device {
             SubstateDevice::Store => {
                 self.store
-                    .create_node(node_id, node_substates, on_store_access)
+                    .create_node(node_id, node_substates, &mut |store_access| {
+                        handler.on_store_access(&self.heap, store_access)
+                    })
                     .map_err(CallbackError::CallbackError)?;
             }
             SubstateDevice::Heap => {
@@ -122,9 +122,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(node_substates)
     }
 
-    pub fn move_partition<'f, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn move_partition<'f, E>(
         &mut self,
-        on_store_access: &'f mut F,
+        handler: &mut impl SubstateIOHandler<E>,
         src_node_id: &NodeId,
         src_partition_number: PartitionNumber,
         dest_node_id: &NodeId,
@@ -148,7 +148,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
             } else {
                 // Recursively move nodes to store
                 for own in substate_value.owned_nodes() {
-                    Self::move_node_to_store(&mut self.heap, self.store, own, on_store_access)
+                    Self::move_node_to_store(&mut self.heap, self.store, handler, own)
                         .map_err(|e| e.map(|e| MoveModuleError::PersistNodeError(e)))?;
                 }
 
@@ -166,7 +166,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                         dest_partition_number,
                         substate_key,
                         substate_value,
-                        on_store_access,
+                        &mut |store_access| handler.on_store_access(&self.heap, store_access),
                     )
                     .map_err(CallbackError::CallbackError)?
             }
@@ -175,7 +175,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(())
     }
 
-    pub fn open_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn open_substate<E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
@@ -293,9 +293,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         substate
     }
 
-    pub fn write_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn write_substate<E>(
         &mut self,
-        on_store_access: &mut F,
+        handler: &mut impl SubstateIOHandler<E>,
         global_lock_handle: u32,
         substate: IndexedScryptoValue,
     ) -> Result<(), CallbackError<WriteSubstateError, E>> {
@@ -329,7 +329,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 if !lock_data.owned_nodes.contains(own) {
                     // Move the node to store, if its owner is already in store
                     if lock_data.location.eq(&SubstateDevice::Store) {
-                        Self::move_node_to_store(&mut self.heap, self.store, own, on_store_access)
+                        Self::move_node_to_store(&mut self.heap, self.store, handler, own)
                             .map_err(|e| e.map(WriteSubstateError::PersistNodeError))?;
                     }
                 }
@@ -392,14 +392,10 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(())
     }
 
-    pub fn close_substate<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    pub fn close_substate(
         &mut self,
         global_lock_handle: u32,
-        _on_store_access: &mut F,
-    ) -> Result<
-        (NodeId, PartitionNumber, SubstateKey, LockFlags),
-        CallbackError<CloseSubstateError, E>,
-    > {
+    ) -> Result<(NodeId, PartitionNumber, SubstateKey, LockFlags), CloseSubstateError> {
         let (node_id, partition_num, substate_key, lock_data) =
             self.substate_locks.unlock(global_lock_handle);
 
@@ -543,42 +539,15 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         Ok(substates)
     }
 
-    fn move_node_to_store<E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn move_node_to_store<E>(
         heap: &mut Heap,
         store: &mut S,
+        handler: &mut impl SubstateIOHandler<E>,
         node_id: &NodeId,
-        on_store_access: &mut F,
     ) -> Result<(), CallbackError<PersistNodeError, E>> {
-        // FIXME: Use unified approach to node configuration
-        let can_be_stored = if node_id.is_global() {
-            true
-        } else {
-            let type_info = Self::get_heap_type_info(node_id, heap);
-
-            if let Some(type_info) = type_info {
-                match type_info {
-                    TypeInfoSubstate::Object(ObjectInfo {
-                        blueprint_info: BlueprintInfo { blueprint_id, .. },
-                        ..
-                    }) if blueprint_id.package_address == RESOURCE_PACKAGE
-                        && (blueprint_id.blueprint_name == FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint_id.blueprint_name == NON_FUNGIBLE_BUCKET_BLUEPRINT
-                            || blueprint_id.blueprint_name == FUNGIBLE_PROOF_BLUEPRINT
-                            || blueprint_id.blueprint_name == NON_FUNGIBLE_PROOF_BLUEPRINT) =>
-                    {
-                        false
-                    }
-                    _ => true,
-                }
-            } else {
-                false
-            }
-        };
-        if !can_be_stored {
-            return Err(CallbackError::Error(PersistNodeError::CantBeStored(
-                node_id.clone(),
-            )));
-        }
+        handler
+            .on_persist_node(heap, node_id)
+            .map_err(CallbackError::CallbackError)?;
 
         let node_substates = match heap.remove_node(node_id) {
             Ok(substates) => substates,
@@ -596,39 +565,27 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                 for reference in substate_value.references() {
                     if !reference.is_global() {
                         return Err(CallbackError::Error(
-                            PersistNodeError::NonGlobalRefNotAllowed(*reference),
+                            PersistNodeError::ContainsNonGlobalRef(*reference),
                         ));
                     }
                 }
 
                 for node in substate_value.owned_nodes() {
-                    Self::move_node_to_store(heap, store, node, on_store_access)?;
+                    Self::move_node_to_store(heap, store, handler, node)?;
                 }
             }
         }
 
         store
-            .create_node(node_id.clone(), node_substates, on_store_access)
+            .create_node(node_id.clone(), node_substates, &mut |store_access| {
+                handler.on_store_access(heap, store_access)
+            })
             .map_err(CallbackError::CallbackError)?;
 
         Ok(())
     }
 
-    // TODO: Remove
-    fn get_heap_type_info(node_id: &NodeId, heap: &mut Heap) -> Option<TypeInfoSubstate> {
-        if let Some(substate) = heap.get_substate(
-            node_id,
-            TYPE_INFO_FIELD_PARTITION,
-            &TypeInfoField::TypeInfo.into(),
-        ) {
-            let type_info: TypeInfoSubstate = substate.as_typed().unwrap();
-            Some(type_info)
-        } else {
-            None
-        }
-    }
-
-    fn get_substate_internal<'a, E, F: FnMut(StoreAccess) -> Result<(), E>>(
+    fn get_substate_internal<'a, E, F: FnMut(&Heap, StoreAccess) -> Result<(), E>>(
         heap: &'a mut Heap,
         store: &'a mut S,
         location: SubstateDevice,
@@ -649,7 +606,7 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
                     node_id,
                     partition_num,
                     substate_key,
-                    on_store_access,
+                    &mut |store_access| on_store_access(heap, store_access),
                     || default.map(|f| f()),
                 )
                 .map_err(|x| x.map(|e| OpenSubstateError::TrackError(Box::new(e))))?,

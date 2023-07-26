@@ -128,7 +128,7 @@ fn global_address_access_from_direct_access_methods_should_fail_even_with_borrow
         vec![],
     );
     let (component_address, recallable): (ComponentAddress, ResourceAddress) =
-        receipt.expect_commit_with_success(true).output(1);
+        receipt.expect_commit(true).output(1);
     let vault_id = test_runner.get_component_vaults(component_address, recallable)[0];
 
     // Act

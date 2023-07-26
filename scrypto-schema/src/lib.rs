@@ -50,7 +50,6 @@ pub enum BlueprintHook {
     OnVirtualize,
     OnMove,
     OnDrop,
-    OnPersist,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor, ManifestSbor)]

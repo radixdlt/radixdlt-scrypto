@@ -1,3 +1,8 @@
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
+    OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+};
 use crate::{
     blueprints::package::*,
     kernel::actor::Actor,
@@ -194,67 +199,121 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn create_node_cost(&self, _node_id: &NodeId, total_substate_size: usize) -> u32 {
-        add(500, Self::data_processing_cost(total_substate_size))
+    pub fn create_node_cost(&self, event: &CreateNodeEvent) -> u32 {
+        match event {
+            CreateNodeEvent::Start(_node_id, node_substates) => {
+                let total_substate_size = node_substates
+                    .values()
+                    .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+                    .sum::<usize>();
+
+                add(500, Self::data_processing_cost(total_substate_size))
+            }
+            CreateNodeEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+            CreateNodeEvent::End(..) => 0,
+        }
     }
 
     #[inline]
-    pub fn drop_node_cost(&self, size: usize) -> u32 {
-        add(500, Self::data_processing_cost(size))
+    pub fn drop_node_cost(&self, event: &DropNodeEvent) -> u32 {
+        match event {
+            DropNodeEvent::Start(..) => 0,
+            DropNodeEvent::End(_node_id, node_substates) => {
+                let total_substate_size = node_substates
+                    .values()
+                    .map(|x| x.values().map(|x| x.len()).sum::<usize>())
+                    .sum::<usize>();
+                add(500, Self::data_processing_cost(total_substate_size))
+            }
+        }
     }
 
     #[inline]
-    pub fn move_modules_cost(&self) -> u32 {
-        500
+    pub fn move_module_cost(&self, event: &MoveModuleEvent) -> u32 {
+        match event {
+            MoveModuleEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+        }
     }
 
     #[inline]
-    pub fn open_substate_cost(&self, size: usize) -> u32 {
-        add(500, Self::data_processing_cost(size))
+    pub fn open_substate_cost(&self, event: &OpenSubstateEvent) -> u32 {
+        match event {
+            OpenSubstateEvent::Start { .. } => 0,
+            OpenSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+            OpenSubstateEvent::End { size, .. } => add(500, Self::data_processing_cost(*size)),
+        }
     }
 
     #[inline]
-    pub fn read_substate_cost(&self, size: usize) -> u32 {
-        add(500, Self::data_processing_cost(size))
+    pub fn read_substate_cost(&self, event: &ReadSubstateEvent) -> u32 {
+        match event {
+            ReadSubstateEvent::End { value, .. } => {
+                add(500, Self::data_processing_cost(value.len()))
+            }
+        }
     }
 
     #[inline]
-    pub fn write_substate_cost(&self, size: usize) -> u32 {
-        add(500, Self::data_processing_cost(size))
+    pub fn write_substate_cost(&self, event: &WriteSubstateEvent) -> u32 {
+        match event {
+            WriteSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+            WriteSubstateEvent::Start { value, .. } => {
+                add(500, Self::data_processing_cost(value.len()))
+            }
+        }
     }
 
     #[inline]
-    pub fn close_substate_cost(&self) -> u32 {
-        500
+    pub fn close_substate_cost(&self, event: &CloseSubstateEvent) -> u32 {
+        match event {
+            CloseSubstateEvent::End(..) => 500,
+        }
     }
 
     #[inline]
-    pub fn set_substate_cost(&self, size: usize) -> u32 {
-        add(500, Self::data_processing_cost(size))
+    pub fn set_substate_cost(&self, event: &SetSubstateEvent) -> u32 {
+        match event {
+            SetSubstateEvent::Start(value) => add(500, Self::data_processing_cost(value.len())),
+            SetSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+        }
     }
 
     #[inline]
-    pub fn remove_substate_base_cost(&self) -> u32 {
-        500
+    pub fn remove_substate_cost(&self, event: &RemoveSubstateEvent) -> u32 {
+        match event {
+            RemoveSubstateEvent::Start => 500,
+            RemoveSubstateEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+        }
     }
 
     #[inline]
-    pub fn scan_substates_base_cost(&self) -> u32 {
-        500
+    pub fn scan_keys_cost(&self, event: &ScanKeysEvent) -> u32 {
+        match event {
+            ScanKeysEvent::Start => 500,
+            ScanKeysEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+        }
     }
 
     #[inline]
-    pub fn scan_sorted_substates_base_cost(&self) -> u32 {
-        500
+    pub fn drain_substates_cost(&self, event: &DrainSubstatesEvent) -> u32 {
+        match event {
+            DrainSubstatesEvent::Start => 500,
+            DrainSubstatesEvent::StoreAccess(store_access) => self.store_access_cost(store_access),
+        }
     }
 
     #[inline]
-    pub fn drain_substates_base_cost(&self) -> u32 {
-        500
+    pub fn scan_sorted_substates_cost(&self, event: &ScanSortedSubstatesEvent) -> u32 {
+        match event {
+            ScanSortedSubstatesEvent::Start => 500,
+            ScanSortedSubstatesEvent::StoreAccess(store_access) => {
+                self.store_access_cost(store_access)
+            }
+        }
     }
 
     #[inline]
-    pub fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
+    fn store_access_cost(&self, store_access: &StoreAccess) -> u32 {
         match store_access {
             StoreAccess::ReadFromDb(size) => {
                 // Execution time (µs): 0.0009622109 * size + 389.5155

@@ -248,9 +248,7 @@ fn cannot_mint_in_component_with_proof_in_root() {
         .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component = receipt.expect_commit(true).new_component_addresses()[0];
     let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
 
     // Act
@@ -325,9 +323,7 @@ fn cannot_burn_in_component_with_proof_in_root() {
         .call_function(package_address, "AuthResource", "create", manifest_args!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component = receipt.expect_commit(true).new_component_addresses()[0];
     let (admin_token, resource) = test_runner.create_mintable_burnable_fungible_resource(account);
 
     // Act

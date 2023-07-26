@@ -20,9 +20,7 @@ fn can_globalize_with_component_metadata() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Assert
     let value = test_runner
@@ -48,9 +46,7 @@ fn can_set_metadata_after_globalized() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Assert
     receipt.expect_commit_success();
@@ -75,9 +71,7 @@ fn can_remove_metadata() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -111,9 +105,7 @@ fn can_set_metadata_through_manifest(entry: MetadataValue) {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -188,9 +180,7 @@ fn can_set_address_metadata_through_manifest() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
 
     // Act
     let entry = MetadataValue::GlobalAddress(address.into());
@@ -228,9 +218,7 @@ fn cannot_set_address_metadata_after_freezing() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    let component_address = receipt
-        .expect_commit_with_success(true)
-        .new_component_addresses()[0];
+    let component_address = receipt.expect_commit(true).new_component_addresses()[0];
     let manifest = ManifestBuilder::new()
         .lock_fee_from_faucet()
         .lock_metadata(component_address, "other_key")

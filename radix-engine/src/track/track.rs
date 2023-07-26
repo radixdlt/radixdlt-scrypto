@@ -682,10 +682,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
         on_store_access: &mut F,
     ) -> Result<Vec<SubstateKey>, E> {
-        let count: usize = count.try_into().unwrap();
+        let limit: usize = limit.try_into().unwrap();
         let mut items = Vec::new();
 
         let node_updates = self.tracked_nodes.get(node_id);
@@ -696,7 +696,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
 
         if let Some(tracked_partition) = tracked_partition {
             for tracked in tracked_partition.substates.values() {
-                if items.len() == count {
+                if items.len() == limit {
                     return Ok(items);
                 }
 
@@ -708,7 +708,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         }
 
         // Optimization, no need to go into database if the node is just created
-        if items.len() == count || is_new {
+        if items.len() == limit || is_new {
             return Ok(items);
         }
 
@@ -722,7 +722,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         for result in &mut tracked_iter {
             let (db_sort_key, _value) = result?;
 
-            if items.len() == count {
+            if items.len() == limit {
                 break;
             }
 
@@ -751,10 +751,10 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
         on_store_access: &mut F,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, E> {
-        let count: usize = count.try_into().unwrap();
+        let limit: usize = limit.try_into().unwrap();
         let mut items = Vec::new();
 
         let node_updates = self.tracked_nodes.get_mut(node_id);
@@ -768,7 +768,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             node_updates.and_then(|n| n.tracked_partitions.get_mut(&partition_num));
         if let Some(tracked_partition) = tracked_partition.as_mut() {
             for tracked in tracked_partition.substates.values_mut() {
-                if items.len() == count {
+                if items.len() == limit {
                     return Ok(items);
                 }
 
@@ -780,7 +780,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         }
 
         // Optimization, no need to go into database if the node is just created
-        if items.len() == count || is_new {
+        if items.len() == limit || is_new {
             return Ok(items);
         }
 
@@ -796,7 +796,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
             for result in &mut tracked_iter {
                 let (db_sort_key, value) = result?;
 
-                if items.len() == count {
+                if items.len() == limit {
                     break;
                 }
 
@@ -842,11 +842,11 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
         on_store_access: &mut F,
     ) -> Result<Vec<IndexedScryptoValue>, E> {
         // TODO: ensure we abort if any substates are write locked.
-        let count: usize = count.try_into().unwrap();
+        let limit: usize = limit.try_into().unwrap();
 
         // initialize the track partition, since we will definitely need it: either to read values from it OR to update the `range_read` on it
         let tracked_node = self
@@ -888,7 +888,7 @@ impl<'s, S: SubstateDatabase, M: DatabaseKeyMapper> SubstateStore for Track<'s, 
         let mut items = Vec::new();
         // construct the composite iterator, which applies changes read from our track on top of db values
         for result in
-            OverlayingResultIterator::new(db_read_entries, tracked_entry_changes).take(count)
+            OverlayingResultIterator::new(db_read_entries, tracked_entry_changes).take(limit)
         {
             let (_key, value) = result?;
             items.push(value);

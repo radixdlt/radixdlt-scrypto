@@ -151,6 +151,7 @@ impl PoolNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -315,6 +316,7 @@ impl PoolNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -478,6 +480,7 @@ impl PoolNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 

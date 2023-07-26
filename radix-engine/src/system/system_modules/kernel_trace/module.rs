@@ -1,14 +1,17 @@
 use crate::kernel::actor::Actor;
 use crate::kernel::call_frame::Message;
-use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DropNodeEvent, OpenSubstateEvent, ReadSubstateEvent,
+    WriteSubstateEvent,
+};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
 use crate::types::*;
 use crate::{errors::RuntimeError, kernel::kernel_api::KernelApi};
 use colored::Colorize;
-use radix_engine_interface::api::field_api::LockFlags;
-use radix_engine_interface::types::{NodeId, OpenSubstateHandle, SubstateKey};
+use radix_engine_interface::types::SubstateKey;
 use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
@@ -75,106 +78,135 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
         Ok(())
     }
 
-    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
-        node_module_init: &BTreeMap<PartitionNumber, BTreeMap<SubstateKey, IndexedScryptoValue>>,
+        event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
-        let mut module_substate_keys = BTreeMap::<&PartitionNumber, Vec<&SubstateKey>>::new();
-        for (module_id, m) in node_module_init {
-            for (substate_key, _) in m {
-                module_substate_keys
-                    .entry(module_id)
-                    .or_default()
-                    .push(substate_key);
+        match event {
+            CreateNodeEvent::Start(node_id, node_module_init) => {
+                let mut module_substate_keys =
+                    BTreeMap::<&PartitionNumber, Vec<&SubstateKey>>::new();
+                for (module_id, m) in *node_module_init {
+                    for (substate_key, _) in m {
+                        module_substate_keys
+                            .entry(module_id)
+                            .or_default()
+                            .push(substate_key);
+                    }
+                }
+                let message = format!(
+                    "Creating node: id = {:?}, type = {:?}, substates = {:?}, module 0 = {:?}",
+                    node_id,
+                    node_id.entity_type(),
+                    module_substate_keys,
+                    node_module_init.get(&PartitionNumber(0))
+                )
+                .red();
+                log!(api, "{}", message);
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_drop_node<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &DropNodeEvent,
+    ) -> Result<(), RuntimeError> {
+        match event {
+            DropNodeEvent::Start(node_id) => {
+                log!(api, "Dropping node: id = {:?}", node_id);
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &OpenSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        match event {
+            OpenSubstateEvent::Start {
+                node_id,
+                partition_num,
+                substate_key,
+                flags,
+            } => {
+                log!(
+                    api,
+                    "Locking substate: node id = {:?}, partition_num = {:?}, substate_key = {:?}, flags = {:?}",
+                    node_id,
+                    partition_num,
+                    substate_key,
+                    flags
+                );
+            }
+            OpenSubstateEvent::StoreAccess(..) => {}
+            OpenSubstateEvent::End {
+                handle,
+                node_id,
+                size,
+            } => {
+                log!(
+                    api,
+                    "Substate locked: node id = {:?}, handle = {:?}",
+                    node_id,
+                    handle
+                );
             }
         }
-        let message = format!(
-            "Creating node: id = {:?}, type = {:?}, substates = {:?}, module 0 = {:?}",
-            node_id,
-            node_id.entity_type(),
-            module_substate_keys,
-            node_module_init.get(&PartitionNumber(0))
-        )
-        .red();
-        log!(api, "{}", message);
+
         Ok(())
     }
 
-    fn before_drop_node<Y: KernelApi<SystemConfig<V>>>(
+    fn on_read_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
+        event: &ReadSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        log!(api, "Dropping node: id = {:?}", node_id);
+        match event {
+            ReadSubstateEvent::End { handle, value } => {
+                log!(
+                    api,
+                    "Reading substate: handle = {}, size = {}",
+                    handle,
+                    value.len()
+                );
+            }
+        }
+
         Ok(())
     }
 
-    fn before_open_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn on_write_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        node_id: &NodeId,
-        module_id: &PartitionNumber,
-        offset: &SubstateKey,
-        flags: &LockFlags,
+        event: &WriteSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Locking substate: node id = {:?}, module_id = {:?}, substate_key = {:?}, flags = {:?}",
-            node_id,
-            module_id,
-            offset,
-            flags
-        );
+        match event {
+            WriteSubstateEvent::Start { handle, value } => {
+                log!(
+                    api,
+                    "Writing substate: handle = {}, size = {}",
+                    handle,
+                    value.len()
+                );
+            }
+            _ => {}
+        }
+
         Ok(())
     }
 
-    fn after_open_substate<Y: KernelApi<SystemConfig<V>>>(
+    fn on_close_substate<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        handle: OpenSubstateHandle,
-        node_id: &NodeId,
-        size: usize,
+        event: &CloseSubstateEvent,
     ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Substate locked: node id = {:?}, handle = {:?}",
-            node_id,
-            handle
-        );
-        Ok(())
-    }
-
-    fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        lock_handle: OpenSubstateHandle,
-        value_size: usize,
-    ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Reading substate: handle = {}, size = {}",
-            lock_handle,
-            value_size
-        );
-        Ok(())
-    }
-
-    fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        lock_handle: OpenSubstateHandle,
-        value_size: usize,
-    ) -> Result<(), RuntimeError> {
-        log!(
-            api,
-            "Writing substate: handle = {}, size = {}",
-            lock_handle,
-            value_size
-        );
-        Ok(())
-    }
-
-    fn on_close_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        lock_handle: OpenSubstateHandle,
-    ) -> Result<(), RuntimeError> {
-        log!(api, "Dropping lock: handle = {} ", lock_handle);
+        match event {
+            CloseSubstateEvent::End(lock_handle) => {
+                log!(api, "Substate closed: handle = {} ", lock_handle);
+            }
+        }
         Ok(())
     }
 }

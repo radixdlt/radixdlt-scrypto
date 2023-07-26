@@ -36,7 +36,7 @@ fn test_trace_resource_transfers() {
         ResourceAddress,
         ComponentAddress,
         ComponentAddress,
-    ) = receipt.expect_commit_with_success(true).output(1);
+    ) = receipt.expect_commit(true).output(1);
 
     /* There should be three resource changes: withdrawal from the source vault,
     deposit to the target vault and withdrawal for the fee */
@@ -76,7 +76,7 @@ fn test_trace_resource_transfers() {
             .len()
     ); // One resource change in the first instruction (lock fee)
 
-    let fee_summary = receipt.expect_commit_with_success(true).fee_summary.clone();
+    let fee_summary = receipt.expect_commit(true).fee_summary.clone();
     let total_fee_paid = fee_summary.total_cost();
 
     // Source vault withdrawal
@@ -132,7 +132,7 @@ fn test_trace_fee_payments() {
 
     let funded_component = test_runner
         .execute_manifest(manifest_prepare, vec![])
-        .expect_commit_with_success(true)
+        .expect_commit(true)
         .new_component_addresses()
         .into_iter()
         .nth(0)
@@ -157,7 +157,7 @@ fn test_trace_fee_payments() {
         .expect_commit_success()
         .execution_trace
         .resource_changes;
-    let fee_summary = receipt.expect_commit_with_success(true).fee_summary.clone();
+    let fee_summary = receipt.expect_commit(true).fee_summary.clone();
     let total_fee_paid = fee_summary.total_cost();
 
     assert_eq!(1, resource_changes.len());

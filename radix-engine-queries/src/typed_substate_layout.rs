@@ -140,6 +140,7 @@ pub enum TypedMainModuleSubstateKey {
     AccountField(AccountField),
     AccountVaultIndexKey(ResourceAddress),
     AccountResourceDepositRuleIndexKey(ResourceAddress),
+    AccountAllowedDepositorsByResourceOrNonFungible(ResourceOrNonFungible),
     OneResourcePoolField(OneResourcePoolField),
     TwoResourcePoolField(TwoResourcePoolField),
     MultiResourcePoolField(MultiResourcePoolField),
@@ -379,6 +380,12 @@ fn to_typed_object_substate_key_internal(
                         scrypto_decode(&key).map_err(|_| ())?,
                     )
                 }
+                AccountPartitionOffset::AccountAllowedDepositorsByResourceOrNonFungible => {
+                    let key = substate_key.for_map().ok_or(())?;
+                    TypedMainModuleSubstateKey::AccountAllowedDepositorsByResourceOrNonFungible(
+                        scrypto_decode(&key).map_err(|_| ())?,
+                    )
+                }
                 AccountPartitionOffset::Account => {
                     TypedMainModuleSubstateKey::AccountField(AccountField::try_from(substate_key)?)
                 }
@@ -497,6 +504,7 @@ pub enum TypedMainModuleSubstateValue {
     Account(TypedAccountFieldValue),
     AccountVaultIndex(KeyValueEntrySubstate<Own>),
     AccountResourceDepositRuleIndex(KeyValueEntrySubstate<AccountResourceDepositRuleEntry>),
+    AccountAllowedDepositorsByResourceOrNonFungible(KeyValueEntrySubstate<()>),
     OneResourcePool(TypedOneResourcePoolFieldValue),
     TwoResourcePool(TypedTwoResourcePoolFieldValue),
     MultiResourcePool(TypedMultiResourcePoolFieldValue),
@@ -788,6 +796,11 @@ fn to_typed_object_substate_value(
         }
         TypedMainModuleSubstateKey::AccountResourceDepositRuleIndexKey(_) => {
             TypedMainModuleSubstateValue::AccountResourceDepositRuleIndex(scrypto_decode(data)?)
+        }
+        TypedMainModuleSubstateKey::AccountAllowedDepositorsByResourceOrNonFungible(_) => {
+            TypedMainModuleSubstateValue::AccountAllowedDepositorsByResourceOrNonFungible(
+                scrypto_decode(data)?,
+            )
         }
         TypedMainModuleSubstateKey::AccessControllerField(offset) => {
             TypedMainModuleSubstateValue::AccessController(match offset {

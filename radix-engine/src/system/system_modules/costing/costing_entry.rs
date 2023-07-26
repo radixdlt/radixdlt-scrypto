@@ -1,6 +1,11 @@
 use super::FeeTable;
 use crate::kernel::actor::Actor;
-use crate::track::interface::{StoreAccess, StoreCommit};
+use crate::kernel::kernel_callback_api::{
+    CloseSubstateEvent, CreateNodeEvent, DrainSubstatesEvent, DropNodeEvent, MoveModuleEvent,
+    OpenSubstateEvent, ReadSubstateEvent, RemoveSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, SetSubstateEvent, WriteSubstateEvent,
+};
+use crate::track::interface::StoreCommit;
 use crate::types::*;
 use radix_engine_interface::*;
 
@@ -42,35 +47,42 @@ pub enum CostingEntry<'a> {
     /* node */
     AllocateNodeId,
     CreateNode {
-        node_id: &'a NodeId,
-        total_substate_size: usize,
+        event: &'a CreateNodeEvent<'a>,
     },
     DropNode {
-        total_substate_size: usize,
+        event: &'a DropNodeEvent<'a>,
     },
-    MoveModules,
+    MoveModule {
+        event: &'a MoveModuleEvent<'a>,
+    },
     OpenSubstate {
-        node_id: &'a NodeId,
-        value_size: usize,
+        event: &'a OpenSubstateEvent<'a>,
     },
     ReadSubstate {
-        value_size: usize,
+        event: &'a ReadSubstateEvent<'a>,
     },
     WriteSubstate {
-        value_size: usize,
+        event: &'a WriteSubstateEvent<'a>,
     },
-    CloseSubstate,
+    CloseSubstate {
+        event: &'a CloseSubstateEvent,
+    },
 
     /* unstable node apis */
     SetSubstate {
-        value_size: usize,
+        event: &'a SetSubstateEvent<'a>,
     },
-    RemoveSubstateBase,
-    ScanSortedSubstatesBase,
-    ScanSubstatesBase,
-    DrainSubstatesBase,
-    StoreAccess {
-        store_access: &'a StoreAccess,
+    RemoveSubstate {
+        event: &'a RemoveSubstateEvent<'a>,
+    },
+    ScanKeys {
+        event: &'a ScanKeysEvent<'a>,
+    },
+    ScanSortedSubstates {
+        event: &'a ScanSortedSubstatesEvent<'a>,
+    },
+    DrainSubstates {
+        event: &'a DrainSubstatesEvent<'a>,
     },
 
     /* commit */
@@ -129,27 +141,18 @@ impl<'a> CostingEntry<'a> {
             }
             CostingEntry::AfterInvoke { output_size } => ft.after_invoke_cost(*output_size),
             CostingEntry::AllocateNodeId => ft.allocate_node_id_cost(),
-            CostingEntry::CreateNode {
-                node_id,
-                total_substate_size,
-            } => ft.create_node_cost(node_id, *total_substate_size),
-            CostingEntry::DropNode {
-                total_substate_size,
-            } => ft.drop_node_cost(*total_substate_size),
-            CostingEntry::MoveModules => ft.move_modules_cost(),
-            CostingEntry::OpenSubstate {
-                node_id: _,
-                value_size,
-            } => ft.open_substate_cost(*value_size),
-            CostingEntry::ReadSubstate { value_size } => ft.read_substate_cost(*value_size),
-            CostingEntry::WriteSubstate { value_size } => ft.write_substate_cost(*value_size),
-            CostingEntry::CloseSubstate => ft.close_substate_cost(),
-            CostingEntry::SetSubstate { value_size } => ft.set_substate_cost(*value_size),
-            CostingEntry::RemoveSubstateBase => ft.remove_substate_base_cost(),
-            CostingEntry::ScanSubstatesBase => ft.scan_substates_base_cost(),
-            CostingEntry::ScanSortedSubstatesBase => ft.scan_sorted_substates_base_cost(),
-            CostingEntry::DrainSubstatesBase => ft.drain_substates_base_cost(),
-            CostingEntry::StoreAccess { store_access } => ft.store_access_cost(store_access),
+            CostingEntry::CreateNode { event } => ft.create_node_cost(event),
+            CostingEntry::DropNode { event } => ft.drop_node_cost(event),
+            CostingEntry::MoveModule { event } => ft.move_module_cost(event),
+            CostingEntry::OpenSubstate { event } => ft.open_substate_cost(event),
+            CostingEntry::ReadSubstate { event } => ft.read_substate_cost(event),
+            CostingEntry::WriteSubstate { event } => ft.write_substate_cost(event),
+            CostingEntry::CloseSubstate { event } => ft.close_substate_cost(event),
+            CostingEntry::SetSubstate { event } => ft.set_substate_cost(event),
+            CostingEntry::RemoveSubstate { event } => ft.remove_substate_cost(event),
+            CostingEntry::ScanKeys { event } => ft.scan_keys_cost(event),
+            CostingEntry::DrainSubstates { event } => ft.drain_substates_cost(event),
+            CostingEntry::ScanSortedSubstates { event } => ft.scan_sorted_substates_cost(event),
             CostingEntry::Commit { store_commit } => ft.store_commit_cost(store_commit),
             CostingEntry::LockFee => ft.lock_fee_cost(),
             CostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
@@ -176,7 +179,10 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::RunWasmCode { export_name, .. } => {
                 format!("RunWasmCode::{}", export_name)
             }
-            CostingEntry::OpenSubstate { node_id, .. } => {
+            CostingEntry::OpenSubstate {
+                event: OpenSubstateEvent::Start { node_id, .. },
+                ..
+            } => {
                 format!(
                     "OpenSubstate::{}",
                     node_id.entity_type().map(|x| x.into()).unwrap_or("?")

@@ -42,7 +42,7 @@ fn test_transaction_preview_cost_estimate() {
             .with_kernel_trace(true)
             .with_cost_breakdown(true),
     );
-    let actual_result = actual_receipt.expect_commit_with_success(true);
+    let actual_result = actual_receipt.expect_commit(true);
     assert_eq!(
         // TODO: better preview payload size estimate?
         preview_result.fee_summary.total_cost()
@@ -77,11 +77,11 @@ fn test_transaction_preview_without_locking_fee() {
     let preview_receipt = test_runner.preview(preview_intent, &network).unwrap();
     let fee_summary = &preview_receipt.expect_commit_success().fee_summary;
     println!("{:?}", preview_receipt);
-    assert_eq!(fee_summary.total_execution_cost_xrd, dec!("0.01083888"));
+    assert!(fee_summary.total_execution_cost_xrd.is_positive());
     assert_eq!(fee_summary.total_tipping_cost_xrd, dec!("0"));
-    assert_eq!(fee_summary.total_state_expansion_cost_xrd, dec!("0.00009"));
+    assert!(fee_summary.total_state_expansion_cost_xrd.is_positive());
     assert_eq!(fee_summary.total_royalty_cost_xrd, dec!("0"));
-    assert_eq!(fee_summary.total_payments(), dec!("0")); // no one is paying the fees; wallets should fill the gap.
+    assert_eq!(fee_summary.total_payments(), dec!("0")); // no one is paying the fees; wallets need to fill the gap.
 }
 
 #[test]

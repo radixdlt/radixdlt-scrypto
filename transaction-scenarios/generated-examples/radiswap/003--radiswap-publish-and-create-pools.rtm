@@ -29,6 +29,7 @@ PUBLISH_PACKAGE_ADVANCED
         Map<String, Tuple>(
             "Radiswap" => Tuple(
                 Enum<0u8>(),
+                false,
                 Array<String>(),
                 Array<Address>(),
                 Tuple(
@@ -647,7 +648,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("5c1c58f58b18c6a9ead907b3fc72619675c7d3e8007c9e78b22b9ff2528ecf2a")
+    Blob("d001abcf4e870fa7a3de570520dcf8248f0e5a01e5694f68744a26fa2f03cc50")
     Map<String, Tuple>(
         "description" => Tuple(
             Enum<1u8>(

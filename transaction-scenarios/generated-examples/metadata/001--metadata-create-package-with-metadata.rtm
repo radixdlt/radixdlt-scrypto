@@ -29,6 +29,7 @@ PUBLISH_PACKAGE_ADVANCED
         Map<String, Tuple>(
             "MetadataTest" => Tuple(
                 Enum<0u8>(),
+                false,
                 Array<String>(),
                 Array<Address>(),
                 Tuple(
@@ -470,7 +471,7 @@ PUBLISH_PACKAGE_ADVANCED
             )
         )
     )
-    Blob("be85461d1095582449cf6855af23447d45452eb79d31521805a9cfff8d9533e9")
+    Blob("e97da32914c1263f0ee8d1b717875b6642a6d43016b08f972375dfcd3109f214")
     Map<String, Tuple>(
         "" => Tuple(
             Enum<1u8>(

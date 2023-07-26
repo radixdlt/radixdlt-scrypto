@@ -1,8 +1,12 @@
-use crate::kernel::kernel_api::KernelInvocation;
+use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
+use crate::kernel::kernel_callback_api::{
+    CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, ScanKeysEvent,
+    ScanSortedSubstatesEvent, WriteSubstateEvent,
+};
 use crate::system::module::SystemModule;
 use crate::system::system_callback::SystemConfig;
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::track::interface::{NodeSubstates, StoreAccess};
+use crate::track::interface::StoreAccess;
 use crate::types::*;
 use crate::{errors::RuntimeError, errors::SystemModuleError, kernel::kernel_api::KernelApi};
 
@@ -103,15 +107,85 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn before_create_node<Y: KernelApi<SystemConfig<V>>>(
+    fn on_create_node<Y: KernelInternalApi<SystemConfig<V>>>(
         api: &mut Y,
-        _node_id: &NodeId,
-        node_substates: &NodeSubstates,
+        event: &CreateNodeEvent,
     ) -> Result<(), RuntimeError> {
         let limits = &mut api.kernel_get_system().modules.limits.config;
 
-        for partitions in node_substates.values() {
-            for (_, value) in partitions {
+        match event {
+            CreateNodeEvent::Start(_node_id, node_substates) => {
+                for partitions in node_substates.values() {
+                    for (_, value) in partitions {
+                        if value.len() > limits.max_substate_size {
+                            return Err(RuntimeError::SystemModuleError(
+                                SystemModuleError::TransactionLimitsError(
+                                    TransactionLimitsError::MaxSubstateSizeExceeded(value.len()),
+                                ),
+                            ));
+                        }
+                    }
+                }
+            }
+            CreateNodeEvent::StoreAccess(store_access) => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_store_access(store_access)?;
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_move_module<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &MoveModuleEvent,
+    ) -> Result<(), RuntimeError> {
+        match event {
+            MoveModuleEvent::StoreAccess(store_access) => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_store_access(store_access)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn on_open_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &OpenSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        match event {
+            OpenSubstateEvent::StoreAccess(store_access) => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_store_access(store_access)?;
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_write_substate<Y: KernelInternalApi<SystemConfig<V>>>(
+        api: &mut Y,
+        event: &WriteSubstateEvent,
+    ) -> Result<(), RuntimeError> {
+        let limits = &mut api.kernel_get_system().modules.limits.config;
+
+        match event {
+            WriteSubstateEvent::StoreAccess(store_access) => {
+                api.kernel_get_system()
+                    .modules
+                    .limits
+                    .process_store_access(store_access)?;
+            }
+            WriteSubstateEvent::Start { value, .. } => {
                 if value.len() > limits.max_substate_size {
                     return Err(RuntimeError::SystemModuleError(
                         SystemModuleError::TransactionLimitsError(
@@ -125,28 +199,45 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
         Ok(())
     }
 
-    fn on_write_substate<Y: KernelApi<SystemConfig<V>>>(
-        api: &mut Y,
-        _lock_handle: OpenSubstateHandle,
-        value_size: usize,
+    fn on_scan_keys(
+        system: &mut SystemConfig<V>,
+        event: &ScanKeysEvent,
     ) -> Result<(), RuntimeError> {
-        let limits = &mut api.kernel_get_system().modules.limits.config;
-
-        if value_size > limits.max_substate_size {
-            return Err(RuntimeError::SystemModuleError(
-                SystemModuleError::TransactionLimitsError(
-                    TransactionLimitsError::MaxSubstateSizeExceeded(value_size),
-                ),
-            ));
+        match event {
+            ScanKeysEvent::StoreAccess(store_access) => {
+                system.modules.limits.process_store_access(store_access)?;
+            }
+            _ => {}
         }
 
         Ok(())
     }
 
-    fn on_store_access(
-        store_access: &StoreAccess,
+    fn on_drain_substates(
         system: &mut SystemConfig<V>,
+        event: &DrainSubstatesEvent,
     ) -> Result<(), RuntimeError> {
-        system.modules.limits.process_store_access(store_access)
+        match event {
+            DrainSubstatesEvent::StoreAccess(store_access) => {
+                system.modules.limits.process_store_access(store_access)?;
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    fn on_scan_sorted_substates(
+        system: &mut SystemConfig<V>,
+        event: &ScanSortedSubstatesEvent,
+    ) -> Result<(), RuntimeError> {
+        match event {
+            ScanSortedSubstatesEvent::StoreAccess(store_access) => {
+                system.modules.limits.process_store_access(store_access)?;
+            }
+            _ => {}
+        }
+
+        Ok(())
     }
 }

@@ -102,9 +102,7 @@ impl NewSimpleBadge {
         .unwrap();
 
         if let Some(receipt) = receipt {
-            let resource_address = receipt
-                .expect_commit_with_success(true)
-                .new_resource_addresses()[0];
+            let resource_address = receipt.expect_commit(true).new_resource_addresses()[0];
 
             let address_bech32_encoder = AddressBech32Encoder::new(&network_definition);
             writeln!(

@@ -99,18 +99,18 @@ impl NonFungibleVaultBlueprint {
     }
 
     pub fn get_non_fungible_local_ids<Y>(
-        count: u32,
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
         Y: ClientApi<RuntimeError>,
     {
-        let mut ids = Self::liquid_non_fungible_local_ids(count, api)?;
+        let mut ids = Self::locked_non_fungible_local_ids(limit, api)?;
         let id_len: u32 = ids.len().try_into().unwrap();
 
-        if id_len < count {
-            let locked_count = count - id_len;
-            ids.extend(Self::locked_non_fungible_local_ids(locked_count, api)?);
+        if id_len < limit {
+            let locked_count = limit - id_len;
+            ids.extend(Self::liquid_non_fungible_local_ids(locked_count, api)?);
         }
 
         Ok(ids)
@@ -398,7 +398,7 @@ impl NonFungibleVaultBlueprint {
     }
 
     fn liquid_non_fungible_local_ids<Y>(
-        count: u32,
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
@@ -407,14 +407,14 @@ impl NonFungibleVaultBlueprint {
         let items: Vec<NonFungibleLocalId> = api.actor_index_scan_keys_typed(
             OBJECT_HANDLE_SELF,
             NON_FUNGIBLE_VAULT_CONTENTS_INDEX,
-            count,
+            limit,
         )?;
         let ids = items.into_iter().collect();
         Ok(ids)
     }
 
     fn locked_non_fungible_local_ids<Y>(
-        count: u32,
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, RuntimeError>
     where
@@ -426,8 +426,8 @@ impl NonFungibleVaultBlueprint {
             LockFlags::read_only(),
         )?;
         let substate_ref: LockedNonFungibleResource = api.field_read_typed(handle)?;
-        let count: usize = count.try_into().unwrap();
-        let ids = substate_ref.ids().into_iter().take(count).collect();
+        let limit: usize = limit.try_into().unwrap();
+        let ids = substate_ref.ids().into_iter().take(limit).collect();
         api.field_close(handle)?;
         Ok(ids)
     }
