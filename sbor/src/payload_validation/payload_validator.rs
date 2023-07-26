@@ -608,7 +608,6 @@ mod tests {
 
     #[test]
     pub fn mismatched_type_full_location_path_is_readable() {
-        // Valid payload, but does not match with schema
         check_location_path::<MyStruct2>(
             basic_encode(&BasicValue::Tuple {
                 fields: vec![
@@ -652,8 +651,7 @@ mod tests {
 
     #[test]
     pub fn invalid_payload_full_location_path_is_readable() {
-        // Invalid payload
-        let valid_bytes = basic_encode(&BasicValue::Tuple {
+        let mut payload = basic_encode(&BasicValue::Tuple {
             fields: vec![
                 BasicValue::U16 { value: 1 },
                 BasicValue::Tuple {
@@ -662,20 +660,41 @@ mod tests {
             ],
         })
         .unwrap();
+        payload.pop(); // remove last byte
         check_location_path::<MyStruct2>(
-            valid_bytes[0..valid_bytes.len() - 1].to_vec(),
+            payload,
             "MyStruct2.[1|field2]->MyStruct2Inner.[1|inner2]",
             "DecodeError(BufferUnderflow { required: 2, remaining: 1 })",
         );
 
-        let valid_bytes = basic_encode(&vec![1u8, 2u8, 3u8]).unwrap();
+        let mut payload = basic_encode(&BasicValue::Tuple {
+            fields: vec![
+                BasicValue::U16 { value: 1 },
+                BasicValue::Tuple {
+                    fields: vec![BasicValue::U16 { value: 2 }, BasicValue::U16 { value: 3 }],
+                },
+            ],
+        })
+        .unwrap();
+        let index = payload.len() - 3;
+        payload[index] = 0xff; // replace U16 value kind with something invalid
+        check_location_path::<MyStruct2>(
+            payload,
+            // TODO: this should be [1|inner2].
+            // A proper fix require tracking states: `BEFORE_READ_VALUE_KIND`, `BEFORE_READ_VALUE` and `AFTER_READ_VALUE`.
+            "MyStruct2.[1|field2]->MyStruct2Inner.[0|inner1]",
+            "DecodeError(UnknownValueKind(255))",
+        );
+
+        let mut payload = basic_encode(&vec![1u8, 2u8, 3u8]).unwrap();
+        payload.pop(); // remove last byte
         check_location_path::<Vec<u8>>(
-            valid_bytes[0..valid_bytes.len() - 1].to_vec(),
+            payload,
             "Array",
             "DecodeError(BufferUnderflow { required: 3, remaining: 2 })",
         );
 
-        let payload_with_invalid_array_size = vec![
+        let payload = vec![
             BASIC_SBOR_V1_PAYLOAD_PREFIX,
             VALUE_KIND_ARRAY,
             VALUE_KIND_U8,
@@ -687,7 +706,7 @@ mod tests {
             0xff,
         ];
         check_location_path::<Vec<u8>>(
-            payload_with_invalid_array_size,
+            payload,
             "", // container state not established due to failing to read size
             "DecodeError(InvalidSize)",
         );
