@@ -51,7 +51,7 @@ pub struct ContainerState<C: CustomTraversal> {
     pub container_header: ContainerHeader<C>,
     pub container_start_offset: usize,
     pub container_child_count: usize,
-    pub last_child_index: Option<usize>,
+    pub last_visited_child_index: Option<usize>,
 }
 
 impl<C: CustomTraversal> ContainerState<C> {
@@ -60,7 +60,7 @@ impl<C: CustomTraversal> ContainerState<C> {
             return true;
         }
 
-        if let Some(index) = self.last_child_index {
+        if let Some(index) = self.last_visited_child_index {
             if index >= self.container_child_count - 1 {
                 return true;
             }
@@ -70,7 +70,7 @@ impl<C: CustomTraversal> ContainerState<C> {
     }
 
     pub fn next_child_index(&self) -> usize {
-        if let Some(index) = self.last_child_index {
+        if let Some(index) = self.last_visited_child_index {
             index + 1
         } else {
             0
@@ -86,10 +86,10 @@ impl<C: CustomTraversal> ContainerState<C> {
             return;
         }
 
-        if let Some(index) = self.last_child_index {
-            self.last_child_index = Some(index + n)
+        if let Some(index) = self.last_visited_child_index {
+            self.last_visited_child_index = Some(index + n)
         } else {
-            self.last_child_index = Some(n - 1)
+            self.last_visited_child_index = Some(n - 1)
         }
     }
 }
@@ -232,7 +232,7 @@ impl<'de, T: CustomTraversal> VecTraverser<'de, T> {
             container_header,
             container_start_offset: start_offset,
             container_child_count: child_count,
-            last_child_index: None,
+            last_visited_child_index: None,
         });
 
         // Check depth: either container stack overflows or children of this container will overflow.
