@@ -252,24 +252,16 @@ where
             M::on_execution_start(self)?;
 
             // Auto drop locks
-            self.current_frame.drop_all_locks(
-                &mut self.heap,
-                self.store,
-                self.callback,
-                &M::on_persist_node,
-            )?;
+            self.current_frame
+                .drop_all_locks(&mut self.heap, self.store, self.callback)?;
 
             // Run
             let output = M::invoke_upstream(args, self)?;
             let message = Message::from_indexed_scrypto_value(&output);
 
             // Auto-drop locks again in case module forgot to drop
-            self.current_frame.drop_all_locks(
-                &mut self.heap,
-                self.store,
-                self.callback,
-                &M::on_persist_node,
-            )?;
+            self.current_frame
+                .drop_all_locks(&mut self.heap, self.store, self.callback)?;
 
             // Handle execution finish
             M::on_execution_finish(&message, self)?;
@@ -358,7 +350,6 @@ where
             &mut self.heap,
             self.store,
             self.callback,
-            &M::on_persist_node,
         )?;
 
         M::after_create_node(&node_id, total_substate_size, &store_access, self)?;
@@ -382,7 +373,6 @@ where
             &mut self.heap,
             self.store,
             self.callback,
-            &M::on_persist_node,
         )?;
 
         M::after_move_modules(
@@ -420,7 +410,7 @@ where
             }
         };
         SystemState {
-            system: &mut self.callback,
+            system: self.callback,
             current_actor: self.current_frame.actor(),
             caller_actor,
         }
@@ -665,7 +655,6 @@ where
             &mut self.heap,
             self.store,
             self.callback,
-            &M::on_persist_node,
             lock_handle,
         )?;
 
