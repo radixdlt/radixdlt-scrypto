@@ -6,6 +6,7 @@ use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use crate::kernel::kernel_callback_api::CallFrameReferences;
 
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
@@ -22,7 +23,23 @@ pub struct CallFrameMessage {
 }
 
 impl CallFrameMessage {
-    pub fn from_indexed_scrypto_value(value: &IndexedScryptoValue) -> Self {
+    pub fn from_input<C: CallFrameReferences>(value: &IndexedScryptoValue, references: &C) -> Self {
+        let mut stable_references = value.references().clone();
+
+        // Add callee references
+        for reference in references.global_references() {
+            stable_references.push(reference.into());
+        }
+
+        Self {
+            copy_stable_references: stable_references,
+            move_nodes: value.owned_nodes().clone(),
+            copy_transient_references: references.transient_references(),
+            copy_only_direct_references: references.direct_access_references(),
+        }
+    }
+
+    pub fn from_output(value: &IndexedScryptoValue) -> Self {
         Self {
             copy_stable_references: value.references().clone(),
             move_nodes: value.owned_nodes().clone(),

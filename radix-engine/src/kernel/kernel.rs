@@ -814,15 +814,8 @@ where
         let callee = invocation.call_frame_data;
         let args = &invocation.args;
         let message = {
-            let mut message = CallFrameMessage::from_indexed_scrypto_value(&args);
+            let message = CallFrameMessage::from_input(&args, &callee);
             M::before_push_frame(&callee, &mut message, &args, self)?;
-
-            // Add callee references
-            for reference in callee.global_references() {
-                message.add_copy_reference(reference.into());
-            }
-            message.copy_transient_references = callee.transient_references();
-            message.copy_only_direct_references = callee.direct_access_references();
 
             message
         };
@@ -849,7 +842,7 @@ where
 
             // Run
             let output = M::invoke_upstream(args, self)?;
-            let mut message = CallFrameMessage::from_indexed_scrypto_value(&output);
+            let mut message = CallFrameMessage::from_output(&output);
 
             // Auto-drop locks again in case module forgot to drop
             self.current_frame
