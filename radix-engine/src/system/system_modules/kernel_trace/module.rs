@@ -27,7 +27,7 @@ macro_rules! log {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
 
     #[cfg(feature = "resource_tracker")]
-    fn on_init<Y: KernelApi<M>>(_api: &mut Y) -> Result<(), RuntimeError> {
+    fn on_init<Y: KernelApi<SystemConfig<V>>>(_api: &mut Y) -> Result<(), RuntimeError> {
         panic!("KernelTraceModule should be disabled for feature resource_tracker!")
     }
 
