@@ -425,9 +425,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 panic!("Transient references only supported for downstream calls.");
             }
 
-            if let Some(ref_origin) =
-                from.get_node_visibility(&node_id).reference_origin(node_id)
-            {
+            if let Some(ref_origin) = from.get_node_visibility(&node_id).reference_origin(node_id) {
                 to.transient_references
                     .entry(node_id.clone())
                     .or_insert(TransientReference {
@@ -469,12 +467,12 @@ impl<C, L: Clone> CallFrame<C, L> {
         data: L,
     ) -> Result<(LockHandle, usize, StoreAccessInfo), OpenSubstateError> {
         let node_visibility = self.get_node_visibility(node_id);
-        let ref_origin =
-            if let Some(ref_origin) = node_visibility.reference_origin(node_id.clone()) {
-                ref_origin
-            } else {
-                return Err(OpenSubstateError::NodeNotVisible(node_id.clone()));
-            };
+        let ref_origin = if let Some(ref_origin) = node_visibility.reference_origin(node_id.clone())
+        {
+            ref_origin
+        } else {
+            return Err(OpenSubstateError::NodeNotVisible(node_id.clone()));
+        };
 
         // Lock and read the substate
         let mut store_handle = None;
