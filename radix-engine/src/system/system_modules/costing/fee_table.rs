@@ -270,16 +270,27 @@ impl FeeTable {
 
     #[inline]
     pub fn drop_node_cost(&self, size: usize) -> u32 {
-        add(45537u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::data_processing_cost(size))
+        add(
+            45537u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::data_processing_cost(size),
+        )
     }
 
     #[inline]
     pub fn move_modules_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(3094u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::store_access_cost(store_access))
+        add(
+            3094u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::store_access_cost(store_access),
+        )
     }
 
     #[inline]
-    pub fn open_substate_cost(&self, node_id: &NodeId, size: usize, store_access: &StoreAccessInfo) -> u32 {
+    pub fn open_substate_cost(
+        &self,
+        node_id: &NodeId,
+        size: usize,
+        store_access: &StoreAccessInfo,
+    ) -> u32 {
         let base_cost: u32 = if let Some(entity_type) = node_id.entity_type() {
             match entity_type {
                 EntityType::GlobalAccessController => 9360,
@@ -317,7 +328,11 @@ impl FeeTable {
 
     #[inline]
     pub fn read_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
-        let base_cost: u32 = if store_access.iter().find(|e| *e == &StoreAccess::ReadFromHeap).is_some() {
+        let base_cost: u32 = if store_access
+            .iter()
+            .find(|e| *e == &StoreAccess::ReadFromHeap)
+            .is_some()
+        {
             5851
         } else {
             11805
@@ -365,12 +380,18 @@ impl FeeTable {
 
     #[inline]
     pub fn scan_sorted_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(6665u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::store_access_cost(store_access))
+        add(
+            6665u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::store_access_cost(store_access),
+        )
     }
 
     #[inline]
     pub fn scan_keys_cost(&self, store_access: &StoreAccessInfo) -> u32 {
-        add(3443u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::store_access_cost(store_access))
+        add(
+            3443u32 / CPU_INSTRUCTIONS_TO_COST_UNIT,
+            Self::store_access_cost(store_access),
+        )
     }
 
     #[inline]

@@ -432,7 +432,10 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for CostingModule {
         api.kernel_get_system()
             .modules
             .costing
-            .apply_execution_cost(CostingEntry::DrainSubstates { count, store_access })
+            .apply_execution_cost(CostingEntry::DrainSubstates {
+                count,
+                store_access,
+            })
     }
 
     fn on_allocate_node_id<Y: KernelApi<SystemConfig<V>>>(

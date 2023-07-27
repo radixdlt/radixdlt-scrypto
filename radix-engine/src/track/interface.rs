@@ -166,7 +166,7 @@ pub enum StoreAccess {
     /// System limits how many items that can be tracked.
     NewEntryInTrack,
     /// Substeate was read from the heap.
-    ReadFromHeap
+    ReadFromHeap,
 }
 
 pub type StoreCommitInfo = Vec<StoreCommit>;
