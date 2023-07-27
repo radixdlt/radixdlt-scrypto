@@ -1760,6 +1760,19 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
     println!("Total mint amount: {}", total_mint_amount);
     println!("Total burn amount: {}", total_burn_amount);
     assert_eq!(total_supply, total_mint_amount - total_burn_amount);
+
+    // Query total supply from the resource manager
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(resource_address, "get_total_supply", manifest_args!())
+            .build(),
+        vec![],
+    );
+    assert_eq!(
+        Some(total_supply),
+        receipt.expect_commit_success().output(1)
+    );
 }
 
 #[test]
@@ -1854,4 +1867,17 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
     println!("Total burn: {:?}", total_burn_non_fungibles);
     total_mint_non_fungibles.retain(|x| !total_burn_non_fungibles.contains(x));
     assert_eq!(total_supply, total_mint_non_fungibles.len().into());
+
+    // Query total supply from the resource manager
+    let receipt = test_runner.execute_manifest(
+        ManifestBuilder::new()
+            .lock_fee_from_faucet()
+            .call_method(resource_address, "get_total_supply", manifest_args!())
+            .build(),
+        vec![],
+    );
+    assert_eq!(
+        Some(total_supply),
+        receipt.expect_commit_success().output(1)
+    );
 }
