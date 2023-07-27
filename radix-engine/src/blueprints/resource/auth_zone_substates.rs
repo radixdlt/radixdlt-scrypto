@@ -10,7 +10,7 @@ pub struct AuthZone {
     pub virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
 
     pub local_caller_package_address: Option<PackageAddress>,
-    pub global_caller: Option<GlobalCaller>,
+    pub global_caller: Option<(GlobalCaller, Reference)>,
 
     pub parent: Option<Reference>,
 }
@@ -34,7 +34,7 @@ impl AuthZone {
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
         local_caller_package_address: Option<PackageAddress>,
-        global_caller: Option<GlobalCaller>,
+        global_caller: Option<(GlobalCaller, Reference)>,
         parent: Option<Reference>,
     ) -> Self {
         Self {

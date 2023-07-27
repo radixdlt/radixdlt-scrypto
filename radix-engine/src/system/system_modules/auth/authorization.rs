@@ -130,7 +130,6 @@ impl Authorization {
                 SystemLockData::default(),
             )?;
             let auth_zone: FieldSubstate<AuthZone> = api.kernel_read_substate(handle)?.as_typed().unwrap();
-            api.kernel_close_substate(handle)?;
 
             // TODO: Combine these two
 
@@ -141,27 +140,28 @@ impl Authorization {
                 );
                 let local_call_frame_proofs = btreeset!(&non_fungible_global_id);
                 if check(&[], &btreeset!(), local_call_frame_proofs, api)? {
+                    api.kernel_close_substate(handle)?;
                     return Ok(true);
                 }
             }
 
             // Test Global Caller
-            if let Some(global_caller) = &auth_zone.value.0.global_caller {
+            if let Some((global_caller, global_caller_reference)) = &auth_zone.value.0.global_caller {
                 let non_fungible_global_id =
                     NonFungibleGlobalId::global_caller_badge(global_caller.clone());
                 let global_call_frame_proofs = btreeset!(&non_fungible_global_id);
                 if check(&[], &btreeset!(), global_call_frame_proofs, api)? {
+                    api.kernel_close_substate(handle)?;
                     return Ok(true);
                 }
-            }
-        }
 
-        if let Some(caller_auth_zone) = &auth_info.caller_auth_zone {
-            if let Some(auth_zone_id) = &caller_auth_zone.global_auth_zone {
-                if Self::global_auth_zone_matches(api, auth_zone_id.clone(), &check)? {
+                if Self::global_auth_zone_matches(api, global_caller_reference.0, &check)? {
+                    api.kernel_close_substate(handle)?;
                     return Ok(true);
                 }
             }
+
+            api.kernel_close_substate(handle)?;
         }
 
         if Self::global_auth_zone_matches(api, auth_info.self_auth_zone, &check)? {

@@ -1,7 +1,7 @@
 use super::Authorization;
 use crate::blueprints::package::PackageAuthNativeBlueprint;
 use crate::errors::*;
-use crate::kernel::actor::{Actor, AuthActorInfo, CallerAuthZone, FunctionActor, MethodActor};
+use crate::kernel::actor::{Actor, AuthActorInfo, FunctionActor, MethodActor};
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi, KernelNodeApi, KernelSubstateApi};
 use crate::system::module::KernelModule;
 use crate::system::node_modules::role_assignment::RoleAssignmentNativePackage;
@@ -97,7 +97,7 @@ impl AuthModule {
                     (BTreeSet::new(), BTreeSet::new())
                 };
 
-            Self::create_auth_info(api, None, virtual_resources, virtual_non_fungibles)?
+            Self::on_execution_start(api, None, virtual_resources, virtual_non_fungibles)?
         };
 
         // Check authorization
@@ -144,7 +144,7 @@ impl AuthModule {
             V: SystemCallbackObject,
             Y: KernelApi<SystemConfig<V>>,
     {
-        let auth_info = Self::create_auth_info(
+        let auth_info = Self::on_execution_start(
             api,
             Some((receiver, direct_access)),
             btreeset!(),
@@ -169,45 +169,6 @@ impl AuthModule {
         Self::on_execution_finish(api, auth_actor_info)
     }
 
-    fn on_execution_finish<V, Y>(
-        api: &mut SystemService<Y, V>,
-        auth_actor_info: AuthActorInfo,
-    ) -> Result<(), RuntimeError>
-        where
-            V: SystemCallbackObject,
-            Y: KernelApi<SystemConfig<V>>,
-    {
-        let self_auth_zone = auth_actor_info.self_auth_zone;
-        // Detach proofs from the auth zone
-        let handle = api.kernel_open_substate(
-            &self_auth_zone,
-            MAIN_BASE_PARTITION,
-            &AuthZoneField::AuthZone.into(),
-            LockFlags::MUTABLE,
-            SystemLockData::Default,
-        )?;
-        let mut substate: FieldSubstate<AuthZone> =
-            api.kernel_read_substate(handle)?.as_typed().unwrap();
-        let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
-        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
-        api.kernel_close_substate(handle)?;
-
-        // Drop all proofs (previously) owned by the auth zone
-        for proof in proofs {
-            let object_info = api.get_object_info(proof.0.as_node_id())?;
-            api.call_function(
-                RESOURCE_PACKAGE,
-                &object_info.blueprint_info.blueprint_id.blueprint_name,
-                PROOF_DROP_IDENT,
-                scrypto_encode(&ProofDropInput { proof }).unwrap(),
-            )?;
-        }
-
-        // Drop the auth zone
-        api.kernel_drop_node(&self_auth_zone)?;
-
-        Ok(())
-    }
 
     fn check_method_authorization<V, Y>(
         system: &mut SystemService<Y, V>,
@@ -245,7 +206,27 @@ impl AuthModule {
         Ok(())
     }
 
-    fn create_auth_info<V, Y>(
+    fn open_auth_zone<V, Y>(
+        system: &mut SystemService<Y, V>,
+        node_id: &NodeId,
+    ) -> Result<(AuthZone, LockHandle), RuntimeError>
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
+    {
+        let handle = system.kernel_open_substate(
+            node_id,
+            MAIN_BASE_PARTITION,
+            &AuthZoneField::AuthZone.into(),
+            LockFlags::read_only(),
+            SystemLockData::default(),
+        )?;
+
+        let auth_zone: FieldSubstate<AuthZone> = system.kernel_read_substate(handle)?.as_typed().unwrap();
+        Ok((auth_zone.value.0, handle))
+    }
+
+    fn on_execution_start<V, Y>(
         system: &mut SystemService<Y, V>,
         receiver: Option<(&NodeId, bool)>,
         virtual_resources: BTreeSet<ResourceAddress>,
@@ -262,145 +243,50 @@ impl AuthModule {
             true
         };
 
-        let (caller_auth_zone, self_auth_zone) = {
+        let (self_auth_zone, parent_lock_handle) = {
             let current_actor = system.current_actor();
             let local_package_address = current_actor.package_address();
-            let caller_auth_zone = match &current_actor {
-                Actor::Root => None,
-                Actor::Method(current_method_actor) => {
-                    let caller_auth_zone = CallerAuthZone {
-                        global_auth_zone: {
-                            // TODO: Check actor object module id?
-                            let node_visibility =
-                                system.kernel_get_node_visibility(&current_method_actor.node_id);
-                            let global_auth_zone = match node_visibility
-                                .reference_origin(current_method_actor.node_id)
-                                .unwrap()
-                            {
-                                ReferenceOrigin::Global(address) => {
-                                    if is_barrier {
-                                        Some(current_method_actor.auth_actor_info.self_auth_zone)
-                                    } else {
-                                        // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                                        current_method_actor
-                                            .auth_actor_info
-                                            .caller_auth_zone
-                                            .clone()
-                                            .and_then(|a| a.global_auth_zone)
-                                    }
-                                }
-                                ReferenceOrigin::Heap => {
-                                    // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                                    current_method_actor
-                                        .auth_actor_info
-                                        .caller_auth_zone
-                                        .clone()
-                                        .and_then(|a| a.global_auth_zone)
-                                }
-                                ReferenceOrigin::DirectlyAccessed => None,
-                            };
-                            global_auth_zone
-                        },
-                    };
-                    Some(caller_auth_zone)
-                }
-                Actor::BlueprintHook(blueprint_hook_actor) => {
-                    let caller_auth_zone = CallerAuthZone {
-                        global_auth_zone: None,
-                    };
-                    Some(caller_auth_zone)
-                }
-                Actor::Function(function_actor) => {
-                    let caller_auth_zone = CallerAuthZone {
-                        global_auth_zone: {
-                            if is_barrier {
-                                Some(function_actor.auth_info.self_auth_zone)
-                            } else {
-                                // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                                function_actor
-                                    .auth_info
-                                    .caller_auth_zone
-                                    .clone()
-                                    .and_then(|a| a.global_auth_zone)
-                            }
-                        },
-                    };
-                    Some(caller_auth_zone)
-                }
-            };
 
-            let global_caller = match current_actor {
-                Actor::Root => None,
+            let (global_caller, parent_lock_handle) = match current_actor {
+                Actor::Root => (None, None),
                 Actor::Method(current_method_actor) => {
                     // TODO: Check actor object module id?
                     let node_visibility =
                         system.kernel_get_node_visibility(&current_method_actor.node_id);
-                    let global_caller: Option<GlobalCaller> = match node_visibility
+                    let ref_origin = node_visibility
                         .reference_origin(current_method_actor.node_id)
-                        .unwrap()
-                    {
+                        .unwrap();
+                    match ref_origin {
                         ReferenceOrigin::Global(address) => {
                             if is_barrier {
-                                Some(address.into())
+                                (Some((address.into(), Reference(current_method_actor.auth_actor_info.self_auth_zone))), None)
                             } else {
                                 // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                                let handle = system.kernel_open_substate(
-                                    &current_method_actor.auth_actor_info.self_auth_zone,
-                                    MAIN_BASE_PARTITION,
-                                    &AuthZoneField::AuthZone.into(),
-                                    LockFlags::read_only(),
-                                    SystemLockData::default(),
-                                )?;
-
-                                let auth_zone: FieldSubstate<AuthZone> = system.kernel_read_substate(handle)?.as_typed().unwrap();
-                                // FIXME: This should probably be kept open
-                                system.kernel_close_substate(handle)?;
-                                auth_zone.value.0.global_caller
+                                let (auth_zone, handle) = Self::open_auth_zone(system, &current_method_actor.auth_actor_info.self_auth_zone)?;
+                                (auth_zone.global_caller, Some(handle))
                             }
                         }
                         ReferenceOrigin::Heap => {
                             // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                            let handle = system.kernel_open_substate(
-                                &current_method_actor.auth_actor_info.self_auth_zone,
-                                MAIN_BASE_PARTITION,
-                                &AuthZoneField::AuthZone.into(),
-                                LockFlags::read_only(),
-                                SystemLockData::default(),
-                            )?;
-
-                            let auth_zone: FieldSubstate<AuthZone> = system.kernel_read_substate(handle)?.as_typed().unwrap();
-                            // FIXME: This should probably be kept open
-                            system.kernel_close_substate(handle)?;
-                            auth_zone.value.0.global_caller
+                            let (auth_zone, handle) = Self::open_auth_zone(system, &current_method_actor.auth_actor_info.self_auth_zone)?;
+                            (auth_zone.global_caller, Some(handle))
                         }
-                        ReferenceOrigin::DirectlyAccessed => None,
-                    };
-                    global_caller
+                        ReferenceOrigin::DirectlyAccessed => (None, None),
+                    }
                 }
                 Actor::BlueprintHook(_) => {
-                    None
+                    (None, None)
                 }
                 Actor::Function(function_actor) => {
                     if is_barrier {
-                        Some(
-                            GlobalCaller::PackageBlueprint(
-                                function_actor.blueprint_id.clone(),
-                            )
-                        )
+                        (Some((
+                            GlobalCaller::PackageBlueprint(function_actor.blueprint_id.clone(),),
+                            Reference(function_actor.auth_info.self_auth_zone),
+                        )), None)
                     } else {
                         // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
-                        let handle = system.kernel_open_substate(
-                            &function_actor.auth_info.self_auth_zone,
-                            MAIN_BASE_PARTITION,
-                            &AuthZoneField::AuthZone.into(),
-                            LockFlags::read_only(),
-                            SystemLockData::default(),
-                        )?;
-
-                        let auth_zone: FieldSubstate<AuthZone> = system.kernel_read_substate(handle)?.as_typed().unwrap();
-                        // FIXME: This should probably be kept open
-                        system.kernel_close_substate(handle)?;
-                        auth_zone.value.0.global_caller
+                        let (auth_zone, handle) = Self::open_auth_zone(system, &function_actor.auth_info.self_auth_zone)?;
+                        (auth_zone.global_caller, Some(handle))
                     }
                 }
             };
@@ -447,13 +333,57 @@ impl AuthModule {
                 ),
             )?;
 
-            (caller_auth_zone, auth_zone_node_id)
+            (auth_zone_node_id, parent_lock_handle)
         };
 
         Ok(AuthActorInfo {
-            caller_auth_zone,
             self_auth_zone,
+            parent_opened_substate: parent_lock_handle,
         })
+    }
+
+    fn on_execution_finish<V, Y>(
+        api: &mut SystemService<Y, V>,
+        auth_actor_info: AuthActorInfo,
+    ) -> Result<(), RuntimeError>
+        where
+            V: SystemCallbackObject,
+            Y: KernelApi<SystemConfig<V>>,
+    {
+        let self_auth_zone = auth_actor_info.self_auth_zone;
+        // Detach proofs from the auth zone
+        let handle = api.kernel_open_substate(
+            &self_auth_zone,
+            MAIN_BASE_PARTITION,
+            &AuthZoneField::AuthZone.into(),
+            LockFlags::MUTABLE,
+            SystemLockData::Default,
+        )?;
+        let mut substate: FieldSubstate<AuthZone> =
+            api.kernel_read_substate(handle)?.as_typed().unwrap();
+        let proofs = core::mem::replace(&mut substate.value.0.proofs, Vec::new());
+        api.kernel_write_substate(handle, IndexedScryptoValue::from_typed(&substate.value.0))?;
+        api.kernel_close_substate(handle)?;
+
+        // Drop all proofs (previously) owned by the auth zone
+        for proof in proofs {
+            let object_info = api.get_object_info(proof.0.as_node_id())?;
+            api.call_function(
+                RESOURCE_PACKAGE,
+                &object_info.blueprint_info.blueprint_id.blueprint_name,
+                PROOF_DROP_IDENT,
+                scrypto_encode(&ProofDropInput { proof }).unwrap(),
+            )?;
+        }
+
+        // Drop the auth zone
+        api.kernel_drop_node(&self_auth_zone)?;
+
+        if let Some(handle) = auth_actor_info.parent_opened_substate {
+            api.kernel_close_substate(handle)?;
+        }
+
+        Ok(())
     }
 
     fn check_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(

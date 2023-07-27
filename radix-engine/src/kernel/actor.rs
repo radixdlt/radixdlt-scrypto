@@ -9,15 +9,17 @@ pub struct InstanceContext {
     pub outer_object: GlobalAddress,
 }
 
+/*
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallerAuthZone {
     pub global_auth_zone: Option<NodeId>,
 }
+ */
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthActorInfo {
-    pub caller_auth_zone: Option<CallerAuthZone>,
     pub self_auth_zone: NodeId,
+    pub parent_opened_substate: Option<LockHandle>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -121,12 +123,14 @@ impl CallFrameReferences for Actor {
         let mut references = vec![];
         references.extend(self.self_auth_zone());
 
+        /*
         // FIXME: Should not have reference of global auth zone
         if let Some(caller_auth_zone) = self.caller_authzone() {
             if let Some(auth_zone) = &caller_auth_zone.global_auth_zone {
                 references.push(auth_zone.clone());
             }
         }
+         */
 
         if !self.is_direct_access() {
             references.extend(self.node_id().filter(|n| !n.is_global()));
@@ -174,6 +178,7 @@ impl Actor {
         }
     }
 
+    /*
     pub fn caller_authzone(&self) -> Option<CallerAuthZone> {
         match self {
             Actor::Root | Actor::BlueprintHook(..) => None,
@@ -181,6 +186,7 @@ impl Actor {
             Actor::Function(function_actor) => function_actor.auth_info.caller_auth_zone.clone(),
         }
     }
+     */
 
     pub fn instance_context(&self) -> Option<InstanceContext> {
         let method_actor = match self {

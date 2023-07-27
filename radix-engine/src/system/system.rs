@@ -10,7 +10,7 @@ use crate::errors::{
 };
 use crate::errors::{EventError, SystemUpstreamError};
 use crate::kernel::actor::{
-    Actor, AuthActorInfo, CallerAuthZone, FunctionActor, InstanceContext, MethodActor,
+    Actor, AuthActorInfo, FunctionActor, InstanceContext, MethodActor,
 };
 use crate::kernel::call_frame::{NodeVisibility, ReferenceOrigin};
 use crate::kernel::kernel_api::*;
