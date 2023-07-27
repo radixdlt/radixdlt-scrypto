@@ -9,6 +9,8 @@ use radix_engine_interface::api::{ClientApi, FieldValue};
 use radix_engine_interface::blueprints::resource::*;
 use radix_engine_interface::*;
 
+use super::{MintFungibleResourceEvent, MintNonFungibleResourceEvent};
+
 pub fn globalize_resource_manager<Y>(
     owner_role: OwnerRole,
     object_id: NodeId,
@@ -76,6 +78,14 @@ where
         ],
     )?;
 
+    api.emit_event(
+        MintFungibleResourceEvent::event_name().to_string(),
+        scrypto_encode(&MintFungibleResourceEvent {
+            amount: initial_supply,
+        })
+        .unwrap(),
+    )?;
+
     Ok((
         ResourceAddress::new_or_panic(address.into()),
         Bucket(Own(bucket_id)),
@@ -111,9 +121,14 @@ where
         resource_address_reservation,
         NON_FUNGIBLE_BUCKET_BLUEPRINT,
         vec![
-            FieldValue::new(&LiquidNonFungibleResource::new(ids)),
+            FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
             FieldValue::new(&LockedNonFungibleResource::default()),
         ],
+    )?;
+
+    api.emit_event(
+        MintNonFungibleResourceEvent::event_name().to_string(),
+        scrypto_encode(&MintNonFungibleResourceEvent { ids }).unwrap(),
     )?;
 
     Ok((
