@@ -17,6 +17,7 @@ impl WasmValidatorConfigV1 {
         Self {
             weights: InstructionWeights::default(),
             max_stack_size: 1024,
+            // TODO adjust the proper value
             call_per_local_cost: 1,
         }
     }
