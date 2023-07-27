@@ -1674,3 +1674,166 @@ fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceA
         .get(0)
         .unwrap()
 }
+
+#[test]
+fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+
+    // Create
+    let resource_address = test_runner.create_freely_mintable_and_burnable_fungible_resource(
+        OwnerRole::None,
+        Some(dec!(100)),
+        18,
+        account,
+    );
+
+    // Mint
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .mint_fungible(resource_address, dec!(30))
+        .deposit_batch(account)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Burn
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_from_account(account, resource_address, dec!(10))
+        .burn_all_from_worktop(resource_address)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Assert
+    let mut total_supply = Decimal::ZERO;
+    let mut total_mint_amount = Decimal::ZERO;
+    let mut total_burn_amount = Decimal::ZERO;
+    for component in test_runner.find_all_components() {
+        let balance = test_runner.get_component_balance(component, resource_address);
+        total_supply += balance;
+        println!("{:?}, {}", component, balance);
+    }
+    for tx_events in test_runner.collected_events() {
+        for event in tx_events {
+            match &event.0 .0 {
+                Emitter::Method(x, _) if x.eq(resource_address.as_node_id()) => {}
+                _ => {
+                    continue;
+                }
+            }
+            let actual_type_name = test_runner.event_name(&event.0);
+            match actual_type_name.as_str() {
+                "MintFungibleResourceEvent" => {
+                    total_mint_amount += scrypto_decode::<MintFungibleResourceEvent>(&event.1)
+                        .unwrap()
+                        .amount;
+                }
+                "BurnFungibleResourceEvent" => {
+                    total_burn_amount += scrypto_decode::<BurnFungibleResourceEvent>(&event.1)
+                        .unwrap()
+                        .amount;
+                }
+                _ => {}
+            }
+        }
+    }
+    println!("Total supply: {}", total_supply);
+    println!("Total mint amount: {}", total_mint_amount);
+    println!("Total burn amount: {}", total_burn_amount);
+    assert_eq!(total_supply, total_mint_amount - total_burn_amount);
+}
+
+#[test]
+fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
+    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let (pk, _, account) = test_runner.new_allocated_account();
+
+    // Create
+    let resource_address = test_runner.create_freely_mintable_and_burnable_non_fungible_resource(
+        OwnerRole::None,
+        NonFungibleIdType::Integer,
+        Some(vec![
+            (NonFungibleLocalId::integer(1), EmptyNonFungibleData {}),
+            (NonFungibleLocalId::integer(2), EmptyNonFungibleData {}),
+            (NonFungibleLocalId::integer(3), EmptyNonFungibleData {}),
+        ]),
+        account,
+    );
+
+    // Mint
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .mint_non_fungible(
+            resource_address,
+            vec![
+                (NonFungibleLocalId::integer(4), EmptyNonFungibleData {}),
+                (NonFungibleLocalId::integer(5), EmptyNonFungibleData {}),
+            ],
+        )
+        .deposit_batch(account)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Burn
+    let manifest = ManifestBuilder::new()
+        .lock_fee_from_faucet()
+        .withdraw_non_fungibles_from_account(
+            account,
+            resource_address,
+            &btreeset!(NonFungibleLocalId::integer(4)),
+        )
+        .burn_all_from_worktop(resource_address)
+        .build();
+    test_runner
+        .execute_manifest(manifest, vec![NonFungibleGlobalId::from_public_key(&pk)])
+        .expect_commit_success();
+
+    // Assert
+    let mut total_supply = Decimal::ZERO;
+    let mut total_mint_non_fungibles = BTreeSet::new();
+    let mut total_burn_non_fungibles = BTreeSet::new();
+    for component in test_runner.find_all_components() {
+        let balance = test_runner.get_component_balance(component, resource_address);
+        total_supply += balance;
+        println!("{:?}, {}", component, balance);
+    }
+    for tx_events in test_runner.collected_events() {
+        for event in tx_events {
+            match &event.0 .0 {
+                Emitter::Method(x, _) if x.eq(resource_address.as_node_id()) => {}
+                _ => {
+                    continue;
+                }
+            }
+            let actual_type_name = test_runner.event_name(&event.0);
+            match actual_type_name.as_str() {
+                "MintNonFungibleResourceEvent" => {
+                    total_mint_non_fungibles.extend(
+                        scrypto_decode::<MintNonFungibleResourceEvent>(&event.1)
+                            .unwrap()
+                            .ids,
+                    );
+                }
+                "BurnNonFungibleResourceEvent" => {
+                    total_burn_non_fungibles.extend(
+                        scrypto_decode::<BurnNonFungibleResourceEvent>(&event.1)
+                            .unwrap()
+                            .ids,
+                    );
+                }
+                _ => {}
+            }
+        }
+    }
+    println!("Total supply: {}", total_supply);
+    println!("Total mint: {:?}", total_mint_non_fungibles);
+    println!("Total burn: {:?}", total_burn_non_fungibles);
+    total_mint_non_fungibles.retain(|x| !total_burn_non_fungibles.contains(x));
+    assert_eq!(total_supply, total_mint_non_fungibles.len().into());
+}
