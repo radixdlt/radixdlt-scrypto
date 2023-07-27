@@ -1,5 +1,5 @@
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
     CloseSubstateEvent, CreateNodeEvent, DropNodeEvent, OpenSubstateEvent, ReadSubstateEvent,
@@ -29,11 +29,11 @@ macro_rules! log {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation,
+        invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         let message = format!(
             "Invoking: fn = {:?}, input size = {}",
-            invocation.actor,
+            invocation.call_frame_data,
             invocation.len(),
         )
         .green();
@@ -45,20 +45,20 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for KernelTraceModul
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         log!(api, "Sending nodes: {:?}", message.move_nodes);
-        log!(api, "Sending refs: {:?}", message.copy_references);
+        log!(api, "Sending refs: {:?}", message.copy_global_references);
         Ok(())
     }
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         log!(api, "Returning nodes: {:?}", message.move_nodes);
-        log!(api, "Returning refs: {:?}", message.copy_references);
+        log!(api, "Returning refs: {:?}", message.copy_global_references);
         Ok(())
     }
 

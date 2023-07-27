@@ -1,4 +1,4 @@
-use crate::kernel::actor::ReceiverType;
+use crate::kernel::kernel_callback_api::CallFrameReferences;
 use crate::track::interface::{
     CallbackError, NodeSubstates, RemoveSubstateError, SetSubstateError, StoreAccess,
     SubstateStore, TrackOpenSubstateError,
@@ -8,7 +8,6 @@ use radix_engine_interface::api::field_api::LockFlags;
 use radix_engine_interface::types::{LockHandle, NodeId, SubstateKey};
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 
-use super::actor::{Actor, BlueprintHookActor, FunctionActor, MethodActor};
 use super::heap::{Heap, HeapOpenSubstateError, HeapRemoveModuleError, HeapRemoveNodeError};
 use super::kernel_api::LockInfo;
 
@@ -16,21 +15,64 @@ use super::kernel_api::LockInfo;
 ///
 /// Note that it's just an intent, not checked/allowed by kernel yet.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct Message {
-    pub copy_references: Vec<NodeId>,
+pub struct CallFrameMessage {
+    /// Nodes to be moved from src to dest
     pub move_nodes: Vec<NodeId>,
+
+    /// Copy of a global ref from src to dest
+    pub copy_global_references: Vec<NodeId>,
+
+    /// Copy of a direct access ref from src to dest
+    pub copy_direct_access_references: Vec<NodeId>,
+
+    /// Create a "stable" transient in dest from src. The src node may
+    /// have global or borrowed visibility
+    /// TODO: Cleanup abstraction (perhaps by adding another type of visibility)
+    pub copy_to_stable_transient_references: Vec<NodeId>,
 }
 
-impl Message {
-    pub fn from_indexed_scrypto_value(value: &IndexedScryptoValue) -> Self {
+impl CallFrameMessage {
+    pub fn from_input<C: CallFrameReferences>(value: &IndexedScryptoValue, references: &C) -> Self {
+        let mut copy_global_references = Vec::new();
+        let mut copy_direct_access_references = Vec::new();
+
+        for arg_ref in value.references().clone() {
+            if arg_ref.is_global() {
+                copy_global_references.push(arg_ref);
+            } else {
+                copy_direct_access_references.push(arg_ref);
+            }
+        }
+
+        copy_global_references.extend(references.global_references());
+        copy_direct_access_references.extend(references.direct_access_references());
+
         Self {
-            copy_references: value.references().clone(),
             move_nodes: value.owned_nodes().clone(),
+            copy_global_references,
+            copy_direct_access_references,
+            copy_to_stable_transient_references: references.stable_transient_references(),
         }
     }
 
-    pub fn add_copy_reference(&mut self, node_id: NodeId) {
-        self.copy_references.push(node_id)
+    pub fn from_output(value: &IndexedScryptoValue) -> Self {
+        let mut copy_global_references = Vec::new();
+        let mut copy_direct_access_references = Vec::new();
+
+        for arg_ref in value.references().clone() {
+            if arg_ref.is_global() {
+                copy_global_references.push(arg_ref);
+            } else {
+                copy_direct_access_references.push(arg_ref);
+            }
+        }
+
+        Self {
+            move_nodes: value.owned_nodes().clone(),
+            copy_global_references,
+            copy_direct_access_references,
+            copy_to_stable_transient_references: vec![],
+        }
     }
 
     pub fn add_move_node(&mut self, node_id: NodeId) {
@@ -58,11 +100,23 @@ pub enum StableReferenceType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TransientReference {
+    ref_count: usize,
+    ref_origin: ReferenceOrigin,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ReferenceOrigin {
+    Heap,
+    Global(GlobalAddress),
+    DirectlyAccessed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Visibility {
     StableReference(StableReferenceType),
     FrameOwned,
-    Actor,
-    Borrowed,
+    Borrowed(ReferenceOrigin),
 }
 
 impl Visibility {
@@ -100,22 +154,49 @@ impl NodeVisibility {
         self.0.iter().any(|x| x.is_normal())
     }
 
-    pub fn can_be_reference_copied_to_frame(&self) -> Option<StableReferenceType> {
+    pub fn is_global(&self) -> bool {
         for v in &self.0 {
-            if let Visibility::StableReference(t) = v {
-                return Some(t.clone());
+            if let Visibility::StableReference(StableReferenceType::Global) = v {
+                return true;
             }
         }
+        return false;
+    }
+
+    // TODO: Should we return Vec<ReferenceOrigin> and not supercede global with direct access reference
+    pub fn reference_origin(&self, node_id: NodeId) -> Option<ReferenceOrigin> {
+        let mut found_direct_access = false;
+        for v in &self.0 {
+            match v {
+                Visibility::StableReference(StableReferenceType::Global) => {
+                    return Some(ReferenceOrigin::Global(GlobalAddress::new_or_panic(
+                        node_id.0,
+                    )));
+                }
+                Visibility::StableReference(StableReferenceType::DirectAccess) => {
+                    found_direct_access = true
+                }
+                Visibility::Borrowed(ref_origin) => return Some(ref_origin.clone()),
+                Visibility::FrameOwned => {
+                    return Some(ReferenceOrigin::Heap);
+                }
+            }
+        }
+
+        if found_direct_access {
+            return Some(ReferenceOrigin::DirectlyAccessed);
+        }
+
         return None;
     }
 }
 
-pub trait CallFrameEventHandler<L, E> {
+pub trait CallFrameEventHandler<C, L, E> {
     fn on_persist_node(&mut self, heap: &Heap, node_id: &NodeId) -> Result<(), E>;
 
     fn on_store_access(
         &mut self,
-        current_frame: &CallFrame<L>,
+        current_frame: &CallFrame<C, L>,
         heap: &Heap,
         store_access: StoreAccess,
     ) -> Result<(), E>;
@@ -123,22 +204,24 @@ pub trait CallFrameEventHandler<L, E> {
 
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects and references by this function.
-pub struct CallFrame<L> {
+pub struct CallFrame<C, L> {
     /// The frame id
     depth: usize,
 
-    /// FIXME: redo actor generification
-    actor: Actor,
+    /// Call frame system layer data
+    call_frame_data: C,
 
     /// Owned nodes which by definition must live on heap
     /// Also keeps track of number of locks on this node, to prevent locked node from moving.
     owned_root_nodes: IndexMap<NodeId, usize>,
 
     /// References to non-GLOBAL nodes, obtained from substate loading, ref counted.
-    transient_references: NonIterMap<NodeId, usize>,
+    /// These references may NOT be passed between call frames as arguments
+    transient_references: NonIterMap<NodeId, TransientReference>,
 
     /// Stable references points to nodes in track, which can't moved/deleted.
     /// Current two types: `GLOBAL` (root, stored) and `DirectAccess`.
+    /// These references MAY be passed between call frames
     stable_references: NonIterMap<NodeId, StableReferenceType>,
 
     next_lock_handle: LockHandle,
@@ -148,7 +231,6 @@ pub struct CallFrame<L> {
 /// Represents an error when creating a new frame.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum CreateFrameError {
-    ActorBeingMoved(NodeId),
     PassMessageError(PassMessageError),
 }
 
@@ -156,7 +238,9 @@ pub enum CreateFrameError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum PassMessageError {
     TakeNodeError(TakeNodeError),
-    StableRefNotFound(NodeId),
+    GlobalRefNotFound(NodeId),
+    DirectRefNotFound(NodeId),
+    TransientRefNotFound(NodeId),
 }
 
 /// Represents an error when attempting to lock a substate.
@@ -268,11 +352,11 @@ pub enum CallFrameScanSortedSubstatesError {
     OwnedNodeNotSupported(NodeId),
 }
 
-impl<L: Clone> CallFrame<L> {
-    pub fn new_root(actor: Actor) -> Self {
+impl<C, L: Clone> CallFrame<C, L> {
+    pub fn new_root(call_frame_data: C) -> Self {
         Self {
             depth: 0,
-            actor,
+            call_frame_data,
             stable_references: NonIterMap::new(),
             transient_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
@@ -282,13 +366,13 @@ impl<L: Clone> CallFrame<L> {
     }
 
     pub fn new_child_from_parent(
-        parent: &mut CallFrame<L>,
-        actor: Actor,
-        message: Message,
+        parent: &mut CallFrame<C, L>,
+        call_frame_data: C,
+        message: CallFrameMessage,
     ) -> Result<Self, CreateFrameError> {
         let mut frame = Self {
             depth: parent.depth + 1,
-            actor,
+            call_frame_data,
             stable_references: NonIterMap::new(),
             transient_references: NonIterMap::new(),
             owned_root_nodes: index_map_new(),
@@ -300,53 +384,13 @@ impl<L: Clone> CallFrame<L> {
         Self::pass_message(parent, &mut frame, message)
             .map_err(CreateFrameError::PassMessageError)?;
 
-        // Make sure actor isn't part of the owned nodes
-        if let Some(node_id) = frame.actor.node_id() {
-            if frame.owned_root_nodes.contains_key(&node_id) {
-                return Err(CreateFrameError::ActorBeingMoved(node_id));
-            }
-        }
-
-        // Additional global references
-        let mut additional_global_refs = Vec::new();
-
-        if let Some(blueprint_id) = frame.actor.blueprint_id() {
-            additional_global_refs.push(blueprint_id.package_address.into());
-        }
-
-        match &frame.actor {
-            Actor::Root => {}
-            Actor::Method(MethodActor {
-                receiver_type,
-                object_info,
-                ..
-            }) => {
-                if let ReceiverType::OnStoredObject(global_address) = receiver_type {
-                    additional_global_refs.push(global_address.clone());
-                }
-                if let OuterObjectInfo::Some { outer_object } =
-                    object_info.blueprint_info.outer_obj_info
-                {
-                    additional_global_refs.push(outer_object.clone());
-                }
-            }
-            Actor::Function(FunctionActor { blueprint_id, .. })
-            | Actor::BlueprintHook(BlueprintHookActor { blueprint_id, .. }) => {
-                additional_global_refs.push(blueprint_id.package_address.clone().into());
-            }
-        }
-
-        for reference in additional_global_refs {
-            frame.add_global_reference(reference);
-        }
-
         Ok(frame)
     }
 
     pub fn pass_message(
-        from: &mut CallFrame<L>,
-        to: &mut CallFrame<L>,
-        message: Message,
+        from: &mut CallFrame<C, L>,
+        to: &mut CallFrame<C, L>,
+        message: CallFrameMessage,
     ) -> Result<(), PassMessageError> {
         for node_id in message.move_nodes {
             // Note that this has no impact on the `transient_references` because
@@ -357,16 +401,47 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Only allow move of `Global` and `DirectAccess` references
-        for node_id in message.copy_references {
-            if let Some(t) = from
-                .get_node_visibility(&node_id)
-                .can_be_reference_copied_to_frame()
-            {
+        for node_id in message.copy_global_references {
+            if from.get_node_visibility(&node_id).is_global() {
                 // Note that GLOBAL and DirectAccess references are mutually exclusive,
                 // so okay to overwrite
-                to.stable_references.insert(node_id, t);
+                to.stable_references
+                    .insert(node_id, StableReferenceType::Global);
             } else {
-                return Err(PassMessageError::StableRefNotFound(node_id));
+                return Err(PassMessageError::GlobalRefNotFound(node_id));
+            }
+        }
+
+        for node_id in message.copy_direct_access_references {
+            if from.get_node_visibility(&node_id).can_be_invoked(true) {
+                to.stable_references
+                    .insert(node_id, StableReferenceType::DirectAccess);
+            } else {
+                return Err(PassMessageError::DirectRefNotFound(node_id));
+            }
+        }
+
+        for node_id in message.copy_to_stable_transient_references {
+            if from.depth >= to.depth {
+                panic!("Transient references only supported for downstream calls.");
+            }
+
+            if let Some(ref_origin) = from.get_node_visibility(&node_id).reference_origin(node_id) {
+                to.transient_references
+                    .entry(node_id.clone())
+                    .or_insert(TransientReference {
+                        ref_count: 0usize,
+                        ref_origin,
+                    })
+                    .ref_count
+                    .add_assign(1);
+
+                if let ReferenceOrigin::Global(global_address) = ref_origin {
+                    to.stable_references
+                        .insert(global_address.into_node_id(), StableReferenceType::Global);
+                }
+            } else {
+                return Err(PassMessageError::TransientRefNotFound(node_id));
             }
         }
 
@@ -377,8 +452,8 @@ impl<L: Clone> CallFrame<L> {
         self.depth
     }
 
-    pub fn actor(&self) -> &Actor {
-        &self.actor
+    pub fn data(&self) -> &C {
+        &self.call_frame_data
     }
 
     pub fn open_substate<
@@ -397,12 +472,15 @@ impl<L: Clone> CallFrame<L> {
         default: Option<fn() -> IndexedScryptoValue>,
         data: L,
     ) -> Result<(LockHandle, usize), CallbackError<OpenSubstateError, E>> {
-        // Check node visibility
-        if !self.get_node_visibility(node_id).is_visible() {
+        let node_visibility = self.get_node_visibility(node_id);
+        let ref_origin = if let Some(ref_origin) = node_visibility.reference_origin(node_id.clone())
+        {
+            ref_origin
+        } else {
             return Err(CallbackError::Error(OpenSubstateError::NodeNotVisible(
                 node_id.clone(),
             )));
-        }
+        };
 
         // Lock and read the substate
         let mut store_handle = None;
@@ -465,13 +543,21 @@ impl<L: Clone> CallFrame<L> {
         for reference in &non_global_references {
             self.transient_references
                 .entry(reference.clone())
-                .or_default()
+                .or_insert(TransientReference {
+                    ref_count: 0usize,
+                    ref_origin,
+                })
+                .ref_count
                 .add_assign(1);
         }
         for own in &owned_nodes {
             self.transient_references
                 .entry(own.clone())
-                .or_default()
+                .or_insert(TransientReference {
+                    ref_count: 0usize,
+                    ref_origin,
+                })
+                .ref_count
                 .add_assign(1);
         }
 
@@ -504,7 +590,7 @@ impl<L: Clone> CallFrame<L> {
         &mut self,
         heap: &mut Heap,
         store: &mut S,
-        handler: &mut impl CallFrameEventHandler<L, E>,
+        handler: &mut impl CallFrameEventHandler<C, L, E>,
         lock_handle: LockHandle,
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
         let substate_lock = self
@@ -616,15 +702,17 @@ impl<L: Clone> CallFrame<L> {
 
         // Shrink transient reference set
         for reference in substate_lock.non_global_references {
-            let cnt = self.transient_references.remove(&reference).unwrap_or(0);
-            if cnt > 1 {
-                self.transient_references.insert(reference, cnt - 1);
+            let mut transient_ref = self.transient_references.remove(&reference).unwrap();
+            if transient_ref.ref_count > 1 {
+                transient_ref.ref_count -= 1;
+                self.transient_references.insert(reference, transient_ref);
             }
         }
         for own in substate_lock.owned_nodes {
-            let cnt = self.transient_references.remove(&own).unwrap_or(0);
-            if cnt > 1 {
-                self.transient_references.insert(own, cnt - 1);
+            let mut transient_ref = self.transient_references.remove(&own).unwrap();
+            if transient_ref.ref_count > 1 {
+                transient_ref.ref_count -= 1;
+                self.transient_references.insert(own, transient_ref);
             }
         }
 
@@ -716,7 +804,7 @@ impl<L: Clone> CallFrame<L> {
         node_substates: NodeSubstates,
         heap: &mut Heap,
         store: &'f mut S,
-        handler: &mut impl CallFrameEventHandler<L, E>,
+        handler: &mut impl CallFrameEventHandler<C, L, E>,
     ) -> Result<(), CallbackError<CreateNodeError, E>> {
         // TODO: We need to protect transient blueprints from being globalized directly
         // into store. This isn't a problem for now since only native objects are allowed
@@ -840,7 +928,7 @@ impl<L: Clone> CallFrame<L> {
         dest_partition_number: PartitionNumber,
         heap: &'f mut Heap,
         store: &'f mut S,
-        handler: &mut impl CallFrameEventHandler<L, E>,
+        handler: &mut impl CallFrameEventHandler<C, L, E>,
     ) -> Result<(), CallbackError<MoveModuleError, E>> {
         // Check ownership (and visibility)
         if self.owned_root_nodes.get(src_node_id) != Some(&0) {
@@ -1101,7 +1189,7 @@ impl<L: Clone> CallFrame<L> {
         &mut self,
         heap: &mut Heap,
         store: &mut S,
-        handler: &mut impl CallFrameEventHandler<L, E>,
+        handler: &mut impl CallFrameEventHandler<C, L, E>,
     ) -> Result<(), CallbackError<CloseSubstateError, E>> {
         let lock_handles: Vec<LockHandle> = self.locks.keys().cloned().collect();
 
@@ -1135,7 +1223,7 @@ impl<L: Clone> CallFrame<L> {
         &self,
         heap: &mut Heap,
         store: &mut S,
-        handler: &mut impl CallFrameEventHandler<L, E>,
+        handler: &mut impl CallFrameEventHandler<C, L, E>,
         node_id: &NodeId,
     ) -> Result<(), CallbackError<PersistNodeError, E>> {
         handler
@@ -1194,17 +1282,9 @@ impl<L: Clone> CallFrame<L> {
             visibilities.insert(Visibility::FrameOwned);
         }
 
-        // Actor
-        if let Some(actor_node_id) = self.actor.node_id() {
-            if actor_node_id == *node_id {
-                visibilities.insert(Visibility::Actor);
-            }
-        }
-
         // Borrowed from substate loading
-        // TODO: we may want to further split it based on the borrow origin (actor & frame owned nodes)
-        if self.transient_references.contains_key(node_id) {
-            visibilities.insert(Visibility::Borrowed);
+        if let Some(transient_ref) = self.transient_references.get(node_id) {
+            visibilities.insert(Visibility::Borrowed(transient_ref.ref_origin));
         }
 
         NodeVisibility(visibilities)

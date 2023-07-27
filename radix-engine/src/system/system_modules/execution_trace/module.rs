@@ -1,7 +1,7 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::kernel_callback_api::{CreateNodeEvent, DropNodeEvent, KernelCallbackObject};
 use crate::system::module::SystemModule;
@@ -253,7 +253,7 @@ impl ResourceSummary {
 
     pub fn from_message<Y: KernelApi<M>, M: KernelCallbackObject>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Self {
         let mut buckets = index_map_new();
         let mut proofs = index_map_new();
@@ -307,7 +307,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
                     .modules
                     .execution_trace
                     .handle_after_create_node(
-                        system_state.current_actor,
+                        system_state.current_call_frame,
                         current_depth,
                         resource_summary,
                     );
@@ -337,7 +337,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
                     .system
                     .modules
                     .execution_trace
-                    .handle_after_drop_node(system_state.current_actor, current_depth);
+                    .handle_after_drop_node(system_state.current_call_frame, current_depth);
             }
         }
 
@@ -347,7 +347,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         let resource_summary = ResourceSummary::from_message(api, message);
@@ -356,27 +356,32 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for ExecutionTraceMo
             .system
             .modules
             .execution_trace
-            .handle_before_push_frame(system_state.current_actor, callee, resource_summary, args);
+            .handle_before_push_frame(
+                system_state.current_call_frame,
+                callee,
+                resource_summary,
+                args,
+            );
         Ok(())
     }
 
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         let current_depth = api.kernel_get_current_depth();
         let resource_summary = ResourceSummary::from_message(api, message);
 
         let system_state = api.kernel_get_system_state();
 
-        let caller = TraceActor::from_actor(system_state.caller_actor);
+        let caller = TraceActor::from_actor(system_state.caller_call_frame);
 
         system_state
             .system
             .modules
             .execution_trace
             .handle_on_execution_finish(
-                system_state.current_actor,
+                system_state.current_call_frame,
                 current_depth,
                 &caller,
                 resource_summary,
