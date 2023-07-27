@@ -170,8 +170,6 @@ extern "C" {
 
     pub fn get_auth_zone() -> Buffer;
 
-    pub fn assert_access_rule(rule_ptr: *const u8, rule_len: usize);
-
     pub fn emit_event(
         event_name_ptr: *const u8,
         event_name_len: usize,
@@ -388,11 +386,6 @@ pub unsafe fn actor_call_module_method(
 
 #[cfg(not(target_arch = "wasm32"))]
 pub unsafe fn get_auth_zone() -> Buffer {
-    unreachable!()
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub unsafe fn assert_access_rule(_rule_ptr: *const u8, _rule_len: usize) {
     unreachable!()
 }
 

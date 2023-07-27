@@ -128,8 +128,6 @@ pub trait WasmRuntime {
 
     fn get_auth_zone(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn assert_access_rule(&mut self, rule: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
-
     fn consume_wasm_execution_units(&mut self, n: u32)
         -> Result<(), InvokeError<WasmRuntimeError>>;
 

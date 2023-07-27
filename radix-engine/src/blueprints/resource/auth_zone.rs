@@ -1,15 +1,15 @@
 use crate::blueprints::resource::ComposedProof;
 use crate::errors::*;
-use crate::kernel::kernel_api::{KernelApi, KernelNodeApi, KernelSubstateApi};
+use crate::kernel::kernel_api::{KernelNodeApi, KernelSubstateApi};
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::TypeInfoSubstate;
 use crate::system::system_callback::SystemLockData;
+use crate::system::system_modules::auth::{Authorization, AuthorizationCheckResult};
 use crate::types::*;
 use native_sdk::resource::NativeProof;
 use radix_engine_interface::api::{ClientApi, LockFlags, ObjectModuleId, OBJECT_HANDLE_SELF};
 use radix_engine_interface::blueprints::package::BlueprintVersion;
 use radix_engine_interface::blueprints::resource::*;
-use crate::system::system_modules::auth::{Authorization, AuthorizationCheckResult};
 
 use super::{compose_proof_by_amount, compose_proof_by_ids, AuthZone, ComposeProofError};
 
@@ -289,13 +289,16 @@ impl AuthZoneBlueprint {
         Ok(proofs)
     }
 
-    /*
-    pub fn assert_access_rule<Y, L>(access_rule: AccessRule, api: &mut Y) -> Result<(), RuntimeError>
-        where
-            Y: ClientApi<RuntimeError> + KernelSubstateApi<L>,
+    pub fn assert_access_rule<Y, L: Default>(
+        access_rule: AccessRule,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: KernelSubstateApi<L> + ClientApi<RuntimeError>,
     {
         let node_id = api.actor_get_node_id()?;
-        let auth_result = Authorization::check_authorization_against_access_rule(api, &node_id, &access_rule)?;
+        let auth_result =
+            Authorization::check_authorization_against_access_rule(api, &node_id, &access_rule)?;
 
         // FIXME: Use app layer errors
         match auth_result {
@@ -305,5 +308,4 @@ impl AuthZoneBlueprint {
             )),
         }
     }
-     */
 }

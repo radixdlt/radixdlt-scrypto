@@ -7,7 +7,10 @@ use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::consensus_manager::{
     ConsensusManagerGetCurrentEpochInput, CONSENSUS_MANAGER_GET_CURRENT_EPOCH_IDENT,
 };
-use radix_engine_interface::blueprints::resource::{AccessRule, NonFungibleGlobalId};
+use radix_engine_interface::blueprints::resource::{
+    AccessRule, AuthZoneAssertAccessRuleInput, NonFungibleGlobalId,
+    AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+};
 use radix_engine_interface::constants::CONSENSUS_MANAGER;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::{
@@ -77,9 +80,17 @@ impl Runtime {
             .unwrap();
     }
 
-    pub fn assert_access_rule(access_rule: AccessRule) {
+    pub fn assert_access_rule(rule: AccessRule) {
         let mut env = ScryptoEnv;
-        env.assert_access_rule(access_rule).unwrap();
+
+        let node_id = env.get_auth_zone().unwrap();
+        let _ = env
+            .call_method(
+                &node_id,
+                AUTH_ZONE_ASSERT_ACCESS_RULE_IDENT,
+                scrypto_encode(&AuthZoneAssertAccessRuleInput { rule }).unwrap(),
+            )
+            .unwrap();
     }
 
     pub fn allocate_component_address(

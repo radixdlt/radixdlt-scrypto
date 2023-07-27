@@ -97,7 +97,6 @@ pub enum CostingEntry<'a> {
     QueryFeeReserve,
     QueryActor,
     QueryAuthZone,
-    AssertAccessRule,
     QueryTransactionHash,
     GenerateRuid,
     EmitEvent {
@@ -181,7 +180,6 @@ impl<'a> CostingEntry<'a> {
             CostingEntry::QueryFeeReserve => ft.query_fee_reserve_cost(),
             CostingEntry::QueryActor => ft.query_actor_cost(),
             CostingEntry::QueryAuthZone => ft.query_auth_zone_cost(),
-            CostingEntry::AssertAccessRule => ft.assert_access_rule_cost(),
             CostingEntry::QueryTransactionHash => ft.query_transaction_hash_cost(),
             CostingEntry::GenerateRuid => ft.generate_ruid_cost(),
             CostingEntry::EmitEvent { size } => ft.emit_event_cost(*size),

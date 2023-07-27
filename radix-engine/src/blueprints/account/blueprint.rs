@@ -519,6 +519,7 @@ impl AccountBlueprint {
         // an access rule and assert against it.
         let access_rule =
             AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(badge)));
+
         Runtime::assert_access_rule(access_rule, api)?;
         Ok(())
     }

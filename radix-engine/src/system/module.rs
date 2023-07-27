@@ -31,7 +31,6 @@ pub trait KernelModule<M: KernelCallbackObject> {
     // -> AfterInvoke
     //======================
 
-
     #[inline(always)]
     fn before_invoke<Y: KernelApi<M>>(
         _api: &mut Y,

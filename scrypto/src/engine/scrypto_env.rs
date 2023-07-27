@@ -13,7 +13,6 @@ use radix_engine_interface::api::{
 };
 use radix_engine_interface::api::{ClientBlueprintApi, ClientTransactionRuntimeApi};
 use radix_engine_interface::api::{KVEntry, LockFlags};
-use radix_engine_interface::blueprints::resource::AccessRule;
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::scrypto::*;
 use radix_engine_interface::types::PackageAddress;
@@ -428,14 +427,6 @@ impl ClientAuthApi<ClientApiError> for ScryptoEnv {
         let auth_zone = copy_buffer(unsafe { get_auth_zone() });
 
         scrypto_decode(&auth_zone).map_err(ClientApiError::DecodeError)
-    }
-
-    fn assert_access_rule(&mut self, access_rule: AccessRule) -> Result<(), ClientApiError> {
-        let access_rule = scrypto_encode(&access_rule).unwrap();
-
-        unsafe { assert_access_rule(access_rule.as_ptr(), access_rule.len()) };
-
-        Ok(())
     }
 }
 

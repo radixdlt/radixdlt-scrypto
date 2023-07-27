@@ -248,7 +248,9 @@ impl<V: SystemCallbackObject> KernelModule<SystemConfig<V>> for CostingModule {
             api.kernel_get_system()
                 .modules
                 .costing
-                .apply_execution_cost(CostingEntry::AfterInvoke { output_size: output.len() })?;
+                .apply_execution_cost(CostingEntry::AfterInvoke {
+                    output_size: output.len(),
+                })?;
         }
 
         Ok(())

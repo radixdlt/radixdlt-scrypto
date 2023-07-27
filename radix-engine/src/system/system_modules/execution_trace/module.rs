@@ -1,8 +1,8 @@
 use crate::blueprints::resource::VaultUtil;
 use crate::errors::*;
 use crate::kernel::actor::{Actor, FunctionActor, MethodActor};
-use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::call_frame::CallFrameMessage;
+use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::KernelCallbackObject;
 use crate::system::module::KernelModule;
 use crate::system::system_callback::SystemConfig;

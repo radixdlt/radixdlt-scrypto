@@ -1,27 +1,24 @@
 use crate::blueprints::resource::AuthZone;
 use crate::errors::RuntimeError;
-use crate::kernel::actor::AuthActorInfo;
-use crate::kernel::kernel_api::{KernelApi, KernelSubstateApi};
+use crate::kernel::kernel_api::KernelSubstateApi;
 use crate::system::node_modules::role_assignment::OwnerRoleSubstate;
-use crate::system::system::{FieldSubstate, KeyValueEntrySubstate, SystemService};
-use crate::system::system_callback::{SystemConfig, SystemLockData};
-use crate::system::system_callback_api::SystemCallbackObject;
+use crate::system::system::{FieldSubstate, KeyValueEntrySubstate};
 use crate::system::system_modules::auth::{
     AuthorityListAuthorizationResult, AuthorizationCheckResult,
 };
 use crate::types::*;
 use native_sdk::resource::{NativeNonFungibleProof, NativeProof};
-use radix_engine_interface::api::{LockFlags, ObjectModuleId};
+use radix_engine_interface::api::{ClientObjectApi, LockFlags, ObjectModuleId};
 use radix_engine_interface::blueprints::resource::*;
 use sbor::rust::ops::Fn;
 
 pub struct Authorization;
 
 impl Authorization {
-    fn proof_matches<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+    fn proof_matches<L: Default, Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>>(
         resource_rule: &ResourceOrNonFungible,
         proof: &Proof,
-        api: &mut SystemService<Y, V>,
+        api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match resource_rule {
             ResourceOrNonFungible::NonFungible(non_fungible_global_id) => {
@@ -40,19 +37,18 @@ impl Authorization {
         }
     }
 
-    fn global_auth_zone_matches<Y, V, P>(
-        api: &mut SystemService<Y, V>,
+    fn global_auth_zone_matches<L: Default, Y, P>(
+        api: &mut Y,
         auth_zone_id: &NodeId,
         check: &P,
     ) -> Result<bool, RuntimeError>
     where
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
+        Y: KernelSubstateApi<L>,
         P: Fn(
             &[Proof],
             &BTreeSet<ResourceAddress>,
             BTreeSet<&NonFungibleGlobalId>,
-            &mut SystemService<Y, V>,
+            &mut Y,
         ) -> Result<bool, RuntimeError>,
     {
         let mut pass = false;
@@ -65,7 +61,7 @@ impl Authorization {
                 MAIN_BASE_PARTITION,
                 &AuthZoneField::AuthZone.into(),
                 LockFlags::read_only(),
-                SystemLockData::default(),
+                L::default(),
             )?;
             let auth_zone: FieldSubstate<AuthZone> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -106,19 +102,19 @@ impl Authorization {
         Ok(pass)
     }
 
-    fn auth_zone_stack_matches<P, Y, V>(
+    fn auth_zone_stack_matches<P, L, Y>(
         auth_zone: &NodeId,
-        api: &mut SystemService<Y, V>,
+        api: &mut Y,
         check: P,
     ) -> Result<bool, RuntimeError>
     where
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
+        L: Default,
+        Y: KernelSubstateApi<L>,
         P: Fn(
             &[Proof],
             &BTreeSet<ResourceAddress>,
             BTreeSet<&NonFungibleGlobalId>,
-            &mut SystemService<Y, V>,
+            &mut Y,
         ) -> Result<bool, RuntimeError>,
     {
         {
@@ -127,17 +123,17 @@ impl Authorization {
                 MAIN_BASE_PARTITION,
                 &AuthZoneField::AuthZone.into(),
                 LockFlags::read_only(),
-                SystemLockData::default(),
+                L::default(),
             )?;
-            let auth_zone: FieldSubstate<AuthZone> = api.kernel_read_substate(handle)?.as_typed().unwrap();
+            let auth_zone: FieldSubstate<AuthZone> =
+                api.kernel_read_substate(handle)?.as_typed().unwrap();
 
             // TODO: Combine these two
 
             // Test Local Caller package address
             if let Some(local_package_address) = auth_zone.value.0.local_caller_package_address {
-                let non_fungible_global_id = NonFungibleGlobalId::package_of_direct_caller_badge(
-                    local_package_address,
-                );
+                let non_fungible_global_id =
+                    NonFungibleGlobalId::package_of_direct_caller_badge(local_package_address);
                 let local_call_frame_proofs = btreeset!(&non_fungible_global_id);
                 if check(&[], &btreeset!(), local_call_frame_proofs, api)? {
                     api.kernel_close_substate(handle)?;
@@ -146,7 +142,8 @@ impl Authorization {
             }
 
             // Test Global Caller
-            if let Some((global_caller, global_caller_reference)) = &auth_zone.value.0.global_caller {
+            if let Some((global_caller, global_caller_reference)) = &auth_zone.value.0.global_caller
+            {
                 let non_fungible_global_id =
                     NonFungibleGlobalId::global_caller_badge(global_caller.clone());
                 let global_call_frame_proofs = btreeset!(&non_fungible_global_id);
@@ -171,11 +168,14 @@ impl Authorization {
         Ok(false)
     }
 
-    fn auth_zone_stack_has_amount<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+    fn auth_zone_stack_has_amount<
+        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        L: Default,
+    >(
         auth_zone: &NodeId,
         resource: &ResourceAddress,
         amount: Decimal,
-        api: &mut SystemService<Y, V>,
+        api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(auth_zone, api, |proofs, _, _, api| {
             // TODO: revisit this and decide if we need to check the composite max amount rather than just each proof individually
@@ -191,10 +191,13 @@ impl Authorization {
         })
     }
 
-    fn auth_zone_stack_matches_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+    fn auth_zone_stack_matches_rule<
+        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        L: Default,
+    >(
         auth_zone: &NodeId,
         resource_rule: &ResourceOrNonFungible,
-        api: &mut SystemService<Y, V>,
+        api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(
             auth_zone,
@@ -221,10 +224,13 @@ impl Authorization {
         )
     }
 
-    pub fn verify_proof_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+    pub fn verify_proof_rule<
+        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        L: Default,
+    >(
         auth_zone: &NodeId,
         proof_rule: &ProofRule,
-        api: &mut SystemService<Y, V>,
+        api: &mut Y,
     ) -> Result<bool, RuntimeError> {
         match proof_rule {
             ProofRule::Require(resource) => {
@@ -274,10 +280,10 @@ impl Authorization {
         }
     }
 
-    pub fn verify_auth_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
+    pub fn verify_auth_rule<Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>, L: Default>(
         auth_zone: &NodeId,
         auth_rule: &AccessRuleNode,
-        api: &mut SystemService<Y, V>,
+        api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match auth_rule {
             AccessRuleNode::ProofRule(rule) => {
@@ -310,13 +316,13 @@ impl Authorization {
     }
 
     pub fn check_authorization_against_role_key_internal<
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
+        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        L: Default,
     >(
         auth_zone: &NodeId,
         role_assignment_of: &NodeId,
         key: &ModuleRoleKey,
-        api: &mut SystemService<Y, V>,
+        api: &mut Y,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         let access_rule = if key.key.key.eq(SELF_ROLE) {
             // FIXME: Prevent panics of node id, this may be triggered by vaults and auth zone
@@ -335,7 +341,7 @@ impl Authorization {
                     let kv_entry = KeyValueEntrySubstate::<()>::default();
                     IndexedScryptoValue::from_typed(&kv_entry)
                 }),
-                SystemLockData::default(),
+                L::default(),
             )?;
             let substate: KeyValueEntrySubstate<AccessRule> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
@@ -351,7 +357,7 @@ impl Authorization {
                             .unwrap(),
                         &SubstateKey::Field(0u8),
                         LockFlags::read_only(),
-                        SystemLockData::default(),
+                        L::default(),
                     )?;
 
                     let owner_role_substate: FieldSubstate<OwnerRoleSubstate> =
@@ -366,10 +372,10 @@ impl Authorization {
     }
 
     pub fn check_authorization_against_access_rule<
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
+        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        L: Default,
     >(
-        api: &mut SystemService<Y, V>,
+        api: &mut Y,
         auth_zone: &NodeId,
         rule: &AccessRule,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
@@ -390,14 +396,14 @@ impl Authorization {
     }
 
     pub fn check_authorization_against_role_list<
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
+        Y: KernelSubstateApi<L> + ClientObjectApi<RuntimeError>,
+        L: Default,
     >(
         auth_zone: &NodeId,
         role_assignment_of: &NodeId,
         module: ObjectModuleId,
         role_list: &RoleList,
-        api: &mut SystemService<Y, V>,
+        api: &mut Y,
     ) -> Result<AuthorityListAuthorizationResult, RuntimeError> {
         let mut failed = Vec::new();
 

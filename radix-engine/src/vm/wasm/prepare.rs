@@ -535,24 +535,6 @@ impl WasmModule {
                                 ));
                             }
                         }
-                        ASSERT_ACCESS_RULE_FUNCTION_NAME => {
-                            if let External::Function(type_index) = entry.external() {
-                                if Self::function_type_matches(
-                                    &self.module,
-                                    *type_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
-                                    vec![],
-                                ) {
-                                    continue;
-                                }
-
-                                return Err(PrepareError::InvalidImport(
-                                    InvalidImport::InvalidFunctionType(
-                                        ASSERT_ACCESS_RULE_FUNCTION_NAME.to_string(),
-                                    ),
-                                ));
-                            }
-                        }
                         NEW_OBJECT_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(

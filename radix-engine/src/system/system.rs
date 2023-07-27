@@ -1,17 +1,13 @@
 use super::id_allocation::IDAllocation;
 use super::payload_validation::*;
-use super::system_modules::auth::Authorization;
 use super::system_modules::costing::CostingEntry;
-use crate::blueprints::resource::AuthZone;
 use crate::errors::{
     ApplicationError, CannotGlobalizeError, CreateObjectError, InvalidDropAccess,
     InvalidGlobalizeAccess, InvalidModuleType, PayloadValidationAgainstSchemaError, RuntimeError,
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{
-    Actor, AuthActorInfo, FunctionActor, InstanceContext, MethodActor,
-};
+use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
 use crate::kernel::call_frame::{NodeVisibility, ReferenceOrigin};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
@@ -20,7 +16,7 @@ use crate::system::system_callback::{
     FieldLockData, KeyValueEntryLockData, SystemConfig, SystemLockData,
 };
 use crate::system::system_callback_api::SystemCallbackObject;
-use crate::system::system_modules::auth::{AuthModule, AuthorizationCheckResult};
+use crate::system::system_modules::auth::AuthModule;
 use crate::system::system_modules::execution_trace::{BucketSnapshot, ProofSnapshot};
 use crate::track::interface::NodeSubstates;
 use crate::types::*;
@@ -35,7 +31,6 @@ use radix_engine_interface::api::object_api::ObjectModuleId;
 use radix_engine_interface::api::*;
 use radix_engine_interface::blueprints::package::*;
 use radix_engine_interface::blueprints::resource::*;
-use radix_engine_interface::blueprints::transaction_processor::TRANSACTION_PROCESSOR_BLUEPRINT;
 use radix_engine_interface::schema::{
     BlueprintKeyValueStoreSchema, Condition, InstanceSchema, KeyValueStoreSchema,
 };
@@ -43,7 +38,6 @@ use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
 use resources_tracker_macro::trace_resources;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use crate::system::system_modules::EnabledModules;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 pub enum SubstateMutability {
@@ -1444,7 +1438,14 @@ where
             RuntimeError::SystemUpstreamError(SystemUpstreamError::InputDecodeError(e))
         })?;
 
-        let auth_actor_info = AuthModule::on_call_method(self, receiver, module_id, direct_access, method_name, &args)?;
+        let auth_actor_info = AuthModule::on_call_method(
+            self,
+            receiver,
+            module_id,
+            direct_access,
+            method_name,
+            &args,
+        )?;
 
         let rtn = self
             .api
@@ -2419,34 +2420,13 @@ where
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
         self.api
             .kernel_get_system()
-            .modules .apply_execution_cost(CostingEntry::QueryAuthZone)?;
+            .modules
+            .apply_execution_cost(CostingEntry::QueryAuthZone)?;
 
         if let Some(auth_zone_id) = self.current_actor().self_auth_zone() {
             Ok(auth_zone_id.into())
         } else {
             Err(RuntimeError::SystemError(SystemError::AuthModuleNotEnabled))
-        }
-    }
-
-    #[trace_resources]
-    fn assert_access_rule(&mut self, rule: AccessRule) -> Result<(), RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(CostingEntry::AssertAccessRule)?;
-
-        if let Some(auth_info) = self.current_actor().auth_info() {
-            let auth_result = Authorization::check_authorization_against_access_rule(self, &auth_info.self_auth_zone, &rule)?;
-            match auth_result {
-                AuthorizationCheckResult::Authorized => Ok(()),
-                AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(
-                    SystemError::AssertAccessRuleFailed,
-                )),
-            }
-        } else {
-            return Err(RuntimeError::SystemError(
-                SystemError::AssertAccessRuleFailed,
-            ));
         }
     }
 }
