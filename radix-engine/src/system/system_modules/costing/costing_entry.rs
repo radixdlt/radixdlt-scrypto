@@ -180,7 +180,7 @@ impl<'a> CostingEntry<'a> {
                 format!("RunWasmCode::{}", export_name)
             }
             CostingEntry::OpenSubstate {
-                event: OpenSubstateEvent::Start { node_id, .. },
+                event: OpenSubstateEvent::End { node_id, .. },
                 ..
             } => {
                 format!(

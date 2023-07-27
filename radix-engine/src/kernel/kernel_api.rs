@@ -196,10 +196,10 @@ pub trait KernelInternalApi<M: KernelCallbackObject> {
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M>;
 
     /// Gets the number of call frames that are currently in the call frame stack
-    fn kernel_get_current_depth(&mut self) -> usize;
+    fn kernel_get_current_depth(&self) -> usize;
 
     /// Returns the visibility of a node
-    fn kernel_get_node_visibility(&mut self, node_id: &NodeId) -> NodeVisibility;
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility;
 
     /* Super unstable interface, specifically for `ExecutionTrace` kernel module */
     fn kernel_read_bucket(&mut self, bucket_id: &NodeId) -> Option<BucketSnapshot>;

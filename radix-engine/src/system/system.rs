@@ -2825,11 +2825,11 @@ where
         self.api.kernel_get_system_state()
     }
 
-    fn kernel_get_current_depth(&mut self) -> usize {
+    fn kernel_get_current_depth(&self) -> usize {
         self.api.kernel_get_current_depth()
     }
 
-    fn kernel_get_node_visibility(&mut self, node_id: &NodeId) -> NodeVisibility {
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.api.kernel_get_node_visibility(node_id)
     }
 

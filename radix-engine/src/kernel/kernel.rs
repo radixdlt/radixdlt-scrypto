@@ -500,14 +500,12 @@ where
     M: KernelCallbackObject,
     S: SubstateStore,
 {
-    fn kernel_get_node_visibility(&mut self, node_id: &NodeId) -> NodeVisibility {
-        let mut read_only = as_read_only!(self);
-        read_only.kernel_get_node_visibility(node_id)
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
+        self.current_frame.get_node_visibility(node_id)
     }
 
-    fn kernel_get_current_depth(&mut self) -> usize {
-        let mut read_only = as_read_only!(self);
-        read_only.kernel_get_current_depth()
+    fn kernel_get_current_depth(&self) -> usize {
+        self.current_frame.depth()
     }
 
     fn kernel_get_system_state(&mut self) -> SystemState<'_, M> {
@@ -550,11 +548,11 @@ impl<'g, M> KernelInternalApi<M> for KernelReadOnly<'g, M>
 where
     M: KernelCallbackObject,
 {
-    fn kernel_get_node_visibility(&mut self, node_id: &NodeId) -> NodeVisibility {
+    fn kernel_get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
         self.current_frame.get_node_visibility(node_id)
     }
 
-    fn kernel_get_current_depth(&mut self) -> usize {
+    fn kernel_get_current_depth(&self) -> usize {
         self.current_frame.depth()
     }
 
@@ -933,10 +931,7 @@ where
         )?;
 
         self.current_frame
-            .write_substate(&mut self.heap, self.store, lock_handle, value)
-            .map_err(CallFrameError::WriteSubstateError)
-            .map_err(KernelError::CallFrameError)
-            .map_err(RuntimeError::KernelError)?;
+            .write_substate(&mut self.heap, self.store, lock_handle, value)?;
 
         Ok(())
     }
