@@ -265,7 +265,7 @@ impl AuthModule {
         let (caller_auth_zone, self_auth_zone) = {
             let current_actor = system.current_actor();
             let local_package_address = current_actor.package_address();
-            let caller_auth_zone = match current_actor {
+            let caller_auth_zone = match &current_actor {
                 Actor::Root => None,
                 Actor::Method(current_method_actor) => {
                     let caller_auth_zone = CallerAuthZone {
@@ -279,10 +279,7 @@ impl AuthModule {
                             {
                                 ReferenceOrigin::Global(address) => {
                                     if is_barrier {
-                                        Some((
-                                            address.into(),
-                                            current_method_actor.auth_actor_info.self_auth_zone,
-                                        ))
+                                        Some(current_method_actor.auth_actor_info.self_auth_zone)
                                     } else {
                                         // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
                                         current_method_actor
@@ -317,12 +314,7 @@ impl AuthModule {
                     let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: {
                             if is_barrier {
-                                Some((
-                                    GlobalCaller::PackageBlueprint(
-                                        function_actor.blueprint_id.clone(),
-                                    ),
-                                    function_actor.auth_info.self_auth_zone,
-                                ))
+                                Some(function_actor.auth_info.self_auth_zone)
                             } else {
                                 // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
                                 function_actor
@@ -337,6 +329,82 @@ impl AuthModule {
                 }
             };
 
+            let global_caller = match current_actor {
+                Actor::Root => None,
+                Actor::Method(current_method_actor) => {
+                    // TODO: Check actor object module id?
+                    let node_visibility =
+                        system.kernel_get_node_visibility(&current_method_actor.node_id);
+                    let global_caller: Option<GlobalCaller> = match node_visibility
+                        .reference_origin(current_method_actor.node_id)
+                        .unwrap()
+                    {
+                        ReferenceOrigin::Global(address) => {
+                            if is_barrier {
+                                Some(address.into())
+                            } else {
+                                // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
+                                let handle = system.kernel_open_substate(
+                                    &current_method_actor.auth_actor_info.self_auth_zone,
+                                    MAIN_BASE_PARTITION,
+                                    &AuthZoneField::AuthZone.into(),
+                                    LockFlags::read_only(),
+                                    SystemLockData::default(),
+                                )?;
+
+                                let auth_zone: FieldSubstate<AuthZone> = system.kernel_read_substate(handle)?.as_typed().unwrap();
+                                // FIXME: This should probably be kept open
+                                system.kernel_close_substate(handle)?;
+                                auth_zone.value.0.global_caller
+                            }
+                        }
+                        ReferenceOrigin::Heap => {
+                            // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
+                            let handle = system.kernel_open_substate(
+                                &current_method_actor.auth_actor_info.self_auth_zone,
+                                MAIN_BASE_PARTITION,
+                                &AuthZoneField::AuthZone.into(),
+                                LockFlags::read_only(),
+                                SystemLockData::default(),
+                            )?;
+
+                            let auth_zone: FieldSubstate<AuthZone> = system.kernel_read_substate(handle)?.as_typed().unwrap();
+                            // FIXME: This should probably be kept open
+                            system.kernel_close_substate(handle)?;
+                            auth_zone.value.0.global_caller
+                        }
+                        ReferenceOrigin::DirectlyAccessed => None,
+                    };
+                    global_caller
+                }
+                Actor::BlueprintHook(_) => {
+                    None
+                }
+                Actor::Function(function_actor) => {
+                    if is_barrier {
+                        Some(
+                            GlobalCaller::PackageBlueprint(
+                                function_actor.blueprint_id.clone(),
+                            )
+                        )
+                    } else {
+                        // TODO: Check if this is okay for all variants, for example, module, auth_zone, or self calls
+                        let handle = system.kernel_open_substate(
+                            &function_actor.auth_info.self_auth_zone,
+                            MAIN_BASE_PARTITION,
+                            &AuthZoneField::AuthZone.into(),
+                            LockFlags::read_only(),
+                            SystemLockData::default(),
+                        )?;
+
+                        let auth_zone: FieldSubstate<AuthZone> = system.kernel_read_substate(handle)?.as_typed().unwrap();
+                        // FIXME: This should probably be kept open
+                        system.kernel_close_substate(handle)?;
+                        auth_zone.value.0.global_caller
+                    }
+                }
+            };
+
             let self_auth_zone_parent = if is_barrier {
                 None
             } else {
@@ -348,6 +416,7 @@ impl AuthModule {
                 virtual_resources,
                 virtual_non_fungibles,
                 local_package_address,
+                global_caller,
                 self_auth_zone_parent,
             );
 

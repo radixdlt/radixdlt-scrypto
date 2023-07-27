@@ -121,7 +121,6 @@ impl Authorization {
             &mut SystemService<Y, V>,
         ) -> Result<bool, RuntimeError>,
     {
-        // Test Local Caller package address
         {
             let handle = api.kernel_open_substate(
                 &auth_info.self_auth_zone,
@@ -132,6 +131,10 @@ impl Authorization {
             )?;
             let auth_zone: FieldSubstate<AuthZone> = api.kernel_read_substate(handle)?.as_typed().unwrap();
             api.kernel_close_substate(handle)?;
+
+            // TODO: Combine these two
+
+            // Test Local Caller package address
             if let Some(local_package_address) = auth_zone.value.0.local_caller_package_address {
                 let non_fungible_global_id = NonFungibleGlobalId::package_of_direct_caller_badge(
                     local_package_address,
@@ -141,19 +144,20 @@ impl Authorization {
                     return Ok(true);
                 }
             }
-        }
 
-
-
-        if let Some(caller_auth_zone) = &auth_info.caller_auth_zone {
-            if let Some((global_caller, auth_zone_id)) = &caller_auth_zone.global_auth_zone {
+            // Test Global Caller
+            if let Some(global_caller) = &auth_zone.value.0.global_caller {
                 let non_fungible_global_id =
                     NonFungibleGlobalId::global_caller_badge(global_caller.clone());
                 let global_call_frame_proofs = btreeset!(&non_fungible_global_id);
                 if check(&[], &btreeset!(), global_call_frame_proofs, api)? {
                     return Ok(true);
                 }
+            }
+        }
 
+        if let Some(caller_auth_zone) = &auth_info.caller_auth_zone {
+            if let Some(auth_zone_id) = &caller_auth_zone.global_auth_zone {
                 if Self::global_auth_zone_matches(api, auth_zone_id.clone(), &check)? {
                     return Ok(true);
                 }

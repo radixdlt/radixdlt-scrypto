@@ -11,7 +11,7 @@ pub struct InstanceContext {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallerAuthZone {
-    pub global_auth_zone: Option<(GlobalCaller, NodeId)>,
+    pub global_auth_zone: Option<NodeId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -123,7 +123,7 @@ impl CallFrameReferences for Actor {
 
         // FIXME: Should not have reference of global auth zone
         if let Some(caller_auth_zone) = self.caller_authzone() {
-            if let Some((_caller, auth_zone)) = &caller_auth_zone.global_auth_zone {
+            if let Some(auth_zone) = &caller_auth_zone.global_auth_zone {
                 references.push(auth_zone.clone());
             }
         }
