@@ -1771,7 +1771,7 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
     );
     assert_eq!(
         Some(total_supply),
-        receipt.expect_commit_success().output(1)
+        receipt.expect_commit_success().output::<Option<Decimal>>(1)
     );
 }
 
@@ -1878,6 +1878,6 @@ fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
     );
     assert_eq!(
         Some(total_supply),
-        receipt.expect_commit_success().output(1)
+        receipt.expect_commit_success().output::<Option<Decimal>>(1)
     );
 }
