@@ -362,16 +362,16 @@ impl Authorization {
             }
         };
 
-        Self::check_authorization_against_access_rule_internal(auth_zone, &access_rule, api)
+        Self::check_authorization_against_access_rule(api, auth_zone, &access_rule)
     }
 
-    fn check_authorization_against_access_rule_internal<
+    pub fn check_authorization_against_access_rule<
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
+        api: &mut SystemService<Y, V>,
         auth_zone: &NodeId,
         rule: &AccessRule,
-        api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match rule {
             AccessRule::Protected(rule_node) => {
@@ -387,17 +387,6 @@ impl Authorization {
             AccessRule::AllowAll => Ok(AuthorizationCheckResult::Authorized),
             AccessRule::DenyAll => Ok(AuthorizationCheckResult::Failed(vec![rule.clone()])),
         }
-    }
-
-    pub fn check_authorization_against_access_rule<
-        Y: KernelApi<SystemConfig<V>>,
-        V: SystemCallbackObject,
-    >(
-        auth_zone: &NodeId,
-        rule: &AccessRule,
-        api: &mut SystemService<Y, V>,
-    ) -> Result<AuthorizationCheckResult, RuntimeError> {
-        Self::check_authorization_against_access_rule_internal(auth_zone, rule, api)
     }
 
     pub fn check_authorization_against_role_list<

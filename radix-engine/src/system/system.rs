@@ -2417,12 +2417,9 @@ where
 {
     #[trace_resources]
     fn get_auth_zone(&mut self) -> Result<NodeId, RuntimeError> {
-        /*
         self.api
             .kernel_get_system()
-            .modules
-            .apply_execution_cost(CostingEntry::QueryAuthZone)?;
-         */
+            .modules .apply_execution_cost(CostingEntry::QueryAuthZone)?;
 
         if let Some(auth_zone_id) = self.current_actor().self_auth_zone() {
             Ok(auth_zone_id.into())
@@ -2439,9 +2436,7 @@ where
             .apply_execution_cost(CostingEntry::AssertAccessRule)?;
 
         if let Some(auth_info) = self.current_actor().auth_info() {
-            // Authorize
-            let auth_result =
-                Authorization::check_authorization_against_access_rule(&auth_info.self_auth_zone, &rule, self)?;
+            let auth_result = Authorization::check_authorization_against_access_rule(self, &auth_info.self_auth_zone, &rule)?;
             match auth_result {
                 AuthorizationCheckResult::Authorized => Ok(()),
                 AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(

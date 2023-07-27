@@ -377,7 +377,7 @@ impl AuthModule {
             ResolvedPermission::AllowAll => return Ok(()),
             ResolvedPermission::AccessRule(rule) => {
                 let result =
-                    Authorization::check_authorization_against_access_rule(&auth_zone, &rule, api)?;
+                    Authorization::check_authorization_against_access_rule(api, &auth_zone, &rule)?;
 
                 match result {
                     AuthorizationCheckResult::Authorized => Ok(()),
