@@ -31,8 +31,3 @@ pub struct OnMoveInput {
 }
 
 pub type OnMoveOutput = ();
-
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub struct OnPersistInput {}
-
-pub type OnPersistOutput = ();

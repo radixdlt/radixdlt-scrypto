@@ -5,11 +5,23 @@ use scrypto::prelude::*;
 
 #[blueprint]
 mod globalize_test {
-    struct GlobalizeTest;
+    struct GlobalizeTest {
+        own: Option<Own>,
+    }
 
     impl GlobalizeTest {
+        pub fn globalize(x: Own) {
+            let modules = btreemap!(
+                ObjectModuleId::Main => x.0,
+                ObjectModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
+                ObjectModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
+            );
+
+            let _ = ScryptoEnv.globalize(modules, None).unwrap();
+        }
+
         pub fn globalize_in_package(package_address: PackageAddress) {
-            let x = GlobalizeTest {}.instantiate();
+            let x = GlobalizeTest { own: None }.instantiate();
 
             ScryptoEnv
                 .call_function(
@@ -21,14 +33,81 @@ mod globalize_test {
                 .unwrap();
         }
 
-        pub fn globalize(x: Own) {
-            let modules = btreemap!(
-                ObjectModuleId::Main => x.0,
-                ObjectModuleId::Metadata => Metadata::new().0.as_node_id().clone(),
-                ObjectModuleId::Royalty => Royalty::new(ComponentRoyaltyConfig::default()).0.as_node_id().clone(),
-            );
+        pub fn globalize_bucket() {
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
+            Self::globalize(bucket.0);
+        }
 
-            let _ = ScryptoEnv.globalize(modules, None).unwrap();
+        pub fn globalize_proof() {
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
+            let proof = bucket.create_proof_of_all();
+            Self::globalize(proof.0);
+        }
+
+        pub fn globalize_vault() {
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
+            let vault = Vault::with_bucket(bucket);
+            Self::globalize(vault.0);
+        }
+
+        pub fn globalize_metadata() {
+            let metadata = Metadata::new().0.as_node_id().clone();
+            Self::globalize(Own(metadata));
+        }
+
+        pub fn globalize_royalty() {
+            let royalty = Royalty::new(ComponentRoyaltyConfig::default())
+                .0
+                .as_node_id()
+                .clone();
+            Self::globalize(Own(royalty));
+        }
+
+        pub fn globalize_role_assignment() {
+            let ra = RoleAssignment::new(OwnerRole::None, btreemap!())
+                .0
+                .as_node_id()
+                .clone();
+            Self::globalize(Own(ra));
+        }
+
+        pub fn store(x: Own) {
+            Self { own: Some(x) }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
+        }
+
+        pub fn store_bucket() {
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
+            Self::store(bucket.0);
+        }
+
+        pub fn store_proof() {
+            let bucket = ResourceBuilder::new_fungible(OwnerRole::None).mint_initial_supply(100);
+            let proof = bucket.create_proof_of_all();
+            Self::store(proof.0);
+        }
+
+        pub fn store_metadata() {
+            let metadata = Metadata::new().0.as_node_id().clone();
+            Self::store(Own(metadata));
+        }
+
+        pub fn store_royalty() {
+            let royalty = Royalty::new(ComponentRoyaltyConfig::default())
+                .0
+                .as_node_id()
+                .clone();
+            Self::store(Own(royalty));
+        }
+
+        pub fn store_role_assignment() {
+            let ra = RoleAssignment::new(OwnerRole::None, btreemap!())
+                .0
+                .as_node_id()
+                .clone();
+            Self::store(Own(ra));
         }
     }
 }
