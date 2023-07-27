@@ -863,7 +863,6 @@ dependencies = [
  "parity-wasm",
  "paste",
  "radix-engine-common",
- "radix-engine-constants",
  "radix-engine-interface",
  "radix-engine-store-interface",
  "resources-tracker-macro",
@@ -890,16 +889,11 @@ dependencies = [
  "num-integer",
  "num-traits",
  "paste",
- "radix-engine-constants",
  "radix-engine-derive",
  "sbor",
  "strum",
  "utils",
 ]
-
-[[package]]
-name = "radix-engine-constants"
-version = "0.11.0"
 
 [[package]]
 name = "radix-engine-derive"
@@ -944,7 +938,6 @@ dependencies = [
  "itertools",
  "paste",
  "radix-engine",
- "radix-engine-constants",
  "radix-engine-interface",
  "radix-engine-store-interface",
  "sbor",
@@ -1302,7 +1295,6 @@ dependencies = [
  "dirs",
  "hex",
  "radix-engine",
- "radix-engine-constants",
  "radix-engine-interface",
  "radix-engine-queries",
  "radix-engine-store-interface",
@@ -1483,7 +1475,6 @@ dependencies = [
  "hex",
  "lazy_static",
  "radix-engine-common",
- "radix-engine-constants",
  "radix-engine-interface",
  "sbor",
  "secp256k1",

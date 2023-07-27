@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use radix_engine_constants::*;
+use radix_engine_common::constants::*;
 
 pub enum ConcatenatedDigest {}
 

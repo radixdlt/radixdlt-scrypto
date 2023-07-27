@@ -347,6 +347,7 @@ impl ResourceNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::Outer,
+                is_transient: false,
                 feature_set: btreeset!(
                     TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
                     VAULT_FREEZE_FEATURE.to_string(),
@@ -679,6 +680,7 @@ impl ResourceNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::Outer,
+                is_transient: false,
                 feature_set: btreeset!(
                     TRACK_TOTAL_SUPPLY_FEATURE.to_string(),
                     VAULT_FREEZE_FEATURE.to_string(),
@@ -938,6 +940,7 @@ impl ResourceNativePackage {
                 blueprint_type: BlueprintType::Inner {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
+                is_transient: false,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1211,6 +1214,7 @@ impl ResourceNativePackage {
                 blueprint_type: BlueprintType::Inner {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
+                is_transient: false,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1401,6 +1405,7 @@ impl ResourceNativePackage {
                 blueprint_type: BlueprintType::Inner {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
+                is_transient: true,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1599,6 +1604,7 @@ impl ResourceNativePackage {
                 blueprint_type: BlueprintType::Inner {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
+                is_transient: true,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1710,6 +1716,7 @@ impl ResourceNativePackage {
                 blueprint_type: BlueprintType::Inner {
                     outer_blueprint: FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
+                is_transient: true,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1826,6 +1833,7 @@ impl ResourceNativePackage {
                 blueprint_type: BlueprintType::Inner {
                     outer_blueprint: NON_FUNGIBLE_RESOURCE_MANAGER_BLUEPRINT.to_string(),
                 },
+                is_transient: true,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -1986,6 +1994,7 @@ impl ResourceNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: true,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 
@@ -2136,6 +2145,7 @@ impl ResourceNativePackage {
 
             BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: true,
                 dependencies: btreeset!(),
                 feature_set: btreeset!(),
 

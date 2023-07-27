@@ -431,6 +431,7 @@ impl AccessControllerNativePackage {
         let blueprints = btreemap!(
             ACCESS_CONTROLLER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 feature_set: btreeset!(),
                 dependencies: btreeset!(
                     PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.into(),

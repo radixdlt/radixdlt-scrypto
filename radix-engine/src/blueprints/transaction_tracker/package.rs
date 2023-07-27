@@ -81,6 +81,7 @@ impl TransactionTrackerNativePackage {
         let blueprints = btreemap!(
             TRANSACTION_TRACKER_BLUEPRINT.to_string() => BlueprintDefinitionInit {
                 blueprint_type: BlueprintType::default(),
+                is_transient: false,
                 dependencies: btreeset!(
                 ),
                 feature_set: btreeset!(),
@@ -250,7 +251,7 @@ mod tests {
             * 5 // Targeted epoch duration: 5 mins
             / 60
             / 24;
-        assert!(covered_epochs >= DEFAULT_MAX_EPOCH_RANGE);
+        assert!(covered_epochs >= MAX_EPOCH_RANGE);
         assert_eq!(covered_days, 65);
     }
 

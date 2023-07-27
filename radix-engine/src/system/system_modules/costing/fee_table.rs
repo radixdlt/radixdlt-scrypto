@@ -369,7 +369,7 @@ impl FeeTable {
     }
 
     #[inline]
-    pub fn scan_substates_cost(&self, store_access: &StoreAccessInfo) -> u32 {
+    pub fn scan_keys_cost(&self, store_access: &StoreAccessInfo) -> u32 {
         add(3443u32 / CPU_INSTRUCTIONS_TO_COST_UNIT, Self::store_access_cost(store_access))
     }
 

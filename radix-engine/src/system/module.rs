@@ -116,7 +116,9 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn after_move_modules<Y: KernelApi<M>>(
         _api: &mut Y,
         _src_node_id: &NodeId,
+        _src_partition_number: PartitionNumber,
         _dest_node_id: &NodeId,
+        _dest_partition_number: PartitionNumber,
         _store_access: &StoreAccessInfo,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -165,7 +167,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_read_substate<Y: KernelApi<M>>(
+    fn after_read_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
         _value_size: usize,
@@ -175,7 +177,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_write_substate<Y: KernelApi<M>>(
+    fn after_write_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
         _value_size: usize,
@@ -185,7 +187,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_close_substate<Y: KernelApi<M>>(
+    fn after_close_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _lock_handle: LockHandle,
         _store_access: &StoreAccessInfo,
@@ -194,15 +196,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_scan_substate<Y: KernelApi<M>>(
-        _api: &mut Y,
-        _store_access: &StoreAccessInfo,
-    ) -> Result<(), RuntimeError> {
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn on_set_substate<Y: KernelApi<M>>(
+    fn after_set_substate<Y: KernelApi<M>>(
         _api: &mut Y,
         _value_size: usize,
         _store_access: &StoreAccessInfo,
@@ -211,7 +205,31 @@ pub trait SystemModule<M: KernelCallbackObject> {
     }
 
     #[inline(always)]
-    fn on_drain_substates<Y: KernelApi<M>>(
+    fn after_remove_substate<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn after_scan_keys<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn after_scan_sorted_substates<Y: KernelApi<M>>(
+        _api: &mut Y,
+        _store_access: &StoreAccessInfo,
+    ) -> Result<(), RuntimeError> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn after_drain_substates<Y: KernelApi<M>>(
         _api: &mut Y,
         _count: u32,
         _store_access: &StoreAccessInfo,

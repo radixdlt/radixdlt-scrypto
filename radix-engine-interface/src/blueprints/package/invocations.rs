@@ -103,6 +103,7 @@ impl Default for BlueprintType {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor, ManifestSbor)]
 pub struct BlueprintDefinitionInit {
     pub blueprint_type: BlueprintType,
+    pub is_transient: bool,
     pub feature_set: BTreeSet<String>,
     pub dependencies: BTreeSet<GlobalAddress>,
     pub schema: BlueprintSchemaInit,
@@ -114,6 +115,7 @@ impl Default for BlueprintDefinitionInit {
     fn default() -> Self {
         Self {
             blueprint_type: BlueprintType::default(),
+            is_transient: false,
             feature_set: BTreeSet::default(),
             dependencies: BTreeSet::default(),
             schema: BlueprintSchemaInit::default(),

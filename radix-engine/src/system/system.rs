@@ -1470,7 +1470,6 @@ where
                                     BlueprintHook::OnVirtualize => {
                                         panic!("Function Actor should never be able to call a borrowed object method unless it's a direct access method.")
                                     }
-                                    BlueprintHook::OnPersist => panic!("Unused"),
                                 },
                                 Actor::Function(..) => {
                                     // This is currently a hack required since kernel modules call methods
@@ -2751,7 +2750,7 @@ where
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<&IndexedScryptoValue, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         self.api.kernel_read_substate(lock_handle)
     }
 

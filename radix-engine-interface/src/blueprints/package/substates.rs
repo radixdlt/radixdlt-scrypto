@@ -152,6 +152,7 @@ pub struct PackageExport {
 pub struct BlueprintDefinition {
     // Frontend interface, this must be backward compatible with minor version updates
     pub interface: BlueprintInterface,
+    pub is_transient: bool,
 
     // Backend implementation pointers
 
