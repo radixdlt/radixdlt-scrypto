@@ -333,7 +333,11 @@ impl AuthModule {
                 ),
             )?;
 
-            (auth_zone_node_id, parent_lock_handle)
+            if let Some(parent_lock_handle) = parent_lock_handle {
+                system.kernel_close_substate(parent_lock_handle)?;
+            }
+
+            (auth_zone_node_id, None)
         };
 
         Ok(AuthActorInfo {

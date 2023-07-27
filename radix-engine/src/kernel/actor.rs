@@ -9,16 +9,11 @@ pub struct InstanceContext {
     pub outer_object: GlobalAddress,
 }
 
-/*
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CallerAuthZone {
-    pub global_auth_zone: Option<NodeId>,
-}
- */
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthActorInfo {
     pub self_auth_zone: NodeId,
+    // This isn't exposed to client and simply stored so that it can be released
+    // when current call frame is finished
     pub parent_opened_substate: Option<LockHandle>,
 }
 
@@ -122,15 +117,6 @@ impl CallFrameReferences for Actor {
     fn stable_transient_references(&self) -> Vec<NodeId> {
         let mut references = vec![];
         references.extend(self.self_auth_zone());
-
-        /*
-        // FIXME: Should not have reference of global auth zone
-        if let Some(caller_auth_zone) = self.caller_authzone() {
-            if let Some(auth_zone) = &caller_auth_zone.global_auth_zone {
-                references.push(auth_zone.clone());
-            }
-        }
-         */
 
         if !self.is_direct_access() {
             references.extend(self.node_id().filter(|n| !n.is_global()));
