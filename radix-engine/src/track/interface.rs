@@ -165,6 +165,7 @@ pub enum StoreAccess {
     /// A new entry has been added to track
     /// System limits how many items that can be tracked.
     NewEntryInTrack,
+    ReadFromHeap
 }
 
 pub type StoreCommitInfo = Vec<StoreCommit>;

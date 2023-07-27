@@ -679,7 +679,7 @@ impl<L: Clone> CallFrame<L> {
             Ok((
                 heap.get_substate(node_id, *partition_num, substate_key)
                     .expect("Substate missing in heap"),
-                StoreAccessInfo::new(),
+                vec![StoreAccess::ReadFromHeap],
             ))
         }
     }

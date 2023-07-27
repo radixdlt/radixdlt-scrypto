@@ -103,6 +103,7 @@ impl FeeTable {
                     // The max number of entries is limited by limits module.
                     0
                 }
+                _ => 0
             };
             sum = add(sum, cost);
         }
