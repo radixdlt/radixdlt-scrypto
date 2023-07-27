@@ -27,7 +27,7 @@ paste = { version = "1.0.13" }
 wasmparser = { version = "0.107.0", default-features = false }
 
 # WASM instrumentation
-wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "refactor/drop_parity-wasm_dependency", default-features = false,  features = ["ignore_custom_section"]}
+wasm-instrument = { git = "https://github.com/radixdlt/wasm-instrument", branch = "radix-master", default-features = false,  features = ["ignore_custom_section"]}
 
 # WASM execution
 # - Wasmi is a WASM interpreter that supports WebAssembly MVP
