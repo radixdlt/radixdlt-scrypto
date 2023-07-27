@@ -52,6 +52,7 @@ impl SubstateLockState {
 pub struct SubstateLocks<D> {
     locks: IndexMap<u32, (NodeId, PartitionNumber, SubstateKey, D)>,
     substate_lock_states: NonIterMap<(NodeId, PartitionNumber, SubstateKey), SubstateLockState>,
+    node_num_locked: NonIterMap<NodeId, usize>,
     next_lock_id: u32,
 }
 
@@ -60,6 +61,7 @@ impl<D> SubstateLocks<D> {
         Self {
             locks: index_map_new(),
             substate_lock_states: NonIterMap::new(),
+            node_num_locked: NonIterMap::new(),
             next_lock_id: 0u32,
         }
     }
@@ -78,6 +80,13 @@ impl<D> SubstateLocks<D> {
         );
         self.next_lock_id += 1;
         new_lock
+    }
+
+    pub fn node_is_locked(
+        &self,
+        node_id: &NodeId,
+    ) -> bool {
+        self.node_num_locked.get(node_id).map(|e| *e > 0).unwrap_or(false)
     }
 
     pub fn is_locked(
@@ -115,6 +124,9 @@ impl<D> SubstateLocks<D> {
             }
         }
 
+        let count = self.node_num_locked.entry(*node_id).or_insert(0);
+        *count = *count + 1;
+
         let handle = self.new_lock_handle(node_id, partition_num, substate_key, data);
         Some(handle)
     }
@@ -130,8 +142,13 @@ impl<D> SubstateLocks<D> {
     pub fn unlock(&mut self, handle: u32) -> (NodeId, PartitionNumber, SubstateKey, D) {
         let (node_id, partition_num, substate_key, data) = self.locks.remove(&handle).unwrap();
         let full_key = (node_id, partition_num, substate_key);
+
         let lock_state = self.substate_lock_states.get_mut(&full_key).unwrap();
         lock_state.unlock();
+
+        let count = self.node_num_locked.entry(node_id).or_insert(0);
+        *count = *count - 1;
+
         (full_key.0, full_key.1, full_key.2, data)
     }
 }

@@ -187,6 +187,7 @@ pub enum CreateNodeError {
 pub enum DropNodeError {
     TakeNodeError(TakeNodeError),
     NodeBorrowed(NodeId, usize),
+    SubstateBorrowed(NodeId),
 }
 
 /// Represents an error when persisting a node into store.
@@ -585,6 +586,8 @@ impl<L: Clone> CallFrame<L> {
                 .or_default()
                 .add_assign(1);
         }
+
+        // FIXME: This doesn't look right as this just keeps a transient reference to an owned node forever
         for own in &owned_nodes {
             self.transient_references
                 .entry(own.clone())

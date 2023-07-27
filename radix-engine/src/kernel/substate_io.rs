@@ -99,9 +99,9 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
     }
 
     pub fn drop_node(&mut self, node_id: &NodeId) -> Result<NodeSubstates, DropNodeError> {
-        // TODO: Add opened substate checks, though this is not required since
-        // the system layer currently maintains the invariant that a call frame cannot
-        // open a substate of an owned node
+        if self.substate_locks.node_is_locked(node_id) {
+            return Err(DropNodeError::SubstateBorrowed(*node_id));
+        }
 
         let node_substates = match self.heap.remove_node(node_id) {
             Ok(substates) => substates,
