@@ -263,7 +263,7 @@ impl TestRunnerBuilder<NoExtension, InMemorySubstateDatabase> {
             custom_database: InMemorySubstateDatabase::standard(),
             trace: true,
             state_hashing: false,
-            collect_events: true,
+            collect_events: false,
         }
     }
 }

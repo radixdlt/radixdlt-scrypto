@@ -428,7 +428,7 @@ fn resource_manager_new_vault_emits_correct_events() {
             let name = test_runner.event_name(&event.0);
             println!("{:?} - {}", event.0, name);
         }
-        assert_eq!(events.len(), 4);
+        assert_eq!(events.len(), 5);
         assert!(match events.get(0) {
             Some((
                 event_identifier
@@ -446,10 +446,22 @@ fn resource_manager_new_vault_emits_correct_events() {
                     ..,
                 ),
                 ..,
-            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            )) if test_runner
+                .is_event_name_equal::<MintFungibleResourceEvent>(event_identifier) =>
+                true,
             _ => false,
         });
         assert!(match events.get(2) {
+            Some((
+                event_identifier @ EventTypeIdentifier(
+                    Emitter::Method(_node_id, ObjectModuleId::Main),
+                    ..,
+                ),
+                ..,
+            )) if test_runner.is_event_name_equal::<VaultCreationEvent>(event_identifier) => true,
+            _ => false,
+        });
+        assert!(match events.get(3) {
             Some((
                 event_identifier
                 @ EventTypeIdentifier(Emitter::Method(_, ObjectModuleId::Main), ..),
@@ -1677,7 +1689,10 @@ fn create_all_allowed_resource(test_runner: &mut DefaultTestRunner) -> ResourceA
 
 #[test]
 fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .without_trace()
+        .collect_events()
+        .build();
     let (pk, _, account) = test_runner.new_allocated_account();
 
     // Create
@@ -1749,7 +1764,10 @@ fn mint_burn_events_should_match_total_supply_for_fungible_resource() {
 
 #[test]
 fn mint_burn_events_should_match_total_supply_for_non_fungible_resource() {
-    let mut test_runner = TestRunnerBuilder::new().without_trace().build();
+    let mut test_runner = TestRunnerBuilder::new()
+        .without_trace()
+        .collect_events()
+        .build();
     let (pk, _, account) = test_runner.new_allocated_account();
 
     // Create

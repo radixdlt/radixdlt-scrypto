@@ -68,7 +68,7 @@ where
         ObjectModuleId::Metadata => metadata.0,
     );
 
-    let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
+    let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
         modules,
         resource_address_reservation,
         FUNGIBLE_BUCKET_BLUEPRINT,
@@ -76,9 +76,6 @@ where
             FieldValue::new(&LiquidFungibleResource::new(initial_supply)),
             FieldValue::new(&LockedFungibleResource::default()),
         ],
-    )?;
-
-    api.emit_event(
         MintFungibleResourceEvent::event_name().to_string(),
         scrypto_encode(&MintFungibleResourceEvent {
             amount: initial_supply,
@@ -112,7 +109,7 @@ where
 
     let metadata = Metadata::create_with_data(metadata.init, api)?;
 
-    let (address, bucket_id) = api.globalize_with_address_and_create_inner_object(
+    let (address, bucket_id) = api.globalize_with_address_and_create_inner_object_and_emit_event(
         btreemap!(
             ObjectModuleId::Main => object_id,
             ObjectModuleId::RoleAssignment => role_assignment.0,
@@ -124,9 +121,6 @@ where
             FieldValue::new(&LiquidNonFungibleResource::new(ids.clone())),
             FieldValue::new(&LockedNonFungibleResource::default()),
         ],
-    )?;
-
-    api.emit_event(
         MintNonFungibleResourceEvent::event_name().to_string(),
         scrypto_encode(&MintNonFungibleResourceEvent { ids }).unwrap(),
     )?;

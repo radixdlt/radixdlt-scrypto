@@ -732,6 +732,92 @@ where
         Ok(node_id.into())
     }
 
+    fn emit_event_internal(
+        &mut self,
+        actor: Actor,
+        event_name: String,
+        event_data: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        self.api
+            .kernel_get_system()
+            .modules
+            .apply_execution_cost(CostingEntry::EmitEvent {
+                size: event_data.len(),
+            })?;
+
+        // Locking the package info substate associated with the emitter's package
+        let type_pointer = {
+            // Getting the package address and blueprint name associated with the actor
+            let (instance_schema, blueprint_id) = match &actor {
+                Actor::Method(MethodActor {
+                    node_id, module_id, ..
+                }) => {
+                    let blueprint_obj_info = self.get_blueprint_info(node_id, *module_id)?;
+                    (
+                        blueprint_obj_info.instance_schema,
+                        blueprint_obj_info.blueprint_id,
+                    )
+                }
+                Actor::Function(FunctionActor { blueprint_id, .. }) => (None, blueprint_id.clone()),
+                _ => {
+                    return Err(RuntimeError::SystemError(SystemError::EventError(
+                        EventError::InvalidActor,
+                    )))
+                }
+            };
+
+            let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
+
+            let type_pointer = blueprint_interface
+                .get_event_type_pointer(event_name.as_str())
+                .ok_or_else(|| {
+                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
+                        PayloadValidationAgainstSchemaError::EventDoesNotExist(event_name.clone()),
+                    ))
+                })?;
+
+            self.validate_payload_against_blueprint_schema(
+                &blueprint_id,
+                &instance_schema,
+                &[(&event_data, type_pointer.clone())],
+            )?;
+
+            type_pointer
+        };
+
+        // Construct the event type identifier based on the current actor
+        let event_type_identifier = match actor {
+            Actor::Method(MethodActor {
+                node_id, module_id, ..
+            }) => Ok(EventTypeIdentifier(
+                Emitter::Method(node_id, module_id),
+                type_pointer,
+            )),
+            Actor::Function(FunctionActor {
+                blueprint_id: ref blueprint,
+                ..
+            }) => Ok(EventTypeIdentifier(
+                Emitter::Function(
+                    blueprint.package_address.into(),
+                    ObjectModuleId::Main,
+                    blueprint.blueprint_name.to_string(),
+                ),
+                type_pointer,
+            )),
+            _ => Err(RuntimeError::SystemModuleError(
+                SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
+            )),
+        }?;
+
+        // Adding the event to the event store
+        self.api
+            .kernel_get_system()
+            .modules
+            .add_event(event_type_identifier, event_data, true)?;
+
+        Ok(())
+    }
+
     fn key_value_entry_remove_and_close_substate(
         &mut self,
         handle: KeyValueEntryHandle,
@@ -1386,12 +1472,14 @@ where
 
     // Costing through kernel
     #[trace_resources]
-    fn globalize_with_address_and_create_inner_object(
+    fn globalize_with_address_and_create_inner_object_and_emit_event(
         &mut self,
         modules: BTreeMap<ObjectModuleId, NodeId>,
         address_reservation: GlobalAddressReservation,
         inner_object_blueprint: &str,
         inner_object_fields: Vec<FieldValue>,
+        event_name: String,
+        event_data: Vec<u8>,
     ) -> Result<(GlobalAddress, NodeId), RuntimeError> {
         let actor_blueprint = self.resolve_blueprint_from_modules(&modules)?;
 
@@ -1409,6 +1497,19 @@ where
             None,
             inner_object_fields,
             btreemap!(),
+        )?;
+
+        let object_info = self.get_object_info(global_address.as_node_id())?;
+        self.emit_event_internal(
+            Actor::Method(MethodActor {
+                receiver_type: ReceiverType::OnStoredObject(global_address),
+                node_id: global_address.into_node_id(),
+                module_id: ObjectModuleId::Main,
+                ident: String::default(),
+                object_info,
+            }),
+            event_name,
+            event_data,
         )?;
 
         Ok((global_address, inner_object))
@@ -2517,87 +2618,8 @@ where
 {
     #[trace_resources]
     fn emit_event(&mut self, event_name: String, event_data: Vec<u8>) -> Result<(), RuntimeError> {
-        self.api
-            .kernel_get_system()
-            .modules
-            .apply_execution_cost(CostingEntry::EmitEvent {
-                size: event_data.len(),
-            })?;
-
-        // Locking the package info substate associated with the emitter's package
-        let type_pointer = {
-            let actor = self.current_actor();
-
-            // Getting the package address and blueprint name associated with the actor
-            let (instance_schema, blueprint_id) = match actor {
-                Actor::Method(MethodActor {
-                    node_id, module_id, ..
-                }) => {
-                    let blueprint_obj_info = self.get_blueprint_info(&node_id, module_id)?;
-                    (
-                        blueprint_obj_info.instance_schema,
-                        blueprint_obj_info.blueprint_id,
-                    )
-                }
-                Actor::Function(FunctionActor { blueprint_id, .. }) => (None, blueprint_id.clone()),
-                _ => {
-                    return Err(RuntimeError::SystemError(SystemError::EventError(
-                        EventError::InvalidActor,
-                    )))
-                }
-            };
-
-            let blueprint_interface = self.get_blueprint_default_interface(blueprint_id.clone())?;
-
-            let type_pointer = blueprint_interface
-                .get_event_type_pointer(event_name.as_str())
-                .ok_or_else(|| {
-                    RuntimeError::SystemError(SystemError::PayloadValidationAgainstSchemaError(
-                        PayloadValidationAgainstSchemaError::EventDoesNotExist(event_name.clone()),
-                    ))
-                })?;
-
-            self.validate_payload_against_blueprint_schema(
-                &blueprint_id,
-                &instance_schema,
-                &[(&event_data, type_pointer.clone())],
-            )?;
-
-            type_pointer
-        };
-
-        // Construct the event type identifier based on the current actor
         let actor = self.current_actor();
-        let event_type_identifier = match actor {
-            Actor::Method(MethodActor {
-                node_id, module_id, ..
-            }) => Ok(EventTypeIdentifier(
-                Emitter::Method(node_id.clone(), module_id.clone()),
-                type_pointer,
-            )),
-            Actor::Function(FunctionActor {
-                blueprint_id: ref blueprint,
-                ..
-            }) => Ok(EventTypeIdentifier(
-                Emitter::Function(
-                    blueprint.package_address.into(),
-                    ObjectModuleId::Main,
-                    blueprint.blueprint_name.to_string(),
-                ),
-                type_pointer,
-            )),
-            _ => Err(RuntimeError::SystemModuleError(
-                SystemModuleError::EventError(Box::new(EventError::InvalidActor)),
-            )),
-        }?;
-
-        // Adding the event to the event store
-        self.api
-            .kernel_get_system()
-            .modules
-            .add_event(event_type_identifier, event_data, true)?;
-
-        Ok(())
+        self.emit_event_internal(actor, event_name, event_data)
     }
 
     #[trace_resources]
