@@ -115,7 +115,7 @@ impl AuthModule {
                 blueprint_id: blueprint_id.clone(),
                 ident: ident.to_string(),
             };
-            Self::check_permission(auth_info.clone(), permission, fn_identifier, api)?;
+            Self::check_permission(&auth_info.self_auth_zone, permission, fn_identifier, api)?;
         }
 
         Ok(auth_info)
@@ -152,7 +152,26 @@ impl AuthModule {
         )?;
 
         if api.kernel_get_system_state().system.modules.enabled_modules.contains(EnabledModules::AUTH) {
-            Self::check_method_authorization(api, receiver, module_id, ident, args, auth_info.clone())?;
+            // Step 1: Resolve method to permission
+            let blueprint_id = api
+                .get_blueprint_info(receiver, module_id)?
+                .blueprint_id;
+
+            let permission = Self::resolve_method_permission(
+                api,
+                &blueprint_id,
+                receiver,
+                &module_id,
+                ident,
+                args,
+            )?;
+
+            // Step 2: Check permission
+            let fn_identifier = FnIdentifier {
+                blueprint_id: blueprint_id.clone(),
+                ident: ident.to_string(),
+            };
+            Self::check_permission(&auth_info.self_auth_zone, permission, fn_identifier, api)?;
         }
 
         Ok(auth_info)
@@ -167,43 +186,6 @@ impl AuthModule {
             Y: KernelApi<SystemConfig<V>>,
     {
         Self::on_execution_finish(api, auth_actor_info)
-    }
-
-
-    fn check_method_authorization<V, Y>(
-        system: &mut SystemService<Y, V>,
-        receiver: &NodeId,
-        module_id: ObjectModuleId,
-        ident: &str,
-        args: &IndexedScryptoValue,
-        auth_info: AuthActorInfo,
-    ) -> Result<(), RuntimeError>
-        where
-            V: SystemCallbackObject,
-            Y: KernelApi<SystemConfig<V>>,
-    {
-        // Step 1: Resolve method to permission
-        let blueprint_id = system
-            .get_blueprint_info(receiver, module_id)?
-            .blueprint_id;
-
-        let permission = Self::resolve_method_permission(
-            system,
-            &blueprint_id,
-            receiver,
-            &module_id,
-            ident,
-            args,
-        )?;
-
-        // Step 2: Check permission
-        let fn_identifier = FnIdentifier {
-            blueprint_id: blueprint_id.clone(),
-            ident: ident.to_string(),
-        };
-        Self::check_permission(auth_info, permission, fn_identifier, system)?;
-
-        Ok(())
     }
 
     fn open_auth_zone<V, Y>(
@@ -243,7 +225,7 @@ impl AuthModule {
             true
         };
 
-        let (self_auth_zone, parent_lock_handle) = {
+        let self_auth_zone = {
             let current_actor = system.current_actor();
             let local_package_address = current_actor.package_address();
 
@@ -337,12 +319,11 @@ impl AuthModule {
                 system.kernel_close_substate(parent_lock_handle)?;
             }
 
-            (auth_zone_node_id, None)
+            auth_zone_node_id
         };
 
         Ok(AuthActorInfo {
             self_auth_zone,
-            parent_opened_substate: parent_lock_handle,
         })
     }
 
@@ -383,15 +364,11 @@ impl AuthModule {
         // Drop the auth zone
         api.kernel_drop_node(&self_auth_zone)?;
 
-        if let Some(handle) = auth_actor_info.parent_opened_substate {
-            api.kernel_close_substate(handle)?;
-        }
-
         Ok(())
     }
 
     fn check_permission<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_info: AuthActorInfo,
+        auth_zone: &NodeId,
         resolved_permission: ResolvedPermission,
         fn_identifier: FnIdentifier,
         api: &mut SystemService<Y, V>,
@@ -400,7 +377,7 @@ impl AuthModule {
             ResolvedPermission::AllowAll => return Ok(()),
             ResolvedPermission::AccessRule(rule) => {
                 let result =
-                    Authorization::check_authorization_against_access_rule(&auth_info, &rule, api)?;
+                    Authorization::check_authorization_against_access_rule(&auth_zone, &rule, api)?;
 
                 match result {
                     AuthorizationCheckResult::Authorized => Ok(()),
@@ -422,7 +399,7 @@ impl AuthModule {
                 module_id,
             } => {
                 let result = Authorization::check_authorization_against_role_list(
-                    &auth_info,
+                    &auth_zone,
                     &role_assignment_of,
                     module_id,
                     &role_list,

@@ -2441,7 +2441,7 @@ where
         if let Some(auth_info) = self.current_actor().auth_info() {
             // Authorize
             let auth_result =
-                Authorization::check_authorization_against_access_rule(&auth_info, &rule, self)?;
+                Authorization::check_authorization_against_access_rule(&auth_info.self_auth_zone, &rule, self)?;
             match auth_result {
                 AuthorizationCheckResult::Authorized => Ok(()),
                 AuthorizationCheckResult::Failed(..) => Err(RuntimeError::SystemError(

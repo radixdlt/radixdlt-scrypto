@@ -12,9 +12,6 @@ pub struct InstanceContext {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthActorInfo {
     pub self_auth_zone: NodeId,
-    // This isn't exposed to client and simply stored so that it can be released
-    // when current call frame is finished
-    pub parent_opened_substate: Option<LockHandle>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

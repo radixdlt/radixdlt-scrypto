@@ -42,7 +42,7 @@ impl Authorization {
 
     fn global_auth_zone_matches<Y, V, P>(
         api: &mut SystemService<Y, V>,
-        auth_zone_id: NodeId,
+        auth_zone_id: &NodeId,
         check: &P,
     ) -> Result<bool, RuntimeError>
     where
@@ -56,7 +56,7 @@ impl Authorization {
         ) -> Result<bool, RuntimeError>,
     {
         let mut pass = false;
-        let mut current_auth_zone_id = auth_zone_id;
+        let mut current_auth_zone_id = *auth_zone_id;
         let mut handles = Vec::new();
         loop {
             // Load auth zone
@@ -107,7 +107,7 @@ impl Authorization {
     }
 
     fn auth_zone_stack_matches<P, Y, V>(
-        auth_info: &AuthActorInfo,
+        auth_zone: &NodeId,
         api: &mut SystemService<Y, V>,
         check: P,
     ) -> Result<bool, RuntimeError>
@@ -123,7 +123,7 @@ impl Authorization {
     {
         {
             let handle = api.kernel_open_substate(
-                &auth_info.self_auth_zone,
+                &auth_zone,
                 MAIN_BASE_PARTITION,
                 &AuthZoneField::AuthZone.into(),
                 LockFlags::read_only(),
@@ -155,7 +155,7 @@ impl Authorization {
                     return Ok(true);
                 }
 
-                if Self::global_auth_zone_matches(api, global_caller_reference.0, &check)? {
+                if Self::global_auth_zone_matches(api, &global_caller_reference.0, &check)? {
                     api.kernel_close_substate(handle)?;
                     return Ok(true);
                 }
@@ -164,7 +164,7 @@ impl Authorization {
             api.kernel_close_substate(handle)?;
         }
 
-        if Self::global_auth_zone_matches(api, auth_info.self_auth_zone, &check)? {
+        if Self::global_auth_zone_matches(api, auth_zone, &check)? {
             return Ok(true);
         }
 
@@ -172,12 +172,12 @@ impl Authorization {
     }
 
     fn auth_zone_stack_has_amount<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_info: &AuthActorInfo,
+        auth_zone: &NodeId,
         resource: &ResourceAddress,
         amount: Decimal,
         api: &mut SystemService<Y, V>,
     ) -> Result<bool, RuntimeError> {
-        Self::auth_zone_stack_matches(auth_info, api, |proofs, _, _, api| {
+        Self::auth_zone_stack_matches(auth_zone, api, |proofs, _, _, api| {
             // TODO: revisit this and decide if we need to check the composite max amount rather than just each proof individually
             for p in proofs {
                 if Self::proof_matches(&ResourceOrNonFungible::Resource(*resource), p, api)?
@@ -192,12 +192,12 @@ impl Authorization {
     }
 
     fn auth_zone_stack_matches_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_info: &AuthActorInfo,
+        auth_zone: &NodeId,
         resource_rule: &ResourceOrNonFungible,
         api: &mut SystemService<Y, V>,
     ) -> Result<bool, RuntimeError> {
         Self::auth_zone_stack_matches(
-            auth_info,
+            auth_zone,
             api,
             |proofs, virtual_resources, virtual_non_fungibles, api| {
                 if let ResourceOrNonFungible::NonFungible(non_fungible_global_id) = resource_rule {
@@ -222,20 +222,20 @@ impl Authorization {
     }
 
     pub fn verify_proof_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_info: &AuthActorInfo,
+        auth_zone: &NodeId,
         proof_rule: &ProofRule,
         api: &mut SystemService<Y, V>,
     ) -> Result<bool, RuntimeError> {
         match proof_rule {
             ProofRule::Require(resource) => {
-                if Self::auth_zone_stack_matches_rule(auth_info, resource, api)? {
+                if Self::auth_zone_stack_matches_rule(auth_zone, resource, api)? {
                     Ok(true)
                 } else {
                     Ok(false)
                 }
             }
             ProofRule::AmountOf(amount, resource) => {
-                if Self::auth_zone_stack_has_amount(auth_info, resource, *amount, api)? {
+                if Self::auth_zone_stack_has_amount(auth_zone, resource, *amount, api)? {
                     Ok(true)
                 } else {
                     Ok(false)
@@ -243,7 +243,7 @@ impl Authorization {
             }
             ProofRule::AllOf(resources) => {
                 for resource in resources {
-                    if !Self::auth_zone_stack_matches_rule(auth_info, resource, api)? {
+                    if !Self::auth_zone_stack_matches_rule(auth_zone, resource, api)? {
                         return Ok(false);
                     }
                 }
@@ -252,7 +252,7 @@ impl Authorization {
             }
             ProofRule::AnyOf(resources) => {
                 for resource in resources {
-                    if Self::auth_zone_stack_matches_rule(auth_info, resource, api)? {
+                    if Self::auth_zone_stack_matches_rule(auth_zone, resource, api)? {
                         return Ok(true);
                     }
                 }
@@ -262,7 +262,7 @@ impl Authorization {
             ProofRule::CountOf(count, resources) => {
                 let mut left = count.clone();
                 for resource in resources {
-                    if Self::auth_zone_stack_matches_rule(auth_info, resource, api)? {
+                    if Self::auth_zone_stack_matches_rule(auth_zone, resource, api)? {
                         left -= 1;
                         if left == 0 {
                             return Ok(true);
@@ -275,13 +275,13 @@ impl Authorization {
     }
 
     pub fn verify_auth_rule<Y: KernelApi<SystemConfig<V>>, V: SystemCallbackObject>(
-        auth_info: &AuthActorInfo,
+        auth_zone: &NodeId,
         auth_rule: &AccessRuleNode,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match auth_rule {
             AccessRuleNode::ProofRule(rule) => {
-                if Self::verify_proof_rule(auth_info, rule, api)? {
+                if Self::verify_proof_rule(auth_zone, rule, api)? {
                     Ok(AuthorizationCheckResult::Authorized)
                 } else {
                     Ok(AuthorizationCheckResult::Failed(vec![]))
@@ -289,7 +289,7 @@ impl Authorization {
             }
             AccessRuleNode::AnyOf(rules) => {
                 for r in rules {
-                    let rtn = Self::verify_auth_rule(auth_info, r, api)?;
+                    let rtn = Self::verify_auth_rule(auth_zone, r, api)?;
                     if matches!(rtn, AuthorizationCheckResult::Authorized) {
                         return Ok(rtn);
                     }
@@ -298,7 +298,7 @@ impl Authorization {
             }
             AccessRuleNode::AllOf(rules) => {
                 for r in rules {
-                    let rtn = Self::verify_auth_rule(auth_info, r, api)?;
+                    let rtn = Self::verify_auth_rule(auth_zone, r, api)?;
                     if matches!(rtn, AuthorizationCheckResult::Failed(..)) {
                         return Ok(rtn);
                     }
@@ -313,7 +313,7 @@ impl Authorization {
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        auth_info: &AuthActorInfo,
+        auth_zone: &NodeId,
         role_assignment_of: &NodeId,
         key: &ModuleRoleKey,
         api: &mut SystemService<Y, V>,
@@ -362,20 +362,20 @@ impl Authorization {
             }
         };
 
-        Self::check_authorization_against_access_rule_internal(auth_info, &access_rule, api)
+        Self::check_authorization_against_access_rule_internal(auth_zone, &access_rule, api)
     }
 
     fn check_authorization_against_access_rule_internal<
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        auth_info: &AuthActorInfo,
+        auth_zone: &NodeId,
         rule: &AccessRule,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
         match rule {
             AccessRule::Protected(rule_node) => {
-                let mut rtn = Self::verify_auth_rule(auth_info, rule_node, api)?;
+                let mut rtn = Self::verify_auth_rule(auth_zone, rule_node, api)?;
                 match &mut rtn {
                     AuthorizationCheckResult::Authorized => {}
                     AuthorizationCheckResult::Failed(stack) => {
@@ -393,18 +393,18 @@ impl Authorization {
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        auth_info: &AuthActorInfo,
+        auth_zone: &NodeId,
         rule: &AccessRule,
         api: &mut SystemService<Y, V>,
     ) -> Result<AuthorizationCheckResult, RuntimeError> {
-        Self::check_authorization_against_access_rule_internal(auth_info, rule, api)
+        Self::check_authorization_against_access_rule_internal(auth_zone, rule, api)
     }
 
     pub fn check_authorization_against_role_list<
         Y: KernelApi<SystemConfig<V>>,
         V: SystemCallbackObject,
     >(
-        auth_info: &AuthActorInfo,
+        auth_zone: &NodeId,
         role_assignment_of: &NodeId,
         module: ObjectModuleId,
         role_list: &RoleList,
@@ -415,7 +415,7 @@ impl Authorization {
         for key in &role_list.list {
             let module_role_key = ModuleRoleKey::new(module, key.key.as_str());
             let result = Self::check_authorization_against_role_key_internal(
-                &auth_info,
+                &auth_zone,
                 role_assignment_of,
                 &module_role_key,
                 api,
