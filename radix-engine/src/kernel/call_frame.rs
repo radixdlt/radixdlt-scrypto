@@ -56,16 +56,23 @@ impl CallFrameMessage {
     }
 
     pub fn from_output(value: &IndexedScryptoValue) -> Self {
-        Self {
-            copy_global_references: value.references().clone(),
-            move_nodes: value.owned_nodes().clone(),
-            copy_to_stable_transient_references: vec![],
-            copy_direct_access_references: vec![],
-        }
-    }
+        let mut copy_global_references = Vec::new();
+        let mut copy_direct_access_references = Vec::new();
 
-    pub fn add_copy_reference(&mut self, node_id: NodeId) {
-        self.copy_global_references.push(node_id)
+        for arg_ref in value.references().clone() {
+            if arg_ref.is_global() {
+                copy_global_references.push(arg_ref);
+            } else {
+                copy_direct_access_references.push(arg_ref);
+            }
+        }
+
+        Self {
+            move_nodes: value.owned_nodes().clone(),
+            copy_global_references,
+            copy_direct_access_references,
+            copy_to_stable_transient_references: vec![],
+        }
     }
 
     pub fn add_move_node(&mut self, node_id: NodeId) {
@@ -156,6 +163,7 @@ impl NodeVisibility {
         return false;
     }
 
+    // TODO: Should we return Vec<ReferenceOrigin> and not supercede global with direct access reference
     pub fn reference_origin(&self, node_id: NodeId) -> Option<ReferenceOrigin> {
         let mut found_direct_access = false;
         for v in &self.0 {
@@ -168,7 +176,7 @@ impl NodeVisibility {
                 Visibility::StableReference(StableReferenceType::DirectAccess) => {
                     found_direct_access = true
                 }
-                Visibility::Borrowed(root_node_type) => return Some(root_node_type.clone()),
+                Visibility::Borrowed(ref_origin) => return Some(ref_origin.clone()),
                 Visibility::FrameOwned => {
                     return Some(ReferenceOrigin::Heap);
                 }
@@ -417,19 +425,19 @@ impl<C, L: Clone> CallFrame<C, L> {
                 panic!("Transient references only supported for downstream calls.");
             }
 
-            if let Some(root_node_type) =
+            if let Some(ref_origin) =
                 from.get_node_visibility(&node_id).reference_origin(node_id)
             {
                 to.transient_references
                     .entry(node_id.clone())
                     .or_insert(TransientReference {
                         ref_count: 0usize,
-                        ref_origin: root_node_type,
+                        ref_origin,
                     })
                     .ref_count
                     .add_assign(1);
 
-                if let ReferenceOrigin::Global(global_address) = root_node_type {
+                if let ReferenceOrigin::Global(global_address) = ref_origin {
                     to.stable_references
                         .insert(global_address.into_node_id(), StableReferenceType::Global);
                 }
@@ -461,9 +469,9 @@ impl<C, L: Clone> CallFrame<C, L> {
         data: L,
     ) -> Result<(LockHandle, usize, StoreAccessInfo), OpenSubstateError> {
         let node_visibility = self.get_node_visibility(node_id);
-        let root_node_type =
-            if let Some(root_node_type) = node_visibility.reference_origin(node_id.clone()) {
-                root_node_type
+        let ref_origin =
+            if let Some(ref_origin) = node_visibility.reference_origin(node_id.clone()) {
+                ref_origin
             } else {
                 return Err(OpenSubstateError::NodeNotVisible(node_id.clone()));
             };
@@ -527,7 +535,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 .entry(reference.clone())
                 .or_insert(TransientReference {
                     ref_count: 0usize,
-                    ref_origin: root_node_type,
+                    ref_origin,
                 })
                 .ref_count
                 .add_assign(1);
@@ -537,7 +545,7 @@ impl<C, L: Clone> CallFrame<C, L> {
                 .entry(own.clone())
                 .or_insert(TransientReference {
                     ref_count: 0usize,
-                    ref_origin: root_node_type,
+                    ref_origin,
                 })
                 .ref_count
                 .add_assign(1);
