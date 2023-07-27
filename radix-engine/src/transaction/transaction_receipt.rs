@@ -245,26 +245,29 @@ impl TransactionReceipt {
         matches!(self.transaction_result, TransactionResult::Reject(_))
     }
 
-    pub fn expect_commit(&self, success: bool) -> &CommitResult {
+    pub fn expect_commit_ignore_result(&self) -> &CommitResult {
         match &self.transaction_result {
-            TransactionResult::Commit(c) => {
-                if c.outcome.is_success() != success {
-                    panic!(
-                        "Expected {} but was {}: {:?}",
-                        if success { "success" } else { "failure" },
-                        if c.outcome.is_success() {
-                            "success"
-                        } else {
-                            "failure"
-                        },
-                        c.outcome
-                    )
-                }
-                c
-            }
+            TransactionResult::Commit(c) => c,
             TransactionResult::Reject(_) => panic!("Transaction was rejected"),
             TransactionResult::Abort(_) => panic!("Transaction was aborted"),
         }
+    }
+
+    pub fn expect_commit(&self, success: bool) -> &CommitResult {
+        let c = self.expect_commit_ignore_result();
+        if c.outcome.is_success() != success {
+            panic!(
+                "Expected {} but was {}: {:?}",
+                if success { "success" } else { "failure" },
+                if c.outcome.is_success() {
+                    "success"
+                } else {
+                    "failure"
+                },
+                c.outcome
+            )
+        }
+        c
     }
 
     pub fn expect_commit_success(&self) -> &CommitResult {

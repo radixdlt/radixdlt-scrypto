@@ -194,6 +194,12 @@ pub enum OwnerRole {
     Updatable(AccessRule),
 }
 
+impl Default for OwnerRole {
+    fn default() -> Self {
+        OwnerRole::None
+    }
+}
+
 impl Into<OwnerRoleEntry> for OwnerRole {
     fn into(self) -> OwnerRoleEntry {
         match self {
