@@ -9,6 +9,8 @@ pub struct AuthZone {
     pub virtual_resources: BTreeSet<ResourceAddress>,
     pub virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
 
+    pub local_caller_package_address: Option<PackageAddress>,
+
     pub parent: Option<Reference>,
 }
 
@@ -18,6 +20,7 @@ impl Clone for AuthZone {
             proofs: self.proofs.iter().map(|p| Proof(p.0)).collect(),
             virtual_resources: self.virtual_resources.clone(),
             virtual_non_fungibles: self.virtual_non_fungibles.clone(),
+            local_caller_package_address: self.local_caller_package_address.clone(),
             parent: self.parent.clone(),
         }
     }
@@ -28,12 +31,14 @@ impl AuthZone {
         proofs: Vec<Proof>,
         virtual_resources: BTreeSet<ResourceAddress>,
         virtual_non_fungibles: BTreeSet<NonFungibleGlobalId>,
+        local_caller_package_address: Option<PackageAddress>,
         parent: Option<Reference>,
     ) -> Self {
         Self {
             proofs,
             virtual_resources,
             virtual_non_fungibles,
+            local_caller_package_address,
             parent,
         }
     }

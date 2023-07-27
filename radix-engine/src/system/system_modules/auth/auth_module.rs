@@ -263,7 +263,9 @@ impl AuthModule {
         };
 
         let (caller_auth_zone, self_auth_zone) = {
-            let caller_auth_zone = match system.current_actor() {
+            let current_actor = system.current_actor();
+            let local_package_address = current_actor.package_address();
+            let caller_auth_zone = match current_actor {
                 Actor::Root => None,
                 Actor::Method(current_method_actor) => {
                     let caller_auth_zone = CallerAuthZone {
@@ -302,16 +304,12 @@ impl AuthModule {
                             };
                             global_auth_zone
                         },
-                        local_package_address: current_method_actor
-                            .get_blueprint_id()
-                            .package_address,
                     };
                     Some(caller_auth_zone)
                 }
                 Actor::BlueprintHook(blueprint_hook_actor) => {
                     let caller_auth_zone = CallerAuthZone {
                         global_auth_zone: None,
-                        local_package_address: blueprint_hook_actor.blueprint_id.package_address,
                     };
                     Some(caller_auth_zone)
                 }
@@ -334,7 +332,6 @@ impl AuthModule {
                                     .and_then(|a| a.global_auth_zone)
                             }
                         },
-                        local_package_address: function_actor.blueprint_id.package_address,
                     };
                     Some(caller_auth_zone)
                 }
@@ -350,6 +347,7 @@ impl AuthModule {
                 vec![],
                 virtual_resources,
                 virtual_non_fungibles,
+                local_package_address,
                 self_auth_zone_parent,
             );
 

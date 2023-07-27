@@ -121,17 +121,31 @@ impl Authorization {
             &mut SystemService<Y, V>,
         ) -> Result<bool, RuntimeError>,
     {
-        if let Some(caller_auth_zone) = &auth_info.caller_auth_zone {
-            {
+        // Test Local Caller package address
+        {
+            let handle = api.kernel_open_substate(
+                &auth_info.self_auth_zone,
+                MAIN_BASE_PARTITION,
+                &AuthZoneField::AuthZone.into(),
+                LockFlags::read_only(),
+                SystemLockData::default(),
+            )?;
+            let auth_zone: FieldSubstate<AuthZone> = api.kernel_read_substate(handle)?.as_typed().unwrap();
+            api.kernel_close_substate(handle)?;
+            if let Some(local_package_address) = auth_zone.value.0.local_caller_package_address {
                 let non_fungible_global_id = NonFungibleGlobalId::package_of_direct_caller_badge(
-                    caller_auth_zone.local_package_address,
+                    local_package_address,
                 );
                 let local_call_frame_proofs = btreeset!(&non_fungible_global_id);
                 if check(&[], &btreeset!(), local_call_frame_proofs, api)? {
                     return Ok(true);
                 }
             }
+        }
 
+
+
+        if let Some(caller_auth_zone) = &auth_info.caller_auth_zone {
             if let Some((global_caller, auth_zone_id)) = &caller_auth_zone.global_auth_zone {
                 let non_fungible_global_id =
                     NonFungibleGlobalId::global_caller_badge(global_caller.clone());

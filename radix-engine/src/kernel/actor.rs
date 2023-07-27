@@ -12,7 +12,6 @@ pub struct InstanceContext {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CallerAuthZone {
     pub global_auth_zone: Option<(GlobalCaller, NodeId)>,
-    pub local_package_address: PackageAddress,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -121,6 +120,8 @@ impl CallFrameReferences for Actor {
     fn stable_transient_references(&self) -> Vec<NodeId> {
         let mut references = vec![];
         references.extend(self.self_auth_zone());
+
+        // FIXME: Should not have reference of global auth zone
         if let Some(caller_auth_zone) = self.caller_authzone() {
             if let Some((_caller, auth_zone)) = &caller_auth_zone.global_auth_zone {
                 references.push(auth_zone.clone());
