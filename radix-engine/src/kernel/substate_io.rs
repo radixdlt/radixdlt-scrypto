@@ -14,6 +14,7 @@ use radix_engine_common::types::SubstateKey;
 use radix_engine_interface::api::LockFlags;
 use radix_engine_interface::types::IndexedScryptoValue;
 use radix_engine_store_interface::db_key_mapper::SubstateKeyContent;
+use sbor::prelude::Box;
 use sbor::prelude::Vec;
 use utils::prelude::index_set_new;
 use utils::rust::prelude::IndexSet;

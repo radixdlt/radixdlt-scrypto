@@ -10,7 +10,7 @@ use crate::kernel::actor::Actor;
 use crate::kernel::actor::BlueprintHookActor;
 use crate::kernel::actor::FunctionActor;
 use crate::kernel::actor::MethodActor;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::{KernelApi, KernelInvocation};
 use crate::kernel::kernel_api::{KernelInternalApi, KernelSubstateApi};
@@ -93,6 +93,7 @@ pub struct SystemConfig<C: SystemCallbackObject> {
 }
 
 impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
+    type CallFrameData = Actor;
     type LockData = SystemLockData;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
@@ -181,7 +182,10 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_drain_substates(self, &event)
     }
 
-    fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(
+        invocation: &KernelInvocation<Actor>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -197,7 +201,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn before_push_frame<Y>(
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -228,7 +232,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
         SystemModuleMixer::on_execution_start(api)
     }
 
-    fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>,
     {
@@ -239,7 +243,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
 
     fn after_pop_frame<Y>(
         dropped_actor: &Actor,
-        message: &Message,
+        message: &CallFrameMessage,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
@@ -247,7 +251,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
     {
         SystemModuleMixer::after_pop_frame(api, dropped_actor, message)?;
 
-        let current_actor = api.kernel_get_system_state().current_actor;
+        let current_actor = api.kernel_get_system_state().current_call_frame;
         let is_to_barrier = current_actor.is_barrier();
         let destination_blueprint_id = current_actor.blueprint_id();
         for node_id in &message.move_nodes {
@@ -573,7 +577,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 system.allocate_virtual_global_address(blueprint_id.clone(), address)?;
 
             api.kernel_invoke(Box::new(KernelInvocation {
-                actor: Actor::BlueprintHook(BlueprintHookActor {
+                call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
                     blueprint_id: blueprint_id.clone(),
                     hook: BlueprintHook::OnVirtualize,
                     receiver: None,
@@ -612,7 +616,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?;
                 if definition.hook_exports.contains_key(&BlueprintHook::OnDrop) {
                     api.kernel_invoke(Box::new(KernelInvocation {
-                        actor: Actor::BlueprintHook(BlueprintHookActor {
+                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
                             blueprint_id: node_object_info.blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnDrop,
                             receiver: Some(node_id.clone()),
@@ -661,7 +665,7 @@ impl<C: SystemCallbackObject> KernelCallbackObject for SystemConfig<C> {
                 )?;
                 if definition.hook_exports.contains_key(&BlueprintHook::OnMove) {
                     api.kernel_invoke(Box::new(KernelInvocation {
-                        actor: Actor::BlueprintHook(BlueprintHookActor {
+                        call_frame_data: Actor::BlueprintHook(BlueprintHookActor {
                             receiver: Some(node_id.clone()),
                             blueprint_id: object_info.blueprint_info.blueprint_id.clone(),
                             hook: BlueprintHook::OnMove,

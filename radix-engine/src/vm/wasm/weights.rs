@@ -195,7 +195,7 @@ pub struct InstructionWeights {
     pub local_tee: u32,
     pub global_get: u32,
     pub global_set: u32,
-    pub memory_current: u32,
+    pub memory_size: u32,
     pub memory_grow: u32,
     pub i64clz: u32,
     pub i64ctz: u32,
@@ -285,7 +285,7 @@ impl Default for InstructionWeights {
             local_tee: cost_instr!(instr_local_tee, 2),
             global_get: cost_instr!(instr_global_get, 1),
             global_set: cost_instr!(instr_global_set, 1),
-            memory_current: cost_instr!(instr_memory_current, 1),
+            memory_size: cost_instr!(instr_memory_size, 1),
             memory_grow: cost_instr!(instr_memory_grow, 1),
             i64clz: cost_instr!(instr_i64clz, 2),
             i64ctz: cost_instr!(instr_i64ctz, 2),
@@ -343,7 +343,7 @@ pub trait WeightInfo {
     fn instr_local_tee(r: u32) -> Weight;
     fn instr_global_get(r: u32) -> Weight;
     fn instr_global_set(r: u32) -> Weight;
-    fn instr_memory_current(r: u32) -> Weight;
+    fn instr_memory_size(r: u32) -> Weight;
     fn instr_memory_grow(r: u32) -> Weight;
     fn instr_i64clz(r: u32) -> Weight;
     fn instr_i64ctz(r: u32) -> Weight;
@@ -552,7 +552,7 @@ impl WeightInfo for InstructionWeights {
             .saturating_add(Weight::from_parts(9_177, 0).saturating_mul(r.into()))
     }
     /// The range of component `r` is `[0, 5000]`.
-    fn instr_memory_current(r: u32) -> Weight {
+    fn instr_memory_size(r: u32) -> Weight {
         // Proof Size summary in bytes:
         //  Measured:  `0`
         //  Estimated: `0`

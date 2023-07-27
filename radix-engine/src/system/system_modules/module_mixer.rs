@@ -2,7 +2,7 @@ use super::costing::CostingEntry;
 use super::limits::TransactionLimitsError;
 use crate::errors::*;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::kernel_callback_api::{
@@ -231,7 +231,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources(log=invocation.len())]
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation,
+        invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api.kernel_get_system(), before_invoke(api, invocation))
     }
@@ -240,7 +240,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn before_push_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         callee: &Actor,
-        message: &mut Message,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
@@ -257,7 +257,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     #[trace_resources]
     fn on_execution_finish<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(api.kernel_get_system(), on_execution_finish(api, message))
     }
@@ -266,7 +266,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
     fn after_pop_frame<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         dropped_actor: &Actor,
-        message: &Message,
+        message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         internal_call_dispatch!(
             api.kernel_get_system(),

@@ -1,3 +1,4 @@
+use crate::kernel::actor::Actor;
 use crate::kernel::kernel_api::{KernelInternalApi, KernelInvocation};
 use crate::kernel::kernel_callback_api::{
     CreateNodeEvent, DrainSubstatesEvent, MoveModuleEvent, OpenSubstateEvent, ScanKeysEvent,
@@ -81,7 +82,7 @@ impl LimitsModule {
 impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for LimitsModule {
     fn before_invoke<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
-        invocation: &KernelInvocation,
+        invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         // Check depth
         let current_depth = api.kernel_get_current_depth();

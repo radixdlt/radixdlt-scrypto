@@ -1,5 +1,4 @@
-use super::actor::Actor;
-use super::call_frame::Message;
+use super::call_frame::CallFrameMessage;
 use crate::errors::*;
 use crate::kernel::heap::Heap;
 use crate::kernel::kernel_api::KernelInvocation;
@@ -7,6 +6,14 @@ use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::track::interface::{NodeSubstates, StoreAccess};
 use crate::types::*;
 use radix_engine_interface::api::field_api::LockFlags;
+
+pub trait CallFrameReferences {
+    fn global_references(&self) -> Vec<NodeId>;
+    fn direct_access_references(&self) -> Vec<NodeId>;
+    fn stable_transient_references(&self) -> Vec<NodeId>;
+
+    fn len(&self) -> usize;
+}
 
 // TODO: Replace Events with separate callback functions
 #[derive(Debug)]
@@ -97,6 +104,7 @@ pub enum ScanSortedSubstatesEvent<'a> {
 
 pub trait KernelCallbackObject: Sized {
     type LockData: Default + Clone;
+    type CallFrameData: CallFrameReferences;
 
     fn on_init<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
@@ -126,46 +134,14 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelInternalApi<Self>;
 
-    /*
-    fn after_open_substate<Y>(
-        handle: OpenSubstateHandle,
-        node_id: &NodeId,
-        size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-     */
     fn on_read_substate<Y>(api: &mut Y, event: ReadSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
-
-    /*
-    fn on_close_substate<Y>(
-        lock_handle: OpenSubstateHandle,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-     */
 
     fn on_write_substate<Y>(api: &mut Y, event: WriteSubstateEvent) -> Result<(), RuntimeError>
     where
         Y: KernelInternalApi<Self>;
 
-    /*
-    fn on_read_substate<Y>(
-        lock_handle: OpenSubstateHandle,
-        value_size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-
-    fn on_write_substate<Y>(
-        lock_handle: OpenSubstateHandle,
-        value_size: usize,
-        api: &mut Y,
-    ) -> Result<(), RuntimeError>
-    where
-        Y: KernelApi<Self>;
-     */
     fn on_set_substate(&mut self, event: SetSubstateEvent) -> Result<(), RuntimeError>;
 
     fn on_remove_substate(&mut self, event: RemoveSubstateEvent) -> Result<(), RuntimeError>;
@@ -179,7 +155,10 @@ pub trait KernelCallbackObject: Sized {
         event: ScanSortedSubstatesEvent,
     ) -> Result<(), RuntimeError>;
 
-    fn before_invoke<Y>(invocation: &KernelInvocation, api: &mut Y) -> Result<(), RuntimeError>
+    fn before_invoke<Y>(
+        invocation: &KernelInvocation<Self::CallFrameData>,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
@@ -188,8 +167,8 @@ pub trait KernelCallbackObject: Sized {
         Y: KernelApi<Self>;
 
     fn before_push_frame<Y>(
-        callee: &Actor,
-        message: &mut Message,
+        callee: &Self::CallFrameData,
+        message: &mut CallFrameMessage,
         args: &IndexedScryptoValue,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
@@ -200,13 +179,13 @@ pub trait KernelCallbackObject: Sized {
     where
         Y: KernelApi<Self>;
 
-    fn on_execution_finish<Y>(message: &Message, api: &mut Y) -> Result<(), RuntimeError>
+    fn on_execution_finish<Y>(message: &CallFrameMessage, api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: KernelApi<Self>;
 
     fn after_pop_frame<Y>(
-        dropped_actor: &Actor,
-        message: &Message,
+        dropped_actor: &Self::CallFrameData,
+        message: &CallFrameMessage,
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where

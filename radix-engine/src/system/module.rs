@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use crate::kernel::actor::Actor;
-use crate::kernel::call_frame::Message;
+use crate::kernel::call_frame::CallFrameMessage;
 use crate::kernel::kernel_api::KernelInvocation;
 use crate::kernel::kernel_api::{KernelApi, KernelInternalApi};
 use crate::kernel::kernel_callback_api::{
@@ -38,7 +38,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn before_invoke<Y: KernelApi<M>>(
         _api: &mut Y,
-        _invocation: &KernelInvocation,
+        _invocation: &KernelInvocation<Actor>,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -47,7 +47,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn before_push_frame<Y: KernelApi<M>>(
         _api: &mut Y,
         _callee: &Actor,
-        _message: &mut Message,
+        _message: &mut CallFrameMessage,
         _args: &IndexedScryptoValue,
     ) -> Result<(), RuntimeError> {
         Ok(())
@@ -61,7 +61,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     #[inline(always)]
     fn on_execution_finish<Y: KernelApi<M>>(
         _api: &mut Y,
-        _message: &Message,
+        _message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }
@@ -70,7 +70,7 @@ pub trait SystemModule<M: KernelCallbackObject> {
     fn after_pop_frame<Y: KernelApi<M>>(
         _api: &mut Y,
         _dropped_actor: &Actor,
-        _message: &Message,
+        _message: &CallFrameMessage,
     ) -> Result<(), RuntimeError> {
         Ok(())
     }

@@ -1,6 +1,6 @@
-use radix_engine::errors::{CallFrameError, KernelError, RuntimeError, SystemError};
+use radix_engine::errors::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::kernel::call_frame::{
-    OpenSubstateError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
+    CreateNodeError, OpenSubstateError, ProcessSubstateError, TakeNodeError, WriteSubstateError,
 };
 use radix_engine::types::*;
 use scrypto_unit::*;
@@ -97,7 +97,7 @@ fn self_cyclic_map_fails_execution() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
-                CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
+                CallFrameError::CreateNodeError(CreateNodeError::ProcessSubstateError(
                     ProcessSubstateError::TakeNodeError(TakeNodeError::OwnNotFound(_))
                 ))
             ))
@@ -311,7 +311,9 @@ fn cannot_directly_reference_inserted_vault() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::NodeNotVisibleForMethodCall)
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(..))
+            ))
         )
     });
 }
@@ -338,7 +340,9 @@ fn cannot_directly_reference_vault_after_container_moved() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::NodeNotVisibleForMethodCall)
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(..))
+            ))
         )
     });
 }
@@ -365,7 +369,9 @@ fn cannot_directly_reference_vault_after_container_stored() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::SystemError(SystemError::NodeNotVisibleForMethodCall)
+            RuntimeError::KernelError(KernelError::CallFrameError(
+                CallFrameError::OpenSubstateError(OpenSubstateError::NodeNotVisible(..))
+            ))
         )
     });
 }
