@@ -103,7 +103,10 @@ impl FeeTable {
                     // The max number of entries is limited by limits module.
                     0
                 }
-                _ => 0
+                StoreAccess::ReadFromHeap => {
+                    // Handled in read_substate_cost() function.
+                    0
+                }
             };
             sum = add(sum, cost);
         }
@@ -314,8 +317,13 @@ impl FeeTable {
 
     #[inline]
     pub fn read_substate_cost(&self, size: usize, store_access: &StoreAccessInfo) -> u32 {
+        let base_cost: u32 = if store_access.iter().find(|e| *e == &StoreAccess::ReadFromHeap).is_some() {
+            5851
+        } else {
+            11805
+        };
         add3(
-            500,
+            base_cost / CPU_INSTRUCTIONS_TO_COST_UNIT,
             Self::data_processing_cost(size),
             Self::store_access_cost(store_access),
         )

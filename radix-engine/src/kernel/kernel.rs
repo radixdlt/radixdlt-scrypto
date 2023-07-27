@@ -686,7 +686,7 @@ where
         Ok(())
     }
 
-    #[trace_resources(log_after={ret.clone().unwrap_or(&IndexedScryptoValue::from_vec(vec![92, 1, 1]).unwrap()).len()})]
+    #[trace_resources]
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,

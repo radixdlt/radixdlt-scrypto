@@ -135,6 +135,14 @@ for path in file_list:
         if param:
             key += "::" + param[0]
 
+        # handle kernel_read_substate
+        resolve_heap_or_track = child.xpath("./self::kernel_read_substate/on_read_substate")
+        if resolve_heap_or_track:
+            store_info_len = resolve_heap_or_track[0].attrib["arg1"]
+            if int(store_info_len) == 0:
+                key += "::store"
+            else:
+                key += "::heap"
 
         # correcting parenthesis
         c1 = key.count('(')

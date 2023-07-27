@@ -27,6 +27,8 @@ use radix_engine_interface::api::ObjectModuleId;
 use radix_engine_interface::crypto::Hash;
 use resources_tracker_macro::trace_resources;
 use transaction::model::AuthZoneParams;
+#[cfg(feature = "resource_tracker")]
+use crate::track::interface::StoreAccess;
 
 bitflags! {
     pub struct EnabledModules: u32 {
@@ -360,7 +362,7 @@ impl<V: SystemCallbackObject> SystemModule<SystemConfig<V>> for SystemModuleMixe
         )
     }
 
-    #[trace_resources(log=value_size, log=store_access.len())]
+    #[trace_resources(log=value_size, log={store_access.iter().find(|e| *e == &StoreAccess::ReadFromHeap).is_some()})]
     fn on_read_substate<Y: KernelApi<SystemConfig<V>>>(
         api: &mut Y,
         lock_handle: LockHandle,
