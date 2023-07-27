@@ -146,8 +146,7 @@ pub struct CallFrame<L> {
     actor: Actor,
 
     /// Owned nodes which by definition must live on heap
-    /// Also keeps track of number of locks on this node, to prevent locked node from moving.
-    owned_root_nodes: IndexMap<NodeId, usize>,
+    owned_root_nodes: IndexSet<NodeId>,
 
     /// References to non-GLOBAL nodes, obtained from substate loading, ref counted.
     transient_references: NonIterMap<NodeId, usize>,
@@ -218,6 +217,7 @@ pub enum MoveModuleError {
     HeapRemoveModuleErr(HeapRemoveModuleError),
     NonGlobalRefNotAllowed(NodeId),
     PersistNodeError(PersistNodeError),
+    SubstateBorrowed(NodeId),
 }
 
 /// Represents an error when attempting to lock a substate.
@@ -298,7 +298,7 @@ impl<L: Clone> CallFrame<L> {
             actor,
             stable_references: NonIterMap::new(),
             transient_references: NonIterMap::new(),
-            owned_root_nodes: index_map_new(),
+            owned_root_nodes: index_set_new(),
             next_handle: 0u32,
             open_substates: index_map_new(),
         }
@@ -314,7 +314,7 @@ impl<L: Clone> CallFrame<L> {
             actor,
             stable_references: NonIterMap::new(),
             transient_references: NonIterMap::new(),
-            owned_root_nodes: index_map_new(),
+            owned_root_nodes: index_set_new(),
             next_handle: 0u32,
             open_substates: index_map_new(),
         };
@@ -325,7 +325,7 @@ impl<L: Clone> CallFrame<L> {
 
         // Make sure actor isn't part of the owned nodes
         if let Some(node_id) = frame.actor.node_id() {
-            if frame.owned_root_nodes.contains_key(&node_id) {
+            if frame.owned_root_nodes.contains(&node_id) {
                 return Err(CreateFrameError::ActorBeingMoved(node_id));
             }
         }
@@ -376,7 +376,7 @@ impl<L: Clone> CallFrame<L> {
             // we don't allow move of "locked nodes".
             from.take_node_internal(&node_id)
                 .map_err(PassMessageError::TakeNodeError)?;
-            to.owned_root_nodes.insert(node_id, 0);
+            to.owned_root_nodes.insert(node_id);
         }
 
         // Only allow move of `Global` and `DirectAccess` references
@@ -434,7 +434,7 @@ impl<L: Clone> CallFrame<L> {
                     .insert(node_id, StableReferenceType::Global);
             }
             SubstateDevice::Heap => {
-                self.owned_root_nodes.insert(node_id, 0);
+                self.owned_root_nodes.insert(node_id);
             }
         }
 
@@ -466,9 +466,7 @@ impl<L: Clone> CallFrame<L> {
                 // Process own
                 //=============
                 for own in substate_value.owned_nodes() {
-                    // FIXME: This is problematic, as owned node must have been locked
-                    // In general, we'd like to move node locking/borrowing to heap.
-                    self.owned_root_nodes.insert(own.clone(), 0);
+                    self.owned_root_nodes.insert(own.clone());
                 }
 
                 //====================
@@ -499,7 +497,7 @@ impl<L: Clone> CallFrame<L> {
         dest_partition_number: PartitionNumber,
     ) -> Result<(), CallbackError<MoveModuleError, E>> {
         // Check ownership (and visibility)
-        if self.owned_root_nodes.get(src_node_id) != Some(&0) {
+        if !self.owned_root_nodes.contains(src_node_id) {
             return Err(CallbackError::Error(MoveModuleError::NodeNotAvailable(
                 src_node_id.clone(),
             )));
@@ -587,7 +585,6 @@ impl<L: Clone> CallFrame<L> {
                 .add_assign(1);
         }
 
-        // FIXME: This doesn't look right as this just keeps a transient reference to an owned node forever
         for own in &owned_nodes {
             self.transient_references
                 .entry(own.clone())
@@ -608,11 +605,6 @@ impl<L: Clone> CallFrame<L> {
             },
         );
         self.next_handle = self.next_handle + 1;
-
-        // Update lock count on the node
-        if let Some(counter) = self.owned_root_nodes.get_mut(node_id) {
-            *counter += 1;
-        }
 
         Ok((lock_handle, substate_value.len()))
     }
@@ -707,7 +699,7 @@ impl<L: Clone> CallFrame<L> {
             .remove(&lock_handle)
             .ok_or_else(|| CloseSubstateError::LockNotFound(lock_handle))?;
 
-        let (node_id, ..) = substate_io.close_substate(global_lock_handle)?;
+        substate_io.close_substate(global_lock_handle)?;
 
         // Shrink transient reference set
         for reference in non_global_references {
@@ -721,11 +713,6 @@ impl<L: Clone> CallFrame<L> {
             if cnt > 1 {
                 self.transient_references.insert(own, cnt - 1);
             }
-        }
-
-        // Update node lock count
-        if let Some(counter) = self.owned_root_nodes.get_mut(&node_id) {
-            *counter -= 1;
         }
 
         Ok(())
@@ -918,7 +905,7 @@ impl<L: Clone> CallFrame<L> {
     }
 
     pub fn owned_nodes(&self) -> Vec<NodeId> {
-        self.owned_root_nodes.keys().cloned().collect()
+        self.owned_root_nodes.clone().into_iter().collect()
     }
 
     pub fn get_node_visibility(&self, node_id: &NodeId) -> NodeVisibility {
@@ -933,7 +920,7 @@ impl<L: Clone> CallFrame<L> {
         }
 
         // Frame owned nodes
-        if self.owned_root_nodes.contains_key(node_id) {
+        if self.owned_root_nodes.contains(node_id) {
             visibilities.insert(Visibility::FrameOwned);
         }
 
@@ -993,7 +980,7 @@ impl<L: Clone> CallFrame<L> {
                         // means that a component's logic may or may not work depending on whether
                         // it's in the store or the heap, which I think feels very unintuitive.
                         // Rather, let's fix the specific worktop drop bucket issue
-                        self.owned_root_nodes.insert(own.clone(), 0);
+                        self.owned_root_nodes.insert(own.clone());
                     }
                 }
             }
@@ -1041,17 +1028,10 @@ impl<L: Clone> CallFrame<L> {
     }
 
     fn take_node_internal(&mut self, node_id: &NodeId) -> Result<(), TakeNodeError> {
-        match self.owned_root_nodes.remove(node_id) {
-            None => {
-                return Err(TakeNodeError::OwnNotFound(node_id.clone()));
-            }
-            Some(lock_count) => {
-                if lock_count == 0 {
-                    Ok(())
-                } else {
-                    Err(TakeNodeError::OwnLocked(node_id.clone()))
-                }
-            }
+        if self.owned_root_nodes.remove(node_id) {
+            Ok(())
+        } else {
+            Err(TakeNodeError::OwnNotFound(node_id.clone()))
         }
     }
 }

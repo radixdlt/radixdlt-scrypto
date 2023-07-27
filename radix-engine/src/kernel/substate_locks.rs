@@ -82,11 +82,11 @@ impl<D> SubstateLocks<D> {
         new_lock
     }
 
-    pub fn node_is_locked(
-        &self,
-        node_id: &NodeId,
-    ) -> bool {
-        self.node_num_locked.get(node_id).map(|e| *e > 0).unwrap_or(false)
+    pub fn node_is_locked(&self, node_id: &NodeId) -> bool {
+        self.node_num_locked
+            .get(node_id)
+            .map(|e| *e > 0)
+            .unwrap_or(false)
     }
 
     pub fn is_locked(

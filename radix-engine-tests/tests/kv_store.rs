@@ -98,7 +98,7 @@ fn self_cyclic_map_fails_execution() {
             e,
             RuntimeError::KernelError(KernelError::CallFrameError(
                 CallFrameError::WriteSubstateError(WriteSubstateError::ProcessSubstateError(
-                    ProcessSubstateError::TakeNodeError(TakeNodeError::OwnLocked(_))
+                    ProcessSubstateError::TakeNodeError(TakeNodeError::OwnNotFound(_))
                 ))
             ))
         )

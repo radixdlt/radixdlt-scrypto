@@ -134,7 +134,12 @@ impl<'g, S: SubstateStore + 'g> SubstateIO<'g, S> {
         dest_node_id: &NodeId,
         dest_partition_number: PartitionNumber,
     ) -> Result<(), CallbackError<MoveModuleError, E>> {
-        // TODO: Add lock checks
+        // TODO: Use more granular partition lock checks?
+        if self.substate_locks.node_is_locked(src_node_id) {
+            return Err(CallbackError::Error(MoveModuleError::SubstateBorrowed(
+                *src_node_id,
+            )));
+        }
 
         // Move
         let module = self
