@@ -47,7 +47,7 @@ members = ["."]
 
 [[bin]]
 name = "transaction"
-path = "src/transaction.rs"
+path = "src/bin/transaction.rs"
 #test = false
 doc = false
 

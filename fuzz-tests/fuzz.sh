@@ -15,7 +15,9 @@ DFLT_TARGET=transaction
 DFLT_TIMEOUT=1000
 
 function usage() {
-    echo "$0 [FUZZER/COMMAND] [SUBCOMMAND] [COMMAND-ARGS]"
+    echo "$0 [FUZZ-TARGET] [FUZZER/COMMAND] [SUBCOMMAND] [COMMAND-ARGS]"
+    echo "Available fuzz targets"
+    echo "    transaction"
     echo "Available fuzzers"
     echo "    libfuzzer  - 'cargo fuzz' wrapper"
     echo "    afl        - 'cargo afl' wrapper"
@@ -102,13 +104,12 @@ function fuzzer_libfuzzer() {
 
 function fuzzer_afl() {
     local cmd=${1:-$DFLT_SUBCOMMAND}
-    local run_args="-T $target "
-    local run_cmd_arg=
     shift
 
     if [ $cmd = "build" ] ; then
         set -x
         cargo afl build --release \
+            --bin $target \
             --no-default-features --features std,afl \
             --target-dir target-afl
     elif [ $cmd = "run" ] ; then
@@ -136,8 +137,6 @@ function fuzzer_afl() {
 
 function fuzzer_simple() {
     local cmd=${1:-$DFLT_SUBCOMMAND}
-    local run_args=""
-    local run_cmd_arg=
     shift
 
     set -x
@@ -221,11 +220,23 @@ function generate_input() {
         exit 1
     fi
 }
+if [ $# -ge 1 ] ; then
+    target=$1
+    shift
+else
+    target=$DFLT_TARGET
+fi
+if [ $# -ge 1 ] ; then
+    # available fuzzers/commands: libfuzzer, afl, simple, generate-input
+    cmd=$1
+    shift
+else
+    cmd=$DFLT_COMMAND
+fi
 
-target=$DFLT_TARGET
-# available fuzzers/commands: libfuzzer, afl, simple, generate-input
-cmd=${1:-$DFLT_COMMAND}
-shift
+if [ $# -eq 0 ] ; then
+    usage
+fi
 
 if [ $cmd = "libfuzzer" ] ; then
     fuzzer_libfuzzer $@

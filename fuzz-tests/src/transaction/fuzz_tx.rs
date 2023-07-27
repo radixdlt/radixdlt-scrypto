@@ -18,12 +18,12 @@ use scrypto_unit::{DefaultTestRunner, TestRunnerBuilder, TestRunnerSnapshot};
 #[cfg(test)]
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use strum::EnumCount;
-use transaction::prelude::*;
 use transaction::manifest::ast;
 use transaction::model::InstructionV1;
+use transaction::prelude::*;
 use transaction::signing::secp256k1::Secp256k1PrivateKey;
 
-use crate::common::*;
+use crate::transaction::common::*;
 
 #[allow(unused)]
 const INSTRUCTION_MAX_CNT: u8 = 10;
@@ -323,7 +323,8 @@ impl TxFuzzer {
                         package_address: package_address.into(),
                         blueprint_name: ACCESS_CONTROLLER_BLUEPRINT.to_string(),
                         function_name: ACCESS_CONTROLLER_CREATE_GLOBAL_IDENT.to_string(),
-                        args: manifest_args!(bucket_id, rule_set, timed_recovery_delay_in_minutes).into(),
+                        args: manifest_args!(bucket_id, rule_set, timed_recovery_delay_in_minutes)
+                            .into(),
                     })
                 }
                 // CreateAccount
@@ -585,8 +586,7 @@ impl TxFuzzer {
                 36 => {
                     global_addresses.push(GlobalAddress::arbitrary(&mut unstructured).unwrap());
                     let address = *unstructured.choose(&global_addresses[..]).unwrap();
-                    let input =
-                        RoleAssignmentLockOwnerInput::arbitrary(&mut unstructured).unwrap();
+                    let input = RoleAssignmentLockOwnerInput::arbitrary(&mut unstructured).unwrap();
 
                     match to_manifest_value(&input) {
                         Ok(args) => Some(InstructionV1::CallRoleAssignmentMethod {
@@ -822,7 +822,14 @@ impl TxFuzzer {
                 ),
             };
             if let Some(instruction) = instruction {
-                let (updated_builder, NewSymbols { new_bucket, new_proof, .. }) = builder.add_instruction_advanced(instruction);
+                let (
+                    updated_builder,
+                    NewSymbols {
+                        new_bucket,
+                        new_proof,
+                        ..
+                    },
+                ) = builder.add_instruction_advanced(instruction);
                 builder = updated_builder;
                 if let Some(bucket_id) = new_bucket {
                     buckets.push(bucket_id)
