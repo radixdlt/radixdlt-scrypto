@@ -47,7 +47,7 @@ impl Authorization {
         P: Fn(
             &[Proof],
             &BTreeSet<ResourceAddress>,
-            BTreeSet<&NonFungibleGlobalId>,
+            BTreeSet<NonFungibleGlobalId>,
             &mut Y,
         ) -> Result<bool, RuntimeError>,
     {
@@ -72,7 +72,7 @@ impl Authorization {
                 let mut virtual_non_fungible_global_ids = BTreeSet::new();
                 let virtual_resources = auth_zone.virtual_resources();
 
-                virtual_non_fungible_global_ids.extend(auth_zone.virtual_non_fungibles());
+                virtual_non_fungible_global_ids.extend(auth_zone.virtual_non_fungibles().clone());
 
                 let proofs = auth_zone.proofs();
 
@@ -113,59 +113,55 @@ impl Authorization {
         P: Fn(
             &[Proof],
             &BTreeSet<ResourceAddress>,
-            BTreeSet<&NonFungibleGlobalId>,
+            BTreeSet<NonFungibleGlobalId>,
             &mut Y,
         ) -> Result<bool, RuntimeError>,
     {
-        {
-            let handle = api.kernel_open_substate(
-                &auth_zone,
-                MAIN_BASE_PARTITION,
-                &AuthZoneField::AuthZone.into(),
-                LockFlags::read_only(),
-                L::default(),
-            )?;
+        let handle = api.kernel_open_substate(
+            &auth_zone,
+            MAIN_BASE_PARTITION,
+            &AuthZoneField::AuthZone.into(),
+            LockFlags::read_only(),
+            L::default(),
+        )?;
+
+        // Using this block structure to be able to ensure handle is freed
+        // The suggested Rust pattern seems to be to use RAII pattern + Drop but
+        // at the moment this does not seem practical to be able to implement
+        let rtn = (|| -> Result<bool, RuntimeError> {
             let auth_zone: FieldSubstate<AuthZone> =
                 api.kernel_read_substate(handle)?.as_typed().unwrap();
+            let auth_zone = auth_zone.value.0;
 
-            // TODO: Combine these two
-
-            // Test Local Caller package address
-            if let Some(local_package_address) = auth_zone.value.0.local_caller_package_address {
-                let non_fungible_global_id =
-                    NonFungibleGlobalId::package_of_direct_caller_badge(local_package_address);
-                let local_call_frame_proofs = btreeset!(&non_fungible_global_id);
-                if check(&[], &btreeset!(), local_call_frame_proofs, api)? {
-                    api.kernel_close_substate(handle)?;
+            // Check Local virtual non fungibles
+            let virtual_proofs = auth_zone.local_virtual_non_fungibles();
+            if !virtual_proofs.is_empty() {
+                if check(&[], &btreeset!(), virtual_proofs, api)? {
                     return Ok(true);
                 }
             }
 
-            // Test Global Caller
-            if let Some((global_caller, global_caller_reference)) = &auth_zone.value.0.global_caller
-            {
-                let non_fungible_global_id =
-                    NonFungibleGlobalId::global_caller_badge(global_caller.clone());
-                let global_call_frame_proofs = btreeset!(&non_fungible_global_id);
-                if check(&[], &btreeset!(), global_call_frame_proofs, api)? {
-                    api.kernel_close_substate(handle)?;
-                    return Ok(true);
-                }
-
+            // Check global caller's full auth zone
+            if let Some((_global_caller, global_caller_reference)) = &auth_zone.global_caller {
                 if Self::global_auth_zone_matches(api, &global_caller_reference.0, &check)? {
-                    api.kernel_close_substate(handle)?;
                     return Ok(true);
                 }
             }
 
-            api.kernel_close_substate(handle)?;
-        }
+            // Check current caller's full auth zone
+            // We ignore the current frame's authzone since it is not relevant
+            if let Some(parent) = auth_zone.parent {
+                if Self::global_auth_zone_matches(api, &parent.0, &check)? {
+                    return Ok(true);
+                }
+            }
 
-        if Self::global_auth_zone_matches(api, auth_zone, &check)? {
-            return Ok(true);
-        }
+            Ok(false)
+        })()?;
 
-        Ok(false)
+        api.kernel_close_substate(handle)?;
+
+        Ok(rtn)
     }
 
     fn auth_zone_stack_has_amount<

@@ -59,6 +59,26 @@ impl AuthZone {
         &self.virtual_non_fungibles
     }
 
+    pub fn local_virtual_non_fungibles(&self) -> BTreeSet<NonFungibleGlobalId> {
+        let mut virtual_proofs = BTreeSet::new();
+
+        // Local Caller package address
+        if let Some(local_package_address) = self.local_caller_package_address {
+            let non_fungible_global_id =
+                NonFungibleGlobalId::package_of_direct_caller_badge(local_package_address);
+            virtual_proofs.insert(non_fungible_global_id);
+        }
+
+        // Global Caller Actor
+        if let Some((global_caller, _global_caller_reference)) = &self.global_caller {
+            let non_fungible_global_id =
+                NonFungibleGlobalId::global_caller_badge(global_caller.clone());
+            virtual_proofs.insert(non_fungible_global_id);
+        }
+
+        virtual_proofs
+    }
+
     pub fn push(&mut self, proof: Proof) {
         self.proofs.push(proof);
     }
