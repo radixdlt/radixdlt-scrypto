@@ -8,7 +8,7 @@ use radix_engine_interface::crypto::Hash;
 pub struct Event {
     pub type_identifier: EventTypeIdentifier,
     pub payload: Vec<u8>,
-    pub revert_on_failure: bool,
+    pub discard_on_failure: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -39,17 +39,8 @@ impl TransactionRuntimeModule {
         self.logs.push((level, message))
     }
 
-    pub fn add_event(
-        &mut self,
-        type_identifier: EventTypeIdentifier,
-        payload: Vec<u8>,
-        revert_on_failure: bool,
-    ) {
-        self.events.push(Event {
-            type_identifier,
-            payload,
-            revert_on_failure,
-        })
+    pub fn add_event(&mut self, event: Event) {
+        self.events.push(event)
     }
 
     pub fn add_replacement(
@@ -74,11 +65,11 @@ impl TransactionRuntimeModule {
         for Event {
             mut type_identifier,
             payload,
-            revert_on_failure,
+            discard_on_failure,
         } in self.events.into_iter()
         {
             // Revert if failure
-            if revert_on_failure && !is_success {
+            if discard_on_failure && !is_success {
                 continue;
             }
 

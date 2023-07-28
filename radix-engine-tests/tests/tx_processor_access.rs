@@ -82,7 +82,7 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     let (pub_key, _, account0) = test_runner.new_account(true);
     let (_, _, account1) = test_runner.new_account(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/tx_processor_access");
-    let initial_balance = test_runner.account_balance(account0, XRD);
+    let initial_balance = test_runner.get_component_balance(account0, XRD);
     let instructions = ManifestBuilder::new()
         .withdraw_from_account(account0, XRD, 10)
         .try_deposit_batch_or_abort(account1)
@@ -107,6 +107,6 @@ fn should_not_be_able_to_steal_money_through_tx_processor_call() {
     );
 
     // Assert
-    let final_balance = test_runner.account_balance(account0, XRD);
+    let final_balance = test_runner.get_component_balance(account0, XRD);
     assert_eq!(initial_balance, final_balance);
 }
