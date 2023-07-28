@@ -106,7 +106,7 @@ function inspect_crashes() {
         fi
         pushd $repo_dir > /dev/null
         echo "Building simple fuzzer"
-        ./fuzz.sh $TARGET simple build
+        ./fuzz.sh simple build $TARGET
         popd > /dev/null
         echo "Checking crash/hangs files"
         for f in $files ; do
@@ -118,7 +118,7 @@ function inspect_crashes() {
             fi
 
             # calling target directly to get rid of unnecessary debugs
-            #./fuzz.sh $TARGET  simple run ../../$f >/dev/null || true
+            #./fuzz.sh simple run $TARGET ../../$f >/dev/null || true
             cmd="${repo_dir}/target/release/${TARGET} $f"
             echo
             echo "file    : $f"
