@@ -146,22 +146,22 @@ fn cant_globalize_role_assignment() {
 
 #[test]
 fn cant_store_bucket() {
-    call_function_and_assert_error("GlobalizeTest", "store_bucket", "Persistence prohibited")
+    call_function_and_assert_error("GlobalizeTest", "store_bucket", "PersistenceProhibited")
 }
 
 #[test]
 fn cant_store_proof() {
-    call_function_and_assert_error("GlobalizeTest", "store_proof", "Persistence prohibited")
+    call_function_and_assert_error("GlobalizeTest", "store_proof", "PersistenceProhibited")
 }
 
 #[test]
 fn cant_store_metadata() {
-    call_function_and_assert_error("GlobalizeTest", "store_metadata", "Persistence prohibited")
+    call_function_and_assert_error("GlobalizeTest", "store_metadata", "PersistenceProhibited")
 }
 
 #[test]
 fn cant_store_royalty() {
-    call_function_and_assert_error("GlobalizeTest", "store_royalty", "Persistence prohibited")
+    call_function_and_assert_error("GlobalizeTest", "store_royalty", "PersistenceProhibited")
 }
 
 #[test]
@@ -169,6 +169,6 @@ fn cant_store_role_assignment() {
     call_function_and_assert_error(
         "GlobalizeTest",
         "store_role_assignment",
-        "Persistence prohibited",
+        "PersistenceProhibited",
     )
 }

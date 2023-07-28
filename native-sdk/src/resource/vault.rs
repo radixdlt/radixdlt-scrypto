@@ -87,6 +87,7 @@ pub trait NativeFungibleVault {
 pub trait NativeNonFungibleVault {
     fn non_fungible_local_ids<Y, E: Debug + ScryptoDecode>(
         &self,
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
@@ -359,6 +360,7 @@ impl NativeNonFungibleVault for Vault {
 
     fn non_fungible_local_ids<Y, E: Debug + ScryptoDecode>(
         &self,
+        limit: u32,
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleLocalId>, E>
     where
@@ -367,7 +369,7 @@ impl NativeNonFungibleVault for Vault {
         let rtn = api.call_method(
             self.0.as_node_id(),
             NON_FUNGIBLE_VAULT_GET_NON_FUNGIBLE_LOCAL_IDS_IDENT,
-            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput {}).unwrap(),
+            scrypto_encode(&NonFungibleVaultGetNonFungibleLocalIdsInput { limit }).unwrap(),
         )?;
 
         Ok(scrypto_decode(&rtn).unwrap())

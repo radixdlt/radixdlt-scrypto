@@ -8,8 +8,8 @@ use crate::errors::{
     SystemError, SystemModuleError,
 };
 use crate::errors::{EventError, SystemUpstreamError};
-use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor, ReceiverType};
-use crate::kernel::call_frame::{NodeVisibility, StableReferenceType, Visibility};
+use crate::kernel::actor::{Actor, FunctionActor, InstanceContext, MethodActor};
+use crate::kernel::call_frame::{NodeVisibility, ReferenceOrigin};
 use crate::kernel::kernel_api::*;
 use crate::system::node_init::type_info_partition;
 use crate::system::node_modules::type_info::{TypeInfoBlueprint, TypeInfoSubstate};
@@ -604,7 +604,10 @@ where
         Ok(GlobalAddressReservation(Own(global_address_reservation)))
     }
 
-    pub fn get_node_type_info(&mut self, node_id: &NodeId) -> Option<TypeInfoSubstate> {
+    pub fn get_node_type_info(
+        &mut self,
+        node_id: &NodeId,
+    ) -> Result<TypeInfoSubstate, RuntimeError> {
         self.api
             .kernel_open_substate(
                 node_id,
@@ -623,7 +626,6 @@ where
                             .and_then(|_| Ok(substate))
                     })
             })
-            .ok()
     }
 
     fn new_object_internal(
@@ -1171,7 +1173,10 @@ where
     }
 
     pub fn current_actor(&mut self) -> Actor {
-        self.api.kernel_get_system_state().current_actor.clone()
+        self.api
+            .kernel_get_system_state()
+            .current_call_frame
+            .clone()
     }
 
     pub fn get_object_info(&mut self, node_id: &NodeId) -> Result<ObjectInfo, RuntimeError> {
@@ -1424,75 +1429,6 @@ where
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        // Direct access methods should never have access to a global address
-        let receiver_type = if direct_access {
-            ReceiverType::DirectAccess
-        } else {
-            let node_visibility = self.api.kernel_get_node_visibility(receiver);
-
-            // Retrieve the global address of the receiver node
-            let mut get_receiver_type = |node_visibility: NodeVisibility| {
-                for visibility in node_visibility.0 {
-                    match visibility {
-                        Visibility::StableReference(StableReferenceType::Global) => {
-                            return Ok(ReceiverType::OnStoredObject(GlobalAddress::new_or_panic(
-                                receiver.clone().into(),
-                            )));
-                        }
-
-                        // Direct access references dont provide any info regarding global address so continue:1458
-                        Visibility::StableReference(StableReferenceType::DirectAccess) => {
-                            continue;
-                        }
-
-                        // Anything frame owned does not have a global address
-                        Visibility::FrameOwned => return Ok(ReceiverType::OnHeapObject),
-
-                        // If borrowed or actor then we just use the current actor's global address
-                        // e.g. if the parent to the node is frame owned then the current actor's global
-                        // address would be None
-                        Visibility::Borrowed | Visibility::Actor => {
-                            match self.api.kernel_get_system_state().current_actor {
-                                Actor::Method(MethodActor { receiver_type, .. }) => {
-                                    let receiver_type = match receiver_type {
-                                        // TODO: This isn't totally correct as a direct access actor may call a non-direct access method
-                                        // but we don't use this anywhere at the moment
-                                        ReceiverType::DirectAccess => ReceiverType::DirectAccess,
-                                        ReceiverType::OnHeapObject => ReceiverType::OnHeapObject,
-                                        m @ ReceiverType::OnStoredObject(..) => m.clone(),
-                                    };
-                                    return Ok(receiver_type);
-                                }
-                                Actor::BlueprintHook(actor) => match actor.hook {
-                                    BlueprintHook::OnMove | BlueprintHook::OnDrop => {
-                                        return Ok(ReceiverType::OnHeapObject)
-                                    }
-                                    BlueprintHook::OnVirtualize => {
-                                        panic!("Function Actor should never be able to call a borrowed object method unless it's a direct access method.")
-                                    }
-                                },
-                                Actor::Function(..) => {
-                                    // This is currently a hack required since kernel modules call methods
-                                    // on objects without creating their own callframe/actor
-                                    // Otherwise, Function Actor should never be able to call a borrowed object method unless it's a direct access method.
-                                    return Ok(ReceiverType::OnHeapObject);
-                                }
-                                Actor::Root => {
-                                    panic!("Root should never be able to call a method")
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Err(RuntimeError::SystemError(
-                    SystemError::NodeNotVisibleForMethodCall,
-                ))
-            };
-
-            get_receiver_type(node_visibility)?
-        };
-
         // Key Value Stores do not have methods so we remove that possibility here
         let object_info = self.get_object_info(&receiver)?;
         if !object_info.module_versions.contains_key(&module_id) {
@@ -1502,8 +1438,8 @@ where
         }
 
         let invocation = KernelInvocation {
-            actor: Actor::method(
-                receiver_type,
+            call_frame_data: Actor::method(
+                direct_access,
                 receiver.clone(),
                 module_id,
                 method_name.to_string(),
@@ -1914,7 +1850,7 @@ where
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
@@ -1922,7 +1858,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_keys::<MapKey>(&node_id, partition_num, count)?
+            .kernel_scan_keys::<MapKey>(&node_id, partition_num, limit)?
             .into_iter()
             .map(|key| key.into_map())
             .collect();
@@ -1935,7 +1871,7 @@ where
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<(Vec<u8>, Vec<u8>)>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
@@ -1943,7 +1879,7 @@ where
 
         let substates = self
             .api
-            .kernel_drain_substates::<MapKey>(&node_id, partition_num, count)?
+            .kernel_drain_substates::<MapKey>(&node_id, partition_num, limit)?
             .into_iter()
             .map(|(key, value)| (key.into_map(), value.into()))
             .collect();
@@ -2019,7 +1955,7 @@ where
         &mut self,
         object_handle: ObjectHandle,
         collection_index: CollectionIndex,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<Vec<u8>>, RuntimeError> {
         let actor_object_type: ActorObjectType = object_handle.try_into()?;
 
@@ -2028,7 +1964,7 @@ where
 
         let substates = self
             .api
-            .kernel_scan_sorted_substates(&node_id, partition_num, count)?
+            .kernel_scan_sorted_substates(&node_id, partition_num, limit)?
             .into_iter()
             .map(|value| value.into())
             .collect();
@@ -2051,7 +1987,7 @@ where
         args: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
         let invocation = KernelInvocation {
-            actor: Actor::function(
+            call_frame_data: Actor::function(
                 BlueprintId::new(&package_address, blueprint_name),
                 function_name.to_string(),
             ),
@@ -2306,15 +2242,20 @@ where
             .apply_execution_cost(CostingEntry::QueryActor)?;
 
         let actor = self.current_actor();
-        match actor {
-            Actor::Method(MethodActor {
-                receiver_type: ReceiverType::OnStoredObject(address),
-                ..
-            }) => Ok(address.clone()),
-            _ => Err(RuntimeError::SystemError(
-                SystemError::GlobalAddressDoesNotExist,
-            )),
+        if !actor.is_direct_access() {
+            if let Some(node_id) = actor.node_id() {
+                let visibility = self.kernel_get_node_visibility(&node_id);
+                if let ReferenceOrigin::Global(address) =
+                    visibility.reference_origin(node_id).unwrap()
+                {
+                    return Ok(address);
+                }
+            }
         }
+
+        Err(RuntimeError::SystemError(
+            SystemError::GlobalAddressDoesNotExist,
+        ))
     }
 
     #[trace_resources]
@@ -2750,7 +2691,7 @@ where
     fn kernel_read_substate(
         &mut self,
         lock_handle: LockHandle,
-    ) -> Result<IndexedScryptoValue, RuntimeError> {
+    ) -> Result<&IndexedScryptoValue, RuntimeError> {
         self.api.kernel_read_substate(lock_handle)
     }
 
@@ -2787,30 +2728,30 @@ where
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<IndexedScryptoValue>, RuntimeError> {
         self.api
-            .kernel_scan_sorted_substates(node_id, partition_num, count)
+            .kernel_scan_sorted_substates(node_id, partition_num, limit)
     }
 
     fn kernel_scan_keys<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<SubstateKey>, RuntimeError> {
         self.api
-            .kernel_scan_keys::<K>(node_id, partition_num, count)
+            .kernel_scan_keys::<K>(node_id, partition_num, limit)
     }
 
     fn kernel_drain_substates<K: SubstateKeyContent>(
         &mut self,
         node_id: &NodeId,
         partition_num: PartitionNumber,
-        count: u32,
+        limit: u32,
     ) -> Result<Vec<(SubstateKey, IndexedScryptoValue)>, RuntimeError> {
         self.api
-            .kernel_drain_substates::<K>(node_id, partition_num, count)
+            .kernel_drain_substates::<K>(node_id, partition_num, limit)
     }
 }
 
