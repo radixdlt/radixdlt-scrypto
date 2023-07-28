@@ -1,6 +1,8 @@
 use scrypto::api::object_api::ObjectModuleId;
 use scrypto::api::ClientBlueprintApi;
 use scrypto::api::ClientObjectApi;
+use scrypto::api::LockFlags;
+use scrypto::prelude::wasm_api::*;
 use scrypto::prelude::*;
 
 #[blueprint]
@@ -180,16 +182,72 @@ mod move_test {
 }
 
 #[blueprint]
-mod core_test {
-    struct CoreTest;
+mod runtime_test {
+    struct RuntimeTest;
 
-    impl CoreTest {
+    impl RuntimeTest {
         pub fn query() -> (PackageAddress, Hash, Epoch) {
             (
                 Runtime::package_address(),
                 Runtime::transaction_hash(),
                 Runtime::current_epoch(),
             )
+        }
+    }
+}
+
+#[blueprint]
+mod recursive_test {
+    struct RecursiveTest {
+        own: Own,
+    }
+
+    impl RecursiveTest {
+        pub fn create_own_at_depth(depth: u32) {
+            // Can be further optimized by pre-computation
+            let schema = scrypto_encode(&KeyValueStoreSchema::new::<u32, Own>(true)).unwrap();
+            let key_payload = scrypto_encode(&0u32).unwrap();
+            let mut value_payload = scrypto_encode(&Own(NodeId([0u8; NodeId::LENGTH]))).unwrap();
+
+            fn create_kv_store(schema: &[u8]) -> NodeId {
+                let bytes = copy_buffer(unsafe { kv_store_new(schema.as_ptr(), schema.len()) });
+                NodeId(bytes[bytes.len() - NodeId::LENGTH..].try_into().unwrap())
+            }
+
+            fn move_kv_store(
+                store: NodeId,
+                to: NodeId,
+                key_payload: &[u8],
+                value_payload: &mut [u8],
+            ) {
+                unsafe {
+                    let handle = kv_store_open_entry(
+                        to.as_ref().as_ptr(),
+                        to.as_ref().len(),
+                        key_payload.as_ptr(),
+                        key_payload.len(),
+                        LockFlags::MUTABLE.bits(),
+                    );
+
+                    let len = value_payload.len();
+                    value_payload[len - NodeId::LENGTH..].copy_from_slice(store.as_bytes());
+
+                    kv_entry_set(handle, value_payload.as_ptr(), value_payload.len());
+                    kv_entry_release(handle);
+                }
+            }
+
+            let mut root = create_kv_store(&schema);
+            for _ in 0..depth {
+                let store = create_kv_store(&schema);
+                move_kv_store(root, store, &key_payload, &mut value_payload);
+                root = store;
+            }
+
+            Self { own: Own(root) }
+                .instantiate()
+                .prepare_to_globalize(OwnerRole::None)
+                .globalize();
         }
     }
 }
